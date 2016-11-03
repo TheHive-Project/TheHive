@@ -1,0 +1,27 @@
+<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
+    <span class="updatable-value" ng-bind="value | showDate" style="vertical-align:top"></span>
+    <small ng-show="active">
+        <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' tooltip="edit">
+            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+        </a>
+    </small>
+    <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+</span>
+<span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
+    <div class="form-inline">
+        <div class="form-group">
+            <div class="input-group">
+                <input class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" type="datetime"/>
+                <span btn-checkbox="" class="btn btn-primary input-group-addon" ng-model="dateNow">now</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <span class="btn" ng-click='update()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' tooltip="save">
+                <i class="text-success glyphicon glyphicon-ok"></i>
+            </span>
+            <span class="btn" ng-click='cancel()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' tooltip="cancel">
+                <i class="text-danger glyphicon glyphicon-remove"></i>
+            </span>
+        </div>
+    </div>
+</span>

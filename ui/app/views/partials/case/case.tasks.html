@@ -1,0 +1,97 @@
+<br>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group">
+                <button class="btn btn-primary" ng-click="state.isNewTask = true">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    Add Task
+                </button>
+            </div>
+
+            <div class="btn-group pull-right" role="group">
+                <page-sizer collection="tasks" sizes="[10, 15, 30, 100]"></page-sizer>
+            </div>
+
+            <div class="pull-right form-inline">
+                <div class="input-group input-group-sm">
+                    <filter-box collection="tasks"></filter-box>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--  ng-show="tasks.total == 0 && tasks.filter == '*'" -->
+<div class="row mv-s" ng-show="tasks.total === 0">
+    <div class="col-md-12">
+        <div class="empty-message">No task found for this case.</div>
+    </div>
+</div>
+
+<!-- Filter input -->
+<!-- <div class="row mb-s">
+    <div class="col-md-12 clearfix">
+        <div class="pull-right form-inline">
+            <div class="input-group input-group-sm">
+                <filter-box collection="tasks"></filter-box>
+            </div>
+            <div class="form-group">
+                <page-sizer collection="tasks"></page-sizer>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<div class="row mt-l" ng-show="state.isNewTask">
+    <div class="col-md-12">
+        <form name="form" ng-submit="addTask(); state.isNewTask = false;">
+            <div class="input-group input-group">
+                <input name="title"class="form-control" ng-model="newTask.title" type="text" placeholder="Enter task title" required>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" ng-disabled="form.$invalid" type="submit">
+                        <i class="text-success glyphicon glyphicon-ok"></i>
+                    </button>
+                    <button class="btn btn-default" ng-click="state.isNewTask = false" type="button">
+                        <i class="text-danger glyphicon glyphicon-remove"></i>
+                    </button>
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mt-l" ng-show="tasks.total !== 0">
+    <div class="col-md-12">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th style="width: 50px"></th>
+                    <th style="width: 550px;">Task</th>
+                    <th style="width: 250px">Date</th>
+                    <th>Owner</th>
+                    <th style="width: 50px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="task in tasks.values" class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+                    <td class="task-status" align="center" ng-switch="task.status">
+                        <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
+                        <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
+                    </td>
+                    <td ng-click="openTask(task)" class="pointer">{{task.title}}</td>
+                    <td>{{task.startDate | showDate}}</td>
+                    <td>
+                        <span ng-show="task.owner">{{getUserInfo(task.owner) | getField: 'name'}}</span>
+                        <em ng-show="!task.owner">Not assigned</em>
+                    </td>
+                    <td class="task-delete clickable" align="center" ng-click="removeTask(task)">
+                        <i class="glyphicon glyphicon-remove text-danger"></i>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <psearch control="tasks"></psearch>
+    </div>
+</div>

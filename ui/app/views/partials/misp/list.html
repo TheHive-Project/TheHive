@@ -1,0 +1,113 @@
+<h2>Import MISP events ({{misp.list.total}})</h2>
+<div class="vpad10"></div>
+
+<div class="row mb-s">
+    <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <!-- Single button -->
+            <div class="btn-group" dropdown>
+                <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="misp.selection.length === 0">
+                    <ng-pluralize count="misp.selection.length" when="{'0': 'No event selected', 'one': '{} selected event', 'other': '{} selected events'}"></ng-pluralize>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <!--
+                        <li>
+                            <a ng-click="misp.bulkImport()">Import</a>
+                        </li>
+                        -->
+                    <li ng-show="misp.menu.follow" ng-click="misp.bulkFollow(true)">
+                        <a>Track new updates</a>
+                    </li>
+                    <li ng-show="misp.menu.unfollow" ng-click="misp.bulkFollow(false)">
+                        <a>Ignore new updates</a>
+                    </li>
+                    <li class="text-danger">
+                        <a ng-click="misp.bulkIgnore()">Mark as read</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="pull-right form-inline">
+            <div class="input-group input-group-sm">
+                <filter-box collection="misp.list"></filter-box>
+            </div>
+            <div class="form-group">
+                <page-sizer collection="misp.list"></page-sizer>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th width="20px"><input type="checkbox" ng-model="misp.menu.selectAll" ng-change="misp.selectAll()"></th>
+                    <th width="100px">Event ID</th>
+                    <th>Title</th>
+                    <th width="150px">Source</th>
+                    <th>Severity</th>
+                    <th width="80px">Attributes</th>
+                    <th>Tags</th>
+                    <th style="width: 160px">Date</th>
+                    <th style="width: 120px"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr ng-repeat="event in misp.list.values">
+                    <td>
+                        <input type="checkbox" ng-model="event.selected" ng-change="misp.select(event)">
+                    </td>
+                    <td>
+                        <strong class="ml-xxs">{{::event.eventId}}</strong>
+                    </td>
+                    <td class="wrap">
+                        <span class="label label-default" ng-class="{'label-danger': event.eventStatus==='New', 'label-warning': event.eventStatus === 'Update'}">{{::event.eventStatus}}</span>
+                        <span class="ml-xs">
+                            <span ng-if="!event.case">{{::event.info}}</span>
+                            <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
+                                <a href>{{::event.info}}</a>
+                            </span>
+                        </span>
+                    </td>
+                    <td>{{event.org}}</td>
+                    <td class="text-center">
+                        <severity value="event.threatLevel"></severity>
+                    </td>
+                    <td class="text-center">{{::event.attributeCount}}</td>
+                    <td>
+                        <span ng-repeat="tag in event.tags" style="margin-right:2px;display:inline-block">
+                            <span class="label label-primary">
+                                <i class="glyphicon glyphicon-tag"></i>
+                                <span ng-bind="tag"></span>
+                            </span>
+                        </span>
+                    </td>
+                    <td>{{event.publishDate | showDate}}</td>
+                    <td class="clearfix">
+                        <div class="pull-right">
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.import(event)" tooltip="Preview and Import" ng-if="!event.case">
+                                <i class="text-info text-20 fa fa-file-text-o"></i>
+                            </a>
+                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" tooltip="View case" ng-if="event.case">
+                                <i class="text-info text-20 fa fa-search"></i>
+                            </a>
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.follow(event)" tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
+                                <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
+                            </a>
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.ignore(event)" tooltip="Mark as read">
+                                <i class="text-info text-20 fa fa-check"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <psearch control="misp.list"></psearch>
+
+    </div>
+</div>

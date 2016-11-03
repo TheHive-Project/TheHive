@@ -1,0 +1,13 @@
+{
+	"name": "Hipposcore",
+	"version": "1.0",
+	"report": "Hippocampe/Hipposcore_1.0/report",
+	"description": "Hippocampe Score report: provides the last report for an IP, domain or a URL",
+	"dataTypeList": ["ip", "domain", "fqdn", "url"],
+	"baseConfig": "Hippocampe",
+	"config": {
+		"check_tlp":false,
+		"service": "hipposcore"
+	},
+	"command": "Hippocampe/hippo.py"
+}

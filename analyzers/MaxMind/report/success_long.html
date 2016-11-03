@@ -1,0 +1,11 @@
+<div class="panel panel-info">
+    <div class="panel-heading">
+        Geolocation of <strong>{{artifact.data}}</strong>
+    </div>
+    <div class="panel-body">
+        <div ng-show="content.traits.is_anonymous_proxy" class="alert alert-warning">Is anonymous proxy</div>
+        <div ng-show="content.traits.is_satellite_provider" class="alert alert-warning">Is satellite provider</div>
+
+        {{[content.continent.name, content.country.name, content.subdivisions.name, content.city.name].join(' / ')}}
+    </div>
+</div>

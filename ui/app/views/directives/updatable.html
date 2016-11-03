@@ -1,0 +1,17 @@
+<span ng-hide="updatable.updating">
+    <span class="updatable-value" style="vertical-align:top">{{value}}</span>
+    <small ng-show="active">
+        <a target="_self" tooltip-popup-delay='500' tooltip="edit">
+            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+        </a>
+    </small>
+</span>
+<span ng-show="updatable.updating">
+    <span ng-transclude></span>
+    <a href ng-click='update()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' tooltip="save">
+        <i class="text-success glyphicon glyphicon-ok"></i>
+    </a>
+    <a href ng-click='cancel()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' tooltip="cancel">
+        <i class="text-danger glyphicon glyphicon-remove"></i>
+    </a>
+</span>

@@ -1,0 +1,35 @@
+<h2 class="vpad10">Observables management</h2>
+<div class="vpad10"></div>
+<h4>DataTypes</h4>
+<hr>
+<div class="row">
+    <div class="col-md-6">
+        <!-- placeholder="newDataTypes"  -->
+        <textarea class="form-control" ng-list="&#10;" ng-model="params.newDataTypes" ng-trim="false" style="resize: vertical"></textarea>
+        <br>
+        <span class="pull-right">
+            <button class="btn btn-primary" ng-click="addArtifactDataTypeList()" ng-disabled="newDataTypes.length === 0">
+                <i class=" glyphicon glyphicon-plus"></i>
+                <b>Add dataTypes</b>
+            </button>
+        </span>
+    </div>
+    <div class="col-md-6">
+        <table class="table table-hover">
+            <thead>
+                <th>dataType</th>
+                <th class="col-md-1" style="text-align:center">Action</th>
+            </thead>
+            <tbody ng-init="textDel = muted" ng-repeat="datatype in dataTypeList">
+                <tr>
+                    <td>{{datatype.value}}</td>
+                    <td ng-mouseout="textDel = 'text-muted'" ng-mouseover="textDel = 'text-danger'" style="text-align:center">
+                        <a href ng-click="deleteArtifactDataType(datatype)">
+                            <i class="text-muted glyphicon glyphicon-trash" ng-class="textDel"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

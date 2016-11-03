@@ -1,0 +1,28 @@
+<div class="search-item-title">
+    <a href ui-sref="app.case.observables-item({caseId: value.case_artifact.case.id, itemId: value.artifactId})">
+        Job <em><span ng-bind="value.analyzerId"></span></em>
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo(value.user) | getField: 'name'}}</span>
+
+    <i class="glyphicon glyphicon-calendar ml-xxs"></i>
+    Started on <span ng-bind="value.startDate | showDate"> </span>
+
+    <span ng-if="value.endDate" class="text-success">
+        (
+        <strong>Fnished</strong>
+        on
+        {{value.endDate | showDate}}
+        as
+        <strong>{{value.status}}</strong>)
+    </span>
+</div>
+<div class="mt-xs wrap">
+    <strong ng-bind="value.case_artifact.dataType"></strong>:
+    <em>
+        <span ng-if="!value.case_artifact.attachment.name" ng-bind="value.case_artifact.data | fang"></span>
+        <span ng-if="value.case_artifact.attachment.name" ng-bind="value.case_artifact.attachment.name"></span>
+    </em>
+</div>

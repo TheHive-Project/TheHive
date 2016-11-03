@@ -1,0 +1,42 @@
+<div class="case-links" ng-show="links.length > 0">
+    <h4 class="vpad10 text-primary">Related cases ({{links.length}})</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Case</th>
+                <th>Tags</th>
+                <th colspan="2">Linked observables</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="link in links">
+                <td class="wrap">
+                    <div>
+                        {{link.startDate | showDate:'YYYY-MM-DD HH:mm'}}
+                        <tlp value="link.tlp"></tlp>
+                    </div>
+                    <div class="small">
+                        <i class="glyphicon glyphicon-folder-open text-muted mr-xxxs"></i>
+                        <a href ui-sref="app.case.details({caseId: link.id})"># {{link.caseId}} - {{link.title | limitTo: 100}}</a>
+                    </div>
+                </td>
+                <td>
+                    <tag-list data="link.tags"></tag-list>
+                </td>
+                <td><span class="badge">{{link.linkedWith.length}}</span></td>
+                <td>
+                    <div ng-repeat="observable in link.linkedWith | limitTo:5" class="wrap">
+                        <a href ui-sref="app.case.observables-item({caseId: link.id, itemId: observable.id})">
+                            <strong>[{{observable.dataType}}]</strong>:
+                            <span ng-if="observable.attachment"></span>{{observable.attachment.name}}
+                            <span ng-if="!observable.attachment"></span>{{observable.data | fang}}
+                        </a>
+                    </div>
+                    <div class="mt-xs" ng-if="link.linkedWith.length > 5">
+                        <a href ui-sref="app.case.observables({caseId: caseId})"><strong>See ({{link.linkedWith.length - 5}}) more links</strong></a>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

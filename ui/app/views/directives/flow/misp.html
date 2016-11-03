@@ -1,0 +1,28 @@
+<div class="flow-misp "ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="fa fa-download"></i>
+        <span ng-show="bulk">MISP updates</span>
+        <span ng-show="!bulk">{{base.object.info}}</span>
+    </div>
+
+    <div class="flow-item-updates wrap" ng-show="bulk">
+        <div class="flow-item-bulk" ng-show="summary.misp.Creation">
+            <ng-pluralize count="summary.misp.Creation" when="{'one': '{} new MISP event has been added', 'other': '{} new MISP events have been added'}"></ng-pluralize>
+        </div>
+        <div class="flow-item-bulk" ng-show="summary.misp.Update">
+            <ng-pluralize count="summary.misp.Update" when="{'one': '{} existing MISP event has been updated', 'other': '{} existing MISP events have been added'}"></ng-pluralize>
+        </div>
+        <div>
+            <a class="small" href ng-click="openState('app.misp-list')">See all</a>
+        </div>
+    </div>
+
+    <div class="flow-item-updates wrap" ng-hide="bulk" ng-switch-default>
+        <span ng-repeat="(k,v) in base.details" ng-switch="k">
+            <div ng-switch-default>
+                {{k}}:
+                <em>{{v}}</em>
+            </div>
+        </span>
+    </div>
+</div>

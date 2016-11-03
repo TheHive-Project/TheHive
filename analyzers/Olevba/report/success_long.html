@@ -1,0 +1,113 @@
+<div ng-if="content.Version" class="col-md-12">
+	<p class="lead">Summary</p>
+		<dl class="dl-horizontal">
+			<dt>Olevba version:</dt>
+			<dd>v{{content.Version}}</dd>
+		</dl>
+
+		<dl class="dl-horizontal">
+			<dt>Olevba detection :</dt>
+			<dd>{{content.vba}}</dd>
+		</dl>
+
+		<dl class="dl-horizontal">
+			<dt>Olevba scanner :</dt>
+			<dd>
+				<span ng-switch="content['vba']">
+					<span ng-switch-when="VBA Macros found">
+						<span class="label" ng-class="{true:'label-danger', false:'label-warning'}[content['Suspicious']]">
+							<span ng-if="content['Suspicious'] === false">Not suspicious</span>
+							<span ng-if="content['Suspicious'] === true">Suspicious VBA</span> 
+						</span> 
+						<span class="label" ng-class="{true:'label-danger'}[content['Base64 Strings']]"><span ng-if="content['Base64 Strings'] === true">Base64 strings</span></span>
+						<span class="label" ng-class="{true:'label-danger'}[content['Hex Strings']]"><span ng-if="content['Hex Strings'] === true">Hex strings</span></span>
+					</span>
+					<span ng-switch-default>
+							<span class="label label-success">
+								Not suspicious
+							</span>
+					</span>
+				</span>
+			</dd>
+		</dl>
+
+</div>
+<div ng-if="content.streams" class="col-md-12">
+	<p class="lead">Detailed Information</p>
+
+	<div ng-repeat="stream in content.streams">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">OLE stream: {{stream['OLE stream']}}</h3>
+			</div>
+			<div class="panel-body">
+				<h5>Information</h5>
+
+				<dl class="dl-horizontal">
+					<dt>VBA filename:</dt>
+					<dd>{{stream['VBA filename']}}</dd>
+				</dl>
+				
+				<dl class="dl-horizontal">
+					<dt>Filename:</dt>
+					<dd>{{stream['Filename']}}</dd>
+				</dl>
+				<br>
+
+				<div ng-if="stream.scan_result[0]">
+					<h5>Olevba analysis</h5>
+					<div class="table-responsive">
+						<table  class="table">
+							<thead>
+								<tr>
+									<th >Type</th>
+									<th >Keyword</th>
+									<th >Description</th>
+								</tr>
+							</thead>
+							<tbody ng-repeat="result in stream.scan_result">
+								<tr>
+									<td>{{result.type}}</td>
+									<td>{{result.keyword}}</td>
+									<td>{{result.description}}</td>
+								</tr>
+							</tbody>
+						</table>
+						
+					</div>
+				</div>
+
+				<div ng-if="stream['VBA code'] && stream['VBA code'] != '' ">
+					<a href  ng-init="isCollapsed = true" ng-click="isCollapsed = !isCollapsed"><span ng-if="isCollapsed">Show code</span><span ng-if="!isCollapsed">Hide code</span></a>
+					<br>
+					<div collapse="isCollapsed">
+						<div ui-codemirror="{
+						    lineNumbers: true,
+			                theme:'twilight',
+			                readOnly: 'nocursor',
+			                lineWrapping : true,
+			                mode: 'vb'
+							}" ng-model="stream['VBA code']">
+						</div>
+							<!-- <span style="white-space: pre-wrap"> -->
+								<!-- {{stream['VBA code']}} -->
+							<!-- </span> -->
+
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+</div>
+
+<div ng-if="content.Error">
+	<div class="panel panel-danger">
+		<div class="panel-heading">
+			<strong>Analysis failure</strong>
+		</div>
+		<div class="panel-body">
+			{{content.Error}}
+		</div>
+	</div>
+</div>

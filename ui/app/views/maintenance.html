@@ -1,0 +1,71 @@
+<div class="container-fluid">
+    <br>
+    <br>
+
+    <div style="position:absolute; margin:auto; top:0px; left:0px; right:0px; z-index:100; width:50%;">
+        <alert close="closeAlert($index)" ng-repeat="alert in alerts" type="{{alert.type}}">{{alert.message}}</alert>
+    </div>
+
+<!-- Update Database -->
+    <div class="row" ng-hide="showUserForm">
+        <div class="col-md-8 col-md-offset-2">
+
+            <div class="alert alert-warning center-block" role="alert">
+                <p class="text-center">The Hive needs to update its database</p>
+                <br>
+                <div class="text-center">
+                    <div class="btn btn-warning" ng-click="migrate()" ng-hide="migrating">Update Database</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Updating Database -->
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div ng-hide="showUserForm" ng-repeat="status in migrationStatus">
+                {{status.tableName}} ({{status.current}} / {{status.total}})
+                <progress>
+                    <bar type="success" value="status.current * 100 / status.total">{{status.current}}</bar>
+                </progress>
+            </div>
+        </div>
+    </div>
+
+<!-- Add Administrator account -->
+<div class="row" ng-show="showUserForm">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Create administrator account</h4></div>
+            <div class="panel-body">
+                <form class="form-horizontal" ng-submit="createInitialUser()">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="inputLogin">Login</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="inputLogin" ng-model="newUser.login" placeholder="Login" type="text">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="inputName">Name</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="inputName" ng-model="newUser.name" placeholder="Name" type="text">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="inputPassword">Password</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="inputPassword" ng-model="newUser.password" placeholder="Password" type="password">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-center">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button class="btn btn-primary" type="submit">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

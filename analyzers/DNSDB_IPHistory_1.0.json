@@ -1,0 +1,13 @@
+{
+	"name": "DNSDB_IPHistory",
+	"version": "1.0",
+	"baseConfig": "DNSDB",
+	"config": {
+		"check_tlp":false,
+		"service": "ip_history"
+	},
+	"report": "DNSDB/report_IPHistory",
+	"description": "DNSDB Passive DNS query for IP history : Provides history records for an IP",
+	"dataTypeList": ["ip"],
+	"command": "DNSDB/dnsdb.py"
+}

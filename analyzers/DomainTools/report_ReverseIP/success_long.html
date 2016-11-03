@@ -1,0 +1,9 @@
+<h5>{{content.ip_addresses.domain_count}} domains found for IP {{content.ip_addresses.ip_address}}</h5>
+
+<h5>Domain Names</h5>
+	<ul class="list">
+		<li
+			ng-repeat="dn in content.ip_addresses.domain_names">
+			{{dn}}
+		</li>
+	</ul>

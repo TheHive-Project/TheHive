@@ -1,0 +1,113 @@
+<br/>
+<!-- <task-details case-id="{{caze.id}}" task="task"></task-details> -->
+<div class="row">
+    <div class="col-md-5">
+        <h4 align="left">
+            <updatable-simple-text on-update="updateField('title', newValue)" placeholder="Task title" value="task.title"></updatable-simple-text>
+            <span ng-hide="task.status == 'Completed'" style="float: right">
+                <!-- <button ng-click="state.isCollapsed=!state.isCollapsed" class="btn btn-default btn-xs">Complete tasks</button> -->
+                <span>
+                    <a href ng-click="switchFlag()" style="text-decoration: none">
+                        <i class="text-yellow glyphicon glyphicon-flag" ng-show="task.flag"></i>
+                        <i class="text-muted glyphicon glyphicon-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted glyphicon-flag'" ng-mouseover="setFlag='text-yellow glyphicon-flag'" ng-show="!task.flag || task.flag == undefined"></i>
+                    </a>
+                </span>
+                <span>
+                    <a href ng-click="state.isCollapsed=!state.isCollapsed" style="text-decoration: none">
+                        <i class="text-muted glyphicon glyphicon-ok-circle" ng-class="CompleteTask" ng-mouseout="CompleteTask='text-muted glyphicon-ok-circle'" ng-mouseover="CompleteTask='text-success glyphicon-ok-sign'"></i>
+                    </a>
+                </span>
+            </span>
+            <span ng-show="task.status == 'Completed'" style="float: right;">
+                <span>
+                    <i class="text-success glyphicon glyphicon-ok-sign"></i>
+                </span>
+            </span>
+        </h4>
+
+        <div class="alert alert-danger" collapse="!state.isCollapsed">
+            <i class="glyphicon glyphicon-exclamation-sign"></i>
+            You are about to close this task. Are you sure you want to continue ?
+            <div align="center">
+                <br>
+                <button class="btn btn-danger btn-xs" ng-click="complete(); state.isCollapsed = !state.isCollapsed">Complete</button>
+            </div>
+        </div>
+
+        <br>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Owner</dt>
+            <dd>
+                <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Date</dt>
+            <dd><updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/></dd>
+        </dl>
+
+        <dl class="dl-horizontal" ng-show="task.status == 'Completed'">
+            <dt class="pull-left">Close date</dt>
+            <dd>
+                <span ng-bind="task.endDate | showDate"></span>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal" ng-show="task.status !== 'Completed'">
+            <dt class="pull-left">Status
+            </dt>
+            <dd>
+                <span ng-bind="task.status"></span>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Description</dt>
+            <dd>
+                <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
+            </dd>
+        </dl>
+    </div>
+
+    <!-- New Log -->
+    <div class="col-md-7">
+        <div class="row clearfix" ng-show="!adding">
+            <div class="col-md-12">
+                <button class="btn btn-primary pull-right" ng-click="showLogEditor()">
+                    <i class="fa fa-plus"></i>
+                    Add new task log</button>
+            </div>
+        </div>
+        <div class="row" ng-show="adding">
+            <div class="col-md-12">
+                <div class="clearfix">
+                    <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Mardown Reference</a>
+                </div>
+                <!-- <markdown-editor edition="isEditMode" content="newLog.message" placeholder="New log"></markdown-editor> -->
+                <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="newLog.message"></textarea>
+                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>
+                <div class="vpad5"></div>
+                <div class="btn-toolbar">
+                    <button class="btn btn-default" ng-click="adding=false" ng-disabled="loading">Cancel</button>
+                    <button class="pull-right btn btn-primary" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
+                        <i class="glyphicon glyphicon-comment"></i>
+                        Add log
+                    </button>
+                    <button btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="pull-right btn btn-default" ng-model="state.attachmentCollapsed" ng-disabled="loading">
+                        <i class="text-default glyphicon glyphicon-paperclip"></i>
+                        {{state.attachmentCollapsed ? 'Add' : 'Discard'}}
+                        attachment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log list -->
+        <div ng-repeat="log in logs.values">
+            <log-entry log="log"></log-entry>
+        </div>
+        <psearch control="logs"></psearch>
+    </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="flow-item-content">
+    <div class="flow-item-summary" ng-include="operationUrl"></div>
+    <div class="flow-item-details" ng-include="getContentUrl()"></div>
+    <div class="flow-item-breadcrumbs">        
+        <entity-link class=" small" target="target" value="data.base.object"></entity-link>
+    </div>
+    <!-- <pre ng-if="isBulkOperation()">{{data.summary | json}}</pre> -->
+</div>

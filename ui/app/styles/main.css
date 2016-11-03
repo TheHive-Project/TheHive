@@ -1,0 +1,390 @@
+a, body {
+    height: 99%;
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+}
+a.noline {
+    text-decoration: none !important;
+}
+body {
+    overflow-y: auto;
+}
+.navbar {
+    position: fixed;
+    right: 0;
+    left: 0;
+    top: 0;
+    z-index: 1030;
+}
+.navbar-brand>img {
+    display: inline;
+}
+.clickable {
+    cursor: pointer;
+}
+.not-clickable {
+    cursor: default;
+}
+.container-main {
+    padding-top: 70px;
+}
+.marked > table,
+.markdown > table {
+    margin: 0 !important;
+}
+
+
+.empty-message {
+    background-color: #f5f5f5;
+    color: #AAA;
+    font-size: 18px;
+    text-align: center;
+    padding: 40px;
+}
+
+.tpad50 {
+	padding-top: 50px
+}
+
+.text-20 {
+    font-size: 20px;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+pre.clearpre {
+    background-color: transparent;
+    border: 0px;
+}
+
+.navbar-nav>li.hdivider {
+    height: 30px;
+    margin-top: 12px;
+    border-left: 1px solid #CCC;
+    opacity: 0.5;
+}
+
+.divider-vertical {
+    height: 50px;
+    margin: 0 9px;
+    border-left: 1px solid #F2F2F2;
+    border-right: 1px solid #FFF;
+}
+pre.clearpre {
+    background-color: transparent;
+    border: 0px;
+}
+.modal-footer.text-left {
+    text-align: left !important;
+}
+.alert-container {
+    position: absolute;
+    margin-right: auto;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 1040;
+    width: 50%;
+}
+.login-form {
+    width: 600px;
+    margin: auto;
+    margin-top: 40px;
+    background-color: #eee;
+}
+.wrap {
+    word-wrap: break-word;
+    word-break: break-all;
+}
+.nowrap {
+    white-space: nowrap;
+}
+.pad20 {
+    padding: 20px;
+}
+.vpad20 {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+.hpad20 {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.pad10 {
+    padding: 10px;
+}
+.vpad10 {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.hpad10 {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.pad5 {
+    padding: 5px;
+}
+.vpad5 {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.hpad5 {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.rm2 {
+	margin-right: 2px;
+}
+.lm2 {
+	margin-left: 2px;
+}
+.rm5 {
+	margin-right: 5px;
+}
+.lm5 {
+	margin-left: 5px;
+}
+.tm5 {
+	margin-top: 5px;
+}
+.bm5 {
+	margin-bottom: 5px;
+}
+
+.rm10 {
+	margin-right: 10px;
+}
+.lm10 {
+	margin-left: 10px;
+}
+.tm10 {
+	margin-top: 10px;
+}
+.bm10 {
+	margin-bottom: 10px;
+}
+
+.has-error .dropzone {
+    border-color: #a94442;
+}
+
+.label.label-lg {
+	font-size: 100% !important;
+	font-weight: normal !important;
+}
+
+.progress.progress-bar-sm {
+    height: 10px;
+}
+.progress.progress-bar-sm .progress-bar {
+    line-height: 10px;
+}
+.progress.task-progress {
+    margin-bottom: 4px !important;
+}
+.progress.task-progress .progress-bar {
+    opacity: 0.8;
+}
+.btn-canceled, .progress-bar-default {
+    background-color: #777;
+}
+dl.dl-horizontal > dt.pull-left {
+    text-align: left !important;
+}
+dl.dl-horizontal.clear {
+    overflow: hidden !important;
+}
+ul.observable-reports-summary li {
+    padding-bottom: 3px;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+}
+
+.form-control.form-control-wrapper {
+    padding: 0;
+    margin: 0;
+    border: none;
+}
+
+.case-metrics dt {
+    width: 300px !important;
+}
+
+.scrollable {
+    height: 100%;
+    overflow: auto;
+}
+.dropzone {
+    height: auto;
+    min-height: 5em;
+    padding: 5px;
+    background-color: #fafafa;
+}
+.dropzone .dz-message {
+    margin: 0 !important;
+    border: 3px dashed #337ab7 !important;
+    line-height: 4em;
+}
+.dropzone .dz-message span {
+    position: inherit !important;
+}
+.div-hover {
+    background: #fff;
+}
+.div-hover:hover {
+    background: #f5f5f5;
+}
+.text-yellow {
+    color: rgb(231, 147, 0);
+}
+.text-tlp-na {
+    color: #428BCA;
+}
+.text-tlp-white {
+    color: #5BC0CE;
+}
+.text-tlp-green {
+    color: #5CB85C;
+}
+.text-tlp-amber {
+    color: #F0AD4E;
+}
+.text-tlp-red {
+    color: #D9534F;
+}
+.border-left-tlp-na {
+    border-left: 6px solid #428BCA;
+}
+.border-left-tlp-white {
+    border-left: 6px solid #5BC0CE;
+}
+.border-left-tlp-green {
+    border-left: 6px solid #5CB85C;
+}
+.border-left-tlp-amber {
+    border-left: 6px solid #F0AD4E;
+}
+.border-left-tlp-red {
+    border-left: 6px solid #D9534F;
+}
+.updatable-waiting .updatable-value {
+    background-color: gray;
+}
+.updatable-success .updatable-value {
+    background-color: green;
+}
+.updatable-failure .updatable-value {
+    background-color: red;
+}
+.updatable-value {
+    white-space: pre-wrap;
+    display: inline-block;
+    vertical-align: text-top;
+}
+.main-fadein.ng-enter {
+    animation: fadeIn 0.5s;
+}
+.selection-filter.ng-enter {
+    animation: fadeIn 0.5s;
+}
+.selection-filter.ng-leave {
+    animation: fadeOut 0.2s;
+}
+.selection.ng-enter {
+    animation: fadeIn 0.5s;
+}
+.selection.ng-leave {}
+.selection-options.ng-enter {
+    animation: fadeInDown 0.5s;
+}
+.selection-options.ng-leave {}
+.flow.ng-enter {
+    animation: fadeInRight 0.5s;
+}
+.flow.ng-leave {}
+.flow.ng-move {
+    animation: slideOutDown 0.5s;
+}
+
+.left-border {
+	border-left: 1px solid lightgrey;
+}
+.spin {
+    -webkit-animation: spin 1s infinite linear;
+    -moz-animation: spin 1s infinite linear;
+    -o-animation: spin 1s infinite linear;
+    animation: spin 1s infinite linear;
+    -webkit-transform-origin: 50% 58%;
+    transform-origin: 50% 58%;
+    -ms-transform-origin: 50% 58%;
+    /* IE 9 */
+}
+
+tr.task-row td.task-delete {
+    text-align: center;
+}
+tr.task-row:hover td.task-delete i {
+    display: block !important;
+}
+tr.task-row td.task-delete i {
+    cursor: pointer;
+    display: none;
+}
+tr.task-row .tast-status {
+    text-align: center;
+}
+
+@-moz-keyframes spin {
+    from {
+        -moz-transform: rotate(0deg);
+    }
+    to {
+        -moz-transform: rotate(360deg);
+    }
+}
+@-webkit-keyframes spin {
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
+}
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* make sidebar nav vertical */
+
+@media (min-width: 384px) {
+    .sidebar-nav {
+        width: 250px;
+    }
+    .sidebar-nav .navbar .navbar-collapse {
+        padding: 0;
+        max-height: none;
+    }
+    .sidebar-nav .navbar ul {
+        float: none;
+    }
+    .sidebar-nav .navbar ul:not {
+        display: block;
+    }
+    .sidebar-nav .navbar li {
+        float: none;
+        display: block;
+    }
+    .sidebar-nav .navbar li a {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+}

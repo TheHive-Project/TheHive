@@ -1,0 +1,32 @@
+{
+  "strict": true,
+  "bitwise": true,
+  "curly": true,
+  "eqeqeq": true,
+  "latedef": false,
+  "noarg": true,
+  "undef": true,
+  "unused": true,
+  "validthis": true,
+  "jasmine": true,
+  "newcap": false,
+  "globals": {
+    "angular": false,
+    "inject": false,
+    "module": false,
+    "moment": false,
+    "$": false,
+    "Dropzone": false,
+    "console": false,
+    "require": false,
+    "FormData": false,
+    "updatableLink": false,
+    "setTimeout": false,
+    "_": false,
+    "CryptoJS": false,
+    "c3": false,
+    "saveSvgAsPng": false,
+    "Blob": false,
+    "File": false
+  }
+}

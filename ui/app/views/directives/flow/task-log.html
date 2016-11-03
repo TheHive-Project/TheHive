@@ -1,0 +1,32 @@
+<div class="flow-task-log log-entry">
+    <div class="flow-item-title wrap">
+        <i class="glyphicon glyphicon-comment"></i>
+        <span ng-bind="getUserInfo(base.user) | getField: 'name'"></span>
+    </div>
+    <div class="flow-item-updates wrap">
+        <span ng-bind="base.details.message| limitTo: 250"></span>
+        <span class="text-muted" ng-if="base.details.message.length > 250">...</span>
+    </div>    
+
+    <div class="flow-item-updates vpad10 clearfix" ng-if="base.object.attachment.name" ng-init="hasImage = isImage(base.object.attachment.contentType)">
+        <div class="file-box">
+            <div class="file">
+                <div class="image" ng-show="hasImage">
+                    <img class="btn img-responsive img-thumbnail" src="/api/datastore/{{base.object.attachment.id}}"
+                        alt="{{base.object.attachment.name}}"
+                        ng-click="showImage(base.object.attachment.id, base.object.attachment.name)"></img>
+                </div>
+
+                <a href="/api/datastore/{{base.object.attachment.id}}?name={{base.object.attachment.name}}" target="_blank">
+                    <div class="icon" ng-hide="isImage(base.object.attachment.contentType)">
+                        <i class="glyphicon glyphicon-file"></i>
+                    </div>
+                    <div class="file-name">
+                        {{base.object.attachment.name}}
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,8 @@
+<div ng-if="active == true">
+	<tags-input ng-model="value.labels" class="ti-input-sm" placeholder="Add a label"
+				replace-spaces-with-dashes="false" min-length="2" ></tags-input>
+</div>
+
+<span ng-if="active != true" ng-switch="value">
+	<span class="label label-primary" style="margin-right:5px; display:inline-block"  ng-repeat="l in value.labels"><i class="glyphicon glyphicon-tag"></i> <span ng-bind="l"></span></span>
+</span>

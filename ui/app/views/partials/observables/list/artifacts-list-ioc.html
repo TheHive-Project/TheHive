@@ -1,0 +1,13 @@
+<div class="col-md-10 col-md-offset-1 bg-info text-center">
+    <br>
+    <span class="btn btn-sm btn-primary" ng-click="setIOC(selection.Action);" ng-switch="selection.Action">
+
+		<span ng-switch-when="setIocFlog"><i class="fa fa-star"></i> Set IOC flag for {{selection.artifacts.length}} observable(s)</span>
+		<span ng-switch-when="unsetIocFlog"><i class="fa fa-star-o"></i> Unset IOC flag for {{selection.artifacts.length}} observable(s)</span>
+    </span>
+    <span class="btn btn-sm btn-default" ng-click="selection.Action='main';">
+        Cancel
+    </span>
+    <br>
+    <br>
+</div>

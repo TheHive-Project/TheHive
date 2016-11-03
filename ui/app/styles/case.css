@@ -1,0 +1,51 @@
+.links-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+.link {
+    margin-right: 5px;
+    border-radius: 3px;
+    padding: 5px;
+}
+span.link-id {
+    width: 100px;
+}
+.has-error .radio-group label {
+    border-color: #a94442;
+}
+
+.indicent-header {
+    width: 330px;
+}
+
+.indicent-header h2 {
+    font-size: 12px;
+    text-align: center;
+}
+
+.indicent-header h2.background {
+    position: relative;
+    z-index: 1;
+}
+
+.indicent-header h2.background:before {
+    border-top: 2px solid #dfdfdf;
+    border-left: 2px solid #dfdfdf;
+    border-right: 2px solid #dfdfdf;
+    content:"";
+    margin: 0 auto;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+}
+
+.indicent-header h2.background span{
+    background: #fff;
+    font-weight: normal;
+    color: #999;
+    padding: 0 15px;
+
+}

@@ -1,0 +1,14 @@
+<div class="panel panel-default">
+    <div class="panel-heading clearfix">
+        <h4 class="panel-title pull-left" style="padding-top: 7.5px;">
+            <span ng-init="collapsed=false">
+                <a class="btn btn-link hpad5" href ng-click="collapsed = !collapsed">
+                    <i class="fa" ng-class="{'fa-minus': !collapsed, 'fa-plus': collapsed}"></i>
+                </a>{{options.title}}
+            </span>
+        </h4>
+    </div>
+    <div class="panel-body" ng-hide="collapsed">
+        <c3 chart="chart"></c3>
+    </div>
+</div>

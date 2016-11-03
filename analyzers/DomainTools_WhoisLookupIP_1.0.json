@@ -1,0 +1,13 @@
+{
+	"name": "DomainTools_WhoisLookup_IP",
+	"version": "1.0",
+	"baseConfig": "DomainTools",
+	"config": {
+		"check_tlp": false,
+		"service": "whois"
+	},
+	"report": "DomainTools/report_WhoisLookup",
+	"description": "DomainTools Whois Lookup IP: provides the ownership record for a IP address with basic registration details",
+	"dataTypeList": ["ip"],
+	"command": "DomainTools/domaintools.py"
+}

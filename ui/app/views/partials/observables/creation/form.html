@@ -1,0 +1,78 @@
+<div class="form-group" ng-class="{ 'has-error' : observableForm.dataType.$invalid && !observableForm.dataType.$pristine }">
+    <label class="col-md-3 control-label">Data Type <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <input type="hidden" name="dataType" ng-model="params.dataType" required>
+        <div class="btn-group" dropdown>
+            <button type="button" class="btn dropdown-toggle" dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" role="menu">
+                <li ng-repeat="type in types">
+                    <a ng-click="selectDataType(type)">{{type}}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- File observable -->
+<div class="form-group" ng-if="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
+    <label class="col-md-3 control-label">Data <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <input type="hidden" name="attachment" ng-model="params.attachment.status" required>
+        <div file-chooser="" filemodel="params.attachment"></div>
+        <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
+            WARNING: This file seems to be empty
+        </div>
+        <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
+    </div>
+</div>
+
+<!-- Non file observable -->
+<div class="form-group" ng-if="!isFile()" ng-class="{ 'has-error' : observableForm.data.$invalid && !observableForm.data.$pristine }">
+    <label class="col-md-3 control-label">Data <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <textarea ng-if="params.bulk" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" required></textarea>
+        <input ng-if="!params.bulk" type="text" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" required>
+        <div>
+            <input type="checkbox" ng-model="params.bulk">&nbsp;Bulk
+            <span ng-show="params.bulk">(one observable per line)</span>
+            <span ng-show="params.bulk" class="pull-right"><ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize></span>
+        </div>
+        <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="col-md-3 control-label">TLP <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <a href ng-click="activeTlp='active'">
+            <tlp value="params.tlp" format="activeTlp" style="float:left; font-size:16px" on-update="updateTlp(newValue)"></tlp>
+        </a>
+    </div>
+</div>
+
+<!-- missing.tags -->
+<div class="form-group" ng-class="{ 'has-error' : observableForm.tags.$invalid && !observableForm.tagsInput.$pristine }">
+    <label class="col-md-3 control-label">
+        Labels
+        <span><i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i></span>
+    </label>
+    <div class="col-md-9">
+        <input type="hidden" name="tags" ng-model="params.tagNames" ng-required="!params.message.length"/>
+        <tags-input name="tagsInput" ng-model="tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"></tags-input>
+        <p class="help-block" ng-show="observableForm.tags.$invalid && !observableForm.tagsInput.$pristine">The observable(s) description or tags are required.</p>
+    </div>
+</div>
+
+<div class="form-group" ng-class="{ 'has-error' : observableForm.description.$invalid && !observableForm.description.$pristine }">
+    <label class="col-sm-3 control-label">Description <i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-sm-9">
+        <textarea class="form-control" name="description" ng-model="params.message" placeholder="Observable(s) description" rows="3" ng-required="!params.tagNames.length"></textarea>
+        <p class="help-block" ng-show="observableForm.description.$invalid && !observableForm.description.$pristine">The observable(s) description or tags are required.</p>
+    </div>
+</div>
+
+<p class="clearfix">
+    <span class="pull-right"><i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i> At least, one required field</span>
+    <span class="pull-right mr-xxs"><i class="fa fa-asterisk text-danger"></i> Required field</span>
+</p>

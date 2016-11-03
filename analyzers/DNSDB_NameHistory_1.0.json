@@ -1,0 +1,13 @@
+{
+	"name": "DNSDB_NameHistory",
+	"version": "1.0",
+	"baseConfig": "DNSDB",
+	"config": {
+		"check_tlp":false,
+		"service": "name_history"
+	},
+	"report": "DNSDB/report_NameHistory",
+	"description": "DNSDB Passive DNS query for domain/host name history : Provides history records for an domain/host",
+	"dataTypeList": ["fqdn"],
+	"command": "DNSDB/dnsdb.py"
+}

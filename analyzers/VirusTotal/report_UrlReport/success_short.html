@@ -1,0 +1,8 @@
+<span ng-switch="content.response_code">
+	<span ng-switch-when="1" class="label" ng-class="{'true':'label-info', 'false':'label-danger'}[content.positives < 5 ]">
+		VT {{content.positives}}/{{content.total}} ({{content.scan_date}})
+	</span>
+	<span ng-switch-default class="label label-warning">
+		VT fail
+	</span>
+</span>

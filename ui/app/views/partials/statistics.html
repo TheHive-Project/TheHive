@@ -1,0 +1,52 @@
+<div class="vpad10"></div>
+<div class="row">
+    <div class="col-md-12 vpad20 hpad20">
+        <form class="form-inline pull-right" ng-submit="filter()">
+            <div class="form-group hpad10">
+                <label>From</label>
+                <dt-picker date="globalFilters.fromDate"></dt-picker>
+            </div>
+            <div class="form-group hpad10">
+                <label>To</label>
+                <dt-picker date="globalFilters.toDate"></dt-picker>
+            </div>
+            <div class="form-group hpad10">
+                <label>Tags</label>
+                <tags-input class="form-control form-control-wrapper" style="width: 300px;" min-length="2" ng-model="globalFilters.tags" placeholder="Add tags" replace-spaces-with-dashes="false"></tags-input>
+            </div>
+            <button type="submit" class="btn btn-primary" tooltip="Apply global filters to all charts">
+                <i class="fa fa-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <chart type="donut" options="caseByTlp" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+    <div class="col-md-4">
+        <chart type="donut" options="caseByStatus" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+    <div class="col-md-4">
+        <chart type="donut" options="caseByResolution" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <chart type="over-time" options="caseOverTime" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <chart type="duration-over-time" options="caseHandlingDurationOverTime" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <chart type="metrics-over-time" options="caseMetricsOverTime" refresh-on="refresh-charts" autoload="false"></chart>
+    </div>
+</div>

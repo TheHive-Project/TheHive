@@ -1,0 +1,24 @@
+<div class="container-fluid">
+
+    <div class="login-form well well-sm" style="margin-bottom: 0px">
+        <h1 align="center"><img src="images/logo.png" height="50"/></h1>
+        <br />
+        <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.message}}</alert>
+        <form ng-submit="login()">
+            <div class="form-group has-feedback has-feedback-left">
+                 <input type="text" class="form-control" placeholder="Username" ng-model="params.username"/>
+                <i style="top:0px;" class="form-control-feedback glyphicon glyphicon-user"></i>
+            </div>
+            <br />
+            <div class="form-group has-feedback has-feedback-left">
+                <input type="password" class="input form-control" placeholder="Password" ng-model="params.password" />
+                <i style="top:0px;" class="form-control-feedback glyphicon glyphicon-lock "></i>
+            </div>
+            <br /> <br />
+            <div class="text-center">
+                <input type="submit" class="btn btn-primary btn-lg" value="Sign In" />
+            </div>
+        </form>
+    </div>
+
+</div>

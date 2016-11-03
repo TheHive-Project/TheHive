@@ -1,0 +1,40 @@
+<div class="container-fluid search-list">
+    <div class="vpad10"></div>
+    <!--
+    <div class="row">
+        <div class="col-md-3">
+            <label>Object type</label>
+            <div class="form-control-wrapper" ng-dropdown-multiselect options="filter.type.values" selected-model="filter.type.selection" extra-settings="filter.type.config"></div>
+        </div>
+        <div class="col-md-3">
+            <label>Sort</label>
+            <input type="text" class="form-control" placeholder="Asc start date, Desc start date...">
+        </div>
+        <div class="col-md-3"></div>
+        <div class="col-md-3"></div>
+    </div>
+    <pre>{{filter.type.selection | json}}</pre>
+-->
+
+    <div class="row mb-s">
+        <div class="col-md-10 col-md-offset-1">
+            {{searchResults.total}}
+            results found for
+            <strong>
+                <em>{{searchResults.filter}}</em>
+            </strong>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1" ng-repeat="value in searchResults.values" ng-switch="value.type">
+            <search-item type="case" value="value" ng-switch-when="case" icon="glyphicon glyphicon-folder-open"></search-item>
+            <search-item type="task" value="value" ng-switch-when="case_task" icon="glyphicon glyphicon-tasks"></search-item>
+            <search-item type="task-log" value="value" ng-switch-when="case_task_log" icon="glyphicon glyphicon-comment"></search-item>
+            <search-item type="observable" value="value" ng-switch-when="case_artifact" icon="glyphicon glyphicon-pushpin"></search-item>
+            <search-item type="observable-job" value="value" ng-switch-when="case_artifact_job" icon="glyphicon glyphicon-cog"></search-item>
+        </div>
+        <psearch control="searchResults"></psearch>
+    </div>
+
+</div>

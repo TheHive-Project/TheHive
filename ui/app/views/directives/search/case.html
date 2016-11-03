@@ -1,0 +1,28 @@
+<div class="search-item-title">
+    <a href ui-sref="app.case.details({caseId: value.id})">
+        {{value.title}}
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo(value.user) | getField: 'name'}}</span>
+
+    <i class="glyphicon glyphicon-calendar ml-xxs"></i>
+    <span ng-bind="value.startDate | showDate"></span>
+
+    <span ng-if="value.endDate" class="text-success">
+        (
+        <strong>Closed</strong>
+        on
+        {{value.endDate | showDate}}
+        as
+        <strong>{{value.resolutionStatus}}</strong>)
+    </span>
+</div>
+<div class="mt-xs wrap" ng-if="value.tags.length>0">
+    <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
+</div>
+
+<div class="mt-xs wrap">
+    <span ng-bind="value.description| limitTo: 250"></span>
+</div>

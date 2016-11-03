@@ -1,0 +1,6 @@
+<span ng-if="content.attachments && content.attachments.length !== 0" class="label label-warning">
+    MsgParser: <ng-pluralize count="content.attachments.length" when="{'1': '1 attachment', 'other': '{} attachments'}"></ng-pluralize>
+</span>
+<span ng-if="!content.attachments || content.attachments.length === 0" class="label label-info">
+    MsgParser: No attachments
+</span>

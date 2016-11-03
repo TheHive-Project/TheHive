@@ -1,0 +1,52 @@
+<hr/>
+
+<div class="log-entry">
+    <div class="row">
+        <div class="col-md-12">
+            <h5>
+                <i class="text-primary glyphicon glyphicon-comment" style="font-size: 16px;"></i>
+                <span ng-bind="getUserInfo(log.user) | getField: 'name'"></span>
+                &nbsp;
+                <small ng-bind="log.startDate | showDate"></small>
+                <span class="pull-right">
+                    <a href ng-click="dropLog()" tooltip="Delete log">
+                        <i class="text-danger glyphicon glyphicon-remove-circle"></i>
+                    </a>
+                </span>
+            </h5>
+        </div>
+    </div>
+
+    <div ng-show="log.attachment != undefined">
+        <div class="row">
+            <div class="col-md-12">
+                <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+            </div>
+        </div>
+
+        <div class="clearfix">
+            <div class="file-box">
+                <div class="file">
+                    <div class="image" ng-show="isImage(log.attachment.contentType)">
+                        <img class="btn img-responsive" src="/api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
+                    </div>
+
+                    <a href="/api/datastore/{{log.attachment.id}}?name={{log.attachment.name}}" target="_blank">
+                        <div class="icon" ng-hide="isImage(log.attachment.contentType)">
+                            <i class="glyphicon glyphicon-file"></i>
+                        </div>
+                        <div class="file-name">
+                            {{log.attachment.name}}
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" ng-show="log.attachment == undefined">
+        <div class="col-md-12">
+            <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+        </div>
+    </div>
+</div>

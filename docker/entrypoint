@@ -1,0 +1,24 @@
+#!/bin/bash
+
+/docker-entrypoint.sh elasticsearch \
+	-Des.path.data=/data \
+	-Des.script.inline=on \
+	-Des.cluster.name=hive \
+	-Des.threadpool.index.queue_size=100000 \
+	-Des.threadpool.search.queue_size=100000 \
+	-Des.threadpool.bulk.queue_size=1000 &
+
+
+if test ! -e conf/application.conf
+then
+	mkdir -p conf
+	cat > conf/application.conf <<- _EOF_
+		# Secret key
+		# ~~~~~
+		# The secret key is used to secure cryptographics functions.
+		# If you deploy your application to several instances be sure to use the same key!
+		play.crypto.secret="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
+		_EOF_
+fi
+
+bin/thehive $@

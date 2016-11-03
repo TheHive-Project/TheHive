@@ -1,0 +1,87 @@
+<!-- First row with logo, app name and searchbox mainpane -->
+<!-- <div class="row">
+    <div class="col-md-12" style="text-align:center">
+        <h1>
+            <img height="50" src="images/logo.png" alt="TheHive">
+        </h1>
+    </div>
+</div> -->
+
+<div class="row">
+    <div ng-Class="{ true:'col-md-9', false:'col-md-12'}[showFlow]">
+        <h3>
+            <span ng-if="view.data == 'currentcases'">Current Cases ({{list.total}})</span>
+            <span ng-if="view.data == 'closedcases'">Closed Cases ({{list.total}})</span>
+            <span ng-if="view.data == 'mytasks'">My tasks ({{list.total}})</span>
+            <span ng-if="view.data == 'waitingtasks'">Waiting tasks ({{list.total}})</span>
+
+            <span style="float: right; font-size:0.55em;" ng-show="!showFlow;" ng-mouseleave="hideOn='text-muted'" ng-mouseenter="hideOn='text-primary'">
+                <a href ng-click="showFlow = true" class="text-muted">
+                    <i ng-class="hideOn" class="text-muted glyphicon glyphicon-chevron-left"></i>
+                    Show live stream</a>
+            </span>
+        </h3>
+
+        <div class="row mb-s">
+            <div class="col-md-12 clearfix">
+                <div class="pull-right form-inline">
+                    <div class="input-group input-group-sm">
+                        <filter-box collection="list"></filter-box>
+                    </div>
+                    <div class="form-group">
+                        <page-sizer collection="list"></page-sizer>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div ng-switch="view.data">
+            <div class="main-fadein" ng-switch-when="currentcases">
+                <div ng-include="'views/partials/index-currentcases.html'"></div>
+            </div>
+
+            <div class="main-fadein" ng-switch-when="closedcases">
+                <div ng-include="'views/partials/index-closedcases.html'"></div>
+            </div>
+
+            <div class="main-fadein" ng-switch-when="mytasks">
+                <div ng-include="'views/partials/index-mytasks.html'"></div>
+            </div>
+
+            <div class="main-fadein" ng-switch-when="waitingtasks">
+                <div ng-include="'views/partials/index-waitingtasks.html'"></div>
+            </div>
+
+            <div class="main-fadein" ng-switch-default>
+                <div ng-include="'views/partials/index-mytasks.html'"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div ng-show="showFlow" class="col-md-3">
+        <div class="col-md-12">
+            <div class="col-md-7">
+                <span ng-mouseleave="liveOn='text-muted'" ng-mouseenter="liveOn='text-primary'">
+                    <a href ng-click="live();showFlow = false" class="text-muted">
+                        <i ng-class="liveOn" class="text-muted glyphicon glyphicon-new-window"></i>
+                        Open in new window</a>
+                </span>
+            </div>
+            <div class="col-md-5">
+                <span ng-mouseleave="hideOn='text-muted'" ng-mouseenter="hideOn='text-primary'">
+                    <a href ng-click="showFlow = false" class="text-muted">
+                        <i ng-class="hideOn" class="text-muted glyphicon glyphicon-chevron-right"></i>
+                        Hide
+                    </a>
+                </span>
+            </div>
+        </div>
+        <br>
+        <br>
+
+        <flow max="10"></flow>
+    </div>
+
+</div>

@@ -1,0 +1,33 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Import MISP Events</h3>
+</div>
+<div class="modal-body">
+    <div class="alert alert-info text-center">
+        <i class="fa fa-info-circle"></i> Your are about to import the following MISP events
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th width="100px">Event ID</th>
+                <th>Title</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="event in dialog.events">
+                <td>
+                    <strong>{{event.eventId}}</strong>
+                </td>
+                <td class="wrap">
+                    <span class="label label-default" ng-class="{'label-danger': event.eventStatus==='New', 'label-warning': event.eventStatus === 'Update'}">{{event.eventStatus | ellipsis:100}}</span>
+                    <span class="ml-xs">{{event.info}}</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+        
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.disableButtons"ng-click="dialog.import()">Import event</button>
+</div>

@@ -1,0 +1,42 @@
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th style="width: 250px">Tags</th>
+            <th style="width: 150px">Tasks</th>
+            <th style="width: 100px">Observables</th>
+            <th style="width: 160px">Date</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr ng-class="{true:'warning'}[currentCase.flag]" ng-repeat="currentCase in list.values">
+            <td>
+                <tlp value="currentCase.tlp"></tlp>
+                <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}}
+                    -
+                    {{currentCase.title}}</a>
+            </td>
+            <td>
+                <span ng-repeat="tag in currentCase.tags">
+                    <span class="label label-primary" style="margin-right:2px;display:inline-block">
+                        <i class="glyphicon glyphicon-tag"></i> <span ng-bind="tag"></span>
+                    </span>
+                </span>
+            </td>
+            <td>
+                <a ui-sref="app.case.tasks({caseId: currentCase.id})">
+                    <ng-pluralize count="currentCase.stats.tasks.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
+                </a>
+                <br>
+                <task-progress tasks="currentCase.stats.tasks"/>
+            </td>
+            <td>
+                <a ui-sref="app.case.observables({caseId: currentCase.id})">{{currentCase.stats.artifacts.count}}</a>
+            </td>
+            <td>{{currentCase.startDate | showDate}}</td>
+        </tr>
+    </tbody>
+</table>
+
+<psearch control="list"></psearch>

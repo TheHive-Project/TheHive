@@ -1,0 +1,28 @@
+<div class="col-md-10 col-md-offset-1 bg-info" ng-switch="analyzersList.countActiveAnalyzers.total">
+
+    <div class="text-center" ng-switch-when="0">
+        <div class="vpad10 text-danger">
+            Sorry, there are currently no analyzers for the selected observable type(s)
+        </div>
+        <div class="vpad10">
+            <span class="btn btn-sm btn-default" ng-click="selection.Action='main';">Cancel</span>
+        </div>
+    </div>
+
+    <div class="text-center" ng-switch-default>
+    	<div class="vpad10 text-warning" ng-if="analyzersList.countDataTypes > 1">
+            Only a subset of the selected observables can be analyzed <strong>({{analyzersList.activeDataTypes.join(', ')}})</strong> and the remaining observables will be ignored
+        </div>
+        <div class="vpad10">
+            <ul class="list-inline">
+                <li ng-repeat="analyzer in analyzersList.analyzers" ng-show="analyzersList.active[analyzer.id]">
+                    <input id="{{analyzer.id}}" value="{{analyzer.description}}" type="checkbox" ng-model="analyzersList.selected[analyzer.id]"> {{analyzer.name}}
+                </li>
+            </ul>
+        </div>
+        <div class="vpad10">
+            <span class="btn btn-sm btn-primary" ng-click="runAnalyzerOnSelection();"><i class="glyphicon glyphicon-fire"></i> Run selected analyzers</span>
+            <span class="btn btn-sm btn-default" ng-click="selection.Action='main';">Cancel</span>
+        </div>
+    </div>
+</div>

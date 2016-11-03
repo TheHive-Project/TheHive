@@ -1,0 +1,13 @@
+<pre class="alert alert-danger" ng-if="content.errorMessage"><strong>Error:</strong> {{content.errorMessage}}</pre>
+<div ng-if="!content.errorMessage">
+    <dl class="dl-horizontal">
+        <dt>Date of record</dt>
+        <dd>{{content.whois.date}}</dd>
+    </dl>
+    <br>
+
+	<pre>{{content.whois.record}}
+
+	## END OF PAGE ###
+	</pre>
+</div>

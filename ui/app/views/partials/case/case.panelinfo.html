@@ -1,0 +1,57 @@
+<div class="panel panel-default">
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-12">
+                <h4>
+                    <severity style="font-size:16px" value="caze.severity"></severity>
+                    <span>Case #
+                        {{caze.caseId}}
+                        -
+                        {{caze.title}}</span>
+                    <span class="pull-right">
+                        <span>
+                            <a href ng-click="switchFlag()" style="text-decoration: none">
+                                <i class="text-yellow glyphicon glyphicon-flag" ng-show="caze.flag"></i>
+                                <i class="text-muted glyphicon glyphicon-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted glyphicon-flag'" ng-mouseover="setFlag='text-yellow glyphicon-flag'" ng-show="!caze.flag || caze.flag == undefined"></i>
+                            </a>
+                        </span>
+                        <span ng-hide="isCaseClosed()" style="font-size: 1.2em">
+                            <a href ng-click="openCloseDialog()" tooltip="Close case">
+                                <i class="text-muted glyphicon glyphicon-ok-circle" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                            </a>
+                        </span>
+                        <span ng-show="isCaseClosed()" style="font-size: 1.2em">
+                            <a href ng-click="reopenCase()" tooltip="Reopen case">
+                                <i class="text-success glyphicon glyphicon-ok-sign"></i>
+                            </a>
+                        </span>
+                    </span>
+                </h4>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <span class="ml-s">
+                    <i class="glyphicon glyphicon-user"></i>
+                    <span ng-bind="getUserInfo(caze.user) | getField: 'name'"></span>
+                </span>
+
+                <span class="ml-xxs">
+                    <i class="glyphicon glyphicon-calendar"></i>
+                    <span>{{caze.startDate | showDate}}</span>&nbsp;&nbsp;
+                    <span ng-show="isCaseClosed()" class="text-success">(Closed at
+                        {{caze.endDate | showDate}}
+                        as
+                        <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>)</span>
+                </span>
+
+                <span class="ml-xxs text-danger" ng-show="links.length > 0">
+                    <i class="glyphicon glyphicon-link"></i>
+                    <strong>
+                        <ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize>
+                    </strong>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,14 @@
+<div ng-switch="type">
+    <div ng-switch-when="donut">
+        <donut-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></donut-chart>
+    </div>
+    <div ng-switch-when="over-time">
+        <histo-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></histo-chart>
+    </div>
+    <div ng-switch-when="duration-over-time">
+        <duration-over-time-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></duration-over-time-chart>
+    </div>
+    <div ng-switch-when="metrics-over-time">
+        <metric-histo-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></metric-histo-chart>
+    </div>
+</div>

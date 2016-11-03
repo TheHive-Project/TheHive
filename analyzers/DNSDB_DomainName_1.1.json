@@ -1,0 +1,13 @@
+{
+	"name": "DNSDB_DomainName",
+	"version": "1.1",
+	"baseConfig": "DNSDB",
+	"config": {
+		"check_tlp":false,
+		"service": "domain_name"
+	},
+	"report": "DNSDB/report_DomainName",
+	"description": "DNSDB Passive DNS query for Domain Names : Provides history records for a domain",
+	"dataTypeList": ["domain"],
+	"command": "DNSDB/dnsdb.py"
+}

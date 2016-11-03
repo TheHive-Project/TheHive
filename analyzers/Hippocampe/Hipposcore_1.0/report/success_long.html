@@ -1,0 +1,21 @@
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <strong>{{artifact.data}}</strong>
+    </div>
+    <div class="panel-body">
+        <dl class="dl-horizontal">
+            <dt>Hippocamp Score:</dt>
+            <dd ng-init="score = content[artifact.data]">
+                <span ng-if="score < 0">
+                    <span class="text-danger">{{score}}</span>
+                </span>
+                <span ng-if="score == 0">
+                    <span class="text-info">{{score}}</span>
+                </span>
+                <span ng-if="score > 0">
+                    <span class="text-success">{{score}}</span>
+                </span>
+            </dd>
+        </dl>
+    </div>
+</div>

@@ -1,0 +1,39 @@
+<span ng-if="!updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
+    <span ng-if="value.length > 0">
+        <small>
+            <a style="cursor: pointer;" tooltip="edit">
+                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+            </a>
+        </small>
+        <!-- <span btf-markdown="value"></span> -->
+        <div marked="value" class="markdown"></div>
+    </span>
+    <span ng-if="!value">
+        <span class="text-warning">
+            <em>Not specified</em>
+        </span>
+        <small ng-show="active">
+            <a style="cursor: pointer;" tooltip="edit">
+                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+            </a>
+        </small>
+    </span>
+</span>
+
+<span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
+    <div class="form-group">
+        <!-- <markdown-editor content="value" placeholder="Add a description"></markdown-editor> -->
+        <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="value"></textarea>
+
+        <div>
+            <span class="btn" ng-click='update()' tooltip-placement="top" tooltip-popup-delay='500' tooltip="save">
+                <i class="text-success glyphicon glyphicon-ok"></i>
+            </span>
+            <span class="btn" ng-click='cancel()' tooltip-placement="top" tooltip-popup-delay='500' tooltip="cancel">
+                <i class="text-danger glyphicon glyphicon-remove"></i>
+            </span>
+            <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank">
+                <i class="fa fa-question-circle"></i> Mardown Reference</a>
+        </div>
+    </div>
+</span>

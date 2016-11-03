@@ -1,0 +1,33 @@
+
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th style="width:80%">
+				Task
+			</th>
+			<th>
+				Date
+			</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		<tr ng-class="{'True':'info'}[value.flag]" ng-repeat="value in list.values" ng-click="openEntity(value)">
+			<td style="width:80%">
+				<div class="col-md-12">
+					<span ng-if="value.flag === 'True'"><i class="text-primary glyphicon glyphicon-flag"></i></span>
+					<span ng-bind="value.title"></span>
+				</div>
+				<div class="col-md-12">
+				<small><entity-link value="value.case"></entity-link></small>
+				</div>
+			</td>
+			<td>
+				{{value.startDate | showDate}}
+			</td>
+		</tr>
+	</tbody>
+
+</table>
+
+<psearch control="list"></psearch>

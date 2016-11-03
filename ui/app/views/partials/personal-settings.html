@@ -1,0 +1,106 @@
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <h3>
+            <center>Settings</center>
+        </h3>
+
+        <!-- Update basic user information -->
+        <form name="basicForm" class="form-horizontal" ng-submit="updateBasicInfo(basicForm)" novalidate>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>Update basic information</h4>
+                </div>
+                <div class="panel-body">
+
+                    <div class="form-group">
+                        <label class="col-md-3 control-label">Username</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control input-sm" ng-model="basicData.username" readonly/>
+                        </div>
+                    </div>
+                    <div class="form-group" ng-class="{ 'has-error' : !basicForm.name.$pristine && basicForm.name.$invalid}">
+                        <label class="col-md-3 control-label">Full name <i class="fa fa-asterisk text-danger"></i></label>
+                        <div class="col-md-9">
+                            <input type="text" name="name" class="form-control input-sm" placeholder="Full name" ng-model="basicData.name" required/>
+                            <div ng-messages="basicForm.name.$error" ng-show="!basicForm.name.$pristine && basicForm.name.$error">
+                                <div ng-messages-include="settings-error.html"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-s">
+                        <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+                        <span class="ml-xxs"><i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                        <button class="btn btn-primary pull-right" ng-disabled="basicForm.$invalid" type="submit">Save</button>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+
+        <!-- Update user password -->
+        <form ng-if="canChangePass" class="form-horizontal mt-s" name="passForm" ng-submit="updatePassword(passForm);" novalidate>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4><input type="checkbox" ng-model="passData.changePassword" ng-click="clearPassword(passForm, passData.changePassword)">
+                        Update password</h4>
+                </div>
+                <div class="panel-body" ng-show="passData.changePassword">
+                    <div class="form-group" ng-class="{ 'has-error' : !passForm.currentPassword.$pristine && passForm.currentPassword.$invalid}">
+                        <label class="col-md-3 control-label">Old password <i class="fa fa-asterisk text-danger"></i></label>
+                        <div class="col-md-9">
+                            <input type="password" name="currentPassword" class="form-control input-sm" placeholder="Current password" autocomplete="off" ng-model="passData.currentPassword" ng-required="passData.changePassword"/>
+                            <div ng-messages="passForm.currentPassword.$error" ng-show="!passForm.currentPassword.$pristine && passForm.currentPassword.$error">
+                                <div ng-messages-include="settings-error.html"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" ng-class="{ 'has-error' : !passForm.password.$pristine && passForm.password.$invalid}">
+                        <label class="col-md-3 control-label">New password <i class="fa fa-asterisk text-danger"></i></label>
+                        <div class="col-md-9">
+                            <input type="password" name="password" class="form-control input-sm" placeholder="New password" autocomplete="off" ng-model="passData.password" ng-required="passData.changePassword"/>
+                            <div ng-messages="passForm.password.$error" ng-show="!passForm.password.$pristine && passForm.password.$error">
+                                <div ng-messages-include="settings-error.html"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" ng-class="{ 'has-error' : !passForm.confirmPassword.$pristine && passForm.confirmPassword.$invalid}">
+                        <label class="col-md-3 control-label">Confirm new password <i class="fa fa-asterisk text-danger"></i></label>
+                        <div class="col-md-9">
+                            <input type="password" name="confirmPassword" class="form-control input-sm" placeholder="Confirm Password" compare-to="passData.password" autocomplete="off" ng-model="passData.passwordConfirm" ng-required="passData.changePassword"/>
+                            <div ng-messages="passForm.confirmPassword.$error" ng-show="!passForm.confirmPassword.$pristine && passForm.confirmPassword.$error">
+                                <div ng-messages-include="settings-error.html"></div>
+                            </div>
+                            <div ng-class="{'has-error': passData.password!=passData.password2, 'has-success': passData.password==passData.password2 && passData.password1!=''}">
+                                <div ng-show="passData.password1 != passData.password2">Oops, that's not the same password as the first one</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-s">
+                        <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+                        <span class="ml-xxs"><i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                        <button class="btn btn-primary pull-right" ng-disabled="passForm.$invalid" type="submit">Save</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script id="settings-error.html" type="text/ng-template">
+    <div class="mt-xxs text-danger" ng-message="required">
+        This field is required
+    </div>
+    <div class="mt-xxs text-danger" ng-message="minlength">
+        <span translate="error.form.minlength"></span>
+    </div>
+    <div class="mt-xxs text-danger" ng-message="maxlength">
+        <span translate="error.form.maxlength"></span>
+    </div>
+    <div class="mt-xxs text-danger" ng-message="compareTo">
+        Oops, that's not the same password as the first one
+    </div>
+</script>

@@ -1,0 +1,13 @@
+{
+	"name": "DomainTools_WhoisLookup",
+	"version": "1.0",
+	"baseConfig": "DomainTools",
+	"config": {
+		"check_tlp": false,
+		"service": "whois/parsed"
+	},
+	"report": "DomainTools/report_WhoisLookup",
+	"description": "DomainTools Whois Lookup: provides the ownership record for a domain name with basic registration details",
+	"dataTypeList": ["domain"],
+	"command": "DomainTools/domaintools.py"
+}

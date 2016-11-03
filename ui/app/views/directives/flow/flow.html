@@ -1,0 +1,11 @@
+<div class="flow">
+  	<div class="flow-item" ng-repeat="value in values" ng-switch="value.base.objectType">
+        <flow-item target="targetWindow" type="user" data="value" ng-switch-when="user"></flow-item>
+        <flow-item target="targetWindow" type="case" data="value" ng-switch-when="case"></flow-item>
+        <flow-item target="targetWindow" type="task" data="value" ng-switch-when="case_task"></flow-item>
+        <flow-item target="targetWindow" type="task-log" data="value" ng-switch-when="case_task_log"></flow-item>
+        <flow-item target="targetWindow" type="observable" data="value" ng-switch-when="case_artifact"></flow-item>
+        <flow-item target="targetWindow" type="observable-job" data="value" ng-switch-when="case_artifact_job"></flow-item>
+        <flow-item target="targetWindow" type="misp" data="value" ng-switch-when="misp"></flow-item>
+	</div>
+</div>

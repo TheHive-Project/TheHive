@@ -1,0 +1,17 @@
+<ul class="nav nav-tabs">
+    <li ng-class="{'active': edition}">
+        <a href ng-click="edit()">Editor</a>
+    </li>
+    <li ng-class="{'active': !edition}">
+        <a href ng-click="preview()">Preview</a>
+    </li>
+   <li class="pull-right">
+        <a href="http://daringfireball.net/projects/markdown/syntax" target="_blank"><i class="fa fa-question-circle"></i> Mardown Reference</a>
+    </li>
+</ul>
+<div class="vpad10" ng-show="edition">
+    <textarea class="input-sm form-control" ng-model="content" placeholder="{{placeholder}}" rows="6" style="white-space: pre-wrap"></textarea>
+</div>
+<div class="pad10" ng-show="!edition">
+    <span btf-markdown="previewContent"></span>
+</div>

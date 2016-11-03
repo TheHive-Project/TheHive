@@ -1,0 +1,21 @@
+<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
+	<span ng-if="value!==null && value !==''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value">{{value}}</span>
+	<span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
+	<small ng-show="active">
+		<a tooltip-popup-delay='500' tooltip="edit" target="_self" style="cursor: pointer;">
+			<i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+		</a>
+	</small>
+	<span ng-hide="active">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+</span>
+<span ng-show="updatable.updating" ng-init="updatable.dropdownOpen=false">
+	<form ng-submit="update()">
+		<div class="input-group input-group-sm">
+			<input type="{{inputType || 'text'}}" class="form-control input-sm" placeholder="{{placeholder}}" ng-model="value" autofocus="autofocus">
+			<span class="input-group-btn">
+				<button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
+					<i class="text-danger glyphicon glyphicon-remove"></i>
+				</button>
+		</div>
+	</form>
+</span>

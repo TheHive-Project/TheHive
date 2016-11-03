@@ -1,0 +1,177 @@
+<br>
+<div class="row">
+    <div class="col-md-7">
+        <h4 class="vpad10 text-primary">Basic information</h4>
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Severity</dt>
+            <dd>
+                <a class="noline" href ng-click="activeSev = true" ng-init="activeSev = false">
+                    <severity active="activeSev" on-update="updateField('severity', newValue)" style="float:left; font-size:16px" value="caze.severity"></severity>
+                </a>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">TLP</dt>
+            <dd>
+                <a class="noline" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
+                    <tlp format="activeTlp" on-update="updateField('tlp', newValue)" style="float:left; font-size:16px" value="caze.tlp"></tlp>
+                </a>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Title
+            </dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('title', newValue)" value="caze.title"></updatable-simple-text>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Date</dt>
+            <dd>
+                <updatable-date on-update="updateField('startDate', newValue)" value="caze.startDate"></updatable-date>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear" ng-show="isCaseClosed()">
+            <dt class="pull-left text-success">Close date</dt>
+            <dd class="text-success">
+                <updatable-date on-update="updateField('endDate', newValue)" value="caze.endDate"></updatable-date>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear" ng-show="isCaseClosed()">
+            <dt class="pull-left text-success">Resolution Status</dt>
+            <dd class="text-success">{{CaseResolutionStatus[caze.resolutionStatus]}}</dd>
+        </dl>
+
+        <dl class="dl-horizontal clear" ng-show="isCaseClosed() && isCaseTruePositive()">
+            <dt class="pull-left text-success">Impact Status</dt>
+            <dd class="text-success">{{caze.impactStatus === 'NoImpact' ? 'No' : 'Yes'}}</dd>
+        </dl>
+
+        <dl class="dl-horizontal clear" ng-show="isCaseClosed()">
+            <dt class="pull-left text-success">Summary</dt>
+            <dd>
+                <updatable-text on-update="updateField('summary', newValue)" value="caze.summary"></updatable-text>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Tags</dt>
+            <dd>
+                <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags"></updatable-tags>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Description</dt>
+            <dd>
+                <updatable-text on-update="updateField('description', newValue)" value="caze.description"></updatable-text>
+            </dd>
+        </dl>
+    </div>
+    <div class="col-md-5 case-metrics">
+        <div class="case-links" ng-show="links.length > 0">
+            <h4 class="vpad10 text-primary">Related cases</h4>
+
+            <div>
+                <h5>Newest (<a href ui-sref="app.case.details({caseId:links[0].id})">Case # {{newestLink.caseId}} - {{newestLink.title}}</a>)</h5>
+                <div>
+                    Created on <strong>{{newestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+                </div>
+                <div>
+                    Shares <strong><ng-pluralize count="newestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
+                    <strong ng-if="newestLink.iocCount > 0" class="text-danger">
+                        (<ng-pluralize count="newestLink.iocCount" when="{'0': 'No IOCs', 'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
+                    </strong>
+                </div>
+                <div>
+                    Tagged as <tag-list data="newestLink.tags"></tag-list>
+                </div>
+                <div class="hr-line-dashed"></div>
+            </div>
+
+            <div ng-show="links.length > 1">
+                <h5>Oldest (<a href ui-sref="app.case.details({caseId:oldestLink.id})">Case # {{oldestLink.caseId}} - {{oldestLink.title}}</a>)</h5>
+                <div>
+                    Created on <strong>{{oldestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+                </div>
+                <div>
+                    Shares
+                    <strong><ng-pluralize count="oldestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
+                    <strong ng-if="oldestLink.iocCount > 0" class="text-danger">
+                        (<ng-pluralize count="oldestLink.iocCount" when="{'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
+                    </strong>
+                </div>
+                <div>
+                    Tagged as <tag-list data="oldestLink.tags"></tag-list>
+                </div>
+                <div class="hr-line-dashed"></div>
+            </div>
+
+            <div class="mt-xs">
+                <a href ui-sref="app.case.links({caseId:caze.id})">
+                    See all (<ng-pluralize count="links.length" when="{'one': '1 related case', 'other': '{} related cases'}"></ng-pluralize>)
+                </a>
+            </div>
+        </div>
+        <div class="case-metrics">
+            <h4 class="vpad10 text-primary">
+                Metrics
+                <span dropdown class="pull-right" ng-show="metricsAvailable">
+                    <a href class="dropdown-toggle" dropdown-toggle>
+                        <i class="fa fa-plus"></i>
+                        Add metric
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li ng-repeat="(key, value) in allMetrics">
+                            <a ng-click="addMetric(value)">{{value.title}}</a>
+                        </li>
+                    </ul>
+                </span>
+            </h4>
+            <div ng-if="hasNoMetrics(caze)">
+                <em>No metrics need to be set</em>
+            </div>
+
+            <dl class="dl-horizontal clear" ng-repeat="(k,v) in caze.metrics">
+                <dt class="pull-left" tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title}}</dt>
+                <dd>
+                    <updatable-simple-text input-type="number" on-update="updateField('metrics.' + k, newValue)" value="caze.metrics[k]"></updatable-simple-text>
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<div class="case-attachments vpad10" ng-if="attachments.values.length > 0">
+    <strong>Attachments</strong>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th style="text-align:center">Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="attachment in attachments.values" style="cursor: pointer;" tooltip-placement="bottom" tooltip-popup-delay="500" tooltip="{{attachment.message}}">
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.name}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.startDate}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
+                <td style="text-align:center">
+                    <a href="/api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name}}" target="_blank">
+                        <i class="glyphicon glyphicon-download"></i>
+                    </a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,90 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+GET      /                                          controllers.Default.redirect(to = "/index.html")
+GET      /api/status                                controllers.StatusCtrl.get
+GET      /api/logout                                controllers.AuthenticationCtrl.logout()
+POST     /api/login                                 controllers.AuthenticationCtrl.login()
+
+POST     /api/_search                               controllers.SearchCtrl.find()
+
+GET      /api/case                                  controllers.CaseCtrl.find()
+POST     /api/case/_search                          controllers.CaseCtrl.find()
+PATCH    /api/case/_bulk                            controllers.CaseCtrl.bulkUpdate()
+POST     /api/case/_stats                           controllers.CaseCtrl.stats()
+POST     /api/case                                  controllers.CaseCtrl.create()
+GET      /api/case/:caseId                          controllers.CaseCtrl.get(caseId)
+PATCH    /api/case/:caseId                          controllers.CaseCtrl.update(caseId)
+DELETE   /api/case/:caseId                          controllers.CaseCtrl.delete(caseId)
+GET      /api/case/:caseId/links                    controllers.CaseCtrl.linkedCases(caseId)
+
+POST     /api/case/template/_search                 controllers.CaseTemplateCtrl.find()
+POST     /api/case/template                         controllers.CaseTemplateCtrl.create()
+GET      /api/case/template/:caseTemplateId         controllers.CaseTemplateCtrl.get(caseTemplateId)
+PATCH    /api/case/template/:caseTemplateId         controllers.CaseTemplateCtrl.update(caseTemplateId)
+DELETE   /api/case/template/:caseTemplateId         controllers.CaseTemplateCtrl.delete(caseTemplateId)
+
+POST     /api/case/artifact/_search                 controllers.ArtifactCtrl.find()
+POST     /api/case/:caseId/artifact/_search         controllers.ArtifactCtrl.findInCase(caseId)
+POST     /api/case/artifact/_stats                  controllers.ArtifactCtrl.stats()
+POST     /api/case/:caseId/artifact                 controllers.ArtifactCtrl.create(caseId)
+GET      /api/case/artifact/:artifactId             controllers.ArtifactCtrl.get(artifactId)
+DELETE   /api/case/artifact/:artifactId             controllers.ArtifactCtrl.delete(artifactId)
+PATCH    /api/case/artifact/:artifactId             controllers.ArtifactCtrl.update(artifactId)
+GET      /api/case/artifact/:artifactId/similar     controllers.ArtifactCtrl.findSimilar(artifactId)
+PATCH    /api/case/artifact/_bulk                   controllers.ArtifactCtrl.bulkUpdate()
+
+POST     /api/case/artifact/:artifactId/job         controllers.JobCtrl.create(artifactId)
+POST     /api/case/artifact/job/_stats              controllers.JobCtrl.stats()
+POST     /api/case/artifact/job/_search             controllers.JobCtrl.find()
+GET      /api/case/artifact/:artifactId/job         controllers.JobCtrl.findInArtifact(artifactId)
+GET      /api/case/artifact/job/:jobId              controllers.JobCtrl.get(jobId)
+
+POST     /api/case/:caseId/task/_search             controllers.TaskCtrl.findInCase(caseId)
+POST     /api/case/task/_search                     controllers.TaskCtrl.find()
+POST     /api/case/task/_stats                      controllers.TaskCtrl.stats()
+GET      /api/case/task/:taskId                     controllers.TaskCtrl.get(taskId)
+PATCH    /api/case/task/:taskId                     controllers.TaskCtrl.update(taskId)
+POST     /api/case/:caseId/task                     controllers.TaskCtrl.create(caseId)
+
+GET      /api/case/task/:taskId/log                 controllers.LogCtrl.findInTask(taskId)
+POST     /api/case/task/log/_search                 controllers.LogCtrl.find()
+POST     /api/case/task/:taskId/log                 controllers.LogCtrl.create(taskId)
+PATCH    /api/case/task/log/:logId                  controllers.LogCtrl.update(logId)
+DELETE   /api/case/task/log/:logId                  controllers.LogCtrl.delete(logId)
+GET      /api/case/task/log/:logId                  controllers.LogCtrl.get(logId)
+
+GET      /api/flow                                  controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
+
+POST     /api/analyzer/_search                      controllers.AnalyzerCtrl.find()
+GET      /api/analyzer/:analyzerId                  controllers.AnalyzerCtrl.get(analyzerId)
+GET      /api/analyzer/:analyzerId/report/:flavor   controllers.AnalyzerCtrl.getReport(analyzerId, flavor)
+
+GET      /api/datastore/:hash                       controllers.AttachmentCtrl.download(hash, name: Option[String])
+GET      /api/datastorezip/:hash                    controllers.AttachmentCtrl.downloadZip(hash, name: Option[String])
+
+POST     /api/maintenance/migrate                   org.elastic4play.controllers.MigrationCtrl.migrate
+#POST          /api/maintenance/rehash                         controllers.MaintenanceCtrl.reHash
+
+GET      /api/list                                  org.elastic4play.controllers.DBListCtrl.list()
+DELETE   /api/list/:itemId                          org.elastic4play.controllers.DBListCtrl.deleteItem(itemId)
+POST     /api/list/:listName                        org.elastic4play.controllers.DBListCtrl.addItem(listName)
+GET      /api/list/:listName                        org.elastic4play.controllers.DBListCtrl.listItems(listName)
+
+GET      /api/user/current                          controllers.UserCtrl.currentUser()
+POST     /api/user/_search                          controllers.UserCtrl.find()
+POST     /api/user                                  controllers.UserCtrl.create()
+GET      /api/user/:userId                          controllers.UserCtrl.get(userId)
+DELETE   /api/user/:userId                          controllers.UserCtrl.delete(userId)
+PATCH    /api/user/:userId                          controllers.UserCtrl.update(userId)
+POST     /api/user/:userId/password/set             controllers.UserCtrl.setPassword(userId)
+POST     /api/user/:userId/password/change          controllers.UserCtrl.changePassword(userId)
+
+POST     /api/stream                                controllers.StreamCtrl.create()
+GET      /api/stream/status                         controllers.StreamCtrl.status
+GET      /api/stream/:streamId                      controllers.StreamCtrl.get(streamId)
+
+->       /api/connector                             connectors.ConnectorRouter
+
+GET      /*file                                     controllers.AssetCtrl.get(file)

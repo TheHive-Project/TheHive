@@ -1,0 +1,16 @@
+<div class="modal-body">
+    <div class="vpad20 text-center">
+        <img alt="TheHive" height="60" src="images/logo.png"/>
+    </div>
+    <div class="row" ng-repeat="(module, ver) in version">
+      <div class="col-md-6"><strong class="pull-right">{{module}}</strong></div>
+      <div class="col-md-6">{{ver}}</div>
+    </div>
+</div>
+<div class="modal-footer">
+    <div class="text-center">
+        <div class="btn btn-primary" ng-click="close()">
+            Close
+        </div>
+    </div>
+</div>

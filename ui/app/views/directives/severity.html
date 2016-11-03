@@ -1,0 +1,19 @@
+<div ng-if="active == true">
+	<span class="label btn" ng-class="{ true:'label-info', false:'label-default' }[value == 1]" ng-click="update(1)">L</span>
+	<span class="label btn" ng-class="{ true:'label-warning', false:'label-default' }[value == 2 || !value]" ng-click="update(2)">M</span>
+	<span class="label btn" ng-class="{ true:'label-danger', false:'label-default' }[value == 3]" ng-click="update(3)">H</span>
+</div>
+<span ng-if="active != true" ng-switch="value">
+	<span ng-switch-when="1">
+		<span class="label label-info">L</span>
+	</span>
+	<span ng-switch-when="2">
+		<span class="label label-warning">M</span>
+	</span>
+	<span ng-switch-when="3">
+		<span class="label label-danger">H</span>
+	</span>
+	<span ng-switch-default>
+		<span class="label label-primary">?</span>
+	</span>
+</span>

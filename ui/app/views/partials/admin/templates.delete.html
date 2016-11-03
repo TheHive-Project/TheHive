@@ -1,0 +1,15 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Remove case template</h3>
+</div>
+<div class="modal-body">
+    <p>
+        Are you sure you want to delete the case template <strong>{{template.name}}</strong>.
+    </p>
+    <p>
+        This action cannot be undone.
+    </p>
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+    <button class="btn btn-danger pull-right" ng-click="confirm()">Confirm</button>
+</div>

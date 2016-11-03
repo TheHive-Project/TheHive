@@ -1,0 +1,44 @@
+<br>
+
+
+<h4>DNSDB IP History Report <em>(Rdata IP)</em></h4>
+<br>
+<br>	
+<h5>{{content.length}} name(s) found.<small><a href ng-click="isCollapsed = !isCollapsed">Show all</a></small></h5> 
+<hr>
+<div class="row col-md-8 col-md-offset-2" collapse="!isCollapsed">
+
+	<pre style="padding: 1px;
+						font-size: 85%;
+						line-height: 0.2;
+						background-color: #F7F7F7;
+						border-radius: 3px;">
+
+		<dl style="margin-bottom:2px;" class="dl-horizontal">
+		<dd	style="text-align:left" ng-repeat="res in content">{{res.rrname}}</dd>
+		</dl>
+	</pre>
+	
+</div>
+<br>
+<div class="row">
+	<table class="table">
+		<thead>
+		 <tr>
+		  <th>rdata</th>
+		  <th>rrname</th>
+		  <th>rrtype</th>
+		  <th>time_first</th>
+		  <th>time_last</th>
+		  <th>count</th>
+		</thead>
+		<tbody ng-repeat="row in content">
+		  <td>{{row.rdata}}</td>
+		  <td>{{row.rrname}}</td>
+		  <td>{{row.rrtype}}</td>
+		  <td>{{row.zone_time_first | showDate}}</td>
+		  <td>{{row.zone_time_last | showDate}}</td>
+		  <td>{{row.count}}</td>
+		</tbody>
+	</table>
+</div>

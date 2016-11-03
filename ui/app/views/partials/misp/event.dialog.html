@@ -1,0 +1,82 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Preview MISP Event</h3>
+</div>
+<div class="modal-body">
+
+    <div class="row text-center" ng-show="dialog.loading">
+        <div class="m-s">
+            <i class="fa fa-3x fa-spinner fa-spin"></i>
+        </div>
+        Loading...
+    </div>
+    <div class="row" ng-hide="dialog.loading">
+        <div class="col-md-12">
+            <h4 class="vpad10 text-primary">
+                Event details
+                <span class="label label-default pull-right" ng-class="{'label-danger': dialog.event.eventStatus==='New', 'label-warning': dialog.event.eventStatus === 'Update'}">{{dialog.event.eventStatus}}</span>
+            </h4>
+            <dl class="dl-horizontal clear">
+                <dt>Event ID</dt>
+                <dd>{{dialog.event.eventId}}</dd>
+            </dl>
+            <dl class="dl-horizontal clear">
+                <dt>Title</dt>
+                <dd>
+                    <severity value="dialog.event.threatLevel"></severity>{{dialog.event.info}}</dd>
+            </dl>
+            <dl class="dl-horizontal clear">
+                <dt>Date</dt>
+                <dd>{{dialog.event.publishDate | showDate}}</dd>
+            </dl>
+            <dl class="dl-horizontal clear">
+                <dt>Organisation</dt>
+                <dd>{{dialog.event.org}}</dd>
+            </dl>
+            <dl class="dl-horizontal clear">
+                <dt>Tags</dt>
+                <dd>
+                    <tag-list data="dialog.event.tags"></tag-list>
+                </dd>
+            </dl>
+
+            <h4 class="vpad10 text-primary">
+                Event attributes ({{dialog.event.attributes.length}})
+            </h4>
+            <ul class="nav nav-pills mb-xxs" ng-if="dialog.dataTypes">
+                <li role="presentation" class="active" ng-repeat="(type, count) in dialog.dataTypes"><a href class="not-clickable">{{type}} <span class="badge">{{count}}</span></a></li>
+            </ul>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width:100px;">Type</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="attribute in dialog.pagination.data">
+                        <td>{{attribute.dataType}}</td>
+                        <td class="wrap">{{attribute.data | fang | ellipsis:250}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-center" ng-show="dialog.event.attributes.length > dialog.pagination.pageSize">
+                <pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                    ng-change="dialog.loadPage()"
+                    total-items="dialog.event.attributes.length"
+                    ng-model="dialog.pagination.currentPage"
+                    items-per-page="dialog.pagination.pageSize"></pagination>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.import()">Import event</button>
+    <button class="btn btn-default pull-right" type="button" ng-click="dialog.ignore()">
+        <i class="fa fa-check"></i> Mark as read
+    </button>
+    <button class="btn btn-default pull-right" type="button" ng-click="dialog.follow()">
+        <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
+    </button>
+</div>

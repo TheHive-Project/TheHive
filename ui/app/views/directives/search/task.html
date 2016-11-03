@@ -1,0 +1,15 @@
+<div class="search-item-title">
+    <a href ui-sref="app.case.tasks-item({caseId: value.case.id, itemId: value.id})">
+        {{value.title}}
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo(value.user) | getField: 'name'}}</span>
+
+    <i class="glyphicon glyphicon-calendar ml-xxs"></i>
+    <span ng-bind="value.startDate | showDate"></span>
+</div>
+<div class="mt-xs wrap">
+    <span ng-bind="(value.description || 'No Description') | limitTo: 250"></span>
+</div>
