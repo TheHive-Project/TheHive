@@ -1,0 +1,144 @@
+body {
+    font-family: Lato;
+}
+#header {
+    padding: 40px 0;
+}
+.btn-cta-secondary {
+    background: #fbb040;
+    border: 1px solid #fbb040;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.btn-cta-twitter {
+    background: #1da1f2;
+    border: 1px solid #1da1f2;
+    color: #fff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+a.btn-cta-twitter {
+    color: #fff !important;
+}
+
+section {
+    padding: 20px 0;
+}
+section#separator {
+    padding: 0;
+    height: 5px;
+}
+h2 {
+    font-size: 50px;
+    font-weight: bold;
+    margin-bottom: 50px;
+}
+.baseline{
+    margin: 40px 0;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.features {
+    background-color: #17baef;
+}
+
+.bg-blue {
+    background-color: #17baef;
+}
+
+.bg-blue h3 {
+    /*color: #053c4e;*/
+    color: #FFFFFF;
+    font-size: 28px;
+}
+
+.bg-black {
+    background-color: #000000;
+}
+
+.bg-blue a {
+    color: #FFFFFF;
+}
+
+.bg-black a {
+    color: #fbb040;
+}
+
+.bg-black p.content {
+    color: #ffffff;
+}
+.img-circle {
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#features .img-circle {
+    background-color: #fbb040;
+}
+
+#tryit .img-circle {
+    background-color: #17baef;
+}
+
+.img-circle i {
+    font-size: 38px;
+}
+pre {
+    font-size: 20px;
+    border: none;
+    padding: 20px;
+    white-space: pre-wrap;       /* Since CSS 2.1 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    color: #c7254e;
+    background-color: #f9f2f4;
+    margin: 30px 0;
+}
+
+#contact h2{
+    color: #fbb040;
+}
+
+#license h2,
+#features h2{
+    color: #ffffff;
+}
+
+p.content {
+    font-size: 20px;
+}
+
+#features p.content,
+#tryit p.content {
+    text-align: justify;
+}
+
+#contact .btns {
+    margin: 40px;
+}
+
+footer .content {
+    font-size: 14px;
+    margin: 0;
+    padding: 10px;
+}
+
+@media only screen
+  and (min-device-width: 320px)
+  and (max-device-width: 480px)
+  and (-webkit-min-device-pixel-ratio: 2)
+  and (orientation: portrait) {
+      .logo {
+          width: 300px;
+      }
+}
