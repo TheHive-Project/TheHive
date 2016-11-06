@@ -46,6 +46,13 @@ frontendFiles := {
 
 mappings in packageBin in Assets ++= frontendFiles.value
 
+// Install files //
+
+mappings in Universal ++= {
+  val dir = baseDirectory.value / "install"
+  (dir.***) pair relativeTo(dir.getParentFile)
+}
+
 // Analyzers //
 
 mappings in Universal ++= {

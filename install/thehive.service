@@ -5,12 +5,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-Environment=TH_HOME=/opt/thehive
-Environment=CONF_DIR=/etc/thehive
-Environment=PID_DIR=/var/run/thehive
-Environment=TH_PORT=9000
-
-
+WorkingDirectory=/opt/thehive
 User=thehive
 Group=thehive
 
