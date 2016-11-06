@@ -1,0 +1,42 @@
+[Unit]
+Description=TheHive
+Documentation=https://thehive-project.org
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment=TH_HOME=/opt/thehive
+Environment=CONF_DIR=/etc/thehive
+Environment=PID_DIR=/var/run/thehive
+Environment=TH_PORT=9000
+
+
+User=thehive
+Group=thehive
+
+ExecStart=/opt/thehive/bin/thehive \
+			-Dconfig.file=/etc/thehive/application.conf \
+			-Dhttp.port=9000 \
+			-Dpidfile.path=/var/run/thehive/pid
+
+
+StandardOutput=journal
+StandardError=inherit
+
+# Specifies the maximum file descriptor number that can be opened by this process
+LimitNOFILE=65536
+
+# Disable timeout logic and wait until process is stopped
+TimeoutStopSec=0
+
+# SIGTERM signal is used to stop the Java process
+KillSignal=SIGTERM
+
+# Java process is never killed
+SendSIGKILL=no
+
+# When a JVM receives a SIGTERM signal it exits with code 143
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
