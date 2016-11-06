@@ -1,8 +1,8 @@
 ![](docs/thehive-logo.png)
-# Learning from Bees
+
 As seasoned Digital Forensics & Incident Response practitioners, we have been looking for years for a solid, scalable platform to **investigate** and **collaborate** information security incidents, **store** heterogeneous observables and **analyze** them one by one or in bulk.
 
-Unsatisfied with what we found on the market, development started in earnest in early 2014 and a first usable version was put in production in October 2014. **TheHive** was born and it has been used since then on a daily basis by about a dozen analysts since then.
+Unsatisfied with what we found on the market, development started in earnest in early 2014 and a first usable version was put in production in October 2014. **TheHive** was born and it has been used since then by about a dozen analysts on a daily basis.
 
 # TheHive
 [TheHive](https://thehive-project.org/) is a scalable 3-in-1 open source and free solution designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly.
