@@ -1,3 +1,4 @@
+![](docs/thehive-logo.png)
 # Learning from Bees
 As seasoned Digital Forensics & Incident Response practitioners, we have been looking for years for a solid, scalable platform to **investigate** and **collaborate** information security incidents, **store** heterogeneous observables and **analyze** them one by one or in bulk.
 
