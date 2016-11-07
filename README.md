@@ -24,6 +24,14 @@ TheHive comes also with an analysis engine. Analyzers can be written in any prog
 
 Security analysts with a knack for scripting can easily add their own analyzers (and contribute them back to the community since sharing is caring) to automate boring or tedious actions that must be performed on observables or IOCs. They can also decide how analyzers behave according to the TLP. For example, a file added as observable can be submitted to VirusTotal if the associated TLP is WHITE or GREEN. If it's AMBER, its hash is computed and submitted to VT but not the file. If it's RED, no VT lookup is done.
 
+# Try it
+To use TheHive, you can:
++ run it [from docker](../../wiki/Docker-guide)
++ run it [from binaries](../../wiki/Installation-guide)
++ build it [from the sources](../../wiki/Build-Guide) then run it
+
+You may also want to check other guides that we made available on the [Wiki](../wiki).
+
 # Details
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap. The provided analyzers are written in Python. Additional analyzers may be written using the same language or any other language supported by Linux.
