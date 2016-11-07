@@ -1,12 +1,15 @@
 name := "TheHive"
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
+  .settings(publish := {})
 
 lazy val thehiveMetrics = (project in file("thehive-metrics"))
   .dependsOn(thehiveBackend)
-  
+  .settings(publish := {})
+
 lazy val thehiveMisp = (project in file("thehive-misp"))
   .dependsOn(thehiveBackend)
+  .settings(publish := {})
 
 lazy val main = (project in file("."))
   .enablePlugins(PlayScala)

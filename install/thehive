@@ -15,7 +15,7 @@ PIDDIR=/var/run/thehive
 PIDFILE=$PIDDIR/pid
 DAEMONUSER=thehive
 CONFIGFILE=/etc/thehive/application.conf
-LISTENPORT=9090
+LISTENPORT=9000
 DAEMON_OPTS=
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
