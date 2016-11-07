@@ -7,6 +7,8 @@ Unsatisfied with what we found on the market, development started in earnest in 
 # TheHive
 [TheHive](https://thehive-project.org/) is a scalable 3-in-1 open source and free solution designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly.
 
+![Current Cases View](images/Current_cases.png)
+
 ## Collaborate
 Collaboration is at the heart of TheHive. Multiple analysts can work on the same case simultaneously. For example, an analyst may deal with malware analysis while another may work on tracking C2 beaconing activity on proxy logs as soon as they see IOCs added by their coworker added to TheHive, thanks to The Flow (a Twitter-like stream that keeps everyone updated on what's happening in real time).
 
