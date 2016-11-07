@@ -1,4 +1,4 @@
-![](docs/thehive-logo.png)
+![](images/thehive-logo.png)
 
 As seasoned Digital Forensics & Incident Response practitioners, we have been looking for years for a solid, scalable platform to **investigate** and **collaborate** information security incidents, **store** heterogeneous observables and **analyze** them one by one or in bulk.
 
@@ -36,7 +36,7 @@ You may also want to check other guides that we made available on the [Wiki](../
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap. The provided analyzers are written in Python. Additional analyzers may be written using the same language or any other language supported by Linux.
 
-![](docs/Architecture.png)
+![](images/Architecture.png)
 
 ## Analyzers
 The first public release of TheHive is provided with 7 analyzers:
@@ -53,7 +53,7 @@ The star (*) indicates that the analyzer needs an API key to work correctly. We 
 ## Workflow
 The following image shows a typical workflow:
 
-![](docs/Workflow.png)
+![](images/Workflow.png)
 
 ## Additional features
 TheHive supports 3 authentication methods:
