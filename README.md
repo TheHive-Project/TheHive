@@ -32,7 +32,7 @@ To use TheHive, you can:
 + run it [from binaries](../../wiki/Installation-guide)
 + build it [from the sources](../../wiki/Build-Guide) then run it
 
-You may also want to check other guides that we made available on the [Wiki](../wiki).
+You may also want to check other guides that we made available on the [Wiki](../../wiki).
 
 # Details
 ## Architecture
