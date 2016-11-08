@@ -1,6 +1,6 @@
 ![](images/thehive-logo.png)
 
-As seasoned Digital Forensics & Incident Response practitioners, we have been looking for years for a solid, scalable platform to **investigate** and **collaborate** information security incidents, **store** heterogeneous observables and **analyze** them one by one or in bulk.
+As seasoned Digital Forensics & Incident Response practitioners, we have been looking for years for a solid, scalable platform to **investigate** and **collaborate** on information security incidents, **store** heterogeneous observables and **analyze** them one by one or in bulk.
 
 Unsatisfied with what we found on the market, development started in earnest in early 2014 and a first usable version was put in production in October 2014. **TheHive** was born and it has been used since then by about a dozen analysts on a daily basis.
 
@@ -10,10 +10,10 @@ Unsatisfied with what we found on the market, development started in earnest in 
 ![Current Cases View](images/Current_cases.png)
 
 ## Collaborate
-Collaboration is at the heart of TheHive. Multiple analysts can work on the same case simultaneously. For example, an analyst may deal with malware analysis while another may work on tracking C2 beaconing activity on proxy logs as soon as they see IOCs added by their coworker added to TheHive, thanks to The Flow (a Twitter-like stream that keeps everyone updated on what's happening in real time).
+Collaboration is at the heart of TheHive. Multiple analysts can work on the same case simultaneously. For example, an analyst may deal with malware analysis while another may work on tracking C2 beaconing activity on proxy logs as soon as IOCs have been added by their coworker, thanks to the Flow (a Twitter-like stream that keeps everyone updated on what's happening in real time).
 
 ## Elaborate
-Within TheHive, every investigation corresponds to a case. Cases can be created from scratch and tasks added on the go and dispatched to (or taken by) available analysts. They can also be created out of a template engine with corresponding metrics that your team need to keep an eye on to drive the activity.
+Within TheHive, every investigation corresponds to a case. Cases can be created from scratch and tasks added on the go and dispatched to (or taken by) available analysts. They can also be created using templates with corresponding metrics to drive your team's activity, identify the type of investigations that take significant time and seek to automate tedious tasks.
 
 Each task can have multiple work logs where contributing analysts may describe what they are up to, what was the outcome, attach pieces of evidence or noteworthy files, etc. Markdown is supported.
 
