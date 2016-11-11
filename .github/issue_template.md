@@ -1,14 +1,14 @@
-# Use this template for bug reports. If you'd like to request a feature, please be as descriptive as possible and delete the template.
+# EDIT THIS TITLE BEFORE POSTING. Use this template for bug reports. If you'd like to request a feature, please be as descriptive as possible and delete the template except the first section (Request Type)
 
 ### Request Type
-(remove everything that does not apply)
-Bug, Question, Feature Request, Support
+(select Bug or Feature Request and **remove this part**)
+Bug / Feature Request
 
 ### Work Environment
 
 | Question              | Answer
 |---------------------------|--------------------
-| OS version (server)       | Debian, ubuntu, CentOS, RedHat, ...
+| OS version (server)       | Debian, Ubuntu, CentOS, RedHat, ...
 | OS version (client)       | XP, Seven, 10, Ubuntu, ...
 | TheHive version / git hash   | 2.x, hash of the commit
 | Package Type              | Docker, Binary, From source
@@ -24,7 +24,7 @@ Describe the problem/bug as clearly as possible.
 1. step 3...
 
 ### Possible Solutions
-(keep this section if you have suggestions on how to solve the problem. Otherwise delete it)
+(keep this section if you have suggestions on how to solve the problem. **Otherwise delete it**)
 
 ### Complementary information
-(add anything that can help identifying the problem such as logs, screenshots, configuration dumps etc.)
+(add anything that can help identifying the problem such as **logs**, **screenshots**, **configuration dumps** etc.)
