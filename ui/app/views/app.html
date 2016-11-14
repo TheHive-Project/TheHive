@@ -1,5 +1,5 @@
 <div>
-    <nav class="navbar navbar-inverse navbar-fixed-top" ng-if="!hideStatusBar" ng-show="currentUser.id" role="navigation">
+    <nav class="navbar navbar-inverse navbar-fixed-top main-navbar" ng-if="!hideStatusBar" ng-show="currentUser.id" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
                 <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#th-navbar-collapse" data-toggle="collapse" type="button">
@@ -70,32 +70,41 @@
 
                     <li>
                         <form ng-submit="search(querystring)" style="margin-top : 10px">
-                            <div class="form-group has-feedback has-feedback-right">
+                            <div class="input-group" style="width: 220px">
+                                <span class="input-group-addon">
+                                    <i class="glyphicon glyphicon-search"></i>
+                                </span>
+                                <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
+                                <div class="input-group-btn">
+                                    <div class="btn-group dropdown" dropdown>
+                                        <a class="btn btn-sm btn-default dropdown-toggle" dropdown-toggle href>
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li class="dropdown-header" role="presentation">Custom search</li>
+                                            <li>
+                                                <a ng-click="querystring = 'status:Resolved' ; search(querystring);">Closed cases</a>
+                                            </li>
+                                            <li>
+                                                <a ng-click="querystring = 'caseId:'">By case number</a>
+                                            </li>
+                                            <li>
+                                                <a ng-click="querystring = '_type:case_artifact '">Observables</a>
+                                            </li>
+                                            <li class="divider"></li>
+                                            <li>
+                                                <a ng-click="querystring = '_type:case AND (_missing_:endDate) AND (startDate:{* TO now-1M})' ; search(querystring);">Cold cases</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- <div class="form-group has-feedback has-feedback-right">
                                 <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
                                 <i class="form-control-feedback glyphicon glyphicon-search" style="top : 0px"></i>
-                            </div>
+                            </div> -->
                         </form>
-                    </li>
-                    <li class="dropdown" dropdown>
-                        <a class="dropdown-toggle" dropdown-toggle href>
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu">
-                            <li class="dropdown-header" role="presentation">Custom search</li>
-                            <li>
-                                <a ng-click="querystring = 'status:Resolved' ; search(querystring);">Closed cases</a>
-                            </li>
-                            <li>
-                                <a ng-click="querystring = 'caseId:'">By case number</a>
-                            </li>
-                            <li>
-                                <a ng-click="querystring = '_type:case_artifact '">Observables</a>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <a ng-click="querystring = '_type:case AND (_missing_:endDate) AND (startDate:{* TO now-1M})' ; search(querystring);">Cold cases</a>
-                            </li>
-                        </ul>
                     </li>
                     <li class="dropdown" dropdown ng-if="isAdmin(currentUser)">
                         <a class="dropdown-toggle" dropdown-toggle href>

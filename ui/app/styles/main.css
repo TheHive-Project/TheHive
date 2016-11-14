@@ -20,6 +20,14 @@ body {
 .navbar-brand>img {
     display: inline;
 }
+.main-navbar .nav>li>a {
+    padding: 15px 8px;
+}
+.main-navbar .input-group-addon {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
 .clickable {
     cursor: pointer;
 }
@@ -27,7 +35,7 @@ body {
     cursor: default;
 }
 .container-main {
-    padding-top: 70px;
+    padding-top: 100px;
 }
 .marked > table,
 .markdown > table {
@@ -360,31 +368,5 @@ tr.task-row .tast-status {
     }
     to {
         transform: rotate(360deg);
-    }
-}
-
-/* make sidebar nav vertical */
-
-@media (min-width: 384px) {
-    .sidebar-nav {
-        width: 250px;
-    }
-    .sidebar-nav .navbar .navbar-collapse {
-        padding: 0;
-        max-height: none;
-    }
-    .sidebar-nav .navbar ul {
-        float: none;
-    }
-    .sidebar-nav .navbar ul:not {
-        display: block;
-    }
-    .sidebar-nav .navbar li {
-        float: none;
-        display: block;
-    }
-    .sidebar-nav .navbar li a {
-        padding-top: 12px;
-        padding-bottom: 12px;
     }
 }
