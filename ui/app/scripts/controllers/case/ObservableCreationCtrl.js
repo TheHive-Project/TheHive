@@ -19,6 +19,7 @@
                 tags: [],
                 tagNames: ''
             };
+            $scope.tags = [];
 
             $scope.$watchCollection('tags', function(value) {
                 $scope.params.tagNames = _.pluck(value, 'text').join(',');
@@ -84,7 +85,6 @@
                         postData.data = params.data;
                     }
 
-                    //postData.data = $scope.params.bulk ? params.data.split('\n') : params.data;
                 } else if (params.attachment) {
                     postData.attachment = params.attachment;
                 }
