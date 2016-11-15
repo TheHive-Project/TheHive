@@ -7,7 +7,7 @@ object BasicSettings extends AutoPlugin {
   override def projectSettings = Seq(
     organization := "org.cert-bdf",
     licenses += "AGPL-V3" -> url("https://www.gnu.org/licenses/agpl-3.0.html"),
-    version := "2.9.0",
+    version := "2.9.1-SNAPSHOT",
     resolvers += Resolver.bintrayRepo("cert-bdf", "elastic4play"),
     scalaVersion := Dependencies.scalaVersion,
     scalacOptions ++= Seq(
