@@ -169,7 +169,23 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
             .state('app.case.tasks-item', {
                 url: '/tasks/{itemId}',
                 templateUrl: 'views/partials/case/case.tasks.item.html',
-                controller: 'CaseTasksItemCtrl'
+                controller: 'CaseTasksItemCtrl',
+                resolve: {
+                    task: function($q, $stateParams, CaseTaskSrv, AlertSrv) {
+                        var deferred = $q.defer();
+
+                        CaseTaskSrv.get({
+                            'taskId': $stateParams.itemId
+                        }, function(data) {
+                            deferred.resolve(data);
+                        }, function(response) {
+                            deferred.reject(response);
+                            AlertSrv.error('taskDetails', response.data, response.status);
+                        });
+
+                        return deferred.promise;
+                    }
+                }
             })
             .state('app.case.observables', {
                 url: '/observables',
@@ -244,7 +260,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
     })
     .config(['markedProvider', 'hljsServiceProvider', function(markedProvider, hljsServiceProvider) {
         'use strict';
-        
+
         // marked config
         markedProvider.setOptions({
             gfm: true,
