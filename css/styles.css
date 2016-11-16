@@ -12,6 +12,13 @@ body {
     text-transform: uppercase;
 }
 
+#header .btn-cta-secondary {
+    width: 200px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
 .btn-cta-twitter {
     background: #1da1f2;
     border: 1px solid #1da1f2;
