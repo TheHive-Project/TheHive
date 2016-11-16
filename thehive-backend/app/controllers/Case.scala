@@ -24,10 +24,12 @@ import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 
 import models.{ Case, CaseStatus }
 import services.{ CaseSrv, TaskSrv }
+import services.CaseMergeSrv
 
 @Singleton
 class CaseCtrl @Inject() (
     caseSrv: CaseSrv,
+    caseMergeSrv: CaseMergeSrv,
     taskSrv: TaskSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
@@ -64,7 +66,7 @@ class CaseCtrl @Inject() (
   @Timed
   def bulkUpdate() = authenticated(Role.write).async(fieldsBodyParser) { implicit request =>
     val isCaseClosing = request.body.getString("status").filter(_ == CaseStatus.Resolved.toString).isDefined
-    
+
     request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids =>
       if (isCaseClosing) taskSrv.closeTasksOfCase(ids: _*) // FIXME log warning if closedTasks contains errors
       caseSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult => renderer.toMultiOutput(OK, multiResult))
@@ -112,5 +114,12 @@ class CaseCtrl @Inject() (
         }
         renderer.toOutput(OK, casesList)
       }
+  }
+
+  @Timed
+  def merge(caseId1: String, caseId2: String) = authenticated(Role.read).async { implicit request =>
+    caseMergeSrv.merge(caseId1, caseId2).map { caze =>
+      renderer.toOutput(OK, caze)
+    }
   }
 }

@@ -102,7 +102,7 @@ class ArtifactSrv @Inject() (
   def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]) =
     find(similarArtifactFilter(artifact), range, sortBy)
 
-  private def similarArtifactFilter(artifact: Artifact): QueryDef = {
+  private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {
     import org.elastic4play.services.QueryDSL._
     val dataType = artifact.dataType()
     artifact.data() match {

@@ -9,22 +9,27 @@
                         -
                         {{caze.title}}</span>
                     <span class="pull-right">
-                        <span>
+                        <span class="ml-xs">
+                            <a href ng-click="mergeCase()" tooltip="Merge case">
+                                <i class="text-primary fa fa-2x fa-compress"></i>
+                            </a>
+                        </span>
+                        <span class="ml-xs">
                             <a href ng-click="switchFlag()" style="text-decoration: none">
-                                <i class="text-yellow glyphicon glyphicon-flag" ng-show="caze.flag"></i>
-                                <i class="text-muted glyphicon glyphicon-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted glyphicon-flag'" ng-mouseover="setFlag='text-yellow glyphicon-flag'" ng-show="!caze.flag || caze.flag == undefined"></i>
+                                <i class="text-yellow fa fa-2x fa-flag" ng-show="caze.flag"></i>
+                                <i class="text-muted fa fa-2x fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'" ng-show="!caze.flag || caze.flag == undefined"></i>
                             </a>
                         </span>
-                        <span ng-hide="isCaseClosed()" style="font-size: 1.2em">
+                        <span class="ml-xs" ng-hide="isCaseClosed()">
                             <a href ng-click="openCloseDialog()" tooltip="Close case">
-                                <i class="text-muted glyphicon glyphicon-ok-circle" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                                <i class="text-muted fa fa-2x fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
                             </a>
                         </span>
-                        <span ng-show="isCaseClosed()" style="font-size: 1.2em">
+                        <span class="ml-xs" ng-show="isCaseClosed()">
                             <a href ng-click="reopenCase()" tooltip="Reopen case">
-                                <i class="text-success glyphicon glyphicon-ok-sign"></i>
+                                <i class="text-success fa fa-2x fa-check-circle"></i>
                             </a>
-                        </span>
+                        </sp
                     </span>
                 </h4>
             </div>

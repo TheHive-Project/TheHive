@@ -49,3 +49,10 @@ span.link-id {
     padding: 0 15px;
 
 }
+
+
+.merge-dialog .merge-case {
+    background-color: #f5f5f5;
+    padding: 10px;
+    overflow: hidden;
+}

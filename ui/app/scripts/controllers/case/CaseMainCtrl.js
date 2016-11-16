@@ -170,6 +170,20 @@
                 });
             };
 
+            $scope.mergeCase = function() {
+                $modal.open({
+                    templateUrl: 'views/partials/case/case.merge.html',
+                    controller: 'CaseMergeModalCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return $scope.caze;
+                        }
+                    }
+                });
+            };
+
             /**
              * A workaround filter to make sure the ngRepeat doesn't order the
              * object keys

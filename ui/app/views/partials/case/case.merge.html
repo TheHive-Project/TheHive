@@ -1,0 +1,44 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Merge Case #{{dialog.caze.caseId}}</h3>
+</div>
+<div class="modal-body merge-dialog">
+    <div class="input-group input-group-lg">
+        <span class="input-group-addon">#</span>
+        <input type="text" class="form-control" placeholder="Case number" ng-model-options='{ debounce: 500 }' ng-change="dialog.getCaseByNumber()" ng-model="dialog.search.caseId">
+    </div>
+    <div class="empty-message mv-s" ng-show="dialog.search.cases.length === 0">
+        Please search for the to be merged with
+        <strong>#{{dialog.caze.caseId}}:
+            {{dialog.caze.title}}</strong>
+    </div>
+    <div class="mv-s merge-case" ng-repeat="c in dialog.search.cases">
+        <h4>{{c.title}}</h4>
+        <div>
+            <span>
+                <i class="glyphicon glyphicon-user"></i>
+                <span ng-bind="dialog.getUserInfo(c.user) | getField: 'name'"></span>
+            </span>
+
+            <span class="ml-xxs">
+                <i class="glyphicon glyphicon-calendar"></i>
+                <span>{{c.startDate | showDate}}</span>&nbsp;&nbsp;
+                <span ng-show="isCaseClosed()" class="text-success">(Closed at
+                    {{c.endDate | showDate}}
+                    as
+                    <strong>{{CaseResolutionStatus[c.resolutionStatus]}}</strong>)</span>
+            </span>
+        </div>
+        <div class="mt-xs wrap" ng-if="c.tags.length>0">
+            <strong>Tags:</strong>
+            <tag-list data="c.tags"></tag-list>
+        </div>
+
+        <div class="mt-xs wrap">
+            <div marked="c.description" class="markdown"></div>
+        </div>
+    </div>
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" ng-click="dialog.merge()" type="button">Merge</button>
+</div>

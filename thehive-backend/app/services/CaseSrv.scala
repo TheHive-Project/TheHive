@@ -25,7 +25,6 @@ class CaseSrv @Inject() (
     taskModel: TaskModel,
     createSrv: CreateSrv,
     artifactSrv: ArtifactSrv,
-    taskSrv: TaskSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
@@ -45,7 +44,7 @@ class CaseSrv @Inject() (
       }
   }
 
-  def get(id: String)(implicit authContext: AuthContext): Future[Case] =
+  def get(id: String): Future[Case] =
     getSrv[CaseModel, Case](caseModel, id)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
