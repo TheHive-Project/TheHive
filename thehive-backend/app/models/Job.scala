@@ -23,7 +23,7 @@ trait JobAttributes { _: AttributeDef =>
   val analyzerId = attribute("analyzerId", F.stringFmt, "Analyzer", O.readonly)
   val status = attribute("status", F.enumFmt(JobStatus), "Status of the job", JobStatus.InProgress)
   val artifactId = attribute("artifactId", F.stringFmt, "Original artifact on which this job was executed", O.readonly)
-  val startDate = attribute("startDate", F.dateFmt, "Timestamp of the job start", O.model)
+  val startDate = attribute("startDate", F.dateFmt, "Timestamp of the job start") // , O.model)
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the job completion (or fail)")
   val report = optionalAttribute("report", F.textFmt, "Analysis result", O.unaudited)
 

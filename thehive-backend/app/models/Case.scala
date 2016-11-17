@@ -21,12 +21,12 @@ import services.AuditedModel
 
 object CaseStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val Ephemeral, Open, FalsePositive, TruePositive, Resolved, Deleted = Value
+  val Open, Resolved, Deleted = Value
 }
 
 object CaseResolutionStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val Indeterminate, FalsePositive, TruePositive, Other = Value
+  val Indeterminate, FalsePositive, TruePositive, Other, Duplicated = Value
 }
 
 object CaseImpactStatus extends Enumeration with HiveEnumeration {
@@ -50,6 +50,8 @@ trait CaseAttributes { _: AttributeDef =>
   val resolutionStatus = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
   val impactStatus = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
   val summary = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
+  val mergeInto = optionalAttribute("mergeInto",F.stringFmt, "Id of the case created by the merge")
+  val mergeFrom = multiAttribute("mergeFrom",F.stringFmt, "Id of the cases merged")
 }
 
 @Singleton
