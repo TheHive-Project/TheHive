@@ -56,3 +56,8 @@ span.link-id {
     padding: 10px;
     overflow: hidden;
 }
+
+.merge-dialog .search-field ul.dropdown-menu {
+    width: 100%;
+    left: 0 !important;
+}
