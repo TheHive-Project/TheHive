@@ -60,6 +60,7 @@
 
         this.merge = function () {
             // TODO pass params as path params not query params
+            this.pendingAsync = true;
             CaseSrv.merge({}, {
                 caseId: me.caze.id,
                 mergedCaseId: me.search.cases[0].id
@@ -73,6 +74,7 @@
 
                 AlertSrv.log('The cases have been successfully merged into a new case #' + merged.caseId, 'success');
             }, function (response) {
+                this.pendingAsync = false;
                 AlertSrv.error('CaseMergeModalCtrl', response.data, response.status);
             });
         };
