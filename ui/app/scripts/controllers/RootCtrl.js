@@ -52,6 +52,13 @@ angular.module('theHiveControllers').controller('RootCtrl',
             AlertSrv.error('RootCtrl', data, status);
         });
 
+        $scope.$on('metrics:refresh', function() {
+            // Get metrics cache
+            MetricsCacheSrv.all().then(function(list) {
+                $scope.metricsCache = list;
+            });
+        });
+
         $scope.$on('misp:status-updated', function(event, enabled) {
             $scope.mispEnabled = enabled;
         });

@@ -35,6 +35,8 @@
                         $scope.initMetrics();
 
                         MetricsCacheSrv.clearCache();
+
+                        $scope.$emit('metrics:refresh');
                     },
                     function(response) {
                         AlertSrv.error('AdminMetricsCtrl', response.data, response.status);
