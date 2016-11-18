@@ -25,6 +25,7 @@ import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import models.{ Case, CaseStatus }
 import services.{ CaseSrv, TaskSrv }
 import services.CaseMergeSrv
+import scala.util.Try
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -47,13 +48,15 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
-    val nparent = request.body.getLong("nparent").getOrElse(0L).toInt
-    val withStats = request.body.getBoolean("nstats").getOrElse(false)
+  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
+    val withStats = for {
+      statsValues <- request.queryString.get("nstats")
+      firstValue <- statsValues.headOption
+    } yield Try(firstValue.toBoolean).getOrElse(firstValue == "1")
 
     for {
       caze ← caseSrv.get(id)
-      casesWithStats ← auxSrv.apply(caze, nparent, withStats)
+      casesWithStats ← auxSrv.apply(caze, 0, withStats.getOrElse(false))
     } yield renderer.toOutput(OK, casesWithStats)
   }
 
