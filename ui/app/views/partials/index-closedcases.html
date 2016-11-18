@@ -15,7 +15,7 @@
 				<tlp value="closedCase.tlp"></tlp>
 				<a ui-sref="app.case.details({caseId: closedCase.id})">#{{closedCase.caseId}} - {{closedCase.title}}</a>				
 				<div class="text-danger" ng-if="closedCase.mergeInto">
-					<small>Merged into <a href ui-sref="app.case.details({caseId: closedCase.mergedInto})">the following case</a></small>					
+					<small>Merged into <a href ui-sref="app.case.details({caseId: closedCase.mergedInto})"> case #{{closedCase.stats.mergeInto.caseId}}</a></small>					
 				</div>
 			</td>
 			<td>
