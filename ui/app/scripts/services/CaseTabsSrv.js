@@ -59,15 +59,19 @@
             },
 
             removeTab: function(tab) {
-                var currentIsActive = tabs[tab].active;
+                var tabItem = tabs[tab];
+
+                if(!tabItem) {
+                    return;
+                }
+
+                var currentIsActive = tabItem.active;
 
                 delete tabs[tab];
 
                 if (currentIsActive) {
-                    console.log('Closing active tab, switch to details');
                     return true;
                 } else {
-                    console.log('Closing non active tab, stay in current tab');
                     return false;
                 }
 

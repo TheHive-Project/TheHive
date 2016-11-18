@@ -290,10 +290,12 @@
 
             };
 
-            $scope.dropArtifact = function(artifact) {
+            $scope.dropArtifact = function(observable) {
                 // TODO check result !
                 CaseArtifactSrv.api().delete({
-                    artifactId: artifact.id
+                    artifactId: observable.id
+                }, function() {
+                    $scope.$emit('observables:observable-removed', observable);
                 });
             };
 
