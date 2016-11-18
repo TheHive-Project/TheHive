@@ -17,6 +17,8 @@ import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
 
 import models.{ Artifact, ArtifactModel, Case, CaseModel, Task, TaskModel }
+import models.CaseStatus
+import models.CaseResolutionStatus
 
 @Singleton
 class CaseSrv @Inject() (
@@ -75,7 +77,7 @@ class CaseSrv @Inject() (
 
   def linkedCases(id: String): Source[(Case, Seq[Artifact]), NotUsed] = {
     import org.elastic4play.services.QueryDSL._
-    findSrv[ArtifactModel, Artifact](artifactModel, parent("case", withId(id)), Some("all"), Nil)
+    findSrv[ArtifactModel, Artifact](artifactModel, parent("case", and(withId(id), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact => artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
       .groupBy(20, _.parentId)
