@@ -13,7 +13,10 @@
 		<tr ng-repeat="closedCase in list.values">
 			<td>
 				<tlp value="closedCase.tlp"></tlp>
-				<a ui-sref="app.case.details({caseId: closedCase.id})">#{{closedCase.caseId}} - {{closedCase.title}}</a>
+				<a ui-sref="app.case.details({caseId: closedCase.id})">#{{closedCase.caseId}} - {{closedCase.title}}</a>				
+				<div class="text-danger" ng-if="closedCase.mergeInto">
+					<small>Merged into <a href ui-sref="app.case.details({caseId: closedCase.mergedInto})">the following case</a></small>					
+				</div>
 			</td>
 			<td>
                 <span ng-repeat="tag in closedCase.tags">
