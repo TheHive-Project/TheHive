@@ -248,17 +248,20 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
     caseSrv.create(fields)
   }
 
-  def markCaseAsDuplicated(caseIds: Seq[String], mergeCaseId: String)(implicit authContext: AuthContext): Future[Unit] = {
-    caseSrv.bulkUpdate(caseIds, Fields.empty
-      .set("mergeInto", mergeCaseId)
-      .set("status", CaseStatus.Resolved.toString)
-      .set("resolutionStatus", CaseResolutionStatus.Duplicated.toString))
-      .map(_.foreach {
-        case Success(_) ⇒ Done
-        case Failure(error) ⇒
+  def markCaseAsDuplicated(cases: Seq[Case], mergeCase: Case)(implicit authContext: AuthContext): Future[Done] = {
+    Future.traverse(cases) { caze ⇒
+      caseSrv.update(caze.id, Fields.empty
+        .set("mergeInto", mergeCase.id)
+        .set("status", CaseStatus.Resolved.toString)
+        .set("resolutionStatus", CaseResolutionStatus.Duplicated.toString)
+        .set("summary", s"${caze.summary()}\n\nMerge into : ${mergeCase.title()} ([#${mergeCase.caseId()}](#/case/${mergeCase.id}/details))"))
+    }
+      .map(_ ⇒ Done)
+      .recover {
+        case error ⇒
           log.error("Case update fail", error)
           Done
-      })
+      }
   }
 
   def merge(caseIds: String*)(implicit authContext: AuthContext): Future[Case] = {
@@ -267,7 +270,7 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
       newCase ← mergeCases(cases)
       _ ← mergeTasksAndLogs(newCase, cases)
       _ ← mergeArtifactsAndJobs(newCase, cases)
-      _ ← markCaseAsDuplicated(caseIds, newCase.id)
+      _ ← markCaseAsDuplicated(cases, newCase)
     } yield newCase
   }
 }
