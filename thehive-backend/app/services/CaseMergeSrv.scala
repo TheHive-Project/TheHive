@@ -250,11 +250,13 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
 
   def markCaseAsDuplicated(cases: Seq[Case], mergeCase: Case)(implicit authContext: AuthContext): Future[Done] = {
     Future.traverse(cases) { caze ⇒
+      val s = s"Merge into : ${mergeCase.title()} ([#${mergeCase.caseId()}](#/case/${mergeCase.id}/details))"
+      val summary = caze.summary().fold(s)(_ + s"\n\n$s")
       caseSrv.update(caze.id, Fields.empty
         .set("mergeInto", mergeCase.id)
         .set("status", CaseStatus.Resolved.toString)
         .set("resolutionStatus", CaseResolutionStatus.Duplicated.toString)
-        .set("summary", s"${caze.summary()}\n\nMerge into : ${mergeCase.title()} ([#${mergeCase.caseId()}](#/case/${mergeCase.id}/details))"))
+        .set("summary", summary))
     }
       .map(_ ⇒ Done)
       .recover {
