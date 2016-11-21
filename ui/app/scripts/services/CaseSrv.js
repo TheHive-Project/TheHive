@@ -10,6 +10,14 @@
                     method: 'GET',
                     url: '/api/case/:caseId/links',
                     isArray: true
+                },
+                merge: {
+                    method: 'POST',
+                    url: '/api/case/:caseId/_merge/:mergedCaseId',
+                    params: {
+                        caseId: '@caseId',
+                        mergedCaseId: '@mergedCaseId',
+                    }
                 }
             });
         });

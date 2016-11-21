@@ -130,7 +130,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                         var deferred = $q.defer();
 
                         CaseSrv.get({
-                            'caseId': $stateParams.caseId
+                            'caseId': $stateParams.caseId,
+                            'nstats': true
                         }, function(data) {
 
                             deferred.resolve(data);
