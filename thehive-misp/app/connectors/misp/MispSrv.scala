@@ -36,7 +36,7 @@ import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
 
 import JsonFormat.{ attributeReads, eventReads, eventStatusFormat, eventWrites }
-import models.{ Artifact, Case, CaseModel, CaseStatus }
+import models.{ Artifact, Case, CaseModel, CaseStatus, CaseResolutionStatus }
 import services.{ ArtifactSrv, CaseSrv, CaseTemplateSrv, UserSrv }
 
 case class MispInstanceConfig(name: String, url: String, key: String, caseTemplate: Option[String], artifactTags: Seq[String])
@@ -265,6 +265,22 @@ class MispSrv @Inject() (mispConfig: MispConfig,
         }
       }
 
+    def getSuccessMispAndCase(misp: Seq[Try[Misp]]): Future[Seq[(Misp, Case)]] = {
+      val successMisp = misp.collect {
+        case Success(m) => m
+      }
+      Future
+        .traverse(successMisp) { misp =>
+          caseSrv.get(misp.id).map(misp -> _)
+        }
+        // remove deleted and merged cases
+        .map {
+          _.filter {
+            case (misp, caze) => caze.status() != CaseStatus.Deleted && caze.resolutionStatus != CaseResolutionStatus.Duplicated
+          }
+        }
+    }
+
     /* for all misp servers, retrieve events */
     getEvents
       /* sort events into : case must be updated (Left) and case must be created (Right) */
@@ -276,15 +292,14 @@ class MispSrv @Inject() (mispConfig: MispConfig,
             updatedMisp <- updateSrv(updates)
             createdMisp <- createSrv[MispModel, Misp](mispModel, creates)
             misp = updatedMisp ++ createdMisp
-            importedMisp = updatedMisp.collect {
-              case Success(m) if m.caze().isDefined => m
-            }
+            importedMisp <- getSuccessMispAndCase(updatedMisp)
             // update case status
-            _ <- updateSrv.apply[CaseModel, Case](caseModel, importedMisp.flatMap(_.caze()), Fields.empty.set("status", CaseStatus.Open.toString))
+            _ <- caseSrv.bulkUpdate(importedMisp.map(_._2.id), Fields.empty.set("status", CaseStatus.Open.toString))
             // and import MISP attributes
-            _ <- Future.sequence(importedMisp.map { m =>
-              importAttributes(m).fallbackTo(Future.successful(Nil))
-            })
+            _  ← Future.traverse(importedMisp) {
+              case (m, c) =>
+                importAttributes(m, c).fallbackTo(Future.successful(Nil))
+            }
           } yield misp
       }
   }
