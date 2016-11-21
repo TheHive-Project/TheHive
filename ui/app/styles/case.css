@@ -23,6 +23,10 @@ span.link-id {
     text-align: center;
 }
 
+.merge-hints {
+    padding-left: 35px;
+}
+
 .indicent-header h2.background {
     position: relative;
     z-index: 1;
