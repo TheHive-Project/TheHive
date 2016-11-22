@@ -131,13 +131,13 @@ class MispSrv @Inject() (mispConfig: MispConfig,
    */
   def getEvents: Future[Seq[MispEvent]] = {
     Future
-      .sequence(mispConfig.instances.map { c =>
+      .traverse(mispConfig.instances) { c =>
         getEvents(c).recoverWith {
           case t =>
             log.warn("Retrieve MISP event list failed", t)
             Future.failed(t)
         }
-      })
+      }
       .map(_.flatten)
   }
 
@@ -150,10 +150,13 @@ class MispSrv @Inject() (mispConfig: MispConfig,
           .asOpt[Seq[JsValue]]
           .getOrElse(Nil)
         val events = eventJson.flatMap { j =>
-          j.asOpt[MispEvent].map(_.copy(serverId = instanceConfig.name)) orElse {
-            log.warn(s"MISP event can't be parsed\n$j")
-            None
-          }
+          j.asOpt[MispEvent]
+            .map(_.copy(serverId = instanceConfig.name))
+            .orElse {
+              log.warn(s"MISP event can't be parsed\n$j")
+              None
+            }
+            .filter(_.attributeCount > 0)
         }
         val eventJsonSize = eventJson.size
         val eventsSize = events.size
