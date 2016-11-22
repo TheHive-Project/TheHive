@@ -1,0 +1,13 @@
+{
+	"name": "URLCategory",
+	"version": "1.0",
+	"report": "URLCategory/report",
+	"description": "URL Category query: checks the category of a specific URL or domain",
+	"dataTypeList": ["url", "domain"],
+	"baseConfig" : "URLCategory",
+	"config": {
+		"service": "query",
+		"max_tlp": 10
+	},
+	"command": "URLCategory/urlcategory.py"
+}
