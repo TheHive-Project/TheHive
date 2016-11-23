@@ -1,0 +1,13 @@
+{
+	"name": "PhishTank_CheckURL",
+	"version": "1.0",
+	"report": "PhishTank_CheckURL/report",
+	"description": "Check URL against PhishTank to determine if it's a verified phishing site",
+	"dataTypeList": ["url"],
+	"baseConfig" : "PhishTank_CheckURL",
+	"config": {
+		"service": "query",
+		"max_tlp": 10
+	},
+	"command": "PhishTank_CheckURL/phishtank_checkurl.py"
+}
