@@ -43,7 +43,7 @@ def get_param(name, default=None, message=None, current=artifact):
 			return get_param(name[1:], default, message, value)
 
 def debug(msg):
-	print >> sys.stderr, msg
+	#print >> sys.stderr, msg
 	pass
 
 http_proxy     = get_param('config.proxy.http')
