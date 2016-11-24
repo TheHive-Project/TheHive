@@ -17,7 +17,6 @@
 		<dl class="dl-horizontal" ng-if="content.pulse_count > 0">
 			<dt>Related Pulses: </dt>
 			<dd class="wrap">
-			<!-- {{content.pulses}} -->
 			<div ng-repeat="pulse in ::content.pulses | limitTo:4">
 				<strong>Name: </strong><a ng-href="https://otx.alienvault.com/pulse/{{::pulse.id}}/" target="_blank">{{::pulse.name}}</a><br/>
 				<strong>Author: </strong>{{::pulse.author.username}}<br/>
@@ -26,7 +25,6 @@
 				<strong>Subscribed: </strong>{{::pulse.is_subscribing}} <br/>
 				<strong>Industries: </strong>{{::pulse.industries}} <br/>
 				<strong>Indicators: </strong>{{::pulse.indicator_count}}
-				<!-- need to make this more robust -->
 				<hr>
 			</div>
 			</dd>
@@ -42,7 +40,6 @@
 		<dl class="dl-horizontal" ng-if="content.malware_samples not === 'No samples found'">
 			<dt>Malware Samples: </dt>			
 			<dd class="wrap">
-			<!-- for debugging {{content.malware_samples}} -->
 			<div ng-repeat="sample in ::content.malware_samples | limitTo:20">
 				{{::sample.sample}}
 			</div>
@@ -97,16 +94,12 @@
 		<dl class="dl-horizontal" ng-if="content.url_list.length > 0">
 			<dt>Related URLs: </dt>
 			<dd class="wrap">
-				<!-- for debugging
-				{{content.url_list}} 
-				-->
 			<div ng-repeat="url in ::content.url_list | limitTo:20">
 				<strong>URL: </strong>{{::url.url}} <br/>
 				<strong>Date: </strong>{{::url.date}} <br/>
 				<strong>HTTP Code: </strong>{{::url.httpcode}} <br/>
 				<strong>IP: </strong>{{::url.result.urlworker.ip}}
 				<hr>
-				<!-- need to make this more robust -->
 			</div>
 			</dd>
 		</dl>
@@ -114,9 +107,6 @@
 		<dl class="dl-horizontal" ng-if="content.passive_dns.length > 2">
 			<dt>Passive DNS: </dt>
 			<dd class="wrap">
-				<!--
-				{{content.passive_dns}}
-				-->
 			<div ng-repeat="dns in ::content.passive_dns | limitTo:20">
 				<strong>Hostname: </strong>{{::dns.hostname}} <br/>
 				<strong>IP: </strong>{{::dns.address}} <br/>
