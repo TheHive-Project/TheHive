@@ -78,13 +78,13 @@
                             Investigation clearly demonstrates that there is something malicious (scam, phishing, malspam, malware, cybersquatting...)
                         </span>
                         <span ng-switch-when="FalsePositive">
-                            Investigation shows that there is nothing malicious (unlock email with clean attachment ...)
+                            Investigation shows that there is nothing malicious (email with clean attachment ...)
                         </span>
                         <span ng-switch-when="Indeterminate">
-                            There is not enough elements to tell that there is something malicious (original message has been delete and not transmitted, IOC lookup with 0 hit ...)
+                            There aren't enough elements to tell that there is something malicious (original message has been deleted and not transmitted, IOC lookup with 0 hits ...)
                         </span>
                         <span ng-switch-when="Other">
-                            Everything that does not need analysis (not an incident)
+                            Everything that does not require an investigation (not an incident)
                         </span>
                     </p>
                 </div>
@@ -105,7 +105,7 @@
                             Something altered availability, integrity or confidentiality
                         </span>
                         <span ng-switch-when="NoImpact">
-                            Security measures blocked the attack on infection
+                            Security measures blocked the attack or infection
                         </span>
                     </p>
                     <p class="help-block" ng-show="caseCloseForm.tempImpactStatus.$invalid">This field is required</p>
