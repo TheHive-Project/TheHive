@@ -6,7 +6,7 @@
         <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.message}}</alert>
         <form ng-submit="login()">
             <div class="form-group has-feedback has-feedback-left">
-                 <input type="text" class="form-control" placeholder="Username" ng-model="params.username"/>
+                 <input type="text" class="form-control" placeholder="Login" ng-model="params.username"/>
                 <i style="top:0px;" class="form-control-feedback glyphicon glyphicon-user"></i>
             </div>
             <br />
