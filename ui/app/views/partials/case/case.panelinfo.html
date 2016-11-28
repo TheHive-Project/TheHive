@@ -9,22 +9,27 @@
                         -
                         {{caze.title}}</span>
                     <span class="pull-right">
-                        <span>
-                            <a href ng-click="switchFlag()" style="text-decoration: none">
-                                <i class="text-yellow glyphicon glyphicon-flag" ng-show="caze.flag"></i>
-                                <i class="text-muted glyphicon glyphicon-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted glyphicon-flag'" ng-mouseover="setFlag='text-yellow glyphicon-flag'" ng-show="!caze.flag || caze.flag == undefined"></i>
+                        <span class="ml-xs">
+                            <a href ng-click="mergeCase()" class="noline" tooltip="Merge case">
+                                <i class="text-primary fa fa-2x fa-compress"></i>
                             </a>
                         </span>
-                        <span ng-hide="isCaseClosed()" style="font-size: 1.2em">
-                            <a href ng-click="openCloseDialog()" tooltip="Close case">
-                                <i class="text-muted glyphicon glyphicon-ok-circle" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                    <span class="ml-xs">
+                            <a href ng-click="switchFlag()" class="noline" tooltip="{{caze.flag ? 'Unflag case' :  'Flag case'}}">
+                                <i class="text-yellow fa fa-2x fa-flag" ng-show="caze.flag"></i>
+                                <i class="text-muted fa fa-2x fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'" ng-show="!caze.flag || caze.flag == undefined"></i>
                             </a>
                         </span>
-                        <span ng-show="isCaseClosed()" style="font-size: 1.2em">
-                            <a href ng-click="reopenCase()" tooltip="Reopen case">
-                                <i class="text-success glyphicon glyphicon-ok-sign"></i>
+                    <span class="ml-xs" ng-hide="isCaseClosed()">
+                            <a href ng-click="openCloseDialog()" class="noline" tooltip="Close case">
+                                <i class="text-muted fa fa-2x fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
                             </a>
                         </span>
+                    <span class="ml-xs" ng-show="isCaseClosed()">
+                            <a href ng-click="reopenCase()" class="noline" tooltip="Reopen case">
+                                <i class="text-success fa fa-2x fa-check-circle"></i>
+                            </a>
+                        </spnn>
                     </span>
                 </h4>
             </div>
@@ -35,16 +40,14 @@
                     <i class="glyphicon glyphicon-user"></i>
                     <span ng-bind="getUserInfo(caze.user) | getField: 'name'"></span>
                 </span>
-
                 <span class="ml-xxs">
                     <i class="glyphicon glyphicon-calendar"></i>
                     <span>{{caze.startDate | showDate}}</span>&nbsp;&nbsp;
-                    <span ng-show="isCaseClosed()" class="text-success">(Closed at
+                <span ng-show="isCaseClosed()" class="text-success">(Closed at
                         {{caze.endDate | showDate}}
                         as
                         <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>)</span>
                 </span>
-
                 <span class="ml-xxs text-danger" ng-show="links.length > 0">
                     <i class="glyphicon glyphicon-link"></i>
                     <strong>
@@ -54,4 +57,10 @@
             </div>
         </div>
     </div>
+</div>
+<div class="alert alert-warning text-center" ng-show="caze.mergeInto">
+    <h4 class="mb-0">
+        This case has been closed as a duplicate and merged into <br>
+        <div class="mt-xs text-primary"><a href ui-sref="app.case.details({caseId: caze.mergeInto})">Case #{{caze.stats.mergeInto.caseId}}: {{caze.stats.mergeInto.title}}</a></div>
+    </h4>
 </div>

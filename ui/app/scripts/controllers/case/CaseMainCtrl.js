@@ -96,6 +96,13 @@
                 field: 'status'
             });
 
+            $scope.$on('tasks:task-removed', function(event, task) {
+                CaseTabsSrv.removeTab('task-' + task.id);
+            });
+            $scope.$on('observables:observable-removed', function(event, observable) {
+                CaseTabsSrv.removeTab('observable-' + observable.id);
+            });
+
             $scope.openTab = function(tabName) {
                 var tab = CaseTabsSrv.getTab(tabName),
                     params = angular.extend({}, $state.params, tab.params || {});
@@ -167,6 +174,20 @@
                     templateUrl: 'views/partials/case/case.reopen.html',
                     controller: 'CaseReopenModalCtrl',
                     size: ''
+                });
+            };
+
+            $scope.mergeCase = function() {
+                $modal.open({
+                    templateUrl: 'views/partials/case/case.merge.html',
+                    controller: 'CaseMergeModalCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return $scope.caze;
+                        }
+                    }
                 });
             };
 

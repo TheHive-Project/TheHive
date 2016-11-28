@@ -67,8 +67,7 @@ class JobSrv(analyzerConf: JsValue,
 
   def create(artifact: Artifact, fields: Fields)(implicit authContext: AuthContext): Future[Job] = {
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id)).map {
-      case job if job.status() != JobStatus.InProgress => job
-      case job =>
+      case job if job.status() == JobStatus.InProgress =>
         val newJob = for {
           analyzer <- analyzerSrv.get(job.analyzerId())
           (status, result) <- analyzer.analyze(attachmentSrv, artifact)
@@ -83,6 +82,7 @@ class JobSrv(analyzerConf: JsValue,
           case t => log.error("Job execution fail", t)
         }
         job
+      case job => job
     }
   }
 

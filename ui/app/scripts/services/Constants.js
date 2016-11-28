@@ -5,6 +5,7 @@
             Indeterminate: 'Indeterminate',
             FalsePositive: 'False Positive',
             TruePositive: 'True Positive',
+            Duplicated: 'Duplicate',
             Other: 'Other'
         })
         .value('CaseImpactStatus', {

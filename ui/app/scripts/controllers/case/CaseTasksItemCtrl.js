@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function($scope, $state, $stateParams, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv) {
+        function($scope, $state, $stateParams, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -16,39 +16,8 @@
                 attachmentCollapsed: true,
                 logMissing: ''
             };
-            $scope.task = {};
 
-            CaseTaskSrv.get({
-                'taskId': taskId
-            }, function(data) {
-
-                var task = data,
-                    taskName = 'task-' + task.id;
-
-                // Add tabs
-                CaseTabsSrv.addTab(taskName, {
-                    name: taskName,
-                    label: task.title,
-                    closable: true,
-                    state: 'app.case.tasks-item',
-                    params: {
-                        itemId: task.id
-                    }
-                });
-
-                // Select tab
-                CaseTabsSrv.activateTab(taskName);
-
-                // Prepare the scope data
-                $scope.initScope(data);
-
-            }, function(response) {
-                AlertSrv.error('taskDetails', response.data, response.status);
-                CaseTabsSrv.activateTab('tasks');
-            });
-
-            $scope.initScope = function(task) {
-                $scope.task = task;
+            $scope.initScope = function() {
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
                     'filter': {
@@ -128,6 +97,27 @@
 
                 return true;
             };
+
+            // Initialize controller
+            $scope.task = task;
+            var taskName = 'task-' + task.id;
+
+            // Add tabs
+            CaseTabsSrv.addTab(taskName, {
+                name: taskName,
+                label: task.title,
+                closable: true,
+                state: 'app.case.tasks-item',
+                params: {
+                    itemId: task.id
+                }
+            });
+
+            // Select tab
+            CaseTabsSrv.activateTab(taskName);
+
+            // Prepare the scope data
+            $scope.initScope(task);
         }
     );
 }());

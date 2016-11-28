@@ -16,6 +16,12 @@
                 <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}}
                     -
                     {{currentCase.title}}</a>
+                <div class="merge-hints text-danger" ng-if="currentCase.mergeFrom">
+					<small>
+                        Merged from <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[0]})"> Case #{{currentCase.stats.mergeFrom[0].caseId}}</a> and
+                        <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
+                    </small>					
+				</div>
             </td>
             <td>
                 <span ng-repeat="tag in currentCase.tags">

@@ -71,7 +71,9 @@
                     'taskId': task.id
                 }, {
                     status: 'Cancel'
-                }, function() {}, function(response) {
+                }, function() {
+                    $scope.$emit('tasks:task-removed', task);
+                }, function(response) {
                     AlertSrv.error('taskList', response.data, response.status);
                 });
             });

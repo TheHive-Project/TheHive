@@ -13,6 +13,8 @@ import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, Field
 
 import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel, JobModel }
 import org.elastic4play.utils.{ RichFuture, RichOr }
+import models.CaseStatus
+import models.CaseResolutionStatus
 
 @Singleton
 class ArtifactSrv @Inject() (
@@ -102,14 +104,14 @@ class ArtifactSrv @Inject() (
   def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]) =
     find(similarArtifactFilter(artifact), range, sortBy)
 
-  private def similarArtifactFilter(artifact: Artifact): QueryDef = {
+  private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {
     import org.elastic4play.services.QueryDSL._
     val dataType = artifact.dataType()
     artifact.data() match {
       // artifact is an hash
       case Some(d) if dataType == "hash" =>
         and(
-          not(parent("case", "_id" ~= artifact.parentId.get)),
+          parent("case", and(not(withId(artifact.parentId.get)), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
           or(
             and(
@@ -119,7 +121,7 @@ class ArtifactSrv @Inject() (
       // artifact contains data but not an hash
       case Some(d) =>
         and(
-          not(parent("case", "_id" ~= artifact.parentId.get)),
+          parent("case", and(not(withId(artifact.parentId.get)), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
           "data" ~= d,
           "dataType" ~= dataType)
@@ -128,7 +130,7 @@ class ArtifactSrv @Inject() (
         val hashes = artifact.attachment().toSeq.flatMap(_.hashes).map(_.toString)
         val hashFilter = hashes.map { h => "attachment.hashes" ~= h }
         and(
-          not(parent("case", "_id" ~= artifact.parentId.get)),
+          parent("case", and(not(withId(artifact.parentId.get)), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
           or(
             hashFilter :+

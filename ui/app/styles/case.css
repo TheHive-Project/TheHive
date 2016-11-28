@@ -23,6 +23,10 @@ span.link-id {
     text-align: center;
 }
 
+.merge-hints {
+    padding-left: 35px;
+}
+
 .indicent-header h2.background {
     position: relative;
     z-index: 1;
@@ -48,4 +52,16 @@ span.link-id {
     color: #999;
     padding: 0 15px;
 
+}
+
+
+.merge-dialog .merge-case {
+    background-color: #f5f5f5;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.merge-dialog .search-field ul.dropdown-menu {
+    width: 100%;
+    left: 0 !important;
 }
