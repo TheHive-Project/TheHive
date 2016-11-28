@@ -20,7 +20,7 @@ object JsonFormat {
       eventId <- (json \ "id").validate[String]
       optTags <- (json \ "EventTag").validateOpt[Seq[JsValue]]
       tags = optTags.toSeq.flatten.flatMap(t => (t \ "Tag" \ "name").asOpt[String])
-      attrCountStr <- (json \ "attribute_count").validate[String]
+      attrCountStr <- (json \ "attribute_count").validate[String].recover { case _ => "0" }
       attrCount = attrCountStr.toInt
       timestamp <- (json \ "timestamp").validate[String]
       date = new Date(timestamp.toLong * 1000)

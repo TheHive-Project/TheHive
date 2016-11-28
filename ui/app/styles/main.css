@@ -17,9 +17,13 @@ body {
     top: 0;
     z-index: 1030;
 }
+.navbar-brand {
+    padding: 6px 20px !important;
+}
 .navbar-brand>img {
     display: inline;
 }
+
 .main-navbar .nav>li>a {
     padding: 15px 8px;
 }

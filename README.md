@@ -41,13 +41,14 @@ TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API
 ![](images/Architecture.png)
 
 ## Analyzers
-The first public release of TheHive is provided with 7 analyzers:
+TheHive 2.9.1 is provided with 8 analyzers:
 + DNSDB*: leverage Farsight's [DNSDB](https://www.dnsdb.info/) for pDNS.
 + DomainTools*: look up domain names, IP addresses, WHOIS records, etc. using the popular [DomainTools](http://domaintools.com/) service API.
 + Hippocampe: query threat feeds through [Hippocampe](https://github.com/CERT-BDF/Hippocampe), a FOSS tool that centralizes feeds and allows you to associate a confidence level to each one of them (that can be changed over time) and get a score indicating the data quality.
 + MaxMind: geolocation.
 + Olevba: parse OLE and OpenXML files using [olevba](http://www.decalage.info/python/olevba) to detect VBA macros, extract their source code etc.
 + Outlook MsgParser: this analyzer allows to add an Outlook message file as an observable and parse it automatically.
++ URLCategory: checks the Fortinet categories of URLs.
 + VirusTotal*: look up files, URLs and hashes through [VirusTotal](https://www.virustotal.com/).
 
 The star (*) indicates that the analyzer needs an API key to work correctly. We do not provide API keys. You have to use your own.
