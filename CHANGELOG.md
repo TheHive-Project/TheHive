@@ -4,6 +4,7 @@
 
 **Implemented enhancements:**
 
+- Update logo and favicon [\#45](https://github.com/CERT-BDF/TheHive/issues/45)
 - Inconsistent wording between the login and user management pages [\#44](https://github.com/CERT-BDF/TheHive/issues/44)
 - MaxMind Analyzer 'Short Report' has hard-coded language [\#23](https://github.com/CERT-BDF/TheHive/issues/23)
 - Don't update imported case from MISP if it is deleted or merged [\#22](https://github.com/CERT-BDF/TheHive/issues/22)
@@ -12,6 +13,7 @@
 
 - NPE occurs at startup if conf directory doesn't exists [\#41](https://github.com/CERT-BDF/TheHive/issues/41)
 - Resource not found by Assets controller [\#38](https://github.com/CERT-BDF/TheHive/issues/38)
+- Systemd startup script does not work [\#29](https://github.com/CERT-BDF/TheHive/issues/29)
 - MISP event parsing error when it doesn't contain any attribute [\#25](https://github.com/CERT-BDF/TheHive/issues/25)
 - Phantom tabs [\#18](https://github.com/CERT-BDF/TheHive/issues/18)
 - The Action button of observables list is blank [\#15](https://github.com/CERT-BDF/TheHive/issues/15)
