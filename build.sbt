@@ -17,6 +17,11 @@ lazy val main = (project in file("."))
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp)
   .settings(aggregate in Docker := false)
   .settings(PublishToBinTray.settings: _*)
+  .settings(Release.settings: _*)
+
+releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
+
+changelogFile := baseDirectory.value / "CHANGELOG.md"
 
 // Front-end //
 run := {
@@ -50,10 +55,9 @@ bintrayOrganization := Some("cert-bdf")
 bintrayRepository := "thehive"
 
 publish := {
-  (publishLocal in Docker).value
+  (publish in Docker).value
   PublishToBinTray.publishRelease.value
   PublishToBinTray.publishLatest.value
-//  ()
 }
 
 releaseProcess := Seq[ReleaseStep](
