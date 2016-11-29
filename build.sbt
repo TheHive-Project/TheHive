@@ -16,35 +16,17 @@ lazy val main = (project in file("."))
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp)
   .settings(aggregate in Docker := false)
+  .settings(PublishToBinTray.settings: _*)
+  .settings(Release.settings: _*)
+
+releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
+
+changelogFile := baseDirectory.value / "CHANGELOG.md"
 
 // Front-end //
-
-val frontendDev = inputKey[Unit]("Build front-end in dev")
-
-frontendDev := {
-  val s = streams.value
-  s.log.info("Preparing front-end for dev (grunt wiredep)")
-  Process("grunt" :: "wiredep" :: Nil, baseDirectory.value / "ui") ! s.log
-}
-
 run := {
   (run in Compile).evaluated
-  frontendDev.evaluated
-}
-
-val frontendFiles = taskKey[Seq[(File, String)]]("Front-end files")
-
-frontendFiles := {
-  val s = streams.value
-  s.log.info("Preparing front-end for prod ...")
-  s.log.info("npm install")
-  Process("npm" :: "install" :: Nil, baseDirectory.value / "ui") ! s.log
-  s.log.info("bower install")
-  Process("bower" :: "install" :: Nil, baseDirectory.value / "ui") ! s.log
-  s.log.info("grunt build")
-  Process("grunt" :: "build" :: Nil, baseDirectory.value / "ui") ! s.log
-  val dir = baseDirectory.value / "ui" / "dist"
-  (dir.***) pair rebase(dir, "ui")
+  frontendDev.value
 }
 
 mappings in packageBin in Assets ++= frontendFiles.value
@@ -63,19 +45,40 @@ mappings in Universal ++= {
   (dir.***) pair relativeTo(dir.getParentFile)
 }
 
-// BINTRAY //
-publish := BinTray.publish(
-	(packageBin in Universal).value,
-	bintrayEnsureCredentials.value,
-	bintrayOrganization.value,
-	bintrayRepository.value,
-	bintrayPackage.value,
-	version.value,
-	sLog.value)
+// Release //
+import ReleaseTransformations._
+
+import Release._
 
 bintrayOrganization := Some("cert-bdf")
 
 bintrayRepository := "thehive"
+
+publish := {
+  (publish in Docker).value
+  PublishToBinTray.publishRelease.value
+  PublishToBinTray.publishLatest.value
+}
+
+releaseProcess := Seq[ReleaseStep](
+  checkUncommittedChanges,
+  checkSnapshotDependencies,
+  getVersionFromBranch,
+  runTest,
+  releaseMerge,
+  checkoutMaster,
+  setReleaseVersion,
+  setReleaseUIVersion,
+  generateChangelog,
+  commitChanges,
+  tagRelease,
+  publishArtifacts,
+  checkoutDevelop,
+  setNextVersion,
+  setNextUIVersion,
+  commitChanges,
+  //commitNextVersion,
+  pushChanges)
 
 // DOCKER //
 
@@ -104,3 +107,39 @@ dockerCommands := (dockerCommands.value.head +:
     "rm -rf /var/lib/apt/lists/*") +:
   Cmd("EXPOSE", "9000") +:
   dockerCommands.value.tail)
+
+// Scalariform //
+import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+
+SbtScalariform.defaultScalariformSettings
+
+ScalariformKeys.preferences := ScalariformKeys.preferences.value
+  .setPreference(AlignParameters, false)
+//  .setPreference(FirstParameterOnNewline, Force)
+  .setPreference(AlignArguments, true)
+//  .setPreference(FirstArgumentOnNewline, true)
+  .setPreference(AlignSingleLineCaseStatements, true)
+  .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 60)
+  .setPreference(CompactControlReadability, true)
+  .setPreference(CompactStringConcatenation, false)
+  .setPreference(DoubleIndentClassDeclaration, true)
+//  .setPreference(DoubleIndentMethodDeclaration, true)
+  .setPreference(FormatXml, true)
+  .setPreference(IndentLocalDefs, false)
+  .setPreference(IndentPackageBlocks, false)
+  .setPreference(IndentSpaces, 2)
+  .setPreference(IndentWithTabs, false)
+  .setPreference(MultilineScaladocCommentsStartOnFirstLine, false)
+//  .setPreference(NewlineAtEndOfFile, true)
+  .setPreference(PlaceScaladocAsterisksBeneathSecondAsterisk, false)
+  .setPreference(PreserveSpaceBeforeArguments, false)
+//  .setPreference(PreserveDanglingCloseParenthesis, false)
+  .setPreference(RewriteArrowSymbols, true)
+  .setPreference(SpaceBeforeColon, false)
+//  .setPreference(SpaceBeforeContextColon, false)
+  .setPreference(SpaceInsideBrackets, false)
+  .setPreference(SpaceInsideParentheses, false)
+  .setPreference(SpacesWithinPatternBinders, true)
+  .setPreference(SpacesAroundMultiImports, true)
