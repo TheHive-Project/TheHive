@@ -25,7 +25,7 @@ class LogSrv @Inject() (
 
   def create(taskId: String, fields: Fields)(implicit authContext: AuthContext): Future[Log] =
     getSrv[TaskModel, Task](taskModel, taskId)
-      .flatMap { task => create(task, fields) }
+      .flatMap { task ⇒ create(task, fields) }
 
   def create(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Log] =
     createSrv[LogModel, Log, Task](logModel, task, fields)

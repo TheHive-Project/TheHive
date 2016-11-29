@@ -4,9 +4,9 @@ import javax.inject.{ Inject, Singleton }
 
 import play.api.libs.json.JsObject
 
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, EntityDef, ModelDef }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, EntityDef, ModelDef }
 
-trait ReportTemplateAttributes { _: AttributeDef =>
+trait ReportTemplateAttributes { _: AttributeDef ⇒
   val content = attribute("content", F.textFmt, "Content of the template")
   val falvor = attribute("flavor", F.stringFmt, "Flavor of the report (short or long)")
   val analyzers = multiAttribute("analyzers", F.stringFmt, "Id of analyzers")

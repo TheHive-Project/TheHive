@@ -7,7 +7,7 @@ import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, AttributeOption => O, ChildModelDef, EntityDef, HiveEnumeration }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, ChildModelDef, EntityDef, HiveEnumeration }
 
 import JsonFormat.logStatusFormat
 import services.AuditedModel
@@ -17,7 +17,7 @@ object LogStatus extends Enumeration with HiveEnumeration {
   val Ok, Deleted = Value
 }
 
-trait LogAttributes { _: AttributeDef =>
+trait LogAttributes { _: AttributeDef ⇒
   val message = attribute("message", F.textFmt, "Message")
   val startDate = attribute("startDate", F.dateFmt, "Timestamp of the comment", new Date)
   // attachment is stored as JsObject containing :
@@ -33,6 +33,6 @@ trait LogAttributes { _: AttributeDef =>
 @Singleton
 class LogModel @Inject() (taskModel: TaskModel) extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log") with LogAttributes with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" -> LogStatus.Deleted)
+  override val removeAttribute = Json.obj("status" → LogStatus.Deleted)
 }
 class Log(model: LogModel, attributes: JsObject) extends EntityDef[LogModel, Log](model, attributes) with LogAttributes

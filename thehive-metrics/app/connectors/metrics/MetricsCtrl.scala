@@ -18,7 +18,7 @@ class MetricsCtrl @Inject() (metricsModule: Metrics) extends Controller with Con
   val name = "metrics"
 
   val router = SimpleRouter {
-    case GET(p"/stats") => stats
+    case GET(p"/stats") ⇒ stats
   }
 
   @Timed("controllers.MetricsCtrl.stats")
@@ -26,6 +26,6 @@ class MetricsCtrl @Inject() (metricsModule: Metrics) extends Controller with Con
     val writer = metricsModule.mapper.writerWithDefaultPrettyPrinter
     val stringWriter = new StringWriter()
     writer.writeValue(stringWriter, metricsModule.registry)
-    Ok(stringWriter.toString).as("application/json").withHeaders("Cache-Control" -> "must-revalidate,no-cache,no-store")
+    Ok(stringWriter.toString).as("application/json").withHeaders("Cache-Control" → "must-revalidate,no-cache,no-store")
   }
 }

@@ -18,26 +18,27 @@ import org.elastic4play.utils.Instance
 
 import models.{ Audit, AuditModel }
 
-trait AuditedModel { self: BaseModelDef =>
+trait AuditedModel { self: BaseModelDef ⇒
   def attributes: Seq[Attribute[_]]
 
   lazy val auditedAttributes: Map[String, Attribute[_]] =
     attributes
-      .collect { case a if !a.isUnaudited => a.name -> a }
+      .collect { case a if !a.isUnaudited ⇒ a.name → a }
       .toMap
   def selectAuditedAttributes(attrs: JsObject) = JsObject {
     attrs.fields.flatMap {
-      case nv @ (name, value) => auditedAttributes.get(name).map(_ => nv)
+      case nv @ (name, value) ⇒ auditedAttributes.get(name).map(_ ⇒ nv)
     }
   }
 }
 
 @Singleton
-class AuditSrv @Inject() (auditModel: AuditModel,
-                          eventSrv: EventSrv,
-                          createSrv: CreateSrv,
-                          implicit val ec: ExecutionContext,
-                          implicit val system: ActorSystem) {
+class AuditSrv @Inject() (
+    auditModel: AuditModel,
+    eventSrv: EventSrv,
+    createSrv: CreateSrv,
+    implicit val ec: ExecutionContext,
+    implicit val system: ActorSystem) {
 
   object EntityExtractor {
     def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
@@ -49,9 +50,9 @@ class AuditSrv @Inject() (auditModel: AuditModel,
     var currentRequestIds = Set.empty[String]
 
     become {
-      case RequestProcessEnd(request, result) =>
+      case RequestProcessEnd(request, result) ⇒
         currentRequestIds = currentRequestIds - Instance.getRequestId(request)
-      case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) =>
+      case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
         val requestId = authContext.requestId
         createSrv[AuditModel, Audit](auditModel, Fields.empty
           .set("operation", action.toString)
@@ -62,7 +63,7 @@ class AuditSrv @Inject() (auditModel: AuditModel,
           .set("startDate", Json.toJson(date))
           .set("rootId", routing)
           .set("requestId", requestId))(authContext)
-          .onFailure { case t => log.error("Audit error", t) }
+          .onFailure { case t ⇒ log.error("Audit error", t) }
         currentRequestIds = currentRequestIds + requestId
     }
   })

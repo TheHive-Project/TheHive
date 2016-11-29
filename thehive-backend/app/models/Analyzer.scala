@@ -12,7 +12,7 @@ import akka.stream.scaladsl.FileIO
 import play.api.Logger
 import play.api.libs.json.{ JsObject, JsString, Json }
 
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, AttributeOption => O, EntityDef, ModelDef }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, EntityDef, ModelDef }
 import org.elastic4play.services.{ AttachmentSrv, AuthContext, TempSrv }
 
 import com.fasterxml.jackson.core.JsonParseException
@@ -50,22 +50,22 @@ case class ExternalAnalyzer(
     tempSrv: TempSrv)(implicit val ec: ExecutionContext, val mat: Materializer) extends Analyzer {
   val log = Logger(getClass)
   private val osexec = if (System.getProperty("os.name").toLowerCase.contains("win"))
-    (c: String) => s"""cmd /c $c"""
+    (c: String) ⇒ s"""cmd /c $c"""
   else
-    (c: String) => s"""sh -c "./$c" """
+    (c: String) ⇒ s"""sh -c "./$c" """
 
-  private[ExternalAnalyzer] def analyzeHelper(attachmentSrv: AttachmentSrv, artifact: Artifact)(process: JsObject => (JobStatus.Type, JsObject)): Future[(JobStatus.Type, JsObject)] = {
+  private[ExternalAnalyzer] def analyzeHelper(attachmentSrv: AttachmentSrv, artifact: Artifact)(process: JsObject ⇒ (JobStatus.Type, JsObject)): Future[(JobStatus.Type, JsObject)] = {
     artifact.attachment() match {
-      case Some(attachment) =>
+      case Some(attachment) ⇒
         val artifactFile = Files.createTempFile("TheHive_", s"_$id.tmp").toAbsolutePath()
         attachmentSrv.source(attachment.id).runWith(FileIO.toPath(artifactFile))
           .map {
-            case result if result.wasSuccessful => artifact.attributes + ("config" -> config) + ("file" -> JsString(artifactFile.toString))
-            case result                         => throw result.getError
+            case result if result.wasSuccessful ⇒ artifact.attributes + ("config" → config) + ("file" → JsString(artifactFile.toString))
+            case result                         ⇒ throw result.getError
           }
           .map(process)
-          .andThen { case _ => Files.delete(artifactFile) }
-      case None => Future { process(artifact.attributes + ("config" -> config)) }
+          .andThen { case _ ⇒ Files.delete(artifactFile) }
+      case None ⇒ Future { process(artifact.attributes + ("config" → config)) }
     }
   }
 
@@ -73,26 +73,26 @@ case class ExternalAnalyzer(
     val output = new StringBuffer
     val error = new StringBuffer
 
-    analyzeHelper(attachmentSrv, artifact) { input =>
+    analyzeHelper(attachmentSrv, artifact) { input ⇒
       blocking {
         log.info(s"Execute ${osexec(command.getFileName.toString)} in ${command.getParent.toFile.getAbsoluteFile.getName}")
         val exitValue = Process(osexec(command.getFileName.toString), command.getParent.toFile).run(
           new ProcessIO(
-            { stdin =>
+            { stdin ⇒
               try stdin.write(input.toString.getBytes("UTF-8"))
               finally stdin.close()
             },
-            { stdout =>
+            { stdout ⇒
               val reader = new BufferedReader(new InputStreamReader(stdout, "UTF-8"))
-              try BasicIO.processLinesFully { line =>
+              try BasicIO.processLinesFully { line ⇒
                 output.append(line).append(System.lineSeparator())
                 ()
               }(reader.readLine)
               finally reader.close()
             },
-            { stderr =>
+            { stderr ⇒
               val reader = new BufferedReader(new InputStreamReader(stderr, "UTF-8"))
-              try BasicIO.processLinesFully { line =>
+              try BasicIO.processLinesFully { line ⇒
                 error.append(line).append(System.lineSeparator())
                 ()
               }(reader.readLine)
@@ -106,14 +106,14 @@ case class ExternalAnalyzer(
       }
     }
       .recover {
-        case _: JsonMappingException =>
+        case _: JsonMappingException ⇒
           error.append(output)
-          (JobStatus.Failure, JsObject(Seq("errorMessage" -> JsString(s"Error: Invalid output\n$error"))))
-        case _: JsonParseException =>
+          (JobStatus.Failure, JsObject(Seq("errorMessage" → JsString(s"Error: Invalid output\n$error"))))
+        case _: JsonParseException ⇒
           error.append(output)
-          (JobStatus.Failure, JsObject(Seq("errorMessage" -> JsString(s"Error: Invalid output\n$error"))))
-        case t: Throwable =>
-          (JobStatus.Failure, JsObject(Seq("errorMessage" -> JsString(t.getMessage + ":" + t.getStackTrace().mkString("", "\n\t", "\n")))))
+          (JobStatus.Failure, JsObject(Seq("errorMessage" → JsString(s"Error: Invalid output\n$error"))))
+        case t: Throwable ⇒
+          (JobStatus.Failure, JsObject(Seq("errorMessage" → JsString(t.getMessage + ":" + t.getStackTrace().mkString("", "\n\t", "\n")))))
       }
   }
 
@@ -123,7 +123,7 @@ case class ExternalAnalyzer(
 
 abstract class JavaAnalyzer extends Analyzer
 
-trait AnalyzerAttributes { _: AttributeDef =>
+trait AnalyzerAttributes { _: AttributeDef ⇒
   val analyzerId = attribute("_id", F.stringFmt, "Analyzer ID", O.readonly)
   val analyzerName = attribute("name", F.stringFmt, "Name of the analyzer", O.readonly)
   val version = attribute("version", F.stringFmt, "Version", O.readonly)
@@ -131,7 +131,7 @@ trait AnalyzerAttributes { _: AttributeDef =>
   val dataTypeList = multiAttribute("dataTypeList", F.stringFmt, "List of accepted data types")
 }
 class AnalyzerModel extends ModelDef[AnalyzerModel, AnalyzerDesc]("analyzer") with AnalyzerAttributes
-class AnalyzerDesc(model: AnalyzerModel, attributes: JsObject) extends EntityDef[AnalyzerModel, AnalyzerDesc](model, attributes) with AnalyzerAttributes { analyzer =>
+class AnalyzerDesc(model: AnalyzerModel, attributes: JsObject) extends EntityDef[AnalyzerModel, AnalyzerDesc](model, attributes) with AnalyzerAttributes { analyzer ⇒
   def info = new AnalyzerInfo {
     val name = analyzer.analyzerName()
     val version = analyzer.version()

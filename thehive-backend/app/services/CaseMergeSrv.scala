@@ -29,13 +29,14 @@ import models.TaskStatus
 import models.LogStatus
 
 @Singleton
-class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
-                              taskSrv: TaskSrv,
-                              logSrv: LogSrv,
-                              artifactSrv: ArtifactSrv,
-                              jobSrv: JobSrv,
-                              implicit val ec: ExecutionContext,
-                              implicit val mat: Materializer) {
+class CaseMergeSrv @Inject() (
+    caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
+    logSrv: LogSrv,
+    artifactSrv: ArtifactSrv,
+    jobSrv: JobSrv,
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) {
 
   lazy val logger = Logger(getClass)
 
@@ -89,7 +90,7 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
 
   private[services] def mergeSummary(cases: Seq[Case]) = {
     val summary = cases
-      .flatMap(c ⇒ c.summary().map(_ -> c.caseId()))
+      .flatMap(c ⇒ c.summary().map(_ → c.caseId()))
       .map {
         case (summary, caseId) ⇒ s"#$caseId:$summary"
       }
@@ -109,9 +110,9 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
     val mergedMetrics: Seq[(String, JsValue)] = metrics.flatMap(_.keys).distinct.map { key ⇒
       val metricValues = metrics.flatMap(m ⇒ (m \ key).asOpt[BigDecimal])
       if (metricValues.size != 1)
-        key -> JsNull
+        key → JsNull
       else
-        key -> JsNumber(metricValues.head)
+        key → JsNumber(metricValues.head)
     }
 
     JsObject(mergedMetrics)
@@ -131,13 +132,13 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
     val (tasks, futureTaskCount) = taskSrv.find(and(parent("case", withId(cases.map(_.id): _*)), "status" ~!= TaskStatus.Cancel), Some("all"), Nil)
     futureTaskCount.foreach(count ⇒ logger.info(s"Creating $count task(s):"))
     tasks
-      .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task -> _) }
+      .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task → _) }
       .flatMapConcat {
         case (oldTask, newTask) ⇒
           logger.info(s"\ttask : ${oldTask.id} -> ${newTask.id} : ${newTask.title()}")
           val (logs, futureLogCount) = logSrv.find(and(parent("case_task", withId(oldTask.id)), "status" ~!= LogStatus.Deleted), Some("all"), Nil)
           futureLogCount.foreach { count ⇒ logger.info(s"Creating $count log(s) in task ${newTask.id}") }
-          logs.map(_ -> newTask)
+          logs.map(_ → newTask)
       }
       .mapAsyncUnordered(5) {
         case (log, task) ⇒
@@ -169,7 +170,7 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
   }
 
   private[services] def mergeArtifactsAndJobs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext): Future[Done] = {
-    val caseMap = cases.map(c ⇒ c.id -> c).toMap
+    val caseMap = cases.map(c ⇒ c.id → c).toMap
     val caseFilter = and(parent("case", withId(cases.map(_.id): _*)), "status" ~= "Ok")
     // Find artifacts hold by cases
     val (artifacts, futureArtifactCount) = artifactSrv.find(caseFilter, Some("all"), Nil)
@@ -178,7 +179,8 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
       .mapAsyncUnordered(5) { artifact ⇒
         // For each artifact find similar artifacts
         val dataFilter = artifact.data().map("data" ~= _) orElse artifact.attachment().map("attachment.id" ~= _.id)
-        val filter = and(caseFilter,
+        val filter = and(
+          caseFilter,
           "status" ~= "Ok",
           "dataType" ~= artifact.dataType(),
           dataFilter.get)
@@ -206,7 +208,7 @@ class CaseMergeSrv @Inject() (caseSrv: CaseSrv,
         // Merged artifact is created under new case
         artifactSrv
           .create(newCase, fields)
-          .map(a ⇒ List(a -> sameArtifacts))
+          .map(a ⇒ List(a → sameArtifacts))
           // Errors are logged and ignored (probably document already exists)
           .recover {
             case e ⇒

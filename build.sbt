@@ -115,7 +115,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 SbtScalariform.defaultScalariformSettings
 
-ScalariformKeys.preferences := ScalariformKeys.preferences.value
+ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, false)
 //  .setPreference(FirstParameterOnNewline, Force)
   .setPreference(AlignArguments, true)
@@ -136,6 +136,7 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(PlaceScaladocAsterisksBeneathSecondAsterisk, false)
   .setPreference(PreserveSpaceBeforeArguments, false)
 //  .setPreference(PreserveDanglingCloseParenthesis, false)
+  .setPreference(DanglingCloseParenthesis, Prevent)
   .setPreference(RewriteArrowSymbols, true)
   .setPreference(SpaceBeforeColon, false)
 //  .setPreference(SpaceBeforeContextColon, false)

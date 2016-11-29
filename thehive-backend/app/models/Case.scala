@@ -67,20 +67,20 @@ class CaseModel @Inject() (
 
   lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" -> CaseStatus.Deleted)
+  override val removeAttribute = Json.obj("status" → CaseStatus.Deleted)
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
     sequenceSrv("case").map { caseId ⇒
-      attrs + ("caseId" -> JsNumber(caseId))
+      attrs + ("caseId" → JsNumber(caseId))
     }
   }
 
   override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
-        updateAttrs + ("endDate" -> Json.toJson(new Date))
+        updateAttrs + ("endDate" → Json.toJson(new Date))
       case Some(CaseStatus.Open) ⇒
-        updateAttrs + ("endDate" -> JsArray(Nil))
+        updateAttrs + ("endDate" → JsArray(Nil))
       case _ ⇒
         updateAttrs
     }
@@ -95,7 +95,7 @@ class CaseModel @Inject() (
         "status" ~= "Ok"),
       selectCount)
       .map { artifactStats ⇒
-        Json.obj("artifacts" -> artifactStats)
+        Json.obj("artifacts" → artifactStats)
       }
   }
 
@@ -111,9 +111,9 @@ class CaseModel @Inject() (
         val (taskCount, taskStats) = taskStatsJson.value.foldLeft((0L, JsObject(Nil))) {
           case ((total, s), (key, value)) ⇒
             val count = (value \ "count").as[Long]
-            (total + count, s + (key -> JsNumber(count)))
+            (total + count, s + (key → JsNumber(count)))
         }
-        Json.obj("tasks" -> (taskStats + ("total" -> JsNumber(taskCount))))
+        Json.obj("tasks" → (taskStats + ("total" → JsNumber(taskCount))))
       }
   }
 
@@ -121,9 +121,9 @@ class CaseModel @Inject() (
     caze.mergeInto()
       .fold(Future.successful(Json.obj())) { mergeCaseId ⇒
         caseSrv.get.get(mergeCaseId).map { c ⇒
-          Json.obj("mergeInto" -> Json.obj(
-            "caseId" -> c.caseId(),
-            "title" -> c.title()))
+          Json.obj("mergeInto" → Json.obj(
+            "caseId" → c.caseId(),
+            "title" → c.title()))
         }
       }
   }
@@ -133,25 +133,24 @@ class CaseModel @Inject() (
       .traverse(caze.mergeFrom()) { id ⇒
         caseSrv.get.get(id).map { c ⇒
           Json.obj(
-            "caseId" -> c.caseId(),
-            "title" -> c.title())
+            "caseId" → c.caseId(),
+            "title" → c.title())
         }
       }
       .map {
-        case mf if !mf.isEmpty ⇒ Json.obj("mergeFrom" -> mf)
+        case mf if !mf.isEmpty ⇒ Json.obj("mergeFrom" → mf)
         case _                 ⇒ Json.obj()
       }
   }
   override def getStats(entity: BaseEntity): Future[JsObject] = {
 
-
     entity match {
       case caze: Case ⇒
         for {
-          taskStats <- buildTaskStats(caze)
-          artifactStats <- buildArtifactStats(caze)
-          mergeIntoStats <- buildMergeIntoStats(caze)
-          mergeFromStats <- buildMergeFromStats(caze)
+          taskStats ← buildTaskStats(caze)
+          artifactStats ← buildArtifactStats(caze)
+          mergeIntoStats ← buildMergeIntoStats(caze)
+          mergeFromStats ← buildMergeFromStats(caze)
         } yield taskStats ++ artifactStats ++ mergeIntoStats ++ mergeFromStats
       case other ⇒
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
@@ -160,7 +159,7 @@ class CaseModel @Inject() (
   }
 
   override val computedMetrics = Map(
-    "handlingDuration" -> "doc['endDate'].value - doc['startDate'].value")
+    "handlingDuration" → "doc['endDate'].value - doc['startDate'].value")
 }
 
 class Case(model: CaseModel, attributes: JsObject) extends EntityDef[CaseModel, Case](model, attributes) with CaseAttributes

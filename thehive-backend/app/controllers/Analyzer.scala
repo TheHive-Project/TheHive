@@ -25,13 +25,13 @@ class AnalyzerCtrl @Inject() (
     implicit val ec: ExecutionContext) extends Controller with Status {
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async { implicit request =>
+  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
     analyzerSrv.get(id.replaceAll("\\.", "_")) // FIXME replace "." by "_" should not be usefull after migration
-      .map(analyzer => renderer.toOutput(OK, analyzer))
+      .map(analyzer ⇒ renderer.toOutput(OK, analyzer))
   }
 
   @Timed
-  def find = authenticated(Role.read).async(fieldsBodyParser) { implicit request =>
+  def find = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
@@ -44,8 +44,8 @@ class AnalyzerCtrl @Inject() (
   }
 
   @Timed
-  def getReport(analyzerId: String, flavor: String) = authenticated(Role.read).async { request =>
+  def getReport(analyzerId: String, flavor: String) = authenticated(Role.read).async { request ⇒
     analyzerSrv.getReport(analyzerId.replaceAll("\\.", "_"), flavor) // FIXME replace "." by "_" should not be usefull after migration
-      .map { reportTemplate => Ok(reportTemplate) }
+      .map { reportTemplate ⇒ Ok(reportTemplate) }
   }
 }

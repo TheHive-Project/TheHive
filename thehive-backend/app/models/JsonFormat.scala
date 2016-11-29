@@ -19,13 +19,13 @@ object JsonFormat {
   implicit val logStatusFormat = enumFormat(LogStatus)
   implicit val caseTemplateStatusFormat = enumFormat(CaseTemplateStatus)
 
-  implicit val pathWrites: Writes[Path] = Writes((value: Path) => JsString(value.toString))
+  implicit val pathWrites: Writes[Path] = Writes((value: Path) ⇒ JsString(value.toString))
 
-  implicit val analyzerWrites: Writes[Analyzer] = Writes((analyzer: Analyzer) =>
+  implicit val analyzerWrites: Writes[Analyzer] = Writes((analyzer: Analyzer) ⇒
     Json.obj(
-      "name" -> analyzer.name,
-      "version" -> analyzer.version,
-      "description" -> analyzer.description,
-      "dataTypeList" -> analyzer.dataTypeList,
-      "id" -> analyzer.id))
+      "name" → analyzer.name,
+      "version" → analyzer.version,
+      "description" → analyzer.description,
+      "dataTypeList" → analyzer.dataTypeList,
+      "id" → analyzer.id))
 }

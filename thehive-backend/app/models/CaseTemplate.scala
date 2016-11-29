@@ -4,7 +4,7 @@ import javax.inject.{ Inject, Singleton }
 
 import play.api.libs.json.JsObject
 
-import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat => F, EntityDef, HiveEnumeration, ModelDef }
+import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat ⇒ F, EntityDef, HiveEnumeration, ModelDef }
 
 import JsonFormat.caseTemplateStatusFormat
 
@@ -13,7 +13,7 @@ object CaseTemplateStatus extends Enumeration with HiveEnumeration {
   val Ok, Deleted = Value
 }
 
-trait CaseTemplateAttributes { _: AttributeDef =>
+trait CaseTemplateAttributes { _: AttributeDef ⇒
   def taskAttributes: Seq[Attribute[_]]
 
   val templateName = attribute("name", F.stringFmt, "Name of the template")

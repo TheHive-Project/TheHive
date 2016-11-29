@@ -19,11 +19,11 @@ trait Connector {
 
 class ConnectorRouter @Inject() (connectors: immutable.Set[Connector]) extends SimpleRouter {
   def routes = {
-    case request @ p"/$connector/$path<.*>" =>
+    case request @ p"/$connector/$path<.*>" ⇒
       connectors
         .find(_.name == connector)
         .flatMap(_.router.withPrefix(s"/$connector/").handlerFor(request))
-        .getOrElse(Action { _ => Results.NotFound(s"connector $connector not found") })
+        .getOrElse(Action { _ ⇒ Results.NotFound(s"connector $connector not found") })
   }
 }
 

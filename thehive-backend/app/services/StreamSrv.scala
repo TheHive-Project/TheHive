@@ -22,10 +22,10 @@ class StreamMonitor @Inject() (implicit val system: ActorSystem) {
   lazy val log = Logger(getClass)
   val monitorActor = actor(new Act {
     become {
-      case DeadLetter(StreamActor.GetOperations, sender, recipient) =>
+      case DeadLetter(StreamActor.GetOperations, sender, recipient) ⇒
         log.warn(s"receive dead GetOperations message, $sender -> $recipient")
         sender ! StreamActor.StreamNotFound
-      case other =>
+      case other ⇒
         log.error(s"receive dead message : $other")
     }
   })
@@ -41,12 +41,13 @@ object StreamActor {
   case object StreamNotFound
 }
 
-class StreamActor(cacheExpiration: FiniteDuration,
-                  refresh: FiniteDuration,
-                  nextItemMaxWait: FiniteDuration,
-                  globalMaxWait: FiniteDuration,
-                  eventSrv: EventSrv,
-                  auxSrv: AuxSrv) extends Actor with ActorLogging {
+class StreamActor(
+    cacheExpiration: FiniteDuration,
+    refresh: FiniteDuration,
+    nextItemMaxWait: FiniteDuration,
+    globalMaxWait: FiniteDuration,
+    eventSrv: EventSrv,
+    auxSrv: AuxSrv) extends Actor with ActorLogging {
   import StreamActor._
   import context.dispatcher
 
@@ -56,7 +57,8 @@ class StreamActor(cacheExpiration: FiniteDuration,
   }
 
   private class WaitingRequest(senderRef: ActorRef, itemCancellable: Cancellable, globalCancellable: Cancellable, hasResult: Boolean) {
-    def this(senderRef: ActorRef) = this(senderRef,
+    def this(senderRef: ActorRef) = this(
+      senderRef,
       FakeCancellable,
       context.system.scheduler.scheduleOnce(refresh, self, Submit(senderRef)),
       false)
@@ -64,16 +66,20 @@ class StreamActor(cacheExpiration: FiniteDuration,
     def renew(): WaitingRequest = {
       if (itemCancellable.cancel()) {
         if (!hasResult && globalCancellable.cancel()) {
-          new WaitingRequest(senderRef,
+          new WaitingRequest(
+            senderRef,
             context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit(senderRef)),
             context.system.scheduler.scheduleOnce(globalMaxWait, self, Submit(senderRef)),
             true)
-        } else
-          new WaitingRequest(senderRef,
+        }
+        else
+          new WaitingRequest(
+            senderRef,
             context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit(senderRef)),
             globalCancellable,
             true)
-      } else
+      }
+      else
         this
     }
 
@@ -95,71 +101,72 @@ class StreamActor(cacheExpiration: FiniteDuration,
     renewExpiration()
     eventSrv.subscribe(self, classOf[EventMessage])
   }
-  
+
   override def postStop() = {
     killCancel.cancel()
     eventSrv.unsubscribe(self)
   }
 
   private def receiveWithState(waitingRequest: Option[WaitingRequest], currentMessages: Map[String, StreamMessageGroup[_]]): Receive = {
-    case Commit(requestId) =>
-      currentMessages.get(requestId).foreach { message =>
-        context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId -> message.makeReady)))
+    case Commit(requestId) ⇒
+      currentMessages.get(requestId).foreach { message ⇒
+        context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId → message.makeReady)))
       }
 
-    case event: MigrationEvent =>
+    case event: MigrationEvent ⇒
       val newMessages = currentMessages.get(event.modelName).fold(MigrationEventGroup(event)) {
-        case e: MigrationEventGroup => e :+ event
+        case e: MigrationEventGroup ⇒ e :+ event
       }
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (event.modelName -> newMessages)))
+      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (event.modelName → newMessages)))
 
-    case EndOfMigrationEvent =>
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + ("end" -> MigrationEventGroup.endOfMigration)))
+    case EndOfMigrationEvent ⇒
+      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + ("end" → MigrationEventGroup.endOfMigration)))
 
-    case operation: AuditOperation if operation.entity.model.isInstanceOf[AuditedModel] =>
+    case operation: AuditOperation if operation.entity.model.isInstanceOf[AuditedModel] ⇒
       val requestId = operation.authContext.requestId
       val updatedOperationGroup = currentMessages.get(requestId).fold(AuditOperationGroup(auxSrv, operation)) {
-        case aog: AuditOperationGroup => aog :+ operation
+        case aog: AuditOperationGroup ⇒ aog :+ operation
       }
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId -> updatedOperationGroup)))
+      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId → updatedOperationGroup)))
 
-    case GetOperations =>
+    case GetOperations ⇒
       renewExpiration()
-      waitingRequest.foreach { wr =>
+      waitingRequest.foreach { wr ⇒
         wr.submit(Nil)
         log.error("Multiple requests !")
       }
       context.become(receiveWithState(Some(new WaitingRequest(sender)), currentMessages))
 
-    case Submit(senderRef) =>
+    case Submit(senderRef) ⇒
       waitingRequest match {
-        case Some(wr) =>
+        case Some(wr) ⇒
           val (readyMessages, pendingMessages) = currentMessages.partition(_._2.isReady)
-          Future.sequence(readyMessages.values.map(_.toJson)).foreach(messages => wr.submit(messages.toSeq))
+          Future.sequence(readyMessages.values.map(_.toJson)).foreach(messages ⇒ wr.submit(messages.toSeq))
           context.become(receiveWithState(None, pendingMessages))
-        case None =>
+        case None ⇒
           log.error("No request to submit !")
       }
 
-    case _: Initialize             =>
-    case operation: AuditOperation =>
-    case message                   => log.warning(s"Unexpected message $message (${message.getClass})")
+    case _: Initialize             ⇒
+    case operation: AuditOperation ⇒
+    case message                   ⇒ log.warning(s"Unexpected message $message (${message.getClass})")
   }
 
   def receive = receiveWithState(None, Map.empty[String, StreamMessageGroup[_]])
 }
 
 @Singleton
-class StreamFilter @Inject() (eventSrv: EventSrv,
-                              implicit val mat: Materializer,
-                              implicit val ec: ExecutionContext) extends Filter {
+class StreamFilter @Inject() (
+    eventSrv: EventSrv,
+    implicit val mat: Materializer,
+    implicit val ec: ExecutionContext) extends Filter {
 
   val log = Logger(getClass)
-  def apply(nextFilter: RequestHeader => Future[Result])(requestHeader: RequestHeader): Future[Result] = {
+  def apply(nextFilter: RequestHeader ⇒ Future[Result])(requestHeader: RequestHeader): Future[Result] = {
     val requestId = Instance.getRequestId(requestHeader)
     eventSrv.publish(StreamActor.Initialize(requestId))
     nextFilter(requestHeader).andThen {
-      case _ => eventSrv.publish(StreamActor.Commit(requestId))
+      case _ ⇒ eventSrv.publish(StreamActor.Commit(requestId))
     }
   }
 }

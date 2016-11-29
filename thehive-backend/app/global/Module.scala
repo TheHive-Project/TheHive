@@ -41,16 +41,16 @@ class TheHive(
     val authFactoryBindings = ScalaMultibinder.newSetBinder[AuthSrvFactory](binder)
 
     val packageUrls = Seq(getClass.getClassLoader, classOf[org.elastic4play.Timed].getClassLoader).flatMap {
-      case ucl: URLClassLoader => ucl.getURLs
-      case _                   => Array.empty[URL]
+      case ucl: URLClassLoader ⇒ ucl.getURLs
+      case _                   ⇒ Array.empty[URL]
     }
 
     new Reflections(new org.reflections.util.ConfigurationBuilder()
       .addUrls(packageUrls: _*)
       .setScanners(new org.reflections.scanners.SubTypesScanner(false)))
       .getSubTypesOf(classOf[BaseModelDef])
-      .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers))
-      .foreach { modelClass =>
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
+      .foreach { modelClass ⇒
         log.info(s"Loading model $modelClass")
         modelBindings.addBinding.to(modelClass)
         if (classOf[AuditedModel].isAssignableFrom(modelClass)) {
@@ -62,9 +62,9 @@ class TheHive(
       .addUrls(packageUrls: _*)
       .setScanners(new org.reflections.scanners.SubTypesScanner(false)))
       .getSubTypesOf(classOf[AuthSrv])
-      .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers) || c.isMemberClass())
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers) || c.isMemberClass())
       .filterNot(_ == classOf[MultiAuthSrv])
-      .foreach { modelClass =>
+      .foreach { modelClass ⇒
         authBindings.addBinding.to(modelClass)
       }
 
@@ -72,8 +72,8 @@ class TheHive(
       .addUrls(packageUrls: _*)
       .setScanners(new org.reflections.scanners.SubTypesScanner(false)))
       .getSubTypesOf(classOf[AuthSrvFactory])
-      .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers))
-      .foreach { modelClass =>
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
+      .foreach { modelClass ⇒
         authFactoryBindings.addBinding.to(modelClass)
       }
 

@@ -30,24 +30,24 @@ class TaskSrv @Inject() (
 
   def create(caseId: String, fields: Fields)(implicit authContext: AuthContext): Future[Task] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze => create(caze, fields) }
+      .flatMap { caze ⇒ create(caze, fields) }
 
   def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Task] =
     createSrv[TaskModel, Task, Case](taskModel, caze, fields)
 
   def create(caseId: String, fields: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Task]]] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze => create(caze, fields) }
+      .flatMap { caze ⇒ create(caze, fields) }
 
   def create(caze: Case, fields: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Task]]] =
-    createSrv[TaskModel, Task, Case](taskModel, fields.map(caze -> _))
+    createSrv[TaskModel, Task, Case](taskModel, fields.map(caze → _))
 
   def get(id: String) =
     getSrv[TaskModel, Task](taskModel, id)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
     getSrv[TaskModel, Task](taskModel, id)
-      .flatMap { task => update(task, fields) }
+      .flatMap { task ⇒ update(task, fields) }
   }
 
   def update(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
@@ -71,11 +71,11 @@ class TaskSrv @Inject() (
     find(filter, range, Nil)
       ._1
       .map {
-        case task if task.status() == TaskStatus.Waiting => (task, cancelTask)
-        case task                                        => (task, completeTask)
+        case task if task.status() == TaskStatus.Waiting ⇒ (task, cancelTask)
+        case task                                        ⇒ (task, completeTask)
       }
       .runWith(Sink.seq)
-      .flatMap { taskUpdate => updateSrv(taskUpdate) }
+      .flatMap { taskUpdate ⇒ updateSrv(taskUpdate) }
   }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Task] =

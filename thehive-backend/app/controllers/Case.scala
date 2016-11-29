@@ -50,8 +50,8 @@ class CaseCtrl @Inject() (
   @Timed
   def get(id: String) = authenticated(Role.read).async { implicit request ⇒
     val withStats = for {
-      statsValues <- request.queryString.get("nstats")
-      firstValue <- statsValues.headOption
+      statsValues ← request.queryString.get("nstats")
+      firstValue ← statsValues.headOption
     } yield Try(firstValue.toBoolean).getOrElse(firstValue == "1")
 
     for {
@@ -117,8 +117,8 @@ class CaseCtrl @Inject() (
         }.map {
           case (caze, artifacts) ⇒
             Json.toJson(caze).as[JsObject] - "description" +
-              ("linkedWith" -> Json.toJson(artifacts)) +
-              ("linksCount" -> Json.toJson(artifacts.size))
+              ("linkedWith" → Json.toJson(artifacts)) +
+              ("linksCount" → Json.toJson(artifacts.size))
         }
         renderer.toOutput(OK, casesList)
       }

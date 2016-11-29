@@ -15,16 +15,15 @@ import org.elastic4play.services.JsonFormat.queryReads
 
 @Singleton
 class SearchCtrl @Inject() (
-  findSrv: FindSrv,
+    findSrv: FindSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext
-) extends Controller with Status {
+    implicit val ec: ExecutionContext) extends Controller with Status {
 
   @Timed
-  def find() = authenticated(Role.read).async(fieldsBodyParser) { implicit request =>
+  def find() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     import QueryDSL._
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
