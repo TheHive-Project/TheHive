@@ -52,6 +52,10 @@ angular.module('theHiveControllers').controller('RootCtrl',
             AlertSrv.error('RootCtrl', data, status);
         });
 
+        $scope.$on('templates:refresh', function(){
+            $scope.templates = TemplateSrv.query();
+        });
+
         $scope.$on('metrics:refresh', function() {
             // Get metrics cache
             MetricsCacheSrv.all().then(function(list) {

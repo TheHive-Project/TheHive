@@ -127,6 +127,9 @@
                 console.log("Create Template: " + $scope.template.name);
                 return TemplateSrv.save($scope.template, function() {
                     $scope.getList(0);
+
+                    $scope.$emit('templates:refresh');
+
                     AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly created', 'success');
                 }, function(response) {
                     AlertSrv.error('TemplateCtrl', response.data, response.status);
@@ -139,6 +142,9 @@
                     templateId: $scope.template.id
                 }, _.omit($scope.template, ['id', 'user', 'type']), function() {
                     $scope.getList($scope.templateIndex);
+                    
+                    $scope.$emit('templates:refresh');
+
                     AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly updated', 'success');
                 }, function(response) {
                     AlertSrv.error('TemplateCtrl', response.data, response.status);
@@ -172,6 +178,9 @@
                     templateId: $scope.template.id
                 }, function() {
                     $scope.getList(0);
+                    
+                    $scope.$emit('templates:refresh');
+
                     $modalInstance.dismiss();
                 });
             };
