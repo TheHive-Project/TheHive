@@ -115,8 +115,8 @@
                 <label class="col-sm-3 control-label">Summary
                     <i class="fa fa-asterisk text-danger"></i>
                 </label>
-                <div class="col-sm-9">
-                    <textarea class="form-control" name="summary" ng-model="formData.summary" placeholder="Close summary" required rows="3"></textarea>
+                <div class="col-sm-9">                    
+                    <textarea class="content-box" name="summary" placeholder="Close summary" markdown-editor="{'fullscreen': {enable: false}, 'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="6" ng-model="formData.summary" required></textarea>
                     <p class="help-block" ng-show="caseCloseForm.summary.$invalid && !caseCloseForm.summary.$pristine">The case summary is required.</p>
                 </div>
             </div>
