@@ -6,6 +6,7 @@ import play.api.{ Configuration, Environment, Logger }
 
 import connectors.ConnectorModule
 
+@Singleton
 class MispConnector(
     environment: Environment,
     configuration: Configuration) extends ConnectorModule {

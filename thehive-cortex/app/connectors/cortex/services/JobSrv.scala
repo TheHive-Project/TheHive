@@ -1,4 +1,4 @@
-package services
+package connectors.cortex.services
 
 import java.util.Date
 
@@ -16,17 +16,19 @@ import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AttachmentSrv, AuthContext, CreateSrv, DeleteSrv, EventSrv, FindSrv, GetSrv }
+import org.elastic4play.services.{ Agg, AttachmentSrv, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv }
 import org.elastic4play.services.{ QueryDef, UpdateSrv }
 import org.elastic4play.services.JsonFormat.configWrites
 
-import models.{ Artifact, ArtifactModel, Job, JobModel, JobStatus }
+import models.{ Artifact, ArtifactModel }
+import services.ArtifactSrv
+import connectors.cortex.models.JobModel
+import connectors.cortex.models.Job
 
 @Singleton
 class JobSrv(
     analyzerConf: JsValue,
     artifactSrv: ArtifactSrv,
-    analyzerSrv: AnalyzerSrv,
     jobModel: JobModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
@@ -34,12 +36,11 @@ class JobSrv(
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     attachmentSrv: AttachmentSrv,
-    eventSrv: EventSrv,
     implicit val ec: ExecutionContext) {
   @Inject def this(
     configuration: Configuration,
     artifactSrv: ArtifactSrv,
-    analyzerSrv: AnalyzerSrv,
+    //    analyzerSrv: AnalyzerSrv,
     jobModel: JobModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
@@ -47,12 +48,11 @@ class JobSrv(
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     attachmentSrv: AttachmentSrv,
-    eventSrv: EventSrv,
     ec: ExecutionContext) =
     this(
       configWrites.writes(configuration.getConfig("analyzer.config").get),
       artifactSrv,
-      analyzerSrv,
+      //      analyzerSrv,
       jobModel,
       createSrv,
       getSrv,
@@ -60,7 +60,6 @@ class JobSrv(
       deleteSrv,
       findSrv,
       attachmentSrv,
-      eventSrv,
       ec)
 
   lazy val log = Logger(getClass)
@@ -69,47 +68,33 @@ class JobSrv(
     artifactSrv.get(artifactId).flatMap(a ⇒ create(a, fields))
 
   def create(artifact: Artifact, fields: Fields)(implicit authContext: AuthContext): Future[Job] = {
-    createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id)).map {
-      case job if job.status() == JobStatus.InProgress ⇒
-        val newJob = for {
-          analyzer ← analyzerSrv.get(job.analyzerId())
-          (status, result) ← analyzer.analyze(attachmentSrv, artifact)
-          updatedAttributes = Json.obj(
-            "endDate" → new Date(),
-            "report" → result.toString,
-            "status" → status)
-          newJob ← updateSrv(job, Fields(updatedAttributes))
-          _ = eventSrv.publish(StreamActor.Commit(authContext.requestId))
-        } yield newJob
-        newJob.onFailure {
-          case t ⇒ log.error("Job execution fail", t)
-        }
-        job
-      case job ⇒ job
-    }
+    createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
+    ???
   }
-
-  def create(artifactAndFields: Seq[(Artifact, Fields)])(implicit authContext: AuthContext) = {
-    createSrv[JobModel, Job, Artifact](jobModel, artifactAndFields).map(
-      _.zip(artifactAndFields).map {
-        case (Success(job), _) if job.status() != JobStatus.InProgress ⇒ job
-        case (Success(job), (artifact, _)) ⇒
-          val newJob = for {
-            analyzer ← analyzerSrv.get(job.analyzerId())
-            (status, result) ← analyzer.analyze(attachmentSrv, artifact)
-            updatedAttributes = Json.obj(
-              "endDate" → new Date(),
-              "report" → result.toString,
-              "status" → status)
-            newJob ← updateSrv(job, Fields(updatedAttributes))
-            _ = eventSrv.publish(StreamActor.Commit(authContext.requestId))
-          } yield newJob
-          newJob.onFailure {
-            case t ⇒ log.error("Job execution fail", t)
-          }
-          job
-      })
-  }
+  //[ M <: org.elastic4play.models.ChildModelDef[M, E, _, PE],
+  //  E <: org.elastic4play.models.EntityDef[M,E],
+  //  PE <: org.elastic4play.models.BaseEntity](model: M, parent: PE, fields: org.elastic4play.controllers.Fields)(implicit authContext: org.elastic4play.services.AuthContext)scala.concurrent.Future[E]
+  //  def create(artifactAndFields: Seq[(Artifact, Fields)])(implicit authContext: AuthContext) = {
+  //    createSrv[JobModel, Job, Artifact](jobModel, artifactAndFields).map(
+  //      _.zip(artifactAndFields).map {
+  //        case (Success(job), _) if job.status() != JobStatus.InProgress ⇒ job
+  //        case (Success(job), (artifact, _)) ⇒
+  //          val newJob = for {
+  //            analyzer ← analyzerSrv.get(job.analyzerId())
+  //            (status, result) ← analyzer.analyze(attachmentSrv, artifact)
+  //            updatedAttributes = Json.obj(
+  //              "endDate" → new Date(),
+  //              "report" → result.toString,
+  //              "status" → status)
+  //            newJob ← updateSrv(job, Fields(updatedAttributes))
+  //            _ = eventSrv.publish(StreamActor.Commit(authContext.requestId))
+  //          } yield newJob
+  //          newJob.onFailure {
+  //            case t ⇒ log.error("Job execution fail", t)
+  //          }
+  //          job
+  //      })
+  //  }
 
   def get(id: String)(implicit Context: AuthContext) =
     getSrv[JobModel, Job](jobModel, id)
