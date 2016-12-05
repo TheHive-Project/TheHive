@@ -5,9 +5,18 @@ import java.io.File
 import play.api.libs.json.{ JsObject, JsString, Json, OFormat, OWrites, Reads, Writes }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import org.elastic4play.models.JsonFormat.enumFormat
+import play.api.libs.json.Format
 
 object JsonFormat {
-  implicit val analyzerFormats = Json.format[Analyzer]
+  val analyzerWrites = Writes[Analyzer](analyzer ⇒ Json.obj(
+    "id" → analyzer.id,
+    "name" → analyzer.name,
+    "version" → analyzer.version,
+    "description" → analyzer.description,
+    "dataTypeList" → analyzer.dataTypeList,
+    "cortexIds" → analyzer.cortexIds))
+  val analyzerReads = Json.reads[Analyzer]
+  implicit val analyzerFormats = Format(analyzerReads, analyzerWrites)
 
   val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
     "attributes" → fileArtifact.attributes))
