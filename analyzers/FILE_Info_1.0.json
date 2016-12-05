@@ -6,5 +6,5 @@
 	"dataTypeList": ["file"],
 	"baseConfig" : "PE_Info",
 	"config": {"max_tlp":"3"},
-	"command": "PE_Info/PE_Info.py"
+	"command": "FILE_Info/run.py"
 }

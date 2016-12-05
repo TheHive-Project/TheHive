@@ -12,7 +12,7 @@ import codecs
 import pefile
 import magic
 import pyexifinfo
-from  lib.PE_analysis import file
+from  lib.File_analysis import file
 from StringIO import StringIO
 
 
@@ -70,19 +70,15 @@ try:
 except ImportError:
     error('Import Error: Module magic not found')
 
-
-
 try:
     __import__('imp').find_module('pefile')
 except ImportError:
     error('Import Error: Module pefile not found')
 
-
 try:
     __import__('imp').find_module('hashlib')
 except ImportError:
     error('Import Error: Module hashlib not found')
-
 
 try:
     __import__('imp').find_module('pydeep')
@@ -94,29 +90,29 @@ try:
 except ImportError:
     error('Import Error: Module pyexifinfo not found')
 
-
-
-try:
-    f = pefile.PE(filepath)
-except Exception as excp:
-    error(str(excp))
-
-
 # set stderr back to original __stderr__
 sys.stderr = sys.__stderr__
 
 
-
-
-# PE_Info analyzer
-def PE_info():
+# Associate Mimetype and analyzer (every result has a result['Mimetype']
+def FileInfo():
     f = file(filepath)
+    try:
+        result['Mimetype'] = f.mimetype()
+    except Exception as excp:
+        error(str(excp))
     result['Exif'] = f.exif()
     result['Magic']= f.magic()
     result['Identification']= {'MD5': f.md5(),
                             'SHA1':f.sha1(),
                             'SHA256':f.sha256(),
-                            'impash':f.imphash(),
+                            'ssdeep':f.ssdeep()}
+
+
+# PE_Info analyzer
+def PE_info():
+    f = file(filepath)
+    result['Identification']= {'impash':f.imphash(),
                             'ssdeep':f.ssdeep(),
                             'pehash':f.pehash(),
                             'OperatingSystem':f.OperatingSystem(),
@@ -132,23 +128,19 @@ def PE_info():
     result['ImportAdressTable'] = f.iat()
 
 
-# Associate Mimetype and analyzer (every result has a result['Mimetype']
-def FileInfo():
-    try:
-        result['Mimetype'] = str(magic.Magic(mimetype=True).from_file(filepath))
-    except Exception as excp:
-        error(str(exsp))
 
+def SpecificInfo():
     if result['Mimetype'] in ['application/x-dosexec']:
         PE_info()
 
 
 
-
 def dump_result(res):
     if type(res['Mimetype']):
-        if res['Mimetype'] == 'application/x-dosexec':
-            json.dump(res, sys.stdout, sort_keys=True,ensure_ascii=False, indent=4)
+        # if res['Mimetype'] == 'application/x-dosexec':
+        #     json.dump(res, sys.stdout, sort_keys=True,ensure_ascii=False, indent=4)
+        json.dump(res, sys.stdout, sort_keys=True,ensure_ascii=False, indent=4)
+        
     else:
         error(res)
 
@@ -158,6 +150,7 @@ def dump_result(res):
 
 def main():
     FileInfo()
+    SpecificInfo()
     dump_result(result)
 
 if __name__ == '__main__':

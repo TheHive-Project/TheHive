@@ -20,17 +20,21 @@ class file:
 
         self.path = filepath
         self.stream = open(filepath, 'r').read()
-        try:
-            self.pe = pefile.PE(filepath)
-            self.pedict = self.pe.dump_dict()
-        except Exception as excp:
-            print('Failed processing %s') % filepath
 
+        if magic.Magic().from_file(self.path) == 'application/x-dosexec':
+            try:
+                self.pe = pefile.PE(filepath)
+                self.pedict = self.pe.dump_dict()
+            except Exception as excp:
+                print('Failed processing %s') % filepath
 
     # Magic
     def magic(self):
         return magic.Magic().from_file(self.path)
 
+
+    def mimetype(self):
+        return magic.Magic(mimetype=True).from_file(self.path)
     # ExifTool
     def exif(self):
         exifreport=pyexifinfo.get_json(self.path)
@@ -50,9 +54,11 @@ class file:
     def ssdeep(self):
         return pydeep.hash_file(self.path)
 
+    # PE: impash
     def imphash(self):
         return self.pe.get_imphash()
 
+    # PE: pehash
     def pehash(self):
         return pehashng.pehashng(self.pe)
 
@@ -72,7 +78,7 @@ class file:
         except Exception as excp:
             return 'None'
 
-    # type
+    # PE: type
     def PEtype(self):
         if self.pe.is_dll():
             return "DLL"
@@ -81,26 +87,26 @@ class file:
         if self.pe.is_exe():
             return "EXE"
 
-    # Timestamp
+    # PE:  Timestamp
     def CompilationTimestamp(self):
         return self.pedict['FILE_HEADER']['TimeDateStamp']['Value']
 
-    # OS Version
+    # PE: OS Version
     def OperatingSystem(self):
         return str(self.pedict['OPTIONAL_HEADER']['MajorOperatingSystemVersion']['Value']) + "." \
                + str(self.pedict['OPTIONAL_HEADER']['MinorOperatingSystemVersion']['Value'])
 
-    # Machine type
+    # PE:Machine type
     def Machine(self):
         machinetype = self.pedict['FILE_HEADER']['Machine']['Value']
         mt = {'0x014c': 'x86', '0x0200': 'Itanium', '0x8664': 'x64'}
         return mt[str(hex(machinetype))] if type(machinetype) is int else str(machinetype) + ' => Not x86/64 or Itanium'
 
-    # Entry Point
+    # PE:Entry Point
     def EntryPoint(self):
         return hex(self.pedict['OPTIONAL_HEADER']['AddressOfEntryPoint']['Value'])
 
-    # IAT list of {'entryname':'name', 'symbols':[list of symbols]}
+    # PE:IAT list of {'entryname':'name', 'symbols':[list of symbols]}
     def iat(self):
         table = []
         for entry in self.pe.DIRECTORY_ENTRY_IMPORT:
@@ -111,7 +117,7 @@ class file:
             table.append(imp)
         return table
 
-    # Resources : WORK IN PROGRESS
+    # PE Resources : WORK IN PROGRESS
     def resources(self):
         print self.pe.DIRECTORY_ENTRY_RESOURCE
         for rsrc in self.pe.DIRECTORY_ENTRY_RESOURCE.entries:
@@ -121,7 +127,7 @@ class file:
                     print i.data.lang
                     print i.data.sublang
 
-    # Sections list of {Name, Size, Entropy, MD5, SHA1, SHA256, SHA512}
+    # PE:Sections list of {Name, Size, Entropy, MD5, SHA1, SHA256, SHA512}
     def sections(self):
         table = []
         for entry in self.pe.sections:
@@ -136,6 +142,6 @@ class file:
         return table
 
 
-    ## Return dump_dict() for debug only
+    # PE :Return dump_dict() for debug only
     def dump(self):
         return self.pedict
