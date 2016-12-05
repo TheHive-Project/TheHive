@@ -1,10 +1,10 @@
 {
-	"name": "PE_Info",
+	"name": "FILE_Info",
 	"version": "1.0",
-	"report": "PE_Info/report",
-	"description": "Basic information about a PE File.",
+	"report": "FILE_Info/report",
+	"description": "Basic information about a File.",
 	"dataTypeList": ["file"],
-	"baseConfig" : "PE_Info",
+	"baseConfig" : "FILE_Info",
 	"config": {"max_tlp":"3"},
 	"command": "FILE_Info/run.py"
 }

@@ -40,7 +40,7 @@
               <dd class="wrap">{{content.Identification['OperatingSystem']}}
               </dd>
           </dl>
-          <dl class="dl-horizontal">
+          <dl class="dl-horizontal" ng-if={{content.Identification['PEType']}}>
               <dt>PE Type</dt>
               <dd class="wrap">{{content.Identification['PEType']}}</dd>
           </dl>
@@ -76,7 +76,7 @@
   </div>
 
   <!-- PE Basic Information -->
-  <div class="panel panel-info">
+  <div class="panel panel-info" ng-if={{content.BasicInformation}}>
       <div class="panel-heading">
           <strong>PE Basic Information</strong>
       </div>
@@ -105,7 +105,7 @@
   </div>
 
   <!-- PE Sections -->
-  <div class="panel panel-info">
+  <div class="panel panel-info" ng-if={{content.Sections}}>
       <div class="panel-heading">
           <strong>PE Sections</strong>
       </div>
@@ -145,7 +145,7 @@
 
 <!-- PE Import Address Table -->
 
-  <div class="panel panel-info">
+  <div class="panel panel-info" ng-if={{content.ImportAdressTable}}>
     <div class="panel-heading">
         <strong>PE Import Address Table</strong>
     </div>
