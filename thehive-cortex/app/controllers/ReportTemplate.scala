@@ -1,4 +1,4 @@
-package controllers
+package connectors.cortex.controllers
 
 import javax.inject.{ Inject, Singleton }
 
@@ -15,6 +15,9 @@ import org.elastic4play.services.AuxSrv
 import org.elastic4play.services.JsonFormat.queryReads
 
 import services.ReportTemplateSrv
+import play.api.Logger
+import akka.stream.scaladsl.Sink
+import akka.stream.Materializer
 
 @Singleton
 class ReportTemplateCtrl @Inject() (
@@ -23,7 +26,10 @@ class ReportTemplateCtrl @Inject() (
     authenticated: Authenticated,
     renderer: Renderer,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) extends Controller with Status {
+
+  lazy val logger = Logger(getClass)
 
   @Timed
   def create = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
@@ -35,6 +41,21 @@ class ReportTemplateCtrl @Inject() (
   def get(id: String) = authenticated(Role.read).async { implicit request ⇒
     reportTemplateSrv.get(id)
       .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
+  }
+
+  @Timed
+  def getContent(analyzerId: String, flavor: String) = authenticated(Role.read).async { implicit request ⇒
+    import QueryDSL._
+    val (reportTemplates, total) = reportTemplateSrv.find(and("analyzers" ~= analyzerId, "flavor" ~= flavor), Some("0-1"), Nil)
+    total.foreach { t ⇒
+      if (t > 1) logger.warn(s"Multiple report templates match for analyzer $analyzerId with flavor $flavor")
+    }
+    reportTemplates
+      .runWith(Sink.headOption)
+      .map {
+        case Some(reportTemplate) ⇒ Ok(reportTemplate.content()).as("text/html")
+        case None                 ⇒ NotFound("")
+      }
   }
 
   @Timed

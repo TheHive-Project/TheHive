@@ -1,4 +1,4 @@
-package connectors.cortex
+package connectors.cortex.controllers
 
 import javax.inject.{ Inject, Singleton }
 
@@ -8,7 +8,7 @@ import play.api.Logger
 import play.api.http.Status
 import play.api.mvc.Controller
 import play.api.routing.SimpleRouter
-import play.api.routing.sird.{ GET, POST, UrlContext }
+import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
 
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
@@ -22,6 +22,7 @@ import connectors.cortex.services.CortexSrv
 
 @Singleton
 class CortextCtrl @Inject() (
+    reportTemplateCtrl: ReportTemplateCtrl,
     cortexSrv: CortexSrv,
     authenticated: Authenticated,
     fieldsBodyParser: FieldsBodyParser,
@@ -30,13 +31,19 @@ class CortextCtrl @Inject() (
   val name = "cortex"
   val log = Logger(getClass)
   val router = SimpleRouter {
-    case POST(p"/job")                           ⇒ createJob
-    case GET(p"/job/$jobId<[^/]*>")              ⇒ getJob(jobId)
-    case POST(p"/job/_search")                   ⇒ findJob
-    case GET(p"/analyzer/$analyzerId<[^/]*>")    ⇒ getAnalyzer(analyzerId)
+    case POST(p"/job") ⇒ createJob
+    case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)
+    case POST(p"/job/_search") ⇒ findJob
+    case GET(p"/analyzer/$analyzerId<[^/]*>") ⇒ getAnalyzer(analyzerId)
     case GET(p"/analyzer/type/$dataType<[^/]*>") ⇒ getAnalyzerFor(dataType)
-    case GET(p"/analyzer")                       ⇒ listAnalyzer
-    case r                                       ⇒ throw NotFoundError(s"${r.uri} not found")
+    case GET(p"/analyzer") ⇒ listAnalyzer
+    case POST(p"/report/template/_search") ⇒ reportTemplateCtrl.find()
+    case POST(p"/report/template") ⇒ reportTemplateCtrl.create()
+    case GET(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.get(caseTemplateId)
+    case PATCH(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.update(caseTemplateId)
+    case DELETE(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.delete(caseTemplateId)
+    case GET(p"/report/template/content/$analyzerId<[^/]*>/$flavor<[^/]*>") ⇒ reportTemplateCtrl.getContent(analyzerId, flavor)
+    case r ⇒ throw NotFoundError(s"${r.uri} not found")
   }
 
   @Timed

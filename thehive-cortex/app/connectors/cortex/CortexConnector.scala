@@ -3,6 +3,7 @@ package connectors.cortex
 import play.api.{ Configuration, Environment, Logger }
 
 import connectors.ConnectorModule
+import connectors.cortex.controllers.CortextCtrl
 
 class CortexConnector(
     environment: Environment,

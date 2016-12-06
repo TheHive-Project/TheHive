@@ -26,12 +26,6 @@ GET      /api/case/template/:caseTemplateId       controllers.CaseTemplateCtrl.g
 PATCH    /api/case/template/:caseTemplateId       controllers.CaseTemplateCtrl.update(caseTemplateId)
 DELETE   /api/case/template/:caseTemplateId       controllers.CaseTemplateCtrl.delete(caseTemplateId)
 
-POST     /api/report/template/_search             controllers.ReportTemplateCtrl.find()
-POST     /api/report/template                     controllers.ReportTemplateCtrl.create()
-GET      /api/report/template/:caseTemplateId     controllers.ReportTemplateCtrl.get(caseTemplateId)
-PATCH    /api/report/template/:caseTemplateId     controllers.ReportTemplateCtrl.update(caseTemplateId)
-DELETE   /api/report/template/:caseTemplateId     controllers.ReportTemplateCtrl.delete(caseTemplateId)
-
 POST     /api/case/artifact/_search               controllers.ArtifactCtrl.find()
 POST     /api/case/:caseId/artifact/_search       controllers.ArtifactCtrl.findInCase(caseId)
 POST     /api/case/artifact/_stats                controllers.ArtifactCtrl.stats()
