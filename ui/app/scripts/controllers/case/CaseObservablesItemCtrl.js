@@ -30,8 +30,7 @@
 
             CaseArtifactSrv.api().get({
                 'artifactId': observableId
-            }, function(data) {
-                var observable = data.artifact;
+            }, function(observable) {
 
                 // Add tab
                 CaseTabsSrv.addTab(observableName, {
@@ -48,7 +47,7 @@
                 CaseTabsSrv.activateTab(observableName);
 
                 // Prepare the scope data
-                $scope.initScope(data);
+                $scope.initScope(observable);
 
                 // Prepare the jobs data
                 $scope.initJobs();
@@ -78,7 +77,7 @@
                         '_parent': {
                             '_type': 'case_artifact',
                             '_query': {
-                                '_id': $scope.artifact.id
+                                '_id': $scope.id
                             }
                         }
                     },

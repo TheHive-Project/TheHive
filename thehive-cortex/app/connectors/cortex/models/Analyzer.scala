@@ -1,7 +1,5 @@
 package connectors.cortex.models
 
-import connectors.cortex.services.CortexClient
-
 trait CortexModel[O] { self ⇒
   def onCortex(cortexId: String): O
 }

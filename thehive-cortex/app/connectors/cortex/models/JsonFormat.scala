@@ -1,11 +1,12 @@
 package connectors.cortex.models
 
-import java.io.File
+import akka.stream.scaladsl.Source
 
-import play.api.libs.json.{ JsObject, JsString, Json, OFormat, OWrites, Reads, Writes }
+import play.api.libs.json.{ Format, JsObject, Json }
+import play.api.libs.json.{ OFormat, OWrites, Reads, Writes }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
+
 import org.elastic4play.models.JsonFormat.enumFormat
-import play.api.libs.json.Format
 
 object JsonFormat {
   val analyzerWrites = Writes[Analyzer](analyzer ⇒ Json.obj(
@@ -15,7 +16,13 @@ object JsonFormat {
     "description" → analyzer.description,
     "dataTypeList" → analyzer.dataTypeList,
     "cortexIds" → analyzer.cortexIds))
-  val analyzerReads = Json.reads[Analyzer]
+  val analyzerReads = Reads[Analyzer](json ⇒
+    for {
+      name ← (json \ "name").validate[String]
+      version ← (json \ "version").validate[String]
+      description ← (json \ "description").validate[String]
+      dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
+    } yield Analyzer(name, version, description, dataTypeList))
   implicit val analyzerFormats = Format(analyzerReads, analyzerWrites)
 
   val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
@@ -23,7 +30,7 @@ object JsonFormat {
 
   val fileArtifactReads = Reads[FileArtifact](json ⇒
     (json \ "attributes").validate[JsObject].map { attributes ⇒
-      FileArtifact(new File("dummy"), attributes)
+      FileArtifact(Source.empty, attributes)
     })
   val fileArtifactFormat = OFormat(fileArtifactReads, fileArtifactWrites)
   val dataArtifactFormat = Json.format[DataArtifact]
@@ -39,5 +46,5 @@ object JsonFormat {
 
   implicit val artifactFormat = OFormat(artifactReads, artifactWrites)
   implicit val jobStatusFormat = enumFormat(JobStatus)
-  implicit val jobFormat = Json.format[CortexJob]
+  implicit val cortexJobFormat = Json.format[CortexJob]
 }

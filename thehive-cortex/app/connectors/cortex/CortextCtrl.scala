@@ -1,26 +1,23 @@
 package connectors.cortex
 
+import javax.inject.{ Inject, Singleton }
+
 import scala.concurrent.ExecutionContext
 
-import org.elastic4play.BadRequestError
-import org.elastic4play.NotFoundError
-import org.elastic4play.Timed
-import org.elastic4play.controllers.Authenticated
-import org.elastic4play.controllers.FieldsBodyParser
-import org.elastic4play.controllers.Renderer
-import org.elastic4play.services.Role
-
-import connectors.cortex.models.JsonFormat._
-import connectors.Connector
-import javax.inject.Inject
-import javax.inject.Singleton
 import play.api.Logger
 import play.api.http.Status
 import play.api.mvc.Controller
 import play.api.routing.SimpleRouter
-import play.api.routing.sird.GET
-import play.api.routing.sird.POST
-import play.api.routing.sird.UrlContext
+import play.api.routing.sird.{ GET, POST, UrlContext }
+
+import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
+import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import org.elastic4play.services.{ QueryDef, QueryDSL, Role }
+import org.elastic4play.services.JsonFormat.queryReads
+
+import connectors.Connector
+import connectors.cortex.models.JsonFormat.{ analyzerFormats, cortexJobFormat }
 import connectors.cortex.services.CortexSrv
 
 @Singleton
@@ -35,7 +32,7 @@ class CortextCtrl @Inject() (
   val router = SimpleRouter {
     case POST(p"/job")                           ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>")              ⇒ getJob(jobId)
-    case GET(p"/job")                            ⇒ listJob
+    case POST(p"/job/_search")                   ⇒ findJob
     case GET(p"/analyzer/$analyzerId<[^/]*>")    ⇒ getAnalyzer(analyzerId)
     case GET(p"/analyzer/type/$dataType<[^/]*>") ⇒ getAnalyzerFor(dataType)
     case GET(p"/analyzer")                       ⇒ listAnalyzer
@@ -46,7 +43,8 @@ class CortextCtrl @Inject() (
   def createJob = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     val analyzerId = request.body.getString("analyzerId").getOrElse(throw BadRequestError(s"analyzerId is missing"))
     val artifactId = request.body.getString("artifactId").getOrElse(throw BadRequestError(s"artifactId is missing"))
-    cortexSrv.createJob(analyzerId, artifactId).map { job ⇒
+    val cortexId = request.body.getString("cortexId").getOrElse(throw BadRequestError(s"cortexId is missing"))
+    cortexSrv.submitJob(cortexId, analyzerId, artifactId).map { job ⇒
       renderer.toOutput(OK, job)
     }
   }
@@ -59,10 +57,13 @@ class CortextCtrl @Inject() (
   }
 
   @Timed
-  def listJob = authenticated(Role.read).async { implicit request ⇒
-    cortexSrv.listJob.map { jobs ⇒
-      renderer.toOutput(OK, jobs)
-    }
+  def findJob = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+    val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val range = request.body.getString("range")
+    val sort = request.body.getStrings("sort").getOrElse(Nil)
+
+    val (jobs, total) = cortexSrv.find(query, range, sort)
+    renderer.toOutput(OK, jobs, total)
   }
 
   @Timed
@@ -85,14 +86,4 @@ class CortextCtrl @Inject() (
       renderer.toOutput(OK, analyzers)
     }
   }
-
-  //*  POST     /api/case/artifact/:artifactId/job         controllers.JobCtrl.create(artifactId)
-  //POST     /api/case/artifact/job/_stats              controllers.JobCtrl.stats()
-  //POST     /api/case/artifact/job/_search             controllers.JobCtrl.find()
-  //GET      /api/case/artifact/:artifactId/job         controllers.JobCtrl.findInArtifact(artifactId)
-  //GET      /api/case/artifact/job/:jobId              controllers.JobCtrl.get(jobId)
-  //POST     /api/analyzer/_search                      controllers.AnalyzerCtrl.find()
-  //GET      /api/analyzer/:analyzerId                  controllers.AnalyzerCtrl.get(analyzerId)
-  //GET      /api/analyzer/:analyzerId/report/:flavor   controllers.AnalyzerCtrl.getReport(analyzerId, flavor)
-
 }

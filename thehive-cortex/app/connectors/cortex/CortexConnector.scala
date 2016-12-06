@@ -1,7 +1,5 @@
 package connectors.cortex
 
-import javax.inject.Singleton
-
 import play.api.{ Configuration, Environment, Logger }
 
 import connectors.ConnectorModule

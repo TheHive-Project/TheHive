@@ -12,9 +12,8 @@ import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
 
 import JsonFormat.jobStatusFormat
-import models.ArtifactModel
+import models.{ Artifact, ArtifactModel }
 import services.AuditedModel
-import models.Artifact
 
 object JobStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -29,6 +28,7 @@ trait JobAttributes { _: AttributeDef ⇒
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the job completion (or fail)")
   val report = optionalAttribute("report", F.textFmt, "Analysis result", O.unaudited)
   val cortexId = optionalAttribute("cortexId", F.stringFmt, "Id of cortex where the job is run", O.readonly)
+  val cortexJobId = optionalAttribute("cortexJobId", F.stringFmt, "Id of job in cortex", O.readonly)
 
 }
 @Singleton
@@ -44,4 +44,6 @@ class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job
   override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject(Nil))(r ⇒ Json.parse(r)))
 }
 
-case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type)
+case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type, cortexIds: List[String] = Nil) extends CortexModel[CortexJob] {
+  def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
+}
