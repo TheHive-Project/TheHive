@@ -27,7 +27,7 @@
     <!-- endbower -->
     <link rel="stylesheet" href="bower_components/smalot-bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.bootstrap.min.css"/>
-    <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">    
     <!-- endbuild -->
 
     <!-- build:css(.tmp) styles/app.css -->
@@ -85,8 +85,12 @@
     <script src="bower_components/bootstrap-markdown/js/bootstrap-markdown.js"></script>
     <script src="bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js"></script>
     <!-- endbower -->
+    
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>    
+    <script type="text/javascript" src="bower_components/angular-ui-ace/ui-ace.js"></script>
 
     <script src="bower_components/codemirror/lib/codemirror.js"></script>
+    <script src="bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
     <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
     <script src="bower_components/smalot-bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
     <script src="bower_components/cryptojslib/components/core-min.js"></script>
@@ -105,9 +109,10 @@
     <script src="scripts/controllers/SearchCtrl.js"></script>
     <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/controllers/StatisticsCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminMetricsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
-    <script src="scripts/controllers/admin/AdminTemplatesCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminReportTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminUsersCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCloseModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
@@ -185,6 +190,7 @@
     <script src="scripts/services/MispSrv.js"></script>
     <script src="scripts/services/ObservablesUISrv.js"></script>
     <script src="scripts/services/PSearchSrv.js"></script>
+    <script src="scripts/services/ReportTemplateSrv.js"></script>
     <script src="scripts/services/SearchSrv.js"></script>
     <script src="scripts/services/StatSrv.js"></script>
     <script src="scripts/services/StatisticSrv.js"></script>

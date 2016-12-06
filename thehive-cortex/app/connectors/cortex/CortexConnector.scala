@@ -13,7 +13,7 @@ class CortexConnector(
 
   def configure() {
     try {
-
+      registerController[CortextCtrl]
     }
     catch {
       case t: Throwable ⇒ log.error("Corte connector is disabled because its configuration is invalid", t)

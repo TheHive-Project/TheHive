@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('AdminTemplatesCtrl',
+    angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
         function($scope, $modal, TemplateSrv, AlertSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
             $scope.task = '';
             $scope.tags = [];
@@ -76,8 +76,8 @@
             $scope.openTaskDialog = function(task, action) {
                 $modal.open({
                     scope: $scope,
-                    templateUrl: 'views/partials/admin/templates.task.html',
-                    controller: 'AdminTemplateTasksCtrl',
+                    templateUrl: 'views/partials/admin/case-templates.task.html',
+                    controller: 'AdminCaseTemplateTasksCtrl',
                     size: 'lg',
                     resolve: {
                         action: function() {
@@ -108,8 +108,8 @@
             $scope.deleteTemplate = function() {
                 $modal.open({
                     scope: $scope,
-                    templateUrl: 'views/partials/admin/templates.delete.html',
-                    controller: 'AdminTemplateDeleteCtrl',
+                    templateUrl: 'views/partials/admin/case-templates.delete.html',
+                    controller: 'AdminCaseTemplateDeleteCtrl',
                     size: ''
                 });
             };
@@ -146,7 +146,7 @@
             };
 
         })
-        .controller('AdminTemplateTasksCtrl', function($scope, $modalInstance, action, task) {
+        .controller('AdminCaseTemplateTasksCtrl', function($scope, $modalInstance, action, task) {
             $scope.task = task || {};
             $scope.action = action;
 
@@ -162,7 +162,7 @@
                 $modalInstance.dismiss();
             };
         })
-        .controller('AdminTemplateDeleteCtrl', function($scope, $modalInstance, TemplateSrv) {
+        .controller('AdminCaseTemplateDeleteCtrl', function($scope, $modalInstance, TemplateSrv) {
             $scope.cancel = function() {
                 $modalInstance.dismiss();
             };

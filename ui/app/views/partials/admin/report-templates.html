@@ -1,0 +1,43 @@
+<h2>Report template management</h2>
+<div class="vpad10"></div>
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th width="100px">Version</th>
+                    <th width="200px">Short template</th>
+                    <th width="200px">Long template</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="analyzer in vm.analyzers">
+                    <td>
+                        {{analyzer.name}}<br>
+                        <small class="text-muted">{{analyzer.description}}</small>
+                    </td>
+                    <td class="vmiddle">{{analyzer.version}}</td>
+                    <td class="vmiddle">
+                        <span class="clickable label label-lg label-success" 
+                            ng-if="analyzer.shortReport" 
+                            ng-click="vm.showTemplate(analyzer.shortReport, analyzer)">View Template</span>
+
+                        <span class="clickable label label-lg label-default" 
+                            ng-if="!analyzer.shortReport",
+                            ng-click="vm.showTemplate({flavor: 'short'}, analyzer)"><em>Default template</em></span>
+                    </td>
+                    <td class="vmiddle">
+                        <span class="clickable label label-lg label-success" 
+                            ng-if="analyzer.longReport" 
+                            ng-click="vm.showTemplate(analyzer.longReport, analyzer)">View Template</span>
+
+                        <span class="clickable label label-lg label-default" 
+                            ng-if="!analyzer.longReport"
+                            ng-click="vm.showTemplate({flavor: 'long'}, analyzer)"><em>Default template</em></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

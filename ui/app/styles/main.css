@@ -31,7 +31,9 @@ body {
     padding-left: 6px;
     padding-right: 6px;
 }
-
+.modal-max {
+    width: 90%;
+}
 .clickable {
     cursor: pointer;
 }
@@ -348,6 +350,10 @@ tr.task-row td.task-delete i {
 }
 tr.task-row .tast-status {
     text-align: center;
+}
+
+td.vmiddle {
+    vertical-align: middle !important;
 }
 
 @-moz-keyframes spin {
