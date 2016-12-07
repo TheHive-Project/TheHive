@@ -35,8 +35,7 @@ object CortexConfig {
       val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
       val key = configuration.getString("key").getOrElse(sys.error("key is missing"))
       Some(new CortexClient(name, url, key))
-    }
-    catch {
+    } catch {
       case NonFatal(_) ⇒ None
     }
   }
@@ -104,28 +103,34 @@ class CortexSrv @Inject() (
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
   }
 
-  def askAllCortex[A](f: CortexClient ⇒ Future[CortexModel[A]]): Future[Seq[A]] = {
-    Future.traverse(cortexConfig.instances.toSeq) {
-      case (name, cortex) ⇒ f(cortex).map(_.onCortex(name))
-    }
-  }
-  def askForAllCortex[A](f: CortexClient ⇒ Future[Seq[CortexModel[A]]]): Future[Seq[A]] = {
+  def askAllCortex[A](f: CortexClient ⇒ Future[Seq[CortexModel[A]]]): Future[Seq[A]] = {
     Future
       .traverse(cortexConfig.instances.toSeq) {
         case (name, cortex) ⇒ f(cortex).map(_.map(_.onCortex(name)))
       }
       .map(_.flatten)
   }
-  def getAnalyzer(analyzerId: String): Future[Seq[Analyzer]] = {
-    askAllCortex(_.getAnalyzer(analyzerId))
+
+  def getAnalyzer(analyzerId: String): Future[Analyzer] = {
+    Future
+      .traverse(cortexConfig.instances) {
+        case (name, cortex) => cortex.getAnalyzer(analyzerId).map(Some(_)).fallbackTo(Future.successful(None))
+      }
+      .map { analyzers =>
+        analyzers.foldLeft[Option[Analyzer]](None) {
+          case (Some(analyzer1), Some(analyzer2)) => Some(analyzer1.copy(cortexIds = analyzer1.cortexIds ++ analyzer2.cortexIds))
+          case (maybeAnalyzer1, maybeAnalyzer2)   => maybeAnalyzer1 orElse maybeAnalyzer2
+        }
+          .getOrElse(throw NotFoundError(s"Analyzer $analyzerId not found"))
+      }
   }
 
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
-    askForAllCortex(_.listAnalyzerForType(dataType))
+    askAllCortex(_.listAnalyzerForType(dataType))
   }
 
   def listAnalyzer: Future[Seq[Analyzer]] = {
-    askForAllCortex(_.listAnalyzer)
+    askAllCortex(_.listAnalyzer)
   }
 
   def getJob(jobId: String): Future[Job] = {
