@@ -8,15 +8,6 @@
                     method: 'POST',
                     url: baseUrl + '/_search',
                     isArray: true
-                },
-                update: {
-                    method: 'PATCH'
-                },
-                create: {
-                    method: 'POST'
-                },
-                save: {
-                    method: 'PUT'
                 }
             });
 
@@ -32,8 +23,8 @@
                 },
 
                 save: function(tpl) {
-                    if(tpl.id) {
-                        return $http.put(baseUrl + '/' + tpl.id, tpl, {});
+                    if(tpl.id) {                        
+                        return $http.patch(baseUrl + '/' + tpl.id, _.omit(tpl, 'id'), {});
                     } else {
                         return $http.post(baseUrl, tpl, {});
                     }

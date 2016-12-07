@@ -64,6 +64,7 @@ module.exports = function(config) {
       'bower_components/angular-marked/dist/angular-marked.js',
       'bower_components/bootstrap-markdown/js/bootstrap-markdown.js',
       'bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js',
+      'bower_components/angular-ui-ace/ui-ace.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       "bower_components/cryptojslib/components/core-min.js",

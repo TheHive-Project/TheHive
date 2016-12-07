@@ -16,16 +16,12 @@
         this.load = function() {
             $q.all([
                 ReportTemplateSrv.list(),
-                AnalyzerSrv.query({
-                    range: 'all'
-                }).$promise
+                AnalyzerSrv.query()
             ]).then(function (response) {
                 self.templates = response[0].data;
                 self.analyzers = response[1];
-
-                var map = _.indexBy(self.analyzers, 'id');
-
-                return $q.resolve(map);
+                
+                return $q.resolve(self.analyzers);
             }).then(function (analyzersMap) {
                 _.each(self.templates, function (tpl) {
                     _.each(tpl.analyzers, function (analyzerId) {
@@ -62,7 +58,7 @@
         this.load();
     };
 
-    function AdminReportTemplateDialogCtrl($modalInstance, reportTemplate, ReportTemplateSrv, analyzer) {
+    function AdminReportTemplateDialogCtrl($modalInstance, reportTemplate, ReportTemplateSrv, AlertSrv, analyzer) {
         this.reportTemplate = reportTemplate;
         this.analyzer = analyzer;
         this.reportTypes = ['short', 'long'];

@@ -1,14 +1,15 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function($scope, $state, $stateParams, CaseTabsSrv, CaseArtifactSrv, PSearchSrv, AnalyzerSrv, AnalyzerInfoSrv, JobSrv, AlertSrv) {
+        function ($scope, $state, $stateParams, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
             $scope.caseId = $stateParams.caseId;
-            $scope.getAnalyzerInfo = AnalyzerInfoSrv;
             $scope.report = {};
             $scope.analyzers = {};
+            $scope.analyzerJobs = {};
+            $scope.jobs = {};
             $scope.state = {
                 'editing': false,
                 'isCollapsed': false,
@@ -30,7 +31,7 @@
 
             CaseArtifactSrv.api().get({
                 'artifactId': observableId
-            }, function(observable) {
+            }, function (observable) {
 
                 // Add tab
                 CaseTabsSrv.addTab(observableName, {
@@ -49,21 +50,51 @@
                 // Prepare the scope data
                 $scope.initScope(observable);
 
-                // Prepare the jobs data
-                $scope.initJobs();
-
-            }, function(response) {
+            }, function (response) {
                 AlertSrv.error('artifactDetails', response.data, response.status);
                 CaseTabsSrv.activateTab('observables');
             });
 
-            $scope.initScope = function(data) {
-                $scope.artifactAnalyzers = data.analyzers;
-                $scope.artifact = data.artifact;
+            $scope.initScope = function (artifact) {
+                $scope.artifact = artifact;
 
-                angular.forEach($scope.artifactAnalyzers, function(analyzer) {
-                    analyzer.active = true;
-                    $scope.analyzers[analyzer.id] = analyzer;
+                // Get analyzers available for the observable's datatype
+                AnalyzerSrv.forDataType(artifact.dataType)
+                    .then(function (analyzers) {                        
+                        return $scope.analyzers = analyzers;
+                    })
+                    .then(function (analyzers) {
+                        console.log(analyzers);
+
+                        $scope.jobs = CortexSrv.list($scope.caseId, observableId, $scope.onJobsChange);
+                    });
+
+            };
+
+            $scope.onJobsChange = function () {
+                $scope.analyzerJobs = {};
+
+                angular.forEach($scope.analyzers, function (analyzer, analyzerId) {
+                    $scope.analyzerJobs[analyzerId] = [];
+                });
+
+                angular.forEach($scope.jobs.values, function (job) {
+                    if (job.analyzerId in $scope.analyzerJobs) {
+                        $scope.analyzerJobs[job.analyzerId].push(job);
+                    } else {
+                        $scope.analyzerJobs[job.analyzerId] = [job];
+
+                        AnalyzerSrv.get(job.analyzerId)
+                            .then(function (data) {
+                                $scope.analyzers[data.analyzerId] = {
+                                    active: false,
+                                    showRows: false
+                                };
+                            },
+                            function (response) {
+                                AlertSrv.error('artifactDetails', response.data, response.status);
+                            });
+                    }
                 });
             };
 
@@ -71,82 +102,42 @@
                 'artifactId': observableId
             });
 
-            $scope.initJobs = function() {
-                var jobs = PSearchSrv($scope.caseId, 'case_artifact_job', {
-                    'filter': {
-                        '_parent': {
-                            '_type': 'case_artifact',
-                            '_query': {
-                                '_id': $scope.id
-                            }
-                        }
-                    },
-                    'pageSize': 200,
-                    'sort': '-startDate',
-                    'onUpdate': function() {
-                        $scope.analyzerJobs = {};
-                        angular.forEach($scope.analyzers, function(analyzer, analyzerId) {
-                            $scope.analyzerJobs[analyzerId] = [];
-                        });
-                        angular.forEach(jobs.values, function(job) {
-                            if (job.analyzerId in $scope.analyzerJobs) {
-                                $scope.analyzerJobs[job.analyzerId].push(job);
-                            } else {
-                                $scope.analyzerJobs[job.analyzerId] = [job];
 
-                                console.log('AnalyzerSrv.get(' + job.analyzerId + ')');
-
-                                AnalyzerSrv.get({
-                                    'analyzerId': job.analyzerId
-                                }, function(data) {
-                                    $scope.analyzers[data.analyzerId] = {
-                                        active: false,
-                                        showRows: false
-                                    };
-                                }, function(response) {
-                                    AlertSrv.error('artifactDetails', response.data, response.status);
-                                });
-                            }
-                        });
-                    }
-                });
-            };
-
-            $scope.openArtifact = function(a) {
+            $scope.openArtifact = function (a) {
                 $state.go('app.case.observables-item', {
                     caseId: a["case"].id,
                     itemId: a.id
                 });
             };
 
-            $scope.getLabels = function(selection) {
+            $scope.getLabels = function (selection) {
                 var labels = [];
 
-                angular.forEach(selection, function(label) {
+                angular.forEach(selection, function (label) {
                     labels.push(label.text);
                 });
 
                 return labels;
             };
 
-            $scope.updateField = function(fieldName, newValue) {
+            $scope.updateField = function (fieldName, newValue) {
                 var field = {};
                 field[fieldName] = newValue;
                 console.log('update artifact field ' + fieldName + ':' + field[fieldName]);
                 return CaseArtifactSrv.api().update({
                     artifactId: $scope.artifact.id
-                }, field, function() {}, function(response) {
+                }, field, function () {}, function (response) {
                     AlertSrv.error('artifactDetails', response.data, response.status);
                 });
             };
 
-            $scope.runAnalyzer = function(analyzerId) {
+            $scope.runAnalyzer = function (analyzerId) {
                 console.log('running analyzer ' + analyzerId + ' on artifact ' + $scope.artifact.id);
-                return JobSrv.save({
-                    'artifactId': $scope.artifact.id
-                }, {
-                    'analyzerId': analyzerId
-                }, function() {}, function(response) {
+                return CortexSrv.createJob({
+                    cortexId: 'local',
+                    artifactId: $scope.artifact.id,
+                    analyzerId: analyzerId
+                }, function () {}, function (response) {
                     AlertSrv.error('artifactDetails', response.data, response.status);
                 });
             };
