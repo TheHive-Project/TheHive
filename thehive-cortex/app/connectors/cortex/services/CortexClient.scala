@@ -47,7 +47,7 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
           DataPart("_json", attributes.toString)))
         request(s"/api/analyzer/$analyzerId", _.post(body), _.json)
       case a: DataArtifact ⇒
-        request(s"/api/analyzer/$analyzerId", _.post(Json.toJson(a)), _.json.as[JsObject])
+        request(s"/api/analyzer/$analyzerId/run", _.post(Json.toJson(a)), _.json.as[JsObject])
     }
   }
 
