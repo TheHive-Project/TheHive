@@ -1,6 +1,7 @@
 package connectors.cortex.services
 
 import java.nio.file.{ Path, Paths }
+import java.util.Date
 
 import javax.inject.{ Inject, Singleton }
 
@@ -17,7 +18,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 
 import play.api.{ Configuration, Logger }
-import play.api.libs.json.JsObject
+import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
 
 import org.elastic4play.{ InternalError, NotFoundError }
@@ -145,7 +146,11 @@ class CortexSrv @Inject() (
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
         val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
         log.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
-        update(jobId, Fields.empty.set("status", status.toString).set("report", report)).onComplete {
+        val jobFields = Fields.empty
+          .set("status", status.toString)
+          .set("report", report)
+          .set("endDate", Json.toJson(new Date))
+        update(jobId, jobFields).onComplete {
           case Failure(e) ⇒ log.error(s"Update job fails", e)
           case _          ⇒
         }
