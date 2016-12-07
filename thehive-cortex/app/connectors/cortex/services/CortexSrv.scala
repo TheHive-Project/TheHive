@@ -5,7 +5,7 @@ import java.nio.file.{ Path, Paths }
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationInt
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
@@ -140,12 +140,15 @@ class CortexSrv @Inject() (
 
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
     log.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job ${jobId}")
-    cortex.waitReport(cortexJobId, Duration.Inf) andThen {
+    cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
-        val report = (j \ "report").as[JsObject]
+        val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
         log.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
-        update(jobId, Fields.empty.set("status", status.toString).set("report", report))
+        update(jobId, Fields.empty.set("status", status.toString).set("report", report)).onComplete {
+          case Failure(e) ⇒ log.error(s"Update job fails", e)
+          case _          ⇒
+        }
       case Failure(e) ⇒
         log.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
         updateJobWithCortex(jobId, cortexJobId, cortex)
