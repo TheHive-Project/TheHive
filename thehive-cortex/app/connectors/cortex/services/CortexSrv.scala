@@ -35,7 +35,8 @@ object CortexConfig {
       val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
       val key = configuration.getString("key").getOrElse(sys.error("key is missing"))
       Some(new CortexClient(name, url, key))
-    } catch {
+    }
+    catch {
       case NonFatal(_) ⇒ None
     }
   }
@@ -114,12 +115,12 @@ class CortexSrv @Inject() (
   def getAnalyzer(analyzerId: String): Future[Analyzer] = {
     Future
       .traverse(cortexConfig.instances) {
-        case (name, cortex) => cortex.getAnalyzer(analyzerId).map(Some(_)).fallbackTo(Future.successful(None))
+        case (name, cortex) ⇒ cortex.getAnalyzer(analyzerId).map(Some(_)).fallbackTo(Future.successful(None))
       }
-      .map { analyzers =>
+      .map { analyzers ⇒
         analyzers.foldLeft[Option[Analyzer]](None) {
-          case (Some(analyzer1), Some(analyzer2)) => Some(analyzer1.copy(cortexIds = analyzer1.cortexIds ++ analyzer2.cortexIds))
-          case (maybeAnalyzer1, maybeAnalyzer2)   => maybeAnalyzer1 orElse maybeAnalyzer2
+          case (Some(analyzer1), Some(analyzer2)) ⇒ Some(analyzer1.copy(cortexIds = analyzer1.cortexIds ++ analyzer2.cortexIds))
+          case (maybeAnalyzer1, maybeAnalyzer2)   ⇒ maybeAnalyzer1 orElse maybeAnalyzer2
         }
           .getOrElse(throw NotFoundError(s"Analyzer $analyzerId not found"))
       }

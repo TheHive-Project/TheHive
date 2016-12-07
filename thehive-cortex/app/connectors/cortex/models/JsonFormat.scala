@@ -7,6 +7,7 @@ import play.api.libs.json.{ OFormat, OWrites, Reads, Writes }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.models.JsonFormat.enumFormat
+import java.util.Date
 
 object JsonFormat {
   val analyzerWrites = Writes[Analyzer](analyzer ⇒ Json.obj(
@@ -46,5 +47,15 @@ object JsonFormat {
 
   implicit val artifactFormat = OFormat(artifactReads, artifactWrites)
   implicit val jobStatusFormat = enumFormat(JobStatus)
-  implicit val cortexJobFormat = Json.format[CortexJob]
+  val cortexJobReads = Reads[CortexJob](json ⇒
+    for {
+      id ← (json \ "id").validate[String]
+      analyzerId ← (json \ "analyzerId").validate[String]
+      artifact ← (json \ "artifact").validate[CortexArtifact]
+      date ← (json \ "date").validate[Date]
+      status ← (json \ "status").validate[JobStatus.Type]
+    } yield CortexJob(id, analyzerId, artifact, date, status, Nil))
+  val cortexJobWrites = Json.writes[CortexJob]
+  implicit val cortexJobFormat = Format(cortexJobReads, cortexJobWrites)
+  implicit val reportTypeFormat = enumFormat(ReportType)
 }

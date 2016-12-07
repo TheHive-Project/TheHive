@@ -2,22 +2,29 @@ package connectors.cortex.controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.ExecutionContext
+import scala.collection.JavaConversions.asScalaBuffer
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.io.Source
+import scala.util.control.NonFatal
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+
+import play.api.Logger
 import play.api.http.Status
+import play.api.libs.json.{ JsBoolean, JsObject }
 import play.api.mvc.Controller
 
-import org.elastic4play.Timed
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.{ BadRequestError, Timed }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, FileInputValue, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.AuxSrv
 import org.elastic4play.services.JsonFormat.queryReads
 
-import services.ReportTemplateSrv
-import play.api.Logger
-import akka.stream.scaladsl.Sink
-import akka.stream.Materializer
+import connectors.cortex.services.ReportTemplateSrv
+import net.lingala.zip4j.core.ZipFile
+import net.lingala.zip4j.model.FileHeader
 
 @Singleton
 class ReportTemplateCtrl @Inject() (
@@ -81,5 +88,42 @@ class ReportTemplateCtrl @Inject() (
     val (reportTemplates, total) = reportTemplateSrv.find(query, range, sort)
     val reportTemplatesWithStats = auxSrv(reportTemplates, nparent, withStats)
     renderer.toOutput(OK, reportTemplatesWithStats, total)
+  }
+
+  @Timed
+  def importTemplatePackage = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+    val zipFile = request.body.get("templates") match {
+      case Some(FileInputValue(name, filepath, contentType)) ⇒ new ZipFile(filepath.toFile)
+      case _                                                 ⇒ throw BadRequestError("")
+    }
+    val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.toSeq.filter(_ != null).collect {
+      case fileHeader: FileHeader if !fileHeader.isDirectory ⇒
+        val Array(analyzerId, flavor) = (fileHeader.getFileName + "/").split("/", 2)
+        val inputStream = zipFile.getInputStream(fileHeader)
+        val content = Source.fromInputStream(inputStream).mkString
+        inputStream.close()
+
+        val reportTemplateFields = Fields.empty
+          .set("flavor", flavor)
+          .set("analyzers", analyzerId)
+          .set("content", content)
+        reportTemplateSrv.create(reportTemplateFields)
+          .recoverWith { // if creation fails, try to update
+            case NonFatal(_) ⇒
+              val reportTemplateId = analyzerId + "_" + flavor
+              reportTemplateSrv.update(reportTemplateId, Fields.empty.set("content", content))
+          }
+          .map(_.id → JsBoolean(true))
+          .recoverWith {
+            case NonFatal(e) ⇒
+              logger.error(s"The import of the report template $analyzerId ($flavor) has failed", e)
+              val reportTemplateId = analyzerId + "_" + flavor
+              Future.successful(reportTemplateId → JsBoolean(false))
+          }
+    }
+
+    Future.sequence(importedReportTemplates).map { result ⇒
+      renderer.toOutput(OK, JsObject(result))
+    }
   }
 }

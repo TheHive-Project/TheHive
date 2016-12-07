@@ -1,4 +1,4 @@
-package services
+package connectors.cortex.services
 
 import javax.inject.{ Inject, Singleton }
 
@@ -14,7 +14,8 @@ import play.api.libs.json.JsObject
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
 
-import models.{ ReportTemplate, ReportTemplateModel }
+import connectors.cortex.models.{ ReportTemplate, ReportTemplateModel }
+import services.ArtifactSrv
 
 @Singleton
 class ReportTemplateSrv @Inject() (
