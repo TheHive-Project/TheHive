@@ -3,7 +3,8 @@
 
     angular.module('theHiveControllers')
         .controller('AdminReportTemplatesCtrl', AdminReportTemplatesCtrl)
-        .controller('AdminReportTemplateDialogCtrl', AdminReportTemplateDialogCtrl);
+        .controller('AdminReportTemplateDialogCtrl', AdminReportTemplateDialogCtrl)
+        .controller('AdminReportTemplateImportCtrl', AdminReportTemplateImportCtrl);
 
 
     function AdminReportTemplatesCtrl($q, $modal, AnalyzerSrv, ReportTemplateSrv) {
@@ -53,6 +54,20 @@
             });
         };
 
+        this.import = function (analyzer, dataType) {
+            var modalInstance = $modal.open({
+                animation: true,
+                templateUrl: 'views/partials/admin/report-template-import.html',
+                controller: 'AdminReportTemplateImportCtrl',
+                controllerAs: 'vm',
+                size: 'lg'
+            });
+
+            modalInstance.result.then(function() {
+                self.load();
+            });
+        };
+
         this.load();
     };
 
@@ -84,5 +99,22 @@
         };
 
         
+    }
+
+    function AdminReportTemplateImportCtrl($modalInstance, ReportTemplateSrv, AlertSrv) {
+        this.formData = {};
+
+        this.ok = function () {
+            ReportTemplateSrv.import(this.formData)
+                .then(function() {
+                    $modalInstance.close();
+                }, function(response) {
+                    AlertSrv.error('AdminReportTemplateImportCtrl', response.data, response.status);
+                });
+        };
+
+        this.cancel = function () {
+            $modalInstance.dismiss('cancel');
+        };
     }
 })();

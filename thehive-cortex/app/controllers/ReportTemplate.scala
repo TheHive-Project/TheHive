@@ -98,7 +98,7 @@ class ReportTemplateCtrl @Inject() (
     }
     val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.toSeq.filter(_ != null).collect {
       case fileHeader: FileHeader if !fileHeader.isDirectory ⇒
-        val Array(analyzerId, flavor) = (fileHeader.getFileName + "/").split("/", 2)
+        val Array(analyzerId, flavor, _*) = (fileHeader.getFileName + "/").split("/", 3)
         val inputStream = zipFile.getInputStream(fileHeader)
         val content = Source.fromInputStream(inputStream).mkString
         inputStream.close()

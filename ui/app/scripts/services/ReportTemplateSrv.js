@@ -28,6 +28,38 @@
                     } else {
                         return $http.post(baseUrl, tpl, {});
                     }
+                },
+
+                import: function(post) {
+                    var postData = {
+                        templates: post.attachment
+                    };
+
+                    return $http({
+                        method: 'POST',
+                        url: baseUrl + '/_import',
+                        headers: {
+                            'Content-Type': undefined
+                        },                        
+                        transformRequest: function (data) {
+                            var formData = new FormData(),
+                                copy = angular.copy(data, {}),
+                                _json = {};
+
+                            angular.forEach(data, function (value, key) {
+                                if (Object.getPrototypeOf(value) instanceof Blob || Object.getPrototypeOf(value) instanceof File) {
+                                    formData.append(key, value);
+                                    delete copy[key];
+                                } 
+                            });
+
+                            //formData.append("attributes", angular.toJson(_json));
+
+                            return formData;
+                        },                        
+                        data: postData
+
+                    });
                 }
             }
 
