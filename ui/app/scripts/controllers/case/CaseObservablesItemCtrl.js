@@ -145,6 +145,16 @@
                 });
             };
 
+            $scope.runAll = function() {
+                _.each($scope.analyzers, function(analyzer, id) {
+                    if(analyzer.active === true) {
+                        console.log('Bulk Run: ' + id);
+
+                        $scope.runAnalyzer(id);
+                    }
+                });
+            };
+
         }
     );
 

@@ -1,3 +1,9 @@
+<h3 class="pad10 text-primary">
+    Observable Analyzers
+    <span class="pull-right">
+        <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>    
+    </span>
+</h3>
 <table class="table table-hover">
     <thead>
         <th>Analyzer</th>
@@ -49,7 +55,6 @@
     </div>
 </div>
 
-<pre>{{report}}</pre>
 <div class="row observable-report vpad10" ng-if="report">
     <div class="col-md-12">
         <report artifact="artifact" content="report.content.full || report.content" default="jsonhuman" flavor="long" name="report.template" status="report.status"></report>
