@@ -12,7 +12,7 @@
                         loadAll: false,
                         pageSize: 200,
                         onUpdate: callback || angular.noop,
-                        streamObjectType: 'job',
+                        streamObjectType: 'case_artifact_job',
                         filter: {
                             _parent: {
                                 _type: 'case_artifact',

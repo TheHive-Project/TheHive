@@ -27,7 +27,7 @@
     <div class="col-md-11 col-md-offset-1">
         <ul class="list-inline observable-reports-summary">
             <li ng-if="jobs[0]" ng-repeat="(analyzerId, jobs) in analyzerJobs">
-                <report artifact="artifact" content="jobs[0].report" flavor="short" name="analyzerId" status="jobs[0].status"></report>
+                <report artifact="artifact" content="jobs[0].report.full" flavor="short" name="analyzerId" status="jobs[0].status"></report>
             </li>
         </ul>
     </div>

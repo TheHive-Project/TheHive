@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="bower_components/css-spaces/dist/spaces.css" />
     <link rel="stylesheet" href="bower_components/bootstrap-markdown/css/bootstrap-markdown.min.css" />
     <link rel="stylesheet" href="bower_components/angular-markdown-editor-ghiscoding/styles/angular-markdown-editor.css" />
+    <link rel="stylesheet" href="bower_components/angular-page-loader/dist/angular-page-loader.css" />
     <!-- endbower -->
     <link rel="stylesheet" href="bower_components/smalot-bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.bootstrap.min.css"/>
@@ -39,7 +40,8 @@
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <!-- endbuild -->
   </head>
-  <body>
+  <body ng-cloak>
+    <page-loader></page-loader>
     <div ui-view></div>
 
     <!-- build:js(.) scripts/vendor.js -->
@@ -84,6 +86,7 @@
     <script src="bower_components/angular-marked/dist/angular-marked.js"></script>
     <script src="bower_components/bootstrap-markdown/js/bootstrap-markdown.js"></script>
     <script src="bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js"></script>
+    <script src="bower_components/angular-page-loader/dist/angular-page-loader.js"></script>
     <!-- endbower -->
     
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>    

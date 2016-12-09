@@ -44,7 +44,8 @@
     "angular-markdown-editor-ghiscoding": "^1.0.9",
     "angular-highlightjs": "^0.6.2",
     "highlight.js.origin": "^9.7.0",
-    "angular-ui-ace": "bower"
+    "angular-ui-ace": "bower",
+    "angular-page-loader": "*"
   },
   "devDependencies": {
     "angular-mocks": "^1.5.8"

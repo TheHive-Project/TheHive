@@ -24,9 +24,7 @@
                 return $q.resolve(self.analyzers);
             }).then(function (analyzersMap) {
                 _.each(self.templates, function (tpl) {
-                    _.each(tpl.analyzers, function (analyzerId) {
-                        analyzersMap[analyzerId][tpl.flavor + 'Report'] = tpl;
-                    });
+                    analyzersMap[tpl.analyzers][tpl.flavor + 'Report'] = tpl;
                 });
 
                 console.log(self.analyzers);
@@ -70,7 +68,7 @@
         };    
 
         this.formData = _.pick(reportTemplate, 'id', 'flavor', 'content');
-        this.formData.analyzers = [this.analyzer.id];
+        this.formData.analyzers = this.analyzer.id;
 
         this.cancel = function () {
             $modalInstance.dismiss();

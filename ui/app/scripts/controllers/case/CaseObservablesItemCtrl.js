@@ -6,7 +6,7 @@
                 observableName = 'observable-' + observableId;
 
             $scope.caseId = $stateParams.caseId;
-            $scope.report = {};
+            $scope.report = null;
             $scope.analyzers = {};
             $scope.analyzerJobs = {};
             $scope.jobs = {};
@@ -60,12 +60,10 @@
 
                 // Get analyzers available for the observable's datatype
                 AnalyzerSrv.forDataType(artifact.dataType)
-                    .then(function (analyzers) {                        
+                    .then(function (analyzers) {
                         return $scope.analyzers = analyzers;
                     })
                     .then(function (analyzers) {
-                        console.log(analyzers);
-
                         $scope.jobs = CortexSrv.list($scope.caseId, observableId, $scope.onJobsChange);
                     });
 
@@ -85,18 +83,23 @@
                         $scope.analyzerJobs[job.analyzerId] = [job];
 
                         AnalyzerSrv.get(job.analyzerId)
-                            .then(function (data) {
-                                $scope.analyzers[data.analyzerId] = {
-                                    active: false,
-                                    showRows: false
-                                };
-                            },
-                            function (response) {
-                                AlertSrv.error('artifactDetails', response.data, response.status);
-                            });
+                            .finally(function (data) {
+                                    $scope.analyzers[data.analyzerId] = {
+                                        active: false,
+                                        showRows: false
+                                    };
+                                });
                     }
                 });
             };
+
+            $scope.showReport = function (job) {
+                $scope.report = {
+                    template: job.analyzerId,
+                    content: job.report,
+                    status: job.status
+                }                
+            }
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
                 'artifactId': observableId
