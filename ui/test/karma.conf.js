@@ -46,6 +46,7 @@ module.exports = function(config) {
       'bower_components/ng-csv/build/ng-csv.min.js',
       'bower_components/ng-tags-input/ng-tags-input.js',
       'bower_components/underscore/underscore.js',
+      'bower_components/codemirror/lib/codemirror.js',
       'bower_components/angular-ui-codemirror/ui-codemirror.js',
       'bower_components/angular-ui-notification/dist/angular-ui-notification.js',
       'bower_components/d3/d3.js',

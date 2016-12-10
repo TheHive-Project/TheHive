@@ -18,7 +18,7 @@
                     scope.confirmDropLog = function() {
                         TaskLogSrv.delete({
                             logId: scope.log.id
-                        }).then(function() {
+                        }).$promise.then(function() {
                             scope.deleteModal.dismiss();
                         });
                     };

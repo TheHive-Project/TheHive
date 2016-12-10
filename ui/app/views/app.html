@@ -74,7 +74,7 @@
                                 <span class="input-group-addon">
                                     <i class="glyphicon glyphicon-search"></i>
                                 </span>
-                                <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
+                                <input class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
                                 <div class="input-group-btn">
                                     <div class="btn-group dropdown" dropdown>
                                         <a class="btn btn-sm btn-default dropdown-toggle" dropdown-toggle href>
@@ -99,11 +99,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- <div class="form-group has-feedback has-feedback-right">
-                                <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
-                                <i class="form-control-feedback glyphicon glyphicon-search" style="top : 0px"></i>
-                            </div> -->
                         </form>
                     </li>
                     <li class="dropdown" dropdown ng-if="isAdmin(currentUser)">
