@@ -97,19 +97,25 @@ def OTX_Query_Domain(data):
 	except:
 		error('API Error! Please verify data type is correct.')
 
-	json.dump({
+	result = {
 		'pulse_count': IP_['general']['pulse_info']['count'],
 		'pulses': IP_['general']['pulse_info']['pulses'],
 		'whois': IP_['general']['whois'],
-		'continent_code': IP_['geo']['continent_code'],
-		'country_code': IP_['geo']['country_code'],
-		'country_name': IP_['geo']['country_name'],
-		'city': IP_['geo']['city'],
-		'asn': IP_['geo']['asn'],
 		'malware_samples': IP_['malware']['result'],
 		'url_list': IP_['url_list']['url_list'],
-		'passive_dns': IP_['passive_dns']['passive_dns']
-	}, sys.stdout, ensure_ascii=False)
+		'passive_dns': IP_['passive_dns']['passive_dns']}
+
+	try:
+		result.update({
+			'continent_code': IP_['geo']['continent_code'],
+			'country_code': IP_['geo']['country_code'],
+			'country_name': IP_['geo']['country_name'],
+			'city': IP_['geo']['city'],
+			'asn': IP_['geo']['asn']})
+	except Exception:
+		pass
+
+	json.dump(result,sys.stdout, ensure_ascii=False)
 
 
 def OTX_Query_File(data):
@@ -125,7 +131,7 @@ def OTX_Query_File(data):
 	except:
 		error('API Error! Please verify data type is correct.')
 
-	
+
 	if IP_['analysis']['analysis']: # file has been analyzed before
 		json.dump({
 			'pulse_count': IP_['general']['pulse_info']['count'],
@@ -174,7 +180,7 @@ def OTX_Query_URL(data):
 # run  only if TLP condition is met
 if tlp > max_tlp:
 	error('Error with TLP value ; see max_tlp in config or tlp value in input data')
-	
+
 # setup proxy
 if http_proxy != None:
 	os.environ['http_proxy'] = http_proxy
