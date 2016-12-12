@@ -32,11 +32,11 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
   }
 
   def getAnalyzer(analyzerId: String)(implicit ws: WSClient, ec: ExecutionContext): Future[Analyzer] = {
-    request(s"/api/analyzer/$analyzerId", _.get, _.json.as[Analyzer])
+    request(s"/api/analyzer/$analyzerId", _.get, _.json.as[Analyzer]).map(_.copy(cortexIds = List(name)))
   }
 
   def listAnalyzer(implicit ws: WSClient, ec: ExecutionContext): Future[Seq[Analyzer]] = {
-    request(s"/api/analyzer", _.get, _.json.as[Seq[Analyzer]])
+    request(s"/api/analyzer", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ws: WSClient, ec: ExecutionContext) = {
@@ -52,7 +52,7 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
   }
 
   def listAnalyzerForType(dataType: String)(implicit ws: WSClient, ec: ExecutionContext): Future[Seq[Analyzer]] = {
-    request(s"/api/analyzer/type/$dataType", _.get, _.json.as[Seq[Analyzer]])
+    request(s"/api/analyzer/type/$dataType", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
   def listJob(implicit ws: WSClient, ec: ExecutionContext) = {

@@ -51,7 +51,7 @@ class CortextCtrl @Inject() (
   def createJob = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     val analyzerId = request.body.getString("analyzerId").getOrElse(throw BadRequestError(s"analyzerId is missing"))
     val artifactId = request.body.getString("artifactId").getOrElse(throw BadRequestError(s"artifactId is missing"))
-    val cortexId = request.body.getString("cortexId").getOrElse(throw BadRequestError(s"cortexId is missing"))
+    val cortexId = request.body.getString("cortexId")
     cortexSrv.submitJob(cortexId, analyzerId, artifactId).map { job ⇒
       renderer.toOutput(OK, job)
     }
