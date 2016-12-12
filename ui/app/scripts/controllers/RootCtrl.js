@@ -63,6 +63,10 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         });
 
+        $scope.$on('misp:event-imported', function() {
+            $scope.mispEvents = MispSrv.stats();
+        });
+
         $scope.$on('misp:status-updated', function(event, enabled) {
             $scope.mispEnabled = enabled;
         });
