@@ -20,7 +20,7 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
   lazy val logger = Logger(getClass)
 
   logger.info(s"new Cortex($name, $baseUrl, $key)")
-  def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ws: WSClient, ec: ExecutionContext) = {
+  def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
     val url = (baseUrl + uri)
     logger.info(s"Requesting Cortex $url")
     f(ws.url(url).withHeaders("auth" → key)).map {
