@@ -126,7 +126,7 @@
             $scope.updateField = function (fieldName, newValue) {
                 var field = {};
                 field[fieldName] = newValue;
-                console.log('update artifact field ' + fieldName + ':' + field[fieldName]);
+
                 return CaseArtifactSrv.api().update({
                     artifactId: $scope.artifact.id
                 }, field, function () {}, function (response) {
@@ -135,21 +135,21 @@
             };
 
             $scope.runAnalyzer = function (analyzerId) {
-                console.log('running analyzer ' + analyzerId + ' on artifact ' + $scope.artifact.id);
+                var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 return CortexSrv.createJob({
                     cortexId: 'local',
                     artifactId: $scope.artifact.id,
                     analyzerId: analyzerId
-                }, function () {}, function (response) {
-                    AlertSrv.error('artifactDetails', response.data, response.status);
+                }).then(function () {
+                    AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
+                }, function (response) {
+                    AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
                 });
             };
 
             $scope.runAll = function() {
                 _.each($scope.analyzers, function(analyzer, id) {
                     if(analyzer.active === true) {
-                        console.log('Bulk Run: ' + id);
-
                         $scope.runAnalyzer(id);
                     }
                 });
