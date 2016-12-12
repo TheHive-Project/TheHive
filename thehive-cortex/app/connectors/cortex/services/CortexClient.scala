@@ -26,7 +26,7 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
     f(ws.url(url).withHeaders("auth" → key)).map {
       case response if response.status / 100 == 2 ⇒ t(response)
       case error ⇒
-        logger.error(s"Cortext error on $baseUrl/$uri (${error.status}) \n${error.body}")
+        logger.error(s"Cortex error on $url (${error.status}) \n${error.body}")
         sys.error("")
     }
   }
@@ -45,7 +45,7 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
         val body = Source(List(
           FilePart("data", (attributes \ "attachment" \ "name").asOpt[String].getOrElse("noname"), None, data),
           DataPart("_json", attributes.toString)))
-        request(s"/api/analyzer/$analyzerId", _.post(body), _.json)
+        request(s"/api/analyzer/$analyzerId/run", _.post(body), _.json)
       case a: DataArtifact ⇒
         request(s"/api/analyzer/$analyzerId/run", _.post(Json.toJson(a)), _.json.as[JsObject])
     }

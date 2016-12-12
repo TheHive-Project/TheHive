@@ -144,15 +144,19 @@ class CortexSrv @Inject() (
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
-        val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
-        log.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
-        val jobFields = Fields.empty
-          .set("status", status.toString)
-          .set("report", report)
-          .set("endDate", Json.toJson(new Date))
-        update(jobId, jobFields).onComplete {
-          case Failure(e) ⇒ log.error(s"Update job fails", e)
-          case _          ⇒
+        if (status == JobStatus.InProgress)
+          updateJobWithCortex(jobId, cortexJobId, cortex)
+        else {
+          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
+          log.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
+          val jobFields = Fields.empty
+            .set("status", status.toString)
+            .set("report", report)
+            .set("endDate", Json.toJson(new Date))
+          update(jobId, jobFields).onComplete {
+            case Failure(e) ⇒ log.error(s"Update job fails", e)
+            case _          ⇒
+          }
         }
       case Failure(e) ⇒
         log.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
