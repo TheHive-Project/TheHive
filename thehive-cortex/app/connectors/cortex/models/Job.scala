@@ -44,6 +44,6 @@ class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job
   override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject(Nil))(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
 }
 
-case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type, cortexIds: List[String] = Nil) extends CortexModel[CortexJob] {
+case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type, cortexIds: List[String] = Nil) {
   def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
 }

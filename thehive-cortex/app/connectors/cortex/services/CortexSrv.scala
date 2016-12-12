@@ -25,7 +25,7 @@ import org.elastic4play.{ InternalError, NotFoundError }
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ AttachmentSrv, AuthContext, CreateSrv, EventSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
 
-import connectors.cortex.models.{ Analyzer, CortexJob, CortexModel, DataArtifact, FileArtifact, Job, JobModel, JobStatus }
+import connectors.cortex.models.{ Analyzer, CortexJob, DataArtifact, FileArtifact, Job, JobModel, JobStatus }
 import connectors.cortex.models.JsonFormat.{ cortexJobFormat, jobStatusFormat }
 import models.Artifact
 import services.{ ArtifactSrv, MergeArtifact }
@@ -104,14 +104,6 @@ class CortexSrv @Inject() (
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
   }
 
-  def askAllCortex[A](f: CortexClient ⇒ Future[Seq[CortexModel[A]]]): Future[Seq[A]] = {
-    Future
-      .traverse(cortexConfig.instances.toSeq) {
-        case cortex ⇒ f(cortex).map(_.map(_.onCortex(cortex.name)))
-      }
-      .map(_.flatten)
-  }
-
   def getAnalyzer(analyzerId: String): Future[Analyzer] = {
     Future
       .traverse(cortexConfig.instances) {
@@ -126,12 +118,42 @@ class CortexSrv @Inject() (
       }
   }
 
+  def askAnalyzersOnAllCortex(f: CortexClient ⇒ Future[Seq[Analyzer]]): Future[Seq[Analyzer]] = {
+    Future
+      .traverse(cortexConfig.instances) {
+        case cortex ⇒ f(cortex)
+      }
+      .map(_.flatten)
+  }
+
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
-    askAllCortex(_.listAnalyzerForType(dataType))
+    Future
+      .traverse(cortexConfig.instances) {
+        case cortex ⇒ cortex.listAnalyzerForType(dataType)
+      }
+      .map { listOfListOfAnalyzers ⇒
+        val analysers = listOfListOfAnalyzers.flatten
+        analysers
+          .groupBy(_.name)
+          .values
+          .map(_.reduce((a1, a2) ⇒ a1.copy(cortexIds = a1.cortexIds ::: a2.cortexIds)))
+          .toSeq
+      }
   }
 
   def listAnalyzer: Future[Seq[Analyzer]] = {
-    askAllCortex(_.listAnalyzer)
+    Future
+      .traverse(cortexConfig.instances) {
+        case cortex ⇒ cortex.listAnalyzer
+      }
+      .map { listOfListOfAnalyzers ⇒
+        val analysers = listOfListOfAnalyzers.flatten
+        analysers
+          .groupBy(_.name)
+          .values
+          .map(_.reduce((a1, a2) ⇒ a1.copy(cortexIds = a1.cortexIds ::: a2.cortexIds)))
+          .toSeq
+      }
   }
 
   def getJob(jobId: String): Future[Job] = {
