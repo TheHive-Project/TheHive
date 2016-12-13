@@ -77,7 +77,14 @@ class CaseSrv @Inject() (
 
   def linkedCases(id: String): Source[(Case, Seq[Artifact]), NotUsed] = {
     import org.elastic4play.services.QueryDSL._
-    findSrv[ArtifactModel, Artifact](artifactModel, parent("case", and(withId(id), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)), Some("all"), Nil)
+    findSrv[ArtifactModel, Artifact](
+      artifactModel,
+      and(
+        parent("case", and(
+          withId(id),
+          "status" ~!= CaseStatus.Deleted,
+          "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
+        "status" ~= "Ok"), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
       .groupBy(20, _.parentId)
