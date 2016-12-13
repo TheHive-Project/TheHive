@@ -75,7 +75,7 @@ class CortexSrv @Inject() (
     implicit val system: ActorSystem,
     implicit val mat: Materializer) {
 
-  lazy val log = Logger(getClass)
+  lazy val logger = Logger(getClass)
 
   val mergeActor = actor(new Act {
     become {
@@ -161,7 +161,7 @@ class CortexSrv @Inject() (
   }
 
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
-    log.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job ${jobId}")
+    logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job ${jobId}")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
@@ -169,18 +169,18 @@ class CortexSrv @Inject() (
           updateJobWithCortex(jobId, cortexJobId, cortex)
         else {
           val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
-          log.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
+          logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
           val jobFields = Fields.empty
             .set("status", status.toString)
             .set("report", report)
             .set("endDate", Json.toJson(new Date))
           update(jobId, jobFields).onComplete {
-            case Failure(e) ⇒ log.error(s"Update job fails", e)
+            case Failure(e) ⇒ logger.error(s"Update job fails", e)
             case _          ⇒
           }
         }
       case Failure(e) ⇒
-        log.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
+        logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
         updateJobWithCortex(jobId, cortexJobId, cortex)
     }
     ()

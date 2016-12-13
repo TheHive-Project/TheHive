@@ -10,6 +10,7 @@ import play.api.libs.json.{ JsObject, JsValue, Json }
 
 import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
+import org.elastic4play.utils.RichJson
 
 import JsonFormat.jobStatusFormat
 import models.{ Artifact, ArtifactModel }
@@ -35,9 +36,9 @@ trait JobAttributes { _: AttributeDef ⇒
 class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job") with JobAttributes with AuditedModel {
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful {
-    attrs - "report" - "endDate" +
-      ("startDate" → Json.toJson(new Date)) +
-      ("status" → Json.toJson(JobStatus.InProgress))
+    attrs
+      .setIfAbsent("status", JobStatus.InProgress)
+      .setIfAbsent("startDate", new Date)
   }
 }
 class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, attributes) with JobAttributes {
