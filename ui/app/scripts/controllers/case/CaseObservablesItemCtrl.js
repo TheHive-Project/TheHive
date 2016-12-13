@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv) {
+        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -84,11 +84,11 @@
 
                         AnalyzerSrv.get(job.analyzerId)
                             .finally(function (data) {
-                                    $scope.analyzers[data.analyzerId] = {
-                                        active: false,
-                                        showRows: false
-                                    };
-                                });
+                                $scope.analyzers[data.analyzerId] = {
+                                    active: false,
+                                    showRows: false
+                                };
+                            });
                     }
                 });
             };
@@ -98,7 +98,7 @@
                     template: job.analyzerId,
                     content: job.report,
                     status: job.status
-                }                
+                }
             }
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
@@ -136,20 +136,34 @@
 
             $scope.runAnalyzer = function (analyzerId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
-                return CortexSrv.createJob({
-                    cortexId: 'local',
-                    artifactId: $scope.artifact.id,
-                    analyzerId: analyzerId
-                }).then(function () {
-                    AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
-                }, function (response) {
-                    AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
-                });
+
+                AnalyzerSrv.serversFor([analyzerId])
+                    .then(function(servers) {
+                        if(servers.length === 1) {
+                            return $q.resolve(servers[0]);
+                        } else {
+                            return CortexSrv.promptForInstance(servers);
+                        }
+                    })
+                    .then(function (serverId) {
+                        return CortexSrv.createJob({
+                            cortexId: serverId,
+                            artifactId: $scope.artifact.id,
+                            analyzerId: analyzerId
+                        });
+                    })
+                    .then(function () {
+                        AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
+                    }, function (response) {
+                        if(response.status) {
+                            AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                        }                        
+                    });
             };
 
-            $scope.runAll = function() {
-                _.each($scope.analyzers, function(analyzer, id) {
-                    if(analyzer.active === true) {
+            $scope.runAll = function () {
+                _.each($scope.analyzers, function (analyzer, id) {
+                    if (analyzer.active === true) {
                         $scope.runAnalyzer(id);
                     }
                 });

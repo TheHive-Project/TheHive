@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CortexSrv', function ($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('CortexSrv', function ($q, $http, $rootScope, $modal, StatSrv, StreamSrv, PSearchSrv) {
 
             var baseUrl = '/api/connector/cortex';
 
@@ -30,6 +30,22 @@
 
                 createJob: function (job) {
                     return $http.post(baseUrl + '/job', job);
+                },
+
+                promptForInstance: function (servers) {
+                    var modalInstance = $modal.open({
+                        templateUrl: 'views/partials/cortex/choose-instance-dialog.html',
+                        controller: 'CortexInstanceDialogCtrl',
+                        controllerAs: 'vm',
+                        size: '',
+                        resolve: {
+                            servers: function() {
+                                return servers;
+                            }
+                        }
+                    });
+
+                    return modalInstance.result;
                 }
             };
 

@@ -78,6 +78,25 @@
                         });
 
                     return deferred.promise;
+                },
+
+                serversFor: function(analyzerIds) {
+                    var deferred = $q.defer();
+
+                    factory.query()
+                        .then(function(all) {
+                            var cortexIds = [];                            
+
+                            _.each(all, function(value, key) {
+                                if(analyzerIds.indexOf(key) > -1){
+                                    cortexIds = cortexIds.concat(value.cortexIds);
+                                }                                
+                            });
+
+                            deferred.resolve(_.uniq(cortexIds));
+                        });
+
+                    return deferred.promise;
                 }
             };
 

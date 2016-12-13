@@ -33,6 +33,8 @@
                                     ret.pop();
                                 }
                                 messageAdded += 1;
+                            } else {
+                                console.log('message already in the flow: ', message);
                             }
 
                         }

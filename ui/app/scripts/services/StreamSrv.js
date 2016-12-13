@@ -22,6 +22,7 @@
             },
 
             handleStreamResponse: function(data) {
+                console.log(data);
                 var byRootIds = {};
                 var byObjectTypes = {};
                 var byRootIdsWithObjectTypes = {};
