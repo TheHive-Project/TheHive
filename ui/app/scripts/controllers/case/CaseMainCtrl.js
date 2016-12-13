@@ -160,11 +160,15 @@
             };
 
             $scope.openCloseDialog = function() {
-                $modal.open({
+                var modalInstance = $modal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.close.html',
                     controller: 'CaseCloseModalCtrl',
                     size: 'lg'
+                });
+
+                modalInstance.result.then(function() {
+                    $state.go('app.main', {viewId: 'currentcases'});
                 });
             };
 

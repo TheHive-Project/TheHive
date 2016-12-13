@@ -34,8 +34,6 @@
             $scope.initialize = function() {
                 MetricsCacheSrv.all().then(function(metricsCache) {
 
-                    console.log($scope.caze);
-
                     $scope.formData = {
                         status: 'Resolved',
                         resolutionStatus: $scope.caze.resolutionStatus || 'Indeterminate',
