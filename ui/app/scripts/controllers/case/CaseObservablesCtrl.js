@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv) {
+        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -489,24 +489,56 @@
             $scope.runAnalyzer = function (analyzerId, artifact) {
                 var artifactName = artifact.data || artifact.attachment.name;
 
-                return CortexSrv.createJob({
-                    cortexId: 'local',
-                    artifactId: artifact.id,
-                    analyzerId: analyzerId
-                }).then(function () {}, function (response) {
-                    AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
-                });
+                return CortexSrv.getServers([analyzerId])
+                    .then(function (serverId) {
+                        return CortexSrv.createJob({
+                            cortexId: serverId,
+                            artifactId: artifact.id,
+                            analyzerId: analyzerId
+                        });
+                    })
+                    .then(function () {}, function (response) {
+                        if (response && response.status) {
+                            AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                        }
+                    });
             };
 
             // run selected analyzers on selected artifacts
             $scope.runAnalyzerOnSelection = function () {
+                var toRun = [];
+
                 angular.forEach($scope.selection.artifacts, function (element) {
                     angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
                         if (($scope.analyzersList.selected[analyzer.id]) && ($scope.checkDataTypeList(analyzer, element.dataType))) {
-                            $scope.runAnalyzer(analyzer.id, element);
+                            toRun.push({
+                                analyzerId: analyzer.id,
+                                artifact: element
+                            });
                         }
                     });
                 });
+
+                var analyzerIds = _.uniq(_.pluck(toRun, 'analyzerId'));
+
+                CortexSrv.getServers(analyzerIds)
+                    .then(function(serverId) {
+                        return $q.all(
+                            _.map(toRun, function(item) {
+                                return CortexSrv.createJob({
+                                    cortexId: serverId,
+                                    artifactId: item.artifact.id,
+                                    analyzerId: item.analyzerId
+                                });                                
+                            })
+                        );                                                
+                    })
+                    .then(function() {
+                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
+                    }, function() {
+                        
+                    })
+
                 $scope.initAnalyzersList();
                 $scope.initSelection($scope.selection);
             };

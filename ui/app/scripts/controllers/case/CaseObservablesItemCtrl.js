@@ -134,39 +134,48 @@
                 });
             };
 
+            $scope._runAnalyzer = function (serverId, analyzerId, artifactId) {
+                return CortexSrv.createJob({
+                    cortexId: serverId,
+                    artifactId: $scope.artifact.id,
+                    analyzerId: analyzerId
+                });
+            }
+
             $scope.runAnalyzer = function (analyzerId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
 
-                AnalyzerSrv.serversFor([analyzerId])
-                    .then(function(servers) {
-                        if(servers.length === 1) {
-                            return $q.resolve(servers[0]);
-                        } else {
-                            return CortexSrv.promptForInstance(servers);
-                        }
-                    })
-                    .then(function (serverId) {
-                        return CortexSrv.createJob({
-                            cortexId: serverId,
-                            artifactId: $scope.artifact.id,
-                            analyzerId: analyzerId
-                        });
-                    })
+                CortexSrv.getServers([analyzerId])
+                    .then(function(serverId) {
+                        return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
+                    })                
                     .then(function () {
                         AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
                     }, function (response) {
-                        if(response.status) {
+                        if (response && response.status) {
                             AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
-                        }                        
+                        }
                     });
             };
 
             $scope.runAll = function () {
-                _.each($scope.analyzers, function (analyzer, id) {
-                    if (analyzer.active === true) {
-                        $scope.runAnalyzer(id);
-                    }
-                });
+                var artifactId = $scope.artifact.id;
+                var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
+                var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
+                    return a.active = true;
+                }), 'id');
+
+                CortexSrv.getServers(analyzerIds)
+                    .then(function(serverId) {
+                        return $q.all(_.map(analyzerIds, function(analyzerId){
+                            return $scope._runAnalyzer(serverId, analyzerId, artifactId);
+                        }));                        
+                    })
+                    .then(function() {
+                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
+                    }, function() {
+                        
+                    })
             };
 
         }

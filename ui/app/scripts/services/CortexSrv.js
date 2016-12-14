@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CortexSrv', function ($q, $http, $rootScope, $modal, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('CortexSrv', function ($q, $http, $rootScope, $modal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
 
             var baseUrl = '/api/connector/cortex';
 
@@ -32,6 +32,17 @@
                     return $http.post(baseUrl + '/job', job);
                 },
 
+                getServers: function (analyzerIds) {
+                    return AnalyzerSrv.serversFor(analyzerIds)
+                        .then(function (servers) {
+                            if (servers.length === 1) {
+                                return $q.resolve(servers[0]);
+                            } else {
+                                return factory.promptForInstance(servers);
+                            }
+                        });
+                },
+
                 promptForInstance: function (servers) {
                     var modalInstance = $modal.open({
                         templateUrl: 'views/partials/cortex/choose-instance-dialog.html',
@@ -39,7 +50,7 @@
                         controllerAs: 'vm',
                         size: '',
                         resolve: {
-                            servers: function() {
+                            servers: function () {
                                 return servers;
                             }
                         }

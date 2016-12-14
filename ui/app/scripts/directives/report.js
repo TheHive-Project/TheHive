@@ -8,8 +8,10 @@
                     return;
                 }
 
+                var reportUrl = '/api/connector/cortex/report/template/content/' + scope.name + '/' + scope.flavor;
+
                 // find report template
-                $templateRequest('/api/connector/cortex/report/template/content/' + scope.name + '/' + scope.flavor, true)
+                $templateRequest(reportUrl, true)
                     .then(function (tmpl) {
                         scope.element.html($compile(tmpl)(scope));
                     }, function (response) {
