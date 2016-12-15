@@ -6,6 +6,7 @@ import scala.concurrent.ExecutionContext
 
 import play.api.Logger
 import play.api.http.Status
+import play.api.libs.json.Json
 import play.api.mvc.Controller
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
@@ -18,11 +19,12 @@ import org.elastic4play.services.JsonFormat.queryReads
 
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.{ analyzerFormats, cortexJobFormat }
-import connectors.cortex.services.CortexSrv
+import connectors.cortex.services.{ CortexConfig, CortexSrv }
 
 @Singleton
 class CortextCtrl @Inject() (
     reportTemplateCtrl: ReportTemplateCtrl,
+    cortexConfig: CortexConfig,
     cortexSrv: CortexSrv,
     authenticated: Authenticated,
     fieldsBodyParser: FieldsBodyParser,
@@ -30,6 +32,7 @@ class CortextCtrl @Inject() (
     implicit val ec: ExecutionContext) extends Controller with Connector with Status {
   val name = "cortex"
   val log = Logger(getClass)
+  override val status = Json.obj("enabled" → true, "servers" → cortexConfig.instances.map(_.name))
   val router = SimpleRouter {
     case POST(p"/job") ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)

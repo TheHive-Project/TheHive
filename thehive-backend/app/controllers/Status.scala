@@ -36,7 +36,7 @@ class StatusCtrl @Inject() (
         "Play" → getVersion(classOf[Controller]),
         "Elastic4s" → getVersion(classOf[ElasticDsl]),
         "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
-      "connectors" → JsObject(connectors.map(c ⇒ c.name → Json.obj("enabled" → true)).toSeq),
+      "connectors" → JsObject(connectors.map(c ⇒ c.name → c.status).toSeq),
       "config" → Json.obj(
         "authType" → (authSrv match {
           case multiAuthSrv: MultiAuthSrv ⇒ multiAuthSrv.authProviders.map { a ⇒ JsString(a.name) }

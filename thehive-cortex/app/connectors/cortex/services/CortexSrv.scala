@@ -151,7 +151,7 @@ class CortexSrv @Inject() (
         analysers
           .groupBy(_.name)
           .values
-          .map(_.reduce((a1, a2) ⇒ a1.copy(cortexIds = a1.cortexIds ::: a2.cortexIds)))
+          .map(_.reduceLeft((a1, a2) ⇒ a1.copy(cortexIds = a1.cortexIds ::: a2.cortexIds)))
           .toSeq
       }
   }
