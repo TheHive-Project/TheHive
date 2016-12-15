@@ -33,7 +33,7 @@
 
                             deferred.resolve(analyzers);
                         }, function (rejection) {
-                            deferred.reject(rejection);
+                            deferred.reject({});
                         })
 
                     } else {

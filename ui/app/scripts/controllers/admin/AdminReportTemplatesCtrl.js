@@ -12,6 +12,7 @@
 
         this.templates = [];
         this.analyzers = [];
+        this.analyzerCount = 0;
 
 
         this.load = function() {
@@ -24,11 +25,19 @@
                 
                 return $q.resolve(self.analyzers);
             }).then(function (analyzersMap) {
+                if(_.isEmpty(analyzersMap)) {
+                    _.each(_.pluck(self.templates, 'analyzers'), function(item) {
+                        analyzersMap[item] = {
+                            id: item
+                        };
+                    });
+                }
+
                 _.each(self.templates, function (tpl) {
                     analyzersMap[tpl.analyzers][tpl.flavor + 'Report'] = tpl;
-                });
+                });  
 
-                console.log(self.analyzers);
+                self.analyzerCount = _.keys(analyzersMap).length;
             });
         };
 

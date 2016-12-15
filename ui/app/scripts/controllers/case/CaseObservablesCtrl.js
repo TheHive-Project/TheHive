@@ -1,10 +1,11 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv) {
+        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
+            $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.uiSrv = ObservablesUISrv;
             $scope.caseId = $stateParams.caseId;
             $scope.showText = false;

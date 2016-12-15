@@ -12,13 +12,19 @@
         </div>        
     </div>
 </div>
-<div class="row">
+
+<div class="row mv-s" ng-show="vm.analyzerCount === 0">
+    <div class="col-md-12">
+        <div class="empty-message">No report templates found.</div>
+    </div>
+</div>
+
+<div class="row" ng-show="vm.analyzerCount > 0">
     <div class="col-md-12">
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th width="100px">Version</th>
+                    <th>Name</th>                    
                     <th width="200px">Short template</th>
                     <th width="200px">Long template</th>
                 </tr>
@@ -26,10 +32,9 @@
             <tbody>
                 <tr ng-repeat="analyzer in vm.analyzers">
                     <td>
-                        {{analyzer.name}}<br>
-                        <small class="text-muted">{{analyzer.description}}</small>
-                    </td>
-                    <td class="vmiddle">{{analyzer.version}}</td>
+                        {{::analyzer.id}}<br>
+                        <small class="text-muted">{{::analyzer.description}}</small>
+                    </td>                    
                     <td class="vmiddle">
                         <span class="clickable label label-lg label-success" 
                             ng-if="analyzer.shortReport" 

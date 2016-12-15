@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv) {
+        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -19,7 +19,7 @@
 
             $scope.artifact = {};
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
-
+            $scope.analysisEnabled = VersionSrv.hasCortex();        
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -61,9 +61,11 @@
                 // Get analyzers available for the observable's datatype
                 AnalyzerSrv.forDataType(artifact.dataType)
                     .then(function (analyzers) {
-                        return $scope.analyzers = analyzers;
+                        $scope.analyzers = analyzers;
+                    }, function () {
+                        $scope.analyzers = [];
                     })
-                    .then(function (analyzers) {
+                    .finally(function () {
                         $scope.jobs = CortexSrv.list($scope.caseId, observableId, $scope.onJobsChange);
                     });
 
@@ -82,6 +84,7 @@
                     } else {
                         $scope.analyzerJobs[job.analyzerId] = [job];
 
+                        /*
                         AnalyzerSrv.get(job.analyzerId)
                             .finally(function (data) {
                                 $scope.analyzers[data.analyzerId] = {
@@ -89,6 +92,7 @@
                                     showRows: false
                                 };
                             });
+                            */
                     }
                 });
             };
@@ -146,9 +150,9 @@
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
 
                 CortexSrv.getServers([analyzerId])
-                    .then(function(serverId) {
+                    .then(function (serverId) {
                         return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
-                    })                
+                    })
                     .then(function () {
                         AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
                     }, function (response) {
@@ -166,15 +170,15 @@
                 }), 'id');
 
                 CortexSrv.getServers(analyzerIds)
-                    .then(function(serverId) {
-                        return $q.all(_.map(analyzerIds, function(analyzerId){
+                    .then(function (serverId) {
+                        return $q.all(_.map(analyzerIds, function (analyzerId) {
                             return $scope._runAnalyzer(serverId, analyzerId, artifactId);
-                        }));                        
+                        }));
                     })
-                    .then(function() {
+                    .then(function () {
                         AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
-                    }, function() {
-                        
+                    }, function () {
+
                     })
             };
 
