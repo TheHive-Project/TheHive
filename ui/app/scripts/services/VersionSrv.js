@@ -26,7 +26,9 @@
                     try {
                         var service = cache.connectors.cortex;
                         
-                        return service.enabled && service.servers.length;
+                        // TODO check how to verify if cortex is enabled
+                        //return service.enabled && service.servers.length;
+                        return service.enabled;
                     } catch (err) {
                         return false;
                     }

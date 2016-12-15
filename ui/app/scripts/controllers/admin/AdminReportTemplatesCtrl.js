@@ -4,7 +4,8 @@
     angular.module('theHiveControllers')
         .controller('AdminReportTemplatesCtrl', AdminReportTemplatesCtrl)
         .controller('AdminReportTemplateDialogCtrl', AdminReportTemplateDialogCtrl)
-        .controller('AdminReportTemplateImportCtrl', AdminReportTemplateImportCtrl);
+        .controller('AdminReportTemplateImportCtrl', AdminReportTemplateImportCtrl)
+        .controller('AdminReportTemplateDeleteCtrl', AdminReportTemplateDeleteCtrl);
 
 
     function AdminReportTemplatesCtrl($q, $modal, AnalyzerSrv, ReportTemplateSrv) {
@@ -63,6 +64,24 @@
             });
         };
 
+        this.deleteTemplate = function(template) {
+            var modalInstance = $modal.open({                
+                templateUrl: 'views/partials/admin/report-template-delete.html',
+                controller: 'AdminReportTemplateDeleteCtrl',
+                controllerAs: 'vm',
+                size: '',
+                resolve: {
+                    template: function() {
+                        return template;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function() {
+                self.load();
+            });
+        };
+
         this.import = function (analyzer, dataType) {
             var modalInstance = $modal.open({
                 animation: true,
@@ -105,10 +124,24 @@
                 }, function(response) {
                     AlertSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
                 });
-        };
-
-        
+        };        
     }
+
+    function AdminReportTemplateDeleteCtrl($modalInstance, ReportTemplateSrv, AlertSrv, template) {
+        this.template = template;
+
+        this.ok = function () {
+            ReportTemplateSrv.delete(template.id)
+                .then(function() {
+                    $modalInstance.close();
+                }, function(response) {
+                    AlertSrv.error('AdminReportTemplateDeleteCtrl', response.data, response.status);
+                });
+        };
+        this.cancel = function () {
+            $modalInstance.dismiss('cancel');
+        };
+    };
 
     function AdminReportTemplateImportCtrl($modalInstance, ReportTemplateSrv, AlertSrv) {
         this.formData = {};

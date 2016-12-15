@@ -30,6 +30,10 @@
                     }
                 },
 
+                delete: function(tplId) {
+                    return $http.delete(baseUrl + '/' + tplId);
+                },
+
                 import: function(post) {
                     var postData = {
                         templates: post.attachment

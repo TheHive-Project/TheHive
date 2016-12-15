@@ -7,24 +7,22 @@
             <div class="btn-group">
                 <button type="button" class="btn btn-primary" ng-click="vm.import()">                    
                     <span class="fa fa-upload"></span> Import templates
-                </button>                
+                </button>
             </div>
-        </div>        
+        </div>
     </div>
 </div>
-
 <div class="row mv-s" ng-show="vm.analyzerCount === 0">
     <div class="col-md-12">
         <div class="empty-message">No report templates found.</div>
     </div>
 </div>
-
 <div class="row" ng-show="vm.analyzerCount > 0">
     <div class="col-md-12">
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Name</th>                    
+                    <th>Name</th>
                     <th width="200px">Short template</th>
                     <th width="200px">Long template</th>
                 </tr>
@@ -34,24 +32,24 @@
                     <td>
                         {{::analyzer.id}}<br>
                         <small class="text-muted">{{::analyzer.description}}</small>
-                    </td>                    
-                    <td class="vmiddle">
-                        <span class="clickable label label-lg label-success" 
-                            ng-if="analyzer.shortReport" 
-                            ng-click="vm.showTemplate(analyzer.shortReport, analyzer)">View Template</span>
-
-                        <span class="clickable label label-lg label-default" 
-                            ng-if="!analyzer.shortReport",
-                            ng-click="vm.showTemplate({flavor: 'short'}, analyzer)"><em>Default template</em></span>
                     </td>
                     <td class="vmiddle">
-                        <span class="clickable label label-lg label-success" 
-                            ng-if="analyzer.longReport" 
-                            ng-click="vm.showTemplate(analyzer.longReport, analyzer)">View Template</span>
-
-                        <span class="clickable label label-lg label-default" 
-                            ng-if="!analyzer.longReport"
-                            ng-click="vm.showTemplate({flavor: 'long'}, analyzer)"><em>Default template</em></span>
+                        <div class="btn-group btn-group-sm" ng-if="analyzer.shortReport">
+                            <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.shortReport, analyzer)">View Template</button>
+                            <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.shortReport)"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="btn-group btn-group-sm" ng-if="!analyzer.shortReport">
+                            <button type="button" class="btn btn-dark" ng-click="vm.showTemplate({flavor: 'short'}, analyzer)">Default template</button>
+                        </div>
+                    </td>
+                    <td class="vmiddle">
+                        <div class="btn-group btn-group-sm" ng-if="analyzer.longReport">
+                            <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.longReport, analyzer)">View Template</button>
+                            <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.longReport)"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="btn-group btn-group-sm" ng-if="!analyzer.longReport">
+                            <button type="button" class="btn btn-dark" ng-click="vm.showTemplate({flavor: 'long'}, analyzer)">Default template</button>
+                        </div>                        
                     </td>
                 </tr>
             </tbody>
