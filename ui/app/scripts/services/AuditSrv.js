@@ -33,8 +33,8 @@
                                     ret.pop();
                                 }
                                 messageAdded += 1;
-                            } else {
-                                console.log('message already in the flow: ', message);
+                            } else if(alreadyInFlow && message.base.objectType === 'case_artifact_job') {
+                                ret[messageAdded] = message;
                             }
 
                         }
