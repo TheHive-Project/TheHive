@@ -51,6 +51,7 @@ object CortexConfig {
     } yield cic
   }
 }
+@Singleton
 case class CortexConfig(truststore: Option[Path], instances: Seq[CortexClient]) {
 
   @Inject
