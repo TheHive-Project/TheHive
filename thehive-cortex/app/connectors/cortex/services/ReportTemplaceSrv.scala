@@ -44,8 +44,8 @@ class ReportTemplateSrv @Inject() (
     updateSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, ids, fields)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[ReportTemplate] =
-    deleteSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, id)
+  def delete(id: String)(implicit Context: AuthContext): Future[Unit] =
+    deleteSrv.realDelete[ReportTemplateModel, ReportTemplate](reportTemplateModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[ReportTemplate, NotUsed], Future[Long]) = {
     findSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, queryDef, range, sortBy)
