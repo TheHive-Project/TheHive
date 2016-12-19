@@ -9,8 +9,9 @@
     <tbody>
         <tr ng-repeat="o in failedObservables">
             <td class="wrap">{{o.data | fang}}</td>
-            <td class="nowrap" ng-switch="o.type">
-                <span ng-switch-when="CONFLICT">Already exists</span>
+            <td class="nowrap" ng-switch="o.type">                
+                <span ng-switch-when="CreateError">Already exists</span>
+                <span ng-switch-when="ConflictError">Already exists</span>
                 <span ng-switch-when="AttributeError">Format error</span>
                 <span ng-switch-default>Unexpected error</span>
             </td>
