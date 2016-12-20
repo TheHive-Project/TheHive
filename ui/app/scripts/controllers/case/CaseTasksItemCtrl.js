@@ -5,6 +5,10 @@
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
+            // Initialize controller
+            $scope.task = task;
+            $scope.tabName = 'task-' + task.id;
+
             $scope.loading = false;
             $scope.newLog = {
                 message: ''
@@ -68,6 +72,7 @@
                 $scope.task.status = 'Completed';
                 $scope.updateField('status', 'Completed');
 
+                CaseTabsSrv.removeTab($scope.tabName)
                 $state.go('app.case.tasks', {
                     caseId: $scope.caseId
                 });
@@ -111,14 +116,10 @@
 
                 return true;
             };
-
-            // Initialize controller
-            $scope.task = task;
-            var taskName = 'task-' + task.id;
-
+            
             // Add tabs
-            CaseTabsSrv.addTab(taskName, {
-                name: taskName,
+            CaseTabsSrv.addTab($scope.tabName, {
+                name: $scope.tabName,
                 label: task.title,
                 closable: true,
                 state: 'app.case.tasks-item',
@@ -128,7 +129,7 @@
             });
 
             // Select tab
-            CaseTabsSrv.activateTab(taskName);
+            CaseTabsSrv.activateTab($scope.tabName);
 
             // Prepare the scope data
             $scope.initScope(task);
