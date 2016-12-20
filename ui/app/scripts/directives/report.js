@@ -23,17 +23,17 @@
             }
             return {
                 restrict: 'E',
-                replace: true,
-                link: function (scope, element) {
-                    scope.element = element;
-                    scope.$watchGroup(['name', 'content', 'status'], updateReport);
-                },
+                replace: true,                
                 scope: {
                     'name': '=',
                     'artifact': '=',
                     'flavor': '@',
                     'status': '=',
                     'content': '='
+                },
+                link: function (scope, element) {
+                    scope.element = element;
+                    scope.$watchGroup(['name', 'content', 'status'], updateReport);
                 }
             };
         });

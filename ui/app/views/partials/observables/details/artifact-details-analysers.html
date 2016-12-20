@@ -41,22 +41,22 @@
     </tbody>
 </table>
 
-<div class="row vpad20">
+<div class="row">
     <div class="col-md-6 col-md-offset-3">
         <hr>
     </div>
 </div>
 
-<div class="row" style="border-bottom:1px dotted">
+<div class="row observable-report" ng-if="report">
     <div class="col-md-12">
-        <p>
-            <strong>Report</strong>
-        </p>
-    </div>
-</div>
-
-<div class="row observable-report vpad10" ng-if="report">
-    <div class="col-md-12">
-        <report artifact="artifact" content="report.content.full || report.content" default="jsonhuman" flavor="long" name="report.template" status="report.status"></report>
+        <h3 class="pad10 text-primary">
+            Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | showDate}}</small>
+        </h3>
+        <report artifact="artifact" 
+            content="report.content.full || report.content" 
+            default="jsonhuman" 
+            flavor="long" 
+            name="report.template" 
+            status="report.status"></report>
     </div>
 </div>

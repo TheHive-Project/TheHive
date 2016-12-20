@@ -101,8 +101,10 @@
                 $scope.report = {
                     template: job.analyzerId,
                     content: job.report,
-                    status: job.status
-                }
+                    status: job.status,
+                    startDate: job.startDate,
+                    endDate: job.endDate
+                };
             }
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
