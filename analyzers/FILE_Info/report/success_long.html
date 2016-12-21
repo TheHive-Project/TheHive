@@ -23,24 +23,24 @@
           <dl class="dl-horizontal">
               <dt>SHA256</dt>
               <dd class="wrap">{{content.Identification['SHA256']}}</dd>
-          <dl class="dl-horizontal" ng-if={{content.Identification['impash']}}>
+          <dl class="dl-horizontal" ng-if=content.Identification['impash']>
               <dt>impash</dt>
               <dd class="wrap">{{content.Identification['impash']|| "-"}} </dd>
           </dl>
-          <dl class="dl-horizontal" ng-if={{content.Identification['ssdeep']}}>
+          <dl class="dl-horizontal" ng-if=content.Identification['ssdeep']>
               <dt>ssdeep</dt>
               <dd class="wrap">{{content.Identification['ssdeep']|| "-"}}  </dd>
           </dl>
-          <dl class="dl-horizontal" ng-if={{content.Identification['pehash']}}>
+          <dl class="dl-horizontal" ng-if=content.Identification['pehash']>
               <dt>pehash</dt>
               <dd class="wrap">{{content.Identification['pehash']|| "-"}}  </dd>
           </dl>
-          <dl class="dl-horizontal" ng-if={{content.Identification['OperatingSystem']}}>
+          <dl class="dl-horizontal" ng-if=content.Identification['OperatingSystem']>
               <dt>Operating System</dt>
               <dd class="wrap">{{content.Identification['OperatingSystem']}}
               </dd>
           </dl>
-          <dl class="dl-horizontal" ng-if={{content.Identification['PEType']}}>
+          <dl class="dl-horizontal" ng-if=content.Identification['PEType']>
               <dt>PE Type</dt>
               <dd class="wrap">{{content.Identification['PEType']}}</dd>
           </dl>
@@ -76,7 +76,7 @@
   </div>
 
   <!-- PE Basic Information -->
-  <div class="panel panel-info" ng-if={{content.BasicInformation}}>
+  <div class="panel panel-info" ng-if=content.BasicInformation>
       <div class="panel-heading">
           <strong>PE Basic Information</strong>
       </div>
@@ -105,7 +105,7 @@
   </div>
 
   <!-- PE Sections -->
-  <div class="panel panel-info" ng-if={{content.Sections}}>
+  <div class="panel panel-info" ng-if=content.Sections>
       <div class="panel-heading">
           <strong>PE Sections</strong>
       </div>
@@ -145,7 +145,7 @@
 
 <!-- PE Import Address Table -->
 
-  <div class="panel panel-info" ng-if={{content.ImportAdressTable}}>
+  <div class="panel panel-info" ng-if=content.ImportAdressTable>
     <div class="panel-heading">
         <strong>PE Import Address Table</strong>
     </div>

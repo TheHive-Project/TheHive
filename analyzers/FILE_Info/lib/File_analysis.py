@@ -1,14 +1,11 @@
 #!/usr/bin/python
 
-import sys
 import os
-import json
 import pefile
 import hashlib
 import pydeep
 import magic
 import pyexifinfo
-import re
 import pehashng
 
 
@@ -42,13 +39,13 @@ class file:
 
     # File hash
     def md5(self):
-        return hashlib.md5(self.stream).hexdigest();
+        return hashlib.md5(self.stream).hexdigest()
 
     def sha1(self):
-        return hashlib.sha1(self.stream).hexdigest();
+        return hashlib.sha1(self.stream).hexdigest()
 
     def sha256(self):
-        return hashlib.sha256(self.stream).hexdigest();
+        return hashlib.sha256(self.stream).hexdigest()
 
     def ssdeep(self):
         return pydeep.hash_file(self.path)
@@ -104,8 +101,11 @@ class file:
     def Machine(self):
         if self.pe:
             machinetype = self.pedict['FILE_HEADER']['Machine']['Value']
-            mt = {'0x014c': 'x86', '0x0200': 'Itanium', '0x8664': 'x64'}
-            return mt[str(hex(machinetype))] if type(machinetype) is int else str(machinetype) + ' => Not x86/64 or Itanium'
+            mt = {'0x14c': 'x86', '0x0200': 'Itanium', '0x8664': 'x64'}
+            if type(machinetype) is int:
+                return mt[str(hex(machinetype))]
+            else:
+                return str(machinetype) + ' => Not x86/64 or Itanium'
 
     # PE:Entry Point
     def EntryPoint(self):

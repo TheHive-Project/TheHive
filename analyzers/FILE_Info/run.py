@@ -5,15 +5,9 @@
 
 
 import sys
-import re
-import os
 import json
 import codecs
-import pefile
-import magic
-import pyexifinfo
 from  lib.File_analysis import file
-from StringIO import StringIO
 
 
 if sys.stdout.encoding != 'UTF-8':
@@ -112,11 +106,11 @@ def FileInfo():
 # PE_Info analyzer
 def PE_info():
     f = file(filepath)
-    result['Identification']= {'impash':f.imphash(),
+    result['Identification'].update({'impash':f.imphash(),
                             'ssdeep':f.ssdeep(),
                             'pehash':f.pehash(),
                             'OperatingSystem':f.OperatingSystem(),
-                            'Type':f.PEtype()}
+                            'Type':f.PEtype()})
 
     result['BasicInformation'] = {'FileInfo':f.info(),
                               'FileSize': f.filesize(),
