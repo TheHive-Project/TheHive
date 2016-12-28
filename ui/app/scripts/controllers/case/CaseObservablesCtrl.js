@@ -530,15 +530,15 @@
                                     cortexId: serverId,
                                     artifactId: item.artifact.id,
                                     analyzerId: item.analyzerId
-                                });                                
+                                });
                             })
-                        );                                                
+                        );
                     })
                     .then(function() {
-                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
+                        AlertSrv.log('Analyzers have been successfully started for ' + $scope.selection.artifacts.length + ' observables', 'success');
                     }, function() {
-                        
-                    })
+
+                    });
 
                 $scope.initAnalyzersList();
                 $scope.initSelection($scope.selection);

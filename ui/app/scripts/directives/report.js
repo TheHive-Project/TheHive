@@ -14,22 +14,22 @@
                 $templateRequest(reportUrl, true)
                     .then(function (tmpl) {
                         scope.element.html($compile(tmpl)(scope));
-                    }, function (response) {
+                    }, function (/*response*/) {
                         $templateRequest('/views/reports/' + scope.flavor + '.html', true)
                             .then(function (tmpl) {
                                 scope.element.html($compile(tmpl)(scope));
                             });
-                    })
+                    });
             }
             return {
-                restrict: 'E',
-                replace: true,                
+                restrict: 'E',                
                 scope: {
                     'name': '=',
                     'artifact': '=',
                     'flavor': '@',
                     'status': '=',
-                    'content': '='
+                    'content': '=',
+                    'success': '='
                 },
                 link: function (scope, element) {
                     scope.element = element;
