@@ -5,8 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.http.Status
-import play.api.libs.json.{ JsArray, Json }
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json.JsArray
 import play.api.mvc.Controller
 
 import org.elastic4play.{ BadRequestError, Timed }
@@ -16,13 +15,11 @@ import org.elastic4play.services.{ Agg, AuxSrv }
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 
-import models.JsonFormat.analyzerWrites
-import services.{ AnalyzerSrv, ArtifactSrv }
+import services.ArtifactSrv
 
 @Singleton
 class ArtifactCtrl @Inject() (
     artifactSrv: ArtifactSrv,
-    analyzerSrv: AnalyzerSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
@@ -54,10 +51,8 @@ class ArtifactCtrl @Inject() (
 
   @Timed
   def get(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
-    for {
-      artifact ← artifactSrv.get(id, request.body.getStrings("fields").map("dataType" +: _))
-      analyzers ← analyzerSrv.availableFor(artifact.dataType()).map(multiResult ⇒ Json.toJson(multiResult))
-    } yield renderer.toOutput(OK, Json.obj("artifact" → artifact, "analyzers" → analyzers))
+    artifactSrv.get(id, request.body.getStrings("fields").map("dataType" +: _))
+      .map(artifact ⇒ renderer.toOutput(OK, artifact))
   }
 
   @Timed

@@ -1,0 +1,9 @@
+<div class="panel" ng-class="{'panel-info': success, 'panel-danger': !success}">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        <div ng-if="!success">{{content.errorMessage}}</div>
+        <pre ng-if="success">{{content | json}}</pre>
+    </div>
+</div>

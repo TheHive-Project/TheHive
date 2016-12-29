@@ -4,17 +4,19 @@ import javax.inject.Inject
 
 import scala.collection.immutable
 
+import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc.{ Action, Results }
 import play.api.routing.{ Router, SimpleRouter }
 import play.api.routing.sird.UrlContext
 
-import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
-
 import com.google.inject.AbstractModule
+
+import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
 
 trait Connector {
   val name: String
   val router: Router
+  val status: JsObject = Json.obj("enabled" → true)
 }
 
 class ConnectorRouter @Inject() (connectors: immutable.Set[Connector]) extends SimpleRouter {

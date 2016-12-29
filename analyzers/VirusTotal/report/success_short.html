@@ -1,11 +1,11 @@
 <span ng-switch="content.response_code">
 	<span ng-switch-when="1" class="label" ng-class="{'true':'label-info', 'false':'label-danger'}[content.positives < 5 ]">
 		VT:
-		<span ng-if="content.positives">{{content.positives}}/{{content.total}} ({{content.scan_date}})&nbsp;</span>
-		<span ng-if="content.scans && content.scans.length > 0">Scans({{content.scans.length}})&nbsp;</span>
-		<span ng-if="content.resolutions && content.resolutions.length > 0">Resolutions({{content.resolutions.length}})&nbsp;</span>
-		<span ng-if="content.detected_urls && content.detected_urls.length > 0">Url detections({{content.detected_urls.length}})&nbsp;</span>
-		<span ng-if="content.detected_downloaded_samples && content.detected_downloaded_samples.length > 0">files({{content.detected_downloaded_samples.length}})&nbsp;</span>
+		<span ng-if="content.positives">{{content.positives}}/{{content.total}} ({{content.scan_date}})</span>
+		<span ng-if="content.scans && content.scans.length > 0">Scans({{content.scans.length}})</span>
+		<span ng-if="content.resolutions && content.resolutions.length > 0">Resolutions({{content.resolutions.length}})</span>
+		<span ng-if="content.detected_urls && content.detected_urls.length > 0">Url detections({{content.detected_urls.length}})</span>
+		<span ng-if="content.detected_downloaded_samples && content.detected_downloaded_samples.length > 0">files({{content.detected_downloaded_samples.length}})</span>
 
 	</span>
 	<span ng-switch-default class="label label-warning">

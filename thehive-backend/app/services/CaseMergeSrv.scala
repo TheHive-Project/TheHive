@@ -21,12 +21,16 @@ import org.elastic4play.services.AuthContext
 import org.elastic4play.services.JsonFormat.log
 import org.elastic4play.services.QueryDSL
 
-import models.{ Artifact, ArtifactStatus, Case, CaseImpactStatus, CaseResolutionStatus, CaseStatus, JobStatus, Task }
+import models.{ Artifact, ArtifactStatus, Case, CaseImpactStatus, CaseResolutionStatus, CaseStatus, Task }
 import play.api.Logger
 import scala.util.Success
 import scala.util.Failure
 import models.TaskStatus
 import models.LogStatus
+import org.elastic4play.services.EventMessage
+import org.elastic4play.services.EventSrv
+
+case class MergeArtifact(newArtifact: Artifact, artifacts: Seq[Artifact], authContext: AuthContext) extends EventMessage
 
 @Singleton
 class CaseMergeSrv @Inject() (
@@ -34,7 +38,7 @@ class CaseMergeSrv @Inject() (
     taskSrv: TaskSrv,
     logSrv: LogSrv,
     artifactSrv: ArtifactSrv,
-    jobSrv: JobSrv,
+    eventSrv: EventSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
@@ -161,14 +165,6 @@ class CaseMergeSrv @Inject() (
     JsString(status)
   }
 
-  private[services] def mergeJobs(newArtifact: Artifact, artifacts: Seq[Artifact])(implicit authContext: AuthContext): Future[Done] = {
-    jobSrv.find(and(parent("case_artifact", withId(artifacts.map(_.id): _*)), "status" ~= JobStatus.Success), Some("all"), Nil)._1
-      .mapAsyncUnordered(5) { job ⇒
-        jobSrv.create(newArtifact, baseFields(job))
-      }
-      .runWith(Sink.ignore)
-  }
-
   private[services] def mergeArtifactsAndJobs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext): Future[Done] = {
     val caseMap = cases.map(c ⇒ c.id → c).toMap
     val caseFilter = and(parent("case", withId(cases.map(_.id): _*)), "status" ~= "Ok")
@@ -217,17 +213,11 @@ class CaseMergeSrv @Inject() (
           }
       }
       .mapConcat(identity)
-      .mapAsyncUnordered(5) {
+      .runForeach {
         case (newArtifact, sameArtifacts) ⇒
           // Then jobs are imported
-          mergeJobs(newArtifact, sameArtifacts)
-            .recover {
-              case error ⇒
-                logger.error("Log creation fail", error)
-                Done
-            }
+          eventSrv.publish(MergeArtifact(newArtifact, sameArtifacts, authContext))
       }
-      .runWith(Sink.ignore)
   }
 
   private[services] def mergeCases(cases: Seq[Case])(implicit authContext: AuthContext): Future[Case] = {

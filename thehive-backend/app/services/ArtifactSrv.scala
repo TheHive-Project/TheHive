@@ -11,7 +11,7 @@ import org.elastic4play.CreateError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FieldsSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
 
-import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel, JobModel }
+import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel }
 import org.elastic4play.utils.{ RichFuture, RichOr }
 import models.CaseStatus
 import models.CaseResolutionStatus
@@ -20,7 +20,6 @@ import models.CaseResolutionStatus
 class ArtifactSrv @Inject() (
     artifactModel: ArtifactModel,
     caseModel: CaseModel,
-    jobModel: JobModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,

@@ -11,10 +11,15 @@ lazy val thehiveMisp = (project in file("thehive-misp"))
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
+lazy val thehiveCortex = (project in file("thehive-cortex"))
+  .dependsOn(thehiveBackend)
+  .settings(publish := {})
+  .settings(SbtScalariform.scalariformSettings: _*)
+
 lazy val main = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp)
-  .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp)
+  .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .settings(aggregate in Docker := false)
   .settings(PublishToBinTray.settings: _*)
   .settings(Release.settings: _*)
@@ -112,8 +117,6 @@ dockerCommands := (dockerCommands.value.head +:
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-
-SbtScalariform.defaultScalariformSettings
 
 ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, false)

@@ -1,0 +1,22 @@
+<form class="form-horizontal" name="form" ng-submit="vm.ok()" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Select Cortex server</h3>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label class="col-sm-4 control-label">
+                Cortex Server
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-8">
+                <select class="form-control" ng-model="vm.selected" ng-options="s for s in vm.servers" required>
+                    <option value="">-- choose server --</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="vm.cancel()">Cancel</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">Yes, select this server</button>
+    </div>
+</form>

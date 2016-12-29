@@ -7,7 +7,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui.codemirror', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs'
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -100,11 +100,18 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                     }
                 }
             })
-            .state('app.administration.templates', {
-                url: '/templates',
-                templateUrl: 'views/partials/admin/templates.html',
-                controller: 'AdminTemplatesCtrl',
+            .state('app.administration.case-templates', {
+                url: '/case-templates',
+                templateUrl: 'views/partials/admin/case-templates.html',
+                controller: 'AdminCaseTemplatesCtrl',
                 title: 'Templates administration'
+            })
+            .state('app.administration.report-templates', {
+                url: '/report-templates',
+                templateUrl: 'views/partials/admin/report-templates.html',
+                controller: 'AdminReportTemplatesCtrl',
+                controllerAs: 'vm',
+                title: 'Report templates administration'
             })
             .state('app.administration.metrics', {
                 url: '/metrics',
@@ -118,6 +125,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
+            
 
         .state('app.case', {
                 abstract: true,

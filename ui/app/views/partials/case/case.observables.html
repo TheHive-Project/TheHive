@@ -25,7 +25,7 @@
                     <li>
                         <a ng-click="selection.isCollapsed=true;selection.Action ='addTags';evalTtags();">Add tag</a>
                     </li>
-                    <li>
+                    <li ng-if="analysisEnabled">
                         <a ng-click="selection.Action ='runAnalyzers'; activeAnalyzers();">Run analyzers</a>
                     </li>
                     <li class="divider"></li>

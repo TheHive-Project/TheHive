@@ -116,9 +116,15 @@
                             </li>
                             <li class="divider"></li>
                             <li>
-                                <a ui-sref="app.administration.templates">
+                                <a ui-sref="app.administration.case-templates">
                                     <i class="fa fa-file-text"></i>
                                     <span class="hpad5">Case templates</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a ui-sref="app.administration.report-templates">
+                                    <i class="fa fa-file-text"></i>
+                                    <span class="hpad5">Report templates</span>
                                 </a>
                             </li>
                             <li>
@@ -166,7 +172,7 @@
             </div>
         </div>
     </nav>
-    <div class="container-fluid container-main">
+    <div class="container-fluid container-main">        
         <div ng-if="currentUser.id" ui-view></div>
     </div>
 </div>
