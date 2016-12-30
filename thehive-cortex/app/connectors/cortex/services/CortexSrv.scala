@@ -8,7 +8,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
 import scala.language.implicitConversions
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
 import akka.NotUsed
@@ -97,8 +97,8 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(id: String, fields: Fields)(implicit Context: AuthContext) = {
-    updateSrv[JobModel, Job](jobModel, id, fields)
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext) = {
+    updateSrv[Job](job, fields)
   }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Job, NotUsed], Future[Long]) = {
@@ -171,14 +171,33 @@ class CortexSrv @Inject() (
         else {
           val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
-          val jobFields = Fields.empty
-            .set("status", status.toString)
-            .set("report", report)
-            .set("endDate", Json.toJson(new Date))
-          update(jobId, jobFields).onComplete {
-            case Failure(e) ⇒ logger.error(s"Update job fails", e)
-            case _          ⇒
-          }
+          getSrv[JobModel, Job](jobModel, jobId)
+            .flatMap { job ⇒
+              if (status == JobStatus.Success) {
+                val jobSummary = Try(Json.parse(report))
+                  .toOption
+                  .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
+                  .getOrElse(JsObject(Nil))
+                for {
+                  artifact ← artifactSrv.get(job.artifactId())
+                  reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject(Nil))
+                  newReports = reports + (job.analyzerId() → jobSummary)
+                } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
+                  .onComplete {
+                    case Failure(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
+                    case Success(_) ⇒
+                  }
+              }
+              val jobFields = Fields.empty
+                .set("status", status.toString)
+                .set("report", report)
+                .set("endDate", Json.toJson(new Date))
+              update(job, jobFields)
+            }
+            .onComplete {
+              case Failure(e) ⇒ logger.error(s"Update job fails", e)
+              case _          ⇒
+            }
         }
       case Failure(e) ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
