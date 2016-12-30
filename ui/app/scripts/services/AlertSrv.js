@@ -17,7 +17,7 @@
                     } else if (angular.isString(data) && data !== '') {
                         log(moduleName + ': ' + data, 'error');
                     } else if (angular.isObject(data)) {
-                        log(moduleName + ': ' + data.message, 'error');
+                        log(moduleName + ': ' + (data.message || data.error), 'error');
                     }
                 }
             };
