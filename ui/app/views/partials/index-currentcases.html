@@ -5,6 +5,7 @@
             <th style="width: 250px">Tags</th>
             <th style="width: 150px">Tasks</th>
             <th style="width: 100px">Observables</th>
+            <th style="width: 100px">Assigned To</th>
             <th style="width: 160px">Date</th>
         </tr>
     </thead>
@@ -20,7 +21,7 @@
 					<small>
                         Merged from <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[0]})"> Case #{{currentCase.stats.mergeFrom[0].caseId}}</a> and
                         <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
-                    </small>					
+                    </small>
 				</div>
             </td>
             <td>
@@ -40,6 +41,7 @@
             <td>
                 <a ui-sref="app.case.observables({caseId: currentCase.id})">{{currentCase.stats.artifacts.count}}</a>
             </td>
+            <td ng-bind="getUserInfo(currentCase.owner) | getField: 'name'"></td>
             <td>{{currentCase.startDate | showDate}}</td>
         </tr>
     </tbody>

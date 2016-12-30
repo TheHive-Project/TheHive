@@ -5,6 +5,7 @@
 			<th style="width: 250px">Tags</th>
 			<th style="width: 150px">Tasks</th>
 			<th style="width: 100px">Observables</th>
+			<th style="width: 100px">Assigned To</th>
 			<th style="width: 160px">Closed Date</th>
 		</tr>
 	</thead>
@@ -13,9 +14,9 @@
 		<tr ng-repeat="closedCase in list.values">
 			<td>
 				<tlp value="closedCase.tlp"></tlp>
-				<a ui-sref="app.case.details({caseId: closedCase.id})">#{{closedCase.caseId}} - {{closedCase.title}}</a>				
+				<a ui-sref="app.case.details({caseId: closedCase.id})">#{{closedCase.caseId}} - {{closedCase.title}}</a>
 				<div class="merge-hints text-danger" ng-if="closedCase.mergeInto">
-					<small>Merged into <a href ui-sref="app.case.details({caseId: closedCase.mergedInto})"> Case #{{closedCase.stats.mergeInto.caseId}}</a></small>					
+					<small>Merged into <a href ui-sref="app.case.details({caseId: closedCase.mergedInto})"> Case #{{closedCase.stats.mergeInto.caseId}}</a></small>
 				</div>
 			</td>
 			<td>
@@ -35,6 +36,7 @@
 			<td>
 				<a ui-sref="app.case.observables({caseId: closedCase.id})">{{closedCase.stats.artifacts.count}}</a>
 			</td>
+			<td ng-bind="getUserInfo(currentCase.owner) | getField: 'name'"></td>
 			<td>{{closedCase.endDate | showDate}}</td>
 		</tr>
 	</tbody>

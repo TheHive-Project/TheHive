@@ -28,6 +28,13 @@
             </dd>
         </dl>
 
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Assigned to</dt>
+            <dd>
+                <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
+            </dd>
+        </dl>
+
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Date</dt>
             <dd>
@@ -134,7 +141,7 @@
                     </ul>
                 </span>
             </h4>
-                                 
+
             <div ng-if="hasNoMetrics(caze)">
                 <em>No metrics need to be set</em>
             </div>
