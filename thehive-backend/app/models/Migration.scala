@@ -64,8 +64,8 @@ class Migration @Inject() (
         mapAttribute(Seq("case", "case_task", "case_artifact_job"), "endDate")(convertDate),
         mapAttribute("misp", "date")(convertDate),
         mapAttribute("misp", "publishDate")(convertDate),
-        mapAttribute(_ ⇒ true, "createdBy", convertDate),
-        mapAttribute(_ ⇒ true, "updatedBy", convertDate))
+        mapAttribute(_ ⇒ true, "createdAt", convertDate),
+        mapAttribute(_ ⇒ true, "updatedAt", convertDate))
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
