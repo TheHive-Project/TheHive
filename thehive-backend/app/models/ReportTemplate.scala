@@ -8,7 +8,7 @@ import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, EntityDef,
 
 trait ReportTemplateAttributes { _: AttributeDef ⇒
   val content = attribute("content", F.textFmt, "Content of the template")
-  val reportType = attribute("reportType", F.stringFmt, "Flavor of the report (short or long)")
+  val reportType = attribute("reportType", F.stringFmt, "Type of the report (short or long)")
   val analyzerId = multiAttribute("analyzerId", F.stringFmt, "Id of analyzers")
 }
 

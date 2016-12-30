@@ -23,7 +23,7 @@
             ]).then(function (response) {
                 self.templates = response[0].data;
                 self.analyzers = response[1];
-                
+
                 return $q.resolve(self.analyzers);
             }).then(function (analyzersMap) {
                 if(_.isEmpty(analyzersMap)) {
@@ -35,8 +35,8 @@
                 }
 
                 _.each(self.templates, function (tpl) {
-                    analyzersMap[tpl.analyzers][tpl.flavor + 'Report'] = tpl;
-                });  
+                    analyzersMap[tpl.analyzerId][tpl.reportType + 'Report'] = tpl;
+                });
 
                 self.analyzerCount = _.keys(analyzersMap).length;
             });
@@ -65,7 +65,7 @@
         };
 
         this.deleteTemplate = function(template) {
-            var modalInstance = $modal.open({                
+            var modalInstance = $modal.open({
                 templateUrl: 'views/partials/admin/report-template-delete.html',
                 controller: 'AdminReportTemplateDeleteCtrl',
                 controllerAs: 'vm',
@@ -82,7 +82,7 @@
             });
         };
 
-        this.import = function (analyzer, dataType) {
+        this.import = function () {
             var modalInstance = $modal.open({
                 animation: true,
                 templateUrl: 'views/partials/admin/report-template-import.html',
@@ -97,7 +97,7 @@
         };
 
         this.load();
-    };
+    }
 
     function AdminReportTemplateDialogCtrl($modalInstance, reportTemplate, ReportTemplateSrv, AlertSrv, analyzer) {
         this.reportTemplate = reportTemplate;
@@ -108,10 +108,10 @@
             showGutter: true,
             theme: 'default',
             mode: 'xml'
-        };    
+        };
 
-        this.formData = _.pick(reportTemplate, 'id', 'flavor', 'content');
-        this.formData.analyzers = this.analyzer.id;
+        this.formData = _.pick(reportTemplate, 'id', 'reportType', 'content');
+        this.formData.analyzerId = this.analyzer.id;
 
         this.cancel = function () {
             $modalInstance.dismiss();
@@ -124,7 +124,7 @@
                 }, function(response) {
                     AlertSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
                 });
-        };        
+        };
     }
 
     function AdminReportTemplateDeleteCtrl($modalInstance, ReportTemplateSrv, AlertSrv, template) {
@@ -141,7 +141,7 @@
         this.cancel = function () {
             $modalInstance.dismiss('cancel');
         };
-    };
+    }
 
     function AdminReportTemplateImportCtrl($modalInstance, ReportTemplateSrv, AlertSrv) {
         this.formData = {};

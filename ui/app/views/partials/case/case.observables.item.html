@@ -25,7 +25,15 @@
     </div>
     <!-- Observable analysers short reports -->
     <div class="col-md-11 col-md-offset-1">
-        <report class="short-report" ng-if="jobs[0]" ng-repeat="(analyzerId, jobs) in analyzerJobs" artifact="artifact" content="jobs[0].report.summary" flavor="short" name="analyzerId" status="jobs[0].status" success="jobs[0].success"></report>
+        <report ng-if="jobs[0]"
+            ng-repeat="(analyzerId, jobs) in analyzerJobs"
+            artifact="artifact"
+            content="jobs[0].report.summary"
+            report-type="short"
+            name="analyzerId"
+            status="jobs[0].status"
+            success="jobs[0].success"
+            class="short-report"></report>
     </div>
 </div>
 

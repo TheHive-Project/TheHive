@@ -51,11 +51,11 @@ class ReportTemplateCtrl @Inject() (
   }
 
   @Timed
-  def getContent(analyzerId: String, flavor: String) = authenticated(Role.read).async { implicit request ⇒
+  def getContent(analyzerId: String, reportType: String) = authenticated(Role.read).async { implicit request ⇒
     import QueryDSL._
-    val (reportTemplates, total) = reportTemplateSrv.find(and("analyzers" ~= analyzerId, "flavor" ~= flavor), Some("0-1"), Nil)
+    val (reportTemplates, total) = reportTemplateSrv.find(and("analyzerId" ~= analyzerId, "reportType" ~= reportType), Some("0-1"), Nil)
     total.foreach { t ⇒
-      if (t > 1) logger.warn(s"Multiple report templates match for analyzer $analyzerId with flavor $flavor")
+      if (t > 1) logger.warn(s"Multiple report templates match for analyzer $analyzerId with type $reportType")
     }
     reportTemplates
       .runWith(Sink.headOption)
@@ -98,28 +98,28 @@ class ReportTemplateCtrl @Inject() (
     }
     val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.toSeq.filter(_ != null).collect {
       case fileHeader: FileHeader if !fileHeader.isDirectory ⇒
-        val Array(analyzerId, flavorHtml, _*) = (fileHeader.getFileName + "/").split("/", 3)
+        val Array(analyzerId, reportTypeHtml, _*) = (fileHeader.getFileName + "/").split("/", 3)
         val inputStream = zipFile.getInputStream(fileHeader)
         val content = Source.fromInputStream(inputStream).mkString
         inputStream.close()
 
-        val flavor = if (flavorHtml.endsWith(".html")) flavorHtml.dropRight(5) else flavorHtml
+        val reportType = if (reportTypeHtml.endsWith(".html")) reportTypeHtml.dropRight(5) else reportTypeHtml
 
         val reportTemplateFields = Fields.empty
-          .set("flavor", flavor)
-          .set("analyzers", analyzerId)
+          .set("reportType", reportType)
+          .set("analyzerId", analyzerId)
           .set("content", content)
         reportTemplateSrv.create(reportTemplateFields)
           .recoverWith { // if creation fails, try to update
             case NonFatal(_) ⇒
-              val reportTemplateId = analyzerId + "_" + flavor
+              val reportTemplateId = analyzerId + "_" + reportType
               reportTemplateSrv.update(reportTemplateId, Fields.empty.set("content", content))
           }
           .map(_.id → JsBoolean(true))
           .recoverWith {
             case NonFatal(e) ⇒
-              logger.error(s"The import of the report template $analyzerId ($flavor) has failed", e)
-              val reportTemplateId = analyzerId + "_" + flavor
+              logger.error(s"The import of the report template $analyzerId ($reportType) has failed", e)
+              val reportTemplateId = analyzerId + "_" + reportType
               Future.successful(reportTemplateId → JsBoolean(false))
           }
     }

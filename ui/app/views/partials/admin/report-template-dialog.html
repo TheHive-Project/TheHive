@@ -2,14 +2,14 @@
     <div class="modal-header bg-primary">
         <h3 class="modal-title">{{vm.reportTemplate.id ? 'Update' : 'Add'}} report template</h3>
     </div>
-    <div class="modal-body">  
+    <div class="modal-body">
         <div class="form-group">
             <label class="col-sm-2 control-label">
                 Report Type
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-sm-4">
-                <select class="form-control" ng-model="vm.formData.flavor" ng-options="t for t in vm.reportTypes" required>
+                <select class="form-control" ng-model="vm.formData.reportType" ng-options="t for t in vm.reportTypes" required>
                     <option value="">-- choose report type --</option>
                 </select>
             </div>
@@ -17,7 +17,7 @@
         <div class="form-group">
             <label class="col-sm-2 control-label">Analyzer</label>
             <div class="col-sm-10">
-                <p class="form-control-static">{{vm.formData.analyzers}}</p>                                
+                <p class="form-control-static">{{vm.formData.analyzerId}}</p>
             </div>
         </div>
         <div class="form-group">
@@ -25,12 +25,12 @@
                 Template
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
-            <div class="col-sm-10">              
-                <div ui-ace="vm.editorOptions" 
-                    ng-model="vm.formData.content" style="height: 400px;"></div>                                        
+            <div class="col-sm-10">
+                <div ui-ace="vm.editorOptions"
+                    ng-model="vm.formData.content" style="height: 400px;"></div>
             </div>
         </div>
-        
+
     </div>
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="vm.cancel()" type="button">Cancel</button>

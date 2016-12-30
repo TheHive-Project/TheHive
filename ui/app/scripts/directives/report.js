@@ -8,28 +8,28 @@
                     return;
                 }
 
-                var reportUrl = '/api/connector/cortex/report/template/content/' + scope.name + '/' + scope.flavor;
+                var reportUrl = '/api/connector/cortex/report/template/content/' + scope.name + '/' + scope.reportType;
 
                 // find report template
                 $templateRequest(reportUrl, true)
                     .then(function (tmpl) {
                         scope.element.html($compile(tmpl)(scope));
                     }, function (/*response*/) {
-                        $templateRequest('/views/reports/' + scope.flavor + '.html', true)
+                        $templateRequest('/views/reports/' + scope.reportType + '.html', true)
                             .then(function (tmpl) {
                                 scope.element.html($compile(tmpl)(scope));
                             });
                     });
             }
             return {
-                restrict: 'E',                
+                restrict: 'E',
                 scope: {
-                    'name': '=',
-                    'artifact': '=',
-                    'flavor': '@',
-                    'status': '=',
-                    'content': '=',
-                    'success': '='
+                    name: '=',
+                    artifact: '=',
+                    reportType: '@',
+                    status: '=',
+                    content: '=',
+                    success: '='
                 },
                 link: function (scope, element) {
                     scope.element = element;

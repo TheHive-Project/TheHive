@@ -45,7 +45,7 @@ class CortextCtrl @Inject() (
     case GET(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.get(caseTemplateId)
     case PATCH(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.update(caseTemplateId)
     case DELETE(p"/report/template/$caseTemplateId<[^/]*>") ⇒ reportTemplateCtrl.delete(caseTemplateId)
-    case GET(p"/report/template/content/$analyzerId<[^/]*>/$flavor<[^/]*>") ⇒ reportTemplateCtrl.getContent(analyzerId, flavor)
+    case GET(p"/report/template/content/$analyzerId<[^/]*>/$reportType<[^/]*>") ⇒ reportTemplateCtrl.getContent(analyzerId, reportType)
     case POST(p"/report/template/_import") ⇒ reportTemplateCtrl.importTemplatePackage
     case r ⇒ throw NotFoundError(s"${r.uri} not found")
   }
