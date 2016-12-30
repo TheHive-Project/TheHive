@@ -19,7 +19,7 @@
 
             $scope.artifact = {};
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
-            $scope.analysisEnabled = VersionSrv.hasCortex();        
+            $scope.analysisEnabled = VersionSrv.hasCortex();
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -105,7 +105,7 @@
                     startDate: job.startDate,
                     endDate: job.endDate
                 };
-            }
+            };
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
                 'artifactId': observableId
@@ -114,7 +114,7 @@
 
             $scope.openArtifact = function (a) {
                 $state.go('app.case.observables-item', {
-                    caseId: a["case"].id,
+                    caseId: a['case'].id,
                     itemId: a.id
                 });
             };
@@ -135,7 +135,9 @@
 
                 return CaseArtifactSrv.api().update({
                     artifactId: $scope.artifact.id
-                }, field, function () {}, function (response) {
+                }, field, function (response) {                    
+                    $scope.artifact = response.toJSON();
+                }, function (response) {
                     AlertSrv.error('artifactDetails', response.data, response.status);
                 });
             };
@@ -143,10 +145,10 @@
             $scope._runAnalyzer = function (serverId, analyzerId, artifactId) {
                 return CortexSrv.createJob({
                     cortexId: serverId,
-                    artifactId: $scope.artifact.id,
+                    artifactId: artifactId,
                     analyzerId: analyzerId
                 });
-            }
+            };
 
             $scope.runAnalyzer = function (analyzerId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
@@ -168,7 +170,7 @@
                 var artifactId = $scope.artifact.id;
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
-                    return a.active = true;
+                    return a.active === true;
                 }), 'id');
 
                 CortexSrv.getServers(analyzerIds)
@@ -179,9 +181,7 @@
                     })
                     .then(function () {
                         AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
-                    }, function () {
-
-                    })
+                    });
             };
 
         }
