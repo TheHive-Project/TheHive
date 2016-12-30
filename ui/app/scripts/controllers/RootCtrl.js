@@ -73,7 +73,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $scope.isAdmin = function(user) {
             var u = user;
-            var re = /admin/;
+            var re = /admin/i;
             return re.test(u.roles);
         };
 
