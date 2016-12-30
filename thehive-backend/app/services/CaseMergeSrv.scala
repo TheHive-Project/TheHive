@@ -232,7 +232,6 @@ class CaseMergeSrv @Inject() (
       .set("tlp", JsNumber(cases.map(_.tlp()).max))
       .set("status", JsString(CaseStatus.Open.toString))
       .set("metrics", mergeMetrics(cases))
-      .set("isIncident", JsBoolean(cases.map(_.isIncident()).reduce(_ || _)))
       .set("resolutionStatus", mergeResolutionStatus(cases))
       .set("impactStatus", mergeImpactStatus(cases))
       .set("summary", mergeSummary(cases))

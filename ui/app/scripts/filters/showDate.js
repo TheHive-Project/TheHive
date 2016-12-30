@@ -7,7 +7,7 @@
             if (angular.isString(str) && str.length > 0) {
                 return moment(str, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']).format(fmt);
             } else if (angular.isNumber(str)) {
-                return moment.unix(str).format(fmt);
+                return moment(str).format(fmt);
             } else {
                 return '';
             }

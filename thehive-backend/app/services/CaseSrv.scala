@@ -36,7 +36,11 @@ class CaseSrv @Inject() (
   lazy val log = Logger(getClass)
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Case] = {
-    createSrv[CaseModel, Case](caseModel, fields.unset("tasks"))
+    val fieldsWithOwner = fields.get("owner") match {
+      case None    ⇒ fields.set("owner", authContext.userId)
+      case Some(_) ⇒ fields
+    }
+    createSrv[CaseModel, Case](caseModel, fieldsWithOwner.unset("tasks"))
       .flatMap { caze ⇒
         val taskFields = fields.getValues("tasks").collect {
           case task: JsObject ⇒ Fields(task)

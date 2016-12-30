@@ -27,13 +27,12 @@
                         weekStart: 1,
                         startView: 1,
                         todayBtn: true,
-                        language: 'fr',
                         autoclose: true
                     });
                     scope.dateNow = false;
                     scope.timeUpdater = undefined;
-                    if (angular.isString(scope.value)) {
-                        var m = moment(scope.value, 'YYYYMMDDTHHmmssZZ');
+                    if (angular.isNumber(scope.value)) {
+                        var m = moment(scope.value);
                         if (m.isValid()) {
                             scope.humanDate = m.format('DD-MM-YYYY HH:mm');
                         }
@@ -45,7 +44,7 @@
                         if (angular.isString(scope.humanDate)) {
                             var m = moment(scope.humanDate, 'DD-MM-YYYY HH:mm');
                             if (m.isValid()) {
-                                scope.value = m.format('YYYYMMDDTHHmmssZZ');
+                                scope.value = m.valueOf();
                             }
                         }
                     });

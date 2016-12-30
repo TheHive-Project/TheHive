@@ -40,6 +40,7 @@ trait ArtifactAttributes { _: AttributeDef ⇒
   val tags = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)
   val status = attribute("status", F.enumFmt(ArtifactStatus), "Status of the artifact", ArtifactStatus.Ok)
+  val reports = attribute("reports", F.textFmt, "Json object that contains all short reports", "{}", O.unaudited)
 }
 
 @Singleton

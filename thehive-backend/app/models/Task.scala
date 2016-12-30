@@ -29,6 +29,7 @@ trait TaskAttributes { _: AttributeDef ⇒
   val flag = attribute("flag", F.booleanFmt, "Flag of the task", false)
   val startDate = optionalAttribute("startDate", F.dateFmt, "Timestamp of the comment start")
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
+  val order = attribute("order", F.numberFmt, "Order of the task", 0L)
 
 }
 @Singleton
