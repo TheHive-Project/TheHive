@@ -17,6 +17,9 @@ import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.JsonFormat.{ authContextWrites, queryReads }
 
 import services.UserSrv
+import play.api.libs.json.Json
+import scala.util.Try
+import play.api.libs.json.JsObject
 
 @Singleton
 class UserCtrl @Inject() (
@@ -27,7 +30,7 @@ class UserCtrl @Inject() (
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext) extends Controller with Status {
 
-  lazy val log = Logger(getClass)
+  lazy val logger = Logger(getClass)
 
   @Timed
   def create = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
@@ -48,7 +51,7 @@ class UserCtrl @Inject() (
   def update(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     if (id == request.authContext.userId || request.authContext.roles.contains(Role.admin)) {
       if (request.body.contains("password"))
-        log.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
+        logger.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
       userSrv.update(id, request.body.unset("password")).map { user ⇒
         renderer.toOutput(OK, user)
       }
@@ -89,9 +92,18 @@ class UserCtrl @Inject() (
 
   @Timed
   def currentUser = Action.async { implicit request ⇒
-    authenticated
-      .getContext(request)
-      .map { authContext ⇒ renderer.toOutput(OK, authContext) }
+    for {
+      authContext ← authenticated.getContext(request)
+      user ← userSrv.get(authContext.userId)
+      preferences = Try(Json.parse(user.preferences()))
+        .recover {
+          case error ⇒
+            logger.warn(s"User ${authContext.userId} has invalid preference format: ${user.preferences()}")
+            JsObject(Nil)
+        }
+        .get
+      json = user.toJson + ("preferences" → preferences)
+    } yield renderer.toOutput(OK, json)
   }
 
   @Timed

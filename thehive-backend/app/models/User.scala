@@ -29,6 +29,8 @@ trait UserAttributes { _: AttributeDef ⇒
   val roles = multiAttribute("roles", F.enumFmt(Role), "Comma separated role list (READ, WRITE and ADMIN)")
   val status = attribute("status", F.enumFmt(UserStatus), "Status of the user", UserStatus.Ok)
   val password = optionalAttribute("password", F.stringFmt, "Password", O.sensitive, O.unaudited)
+  val avatar = optionalAttribute("avatar", F.stringFmt, "Base64 representation of user avatar image", O.unaudited)
+  val preferences = attribute("preferences", F.stringFmt, "User preferences", "{}", O.sensitive, O.unaudited)
 }
 
 class UserModel extends ModelDef[UserModel, User]("user") with UserAttributes with AuditedModel {

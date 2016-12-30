@@ -60,6 +60,8 @@ class Migration @Inject() (
 
         addAttribute("case_task", "order" → JsNumber(0)), // add task order
 
+        addAttribute("user", "preferences" → JsString("{}")), // add user preferences, default empty (Json object)
+
         mapAttribute(Seq("case", "case_task", "case_task_log", "case_artifact", "audit", "case_artifact_job"), "startDate")(convertDate),
         mapAttribute(Seq("case", "case_task", "case_artifact_job"), "endDate")(convertDate),
         mapAttribute("misp", "date")(convertDate),
