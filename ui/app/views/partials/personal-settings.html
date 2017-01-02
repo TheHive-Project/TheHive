@@ -19,7 +19,9 @@
                         </div>
                     </div>
                     <div class="form-group" ng-class="{ 'has-error' : !basicForm.name.$pristine && basicForm.name.$invalid}">
-                        <label class="col-md-3 control-label">Full name <i class="fa fa-asterisk text-danger"></i></label>
+                        <label class="col-md-3 control-label">Full name
+                            <i class="fa fa-asterisk text-danger"></i>
+                        </label>
                         <div class="col-md-9">
                             <input type="text" name="name" class="form-control input-sm" placeholder="Full name" ng-model="basicData.name" required/>
                             <div ng-messages="basicForm.name.$error" ng-show="!basicForm.name.$pristine && basicForm.name.$error">
@@ -27,9 +29,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="form-group" ng-class="{ 'has-error' : basicForm.avatar.$error.maxsize}">
+                        <label class="col-md-3 control-label">Avatar</label>
+                        <div class="col-md-9">
+                            <div ng-show="!basicData.avatar">
+                                <div style="width: 100px;">
+                                    <img alt="User avatar" src="images/no-avatar.png"/>
+                                    <input type="file" class="mt-xxs form-control" ng-model="avatar" name="avatar"
+                                        accept="image/jpg|image/png|image/jpeg"
+                                        maxsize="500"
+                                        base-sixty-four-input
+                                        do-not-parse-if-oversize>
+                                </div>                                
+                                <span ng-show="form.file.$error.maxsize">Files must not exceed 500 KB</span>
+                            </div>
+
+                            <div ng-show="basicData.avatar" style="width: 100px;">
+                                <img alt="User avatar" data-ng-src="{{'data:image/jpeg;base64,' + basicData.avatar}}"/>
+                                <br>
+                                <button class="mt-xxs btn btn-block btn-sm btn-danger" type="button" ng-click="basicData.avatar = null">Clear</button>
+                            </div>
+
+                        </div>
+                    </div>
+
                     <div class="mt-s">
                         <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
-                        <span class="ml-xxs"><i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                        <span class="ml-xxs">
+                            <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
                         <button class="btn btn-primary pull-right" ng-disabled="basicForm.$invalid" type="submit">Save</button>
                     </div>
 
@@ -46,7 +74,9 @@
                 </div>
                 <div class="panel-body" ng-show="passData.changePassword">
                     <div class="form-group" ng-class="{ 'has-error' : !passForm.currentPassword.$pristine && passForm.currentPassword.$invalid}">
-                        <label class="col-md-3 control-label">Old password <i class="fa fa-asterisk text-danger"></i></label>
+                        <label class="col-md-3 control-label">Old password
+                            <i class="fa fa-asterisk text-danger"></i>
+                        </label>
                         <div class="col-md-9">
                             <input type="password" name="currentPassword" class="form-control input-sm" placeholder="Current password" autocomplete="off" ng-model="passData.currentPassword" ng-required="passData.changePassword"/>
                             <div ng-messages="passForm.currentPassword.$error" ng-show="!passForm.currentPassword.$pristine && passForm.currentPassword.$error">
@@ -56,7 +86,9 @@
                     </div>
 
                     <div class="form-group" ng-class="{ 'has-error' : !passForm.password.$pristine && passForm.password.$invalid}">
-                        <label class="col-md-3 control-label">New password <i class="fa fa-asterisk text-danger"></i></label>
+                        <label class="col-md-3 control-label">New password
+                            <i class="fa fa-asterisk text-danger"></i>
+                        </label>
                         <div class="col-md-9">
                             <input type="password" name="password" class="form-control input-sm" placeholder="New password" autocomplete="off" ng-model="passData.password" ng-required="passData.changePassword"/>
                             <div ng-messages="passForm.password.$error" ng-show="!passForm.password.$pristine && passForm.password.$error">
@@ -66,7 +98,9 @@
                     </div>
 
                     <div class="form-group" ng-class="{ 'has-error' : !passForm.confirmPassword.$pristine && passForm.confirmPassword.$invalid}">
-                        <label class="col-md-3 control-label">Confirm new password <i class="fa fa-asterisk text-danger"></i></label>
+                        <label class="col-md-3 control-label">Confirm new password
+                            <i class="fa fa-asterisk text-danger"></i>
+                        </label>
                         <div class="col-md-9">
                             <input type="password" name="confirmPassword" class="form-control input-sm" placeholder="Confirm Password" compare-to="passData.password" autocomplete="off" ng-model="passData.passwordConfirm" ng-required="passData.changePassword"/>
                             <div ng-messages="passForm.confirmPassword.$error" ng-show="!passForm.confirmPassword.$pristine && passForm.confirmPassword.$error">
@@ -80,11 +114,16 @@
 
                     <div class="mt-s">
                         <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
-                        <span class="ml-xxs"><i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                        <span class="ml-xxs">
+                            <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
                         <button class="btn btn-primary pull-right" ng-disabled="passForm.$invalid" type="submit">Save</button>
                     </div>
                 </div>
             </div>
+        </form>
+
+        <form name="form">
+
         </form>
 
     </div>

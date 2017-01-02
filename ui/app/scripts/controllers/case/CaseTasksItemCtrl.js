@@ -72,19 +72,19 @@
                 $scope.task.status = 'Completed';
                 $scope.updateField('status', 'Completed');
 
-                CaseTabsSrv.removeTab($scope.tabName)
+                CaseTabsSrv.removeTab($scope.tabName);
                 $state.go('app.case.tasks', {
                     caseId: $scope.caseId
                 });
             };
 
             $scope.showLogEditor = function () {
-                $scope.adding = true;                
+                $scope.adding = true;
                 $rootScope.$broadcast('beforeNewLogShow');
             };
 
             $scope.cancelAddLog = function() {
-                // Switch to editor mode instead of preview mode 
+                // Switch to editor mode instead of preview mode
                 $rootScope.markdownEditorObjects.newLog.hidePreview();
                 $scope.adding = false;
             };
@@ -102,7 +102,7 @@
                     delete $scope.newLog.attachment;
                     $scope.state.attachmentCollapsed = true;
                     $scope.newLog.message = '';
-                    
+
                     $rootScope.markdownEditorObjects.newLog.hidePreview();
                     $scope.adding = false;
                     // removeAllFiles is added by dropzone directive as control
@@ -116,7 +116,7 @@
 
                 return true;
             };
-            
+
             // Add tabs
             CaseTabsSrv.addTab($scope.tabName, {
                 name: $scope.tabName,

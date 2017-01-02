@@ -7,7 +7,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui.codemirror', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader'
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -125,7 +125,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
-            
+
 
         .state('app.case', {
                 abstract: true,

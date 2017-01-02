@@ -64,7 +64,7 @@
 
 <div class="row mt-l" ng-show="tasks.total !== 0">
     <div class="col-md-12">
-        <table class="table table-hover">
+        <table class="table table-hover valigned">
             <thead>
                 <tr>
                     <th style="width: 50px"></th>
@@ -83,7 +83,9 @@
                     <td ng-click="openTask(task)" class="pointer">{{task.title}}</td>
                     <td>{{task.startDate | showDate}}</td>
                     <td>
-                        <span ng-show="task.owner">{{getUserInfo(task.owner) | getField: 'name'}}</span>
+                        <span ng-show="task.owner">
+                            <user user-id="task.owner"></user>
+                        </span>
                         <em ng-show="!task.owner">Not assigned</em>
                     </td>
                     <td class="task-delete clickable" align="center" ng-click="removeTask(task)">

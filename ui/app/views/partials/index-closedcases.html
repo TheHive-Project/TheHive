@@ -36,7 +36,9 @@
 			<td>
 				<a ui-sref="app.case.observables({caseId: closedCase.id})">{{closedCase.stats.artifacts.count}}</a>
 			</td>
-			<td ng-bind="getUserInfo(currentCase.owner) | getField: 'name'"></td>
+			<td align="center">
+				<user user-id="closedCase.owner" icon-only="true" icon-size="m"></user>
+			</td>
 			<td>{{closedCase.endDate | showDate}}</td>
 		</tr>
 	</tbody>

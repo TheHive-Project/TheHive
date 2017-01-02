@@ -1,12 +1,13 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, AlertSrv, appConfig) {
+        function($scope, $state, UserSrv, AlertSrv, resizeService, readLocalPicService, UserInfoSrv, appConfig) {
             $scope.appConfig = appConfig;
 
             $scope.basicData = {
                 username: $scope.currentUser.id,
-                name: $scope.currentUser.name
+                name: $scope.currentUser.name,
+                avatar: $scope.currentUser.avatar
             };
 
             $scope.passData = {
@@ -15,17 +16,23 @@
                 password: '',
                 passwordConfirm: ''
             };
-            $scope.canChangePass = appConfig.config.capabilities.indexOf('changePassword') !== -1;            
+            $scope.canChangePass = appConfig.config.capabilities.indexOf('changePassword') !== -1;
+
 
             $scope.updateBasicInfo = function(form) {
-                if(!form.$valid) {
+                if (!form.$valid) {
                     return;
                 }
 
                 UserSrv.update({
                     userId: $scope.currentUser.id
-                }, {name: $scope.basicData.name}, function(data) {
+                }, {
+                    name: $scope.basicData.name,
+                    avatar: $scope.basicData.avatar
+                }, function(data) {
                     $scope.currentUser.name = data.name;
+
+                    UserInfoSrv.update(data._id, data);
 
                     AlertSrv.log('Your basic information have been successfully updated', 'success');
 
@@ -36,7 +43,7 @@
             };
 
             $scope.updatePassword = function(form) {
-                if(!form.$valid) {
+                if (!form.$valid) {
                     return;
                 }
 
@@ -49,7 +56,7 @@
                 if (updatedFields !== {}) {
                     UserSrv.changePass({
                         userId: $scope.currentUser.id
-                    }, updatedFields, function(/*data*/) {
+                    }, updatedFields, function( /*data*/ ) {
                         AlertSrv.log('Your password has been successfully updated', 'success');
                         $state.reload();
                     }, function(response) {
@@ -62,7 +69,7 @@
 
             $scope.clearPassword = function(form, changePassword) {
 
-                if(!changePassword) {
+                if (!changePassword) {
                     $scope.passData.currentPassword = '';
                     $scope.passData.password = '';
                     $scope.passData.passwordConfirm = '';
@@ -77,6 +84,21 @@
             $scope.cancel = function() {
                 $state.go('app.main');
             };
+
+            $scope.$watch('avatar', function(value) {
+               if(!value){
+                   return;
+               }
+
+               resizeService.resizeImage('data:' + value.filetype + ';base64,' + value.base64, {
+                   height: 100,
+                   width: 100,
+                   outputFormat: 'image/jpeg'
+               })
+               .then(function(image) {
+                   $scope.basicData.avatar = image.replace('data:image/jpeg;base64,', '');
+               });
+           });
         }
     );
 })();

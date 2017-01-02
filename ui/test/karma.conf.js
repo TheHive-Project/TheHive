@@ -65,6 +65,8 @@ module.exports = function(config) {
       'bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js',
       'bower_components/angular-ui-ace/ui-ace.js',
       'bower_components/angular-page-loader/dist/angular-page-loader.js',
+      'bower_components/angular-images-resizer/angular-images-resizer.js',
+      'bower_components/angular-base64-upload/src/angular-base64-upload.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       "bower_components/cryptojslib/components/core-min.js",

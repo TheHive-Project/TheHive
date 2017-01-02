@@ -143,8 +143,9 @@
                         </ul>
                     </li>
                     <li class="dropdown" dropdown>
-                        <a class="dropdown-toggle" dropdown-toggle href>
-                            <i class="glyphicon glyphicon-user"></i>&nbsp;{{currentUser.name}}
+                        <a class="profile dropdown-toggle" dropdown-toggle href>
+                            <!-- <i class="glyphicon glyphicon-user"></i>&nbsp;{{currentUser.name}} -->
+                            <user user-id="currentUser.id"></user>
                             <b class="caret"></b>
                         </a>
                         <ul class="dropdown-menu">
@@ -172,7 +173,7 @@
             </div>
         </div>
     </nav>
-    <div class="container-fluid container-main">        
+    <div class="container-fluid container-main">
         <div ng-if="currentUser.id" ui-view></div>
     </div>
 </div>

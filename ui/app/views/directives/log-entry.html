@@ -5,7 +5,7 @@
         <div class="col-md-12">
             <h5>
                 <i class="text-primary glyphicon glyphicon-comment" style="font-size: 16px;"></i>
-                <span ng-bind="getUserInfo(log.user) | getField: 'name'"></span>
+                <span ng-bind="getUserInfo.get(log.user) | getField: 'name'"></span>
                 &nbsp;
                 <small ng-bind="log.startDate | showDate"></small>
                 <span class="pull-right">

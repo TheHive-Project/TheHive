@@ -22,7 +22,7 @@
                             <i class="text-success glyphicon glyphicon-ok"></i>
                         </td>
                         <td>{{task.title}}</td>
-                        <td>{{getUserInfo(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
+                        <td>{{getUserInfo.get(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
                     </tr>
 
                     <tr ng-if="task.status == 'InProgress'" ng-class="{true:'warning'}[task.flag]">
@@ -30,7 +30,7 @@
                             <i class=" glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                         </td>
                         <td>{{task.title}}</td>
-                        <td>{{getUserInfo(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
+                        <td>{{getUserInfo.get(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
                     </tr>
 
                     <tr ng-if="task.status == 'Waiting'">

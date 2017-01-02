@@ -1,0 +1,5 @@
+<span class="avatar avatar-{{iconSize || 'xs'}}">
+    <img ng-if="userData.avatar" class="avatar-icon" alt="{{userData.name}}" tooltip="{{userData.name}}" data-ng-src="{{'data:image/jpeg;base64,' + userData.avatar}}"/>
+    <img ng-if="!userData.avatar" class="avatar-icon" alt="{{userData.name}}" tooltip="{{userData.name}}" src="images/no-avatar.png"/>
+    <span ng-if="!iconOnly" class="avatar-name">{{userData.name}}</span>
+</span>

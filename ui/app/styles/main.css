@@ -27,6 +27,10 @@ body {
 .main-navbar .nav>li>a {
     padding: 15px 8px;
 }
+.main-navbar .nav>li>a.profile {
+    padding: 10px 8px;
+}
+
 .main-navbar .input-group-addon {
     padding-left: 6px;
     padding-right: 6px;
@@ -396,4 +400,26 @@ td.vmiddle {
     to {
         transform: rotate(360deg);
     }
+}
+
+.avatar .avatar-icon {
+    border-radius: 50px;
+}
+
+.avatar .avatar-name {
+    margin-left: 5px;
+}
+
+.avatar.avatar-xs .avatar-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.avatar.avatar-m .avatar-icon {
+    width: 40px;
+    height: 40px;
+}
+
+table.valigned td {
+    vertical-align: middle !important;
 }

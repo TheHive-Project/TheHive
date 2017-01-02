@@ -12,7 +12,7 @@
         <span ng-repeat="(k, v) in base.details" ng-switch="k">
             <div ng-switch-when="owner">
                 {{k}}:
-                <em>{{getUserInfo(v) | getField: 'name'}}</em>
+                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
             </div>
             <div ng-switch-when="startDate">
                 {{k}}:
