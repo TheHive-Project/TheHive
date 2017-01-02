@@ -85,6 +85,12 @@
                 $state.go('app.main');
             };
 
+            $scope.clearAvatar = function(form) {
+                $scope.basicData.avatar = null;
+                form.avatar.$setValidity('maxsize', true);
+                form.avatar.$setPristine(true);
+            };
+
             $scope.$watch('avatar', function(value) {
                if(!value){
                    return;

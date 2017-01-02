@@ -41,16 +41,19 @@
                                         maxsize="500"
                                         base-sixty-four-input
                                         do-not-parse-if-oversize>
-                                </div>                                
-                                <span ng-show="form.file.$error.maxsize">Files must not exceed 500 KB</span>
+                                </div>
+                                <div class="help-block">Images must not exceed 500 KB. Recommended dimension are 100x100px</div>
                             </div>
 
                             <div ng-show="basicData.avatar" style="width: 100px;">
                                 <img alt="User avatar" data-ng-src="{{'data:image/jpeg;base64,' + basicData.avatar}}"/>
                                 <br>
-                                <button class="mt-xxs btn btn-block btn-sm btn-danger" type="button" ng-click="basicData.avatar = null">Clear</button>
+                                <button class="mt-xxs btn btn-block btn-sm btn-danger" type="button" ng-click="clearAvatar(basicForm)">Clear</button>
                             </div>
 
+                            <div ng-messages="basicForm.avatar.$error" ng-show="!basicForm.avatar.$pristine && basicForm.avatar.$error">
+                                <div ng-messages-include="settings-error.html"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -138,6 +141,9 @@
     </div>
     <div class="mt-xxs text-danger" ng-message="maxlength">
         <span translate="error.form.maxlength"></span>
+    </div>
+    <div class="mt-xxs text-danger" ng-message="maxsize">
+        Files must not exceed 500 KB
     </div>
     <div class="mt-xxs text-danger" ng-message="compareTo">
         Oops, that's not the same password as the first one
