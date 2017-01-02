@@ -31,6 +31,24 @@
             }
         };
 
+        $scope.caseBySeverity = {
+            title: 'Cases by Severity',
+            type: 'case',
+            field: 'severity',
+            dateField: 'startDate',
+            tagsField: 'tags',
+            colors: {
+                '1': '#5bc0de',
+                '2': '#f0ad4e',
+                '3': '#d9534f'
+            },
+            names: {
+                '1': 'Low',
+                '2': 'Medium',
+                '3': 'High'
+            }
+        };
+
         $scope.caseByStatus = {
             title: 'Cases by status',
             type: 'case',
