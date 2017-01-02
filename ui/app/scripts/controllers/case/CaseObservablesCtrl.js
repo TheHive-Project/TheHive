@@ -129,6 +129,10 @@
                 $scope.filter();
             };
 
+            $scope.countReports = function(observable) {
+                return _.keys(observable.reports).length;
+            };
+
             // FIXME à quoi ça sert ? c'est un tableau ou un object ?
             $scope.artifactList = [];
             $scope.artifactList.Action = 'main';
@@ -542,6 +546,30 @@
 
                 $scope.initAnalyzersList();
                 $scope.initSelection($scope.selection);
+            };
+
+            $scope.runAllOnObservable = function(artifact) {
+                var artifactId = artifact.id;
+                var artifactName = artifact.data || artifact.attachment.name;
+
+                var analyzerIds = [];
+                AnalyzerSrv.forDataType(artifact.dataType)
+                    .then(function(analyzers) {
+                        analyzerIds = _.pluck(analyzers, 'id');
+                        return CortexSrv.getServers(analyzerIds);
+                    })
+                    .then(function (serverId) {
+                        return $q.all(_.map(analyzerIds, function (analyzerId) {
+                            return CortexSrv.createJob({
+                                cortexId: serverId,
+                                artifactId: artifactId,
+                                analyzerId: analyzerId
+                            });
+                        }));
+                    })
+                    .then(function () {
+                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');                        
+                    });
             };
 
             //

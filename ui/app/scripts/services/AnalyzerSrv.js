@@ -32,16 +32,16 @@
                             analyzers = _.indexBy(response, 'id');
 
                             deferred.resolve(analyzers);
-                        }, function (rejection) {
+                        }, function (/*rejection*/) {
                             deferred.reject({});
-                        })
+                        });
 
                     } else {
                         deferred.resolve(analyzers);
                     }
 
                     return deferred.promise;
-                },  
+                },
 
                 get: function(analyzerId) {
                     var deferred = $q.defer();
@@ -58,7 +58,7 @@
                         });
                     }
 
-                    return deferred.promise;                    
+                    return deferred.promise;
                 },
 
                 forDataType: function(dataType) {
@@ -69,7 +69,7 @@
                             var filtered = {};
                             _.each(all, function(value, key) {
                                 if(value.dataTypeList && value.dataTypeList.indexOf(dataType) !== -1) {
-                                    filtered[key] = angular.copy(value);                                     
+                                    filtered[key] = angular.copy(value);
                                     filtered[key].active = true;
                                 }
                             });
@@ -85,12 +85,12 @@
 
                     factory.query()
                         .then(function(all) {
-                            var cortexIds = [];                            
+                            var cortexIds = [];
 
                             _.each(all, function(value, key) {
                                 if(analyzerIds.indexOf(key) > -1){
                                     cortexIds = cortexIds.concat(value.cortexIds);
-                                }                                
+                                }
                             });
 
                             deferred.resolve(_.uniq(cortexIds));

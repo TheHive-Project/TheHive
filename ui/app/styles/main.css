@@ -279,17 +279,40 @@ ul.observable-reports-summary li {
 .border-left-tlp-na {
     border-left: 6px solid #428BCA;
 }
-.border-left-tlp-white {
+.border-left-tlp-white,
+.border-left-tlp-0 {
     border-left: 6px solid #5BC0CE;
 }
-.border-left-tlp-green {
+.border-left-tlp-green,
+.border-left-tlp-1  {
     border-left: 6px solid #5CB85C;
 }
-.border-left-tlp-amber {
+.border-left-tlp-amber,
+.border-left-tlp-2  {
     border-left: 6px solid #F0AD4E;
 }
-.border-left-tlp-red {
+.border-left-tlp-red,
+.border-left-tlp-3  {
     border-left: 6px solid #D9534F;
+}
+.bg-tlp-na {
+    background-color: #428BCA;
+}
+.bg-tlp-white,
+.bg-tlp-0 {
+    background-color: #5BC0CE;
+}
+.bg-tlp-green,
+.bg-tlp-1 {
+    background-color: #5CB85C;
+}
+.bg-tlp-amber,
+.bg-tlp-2 {
+    background-color: #F0AD4E;
+}
+.bg-tlp-red,
+.bg-tlp-3 {
+    background-color: #D9534F;
 }
 .updatable-waiting .updatable-value {
     background-color: gray;

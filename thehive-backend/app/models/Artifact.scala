@@ -87,4 +87,5 @@ class ArtifactModel @Inject() (
 
 class Artifact(model: ArtifactModel, attributes: JsObject) extends EntityDef[ArtifactModel, Artifact](model, attributes) with ArtifactAttributes {
   def dblists = model.dblists
+  override def toJson = super.toJson + ("reports" → Json.parse(reports())) // FIXME is parse fails (invalid report)
 }
