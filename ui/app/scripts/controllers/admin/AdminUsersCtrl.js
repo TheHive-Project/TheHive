@@ -4,7 +4,10 @@
     angular.module('theHiveControllers').controller('AdminUsersCtrl',
         function($scope, PSearchSrv, UserSrv, AlertSrv, appConfig) {
             $scope.appConfig = appConfig;
-            $scope.canSetPass = appConfig.config.capabilities.indexOf('setPassword') !== -1;            
+            $scope.canSetPass = appConfig.config.capabilities.indexOf('setPassword') !== -1;
+            $scope.newUser = {
+                roles: ['read','write']
+            };
 
             /**
              * users management page
@@ -14,7 +17,9 @@
             });
             $scope.initNewUser = function() {
                 $scope.apiKey = false;
-                $scope.newUser = {};
+                $scope.newUser = {
+                    roles: ['read','write']
+                };
             };
             $scope.initNewUser();
 
