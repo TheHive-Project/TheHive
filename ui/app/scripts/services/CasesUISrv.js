@@ -20,6 +20,11 @@
                         type: 'list',
                         defaultValue: []
                     },
+                    resolutionStatus: {
+                        field: 'resolutionStatus',
+                        type: 'list',
+                        defaultValue: []
+                    },
                     tags: {
                         field: 'tags',
                         type: 'list',
