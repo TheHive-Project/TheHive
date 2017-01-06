@@ -3,12 +3,13 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv) {
+    function CaseListCtrl($scope, $q, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, CaseResolutionStatus) {
         var self = this;
 
         this.showFlow = true;
         this.openEntity = EntitySrv.open;
         this.getUserInfo = UserInfoSrv;
+        this.CaseResolutionStatus = CaseResolutionStatus;
 
         this.uiSrv = CasesUISrv;
         this.uiSrv.initContext('list');
