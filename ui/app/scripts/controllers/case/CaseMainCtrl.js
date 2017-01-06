@@ -115,7 +115,7 @@
 
                 if(switchToDetails) {
                     $scope.openTab('details');
-                }                
+                }
             };
 
             $scope.switchFlag = function() {
@@ -168,7 +168,7 @@
                 });
 
                 modalInstance.result.then(function() {
-                    $state.go('app.main', {viewId: 'currentcases'});
+                    $state.go('app.cases');
                 });
             };
 

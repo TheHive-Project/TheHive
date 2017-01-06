@@ -28,7 +28,7 @@
     <!-- endbower -->
     <link rel="stylesheet" href="bower_components/smalot-bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.bootstrap.min.css"/>
-    <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">    
+    <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">
     <!-- endbuild -->
 
     <!-- build:css(.tmp) styles/app.css -->
@@ -38,6 +38,7 @@
     <link rel="stylesheet" href="styles/search.css"/>
     <link rel="stylesheet" href="styles/filters.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
+    <link rel="stylesheet" href="styles/directives/user.css"/>
     <!-- endbuild -->
   </head>
   <body ng-cloak>
@@ -90,8 +91,8 @@
     <script src="bower_components/angular-images-resizer/angular-images-resizer.js"></script>
     <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
     <!-- endbower -->
-    
-    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>    
+
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
     <script type="text/javascript" src="bower_components/angular-ui-ace/ui-ace.js"></script>
 
     <script src="bower_components/codemirror/lib/codemirror.js"></script>
@@ -123,6 +124,7 @@
     <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
     <script src="scripts/controllers/case/CaseDetailsCtrl.js"></script>
     <script src="scripts/controllers/case/CaseLinksCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseListCtrl.js"></script>
     <script src="scripts/controllers/case/CaseMainCtrl.js"></script>
     <script src="scripts/controllers/case/CaseMergeModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseObservablesCtrl.js"></script>
@@ -188,6 +190,7 @@
     <script src="scripts/services/CaseSrv.js"></script>
     <script src="scripts/services/CaseTabsSrv.js"></script>
     <script src="scripts/services/CaseTaskSrv.js"></script>
+    <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/ChartSrv.js"></script>
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
@@ -205,6 +208,7 @@
     <script src="scripts/services/StatisticSrv.js"></script>
     <script src="scripts/services/StreamSrv.js"></script>
     <script src="scripts/services/StreamStatSrv.js"></script>
+    <script src="scripts/services/TagSrv.js"></script>
     <script src="scripts/services/TaskLogSrv.js"></script>
     <script src="scripts/services/TemplateSrv.js"></script>
     <script src="scripts/services/UserInfoSrv.js"></script>

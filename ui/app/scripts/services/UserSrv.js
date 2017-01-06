@@ -35,7 +35,7 @@ angular.module('theHiveServices')
             } else {
                 var ret = {
                     'name': login,
-                    'id': login
+                    'id': login                    
                 };
                 res.get({
                     'userId': login

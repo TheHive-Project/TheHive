@@ -115,6 +115,10 @@ pre.clearpre {
     margin-top: 40px;
     background-color: #eee;
 }
+.flexwrap{
+    display: flex;
+    flex-wrap: wrap;
+}
 .wrap {
     word-wrap: break-word;
     word-break: break-all;
@@ -217,6 +221,13 @@ dl.dl-horizontal > dt.pull-left {
 }
 dl.dl-horizontal.clear {
     overflow: hidden !important;
+}
+dl.dl-horizontal > dt,
+dl.dl-horizontal > dd {
+    line-height: 28px;
+}
+dl.dl-horizontal {
+    margin-bottom: 10px;
 }
 ul.observable-reports-summary li {
     padding-bottom: 3px;
@@ -423,24 +434,6 @@ td.vmiddle {
     to {
         transform: rotate(360deg);
     }
-}
-
-.avatar .avatar-icon {
-    border-radius: 50px;
-}
-
-.avatar .avatar-name {
-    margin-left: 5px;
-}
-
-.avatar.avatar-xs .avatar-icon {
-    width: 30px;
-    height: 30px;
-}
-
-.avatar.avatar-m .avatar-icon {
-    width: 40px;
-    height: 40px;
 }
 
 table.valigned td {

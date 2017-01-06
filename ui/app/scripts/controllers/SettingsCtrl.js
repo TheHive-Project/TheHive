@@ -63,7 +63,7 @@
                         AlertSrv.error('SettingsCtrl', response.data, response.status);
                     });
                 } else {
-                    $state.go('app.main');
+                    $state.go('app.cases');
                 }
             };
 
@@ -82,7 +82,7 @@
             };
 
             $scope.cancel = function() {
-                $state.go('app.main');
+                $state.go('app.cases');
             };
 
             $scope.clearAvatar = function(form) {

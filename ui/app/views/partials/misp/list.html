@@ -80,10 +80,7 @@
                     <td class="text-center">{{::event.attributeCount}}</td>
                     <td>
                         <span ng-repeat="tag in event.tags" style="margin-right:2px;display:inline-block">
-                            <span class="label label-primary">
-                                <i class="glyphicon glyphicon-tag"></i>
-                                <span ng-bind="tag"></span>
-                            </span>
+                            <span class="label label-primary">{{tag}}</span>
                         </span>
                     </td>
                     <td>{{event.publishDate | showDate}}</td>

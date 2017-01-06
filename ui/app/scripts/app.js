@@ -21,7 +21,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
 
-        $urlRouterProvider.otherwise('/main/');
+        $urlRouterProvider.otherwise('/cases');
 
         $stateProvider
             .state('login', {
@@ -60,6 +60,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 },
                 templateUrl: 'views/app.main.html',
                 controller: 'MainPageCtrl'
+            })
+            .state('app.cases', {
+                url: 'cases',
+                templateUrl: 'views/partials/case/case.list.html',
+                controller: 'CaseListCtrl',
+                controllerAs: '$vm',
+                title: 'Cases'
             })
             .state('app.search', {
                 url: 'search?q',
@@ -125,9 +132,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
-
-
-        .state('app.case', {
+            .state('app.case', {
                 abstract: true,
                 url: 'case/{caseId}',
                 templateUrl: 'views/app.case.html',

@@ -15,7 +15,7 @@
             <dt class="pull-left">TLP</dt>
             <dd>
                 <a class="noline" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
-                    <tlp format="activeTlp" on-update="updateField('tlp', newValue)" style="float:left; font-size:16px" value="caze.tlp"></tlp>
+                    <tlp format="activeTlp" on-update="updateField('tlp', newValue)" style="float:left;" value="caze.tlp"></tlp>
                 </a>
             </dd>
         </dl>
@@ -29,7 +29,7 @@
         </dl>
 
         <dl class="dl-horizontal">
-            <dt class="pull-left">Assigned to</dt>
+            <dt class="pull-left">Assignee</dt>
             <dd>
                 <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
             </dd>

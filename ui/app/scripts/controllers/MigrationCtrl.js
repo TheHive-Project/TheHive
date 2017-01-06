@@ -19,10 +19,10 @@
                             if (users.length === 0) {
                                 $scope.showUserForm = true;
                             } else {
-                                $state.go('app.main');
+                                $state.go('app.cases');
                             }
                         }, function() {
-                            $state.go('app.main');
+                            $state.go('app.cases');
                         });
                     }
                     var current = 0;
@@ -58,7 +58,7 @@
                     'password': $scope.newUser.password,
                     'roles': ['read', 'write', 'admin']
                 }, function() {
-                    $state.go('app.main');
+                    $state.go('app.cases');
                 });
             };
         }

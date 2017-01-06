@@ -1,0 +1,47 @@
+.avatar .avatar-icon {
+    border-radius: 50px;
+}
+
+.avatar .avatar-name {
+    margin-left: 8px;
+}
+
+.avatar .avatar-icon {
+    position: absolute;
+}
+
+.avatar div.avatar-icon {
+    background-color: #ccc;
+    font-weight: bold;
+    float: left;
+    text-align: center;
+    color: #000;
+}
+
+.avatar.avatar-xs {
+    line-height: 30px;
+}
+
+.avatar.avatar-m {
+    line-height: 40px;
+}
+
+.avatar.avatar-xs .avatar-icon {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+}
+
+.avatar.avatar-m .avatar-icon {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+}
+
+.avatar.avatar-xs .avatar-name {
+    margin-left: 35px;
+}
+
+.avatar.avatar-m .avatar-name {
+    margin-left:45px;
+}

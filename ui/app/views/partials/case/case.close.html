@@ -13,7 +13,7 @@
                     <tr>
                         <th style="width: 40px"></th>
                         <th>Task</th>
-                        <th style="width: 250px">Assigned to</th>
+                        <th style="width: 250px">Assignee</th>
                     </tr>
                 </thead>
                 <tbody ng-repeat="task in tasks">
@@ -115,7 +115,7 @@
                 <label class="col-sm-3 control-label">Summary
                     <i class="fa fa-asterisk text-danger"></i>
                 </label>
-                <div class="col-sm-9">                    
+                <div class="col-sm-9">
                     <textarea class="content-box" name="summary" placeholder="Close summary" markdown-editor="{'fullscreen': {enable: false}, 'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="6" ng-model="formData.summary" required></textarea>
                     <p class="help-block" ng-show="caseCloseForm.summary.$invalid && !caseCloseForm.summary.$pristine">The case summary is required.</p>
                 </div>
