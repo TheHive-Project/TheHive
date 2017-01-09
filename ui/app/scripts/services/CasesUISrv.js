@@ -174,7 +174,7 @@
                 removeFilter: function(field) {
                     var filter = factory.activeFilters[field];
 
-                    if(angular.isObject(filter.value)) {
+                    if(_.isObject(filter.value) && !_.isArray(filter.value)) {
                         _.each(filter.value, function(value, key) {
                             filter.value[key] = null;
                         });
