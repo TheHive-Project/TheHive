@@ -116,6 +116,41 @@
             aggregations: ['sum']
         };
 
+        $scope.observableByDataType = {
+            title: 'Observables by Type',
+            type: 'case_artifact',
+            field: 'dataType',
+            dateField: 'startDate',
+            tagsField: 'tags'
+        };
+
+        $scope.observableByIoc = {
+            title: 'Observables by IOC flag',
+            type: 'case_artifact',
+            field: 'ioc',
+            dateField: 'startDate',
+            tagsField: 'tags',
+            names: {
+                '0': 'NOT IOC',
+                '1': 'IOC'
+            }
+        };
+
+        $scope.observableOverTime = {
+            title: 'Observables over time',
+            type: 'case/artifact',
+            fields: ['startDate'],
+            dateField: 'startDate',
+            tagsField: 'tags',
+            names: {
+                startDate: 'Number of observables'
+            },
+            types: {
+                startDate: 'bar'
+            }
+        };
+
+
         // Prepare the global query
         $scope.prepareGlobalQuery = function() {
             // Handle date queries
