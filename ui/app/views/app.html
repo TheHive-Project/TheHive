@@ -24,7 +24,7 @@
                             <li>
                                 <a href ng-click="createNewCase()">Empty Case</a>
                             </li>
-                            <li class="divider"></li>
+                            <li class="divider" ng-if="templates && templates.length > 0"></li>
                             <li ng-repeat="template in templates">
                                 <a href ng-click="createNewCase(template)">From
                                     {{template.name | uppercase}}
@@ -32,20 +32,26 @@
                             </li>
                         </ul>
                     </li>
-                    <li>
+                    <li ui-sref-active="active">
                         <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
                             <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
                         </a>
                     </li>
-                    <li>
+                    <li ui-sref-active="active">
                         <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
                             <span class="badge alert-danger">{{waitingTasks.count}}</span>
                         </a>
                     </li>
-                    <li ng-show="mispEnabled === true">
+                    <li ng-show="mispEnabled === true" ui-sref-active="active">
                         <a href ui-sref="app.misp-list">
                             MISP
                             <span class="badge alert-danger">{{mispEvents.count}}</span>
+                        </a>
+                    </li>
+                    <li class="hdivider hidden-xs"></li>
+                    <li ui-sref-active="active">
+                        <a ui-sref="app.statistics">
+                            <i class="fa fa-bar-chart"></i> Statistics
                         </a>
                     </li>
                 </ul>
@@ -131,16 +137,12 @@
                         </ul>
                     </li>
                     <li class="dropdown" dropdown>
-                        <a class="profile dropdown-toggle" dropdown-toggle href>                            
+                        <a class="profile dropdown-toggle" dropdown-toggle href>
                             <user user-id="currentUser.id"></user>
                         </a>
                         <ul class="dropdown-menu">
                             <li>
                                 <a ui-sref="app.settings">Personal settings</a>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <a ui-sref="app.statistics">Statistics</a>
                             </li>
                             <li class="divider"></li>
                             <li>
