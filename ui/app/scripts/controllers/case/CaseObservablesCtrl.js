@@ -138,7 +138,10 @@
             $scope.artifactList.Action = 'main';
             $scope.artifactList.isCollapsed = true;
             $scope.artifactList.ttags = [];
-            $scope.analyzersList = {};
+            $scope.analyzersList = {
+                active: {},
+                datatypes: {}
+            };
             $scope.selection = {};
 
             //
@@ -568,7 +571,7 @@
                         }));
                     })
                     .then(function () {
-                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');                        
+                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
             };
 
