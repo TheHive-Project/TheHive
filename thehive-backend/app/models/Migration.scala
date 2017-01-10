@@ -41,6 +41,7 @@ class Migration @Inject() (
   }
 
   override val operations: PartialFunction[DatabaseState, Seq[Operation]] = {
+    case DatabaseState(version) if version < 7 => Nil
     case previousState @ DatabaseState(7) ⇒
       Seq(
         renameAttribute("reportTemplate", "analyzerId", "analyzers"), // reportTemplate refers only one analyzer
