@@ -58,7 +58,7 @@
                     </thead>
 
                     <tbody>
-                        <tr ng-class="{true:'warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
+                        <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
 
                             <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
                             <td>

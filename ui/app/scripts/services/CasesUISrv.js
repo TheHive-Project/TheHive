@@ -78,7 +78,8 @@
                             state: state,
                             showFilters: false,
                             showStats: false,
-                            pageSize: 15
+                            pageSize: 15,
+                            sort: ['-flag', '-startDate']
                         };
 
                         factory.filters = {};

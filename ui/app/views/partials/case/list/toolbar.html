@@ -26,14 +26,14 @@
                 </button>
                 <ul class="dropdown-menu" role="menu">
                     <li>
-                        <a ng-click="$vm.sortBy(['-flag', '-startDate'])">Newest</a>
+                        <a ng-click="$vm.sortBy(['-flag', '-startDate'])">Newest first</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.sortBy(['-flag', '+startDate'])">Oldest</a>
+                        <a ng-click="$vm.sortBy(['-flag', '+startDate'])">Oldest first</a>
                     </li>
                 </ul>
             </div>
-            
+
             <div class="btn-group pull-right" role="group">
                 <page-sizer collection="$vm.list" sizes="[10, 15, 30, 100]"></page-sizer>
             </div>
