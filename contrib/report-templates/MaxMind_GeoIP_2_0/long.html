@@ -1,0 +1,20 @@
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        Geolocation of <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        <div ng-show="content.traits.is_anonymous_proxy" class="alert alert-warning">Is anonymous proxy</div>
+        <div ng-show="content.traits.is_satellite_provider" class="alert alert-warning">Is satellite provider</div>
+
+        {{[content.continent.name, content.country.name, content.subdivisions.name, content.city.name].join(' / ')}}
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>

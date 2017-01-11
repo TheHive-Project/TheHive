@@ -1,0 +1,48 @@
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{artifact.data | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>
+
+<div class="panel panel-info" ng-if="success" ng-init="recordsLimit=20">
+    <div class="panel-heading">
+        <strong>{{artifact.data| fang}}</strong>
+        <a ng-show="::content.history.length > 20" class="pull-right" href ng-click="recordsLimit=undefined">View All ({{::content.history.length}})</a>
+    </div>
+    <div class="panel-body">
+        <div ng-if="content.record_count === 0">No records found</div>
+        <table class="table table-hover" ng-if="content.record_count > 0">
+            <thead>
+                <tr>
+                    <th width="50">#</th>
+                    <th width="120">date</th>
+                    <th>server names</th>
+                    <th>registrant</th>
+                    <th>registrar</th>
+                    <th>expiration</th>
+                    <th>statuses</th>
+                </tr>
+            </thead>
+            <tbody ng-repeat="row in content.history | limitTo:recordsLimit">
+                <td>{{$index + 1}}</td>
+                <td>{{row.date}}</td>
+                <td class="wrap">
+                    <ul class="list-unstyled">
+                        <li ng-repeat="ns in row.whois.name_servers">{{ns}}</li>
+                    </ul>
+                </td>
+                <td>{{row.whois.registrant}}</td>
+                <td>{{row.whois.registration.registrar}}</td>
+                <td>{{row.whois.registration.expires}}</td>
+                <td class="wrap">
+                    <ul class="list-unstyled">
+                        <li ng-repeat="st in row.whois.registration.statuses">{{st}}</li>
+                    </ul>
+                </td>
+            </tbody>
+        </table>
+    </div>
+</div>
