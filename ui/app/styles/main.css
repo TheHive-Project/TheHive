@@ -307,23 +307,23 @@ ul.observable-reports-summary li {
     border-left: 6px solid #D9534F;
 }
 .bg-tlp-na {
-    background-color: #428BCA;
+    background-color: #428BCA !important;
 }
 .bg-tlp-white,
 .bg-tlp-0 {
-    background-color: #5BC0CE;
+    background-color: #5BC0CE !important;
 }
 .bg-tlp-green,
 .bg-tlp-1 {
-    background-color: #5CB85C;
+    background-color: #5CB85C !important;
 }
 .bg-tlp-amber,
 .bg-tlp-2 {
-    background-color: #F0AD4E;
+    background-color: #F0AD4E !important;
 }
 .bg-tlp-red,
 .bg-tlp-3 {
-    background-color: #D9534F;
+    background-color: #D9534F !important;
 }
 .updatable-waiting .updatable-value {
     background-color: gray;
@@ -438,4 +438,11 @@ td.vmiddle {
 
 table.valigned td {
     vertical-align: middle !important;
+}
+
+table tr.tr-warning {
+    background-color: #fcf8e3 !important;
+}
+table tr.tr-warning>td {
+    background-color: #fcf8e3;
 }
