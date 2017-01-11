@@ -35,7 +35,9 @@
                 }
 
                 _.each(self.templates, function (tpl) {
-                    analyzersMap[tpl.analyzerId][tpl.reportType + 'Report'] = tpl;
+                    if(analyzersMap[tpl.analyzerId]) {
+                        analyzersMap[tpl.analyzerId][tpl.reportType + 'Report'] = tpl;
+                    }                    
                 });
 
                 self.analyzerCount = _.keys(analyzersMap).length;
