@@ -35,6 +35,10 @@
                     });
 
                     self.loadPage();
+                }, function(response) {
+                  self.loading = false;
+                  AlertSrv.error('MispEventCtrl', response.data, response.status);
+                  $modalInstance.dismiss();
                 });
             };
 
@@ -56,7 +60,7 @@
 
             self.ignore = function(){
                 MispSrv.ignore(self.event.id).then(function( /*data*/ ) {
-                    $modalInstance.dismiss();                    
+                    $modalInstance.dismiss();
                 });
             };
 
