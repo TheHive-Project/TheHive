@@ -17,7 +17,7 @@
                     if (status === 520) {
                         AlertSrv.error('AuthenticationCtrl', data, status);
                     } else {
-                        AlertSrv.log(data, 'error');
+                        AlertSrv.log(data.message, 'error');
                     }
                 });
             };
