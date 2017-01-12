@@ -30,6 +30,11 @@
                         type: 'list',
                         defaultValue: []
                     },
+                    owner: {
+                        field: 'owner',
+                        type: 'list',
+                        defaultValue: []
+                    },
                     tlp: {
                         field: 'tlp',
                         type: 'number',

@@ -48,6 +48,19 @@
                                 </tags-input>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">Assignee</label>
+                        <div class="col-sm-8">
+                            <tags-input class="form-control form-control-wrapper"
+                                min-length="2"
+                                ng-model="$vm.uiSrv.activeFilters.owner.value"
+                                placeholder="ex: Firstname Lastname"
+                                replace-spaces-with-dashes="false"
+                                display-property="label">
+                                    <auto-complete debounceDelay="400" source="$vm.getUsers($query)" display-property="label"></auto-complete>
+                                </tags-input>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">

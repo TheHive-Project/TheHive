@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, CaseResolutionStatus) {
+    function CaseListCtrl($scope, $q, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus) {
         var self = this;
 
         this.showFlow = true;
@@ -133,6 +133,44 @@
 
         this.getTags = function(query) {
             return TagSrv.fromCases(query);
+        };
+
+        this.getUsers = function(query) {
+            return UserSrv.list({
+                _and: [
+                    {
+                        status: 'Ok'
+                    }
+                ]
+            }).then(function(data) {
+                return _.map(data, function(user) {
+                    return {
+                        label: user.name,
+                        text: user.id
+                    };
+                });
+            }).then(function(users) {
+                var filtered = _.filter(users, function(user) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(user.label);
+                });
+
+                return filtered;
+            });
+        };
+
+        this.filterMyCases = function() {
+            this.uiSrv.clearFilters()
+                .then(function(){
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.uiSrv.activeFilters.owner = {
+                        value: [{
+                            text: currentUser.id,
+                            label: currentUser.name
+                        }]
+                    };
+                    self.filter();
+                });
         };
 
         this.filterByStatus = function(status) {
