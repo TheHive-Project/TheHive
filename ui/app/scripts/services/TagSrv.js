@@ -12,9 +12,9 @@
                     limit: 1000
                 }).then(function(response) {
                     var tags = [];
-                    var regex = new RegExp(query);
 
                     tags = _.map(_.filter(_.keys(response.data), function(tag) {
+                        var regex = new RegExp(query, 'gi');
                         return regex.test(tag);
                     }), function(tag) {
                         return {text: tag};

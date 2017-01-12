@@ -35,7 +35,7 @@ angular.module('theHiveServices')
             } else {
                 var ret = {
                     'name': login,
-                    'id': login                    
+                    'id': login
                 };
                 res.get({
                     'userId': login
@@ -66,6 +66,22 @@ angular.module('theHiveServices')
                     defer.reject(data, status);
                 });
             }
+
+            return defer.promise;
+        };
+
+        res.list = function(query) {
+            var defer = $q.defer();
+
+            var post = {
+                range: 'all',
+                query: query
+            };
+
+            $http.post('/api/user/_search', post)
+                .then(function(response) {
+                    defer.resolve(response.data);
+                });
 
             return defer.promise;
         };

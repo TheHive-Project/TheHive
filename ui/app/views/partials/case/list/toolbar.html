@@ -10,6 +10,9 @@
                 </button>
                 <ul class="dropdown-menu" role="menu">
                     <li>
+                        <a ng-click="$vm.filterMyCases()">My cases</a>
+                    </li>
+                    <li>
                         <a ng-click="$vm.filterByStatus('Open')">Open Cases ({{$vm.caseStats.Open.count}})</a>
                     </li>
                     <li>
