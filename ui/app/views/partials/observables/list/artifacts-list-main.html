@@ -57,8 +57,8 @@
                     <a href="" ng-click="addFilterValue('dataType', artifact.dataType)"><span ng-bind="artifact.dataType"></span></a>
                 </td>
                 <td class="wrap clickable" ng-click="openArtifact(artifact)">{{(artifact.data | fang) || (artifact.attachment.name | fang)}}</td>
-                <td class="clickable" ng-switch="countReports(artifact)">
-                    <span ng-switch-when="0">
+                <td ng-switch="countReports(artifact)">
+                    <span ng-switch-when="0" class="clickable">
                         <a href ng-click="runAllOnObservable(artifact)">Run all analyzers</a>
                     </span>
                     <span ng-switch-default>

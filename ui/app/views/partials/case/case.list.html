@@ -95,7 +95,11 @@
                             <td class="nowrap">
                                 <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
                             </td>
-                            <td>{{currentCase.startDate | showDate}}</td>
+                            <td>
+                                <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
+                                    <span tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
+                                </a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

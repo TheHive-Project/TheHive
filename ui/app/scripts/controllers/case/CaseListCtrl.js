@@ -89,7 +89,7 @@
                         });
                     }
                 } else if (filterDef.type === 'date') {
-                    date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                    date = moment(value);
                     this.uiSrv.activeFilters[field] = {
                         value: {
                             from: date.hour(0).minutes(0).seconds(0).toDate(),
@@ -107,7 +107,7 @@
                         }]
                     };
                 } else if (filterDef.type === 'date') {
-                    date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                    date = moment(value);
                     this.uiSrv.activeFilters[field] = {
                         value: {
                             from: date.hour(0).minutes(0).seconds(0).toDate(),
