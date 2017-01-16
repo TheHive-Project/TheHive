@@ -44,16 +44,15 @@
 
         <div class="row mt-s">
             <div class="col-md-12">
-                <table class="table table-striped">
+                <table class="table table-striped case-list">
                     <thead>
                         <tr>
                             <th style="width: 10px;" class="p-0"></th>
+                            <th style="width: 60px;">Assignee</th>
                             <th>Title</th>
-                            <th style="width: 250px">Tags</th>
-                            <th style="width: 150px">Tasks</th>
-                            <th style="width: 100px">Observables</th>
-                            <th style="width: 60px">Assignee</th>
-                            <th style="width: 160px">Date</th>
+                            <th style="width: 100px;">Tasks</th>
+                            <th style="width: 100px;">Observables</th>
+                            <th style="width: 120px;">Date</th>
                         </tr>
                     </thead>
 
@@ -61,11 +60,21 @@
                         <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
 
                             <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
+                            <td class="nowrap">
+                                <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
+                            </td>
                             <td>
-                                <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}}
-                                    -
-                                    {{currentCase.title}}</a>
-                                <div ng-show="currentCase.status !== 'Open'" class="text-success">
+                                <div class="case-title">
+                                    <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
+                                </div>
+                                <div class="case-tags flexwrap mt-xxs">
+                                    <span class="mr-xxxs">Tags:</span>
+                                    <strong class="text-muted mr-xxxs" ng-if="!currentCase.tags || currentCase.tags.length === 0">None</strong>
+                                    <span ng-repeat="tag in currentCase.tags" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}
+
+                                    </span>
+                                </div>
+                                <div class="text-success" ng-show="currentCase.status !== 'Open'">
                                     <small>
                                         (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
                                     </small>
@@ -77,23 +86,15 @@
                                     </small>
                 				</div>
                             </td>
-                            <td class="flexwrap">
-                                <span ng-repeat="tag in currentCase.tags" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">
-                                    <span ng-bind="tag"></span>
-                                </span>
-                            </td>
                             <td>
                                 <a ui-sref="app.case.tasks({caseId: currentCase.id})">
                                     <ng-pluralize count="currentCase.stats.tasks.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
                                 </a>
                                 <br>
-                                <task-progress tasks="currentCase.stats.tasks"/>
+                                <task-progress ng-show="currentCase.stats.tasks.total > 0" tasks="currentCase.stats.tasks"/>
                             </td>
                             <td>
                                 <a ui-sref="app.case.observables({caseId: currentCase.id})">{{currentCase.stats.artifacts.count}}</a>
-                            </td>
-                            <td class="nowrap">
-                                <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
                             </td>
                             <td>
                                 <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
