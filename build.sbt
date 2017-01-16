@@ -36,6 +36,10 @@ run := {
 
 mappings in packageBin in Assets ++= frontendFiles.value
 
+mappings in Universal ~= { _.filterNot {
+  case (_, name) => name == "conf/application.conf"
+}}
+
 // Install files //
 
 mappings in Universal ++= {
