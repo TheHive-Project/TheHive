@@ -48,10 +48,10 @@
                     <thead>
                         <tr>
                             <th style="width: 10px;" class="p-0"></th>
-                            <th style="width: 60px;">Assignee</th>
                             <th>Title</th>
                             <th style="width: 100px;">Tasks</th>
                             <th style="width: 100px;">Observables</th>
+                            <th style="width: 60px;">Assignee</th>
                             <th style="width: 120px;">Date</th>
                         </tr>
                     </thead>
@@ -60,9 +60,6 @@
                         <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
 
                             <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
-                            <td class="nowrap">
-                                <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
-                            </td>
                             <td>
                                 <div class="case-title">
                                     <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
@@ -95,6 +92,9 @@
                             </td>
                             <td>
                                 <a ui-sref="app.case.observables({caseId: currentCase.id})">{{currentCase.stats.artifacts.count}}</a>
+                            </td>
+                            <td class="nowrap">
+                                <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
                             </td>
                             <td>
                                 <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
