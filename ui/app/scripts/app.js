@@ -256,7 +256,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         localStorageServiceProvider
             .setPrefix('th')
-            .setStorageType('sessionStorage')
+            .setStorageType('localStorage')
             .setNotify(false, false);
     })
     .config(function(NotificationProvider) {
