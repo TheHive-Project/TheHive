@@ -46,7 +46,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val endDate = optionalAttribute("endDate", F.dateFmt, "Resolution date")
   val tags = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag = attribute("flag", F.booleanFmt, "Flag of the case", false)
-  val tlp = attribute("tlp", F.numberFmt, "TLP level", -1L)
+  val tlp = attribute("tlp", F.numberFmt, "TLP level", 2L)
   val status = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
   val metrics = optionalAttribute("metrics", F.metricsFmt, "List of metrics")
   val resolutionStatus = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
