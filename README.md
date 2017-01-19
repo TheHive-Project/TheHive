@@ -41,7 +41,7 @@ TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API
 ![](images/Architecture.png)
 
 ## Analyzers
-TheHive 2.9.1 is provided with 8 analyzers:
+TheHive 2.9.2 is provided with 8 analyzers:
 + DNSDB*: leverage Farsight's [DNSDB](https://www.dnsdb.info/) for pDNS.
 + DomainTools*: look up domain names, IP addresses, WHOIS records, etc. using the popular [DomainTools](http://domaintools.com/) service API.
 + Hippocampe: query threat feeds through [Hippocampe](https://github.com/CERT-BDF/Hippocampe), a FOSS tool that centralizes feeds and allows you to associate a confidence level to each one of them (that can be changed over time) and get a score indicating the data quality.
