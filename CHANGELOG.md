@@ -1,7 +1,15 @@
 # Change Log
 
-## [2.9.1](https://github.com/CERT-BDF/TheHive/tree/2.9.1)
+## [2.9.2](https://github.com/CERT-BDF/TheHive/tree/2.9.2) (2017-01-19)
 
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.9.1...2.9.2)
+
+**Fixed bugs:**
+
+- docker image: $.post\(...\).success is not a function [\#95](https://github.com/CERT-BDF/TheHive/issues/95)
+
+
+## [2.9.1](https://github.com/CERT-BDF/TheHive/tree/2.9.1) (2016-11-28)
 **Implemented enhancements:**
 
 - Update logo and favicon [\#45](https://github.com/CERT-BDF/TheHive/issues/45)
@@ -11,8 +19,8 @@
 
 **Fixed bugs:**
 
-- NPE occurs at startup if conf directory doesn't exists [\#41](https://github.com/CERT-BDF/TheHive/issues/41)
 - Resource not found by Assets controller [\#38](https://github.com/CERT-BDF/TheHive/issues/38)
+- NPE occurs at startup if conf directory doesn't exists [\#41](https://github.com/CERT-BDF/TheHive/issues/41)
 - Systemd startup script does not work [\#29](https://github.com/CERT-BDF/TheHive/issues/29)
 - MISP event parsing error when it doesn't contain any attribute [\#25](https://github.com/CERT-BDF/TheHive/issues/25)
 - Phantom tabs [\#18](https://github.com/CERT-BDF/TheHive/issues/18)
@@ -27,15 +35,16 @@
 - Statistics based on Tags [\#37](https://github.com/CERT-BDF/TheHive/issues/37)
 - Statistics on a per case template name / prefix basis [\#31](https://github.com/CERT-BDF/TheHive/issues/31)
 - Observable Viewing Page [\#17](https://github.com/CERT-BDF/TheHive/issues/17)
-- Case merging [\#14](https://github.com/CERT-BDF/TheHive/issues/14)
 - Give us something to work with! [\#2](https://github.com/CERT-BDF/TheHive/issues/2)
+- Case merging [\#14](https://github.com/CERT-BDF/TheHive/issues/14)
 
 **Merged pull requests:**
 
-- New analyzer to check URL categories [\#24](https://github.com/CERT-BDF/TheHive/pull/24) ([ecapuano](https://github.com/ecapuano))
+- AlienVault OTX Analyzer [\#39](https://github.com/CERT-BDF/TheHive/pull/39) ([ecapuano](https://github.com/ecapuano))
 - Fix "Run from Docker" [\#9](https://github.com/CERT-BDF/TheHive/pull/9) ([2xyo](https://github.com/2xyo))
 - Fixing a Simple Typo [\#6](https://github.com/CERT-BDF/TheHive/pull/6) ([swannysec](https://github.com/swannysec))
 - Fixed broken link to Wiki [\#1](https://github.com/CERT-BDF/TheHive/pull/1) ([Neo23x0](https://github.com/Neo23x0))
+- New analyzer to check URL categories [\#24](https://github.com/CERT-BDF/TheHive/pull/24) ([ecapuano](https://github.com/ecapuano))
 
 
 
