@@ -9,10 +9,10 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 
-import play.api.libs.json.JsObject
+import play.api.libs.json.{ JsBoolean, JsObject }
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
+import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
 
 import models.{ Case, CaseModel, Task, TaskModel, TaskStatus }
 
@@ -65,8 +65,8 @@ class TaskSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
     val filter = and(parent("case", withId(caseIds: _*)), "status" in (TaskStatus.Waiting.toString, TaskStatus.InProgress.toString))
     val range = Some("all")
-    val completeTask = Fields.empty.set("status", TaskStatus.Completed.toString)
-    val cancelTask = Fields.empty.set("status", TaskStatus.Cancel.toString)
+    val completeTask = Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsBoolean(false))
+    val cancelTask = Fields.empty.set("status", TaskStatus.Cancel.toString).set("flag", JsBoolean(false))
 
     find(filter, range, Nil)
       ._1
