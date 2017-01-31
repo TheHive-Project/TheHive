@@ -2,6 +2,15 @@
     'use strict';
     angular.module('theHiveServices')
         .factory('CasesUISrv', function($q, localStorageService) {
+            var defaultFilter = {
+                status: {
+                    field: 'status',
+                    value: [{
+                        text: 'Open'
+                    }],
+                    filter: '(status:"Open")'
+                }
+            };
 
             var factory = {
                 filterDefs: {
@@ -61,24 +70,20 @@
                     state: null,
                     showFilters: false,
                     showStats: false,
-                    pageSize: 15
+                    pageSize: 15,
+                    sort: ['-flag', '-startDate']
                 },
                 currentState: null,
                 currentPageSize: null,
 
                 initContext: function(state) {
-                    if (!factory.context.state) {
-                        var storedContext = localStorageService.get('cases-section');
-
-                        if (storedContext && storedContext.state && storedContext.state === state) {
-                            factory.context = storedContext;
-                            factory.filters = storedContext.filters || {};
-                            factory.activeFilters = storedContext.activeFilters || {};
-                            return;
-                        }
-                    }
-
-                    if (state !== factory.context.state) {
+                    var storedContext = localStorageService.get('cases-section');
+                    if (storedContext) {
+                        factory.context = storedContext;
+                        factory.filters = storedContext.filters || {};
+                        factory.activeFilters = storedContext.activeFilters || {};
+                        return;
+                    } else {
                         factory.context = {
                             state: state,
                             showFilters: false,
@@ -87,8 +92,13 @@
                             sort: ['-flag', '-startDate']
                         };
 
-                        factory.filters = {};
+                        factory.filters = defaultFilter;
                         factory.activeFilters = {};
+                        factory.activeFilters.status = {
+                            value: [{
+                                text: 'Open'
+                            }]
+                        };
 
                         factory.storeContext();
                     }
@@ -140,17 +150,6 @@
                         filterDef = factory.filterDefs[field];
 
                     // Prepare the filter value
-                    /*
-                    if(factory.hasFilter(field)) {
-                        var oldValue = factory.getFilterValue(field);
-                        console.log('Filter ['+field+'] already exists = ' + oldValue);
-
-                        if(factory.filterDefs[field].type === 'list') {
-                            value = angular.isArray(oldValue) ? oldValue.push({text: value}) : [{text: oldValue}, {text: value}];
-                        }
-                    }
-                    */
-
                     if (field === 'keyword') {
                         query = value;
                     } else if (angular.isArray(value) && value.length > 0) {
