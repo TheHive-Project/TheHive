@@ -47,13 +47,6 @@ mappings in Universal ++= {
   (dir.***) pair relativeTo(dir.getParentFile)
 }
 
-// Analyzers //
-
-mappings in Universal ++= {
-  val dir = baseDirectory.value / "analyzers"
-  (dir.***) pair relativeTo(dir.getParentFile)
-}
-
 // Release //
 import ReleaseTransformations._
 
@@ -109,11 +102,6 @@ dockerCommands := dockerCommands.value.map {
 }
 
 dockerCommands := (dockerCommands.value.head +:
-  ExecCmd("RUN", "bash", "-c",
-    "apt-get update && " +
-    "apt-get install -y --no-install-recommends python python-pip && " +
-    "pip install OleFile && " +
-    "rm -rf /var/lib/apt/lists/*") +:
   Cmd("EXPOSE", "9000") +:
   dockerCommands.value.tail)
 
