@@ -4,6 +4,13 @@ body {
 #header {
     padding: 40px 0;
 }
+.btn-cta-primary {
+    background: #17baef;
+    border: 1px solid #17baef;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+}
 .btn-cta-secondary {
     background: #fbb040;
     border: 1px solid #fbb040;
@@ -11,14 +18,6 @@ body {
     font-weight: 600;
     text-transform: uppercase;
 }
-
-#header .btn-cta-secondary {
-    width: 200px;
-    margin-bottom: 5px;
-    margin-left: 5px;
-    margin-right: 5px;
-}
-
 .btn-cta-twitter {
     background: #1da1f2;
     border: 1px solid #1da1f2;
@@ -26,16 +25,43 @@ body {
     font-weight: 600;
     text-transform: uppercase;
 }
+
+#header .btn-cta-secondary,
+.section-header .btn-cta-secondary {
+    width: 200px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+
 a.btn-cta-twitter {
     color: #fff !important;
 }
-
+div.btns a {
+    min-width: 200px;
+}
 section {
     padding: 20px 0;
 }
 section#separator {
     padding: 0;
     height: 5px;
+}
+section .section-header {
+    margin-bottom: 50px;
+}
+section .section-header h2 {
+    font-size: 50px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+section .section-header h3 {
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+section .section-header .btns {
+    margin-bottom: 20px;
 }
 h2 {
     font-size: 50px;
@@ -77,6 +103,10 @@ h2 {
 .bg-black p.content {
     color: #ffffff;
 }
+
+.text-left {
+    text-align: left !important;
+}
 .img-circle {
     height: 120px;
     width: 120px;
@@ -87,7 +117,8 @@ h2 {
     align-items: center;
 }
 
-#features .img-circle {
+#thehive .img-circle,
+#cortex .img-circle {
     background-color: #fbb040;
 }
 
@@ -99,7 +130,7 @@ h2 {
     font-size: 38px;
 }
 pre {
-    font-size: 20px;
+    font-size: 14px;
     border: none;
     padding: 20px;
     white-space: pre-wrap;
@@ -118,7 +149,7 @@ pre {
 }
 
 #license h2,
-#features h2{
+#thehive h2{
     color: #ffffff;
 }
 
@@ -126,9 +157,14 @@ p.content {
     font-size: 20px;
 }
 
-#features p.content,
+#thehive p.content,
+#cortex p.content,
 #tryit p.content {
     text-align: justify;
+}
+
+#tryit h3 {
+    margin-bottom: 20px;
 }
 
 #contact .btns {
@@ -139,6 +175,10 @@ footer .content {
     font-size: 14px;
     margin: 0;
     padding: 10px;
+}
+
+footer .content.credits {
+    font-size:12px;
 }
 
 @media only screen
