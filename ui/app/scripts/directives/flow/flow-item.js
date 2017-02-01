@@ -19,8 +19,8 @@
                     scope.getContentUrl = function() {
                         return 'views/directives/flow/' + scope.type + '.html';
                     };
-                    scope.gtime = function(startdate) {
-                        return moment(startdate, 'YYYYMMDDTHHmmssZZ').toDate().getTime();
+                    scope.gtime = function(startdate) {                        
+                        return moment(startdate).toDate().getTime();
                     };
                     scope.isImage = function(contentType) {
                         return angular.isString(contentType) && contentType.indexOf('image') === 0;

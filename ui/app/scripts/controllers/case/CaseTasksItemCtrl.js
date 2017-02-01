@@ -1,9 +1,13 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function($scope, $state, $stateParams, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
+
+            // Initialize controller
+            $scope.task = task;
+            $scope.tabName = 'task-' + task.id;
 
             $scope.loading = false;
             $scope.newLog = {
@@ -17,7 +21,13 @@
                 logMissing: ''
             };
 
-            $scope.initScope = function() {
+            $scope.markdownEditorOptions = {
+                iconlibrary: 'fa',
+                addExtraButtons: true,
+                resize: 'vertical'
+            };
+
+            $scope.initScope = function () {
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
                     'filter': {
@@ -38,7 +48,7 @@
                 });
             };
 
-            $scope.switchFlag = function() {
+            $scope.switchFlag = function () {
                 if ($scope.task.flag === undefined || $scope.task.flag === false) {
                     $scope.task.flag = true;
                     $scope.updateField('flag', true);
@@ -48,31 +58,38 @@
                 }
             };
 
-            $scope.updateField = function(fieldName, newValue) {
+            $scope.updateField = function (fieldName, newValue) {
                 var field = {};
                 field[fieldName] = newValue;
                 return CaseTaskSrv.update({
                     taskId: $scope.task.id
-                }, field, function() {}, function(response) {
+                }, field, function () {}, function (response) {
                     AlertSrv.error('taskDetails', response.data, response.status);
                 });
             };
 
-            $scope.complete = function() {
+            $scope.complete = function () {
                 $scope.task.status = 'Completed';
                 $scope.updateField('status', 'Completed');
 
+                CaseTabsSrv.removeTab($scope.tabName);
                 $state.go('app.case.tasks', {
                     caseId: $scope.caseId
                 });
             };
 
-            $scope.showLogEditor = function() {
+            $scope.showLogEditor = function () {
                 $scope.adding = true;
-                $scope.isEditMode = true;
+                $rootScope.$broadcast('beforeNewLogShow');
             };
 
-            $scope.addLog = function() {
+            $scope.cancelAddLog = function() {
+                // Switch to editor mode instead of preview mode
+                $rootScope.markdownEditorObjects.newLog.hidePreview();
+                $scope.adding = false;
+            };
+
+            $scope.addLog = function () {
                 $scope.loading = true;
 
                 if ($scope.state.attachmentCollapsed || !$scope.newLog.attachment) {
@@ -81,16 +98,18 @@
 
                 TaskLogSrv.save({
                     'taskId': $scope.task.id
-                }, $scope.newLog, function() {
+                }, $scope.newLog, function () {
                     delete $scope.newLog.attachment;
                     $scope.state.attachmentCollapsed = true;
                     $scope.newLog.message = '';
+
+                    $rootScope.markdownEditorObjects.newLog.hidePreview();
                     $scope.adding = false;
                     // removeAllFiles is added by dropzone directive as control
                     $scope.state.removeAllFiles();
 
                     $scope.loading = false;
-                }, function(response) {
+                }, function (response) {
                     AlertSrv.error('taskDetails', response.data, response.status);
                     $scope.loading = false;
                 });
@@ -98,13 +117,9 @@
                 return true;
             };
 
-            // Initialize controller
-            $scope.task = task;
-            var taskName = 'task-' + task.id;
-
             // Add tabs
-            CaseTabsSrv.addTab(taskName, {
-                name: taskName,
+            CaseTabsSrv.addTab($scope.tabName, {
+                name: $scope.tabName,
                 label: task.title,
                 closable: true,
                 state: 'app.case.tasks-item',
@@ -114,7 +129,7 @@
             });
 
             // Select tab
-            CaseTabsSrv.activateTab(taskName);
+            CaseTabsSrv.activateTab($scope.tabName);
 
             // Prepare the scope data
             $scope.initScope(task);

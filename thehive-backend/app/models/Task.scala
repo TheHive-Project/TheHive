@@ -10,7 +10,7 @@ import play.api.libs.json.{ JsBoolean, JsObject }
 import play.api.libs.json.JsValue.jsValueToJsLookup
 
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
 import org.elastic4play.utils.RichJson
 
 import JsonFormat.taskStatusFormat
@@ -21,7 +21,7 @@ object TaskStatus extends Enumeration with HiveEnumeration {
   val Waiting, InProgress, Completed, Cancel = Value
 }
 
-trait TaskAttributes { _: AttributeDef =>
+trait TaskAttributes { _: AttributeDef ⇒
   val title = attribute("title", F.textFmt, "Title of the task")
   val description = optionalAttribute("description", F.textFmt, "Task details")
   val owner = optionalAttribute("owner", F.stringFmt, "User who owns the task")
@@ -29,6 +29,7 @@ trait TaskAttributes { _: AttributeDef =>
   val flag = attribute("flag", F.booleanFmt, "Flag of the task", false)
   val startDate = optionalAttribute("startDate", F.dateFmt, "Timestamp of the comment start")
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
+  val order = attribute("order", F.numberFmt, "Order of the task", 0L)
 
 }
 @Singleton
@@ -37,14 +38,14 @@ class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel
 
   override def updateHook(task: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
     (updateAttrs \ "status").asOpt[TaskStatus.Type] match {
-      case Some(TaskStatus.InProgress) =>
+      case Some(TaskStatus.InProgress) ⇒
         updateAttrs
           .setIfAbsent("startDate", new Date)
-      case Some(TaskStatus.Completed) =>
+      case Some(TaskStatus.Completed) ⇒
         updateAttrs
           .setIfAbsent("endDate", new Date) +
-          ("flag" -> JsBoolean(false))
-      case _ => updateAttrs
+          ("flag" → JsBoolean(false))
+      case _ ⇒ updateAttrs
     }
   }
 }

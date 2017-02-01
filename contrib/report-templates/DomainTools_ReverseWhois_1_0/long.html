@@ -1,0 +1,34 @@
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        <strong>{{artifact.data | fang}}</strong>
+    </div>
+    <div class="panel-body">
+		<dl class="dl-horizontal">
+            <dt>Current Domains</dt>
+            <dd>{{content.domain_count.current}}</dd>
+        </dl>
+		<dl class="dl-horizontal">
+            <dt>Historic Domains</dt>
+            <dd>{{content.domain_count.historic}}</dd>
+        </dl>
+		<dl class="dl-horizontal">
+            <dt>Domains</dt>
+            <dd>
+				<ul class="list list-unstyled">
+					<li ng-repeat="dn in content.domains">
+						{{dn}}
+					</li>
+				</ul>
+			</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{artifact.data | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>

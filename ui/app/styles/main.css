@@ -27,11 +27,17 @@ body {
 .main-navbar .nav>li>a {
     padding: 15px 8px;
 }
+.main-navbar .nav>li>a.profile {
+    padding: 10px 8px;
+}
+
 .main-navbar .input-group-addon {
     padding-left: 6px;
     padding-right: 6px;
 }
-
+.modal-max {
+    width: 90%;
+}
 .clickable {
     cursor: pointer;
 }
@@ -46,7 +52,9 @@ body {
     margin: 0 !important;
 }
 
-
+.short-report {
+    margin-right: 5px;
+}
 .empty-message {
     background-color: #f5f5f5;
     color: #AAA;
@@ -106,6 +114,10 @@ pre.clearpre {
     margin: auto;
     margin-top: 40px;
     background-color: #eee;
+}
+.flexwrap{
+    display: flex;
+    flex-wrap: wrap;
 }
 .wrap {
     word-wrap: break-word;
@@ -210,6 +222,13 @@ dl.dl-horizontal > dt.pull-left {
 dl.dl-horizontal.clear {
     overflow: hidden !important;
 }
+dl.dl-horizontal > dt,
+dl.dl-horizontal > dd {
+    line-height: 28px;
+}
+dl.dl-horizontal {
+    margin-bottom: 10px;
+}
 ul.observable-reports-summary li {
     padding-bottom: 3px;
     padding-left: 2px !important;
@@ -271,17 +290,40 @@ ul.observable-reports-summary li {
 .border-left-tlp-na {
     border-left: 6px solid #428BCA;
 }
-.border-left-tlp-white {
+.border-left-tlp-white,
+.border-left-tlp-0 {
     border-left: 6px solid #5BC0CE;
 }
-.border-left-tlp-green {
+.border-left-tlp-green,
+.border-left-tlp-1  {
     border-left: 6px solid #5CB85C;
 }
-.border-left-tlp-amber {
+.border-left-tlp-amber,
+.border-left-tlp-2  {
     border-left: 6px solid #F0AD4E;
 }
-.border-left-tlp-red {
+.border-left-tlp-red,
+.border-left-tlp-3  {
     border-left: 6px solid #D9534F;
+}
+.bg-tlp-na {
+    background-color: #428BCA !important;
+}
+.bg-tlp-white,
+.bg-tlp-0 {
+    background-color: #5BC0CE !important;
+}
+.bg-tlp-green,
+.bg-tlp-1 {
+    background-color: #5CB85C !important;
+}
+.bg-tlp-amber,
+.bg-tlp-2 {
+    background-color: #F0AD4E !important;
+}
+.bg-tlp-red,
+.bg-tlp-3 {
+    background-color: #D9534F !important;
 }
 .updatable-waiting .updatable-value {
     background-color: gray;
@@ -350,6 +392,25 @@ tr.task-row .tast-status {
     text-align: center;
 }
 
+td.vmiddle {
+    vertical-align: middle !important;
+}
+
+.observable-report pre {
+    display: block;
+    padding: 9.5px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.42857143;
+    word-break: break-all;
+    word-wrap: break-word;
+    background-color: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #333;
+    color: #fff;
+}
+
 @-moz-keyframes spin {
     from {
         -moz-transform: rotate(0deg);
@@ -373,4 +434,15 @@ tr.task-row .tast-status {
     to {
         transform: rotate(360deg);
     }
+}
+
+table.valigned td {
+    vertical-align: middle !important;
+}
+
+table tr.tr-warning {
+    background-color: #fcf8e3 !important;
+}
+table tr.tr-warning>td {
+    background-color: #fcf8e3;
 }

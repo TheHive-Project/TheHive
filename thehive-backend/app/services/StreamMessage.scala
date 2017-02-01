@@ -20,62 +20,64 @@ trait StreamMessageGroup[M] {
   def toJson(implicit ec: ExecutionContext): Future[JsObject]
 }
 
-case class AuditOperationGroup(auxSrv: AuxSrv,
-                               operation: AuditOperation,
-                               auditedAttributes: JsObject,
-                               obj: Future[JsObject],
-                               summary: Map[String, Map[String, Int]], isReady: Boolean) extends StreamMessageGroup[AuditOperation] {
+case class AuditOperationGroup(
+    auxSrv: AuxSrv,
+    operation: AuditOperation,
+    auditedAttributes: JsObject,
+    obj: Future[JsObject],
+    summary: Map[String, Map[String, Int]], isReady: Boolean) extends StreamMessageGroup[AuditOperation] {
   def :+(operation: AuditOperation): AuditOperationGroup = {
     val modelSummary = summary.getOrElse(operation.entity.model.name, Map.empty[String, Int])
     val actionCount = modelSummary.getOrElse(operation.action.toString, 0)
-    copy(summary = summary + (operation.entity.model.name -> (modelSummary +
-      (operation.action.toString -> (actionCount + 1)))))
+    copy(summary = summary + (operation.entity.model.name → (modelSummary +
+      (operation.action.toString → (actionCount + 1)))))
   }
 
   def makeReady = copy(isReady = true)
 
-  def toJson(implicit ec: ExecutionContext): Future[JsObject] = obj.map { o =>
+  def toJson(implicit ec: ExecutionContext): Future[JsObject] = obj.map { o ⇒
     Json.obj(
-      "base" -> Json.obj(
-        "objectId" -> operation.entity.id,
-        "objectType" -> operation.entity.model.name,
-        "operation" -> operation.action,
-        "startDate" -> operation.date,
-        "rootId" -> operation.entity.routing,
-        "user" -> operation.authContext.userId,
-        "createdBy" -> operation.authContext.userId,
-        "createdAt" -> operation.date,
-        "requestId" -> operation.authContext.requestId,
-        "object" -> o,
-        "details" -> auditedAttributes),
-      "summary" -> summary)
+      "base" → Json.obj(
+        "objectId" → operation.entity.id,
+        "objectType" → operation.entity.model.name,
+        "operation" → operation.action,
+        "startDate" → operation.date,
+        "rootId" → operation.entity.routing,
+        "user" → operation.authContext.userId,
+        "createdBy" → operation.authContext.userId,
+        "createdAt" → operation.date,
+        "requestId" → operation.authContext.requestId,
+        "object" → o,
+        "details" → auditedAttributes),
+      "summary" → summary)
   }
 }
 
 object AuditOperationGroup {
   lazy val log = Logger(getClass)
-  
+
   def apply(auxSrv: AuxSrv, operation: AuditOperation)(implicit ec: ExecutionContext): AuditOperationGroup = {
     val auditedAttributes = JsObject {
       operation.details.fields
         .map {
-          case (name, value) =>
+          case (name, value) ⇒
             val baseName = name.split("\\.").head
             (name, value, operation.entity.model.attributes.find(_.name == baseName))
         }
-        .collect { case (name, value, Some(attr)) if !attr.isUnaudited => (name, value) }
+        .collect { case (name, value, Some(attr)) if !attr.isUnaudited ⇒ (name, value) }
     }
     val obj = auxSrv(operation.entity, 10, false)
       .recover {
-        case error =>
+        case error ⇒
           log.error("auxSrv fails", error)
           JsObject(Nil)
       }
-    new AuditOperationGroup(auxSrv,
+    new AuditOperationGroup(
+      auxSrv,
       operation,
       auditedAttributes,
       obj,
-      Map(operation.entity.model.name -> Map(operation.action.toString -> 1)),
+      Map(operation.entity.model.name → Map(operation.action.toString → 1)),
       false)
   }
 }
@@ -91,12 +93,12 @@ case class MigrationEventGroup(tableName: String, current: Long, total: Long) ex
   val isReady = true
   def makeReady = this
   def toJson(implicit ec: ExecutionContext): Future[JsObject] = Future.successful(Json.obj(
-    "base" -> Json.obj(
-      "rootId" -> current,
-      "objectType" -> "migration",
-      "tableName" -> tableName,
-      "current" -> current,
-      "total" -> total)))
+    "base" → Json.obj(
+      "rootId" → current,
+      "objectType" → "migration",
+      "tableName" → tableName,
+      "current" → current,
+      "total" → total)))
 }
 
 object MigrationEventGroup {

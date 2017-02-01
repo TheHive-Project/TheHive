@@ -13,7 +13,7 @@
                     <tr>
                         <th style="width: 40px"></th>
                         <th>Task</th>
-                        <th style="width: 250px">Assigned to</th>
+                        <th style="width: 250px">Assignee</th>
                     </tr>
                 </thead>
                 <tbody ng-repeat="task in tasks">
@@ -22,7 +22,7 @@
                             <i class="text-success glyphicon glyphicon-ok"></i>
                         </td>
                         <td>{{task.title}}</td>
-                        <td>{{getUserInfo(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
+                        <td>{{getUserInfo.get(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
                     </tr>
 
                     <tr ng-if="task.status == 'InProgress'" ng-class="{true:'warning'}[task.flag]">
@@ -30,7 +30,7 @@
                             <i class=" glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                         </td>
                         <td>{{task.title}}</td>
-                        <td>{{getUserInfo(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
+                        <td>{{getUserInfo.get(task.owner) | getField: 'name'}}<br>{{task.startDate | showDate}}</td>
                     </tr>
 
                     <tr ng-if="task.status == 'Waiting'">
@@ -116,7 +116,7 @@
                     <i class="fa fa-asterisk text-danger"></i>
                 </label>
                 <div class="col-sm-9">
-                    <textarea class="form-control" name="summary" ng-model="formData.summary" placeholder="Close summary" required rows="3"></textarea>
+                    <textarea class="content-box" name="summary" placeholder="Close summary" markdown-editor="{'fullscreen': {enable: false}, 'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="6" ng-model="formData.summary" required></textarea>
                     <p class="help-block" ng-show="caseCloseForm.summary.$invalid && !caseCloseForm.summary.$pristine">The case summary is required.</p>
                 </div>
             </div>

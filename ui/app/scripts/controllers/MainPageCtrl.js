@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('MainPageCtrl',
-        function($rootScope, $scope, $window, $stateParams, $state, CaseTaskSrv, PSearchSrv, EntitySrv) {
+        function($rootScope, $scope, $window, $stateParams, $state, CaseTaskSrv, PSearchSrv, EntitySrv, UserInfoSrv) {
 
             $scope.live = function() {
                 $window.open($state.href('live'), 'TheHiveLive',
@@ -66,6 +66,7 @@
             // init values
             $scope.showFlow = true;
             $scope.openEntity = EntitySrv.open;
+            $scope.getUserInfo = UserInfoSrv;
 
             $scope.openWTask = function(task) {
                 if (task.status === 'Waiting') {

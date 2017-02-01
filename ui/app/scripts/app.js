@@ -6,8 +6,8 @@ angular.module('theHiveDirectives', []);
 angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
-        'ngResource', 'ui.codemirror', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs'
+        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -21,7 +21,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
 
-        $urlRouterProvider.otherwise('/main/');
+        $urlRouterProvider.otherwise('/cases');
 
         $stateProvider
             .state('login', {
@@ -60,6 +60,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 },
                 templateUrl: 'views/app.main.html',
                 controller: 'MainPageCtrl'
+            })
+            .state('app.cases', {
+                url: 'cases',
+                templateUrl: 'views/partials/case/case.list.html',
+                controller: 'CaseListCtrl',
+                controllerAs: '$vm',
+                title: 'Cases'
             })
             .state('app.search', {
                 url: 'search?q',
@@ -100,11 +107,18 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                     }
                 }
             })
-            .state('app.administration.templates', {
-                url: '/templates',
-                templateUrl: 'views/partials/admin/templates.html',
-                controller: 'AdminTemplatesCtrl',
+            .state('app.administration.case-templates', {
+                url: '/case-templates',
+                templateUrl: 'views/partials/admin/case-templates.html',
+                controller: 'AdminCaseTemplatesCtrl',
                 title: 'Templates administration'
+            })
+            .state('app.administration.report-templates', {
+                url: '/report-templates',
+                templateUrl: 'views/partials/admin/report-templates.html',
+                controller: 'AdminReportTemplatesCtrl',
+                controllerAs: 'vm',
+                title: 'Report templates administration'
             })
             .state('app.administration.metrics', {
                 url: '/metrics',
@@ -118,8 +132,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
-
-        .state('app.case', {
+            .state('app.case', {
                 abstract: true,
                 url: 'case/{caseId}',
                 templateUrl: 'views/app.case.html',
@@ -243,7 +256,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         localStorageServiceProvider
             .setPrefix('th')
-            .setStorageType('sessionStorage')
+            .setStorageType('localStorage')
             .setNotify(false, false);
     })
     .config(function(NotificationProvider) {

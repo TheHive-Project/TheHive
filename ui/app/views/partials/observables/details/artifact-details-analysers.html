@@ -1,91 +1,77 @@
-<!-- TITLE ROW -->
-<div class="row" style="font-size:0.90em;border-bottom:1px dotted">
-    <div class="col-md-5" style="text-align:left">
-        <p>
-            <strong>Analyzer</strong>
-        </p>
-    </div>
-    <div class="col-md-3" style="text-align:left">
-        <p>
-            <strong>Last analysis</strong>
-        </p>
-    </div>
-    <div class="col-md-3" style="text-align:center">
-        <p>
-            <strong>Job status</strong>
-        </p>
-    </div>
-    <div class="col-md-1" style="text-align:left">
-        <p>
-            <strong>Action</strong>
-        </p>
-    </div>
-</div>
+<h3 class="pad10 text-primary">
+    Observable Analyzers
+    <span class="pull-right" ng-if="analysisEnabled">
+        <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
+    </span>
+</h3>
+<table class="table table-hover">
+    <thead>
+        <th>Analyzer</th>
+        <th width="300">Last analysis</th>
+        <th width="60" ng-if="analysisEnabled">Action</th>
+    </thead>
+    <tbody>
+        <tr ng-repeat="(analyzerId, jobs) in analyzerJobs" ng-init="analyzers[analyzerId].showRows=false;">
+            <td>
+                <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
+                    <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
+                </a>
+                {{::analyzerId}}<br>
+                <small class="text-muted">{{::analyzers[analyzerId] | getField: 'description'}}</small>
+            </td>
+            <td>
+                <ul class="list-unstyled">
+                    <li ng-repeat="job in jobs" ng-show="analyzers[analyzerId].showRows || $first">
+                        <span class="mr-s">
+                            <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]"></i>
+                        </span>
 
-<!-- LIST of jobs by Analyser or available analysers -->
+                        <a href ng-click="showReport(job)" tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
+                    </li>
+                </ul>
+            </td>
+            <td ng-if="analysisEnabled">
+                <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
+                    ng-click="runAnalyzer(analyzerId)"
+                    ng-if="analyzers[analyzerId].active">
+                    <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
+                </span>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
 <div class="row">
-    <div class="col-md-12" ng-init="analyzers[analyzerId].showRows=false;" ng-mouseenter="AnalyzerStyle={'background-color':'#F8F8FF'}" ng-mouseleave="AnalyzerStyle={'background-color':''}" ng-repeat="(analyzerId, jobs) in analyzerJobs" ng-style="AnalyzerStyle" style="font-size:0.90em">
-        <br>
-        <div class="row" ng-repeat="job in jobs" ng-show="analyzers[analyzerId].showRows || $first">
-
-            <div class="col-md-5 text-left">
-                <p>
-                    <a href="" ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows" ng-if="$first && !$last">
-                        <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
-                    </a>
-                    <span ng-if="$first">
-                        {{analyzerId}}
-                        :
-                        {{getAnalyzerInfo(analyzerId) | getField: 'description'}}
-                    </span>
-                </p>
-            </div>
-
-            <div class="col-md-3 text-left">
-                <a href="" ng-click="report.template=job.analyzerId; report.content=job.report; report.status=job.status" tooltip="View report">{{job.endDate | showDate}}</a>
-            </div>
-
-            <div class="col-md-3 text-center">
-                <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]" style="font-size:16px"></i>
-            </div>
-
-            <div class="col-md-1 text-left">
-                <span class="btn btn-xs btn-warning" ng-click="runAnalyzer(analyzerId)" ng-if="$first && analyzers[analyzerId].active" style="vertical-align:middle">
-                    <i class="glyphicon glyphicon-repeat"></i>
-                </span>
-            </div>
-        </div>
-
-        <div class="row" ng-if="jobs.length == 0" style="margin-bottom: 10px;">
-            <div class="col-md-5">
-                <span ng-bind="getAnalyzerInfo(analyzerId) | getField: 'description'"></span>
-            </div>
-            <div class="col-md-1 col-md-offset-6 text-left">
-                <span class="btn btn-xs btn-danger" ng-click="runAnalyzer(analyzerId)">
-                    <i class="glyphicon glyphicon-fire"></i>
-                </span>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="row vpad20">
     <div class="col-md-6 col-md-offset-3">
         <hr>
     </div>
 </div>
 
-<div class="row" style="border-bottom:1px dotted">
+<div class="row observable-report" ng-if="report">
     <div class="col-md-12">
-        <p>
-            <strong>Report</strong>
-        </p>
-    </div>
-</div>
-
-<div class="row vpad10">
-    <div class="col-md-12">
-        <report artifact="artifact" content="report.content" default="jsonhuman" flavor="long" name="report.template" status="report.status"></report>
+        <h3 class="pad10 text-primary">
+            Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | showDate}}</small>
+            <span class="pull-right">
+                <small><a href class="text-primary" ng-click="showRaw = !showRaw">{{showRaw ? 'Hide': 'Show'}} Raw Report</a></small>
+            </span>
+        </h3>
+        <div ng-if="showRaw">
+            <div class="panel" ng-class="{'panel-info': report.content.success, 'panel-danger': !report.content.success}">
+                <div class="panel-heading">
+                    <strong>Raw report</strong>
+                </div>
+                <div class="panel-body">
+                    <pre>{{(report.content.full || report.content) | json}}</pre>
+                </div>
+            </div>
+        </div>
+        <report ng-if="!showRaw" artifact="artifact"
+            content="report.content.full || report.content"
+            default="jsonhuman"
+            report-type="long"
+            name="report.template"
+            status="report.status"
+            success="report.content.success"
+            ></report>
     </div>
 </div>

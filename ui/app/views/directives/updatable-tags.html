@@ -1,7 +1,7 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
     <span class="updatable-value" ng-show="!value || value.length === 0" style="vertical-align:top; white-space: pre-wrap"><span class="text-warning"><em>Not Specified</em></span></span>
     <span ng-repeat="tag in value">
-        <span class="label label-primary" style="margin-right:2px;display:inline-block"><i class="glyphicon glyphicon-tag"></i><span ng-bind="tag.text"></span>
+        <span class="label label-primary mr-xxxs"><span ng-bind="tag.text"></span>
         </span>
     </span>
 

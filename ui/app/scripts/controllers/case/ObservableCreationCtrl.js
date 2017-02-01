@@ -96,12 +96,16 @@
             };
 
             $scope.getFailedObservables = function(failures) {
+                if(!_.isArray(failures)) {
+                    failures = [failures];
+                }
+
                 return _.map(failures, function(observable) {
                     return {
                         data: observable.object.data,
                         type: observable.type
                     };
-                });
+                });                
             };
 
             $scope.handleSaveSuccess = function(response) {

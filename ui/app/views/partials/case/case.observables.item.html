@@ -4,7 +4,7 @@
     <div class="col-md-11 col-md-offset-1" ng-show="artifact.data != undefined">
         <div class="col-md-12">
             <h4>
-                <span class="text-muted glyphicon " ng-class="{true:'text-primary glyphicon-star'}[artifact.ioc]" tooltip-placement="bottom" tooltip-popup-delay="500" tooltip="is an IOC"></span>
+                <span class="text-muted fa " ng-class="{true:'text-primary fa-star'}[artifact.ioc]" tooltip-placement="bottom" tooltip-popup-delay="500" tooltip="is an IOC"></span>
                 [<span ng-bind="artifact.dataType" style="text-transform: uppercase;"></span>]: <em><span class="wrap">{{artifact.data | fang}}</span></em>
             </h4>
         </div>
@@ -25,11 +25,15 @@
     </div>
     <!-- Observable analysers short reports -->
     <div class="col-md-11 col-md-offset-1">
-        <ul class="list-inline observable-reports-summary">
-            <li ng-if="jobs[0]" ng-repeat="(analyzerId, jobs) in analyzerJobs">
-                <report artifact="artifact" content="jobs[0].report" flavor="short" name="analyzerId" status="jobs[0].status"></report>
-            </li>
-        </ul>
+        <report ng-if="jobs[0]"
+            ng-repeat="(analyzerId, jobs) in analyzerJobs"
+            artifact="artifact"
+            content="jobs[0].report.summary"
+            report-type="short"
+            name="analyzerId"
+            status="jobs[0].status"
+            success="jobs[0].success"
+            class="short-report"></report>
     </div>
 </div>
 
@@ -39,5 +43,4 @@
 
 <div ng-include="'views/partials/observables/details/artifact-details-information.html'"></div>
 
-<h3 class="pad10 text-primary">Observable Analyzers</h3>
 <div ng-include="'views/partials/observables/details/artifact-details-analysers.html'"></div>

@@ -20,7 +20,8 @@ class AssetCtrlDev @Inject() (environment: Environment) extends ExternalAssets(e
   def get(file: String) = {
     if (file.startsWith("bower_components/")) {
       at("ui", file)
-    } else {
+    }
+    else {
       at("ui/app", file)
     }
   }

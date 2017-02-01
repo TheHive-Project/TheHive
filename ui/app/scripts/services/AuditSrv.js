@@ -33,6 +33,8 @@
                                     ret.pop();
                                 }
                                 messageAdded += 1;
+                            } else if(alreadyInFlow && message.base.objectType === 'case_artifact_job') {
+                                ret[messageAdded] = message;
                             }
 
                         }

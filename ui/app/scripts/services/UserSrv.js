@@ -70,5 +70,21 @@ angular.module('theHiveServices')
             return defer.promise;
         };
 
+        res.list = function(query) {
+            var defer = $q.defer();
+
+            var post = {
+                range: 'all',
+                query: query
+            };
+
+            $http.post('/api/user/_search', post)
+                .then(function(response) {
+                    defer.resolve(response.data);
+                });
+
+            return defer.promise;
+        };
+
         return res;
     });

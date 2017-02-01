@@ -1,0 +1,26 @@
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        URL Categories of
+        <strong>{{artifact.data}}</strong>
+    </div>
+    <div class="panel-body">
+        <dl class="dl-horizontal" ng-if="content.category">
+            <dt>Fortinet URL Category:</dt>
+            <dd class="wrap">{{content.category}}&nbsp;
+                <i class="fa fa-search"></i>
+                <a ng-href="http://www.fortiguard.com/iprep?data={{artifact.data}}&lookup=Lookup" target="_blank">View Full Report</a>
+                <i class="fa fa-recycle"></i>
+                <a ng-href="http://www.fortiguard.com/iprep_form?data={{artifact.data}}" target="_blank">Request Recategorization</a>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>

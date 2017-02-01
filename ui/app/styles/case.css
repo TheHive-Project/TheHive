@@ -65,3 +65,12 @@ span.link-id {
     width: 100%;
     left: 0 !important;
 }
+
+table.case-list .case-tags {
+    font-size: 12px !important;
+}
+
+table.case-list .case-tags .label {
+    font-size: inherit !important;
+    font-weight: normal;
+}

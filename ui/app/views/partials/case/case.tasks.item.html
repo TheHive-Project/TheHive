@@ -84,13 +84,11 @@
             <div class="col-md-12">
                 <div class="clearfix">
                     <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
-                </div>
-                <!-- <markdown-editor edition="isEditMode" content="newLog.message" placeholder="New log"></markdown-editor> -->
-                <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="newLog.message"></textarea>
-                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>
-                <div class="vpad5"></div>
-                <div class="btn-toolbar">
-                    <button class="btn btn-default" ng-click="adding=false" ng-disabled="loading">Cancel</button>
+                </div>                
+                <textarea name="newLog" autofocus="beforeNewLogShow" class="content-box" markdown-editor="markdownEditorOptions" rows="10" ng-model="newLog.message"></textarea>
+                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>                
+                <div class="btn-toolbar mt-xxs">
+                    <button class="btn btn-default" ng-click="cancelAddLog();" ng-disabled="loading">Cancel</button>
                     <button class="pull-right btn btn-primary" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
                         <i class="glyphicon glyphicon-comment"></i>
                         Add log

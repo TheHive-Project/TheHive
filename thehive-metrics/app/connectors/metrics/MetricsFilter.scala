@@ -17,7 +17,7 @@ trait MetricsFilter extends Filter
 
 @Singleton
 class NoMetricsFilter @Inject() (implicit val mat: Materializer) extends MetricsFilter {
-  def apply(f: (RequestHeader) => Future[Result])(rh: RequestHeader) = f(rh)
+  def apply(f: (RequestHeader) ⇒ Future[Result])(rh: RequestHeader) = f(rh)
 }
 
 @Singleton
@@ -44,28 +44,28 @@ class MetricsFilterImpl @Inject() (metricsModule: Metrics, implicit val mat: Mat
     Status.CREATED, Status.TEMPORARY_REDIRECT, Status.INTERNAL_SERVER_ERROR, Status.CONFLICT,
     Status.UNAUTHORIZED, Status.NOT_MODIFIED)
 
-  def statusCodes(implicit registry: MetricRegistry): Map[Int, Meter] = knownStatuses.map(s => s -> registry.meter(name(labelPrefix, s.toString))).toMap
+  def statusCodes(implicit registry: MetricRegistry): Map[Int, Meter] = knownStatuses.map(s ⇒ s → registry.meter(name(labelPrefix, s.toString))).toMap
   def requestsTimer(implicit registry: MetricRegistry): Timer = registry.timer(name(labelPrefix, "requestTimer"))
   def activeRequests(implicit registry: MetricRegistry): Counter = registry.counter(name(labelPrefix, "activeRequests"))
   def otherStatuses(implicit registry: MetricRegistry): Meter = registry.meter(name(labelPrefix, "other"))
 
-  def apply(nextFilter: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
+  def apply(nextFilter: (RequestHeader) ⇒ Future[Result])(rh: RequestHeader): Future[Result] = {
     implicit val r = metricsModule.registry
     val context = requestsTimer.time()
 
-      def logCompleted(result: Result): Unit = {
-        activeRequests.dec()
-        context.stop()
-        statusCodes.getOrElse(result.header.status, otherStatuses).mark()
-      }
+    def logCompleted(result: Result): Unit = {
+      activeRequests.dec()
+      context.stop()
+      statusCodes.getOrElse(result.header.status, otherStatuses).mark()
+    }
 
     activeRequests.inc()
     nextFilter(rh).transform(
-      result => {
+      result ⇒ {
         logCompleted(result)
         result
       },
-      exception => {
+      exception ⇒ {
         logCompleted(Results.InternalServerError)
         exception
       })

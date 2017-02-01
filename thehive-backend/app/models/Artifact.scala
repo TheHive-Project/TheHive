@@ -16,7 +16,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.BadRequestError
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, AttributeOption => O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
 import org.elastic4play.services.DBLists
 import org.elastic4play.utils.MultiHash
 
@@ -28,7 +28,7 @@ object ArtifactStatus extends Enumeration with HiveEnumeration {
   val Ok, Deleted = Value
 }
 
-trait ArtifactAttributes { _: AttributeDef =>
+trait ArtifactAttributes { _: AttributeDef ⇒
   def dblists: DBLists
   val artifactId = attribute("_id", F.stringFmt, "Artifact id", O.model)
   val data = optionalAttribute("data", F.stringFmt, "Content of the artifact", O.readonly)
@@ -40,6 +40,7 @@ trait ArtifactAttributes { _: AttributeDef =>
   val tags = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)
   val status = attribute("status", F.enumFmt(ArtifactStatus), "Status of the artifact", ArtifactStatus.Ok)
+  val reports = attribute("reports", F.textFmt, "Json object that contains all short reports", "{}", O.unaudited)
 }
 
 @Singleton
@@ -49,15 +50,15 @@ class ArtifactModel @Inject() (
     artifactSrv: Provider[ArtifactSrv],
     implicit val mat: Materializer,
     implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact") with ArtifactAttributes with AuditedModel {
-  override val removeAttribute = Json.obj("status" -> ArtifactStatus.Deleted)
+  override val removeAttribute = Json.obj("status" → ArtifactStatus.Deleted)
 
   // this method modify request in order to hash artifact and manager file upload
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
     val keys = attrs.keys
     if (keys.contains("data") == keys.contains("attachment"))
       throw new BadRequestError(s"Artifact must contain data or attachment (but not both)")
-    computeId(parent, attrs).map { id =>
-      attrs + ("_id" -> JsString(id))
+    computeId(parent, attrs).map { id ⇒
+      attrs + ("_id" → JsString(id))
     }
   }
 
@@ -67,8 +68,8 @@ class ArtifactModel @Inject() (
     mm.addValue((attrs \ "data").asOpt[JsValue].getOrElse(JsNull))
     mm.addValue((attrs \ "dataType").asOpt[JsValue].getOrElse(JsNull))
     (attrs \ "attachment" \ "filepath").asOpt[String]
-      .fold(Future.successful(()))(file => mm.addFile(file))
-      .map { _ =>
+      .fold(Future.successful(()))(file ⇒ mm.addFile(file))
+      .map { _ ⇒
         mm.addValue(JsString(parent.fold("")(_.id)))
         mm.digest.toString
       }
@@ -76,14 +77,15 @@ class ArtifactModel @Inject() (
 
   override def getStats(entity: BaseEntity): Future[JsObject] = {
     entity match {
-      case artifact: Artifact =>
+      case artifact: Artifact ⇒
         val (_, total) = artifactSrv.get.findSimilar(artifact, Some("0-0"), Nil)
-        total.map { t => Json.obj("seen" -> t) }
-      case _ => Future.successful(JsObject(Nil))
+        total.map { t ⇒ Json.obj("seen" → t) }
+      case _ ⇒ Future.successful(JsObject(Nil))
     }
   }
 }
 
 class Artifact(model: ArtifactModel, attributes: JsObject) extends EntityDef[ArtifactModel, Artifact](model, attributes) with ArtifactAttributes {
   def dblists = model.dblists
+  override def toJson = super.toJson + ("reports" → Json.parse(reports())) // FIXME is parse fails (invalid report)
 }

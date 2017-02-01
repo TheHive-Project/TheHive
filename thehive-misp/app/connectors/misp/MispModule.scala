@@ -6,6 +6,7 @@ import play.api.{ Configuration, Environment, Logger }
 
 import connectors.ConnectorModule
 
+@Singleton
 class MispConnector(
     environment: Environment,
     configuration: Configuration) extends ConnectorModule {
@@ -13,12 +14,13 @@ class MispConnector(
 
   def configure() {
     try {
-//      val mispConfig = MispConfig(configuration)
-//      bind[MispConfig].toInstance(mispConfig)
+      //      val mispConfig = MispConfig(configuration)
+      //      bind[MispConfig].toInstance(mispConfig)
       bind[MispSrv].asEagerSingleton()
       registerController[MispCtrl]
-    } catch {
-      case t: Throwable => log.error("MISP connector is disabled because its configuration is invalid", t)
+    }
+    catch {
+      case t: Throwable ⇒ log.error("MISP connector is disabled because its configuration is invalid", t)
     }
   }
 }

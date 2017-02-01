@@ -25,29 +25,27 @@
 
 <!-- list of artifacts-->
 <div class="col-md-12">
-    <table style="font-size:0.9em" class="table">
+    <table class="table table-hover valigned">
         <thead>
             <tr>
-                <th style="width: 1%;">
+                <th style="width: 10px;" class="p-0"></th>
+                <th style="width: 20px">
                     <input type="checkbox" ng-change="selectAll()" ng-model="selection.all" ng-disabled="switchTEList"></input>
                 </th>
-                <th style="width: 1%"></th>
-                <th style="width: 1%"></th>
-                <th style="width: 1%"></th>
-                <th style="width: 10%">Date added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th style="width: 7%">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th style="width: 45%">Data/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <!-- <th style="width:25%">Reports</th> -->
-                <th style="width: 20%">Tags</th>
+                <th style="width: 15px"></th>
+                <th style="width: 15px"></th>
+                <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th>Data/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th style="width: 140px">Reports</th>
+                <th style="width: 300px">Tags</th>
+                <th style="width: 120px">Date added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
             </tr>
         </thead>
         <tbody>
-            <tr ng-mouseenter="showDropArtifact = true" ng-mouseleave="showDropArtifact = false" ng-repeat="artifact in artifacts.values">
+            <tr ng-repeat="artifact in artifacts.values">
+                <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="addFilterValue('tlp', artifact.tlp)"></td>
                 <td>
                     <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]">
-                </td>
-                <td>
-                    <span class="clickable" ng-click="addFilterValue('tlp', artifact.tlp)"><tlp format="small" value="artifact.tlp"></tlp></span>
                 </td>
                 <td>
                     <span ng-click="addFilterValue('ioc', artifact.ioc)" ng-if="artifact.ioc" class="clickable fa fa-star" tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
@@ -56,19 +54,26 @@
 					<span tooltip="{{artifact.stats.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="artifact.stats.seen > 0" class="glyphicon glyphicon-eye-open"></span>
                 </td>
                 <td>
-                    <a href="" ng-click="addFilterValue('startDate', artifact.startDate)"><span tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>
-                </td>
-                <td>
                     <a href="" ng-click="addFilterValue('dataType', artifact.dataType)"><span ng-bind="artifact.dataType"></span></a>
                 </td>
-                <td class="wrap" style="cursor: pointer;" ng-click="openArtifact(artifact)">{{(artifact.data | fang) || (artifact.attachment.name | fang)}}</td>
-                <!-- <td></td> -->
+                <td class="wrap clickable" ng-click="openArtifact(artifact)">{{(artifact.data | fang) || (artifact.attachment.name | fang)}}</td>
+                <td ng-switch="countReports(artifact)">
+                    <span ng-switch-when="0" class="clickable">
+                        <a href ng-click="runAllOnObservable(artifact)">Run all analyzers</a>
+                    </span>
+                    <span ng-switch-default>
+                        <ng-pluralize count="countReports(artifact)" when="{'one': '1 analysis', 'other': '{} analysis'}"></ng-pluralize>
+                    </span>
+                </td>
                 <td>
                 	<span ng-repeat="l in artifact.tags">
-                		<span class="label label-primary mr-xxs pointer" ng-click="addFilterValue('tags', l)">
+                		<span class="label label-primary mr-xxxs pointer" ng-click="addFilterValue('tags', l)">
                 			<i class="glyphicon glyphicon-tag"></i> <span ng-bind="l"></span>
                     	</span>
                     </span>
+                </td>
+                <td>
+                    <a href="" ng-click="addFilterValue('startDate', artifact.startDate)"><span tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>
                 </td>
             </tr>
         </tbody>

@@ -17,6 +17,9 @@ import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.JsonFormat.{ authContextWrites, queryReads }
 
 import services.UserSrv
+import play.api.libs.json.Json
+import scala.util.Try
+import play.api.libs.json.JsObject
 
 @Singleton
 class UserCtrl @Inject() (
@@ -27,73 +30,84 @@ class UserCtrl @Inject() (
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext) extends Controller with Status {
 
-  lazy val log = Logger(getClass)
+  lazy val logger = Logger(getClass)
 
   @Timed
-  def create = authenticated(Role.admin).async(fieldsBodyParser) { implicit request =>
+  def create = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
     userSrv.create(request.body)
-      .map(user => renderer.toOutput(CREATED, user))
+      .map(user ⇒ renderer.toOutput(CREATED, user))
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async { implicit request =>
+  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
     userSrv.get(id)
-      .map { user =>
+      .map { user ⇒
         val json = if (request.roles.contains(Role.admin)) user.toAdminJson else user.toJson
         renderer.toOutput(OK, json)
       }
   }
 
   @Timed
-  def update(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request =>
+  def update(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     if (id == request.authContext.userId || request.authContext.roles.contains(Role.admin)) {
       if (request.body.contains("password"))
-        log.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
-      userSrv.update(id, request.body.unset("password")).map { user =>
+        logger.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
+      userSrv.update(id, request.body.unset("password")).map { user ⇒
         renderer.toOutput(OK, user)
       }
-    } else {
+    }
+    else {
       Future.failed(AuthorizationError("You are not permitted to change user settings"))
     }
   }
 
   @Timed
-  def setPassword(login: String) = authenticated(Role.admin).async(fieldsBodyParser) { implicit request =>
+  def setPassword(login: String) = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
     request.body.getString("password")
-      .fold(Future.failed[Result](MissingAttributeError("password"))) { password =>
-        authSrv.setPassword(login, password).map(_ => NoContent)
+      .fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
+        authSrv.setPassword(login, password).map(_ ⇒ NoContent)
       }
   }
 
   @Timed
-  def changePassword(login: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request =>
+  def changePassword(login: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     if (login == request.authContext.userId) {
       val fields = request.body
-      fields.getString("password").fold(Future.failed[Result](MissingAttributeError("password"))) { password =>
-        fields.getString("currentPassword").fold(Future.failed[Result](MissingAttributeError("currentPassword"))) { currentPassword =>
+      fields.getString("password").fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
+        fields.getString("currentPassword").fold(Future.failed[Result](MissingAttributeError("currentPassword"))) { currentPassword ⇒
           authSrv.changePassword(request.authContext.userId, currentPassword, password)
-            .map(_ => NoContent)
+            .map(_ ⇒ NoContent)
         }
       }
-    } else
+    }
+    else
       Future.failed(AuthorizationError("You can't change password of another user"))
   }
 
   @Timed
-  def delete(id: String) = authenticated(Role.admin).async { implicit request =>
+  def delete(id: String) = authenticated(Role.admin).async { implicit request ⇒
     userSrv.delete(id)
-      .map(_ => NoContent)
+      .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def currentUser = Action.async { implicit request =>
-    authenticated
-      .getContext(request)
-      .map { authContext => renderer.toOutput(OK, authContext) }
+  def currentUser = Action.async { implicit request ⇒
+    for {
+      authContext ← authenticated.getContext(request)
+      user ← userSrv.get(authContext.userId)
+      preferences = Try(Json.parse(user.preferences()))
+        .recover {
+          case error ⇒
+            logger.warn(s"User ${authContext.userId} has invalid preference format: ${user.preferences()}")
+            JsObject(Nil)
+        }
+        .get
+      json = user.toJson + ("preferences" → preferences)
+    } yield renderer.toOutput(OK, json)
   }
 
   @Timed
-  def find = authenticated(Role.read).async(fieldsBodyParser) { implicit request =>
+  def find = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)

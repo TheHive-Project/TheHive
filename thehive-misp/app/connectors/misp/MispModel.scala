@@ -6,7 +6,7 @@ import javax.inject.{ Inject, Singleton }
 
 import play.api.libs.json.JsObject
 
-import org.elastic4play.models.{ AttributeDef, AttributeFormat => F, EntityDef, HiveEnumeration, ModelDef }
+import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, EntityDef, HiveEnumeration, ModelDef }
 
 import JsonFormat.eventStatusFormat
 import services.AuditedModel
@@ -16,7 +16,7 @@ object EventStatus extends Enumeration with HiveEnumeration {
   val New, Update, Ignore, Imported = Value
 }
 
-trait MispAttributes { _: AttributeDef =>
+trait MispAttributes { _: AttributeDef ⇒
   val eventUuid = attribute("_id", F.stringFmt, "event uuid")
   val serverId = attribute("serverId", F.stringFmt, "Id of the server")
   val eventId = attribute("eventId", F.numberFmt, "Id of MIPS event")

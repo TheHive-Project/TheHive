@@ -8,44 +8,23 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" ui-sref="app.main({viewId: 'currentcases'})">
+                <a class="navbar-brand" ui-sref="app.cases()">
                     <img alt="The Hive" src="images/logo.white.png"></a>
             </div>
 
             <div class="collapse navbar-collapse" id="th-navbar-collapse">
                 <ul class="nav navbar-nav" ng-show="currentUser.id">
-                    <li>
-                        <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
-                            <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
-                            <span class="badge alert-danger">{{waitingTasks.count}}</span>
-                        </a>
-                    </li>
-                    <li class="hdivider hidden-xs"></li>
-                    <li>
-                        <a href tooltip="Current cases" ui-sref="app.main({viewId: 'currentcases'})">
-                            <i class="fa fa-folder-open"></i>
-                            Current</a>
-                    </li>
-                    <li>
-                        <a href tooltip="Closed cases" ui-sref="app.main({viewId: 'closedcases'})">
-                            <i class="fa fa-folder"></i>
-                            Closed</a>
-                    </li>
                     <li class="dropdown" dropdown>
                         <a class="dropdown-toggle" dropdown-toggle href>
                             <i class="text-default fa fa-plus"></i>
-                            <span class="hpad5">New</span>
+                            <span class="hpad5">New Case</span>
                             <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu">
                             <li>
                                 <a href ng-click="createNewCase()">Empty Case</a>
                             </li>
-                            <li class="divider"></li>
+                            <li class="divider" ng-if="templates && templates.length > 0"></li>
                             <li ng-repeat="template in templates">
                                 <a href ng-click="createNewCase(template)">From
                                     {{template.name | uppercase}}
@@ -53,11 +32,26 @@
                             </li>
                         </ul>
                     </li>
-                    <li class="hdivider hidden-xs" ng-show="mispEnabled === true"></li>
-                    <li ng-show="mispEnabled === true">
+                    <li ui-sref-active="active">
+                        <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
+                            <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
+                        </a>
+                    </li>
+                    <li ui-sref-active="active">
+                        <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
+                            <span class="badge alert-danger">{{waitingTasks.count}}</span>
+                        </a>
+                    </li>
+                    <li ng-show="mispEnabled === true" ui-sref-active="active">
                         <a href ui-sref="app.misp-list">
                             MISP
                             <span class="badge alert-danger">{{mispEvents.count}}</span>
+                        </a>
+                    </li>
+                    <li class="hdivider hidden-xs"></li>
+                    <li ui-sref-active="active">
+                        <a ui-sref="app.statistics">
+                            <i class="fa fa-bar-chart"></i> Statistics
                         </a>
                     </li>
                 </ul>
@@ -74,7 +68,7 @@
                                 <span class="input-group-addon">
                                     <i class="glyphicon glyphicon-search"></i>
                                 </span>
-                                <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
+                                <input class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
                                 <div class="input-group-btn">
                                     <div class="btn-group dropdown" dropdown>
                                         <a class="btn btn-sm btn-default dropdown-toggle" dropdown-toggle href>
@@ -99,11 +93,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- <div class="form-group has-feedback has-feedback-right">
-                                <input autofocus="autofocus" class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
-                                <i class="form-control-feedback glyphicon glyphicon-search" style="top : 0px"></i>
-                            </div> -->
                         </form>
                     </li>
                     <li class="dropdown" dropdown ng-if="isAdmin(currentUser)">
@@ -121,9 +110,15 @@
                             </li>
                             <li class="divider"></li>
                             <li>
-                                <a ui-sref="app.administration.templates">
+                                <a ui-sref="app.administration.case-templates">
                                     <i class="fa fa-file-text"></i>
                                     <span class="hpad5">Case templates</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a ui-sref="app.administration.report-templates">
+                                    <i class="fa fa-file-text"></i>
+                                    <span class="hpad5">Report templates</span>
                                 </a>
                             </li>
                             <li>
@@ -142,17 +137,12 @@
                         </ul>
                     </li>
                     <li class="dropdown" dropdown>
-                        <a class="dropdown-toggle" dropdown-toggle href>
-                            <i class="glyphicon glyphicon-user"></i>&nbsp;{{currentUser.name}}
-                            <b class="caret"></b>
+                        <a class="profile dropdown-toggle" dropdown-toggle href>
+                            <user user-id="currentUser.id"></user>
                         </a>
                         <ul class="dropdown-menu">
                             <li>
                                 <a ui-sref="app.settings">Personal settings</a>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <a ui-sref="app.statistics">Statistics</a>
                             </li>
                             <li class="divider"></li>
                             <li>

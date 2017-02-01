@@ -11,10 +11,10 @@
             </span>
         </span>
     </span>
-    <span class="operation-user">{{getUserInfo(base.user) | getField: 'name'}}</span>
+    <span class="operation-user">{{getUserInfo.get(base.user) | getField: 'name'}}</span>
 
     <span class="operation-timer pull-right">
-        <i class="text-default glyphicon glyphicon-time"></i>
+        <i class="text-default glyphicon glyphicon-time"></i>        
     	<timer interval="30000" start-time="gtime(base.startDate)">
             {{millis  | amDurationFormat : 'milliseconds'}}
     	</timer>

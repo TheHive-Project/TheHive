@@ -52,11 +52,19 @@ angular.module('theHiveControllers').controller('RootCtrl',
             AlertSrv.error('RootCtrl', data, status);
         });
 
+        $scope.$on('templates:refresh', function(){
+            $scope.templates = TemplateSrv.query();
+        });
+
         $scope.$on('metrics:refresh', function() {
             // Get metrics cache
             MetricsCacheSrv.all().then(function(list) {
                 $scope.metricsCache = list;
             });
+        });
+
+        $scope.$on('misp:event-imported', function() {
+            $scope.mispEvents = MispSrv.stats();
         });
 
         $scope.$on('misp:status-updated', function(event, enabled) {
@@ -65,7 +73,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $scope.isAdmin = function(user) {
             var u = user;
-            var re = /admin/;
+            var re = /admin/i;
             return re.test(u.roles);
         };
 

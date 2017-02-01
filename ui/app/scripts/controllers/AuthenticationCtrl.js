@@ -12,12 +12,12 @@
             $scope.login = function() {
                 $scope.params.username = angular.lowercase($scope.params.username);
                 AuthenticationSrv.login($scope.params.username, $scope.params.password, function() {
-                    $state.go('app.main');
+                    $state.go('app.cases');
                 }, function(data, status) {
                     if (status === 520) {
                         AlertSrv.error('AuthenticationCtrl', data, status);
                     } else {
-                        AlertSrv.log(data, 'error');
+                        AlertSrv.log(data.message, 'error');
                     }
                 });
             };

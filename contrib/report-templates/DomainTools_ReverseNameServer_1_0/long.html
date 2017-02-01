@@ -1,0 +1,43 @@
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{artifact.data | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        <strong>{{artifact.data | fang}}</strong>
+    </div>
+    <div class="panel-body">
+		<dl class="dl-horizontal">
+			<dt>Name Server</dt>
+			<dd>{{content.name_server.hostname}}</dd>
+		</dl>
+		<dl class="dl-horizontal">
+			<dt>Primary domains</dt>
+			<dd>
+				{{content.name_server.primary}}<br>
+				<a href ng-click="isPCollapsed = !isPCollapsed">Show all</a>
+			</dd>
+		</dl>
+		<dl class="dl-horizontal">
+			<dt>Secondary domains</dt>
+			<dd>
+				{{content.name_server.secondary}}<br>
+				<a href ng-click="isSCollapsed = !isSCollapsed">Show all</a>
+			</dd>
+		</dl>
+
+		<div ng-if="isPCollapsed">
+			<h5>Primary Domains List</h5>
+			<pre style="height: 300px">{{content.primary_domains | json}}</pre>
+		</div>
+		<div ng-if="isSCollapsed">
+			<h5>Secondary Domains List</h5>
+			<pre style="height: 300px">{{content.secondary_domains | json}}</pre>
+		</div>
+
+    </div>
+</div>

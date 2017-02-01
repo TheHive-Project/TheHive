@@ -77,7 +77,7 @@ object InfluxMetricConfig {
     val password = configuration.getString("metrics.influx.password").getOrElse("root")
     val database = configuration.getString("metrics.influx.database").getOrElse("thehive")
     val retention = configuration.getString("metrics.influx.retention").getOrElse("default")
-    val tags = configuration.getConfig("metrics.influx.tags").fold(Map.empty[String, String]) { cfg =>
+    val tags = configuration.getConfig("metrics.influx.tags").fold(Map.empty[String, String]) { cfg ⇒
       cfg.entrySet.toMap.mapValues(_.render)
     }
     val interval = configuration.getMilliseconds("metrics.influx.period").getOrElse(10000L).millis // 10 seconds
@@ -95,9 +95,9 @@ object MetricConfig extends UnitConverter {
     val jvm = configuration.getBoolean("metrics.jvm").getOrElse(true)
     val logback = configuration.getBoolean("metrics.logback").getOrElse(true)
 
-    val graphiteMetricConfig = configuration.getBoolean("metrics.graphite.enabled").filter(identity).map(_ => GraphiteMetricConfig(configuration))
-    val gangliaMetricConfig = configuration.getBoolean("metrics.ganglia.enabled").filter(identity).map(_ => GangliaMetricConfig(configuration))
-    val influxMetricConfig = configuration.getBoolean("metrics.influx.enabled").filter(identity).map(_ => InfluxMetricConfig(configuration))
+    val graphiteMetricConfig = configuration.getBoolean("metrics.graphite.enabled").filter(identity).map(_ ⇒ GraphiteMetricConfig(configuration))
+    val gangliaMetricConfig = configuration.getBoolean("metrics.ganglia.enabled").filter(identity).map(_ ⇒ GangliaMetricConfig(configuration))
+    val influxMetricConfig = configuration.getBoolean("metrics.influx.enabled").filter(identity).map(_ ⇒ InfluxMetricConfig(configuration))
     MetricConfig(registryName, rateUnit, durationUnit, jvm, logback, graphiteMetricConfig, gangliaMetricConfig, influxMetricConfig)
   }
 }
@@ -105,25 +105,25 @@ object MetricConfig extends UnitConverter {
 class TimedInterceptor @Inject() (metricsProvider: Provider[Metrics]) extends MethodInterceptor {
   override def invoke(invocation: MethodInvocation) = {
     val timerName = invocation.getStaticPart.getAnnotation(classOf[Timed]).value match {
-      case "" =>
+      case "" ⇒
         val method = invocation.getMethod
         method.getClass.getName + "." + method.getName
-      case timerName => timerName
+      case timerName ⇒ timerName
     }
     val timer = metricsProvider.get.registry.timer(timerName).time()
     invocation.proceed() match {
-      case f: Future[_] =>
-        f.onComplete { _ => timer.stop() }
+      case f: Future[_] ⇒
+        f.onComplete { _ ⇒ timer.stop() }
         f
-      case action: Action[x] => new Action[x] {
+      case action: Action[x] ⇒ new Action[x] {
         def apply(request: Request[x]) = {
           val result = action.apply(request)
-          result.onComplete { _ => timer.stop() }
+          result.onComplete { _ ⇒ timer.stop() }
           result
         }
         lazy val parser = action.parser
       }
-      case o =>
+      case o ⇒
         timer.stop()
         o
     }
@@ -171,7 +171,7 @@ class Metrics @Inject() (configuration: Configuration, metricConfig: MetricConfi
 
   mapper.registerModule(new json.MetricsModule(metricConfig.rateUnit, metricConfig.durationUnit, false))
 
-  metricConfig.graphiteMetricConfig.foreach { graphiteMetricConfig =>
+  metricConfig.graphiteMetricConfig.foreach { graphiteMetricConfig ⇒
     val graphite = new Graphite(graphiteMetricConfig.host, graphiteMetricConfig.port)
     GraphiteReporter.forRegistry(registry)
       .prefixedWith(graphiteMetricConfig.prefix)
@@ -182,7 +182,7 @@ class Metrics @Inject() (configuration: Configuration, metricConfig: MetricConfi
       .start(graphiteMetricConfig.interval.toMillis, TimeUnit.MILLISECONDS)
   }
 
-  metricConfig.gangliaMetricConfig.foreach { gangliaMetricConfig =>
+  metricConfig.gangliaMetricConfig.foreach { gangliaMetricConfig ⇒
     val ganglia = new GMetric(gangliaMetricConfig.host, gangliaMetricConfig.port, GMetric.UDPAddressingMode.valueOf(gangliaMetricConfig.mode), gangliaMetricConfig.ttl, gangliaMetricConfig.version)
     GangliaReporter.forRegistry(registry)
       .prefixedWith(gangliaMetricConfig.prefix)
@@ -194,7 +194,7 @@ class Metrics @Inject() (configuration: Configuration, metricConfig: MetricConfi
       .start(gangliaMetricConfig.interval.toMillis, TimeUnit.MILLISECONDS);
   }
 
-  metricConfig.influxMetricConfig.foreach { influxMetricConfig =>
+  metricConfig.influxMetricConfig.foreach { influxMetricConfig ⇒
     val influxdb = influxDBFactory.InfluxDB(
       influxMetricConfig.url,
       influxMetricConfig.user,
@@ -212,5 +212,5 @@ class Metrics @Inject() (configuration: Configuration, metricConfig: MetricConfi
       .start(influxMetricConfig.interval.toMillis, TimeUnit.MILLISECONDS)
   }
 
-  lifecycle.addStopHook { () => Future.successful(SharedMetricRegistries.remove(metricConfig.registryName)) }
+  lifecycle.addStopHook { () ⇒ Future.successful(SharedMetricRegistries.remove(metricConfig.registryName)) }
 }

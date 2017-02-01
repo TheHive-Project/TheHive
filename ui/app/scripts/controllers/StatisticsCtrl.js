@@ -31,6 +31,24 @@
             }
         };
 
+        $scope.caseBySeverity = {
+            title: 'Cases by Severity',
+            type: 'case',
+            field: 'severity',
+            dateField: 'startDate',
+            tagsField: 'tags',
+            colors: {
+                '1': '#5bc0de',
+                '2': '#f0ad4e',
+                '3': '#d9534f'
+            },
+            names: {
+                '1': 'Low',
+                '2': 'Medium',
+                '3': 'High'
+            }
+        };
+
         $scope.caseByStatus = {
             title: 'Cases by status',
             type: 'case',
@@ -97,6 +115,41 @@
             tagsField: 'tags',
             aggregations: ['sum']
         };
+
+        $scope.observableByDataType = {
+            title: 'Observables by Type',
+            type: 'case_artifact',
+            field: 'dataType',
+            dateField: 'startDate',
+            tagsField: 'tags'
+        };
+
+        $scope.observableByIoc = {
+            title: 'Observables by IOC flag',
+            type: 'case_artifact',
+            field: 'ioc',
+            dateField: 'startDate',
+            tagsField: 'tags',
+            names: {
+                '0': 'NOT IOC',
+                '1': 'IOC'
+            }
+        };
+
+        $scope.observableOverTime = {
+            title: 'Observables over time',
+            type: 'case/artifact',
+            fields: ['startDate'],
+            dateField: 'startDate',
+            tagsField: 'tags',
+            names: {
+                startDate: 'Number of observables'
+            },
+            types: {
+                startDate: 'bar'
+            }
+        };
+
 
         // Prepare the global query
         $scope.prepareGlobalQuery = function() {

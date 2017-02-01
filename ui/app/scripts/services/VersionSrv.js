@@ -4,7 +4,7 @@
         .factory('VersionSrv', function($http, $q) {
             var cache = null;
 
-            return {
+            var factory =  {
                 get: function() {
                     var deferred = $q.defer();
 
@@ -20,7 +20,19 @@
                     }
 
                     return deferred.promise;
+                },
+
+                hasCortex: function() {
+                    try {
+                        var service = cache.connectors.cortex;
+                        
+                        return service.enabled && service.servers.length;
+                    } catch (err) {
+                        return false;
+                    }
                 }
             };
+
+            return factory;
         });
 })();

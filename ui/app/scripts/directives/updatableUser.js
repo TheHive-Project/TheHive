@@ -7,6 +7,9 @@
                 'link': function(scope, element, attrs, ctrl, transclude) {
                     UtilsSrv.updatableLink(scope, element, attrs, ctrl, transclude);
                     scope.userList = PSearchSrv(undefined, 'user', {
+                        baseFilter: {
+                            'status': 'Ok'
+                        },
                         loadAll: true,
                         sort:  '+name'
                     });

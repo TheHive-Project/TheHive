@@ -8,7 +8,7 @@
 </div> -->
 
 <div class="row">
-    <div ng-Class="{ true:'col-md-9', false:'col-md-12'}[showFlow]">
+    <div ng-Class="{ 'col-md-9': showFlow, 'col-md-12': !showFlow}">
         <h3>
             <span ng-if="view.data == 'currentcases'">Current Cases ({{list.total}})</span>
             <span ng-if="view.data == 'closedcases'">Closed Cases ({{list.total}})</span>

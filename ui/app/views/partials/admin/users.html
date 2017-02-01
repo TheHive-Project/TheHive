@@ -23,7 +23,7 @@
                         {{newUser.roles.join(', ')}}&nbsp;&nbsp;
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu" ng-init="newUser.roles = ['read']" role="menu">
+                    <ul class="dropdown-menu" role="menu">
                         <li>
                             <a ng-click="newUser.roles = ['read']">read</a>
                             <a ng-click="newUser.roles = ['read','write']">read, write</a>

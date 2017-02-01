@@ -1,0 +1,30 @@
+<div class="panel panel-info" ng-if="success">
+    <div class="panel-heading">
+        <strong>Detailed Information</strong>
+    </div>
+    <div class="panel-body">
+        <dl class="dl-horizontal">
+            <dt>Hippocamp Score:</dt>
+            <dd ng-init="score = content[artifact.data].hipposcore">
+                <span ng-if="score < 0">
+                    <span class="text-danger">{{score}}</span>
+                </span>
+                <span ng-if="score == 0">
+                    <span class="text-info">{{score}}</span>
+                </span>
+                <span ng-if="score > 0">
+                    <span class="text-success">{{score}}</span>
+                </span>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>

@@ -7,7 +7,8 @@ import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.math.BigDecimal.{ int2bigDecimal, long2bigDecimal }
 
-import play.api.libs.json.{ JsArray, JsNumber, JsObject }
+import play.api.Logger
+import play.api.libs.json.{ JsArray, JsBoolean, JsNumber, JsObject }
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
@@ -17,9 +18,7 @@ import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeO
 import org.elastic4play.services.{ FindSrv, SequenceSrv }
 
 import JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
-import services.AuditedModel
-import services.CaseSrv
-import play.api.Logger
+import services.{ AuditedModel, CaseSrv }
 
 object CaseStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -41,14 +40,14 @@ trait CaseAttributes { _: AttributeDef ⇒
   val title = attribute("title", F.textFmt, "Title of the case")
   val description = attribute("description", F.textFmt, "Description of the case")
   val severity = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-5)", 3L)
+  val owner = attribute("owner", F.stringFmt, "Owner of the case")
   val startDate = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val endDate = optionalAttribute("endDate", F.dateFmt, "Resolution date")
   val tags = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag = attribute("flag", F.booleanFmt, "Flag of the case", false)
-  val tlp = attribute("tlp", F.numberFmt, "TLP level", -1L)
+  val tlp = attribute("tlp", F.numberFmt, "TLP level", 2L)
   val status = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
   val metrics = optionalAttribute("metrics", F.metricsFmt, "List of metrics")
-  val isIncident = attribute("isIncident", F.booleanFmt, "Indicates if this case is an incident (true positive)", false)
   val resolutionStatus = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
   val impactStatus = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
   val summary = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
@@ -67,20 +66,22 @@ class CaseModel @Inject() (
 
   lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" -> CaseStatus.Deleted)
+  override val removeAttribute = Json.obj("status" → CaseStatus.Deleted)
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
     sequenceSrv("case").map { caseId ⇒
-      attrs + ("caseId" -> JsNumber(caseId))
+      attrs + ("caseId" → JsNumber(caseId))
     }
   }
 
   override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
-        updateAttrs + ("endDate" -> Json.toJson(new Date))
+        updateAttrs +
+          ("endDate" → Json.toJson(new Date)) +
+          ("flag" → JsBoolean(false))
       case Some(CaseStatus.Open) ⇒
-        updateAttrs + ("endDate" -> JsArray(Nil))
+        updateAttrs + ("endDate" → JsArray(Nil))
       case _ ⇒
         updateAttrs
     }
@@ -95,7 +96,7 @@ class CaseModel @Inject() (
         "status" ~= "Ok"),
       selectCount)
       .map { artifactStats ⇒
-        Json.obj("artifacts" -> artifactStats)
+        Json.obj("artifacts" → artifactStats)
       }
   }
 
@@ -111,9 +112,9 @@ class CaseModel @Inject() (
         val (taskCount, taskStats) = taskStatsJson.value.foldLeft((0L, JsObject(Nil))) {
           case ((total, s), (key, value)) ⇒
             val count = (value \ "count").as[Long]
-            (total + count, s + (key -> JsNumber(count)))
+            (total + count, s + (key → JsNumber(count)))
         }
-        Json.obj("tasks" -> (taskStats + ("total" -> JsNumber(taskCount))))
+        Json.obj("tasks" → (taskStats + ("total" → JsNumber(taskCount))))
       }
   }
 
@@ -121,9 +122,9 @@ class CaseModel @Inject() (
     caze.mergeInto()
       .fold(Future.successful(Json.obj())) { mergeCaseId ⇒
         caseSrv.get.get(mergeCaseId).map { c ⇒
-          Json.obj("mergeInto" -> Json.obj(
-            "caseId" -> c.caseId(),
-            "title" -> c.title()))
+          Json.obj("mergeInto" → Json.obj(
+            "caseId" → c.caseId(),
+            "title" → c.title()))
         }
       }
   }
@@ -133,25 +134,24 @@ class CaseModel @Inject() (
       .traverse(caze.mergeFrom()) { id ⇒
         caseSrv.get.get(id).map { c ⇒
           Json.obj(
-            "caseId" -> c.caseId(),
-            "title" -> c.title())
+            "caseId" → c.caseId(),
+            "title" → c.title())
         }
       }
       .map {
-        case mf if !mf.isEmpty ⇒ Json.obj("mergeFrom" -> mf)
+        case mf if !mf.isEmpty ⇒ Json.obj("mergeFrom" → mf)
         case _                 ⇒ Json.obj()
       }
   }
   override def getStats(entity: BaseEntity): Future[JsObject] = {
 
-
     entity match {
       case caze: Case ⇒
         for {
-          taskStats <- buildTaskStats(caze)
-          artifactStats <- buildArtifactStats(caze)
-          mergeIntoStats <- buildMergeIntoStats(caze)
-          mergeFromStats <- buildMergeFromStats(caze)
+          taskStats ← buildTaskStats(caze)
+          artifactStats ← buildArtifactStats(caze)
+          mergeIntoStats ← buildMergeIntoStats(caze)
+          mergeFromStats ← buildMergeFromStats(caze)
         } yield taskStats ++ artifactStats ++ mergeIntoStats ++ mergeFromStats
       case other ⇒
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
@@ -160,7 +160,7 @@ class CaseModel @Inject() (
   }
 
   override val computedMetrics = Map(
-    "handlingDuration" -> "doc['endDate'].value - doc['startDate'].value")
+    "handlingDuration" → "doc['endDate'].value - doc['startDate'].value")
 }
 
 class Case(model: CaseModel, attributes: JsObject) extends EntityDef[CaseModel, Case](model, attributes) with CaseAttributes

@@ -28,6 +28,20 @@
 			<dd>{{artifact.startDate | showDate}}</dd>
 		</dl>
 
+        <dl class="dl-horizontal clear">
+			<dt class="pull-left">Is IOC</dt>
+			<dd>
+				<span ng-init="iocActive = false" ng-mouseenter="iocActive = true" ng-mouseleave="iocActive = false" ng-click="updateField('ioc', !artifact.ioc)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
+                    <small ng-show="iocActive">
+                        <a href class="clickable" tooltip="edit">
+                            <i class="glyphicon glyphicon-pencil"></i>
+                        </a>
+                    </small>
+				</span>
+			</dd>
+		</dl>
+
 		<dl class="dl-horizontal clear">
 			<dt class="pull-left">Labels</dt>
 			<dd>

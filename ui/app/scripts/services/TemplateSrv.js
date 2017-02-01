@@ -9,7 +9,10 @@
                 query: {
                   method: 'POST',
                   url: '/api/case/template/_search',
-                  isArray: true
+                  isArray: true,
+                  params: {
+                      range: 'all'
+                  }
                 }
             });
         });

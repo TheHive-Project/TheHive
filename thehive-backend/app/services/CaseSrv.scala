@@ -36,13 +36,17 @@ class CaseSrv @Inject() (
   lazy val log = Logger(getClass)
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Case] = {
-    createSrv[CaseModel, Case](caseModel, fields.unset("tasks"))
-      .flatMap { caze =>
+    val fieldsWithOwner = fields.get("owner") match {
+      case None    ⇒ fields.set("owner", authContext.userId)
+      case Some(_) ⇒ fields
+    }
+    createSrv[CaseModel, Case](caseModel, fieldsWithOwner.unset("tasks"))
+      .flatMap { caze ⇒
         val taskFields = fields.getValues("tasks").collect {
-          case task: JsObject => Fields(task)
+          case task: JsObject ⇒ Fields(task)
         }
-        createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze -> _))
-          .map(_ => caze)
+        createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
+          .map(_ ⇒ caze)
       }
   }
 
@@ -68,26 +72,33 @@ class CaseSrv @Inject() (
   def getStats(id: String): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     for {
-      taskStats <- findSrv(taskModel, and(
+      taskStats ← findSrv(taskModel, and(
         "_parent" ~= id,
         "status" in ("Waiting", "InProgress", "Completed")), groupByField("status", selectCount))
-      artifactStats <- findSrv(artifactModel, and("_parent" ~= id, "status" ~= "Ok"), groupByField("status", selectCount))
+      artifactStats ← findSrv(artifactModel, and("_parent" ~= id, "status" ~= "Ok"), groupByField("status", selectCount))
     } yield Json.obj(("tasks", taskStats), ("artifacts", artifactStats))
   }
 
   def linkedCases(id: String): Source[(Case, Seq[Artifact]), NotUsed] = {
     import org.elastic4play.services.QueryDSL._
-    findSrv[ArtifactModel, Artifact](artifactModel, parent("case", and(withId(id), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)), Some("all"), Nil)
+    findSrv[ArtifactModel, Artifact](
+      artifactModel,
+      and(
+        parent("case", and(
+          withId(id),
+          "status" ~!= CaseStatus.Deleted,
+          "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
+        "status" ~= "Ok"), Some("all"), Nil)
       ._1
-      .flatMapConcat { artifact => artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
+      .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
       .groupBy(20, _.parentId)
-      .map { a => (a.parentId, Seq(a)) }
-      .reduce((l, r) => (l._1, r._2 ++ l._2))
+      .map { a ⇒ (a.parentId, Seq(a)) }
+      .reduce((l, r) ⇒ (l._1, r._2 ++ l._2))
       .mergeSubstreams
       .mapAsyncUnordered(5) {
-        case (Some(caseId), artifacts) => getSrv[CaseModel, Case](caseModel, caseId) map (_ -> artifacts)
-        case _                         => Future.failed(InternalError("Case not found"))
+        case (Some(caseId), artifacts) ⇒ getSrv[CaseModel, Case](caseModel, caseId) map (_ → artifacts)
+        case _                         ⇒ Future.failed(InternalError("Case not found"))
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_ ⇒ NotUsed)
   }
 }

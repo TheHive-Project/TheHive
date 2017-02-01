@@ -9,7 +9,7 @@
 </div>
 <div>
     <i class="glyphicon glyphicon-user"></i>
-    <span>{{getUserInfo(value.user) | getField: 'name'}}</span>
+    <span>{{getUserInfo.get(value.user) | getField: 'name'}}</span>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
     <span ng-bind="value.startDate | showDate"></span>

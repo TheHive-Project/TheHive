@@ -20,6 +20,7 @@ RUNNING_PID
 .settings
 tmp
 .classpath
+.cache-macros
 
 # IntelliJ IDEA
 /.idea
@@ -31,3 +32,4 @@ tmp
 __pycache__/
 *.py[cod]
 *$py.class
+/bin/
