@@ -60,11 +60,11 @@
                 </tbody>
             </table>
             <div class="text-center" ng-show="dialog.event.attributes.length > dialog.pagination.pageSize">
-                <pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
                     ng-change="dialog.loadPage()"
                     total-items="dialog.event.attributes.length"
                     ng-model="dialog.pagination.currentPage"
-                    items-per-page="dialog.pagination.pageSize"></pagination>
+                    items-per-page="dialog.pagination.pageSize"></ul>
             </div>
         </div>
     </div>

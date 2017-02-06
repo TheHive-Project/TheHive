@@ -1,14 +1,14 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($modal, TaskLogSrv, UserInfoSrv, AlertSrv) {
+        .directive('logEntry', function($uibModal, TaskLogSrv, UserInfoSrv, AlertSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
                 link: function(scope) {
 
                     // drop log
                     scope.dropLog = function() {
-                        scope.deleteModal = $modal.open({
+                        scope.deleteModal = $uibModal.open({
                             scope: scope,
                             templateUrl: 'views/directives/log-entry-delete.html',
                             size: ''
@@ -39,7 +39,7 @@
                         return angular.isString(contentType) && contentType.indexOf('image') === 0;
                     };
                     scope.showImage = function() {
-                        $modal.open({
+                        $uibModal.open({
                             template: '<img style="width:100%" src="/api/datastore/' + scope.log.attachment.id + '" alt="' + scope.log.attachment.name + '"></img>',
                             size: 'lg'
                         });

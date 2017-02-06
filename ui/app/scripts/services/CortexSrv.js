@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CortexSrv', function ($q, $http, $rootScope, $modal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
+        .factory('CortexSrv', function ($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
 
             var baseUrl = '/api/connector/cortex';
 
@@ -44,7 +44,7 @@
                 },
 
                 promptForInstance: function (servers) {
-                    var modalInstance = $modal.open({
+                    var modalInstance = $uibModal.open({
                         templateUrl: 'views/partials/cortex/choose-instance-dialog.html',
                         controller: 'CortexInstanceDialogCtrl',
                         controllerAs: 'vm',

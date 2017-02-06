@@ -5,12 +5,12 @@
     <div class="col-md-12 clearfix">
         <div class="pull-left">
             <!-- Single button -->
-            <div class="btn-group" dropdown>
-                <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="misp.selection.length === 0">
+            <div class="btn-group" uib-dropdown>
+                <button type="button" class="btn btn-default" uib-dropdown-toggle ng-disabled="misp.selection.length === 0">
                     <ng-pluralize count="misp.selection.length" when="{'0': 'No event selected', 'one': '{} selected event', 'other': '{} selected events'}"></ng-pluralize>
                     <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu" uib-dropdown-menu>
                     <!--
                         <li>
                             <a ng-click="misp.bulkImport()">Import</a>
@@ -86,16 +86,16 @@
                     <td>{{event.publishDate | showDate}}</td>
                     <td class="clearfix">
                         <div class="pull-right">
-                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.import(event)" tooltip="Preview and Import" ng-if="!event.case">
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
                                 <i class="text-info text-20 fa fa-file-text-o"></i>
                             </a>
-                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" tooltip="View case" ng-if="event.case">
+                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
                                 <i class="text-info text-20 fa fa-search"></i>
                             </a>
-                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.follow(event)" tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
                                 <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
                             </a>
-                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.ignore(event)" tooltip="Mark as read">
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.ignore(event)" uib-tooltip="Mark as read">
                                 <i class="text-info text-20 fa fa-check"></i>
                             </a>
                         </div>

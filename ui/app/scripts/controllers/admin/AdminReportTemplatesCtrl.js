@@ -8,7 +8,7 @@
         .controller('AdminReportTemplateDeleteCtrl', AdminReportTemplateDeleteCtrl);
 
 
-    function AdminReportTemplatesCtrl($q, $modal, AnalyzerSrv, ReportTemplateSrv) {
+    function AdminReportTemplatesCtrl($q, $uibModal, AnalyzerSrv, ReportTemplateSrv) {
         var self = this;
 
         this.templates = [];
@@ -45,7 +45,7 @@
         };
 
         this.showTemplate = function (reportTemplate, analyzer) {
-            var modalInstance = $modal.open({
+            var modalInstance = $uibModal.open({
                 //scope: $scope,
                 templateUrl: 'views/partials/admin/report-template-dialog.html',
                 controller: 'AdminReportTemplateDialogCtrl',
@@ -67,7 +67,7 @@
         };
 
         this.deleteTemplate = function(template) {
-            var modalInstance = $modal.open({
+            var modalInstance = $uibModal.open({
                 templateUrl: 'views/partials/admin/report-template-delete.html',
                 controller: 'AdminReportTemplateDeleteCtrl',
                 controllerAs: 'vm',
@@ -85,7 +85,7 @@
         };
 
         this.import = function () {
-            var modalInstance = $modal.open({
+            var modalInstance = $uibModal.open({
                 animation: true,
                 templateUrl: 'views/partials/admin/report-template-import.html',
                 controller: 'AdminReportTemplateImportCtrl',
@@ -101,7 +101,7 @@
         this.load();
     }
 
-    function AdminReportTemplateDialogCtrl($modalInstance, reportTemplate, ReportTemplateSrv, AlertSrv, analyzer) {
+    function AdminReportTemplateDialogCtrl($uibModalInstance, reportTemplate, ReportTemplateSrv, AlertSrv, analyzer) {
         this.reportTemplate = reportTemplate;
         this.analyzer = analyzer;
         this.reportTypes = ['short', 'long'];
@@ -116,49 +116,49 @@
         this.formData.analyzerId = this.analyzer.id;
 
         this.cancel = function () {
-            $modalInstance.dismiss();
+            $uibModalInstance.dismiss();
         };
 
         this.saveTemplate = function() {
             ReportTemplateSrv.save(this.formData)
                 .then(function() {
-                    $modalInstance.close();
+                    $uibModalInstance.close();
                 }, function(response) {
                     AlertSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
                 });
         };
     }
 
-    function AdminReportTemplateDeleteCtrl($modalInstance, ReportTemplateSrv, AlertSrv, template) {
+    function AdminReportTemplateDeleteCtrl($uibModalInstance, ReportTemplateSrv, AlertSrv, template) {
         this.template = template;
 
         this.ok = function () {
             ReportTemplateSrv.delete(template.id)
                 .then(function() {
-                    $modalInstance.close();
+                    $uibModalInstance.close();
                 }, function(response) {
                     AlertSrv.error('AdminReportTemplateDeleteCtrl', response.data, response.status);
                 });
         };
         this.cancel = function () {
-            $modalInstance.dismiss('cancel');
+            $uibModalInstance.dismiss('cancel');
         };
     }
 
-    function AdminReportTemplateImportCtrl($modalInstance, ReportTemplateSrv, AlertSrv) {
+    function AdminReportTemplateImportCtrl($uibModalInstance, ReportTemplateSrv, AlertSrv) {
         this.formData = {};
 
         this.ok = function () {
             ReportTemplateSrv.import(this.formData)
                 .then(function() {
-                    $modalInstance.close();
+                    $uibModalInstance.close();
                 }, function(response) {
                     AlertSrv.error('AdminReportTemplateImportCtrl', response.data, response.status);
                 });
         };
 
         this.cancel = function () {
-            $modalInstance.dismiss('cancel');
+            $uibModalInstance.dismiss('cancel');
         };
     }
 })();

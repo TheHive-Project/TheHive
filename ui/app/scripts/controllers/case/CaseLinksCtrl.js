@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseLinksCtrl',
-        function($scope, $state, $stateParams, $modal, CaseTabsSrv) {
+        function($scope, $state, $stateParams, $uibModal, CaseTabsSrv) {
             $scope.caseId = $stateParams.caseId;
             var tabName = 'links-' + $scope.caseId;
 

@@ -141,13 +141,13 @@
                     <h4 class="vpad10 text-primary">
                         Case metrics ({{template.metricNames.length || 0}})
 
-                        <span dropdown class="pull-right">
-                            <a href class="dropdown-toggle" dropdown-toggle>
+                        <span uib-dropdown class="pull-right">
+                            <a href class="dropdown-toggle" uib-dropdown-toggle>
                                 <i class="fa fa-plus"></i>
                                 Add metric
                                 <span class="caret"></span>
                             </a>
-                            <ul class="dropdown-menu" role="menu">
+                            <ul class="dropdown-menu" uib-dropdown-menu>
                                 <li ng-repeat="(key, value) in metrics">
                                     <a ng-click="addMetric(value)">{{value.title}}</a>
                                 </li>

@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -290,7 +290,7 @@
             // actions on artifacts
 
             $scope.addArtifact = function () {
-                $modal.open({
+                $uibModal.open({
                     animation: 'true',
                     templateUrl: 'views/partials/observables/observable.creation.html',
                     controller: 'ObservableCreationCtrl',

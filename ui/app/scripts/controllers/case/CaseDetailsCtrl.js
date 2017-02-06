@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('CaseDetailsCtrl',
-        function($scope, $state, $modal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
+        function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -43,7 +43,7 @@
             };
 
             $scope.addMetric = function(metric) {
-                var modalInstance = $modal.open({
+                var modalInstance = $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.add.metric.html',
                     controller: 'CaseAddMetricConfirmCtrl',
@@ -74,15 +74,15 @@
         }
     );
 
-    angular.module('theHiveControllers').controller('CaseAddMetricConfirmCtrl', function($scope, $modalInstance, metric) {
+    angular.module('theHiveControllers').controller('CaseAddMetricConfirmCtrl', function($scope, $uibModalInstance, metric) {
         $scope.metric = metric;
 
         $scope.cancel = function() {
-            $modalInstance.dismiss(metric);
+            $uibModalInstance.dismiss(metric);
         };
 
         $scope.confirm = function() {
-            $modalInstance.close(metric);
+            $uibModalInstance.close(metric);
         };
     });
 

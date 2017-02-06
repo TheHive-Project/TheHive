@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispListCtrl', function($q, $state, $modal, MispSrv, AlertSrv) {
+        .controller('MispListCtrl', function($q, $state, $uibModal, MispSrv, AlertSrv) {
             var self = this;
 
             self.list = [];
@@ -52,7 +52,7 @@
             };
 
             self.import = function(event) {
-                $modal.open({
+                $uibModal.open({
                     templateUrl: 'views/partials/misp/event.dialog.html',
                     controller: 'MispEventCtrl',
                     controllerAs: 'dialog',
@@ -64,7 +64,7 @@
             };
 
             self.bulkImport = function() {
-                var modalInstance = $modal.open({
+                var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/misp/bulk.import.dialog.html',
                     controller: 'MispBulkImportCtrl',
                     controllerAs: 'dialog',

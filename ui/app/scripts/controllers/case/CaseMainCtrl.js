@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $modal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, AlertSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, AlertSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -160,7 +160,7 @@
             };
 
             $scope.openCloseDialog = function() {
-                var modalInstance = $modal.open({
+                var modalInstance = $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.close.html',
                     controller: 'CaseCloseModalCtrl',
@@ -173,7 +173,7 @@
             };
 
             $scope.reopenCase = function() {
-                $modal.open({
+                $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.reopen.html',
                     controller: 'CaseReopenModalCtrl',
@@ -182,7 +182,7 @@
             };
 
             $scope.mergeCase = function() {
-                $modal.open({
+                $uibModal.open({
                     templateUrl: 'views/partials/case/case.merge.html',
                     controller: 'CaseMergeModalCtrl',
                     controllerAs: 'dialog',

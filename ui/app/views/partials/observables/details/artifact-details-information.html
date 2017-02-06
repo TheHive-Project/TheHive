@@ -34,7 +34,7 @@
 				<span ng-init="iocActive = false" ng-mouseenter="iocActive = true" ng-mouseleave="iocActive = false" ng-click="updateField('ioc', !artifact.ioc)">
                     <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
                     <small ng-show="iocActive">
-                        <a href class="clickable" tooltip="edit">
+                        <a href class="clickable" uib-tooltip="edit">
                             <i class="glyphicon glyphicon-pencil"></i>
                         </a>
                     </small>
@@ -67,7 +67,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
+				<tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
 					<td><tlp value="a.tlp"></tlp></td>
 					<td>[{{a.dataType}}]: {{a.data}}<br>
                         #{{a.case.caseId}} - {{a.case.title}}

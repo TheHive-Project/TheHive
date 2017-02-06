@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $modalInstance, clipboard, CaseArtifactSrv, ListSrv, AlertSrv) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, AlertSrv) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -130,7 +130,7 @@
 
                     AlertSrv.log('Observables have been successfully created', 'success');
 
-                    $modalInstance.close(response);
+                    $uibModalInstance.close(response);
                 }
             };
 
@@ -145,7 +145,7 @@
                 } else {
                     AlertSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
 
-                    $modalInstance.close(response);
+                    $uibModalInstance.close(response);
                 }
 
             };
@@ -157,7 +157,7 @@
             };
 
             $scope.cancel = function() {
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
 
             $scope.isFile = function() {

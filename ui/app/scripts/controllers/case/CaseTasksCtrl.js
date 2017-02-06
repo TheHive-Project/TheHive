@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, AlertSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, AlertSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -54,7 +54,7 @@
 
         $scope.removeTask = function(task) {
 
-            var modalInstance = $modal.open({
+            var modalInstance = $uibModal.open({
                 animation: true,
                 templateUrl: 'views/partials/case/case.task.delete.html',
                 controller: 'CaseTaskDeleteCtrl',
@@ -99,15 +99,15 @@
 
     }
 
-    function CaseTaskDeleteCtrl($modalInstance, title) {
+    function CaseTaskDeleteCtrl($uibModalInstance, title) {
         this.title = title;
 
         this.ok = function() {
-            $modalInstance.close();
+            $uibModalInstance.close();
         };
 
         this.cancel = function() {
-            $modalInstance.dismiss();
+            $uibModalInstance.dismiss();
         };
     }
 }());
