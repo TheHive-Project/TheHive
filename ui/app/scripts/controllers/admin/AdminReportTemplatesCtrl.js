@@ -24,10 +24,19 @@
                 self.templates = response[0].data;
                 self.analyzers = response[1];
 
+                var cleared = _.mapObject(self.analyzers, function(val) {
+                    delete val.shortReport;
+                    delete val.longReport;
+
+                    return val;
+                });
+
+                self.analyzers = cleared;
+
                 return $q.resolve(self.analyzers);
             }).then(function (analyzersMap) {
                 if(_.isEmpty(analyzersMap)) {
-                    _.each(_.pluck(self.templates, 'analyzers'), function(item) {
+                    _.each(_.pluck(self.templates, 'analyzerId'), function(item) {
                         analyzersMap[item] = {
                             id: item
                         };
@@ -37,7 +46,7 @@
                 _.each(self.templates, function (tpl) {
                     if(analyzersMap[tpl.analyzerId]) {
                         analyzersMap[tpl.analyzerId][tpl.reportType + 'Report'] = tpl;
-                    }                    
+                    }
                 });
 
                 self.analyzerCount = _.keys(analyzersMap).length;
