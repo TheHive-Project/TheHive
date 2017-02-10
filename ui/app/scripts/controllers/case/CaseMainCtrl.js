@@ -15,6 +15,7 @@
                 CaseTabsSrv.initTabs();
             }
 
+            $scope.tabSrv = CaseTabsSrv;
             $scope.tabs = CaseTabsSrv.getTabs();
             $scope.getUserInfo = UserInfoSrv;
             $scope.caseId = caseId;

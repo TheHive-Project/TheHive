@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -46,7 +46,10 @@
                 });
 
                 // Select tab
-                CaseTabsSrv.activateTab(observableName);
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(observableName);
+                }, 0);
+
 
                 // Prepare the scope data
                 $scope.initScope(observable);
