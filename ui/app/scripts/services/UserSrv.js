@@ -1,10 +1,10 @@
 angular.module('theHiveServices')
     .factory('UserSrv', function($resource, $http, $q, AlertSrv, UtilsSrv) {
         'use strict';
-        var res = $resource('/api/user/:userId', {}, {
+        var res = $resource('./api/user/:userId', {}, {
             query: {
                 method: 'POST',
-                url: '/api/user/_search',
+                url: './api/user/_search',
                 isArray: true
             },
             update: {
@@ -12,11 +12,11 @@ angular.module('theHiveServices')
             },
             changePass: {
                 method: 'POST',
-                url: '/api/user/:userId/password/change'
+                url: './api/user/:userId/password/change'
             },
             setPass: {
                 method: 'POST',
-                url: '/api/user/:userId/password/set'
+                url: './api/user/:userId/password/set'
             }
         });
         /**
@@ -78,7 +78,7 @@ angular.module('theHiveServices')
                 query: query
             };
 
-            $http.post('/api/user/_search', post)
+            $http.post('./api/user/_search', post)
                 .then(function(response) {
                     defer.resolve(response.data);
                 });

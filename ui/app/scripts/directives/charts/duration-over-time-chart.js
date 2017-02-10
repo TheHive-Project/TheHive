@@ -33,7 +33,7 @@
 
                     var computedFieldName = 'computed.handlingDuration';
 
-                    $http.post('/api/case/_stats', {
+                    $http.post('./api/case/_stats', {
                         query: options.params.q,
                         stats: [{
                             _agg: 'time',

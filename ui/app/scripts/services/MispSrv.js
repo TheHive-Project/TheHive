@@ -3,7 +3,7 @@
     angular.module('theHiveServices')
         .factory('MispSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
 
-            var baseUrl = '/api/connector/misp';
+            var baseUrl = './api/connector/misp';
 
             var factory = {
                 list: function(callback) {

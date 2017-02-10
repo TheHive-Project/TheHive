@@ -231,7 +231,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         $httpProvider.interceptors.push(function($rootScope, $q) {
             var isApiCall = function(url) {
-                return url && url.startsWith('/api') && !url.startsWith('/api/stream');
+                return url && url.startsWith('./api') && !url.startsWith('./api/stream');
             };
 
             return {

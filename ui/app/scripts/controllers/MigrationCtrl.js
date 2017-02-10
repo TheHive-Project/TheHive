@@ -37,7 +37,7 @@
 
             $scope.migrate = function() {
                 $scope.migrating = true;
-                $http.post('/api/maintenance/migrate', {}, {
+                $http.post('./api/maintenance/migrate', {}, {
                     timeout: 10 * 60 * 60 * 1000 // 10 minutes
                 }).success(function() {
                     console.log('Migration started');

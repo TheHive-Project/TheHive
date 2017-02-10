@@ -3,7 +3,7 @@
     angular.module('theHiveServices').factory('MetricsCacheSrv', function($resource, $q) {
 
         var metrics = null,
-            resource = $resource('/api/list/:listId', {}, {
+            resource = $resource('./api/list/:listId', {}, {
                 query: {
                     method: 'GET',
                     isArray: false

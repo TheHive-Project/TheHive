@@ -27,7 +27,7 @@
                     };
                     scope.showImage = function(attachmentId, attachmentName) {
                         $uibModal.open({
-                            template: '<img style="width:100%" src="/api/datastore/' + attachmentId + '" alt="' + attachmentName + '"></img>',
+                            template: '<img style="width:100%" src="./api/datastore/' + attachmentId + '" alt="' + attachmentName + '"></img>',
                             size: 'lg'
                         });
                     };

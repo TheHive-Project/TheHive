@@ -8,7 +8,7 @@
                     max = 10;
                 }
 
-                $http.get('/api/flow', {
+                $http.get('./api/flow', {
                     'params': {
                         'rootId': rootId,
                         'count': max

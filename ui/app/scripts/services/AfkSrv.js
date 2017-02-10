@@ -13,7 +13,7 @@
                 prompt: function() {
                     var defer = $q.defer();
 
-                    $http.get('/api/stream/status').then(function(response) {
+                    $http.get('./api/stream/status').then(function(response) {
 
                         if(response.data.warning === true) {
                             if(current !== null) {

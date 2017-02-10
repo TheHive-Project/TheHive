@@ -40,7 +40,7 @@
                     };
                     scope.showImage = function() {
                         $uibModal.open({
-                            template: '<img style="width:100%" src="/api/datastore/' + scope.log.attachment.id + '" alt="' + scope.log.attachment.name + '"></img>',
+                            template: '<img style="width:100%" src="./api/datastore/' + scope.log.attachment.id + '" alt="' + scope.log.attachment.name + '"></img>',
                             size: 'lg'
                         });
                     };

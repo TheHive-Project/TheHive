@@ -4,7 +4,7 @@
         var self = {
             currentUser: null,
             login: function(username, password, success, failure) {
-                $http.post('/api/login', {
+                $http.post('./api/login', {
                     'user': username,
                     'password': password
                 }).success(function(data, status, headers, config) {
@@ -18,7 +18,7 @@
                 });
             },
             logout: function(success, failure) {
-                $http.get('/api/logout').success(function(data, status, headers, config) {
+                $http.get('./api/logout').success(function(data, status, headers, config) {
                     self.currentUser = null;
 
                     if (angular.isFunction(success)) {
@@ -32,7 +32,7 @@
             },
             current: function(success, failure) {
                 var result = {};
-                $http.get('/api/user/current').success(function(data, status, headers, config) {
+                $http.get('./api/user/current').success(function(data, status, headers, config) {
                     self.currentUser = data;
 
                     UtilsSrv.shallowClearAndCopy(data, result);

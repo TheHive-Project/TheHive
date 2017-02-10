@@ -5,9 +5,9 @@
             return function(cb, filter, objectType, range, sort, nparent, nstats) {
                 var url;
                 if (!angular.isString(objectType) || objectType === 'any') {
-                    url = '/api/_search';
+                    url = './api/_search';
                 } else {
-                    url = '/api/' + objectType.replace(/_/g, '/') + '/_search';
+                    url = './api/' + objectType.replace(/_/g, '/') + '/_search';
                 }
 
                 var params = '';

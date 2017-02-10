@@ -37,7 +37,7 @@
                         }
                     };
 
-                    $http.post('/api/' + options.params.entity + '/_stats', {
+                    $http.post('./api/' + options.params.entity + '/_stats', {
                         "query": options.params.q,
                         "stats": [{
                             "_agg": "time",

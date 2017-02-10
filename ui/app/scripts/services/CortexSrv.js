@@ -3,7 +3,7 @@
     angular.module('theHiveServices')
         .factory('CortexSrv', function ($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
 
-            var baseUrl = '/api/connector/cortex';
+            var baseUrl = './api/connector/cortex';
 
             var factory = {
                 list: function (caseId, observableId, callback) {
