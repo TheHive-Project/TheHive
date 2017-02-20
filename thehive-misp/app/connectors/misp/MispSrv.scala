@@ -373,7 +373,7 @@ class MispSrv @Inject() (
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Misp, NotUsed], Future[Long]) = {
     import org.elastic4play.services.QueryDSL._
-    findSrv[MispModel, Misp](mispModel, and(queryDef, not("eventStatus" in ("Ignore", "Imported"))), range, sortBy)
+    findSrv[MispModel, Misp](mispModel, queryDef, range, sortBy)
   }
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]) = findSrv(mispModel, queryDef, aggs: _*)

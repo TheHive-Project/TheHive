@@ -1,21 +1,16 @@
-<h2>Import MISP events ({{misp.list.total}})</h2>
+<!-- <h2>Import MISP events ({{misp.list.total}})</h2>
 <div class="vpad10"></div>
 
 <div class="row mb-s">
     <div class="col-md-12 clearfix">
         <div class="pull-left">
-            <!-- Single button -->
             <div class="btn-group" uib-dropdown>
                 <button type="button" class="btn btn-default" uib-dropdown-toggle ng-disabled="misp.selection.length === 0">
                     <ng-pluralize count="misp.selection.length" when="{'0': 'No event selected', 'one': '{} selected event', 'other': '{} selected events'}"></ng-pluralize>
                     <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
-                    <!--
-                        <li>
-                            <a ng-click="misp.bulkImport()">Import</a>
-                        </li>
-                        -->
+
                     <li ng-show="misp.menu.follow" ng-click="misp.bulkFollow(true)">
                         <a>Track new updates</a>
                     </li>
@@ -37,21 +32,57 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <div class="row">
     <div class="col-md-12">
-        <table class="table table-striped">
+        <div ng-include="'views/partials/misp/list/toolbar.html'"></div>
+
+        <div class="mv-s filter-panel" ng-include="'views/partials/misp/list/mini-stats.html'" ng-show="misp.filtering.context.showStats"></div>
+
+        <div class="mt-s filter-panel" ng-include="'views/partials/misp/list/filters.html'" ng-show="misp.filtering.context.showFilters"></div>
+
+        <div class="row mt-s">
+            <div class="col-md-12 clearfix">
+                <div class="pull-left">
+                    <h4>List of MISP events ({{misp.list.total || 0}} of {{mispEvents.count}})</h4>
+                </div>
+                <div class="active-filters">
+                    <ul ng-if="misp.filtering.countFilters() > 0">
+                        <li>{{misp.filtering.countFilters()}}
+                            filter(s) applied:
+                        </li>
+                        <li class="filter-item" ng-repeat="(field,filter) in misp.filtering.filters">
+                            <span>
+                                <strong>{{filter.label}}:</strong>
+                                {{filter.value | filterValue}}</span>
+                            <a href="" ng-click="misp.removeFilter(field)">
+                                <span class="filter-close fa fa-times text-danger"></span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="" ng-click="misp.clearFilters()">Clear filters</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-s">
+    <div class="col-md-12">
+        <table class="table table-striped  case-list">
             <thead>
                 <tr>
                     <th width="20px"><input type="checkbox" ng-model="misp.menu.selectAll" ng-change="misp.selectAll()"></th>
-                    <th width="100px">Event ID</th>
+                    <th width="80px">Event ID</th>
+                    <th width="80px">Status</th>
                     <th>Title</th>
                     <th width="150px">Source</th>
-                    <th>Severity</th>
+                    <th width="80px">Severity</th>
                     <th width="80px">Attributes</th>
-                    <th>Tags</th>
-                    <th style="width: 160px">Date</th>
+                    <th style="width: 160px">Publish Date</th>
                     <th style="width: 120px"></th>
                 </tr>
             </thead>
@@ -62,30 +93,34 @@
                         <input type="checkbox" ng-model="event.selected" ng-change="misp.select(event)">
                     </td>
                     <td>
-                        <strong class="ml-xxs">{{::event.eventId}}</strong>
+                        <strong>{{::event.eventId}}</strong>
+                    </td>
+                    <td>
+                        <span class="clickable label label-default" ng-class="{'label-danger': event.eventStatus==='New', 'label-warning': event.eventStatus === 'Update'}" ng-click="misp.addFilterValue('eventStatus', event.eventStatus)">{{::event.eventStatus}}</span>
                     </td>
                     <td class="wrap">
-                        <span class="label label-default" ng-class="{'label-danger': event.eventStatus==='New', 'label-warning': event.eventStatus === 'Update'}">{{::event.eventStatus}}</span>
-                        <span class="ml-xs">
-                            <span ng-if="!event.case">{{::event.info}}</span>
-                            <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
-                                <a href>{{::event.info}}</a>
+                        <div class="case-title">
+                            <span>
+                                <span ng-if="!event.case">{{::event.info}}</span>
+                                <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
+                                    <a href>{{::event.info}}</a>
+                                </span>
                             </span>
-                        </span>
+                        </div>
+                        <div class="case-tags flexwrap mt-xxs">
+                            <span class="mr-xxxs">Tags:</span>
+                            <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
+                            <span ng-repeat="tag in event.tags" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="misp.addFilterValue('tags', tag)">{{tag}}</span>
+                        </div>
                     </td>
-                    <td>{{event.org}}</td>
+                    <td><a href ng-click="misp.addFilterValue('org', event.org)">{{event.org}}</a></td>
                     <td class="text-center">
                         <severity value="event.threatLevel"></severity>
                     </td>
                     <td class="text-center">{{::event.attributeCount}}</td>
-                    <td>
-                        <span ng-repeat="tag in event.tags" style="margin-right:2px;display:inline-block">
-                            <span class="label label-primary">{{tag}}</span>
-                        </span>
-                    </td>
-                    <td>{{event.publishDate | showDate}}</td>
+                    <td><a href ng-click="misp.addFilterValue('publishDate', event.publishDate)">{{event.publishDate | showDate}}</a></td>
                     <td class="clearfix">
-                        <div class="pull-right">
+                        <div class="pull-left">
                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
                                 <i class="text-info text-20 fa fa-file-text-o"></i>
                             </a>
@@ -95,7 +130,7 @@
                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
                                 <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
                             </a>
-                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.ignore(event)" uib-tooltip="Mark as read">
+                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="misp.ignore(event)" uib-tooltip="Mark as unread" ng-if="event.eventStatus !== 'Ignore' && !event.case">
                                 <i class="text-info text-20 fa fa-check"></i>
                             </a>
                         </div>

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispListCtrl', function($scope, $q, $state, $uibModal, MispSrv, AlertSrv) {
+        .controller('MispListCtrl', function($scope, $q, $state, $uibModal, MispSrv, AlertSrv, FilteringSrv) {
             var self = this;
 
             self.list = [];
@@ -9,7 +9,84 @@
             self.menu = {
                 follow: false,
                 unfollow: false,
+                markAsRead: false,
                 selectAll: false
+            };
+            self.filtering = new FilteringSrv('misp-section', {
+                defaults: {
+                    showFilters: false,
+                    showStats: false,
+                    pageSize: 15,
+                    sort: ['-publishDate']
+                },
+                defaultFilter: {
+                    eventStatus: {
+                        field: 'eventStatus',
+                        label: 'Status',
+                        value: [{
+                            text: 'New'
+                        }, {
+                            text: 'Update'
+                        }],
+                        filter: '(eventStatus:"New" OR eventStatus:"Update")'
+                    }
+                },
+                filterDefs: {
+                    keyword: {
+                        field: 'keyword',
+                        type: 'string',
+                        defaultValue: []
+                    },
+                    eventStatus: {
+                        field: 'eventStatus',
+                        type: 'list',
+                        defaultValue: [],
+                        label: 'Status'
+                    },
+                    tags: {
+                        field: 'tags',
+                        type: 'list',
+                        defaultValue: [],
+                        label: 'Tags'
+                    },
+                    org: {
+                        field: 'org',
+                        type: 'list',
+                        defaultValue: [],
+                        label: 'Source'
+                    },
+                    info: {
+                        field: 'info',
+                        type: 'string',
+                        defaultValue: '',
+                        label: 'Title'
+                    },
+                    publishDate: {
+                        field: 'publishDate',
+                        type: 'date',
+                        defaultValue: {
+                            from: null,
+                            to: null
+                        },
+                        label: 'Publish Date'
+                    }
+                }
+            });
+            self.filtering.initContext('list');
+            self.searchForm = {
+                searchQuery: self.filtering.buildQuery() || ''
+            };
+
+            $scope.$watch('misp.list.pageSize', function (newValue) {
+                self.filtering.setPageSize(newValue);
+            });
+
+            this.toggleStats = function () {
+                this.filtering.toggleStats();
+            };
+
+            this.toggleFilters = function () {
+                this.filtering.toggleFilters();
             };
 
             self.follow = function(event) {
@@ -120,7 +197,17 @@
             };
 
             self.load = function() {
-                self.list = MispSrv.list($scope, self.resetSelection);
+                var config = {
+                    scope: $scope,
+                    filter: self.searchForm.searchQuery !== '' ? {
+                        _string: self.searchForm.searchQuery
+                    } : '',
+                    loadAll: false,
+                    sort: self.filtering.context.sort,
+                    pageSize: self.filtering.context.pageSize,
+                };
+
+                self.list = MispSrv.list(config, self.resetSelection);
             };
 
             self.cancel = function() {
@@ -132,6 +219,11 @@
 
                 self.menu.unfollow = temp.length === 1 && temp[0] === true;
                 self.menu.follow = temp.length === 1 && temp[0] === false;
+
+
+                temp = _.uniq(_.pluck(self.selection, 'eventStatus'));
+
+                self.menu.markAsRead = temp.indexOf('Ignore') === -1;
             };
 
             self.select = function(event) {
@@ -161,6 +253,103 @@
 
                 self.updateMenu();
 
+            };
+
+            this.filter = function () {
+                self.filtering.filter().then(this.applyFilters);
+            };
+
+            this.applyFilters = function () {
+                self.searchForm.searchQuery = self.filtering.buildQuery();
+                self.search();
+            };
+
+            this.clearFilters = function () {
+                self.filtering.clearFilters().then(this.applyFilters);
+            };
+
+            this.addFilter = function (field, value) {
+                self.filtering.addFilter(field, value).then(this.applyFilters);
+            };
+
+            this.removeFilter = function (field) {
+                self.filtering.removeFilter(field).then(this.applyFilters);
+            };
+
+            this.search = function () {
+                this.list.filter = {
+                    _string: this.searchForm.searchQuery
+                };
+
+                this.list.update();
+            };
+            this.addFilterValue = function (field, value) {
+                var filterDef = self.filtering.filterDefs[field];
+                var filter = self.filtering.activeFilters[field];
+                var date;
+
+                if (filter && filter.value) {
+                    if (filterDef.type === 'list') {
+                        if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
+                            filter.value.push({
+                                text: value
+                            });
+                        }
+                    } else if (filterDef.type === 'date') {
+                        date = moment(value);
+                        self.filtering.activeFilters[field] = {
+                            value: {
+                                from: date.hour(0).minutes(0).seconds(0).toDate(),
+                                to: date.hour(23).minutes(59).seconds(59).toDate()
+                            }
+                        };
+                    } else {
+                        filter.value = value;
+                    }
+                } else {
+                    if (filterDef.type === 'list') {
+                        self.filtering.activeFilters[field] = {
+                            value: [{
+                                text: value
+                            }]
+                        };
+                    } else if (filterDef.type === 'date') {
+                        date = moment(value);
+                        self.filtering.activeFilters[field] = {
+                            value: {
+                                from: date.hour(0).minutes(0).seconds(0).toDate(),
+                                to: date.hour(23).minutes(59).seconds(59).toDate()
+                            }
+                        };
+                    } else {
+                        self.filtering.activeFilters[field] = {
+                            value: value
+                        };
+                    }
+                }
+
+                this.filter();
+            };
+
+            this.filterByStatus = function(status) {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue('eventStatus', status);
+                    });
+            };
+
+            this.sortBy = function(sort) {
+                self.list.sort = sort;
+                self.list.update();
+                self.filtering.setSort(sort);
+            };
+
+            this.getStatuses = function(query) {
+                return MispSrv.statuses(query);
+            };
+
+            this.getSources = function(query) {
+                return MispSrv.sources(query);
             };
 
             self.load();

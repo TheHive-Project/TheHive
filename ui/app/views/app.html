@@ -45,7 +45,7 @@
                     <li ng-show="mispEnabled === true" ui-sref-active="active">
                         <a href ui-sref="app.misp-list">
                             MISP
-                            <span class="badge alert-danger">{{mispEvents.count}}</span>
+                            <span class="badge alert-danger">{{(mispEvents.New.count || 0) + (mispEvents.Update.count || 0)}}</span>
                         </a>
                     </li>
                     <li class="hdivider hidden-xs"></li>

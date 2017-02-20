@@ -19,7 +19,7 @@
     "bootstrap": "~3.3.7",
     "bootstrap-sass-official": "~3.3.7",
     "dropzone": "~4.3.0",
-    "font-awesome": "fontawesome#~4.4.0",
+    "font-awesome": "fontawesome#^4.7.0",
     "jquery": "~3.1.0",
     "moment": "~2.14.1",
     "ng-csv": "~0.3.6",
