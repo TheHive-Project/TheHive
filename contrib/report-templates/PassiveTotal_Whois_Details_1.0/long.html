@@ -1,6 +1,6 @@
-<div class="report-FILEInfo" ng-if="success">
+<div class="report-PT" ng-if="success">
     <style>
-        .report-FILEInfo dl {
+        .report-PT dl {
             margin-bottom: 2px;
         }
 
@@ -8,7 +8,9 @@
 
   <div class="panel panel-info">
       <div class="panel-heading">
-          <strong>PassiveTotal Whois Summary</strong>
+          <strong>PassiveTotal Whois Summary for
+                  {{artifact.data}}
+          </strong>
       </div>
       <div class="panel-body">
           <div ng-if="content[artifact.data].length === 0">
