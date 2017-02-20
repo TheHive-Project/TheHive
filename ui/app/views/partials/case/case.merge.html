@@ -4,19 +4,19 @@
 <div class="modal-body merge-dialog">
     <div class="input-group input-group-lg search-field">
         <input type="text"
-            placeholder="{{dialog.search.placeholder}}" 
-            ng-model="dialog.search.input"    
-            typeahead-wait-ms="500"                      
-            typeahead="caze as dialog.format(caze) for caze in dialog.getCaseByTitle(dialog.search.type, $viewValue)"
-            typeahead-min-length="dialog.search.minInputLength" 
-            typeahead-on-select="dialog.onSelect($item)" 
+            placeholder="{{dialog.search.placeholder}}"
+            ng-model="dialog.search.input"
+            uib-typeahead="caze as dialog.format(caze) for caze in dialog.getCaseByTitle(dialog.search.type, $viewValue)"
+            typeahead-wait-ms="500"
+            typeahead-min-length="dialog.search.minInputLength"
+            typeahead-on-select="dialog.onSelect($item)"
             class="form-control">
-            
+
         <span class="input-group-addon">
             <input type="radio" name="search-type" ng-model="dialog.search.type" value="title" ng-change="dialog.onTypeChange('title')"> By Title
             <input type="radio" name="search-type" ng-model="dialog.search.type" value="number" ng-change="dialog.onTypeChange('number')"> By Number
         </span>
-        
+
     </div>
 
     <div class="empty-message mv-s" ng-show="dialog.search.cases.length === 0">
