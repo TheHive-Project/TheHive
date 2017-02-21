@@ -1,0 +1,52 @@
+<div class="report-PT" ng-if="success">
+    <style>
+        .report-PT dl {
+            margin-bottom: 2px;
+        }
+
+    </style>
+
+  <div class="panel panel-info">
+      <div class="panel-heading">
+          <strong>PassiveTotal Passive DNS Report
+        </strong>
+      </div>
+
+      <div class="panel-body">
+
+        <strong>Records for {{artifact.data}}</strong></div>
+            <div class="panel-body">
+              <table class="table table-hover">
+                <tr>
+                  <th>Hosts</th>
+                  <th>First Seen</th>
+                  <th>Last Seen</th>
+                  <th>Sources</th>
+                </tr>
+                <tr ng-repeat="result in content.results">
+                  <td><strong>{{result.resolve}}</strong></td>
+                  <td>
+                    {{result.firstSeen}}
+                  </td>
+                  <td>
+                    {{result.lastSeen}}
+                  </td>
+                  <td>
+                    <span ng-repeat="src in result.source">{{src}}<span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+      </div>
+  </div>
+
+<!-- General error -->
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>
