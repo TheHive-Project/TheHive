@@ -25,6 +25,9 @@
             {{dialog.caze.title}}</strong>
     </div>
     <div class="mv-s merge-case" ng-repeat="c in dialog.search.cases">
+        <div class="alert alert-warning" ng-show="c.mergeInto">
+            WARNING: This case has already been merged with another case
+        </div>
         <h4>{{c.title}}</h4>
         <div>
             <span>
