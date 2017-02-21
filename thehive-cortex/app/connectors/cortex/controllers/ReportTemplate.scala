@@ -86,7 +86,7 @@ class ReportTemplateCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (reportTemplates, total) = reportTemplateSrv.find(query, range, sort)
-    val reportTemplatesWithStats = auxSrv(reportTemplates, nparent, withStats)
+    val reportTemplatesWithStats = auxSrv(reportTemplates, nparent, withStats, false)
     renderer.toOutput(OK, reportTemplatesWithStats, total)
   }
 

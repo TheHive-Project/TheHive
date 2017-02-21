@@ -66,7 +66,7 @@ object AuditOperationGroup {
         }
         .collect { case (name, value, Some(attr)) if !attr.isUnaudited ⇒ (name, value) }
     }
-    val obj = auxSrv(operation.entity, 10, false)
+    val obj = auxSrv(operation.entity, 10, false, true)
       .recover {
         case error ⇒
           log.error("auxSrv fails", error)

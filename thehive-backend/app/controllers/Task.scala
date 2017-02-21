@@ -71,7 +71,7 @@ class TaskCtrl @Inject() (
     val withStats = request.body.getBoolean("stats").getOrElse(false)
 
     val (tasks, total) = taskSrv.find(query, range, sort)
-    val tasksWithStats = auxSrv.apply(tasks, nparent, withStats)
+    val tasksWithStats = auxSrv.apply(tasks, nparent, withStats, false)
     renderer.toOutput(OK, tasksWithStats, total)
   }
 
