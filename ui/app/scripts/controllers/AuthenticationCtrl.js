@@ -4,10 +4,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $modalStack, AuthenticationSrv, AlertSrv) {
+        .controller('AuthenticationCtrl', function($scope, $state, $uibModalStack, AuthenticationSrv, AlertSrv) {
             $scope.params = {};
 
-            $modalStack.dismissAll();
+            $uibModalStack.dismissAll();
 
             $scope.login = function() {
                 $scope.params.username = angular.lowercase($scope.params.username);
@@ -17,7 +17,7 @@
                     if (status === 520) {
                         AlertSrv.error('AuthenticationCtrl', data, status);
                     } else {
-                        AlertSrv.log(data, 'error');
+                        AlertSrv.log(data.message, 'error');
                     }
                 });
             };

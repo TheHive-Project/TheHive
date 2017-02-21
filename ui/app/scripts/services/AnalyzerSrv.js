@@ -3,10 +3,10 @@
     angular.module('theHiveServices')
         .factory('AnalyzerSrv', function ($resource, $q) {
             var analyzers = null,
-                resource = $resource('/api/connector/cortex/analyzer/:analyzerId', {}, {
+                resource = $resource('./api/connector/cortex/analyzer/:analyzerId', {}, {
                     query: {
                         method: 'GET',
-                        url: '/api/connector/cortex/analyzer',
+                        url: './api/connector/cortex/analyzer',
                         isArray: true
                     },
                     get: {
@@ -29,7 +29,10 @@
                         resource.query({
                             range: 'all'
                         }, {}, function (response) {
-                            analyzers = _.indexBy(response, 'id');
+
+                            analyzers = _.indexBy(_.map(response, function(item) {
+                                return item.toJSON();
+                            }), 'id');
 
                             deferred.resolve(analyzers);
                         }, function (/*rejection*/) {

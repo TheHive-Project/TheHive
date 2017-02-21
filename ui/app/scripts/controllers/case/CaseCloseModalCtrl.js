@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCloseModalCtrl',
-        function($scope, $modalInstance, SearchSrv, MetricsCacheSrv, AlertSrv) {
+        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, AlertSrv) {
 
             $scope.tasksValid = false;
             $scope.tasks = [];
@@ -71,12 +71,12 @@
 
                     AlertSrv.log('The case #' + caze.caseId + ' has been closed', 'success');
 
-                    $modalInstance.close();
+                    $uibModalInstance.close();
                 });
             };
 
             $scope.cancel = function() {
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
         }
     );

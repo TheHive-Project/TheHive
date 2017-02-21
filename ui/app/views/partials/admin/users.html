@@ -18,12 +18,12 @@
             </div>
             <div class="col-md-2">
                 Roles
-                <div class="btn-group" dropdown>
-                    <button class="btn btn-sm dropdown-toggle" dropdown-toggle type="button">
+                <div class="btn-group" uib-dropdown>
+                    <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
                         {{newUser.roles.join(', ')}}&nbsp;&nbsp;
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu" role="menu">
+                    <ul class="dropdown-menu" uib-dropdown-menu>
                         <li>
                             <a ng-click="newUser.roles = ['read']">read</a>
                             <a ng-click="newUser.roles = ['read','write']">read, write</a>
@@ -62,13 +62,13 @@
                 </span>
             </td>
             <td class="col-md-2" style="vertical-align:middle; ">
-                <div class="btn-group" dropdown ng-if="user.status == 'Ok'">
-                    <button class="btn btn-sm dropdown-toggle" dropdown-toggle type="button">
+                <div class="btn-group" uib-dropdown ng-if="user.status == 'Ok'">
+                    <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
                         <span ng-bind="user.roles.join(', ')">&nbsp;&nbsp;
                             <span class="caret"></span>
                         </span>
                     </button>
-                    <ul class="dropdown-menu" role="menu">
+                    <ul class="dropdown-menu" uib-dropdown-menu>
                         <li>
                             <a ng-click="newValue = ['read'] ; updateField(user, 'roles', newValue)">read</a>
                             <a ng-click="newValue = ['read','write'];updateField(user, 'roles', newValue)">read, write</a>

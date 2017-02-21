@@ -26,7 +26,7 @@
                         }
                         // Call the link function to link the given scope and
                         // a Clone Attach Function,
-                        // http://docs.angularjs.org/api/ng.$compile :
+                        // http://docs.angularjs.org./api/ng.$compile :
                         // "Calling the linking function returns the element of the
                         // template.
                         // It is either the original element passed in,

@@ -36,17 +36,14 @@ run := {
 
 mappings in packageBin in Assets ++= frontendFiles.value
 
+mappings in Universal ~= { _.filterNot {
+  case (_, name) => name == "conf/application.conf"
+}}
+
 // Install files //
 
 mappings in Universal ++= {
   val dir = baseDirectory.value / "install"
-  (dir.***) pair relativeTo(dir.getParentFile)
-}
-
-// Analyzers //
-
-mappings in Universal ++= {
-  val dir = baseDirectory.value / "analyzers"
   (dir.***) pair relativeTo(dir.getParentFile)
 }
 
@@ -105,11 +102,6 @@ dockerCommands := dockerCommands.value.map {
 }
 
 dockerCommands := (dockerCommands.value.head +:
-  ExecCmd("RUN", "bash", "-c",
-    "apt-get update && " +
-    "apt-get install -y --no-install-recommends python python-pip && " +
-    "pip install OleFile && " +
-    "rm -rf /var/lib/apt/lists/*") +:
   Cmd("EXPOSE", "9000") +:
   dockerCommands.value.tail)
 

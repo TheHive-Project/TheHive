@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -94,7 +94,7 @@
                             });
                         }
                     } else if (filterDef.type === 'date') {
-                        date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                        date = moment(value);
                         $scope.uiSrv.activeFilters[field] = {
                             value: {
                                 from: date.hour(0).minutes(0).seconds(0).toDate(),
@@ -112,7 +112,7 @@
                             }]
                         };
                     } else if (filterDef.type === 'date') {
-                        date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                        date = moment(value);
                         $scope.uiSrv.activeFilters[field] = {
                             value: {
                                 from: date.hour(0).minutes(0).seconds(0).toDate(),
@@ -290,7 +290,7 @@
             // actions on artifacts
 
             $scope.addArtifact = function () {
-                $modal.open({
+                $uibModal.open({
                     animation: 'true',
                     templateUrl: 'views/partials/observables/observable.creation.html',
                     controller: 'ObservableCreationCtrl',

@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AboutCtrl',
-        function($rootScope, $scope, $modalInstance, VersionSrv, AlertSrv) {
+        function($rootScope, $scope, $uibModalInstance, VersionSrv, AlertSrv) {
             VersionSrv.get().then(function(response) {
                 $scope.version = response.versions;
             }, function(data, status) {
@@ -13,7 +13,7 @@
             });
 
             $scope.close = function() {
-                $modalInstance.close();
+                $uibModalInstance.close();
             };
         }
     );

@@ -76,7 +76,7 @@
                 self.isPolling = true;
 
                 // Poll stream changes
-                $http.get('/api/stream/' + self.streamId).success(function(data, status) {
+                $http.get('./api/stream/' + self.streamId).success(function(data, status) {
                     // Flag polling end
                     self.isPolling = false;
 
@@ -118,7 +118,7 @@
                     return;
                 }
 
-                $http.post('/api/stream').success(function(streamId) {
+                $http.post('./api/stream').success(function(streamId) {
                     self.streamId = streamId;
                     self.poll(self.streamId);
                 }).error(function(data, status) {

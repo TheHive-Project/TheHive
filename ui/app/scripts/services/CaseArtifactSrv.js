@@ -8,12 +8,12 @@
             var factory = {
                 api: function() {
                     if(api === null) {
-                        return FileResource('/api/case/:caseId/artifact/:artifactId', {}, {
+                        return FileResource('./api/case/:caseId/artifact/:artifactId', {}, {
                             update: {
                                 method: 'PATCH'
                             },
                             similar: {
-                                url: '/api/case/artifact/:artifactId/similar',
+                                url: './api/case/artifact/:artifactId/similar',
                                 isArray: true
                             }
                         });

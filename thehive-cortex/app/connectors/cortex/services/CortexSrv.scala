@@ -34,11 +34,13 @@ object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration): Option[CortexClient] = {
     try {
       val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
-      val key = configuration.getString("key").getOrElse(sys.error("key is missing"))
+      val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
       Some(new CortexClient(name, url, key))
     }
     catch {
-      case NonFatal(_) ⇒ None
+      case NonFatal(e) ⇒
+        Logger.error("Error while loading cortex configuration", e)
+        None
     }
   }
 

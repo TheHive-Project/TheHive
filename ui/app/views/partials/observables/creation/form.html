@@ -2,10 +2,10 @@
     <label class="col-md-3 control-label">Data Type <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
         <input type="hidden" name="dataType" ng-model="params.dataType" required>
-        <div class="btn-group" dropdown>
-            <button type="button" class="btn dropdown-toggle" dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
+        <div class="btn-group" uib-dropdown>
+            <button type="button" class="btn" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
             </button>
-            <ul class="dropdown-menu" role="menu">
+            <ul class="dropdown-menu" uib-dropdown-menu>
                 <li ng-repeat="type in types">
                     <a ng-click="selectDataType(type)">{{type}}</a>
                 </li>

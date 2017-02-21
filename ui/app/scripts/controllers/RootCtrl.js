@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $modal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
+    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
         'use strict';
 
         $scope.querystring = '';
@@ -93,7 +93,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.createNewCase = function(template) {
-            $modal.open({
+            $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',
                 controller: 'CaseCreationCtrl',
                 size: 'lg',
@@ -104,7 +104,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.aboutTheHive = function() {
-            $modal.open({
+            $uibModal.open({
                 templateUrl: 'views/partials/about.html',
                 controller: 'AboutCtrl',
                 size: ''

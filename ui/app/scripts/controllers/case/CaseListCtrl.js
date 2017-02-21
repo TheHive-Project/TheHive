@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, CaseResolutionStatus) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus) {
         var self = this;
 
         this.showFlow = true;
@@ -89,7 +89,7 @@
                         });
                     }
                 } else if (filterDef.type === 'date') {
-                    date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                    date = moment(value);
                     this.uiSrv.activeFilters[field] = {
                         value: {
                             from: date.hour(0).minutes(0).seconds(0).toDate(),
@@ -107,7 +107,7 @@
                         }]
                     };
                 } else if (filterDef.type === 'date') {
-                    date = moment(value, ['YYYYMMDDTHHmmZZ', 'DD-MM-YYYY HH:mm']);
+                    date = moment(value);
                     this.uiSrv.activeFilters[field] = {
                         value: {
                             from: date.hour(0).minutes(0).seconds(0).toDate(),
@@ -135,6 +135,44 @@
             return TagSrv.fromCases(query);
         };
 
+        this.getUsers = function(query) {
+            return UserSrv.list({
+                _and: [
+                    {
+                        status: 'Ok'
+                    }
+                ]
+            }).then(function(data) {
+                return _.map(data, function(user) {
+                    return {
+                        label: user.name,
+                        text: user.id
+                    };
+                });
+            }).then(function(users) {
+                var filtered = _.filter(users, function(user) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(user.label);
+                });
+
+                return filtered;
+            });
+        };
+
+        this.filterMyCases = function() {
+            this.uiSrv.clearFilters()
+                .then(function(){
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.uiSrv.activeFilters.owner = {
+                        value: [{
+                            text: currentUser.id,
+                            label: currentUser.name
+                        }]
+                    };
+                    self.filter();
+                });
+        };
+
         this.filterByStatus = function(status) {
             this.uiSrv.clearFilters()
                 .then(function(){
@@ -146,6 +184,11 @@
             this.list.sort = sort;
             this.list.update();
             this.uiSrv.setSort(sort);
+        };
+
+        this.live = function() {
+            $window.open($state.href('live'), 'TheHiveLive',
+                'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');
         };
 
     }

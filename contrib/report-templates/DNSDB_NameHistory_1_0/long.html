@@ -1,0 +1,42 @@
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>
+
+<div class="panel panel-info" ng-if="success" ng-init="recordsLimit=20">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+        <a ng-show="::content.records.length > 20" class="pull-right" href ng-click="recordsLimit=undefined">View All ({{::content.records.length}})</a>
+    </div>
+    <div class="panel-body">
+        <p>
+            DNSDB Name History Report<em>(Rdata Name)</em>
+        </p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th width="50">#</th>
+                    <th>count</th>
+                    <th>rdata</th>
+                    <th>rrname</th>
+                    <th>rrtype</th>
+                    <th width="120">time first</th>
+                    <th width="120">time last</th>
+                </tr>
+            </thead>
+            <tbody ng-repeat="row in content.records | limitTo:recordsLimit">
+                <td>{{$index + 1}}</td>
+                <td>{{row.count}}</td>
+                <td class="wrap">{{row.rdata}}</td>
+                <td class="wrap">{{row.rrname}}</td>
+                <td>{{row.rrtype}}</td>
+                <td>{{row.time_first | shortDate}}</td>
+                <td>{{row.time_last | shortDate}}</td>
+            </tbody>
+        </table>
+    </div>
+</div>

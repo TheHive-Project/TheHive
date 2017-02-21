@@ -7,7 +7,8 @@ import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.math.BigDecimal.{ int2bigDecimal, long2bigDecimal }
 
-import play.api.libs.json.{ JsArray, JsNumber, JsObject }
+import play.api.Logger
+import play.api.libs.json.{ JsArray, JsBoolean, JsNumber, JsObject }
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
@@ -17,9 +18,7 @@ import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeO
 import org.elastic4play.services.{ FindSrv, SequenceSrv }
 
 import JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
-import services.AuditedModel
-import services.CaseSrv
-import play.api.Logger
+import services.{ AuditedModel, CaseSrv }
 
 object CaseStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -46,7 +45,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val endDate = optionalAttribute("endDate", F.dateFmt, "Resolution date")
   val tags = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag = attribute("flag", F.booleanFmt, "Flag of the case", false)
-  val tlp = attribute("tlp", F.numberFmt, "TLP level", -1L)
+  val tlp = attribute("tlp", F.numberFmt, "TLP level", 2L)
   val status = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
   val metrics = optionalAttribute("metrics", F.metricsFmt, "List of metrics")
   val resolutionStatus = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
@@ -78,7 +77,9 @@ class CaseModel @Inject() (
   override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
-        updateAttrs + ("endDate" → Json.toJson(new Date))
+        updateAttrs +
+          ("endDate" → Json.toJson(new Date)) +
+          ("flag" → JsBoolean(false))
       case Some(CaseStatus.Open) ⇒
         updateAttrs + ("endDate" → JsArray(Nil))
       case _ ⇒

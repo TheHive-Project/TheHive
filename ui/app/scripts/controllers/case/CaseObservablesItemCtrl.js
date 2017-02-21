@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv) {
+        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -20,6 +20,7 @@
             $scope.artifact = {};
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
+            $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -45,7 +46,10 @@
                 });
 
                 // Select tab
-                CaseTabsSrv.activateTab(observableName);
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(observableName);
+                }, 0);
+
 
                 // Prepare the scope data
                 $scope.initScope(observable);
@@ -135,7 +139,7 @@
 
                 return CaseArtifactSrv.api().update({
                     artifactId: $scope.artifact.id
-                }, field, function (response) {                    
+                }, field, function (response) {
                     $scope.artifact = response.toJSON();
                 }, function (response) {
                     AlertSrv.error('artifactDetails', response.data, response.status);

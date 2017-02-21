@@ -6,7 +6,7 @@ angular.module('theHiveDirectives', []);
 angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
-        'ngResource', 'ui.codemirror', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
+        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
         'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer'
     ])
     .config(function($resourceProvider) {
@@ -212,7 +212,12 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
             .state('app.case.observables-item', {
                 url: '/observables/{itemId}',
                 templateUrl: 'views/partials/case/case.observables.item.html',
-                controller: 'CaseObservablesItemCtrl'
+                controller: 'CaseObservablesItemCtrl',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
             })
             .state('app.misp-list', {
                 url: 'misp/list',
@@ -226,7 +231,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         $httpProvider.interceptors.push(function($rootScope, $q) {
             var isApiCall = function(url) {
-                return url && url.startsWith('/api') && !url.startsWith('/api/stream');
+                return url && url.startsWith('./api') && !url.startsWith('./api/stream');
             };
 
             return {
@@ -256,7 +261,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         localStorageServiceProvider
             .setPrefix('th')
-            .setStorageType('sessionStorage')
+            .setStorageType('localStorage')
             .setNotify(false, false);
     })
     .config(function(NotificationProvider) {
