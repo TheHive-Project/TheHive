@@ -26,7 +26,7 @@
                             <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]"></i>
                         </span>
 
-                        <a href ng-click="showReport(job)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
+                        <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
                     </li>
                 </ul>
             </td>

@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, AlertSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -101,14 +101,21 @@
                 });
             };
 
-            $scope.showReport = function (job) {
-                $scope.report = {
-                    template: job.analyzerId,
-                    content: job.report,
-                    status: job.status,
-                    startDate: job.startDate,
-                    endDate: job.endDate
-                };
+            $scope.showReport = function (jobId) {
+                $scope.report = {};
+
+                CortexSrv.getJob(jobId).then(function(response) {
+                    var job = response.data;
+                    $scope.report = {
+                        template: job.analyzerId,
+                        content: job.report,
+                        status: job.status,
+                        startDate: job.startDate,
+                        endDate: job.endDate
+                    };
+                }, function(err) {
+                    AlertSrv.log('An expected error occured while fetching the job report');
+                });
             };
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
