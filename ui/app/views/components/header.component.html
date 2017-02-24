@@ -1,5 +1,4 @@
-<!--
-<nav class="navbar navbar-inverse navbar-fixed-top main-navbar" ng-if="!hideStatusBar" ng-show="currentUser.id" role="navigation">
+<nav class="navbar navbar-static-top main-navbar bg-navy" ng-if="!hideStatusBar" ng-show="currentUser.id">
     <div class="container-fluid">
         <div class="navbar-header">
             <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#th-navbar-collapse" data-toggle="collapse" type="button">
@@ -45,7 +44,7 @@
                 <li ng-show="mispEnabled === true" ui-sref-active="active">
                     <a href ui-sref="app.misp-list">
                         MISP
-                        <span class="badge alert-danger">{{(mispEvents.New.count || 0) + (mispEvents.Update.count || 0)}}</span>
+                        <span class="badge alert-danger">{{mispEvents.count}}</span>
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>
@@ -61,6 +60,7 @@
                         <i class="fa fa-circle-o-notch fa-spin"></i>
                     </a>
                 </li>
+
                 <li>
                     <form ng-submit="search(querystring)" style="margin-top : 10px">
                         <div class="input-group" style="width: 220px">
@@ -158,7 +158,6 @@
                 </li>
             </ul>
         </div>
+
     </div>
 </nav>
--->
-<app-container class="wrapper"></app-container>

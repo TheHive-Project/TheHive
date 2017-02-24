@@ -1,0 +1,19 @@
+<header class="main-header"></header>
+<!--<main-sidebar class="main-sidebar"></main-sidebar>-->
+<div class="content-wrapper" fixed-height>
+	<div class="container-fluid container-main">
+		<div ng-if="currentUser.id" ui-view></div>
+	</div>
+</div>
+<footer class="main-footer">
+	<div class="container-fluid">
+		<div class="pull-right hidden-xs">
+			<strong>Version</strong>: {{appConfig.versions.TheHive}}
+		</div>
+		<strong>Copyright &copy; 2016-2017 <a href="http://www.thehive-project.org" target="_blank">TheHive Project</a></strong> All rights reserved.
+	</div>
+</footer>
+<!--
+<control-sidebar class="control-sidebar control-sidebar-dark"></control-sidebar>
+<div class="control-sidebar-bg"></div>
+-->

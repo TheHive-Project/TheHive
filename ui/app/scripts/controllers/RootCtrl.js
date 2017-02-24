@@ -2,9 +2,10 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
+    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv, appConfig) {
         'use strict';
 
+        $scope.appConfig = appConfig;
         $scope.querystring = '';
         $scope.view = {
             data: 'currentcases'

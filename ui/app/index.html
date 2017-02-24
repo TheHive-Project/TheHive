@@ -31,6 +31,9 @@
     <!-- endbuild -->
 
     <!-- build:css(.tmp) styles/app.css -->
+    <link rel="stylesheet" href="styles/vendors/AdminLTE.css">
+    <link rel="stylesheet" href="styles/vendors/AdminLTE-skin-blue.css">
+
     <link rel="stylesheet" href="styles/main.css"/>
     <link rel="stylesheet" href="styles/case.css"/>
     <link rel="stylesheet" href="styles/flow.css"/>
@@ -39,10 +42,15 @@
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
     <!-- endbuild -->
+
+    <style>
+		app-container { display: block }
+	</style>
+
   </head>
-  <body ng-cloak>
+  <body ng-cloak class="hold-transition skin-blue layout-top-nav">
     <page-loader></page-loader>
-    <div ui-view></div>
+    <div ui-view></div>    
 
     <!-- build:js(.) scripts/vendor.js -->
     <!-- bower:js -->
@@ -102,6 +110,10 @@
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
     <!-- injector:js -->
     <script src="scripts/app.js"></script>
+    <script src="scripts/components/app-container.component.js"></script>
+    <script src="scripts/components/control-sidebar.component.js"></script>
+    <script src="scripts/components/header.component.js"></script>
+    <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/controllers/AboutCtrl.js"></script>
     <script src="scripts/controllers/AuthenticationCtrl.js"></script>
     <script src="scripts/controllers/LiveCtrl.js"></script>
@@ -149,6 +161,7 @@
     <script src="scripts/directives/entityLink.js"></script>
     <script src="scripts/directives/fileChooser.js"></script>
     <script src="scripts/directives/filter-box.js"></script>
+    <script src="scripts/directives/fixed-height.js"></script>
     <script src="scripts/directives/flow/flow-item.js"></script>
     <script src="scripts/directives/flow/flow.js"></script>
     <script src="scripts/directives/logEntry.js"></script>
@@ -214,6 +227,7 @@
     <script src="scripts/services/UserSrv.js"></script>
     <script src="scripts/services/UtilsSrv.js"></script>
     <script src="scripts/services/VersionSrv.js"></script>
+    <script src="scripts/thirdparty/theme.js"></script>
     <script src="scripts/utils/highlight.min.js"></script>
     <script src="scripts/utils/saveSvgAsPng.js"></script>
     <!-- endinjector -->

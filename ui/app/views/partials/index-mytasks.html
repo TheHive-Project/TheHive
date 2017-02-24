@@ -1,21 +1,23 @@
-
-<table class="table table-hover">
+<table class="table table-striped table-hover valigned">
 	<thead>
 		<tr>
 			<th>Task</th>
-			<th style="width: 200px">Date</th>
+			<th width="250px;">Date</th>
 		</tr>
 	</thead>
 
 	<tbody>
-		<tr ng-class="{'True':'info'}[value.flag]" ng-repeat="value in list.values" ng-click="openEntity(value)">
-			<td style="width:80%">
-				<div class="col-md-12">
-					<span ng-if="value.flag === 'True'"><i class="text-primary glyphicon glyphicon-flag"></i></span>
+		<tr class="pointer task-row"
+			ng-repeat="value in list.values"
+			ng-class="{'warning': (value.flag == true)}"
+			ng-click="openEntity(value)">
+			<td>
+				<div>
+					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
 					<span ng-bind="value.title"></span>
 				</div>
-				<div class="col-md-12">
-				<small><entity-link value="value.case"></entity-link></small>
+				<div>
+					<small><entity-link value="value.case"></entity-link></small>
 				</div>
 			</td>
 			<td>

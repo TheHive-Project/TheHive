@@ -4,7 +4,7 @@
 
 <div class="row">
     <div class="col-md-9">
-        <uib-tabset type="tabs" active="tabSrv.activeIndex">
+        <uib-tabset type="tabs" active="tabSrv.activeIndex" class="nav-tabs-custom">
             <uib-tab ng-click="openTab(name)" ng-init="tab = tabs[name];" ng-repeat="name in notSorted(tabs)">
                 <uib-tab-heading ng-switch on="name">
                     <span ng-switch-when="details">
@@ -40,10 +40,9 @@
                         </a>
                     </span>
                 </uib-tab-heading>
+                <div ui-view></div>
             </uib-tab>
         </uib-tabset>
-
-        <div ui-view></div>
     </div>
 
     <div class="col-md-3">

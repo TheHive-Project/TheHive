@@ -1,8 +1,8 @@
 a, body {
-    height: 99%;
+    /*height: 99%;*/
     overflow: hidden;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
+    /*font-family: 'Roboto', sans-serif;*/
+    /*font-weight: 300;*/
 }
 a.noline {
     text-decoration: none !important;
@@ -445,4 +445,8 @@ table tr.tr-warning {
 }
 table tr.tr-warning>td {
     background-color: #fcf8e3;
+}
+
+.box.box-navy {
+    border-top-color: #001f3f;
 }
