@@ -2,7 +2,7 @@
     'use strict';
     angular.module('theHiveServices')
         .factory('PSearchSrv', function(SearchSrv, StreamSrv) {
-            function update(objectType, control) {
+            function update(objectType, control, updates) {
                 var range = '';
                 if (control.loadAll) {
                     range = 'all';
@@ -38,7 +38,7 @@
                             control.values.push(d);
                         });
                         if (angular.isFunction(control.onUpdate)) {
-                            control.onUpdate();
+                            control.onUpdate(updates);
                         }
                     }
                     control.total = total;
@@ -93,8 +93,8 @@
                 }
 
                 if (control.skipStream !== true) {
-                    StreamSrv.listen(root, control.streamObjectType || objectType, function() {
-                        update(objectType, control);
+                    StreamSrv.listen(root, control.streamObjectType || objectType, function(updates) {
+                        update(objectType, control, updates);
                     });
                 }
 

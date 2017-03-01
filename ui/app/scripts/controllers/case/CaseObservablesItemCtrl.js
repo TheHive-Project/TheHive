@@ -75,7 +75,7 @@
 
             };
 
-            $scope.onJobsChange = function () {
+            $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
                 angular.forEach($scope.analyzers, function (analyzer, analyzerId) {
@@ -99,6 +99,26 @@
                             */
                     }
                 });
+
+                // Check it a job completed successfully and update the observableId
+                if(updates && updates.length > 0) {
+
+                    var statuses = _.pluck(_.map(updates, function(item) {
+                        return item.base.details;
+                    }), 'status');
+
+                    console.log(statuses);
+                    if(statuses.indexOf('Success') > -1) {
+                        CaseArtifactSrv.api().get({
+                            'artifactId': observableId
+                        }, function (observable) {
+                            $scope.artifact = observable;
+                        }, function (response) {
+                            AlertSrv.error('artifactDetails', response.data, response.status);
+                            CaseTabsSrv.activateTab('observables');
+                        });
+                    }
+                }
             };
 
             $scope.showReport = function (jobId) {
@@ -113,7 +133,7 @@
                         startDate: job.startDate,
                         endDate: job.endDate
                     };
-                }, function(err) {
+                }, function(/*err*/) {
                     AlertSrv.log('An expected error occured while fetching the job report');
                 });
             };
