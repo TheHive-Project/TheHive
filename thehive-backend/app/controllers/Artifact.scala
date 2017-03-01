@@ -95,7 +95,7 @@ class ArtifactCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (artifacts, total) = artifactSrv.find(query, range, sort)
-    val artifactWithCase = auxSrv(artifacts, nparent, withStats, true)
+    val artifactWithCase = auxSrv(artifacts, nparent, withStats, false)
     renderer.toOutput(OK, artifactWithCase, total)
   }
 
