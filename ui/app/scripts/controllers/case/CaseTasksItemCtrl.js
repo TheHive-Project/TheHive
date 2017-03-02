@@ -30,6 +30,7 @@
             $scope.initScope = function () {
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
+                    scope: $scope,
                     'filter': {
                         '_and': [{
                             '_parent': {

@@ -6,8 +6,9 @@
             var baseUrl = './api/connector/misp';
 
             var factory = {
-                list: function(callback) {
+                list: function(scope, callback) {
                     return PSearchSrv(undefined, 'connector/misp', {
+                        scope: scope,
                         sort: '-publishDate',
                         loadAll: false,
                         pageSize: 10,
@@ -44,7 +45,7 @@
                     $rootScope.$broadcast('misp:status-updated', false);
                 },
 
-                stats: function() {
+                stats: function(scope) {
                     var field = 'eventStatus',
                         mispStatQuery = {
                             _not: {
@@ -65,8 +66,14 @@
                         };
 
 
-                    StreamSrv.listen('any', 'misp', function() {
-                        StatSrv.get(statConfig);
+
+                    StreamSrv.addListener({
+                        rootId: 'any',
+                        objectType: 'misp',
+                        scope: scope,
+                        callback: function() {
+                            StatSrv.get(statConfig);
+                        }
                     });
 
                     return StatSrv.get(statConfig);

@@ -18,6 +18,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             $scope.templates = TemplateSrv.query();
 
             $scope.myCurrentTasks = StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {
                     '_and': [{
@@ -32,6 +33,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
 
             $scope.waitingTasks = StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {
                     'status': 'Waiting'
@@ -47,7 +49,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
 
             // Get MISP counts
-            $scope.mispEvents = MispSrv.stats();
+            $scope.mispEvents = MispSrv.stats($scope);
         }, function(data, status) {
             AlertSrv.error('RootCtrl', data, status);
         });
@@ -64,7 +66,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         });
 
         $scope.$on('misp:event-imported', function() {
-            $scope.mispEvents = MispSrv.stats();
+            $scope.mispEvents = MispSrv.stats($scope);
         });
 
         $scope.$on('misp:status-updated', function(event, enabled) {

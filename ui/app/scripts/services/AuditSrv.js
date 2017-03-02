@@ -2,7 +2,7 @@
     'use strict';
     angular.module('theHiveServices')
         .factory('AuditSrv', function($http, StreamSrv, AlertSrv) {
-            return function(rootId, max) {
+            return function(rootId, max, scope) {
                 var ret = [];
                 if (!isFinite(max)) {
                     max = 10;
@@ -22,23 +22,31 @@
                             return m.base.requestId === message.base.requestId;
                         };
                     };
-                    StreamSrv.listen(rootId, 'any', function(messages) {
-                        for (var i = messages.length - 1, messageAdded = 0; i >= 0 && messageAdded < max; i--) {
-                            var message = messages[i];
-                            var alreadyInFlow = _.find(ret, fnSameRequestId(message)) !== undefined;
-                            if (!alreadyInFlow && message.base.objectType !== 'user') {
-                                var index = messageAdded;
-                                ret.splice(index, 0, message);
-                                if (ret.length > max) {
-                                    ret.pop();
-                                }
-                                messageAdded += 1;
-                            } else if(alreadyInFlow && message.base.objectType === 'case_artifact_job') {
-                                ret[messageAdded] = message;
-                            }
 
+                    var eventConfig = {
+                        rootId: rootId,
+                        objectType: 'any',
+                        scope: scope,
+                        callback: function(messages) {
+                            for (var i = messages.length - 1, messageAdded = 0; i >= 0 && messageAdded < max; i--) {
+                                var message = messages[i];
+                                var alreadyInFlow = _.find(ret, fnSameRequestId(message)) !== undefined;
+                                if (!alreadyInFlow && message.base.objectType !== 'user') {
+                                    var index = messageAdded;
+                                    ret.splice(index, 0, message);
+                                    if (ret.length > max) {
+                                        ret.pop();
+                                    }
+                                    messageAdded += 1;
+                                } else if(alreadyInFlow && message.base.objectType === 'case_artifact_job') {
+                                    ret[messageAdded] = message;
+                                }
+
+                            }
                         }
-                    });
+                    };
+
+                    StreamSrv.addListener(eventConfig);
                 }).error(function(data, status) {
                     AlertSrv.error('AuditSrv', data, status);
                 });

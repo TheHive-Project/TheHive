@@ -58,6 +58,7 @@
             });
 
             $scope.tasks = StreamStatSrv({
+                scope: $scope,
                 rootId: caseId,
                 query: {
                     '_and': [{
@@ -79,6 +80,7 @@
             });
 
             $scope.artifactStats = StreamStatSrv({
+                scope: $scope,
                 rootId: caseId,
                 query: {
                     '_and': [{

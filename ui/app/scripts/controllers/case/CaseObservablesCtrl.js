@@ -17,7 +17,8 @@
             $scope.selection = {};
 
             $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
-                'baseFilter': {
+                scope: $scope,
+                baseFilter: {
                     '_and': [{
                         '_parent': {
                             "_type": "case",
@@ -29,16 +30,16 @@
                         'status': 'Ok'
                     }]
                 },
-                'filter': $scope.searchForm.searchQuery !== '' ? {
+                filter: $scope.searchForm.searchQuery !== '' ? {
                     _string: $scope.searchForm.searchQuery
                 } : '',
-                'loadAll': true,
-                'sort': '-startDate',
-                'pageSize': $scope.uiSrv.context.pageSize,
-                'onUpdate': function () {
+                loadAll: true,
+                sort: '-startDate',
+                pageSize: $scope.uiSrv.context.pageSize,
+                onUpdate: function () {
                     $scope.updateSelection();
                 },
-                'nstats': true
+                nstats: true
             });
 
             $scope.$watchCollection('artifacts.pageSize', function (newValue) {

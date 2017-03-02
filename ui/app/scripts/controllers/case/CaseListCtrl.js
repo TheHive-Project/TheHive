@@ -18,6 +18,7 @@
         };
 
         this.list = PSearchSrv(undefined, 'case', {
+            scope: $scope,
             filter: self.searchForm.searchQuery !== '' ? {
                 _string: self.searchForm.searchQuery
             } : '',
@@ -28,6 +29,7 @@
         });
 
         this.caseStats = StreamStatSrv({
+            scope: $scope,
             rootId: 'any',
             query: {},
             result: {},

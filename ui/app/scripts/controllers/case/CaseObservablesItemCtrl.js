@@ -70,7 +70,7 @@
                         $scope.analyzers = [];
                     })
                     .finally(function () {
-                        $scope.jobs = CortexSrv.list($scope.caseId, observableId, $scope.onJobsChange);
+                        $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
             };

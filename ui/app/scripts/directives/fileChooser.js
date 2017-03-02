@@ -37,7 +37,6 @@
                     this.removeFile(file);
                 });
                 if (angular.isDefined(scope.control)) {
-                    console.log('Attach removeAllFiles function in control object');
                     scope.control.removeAllFiles = function() {
                         dropzone.removeAllFiles();
                     };

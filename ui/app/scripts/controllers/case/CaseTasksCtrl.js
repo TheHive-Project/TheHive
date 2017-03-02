@@ -17,7 +17,8 @@
         };
 
         $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
-            'baseFilter': {
+            scope: $scope,
+            baseFilter: {
                 '_and': [{
                     '_parent': {
                         '_type': 'case',
@@ -31,7 +32,7 @@
                     }
                 }]
             },
-            'sort': ['-flag', '+startDate', '+title']
+            sort: ['-flag', '+startDate', '+title']
         });
 
         $scope.showTask = function(task) {

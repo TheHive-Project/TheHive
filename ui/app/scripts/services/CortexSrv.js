@@ -6,8 +6,9 @@
             var baseUrl = './api/connector/cortex';
 
             var factory = {
-                list: function (caseId, observableId, callback) {
+                list: function (scope, caseId, observableId, callback) {
                     return PSearchSrv(undefined, 'connector/cortex/job', {
+                        scope: scope,
                         sort: '-startDate',
                         loadAll: false,
                         pageSize: 200,

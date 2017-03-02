@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispListCtrl', function($q, $state, $uibModal, MispSrv, AlertSrv) {
+        .controller('MispListCtrl', function($scope, $q, $state, $uibModal, MispSrv, AlertSrv) {
             var self = this;
 
             self.list = [];
@@ -120,7 +120,7 @@
             };
 
             self.load = function() {
-                self.list = MispSrv.list(self.resetSelection);
+                self.list = MispSrv.list($scope, self.resetSelection);
             };
 
             self.cancel = function() {

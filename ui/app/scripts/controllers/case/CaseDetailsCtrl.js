@@ -13,7 +13,8 @@
             };
 
             $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
-                'filter': {
+                scope: $scope,
+                filter: {
                     '_and': [{
                         '_not': {
                             'status': 'Deleted'
@@ -34,8 +35,8 @@
                         }
                     }]
                 },
-                'pageSize': 100,
-                'nparent': 1
+                pageSize: 100,
+                nparent: 1
             });
 
             $scope.hasNoMetrics = function(caze) {

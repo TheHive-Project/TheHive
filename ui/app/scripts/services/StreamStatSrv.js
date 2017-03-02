@@ -13,8 +13,13 @@
              * <li>error {Function}</li>
              */
             return function(config) {
-                StreamSrv.listen(config.rootId, config.objectType, function() {
-                    StatSrv.get(config);
+                StreamSrv.addListener({
+                    rootId: config.rootId,
+                    objectType: config.objectType,
+                    scope: config.scope,
+                    callback:function() {
+                        StatSrv.get(config);
+                    }
                 });
 
                 return StatSrv.get(config);
