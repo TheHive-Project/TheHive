@@ -1,11 +1,41 @@
 # Change Log
 
+## [2.10.1](https://github.com/CERT-BDF/TheHive/tree/2.10.1)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.0...2.10.1)
+
+**Implemented enhancements:**
+
+- Remove duplicate stream callbacks registration [\#138](https://github.com/CERT-BDF/TheHive/issues/138)
+- Typo in quick filters [\#134](https://github.com/CERT-BDF/TheHive/issues/134)
+- Display a warning when trying to merge an already merged case [\#129](https://github.com/CERT-BDF/TheHive/issues/129)
+- Restyle avatar's upload button [\#126](https://github.com/CERT-BDF/TheHive/issues/126)
+- Feature Request: Ansible build scripts [\#124](https://github.com/CERT-BDF/TheHive/issues/124)
+- Add pagination component at the top of the task log [\#116](https://github.com/CERT-BDF/TheHive/issues/116)
+- Disable buttons in MISP event's preview dialog [\#115](https://github.com/CERT-BDF/TheHive/issues/115)
+- Make The Hive working on any URL path and not only / [\#114](https://github.com/CERT-BDF/TheHive/issues/114)
+- Misleading MISP Event Date and Time [\#101](https://github.com/CERT-BDF/TheHive/issues/101)
+- Upgrade to the last version of UI-Bootstrap UI library [\#79](https://github.com/CERT-BDF/TheHive/issues/79)
+
+**Fixed bugs:**
+
+- 401 HTTP responses don't trigger redirection to login page [\#140](https://github.com/CERT-BDF/TheHive/issues/140)
+- Fix a JS issue related to inactivity dialog [\#139](https://github.com/CERT-BDF/TheHive/issues/139)
+- Flow is not shown [\#127](https://github.com/CERT-BDF/TheHive/issues/127)
+- Case merge does not close tasks in merged cases [\#118](https://github.com/CERT-BDF/TheHive/issues/118)
+- Web UI doesn't refresh once a report template is deleted [\#113](https://github.com/CERT-BDF/TheHive/issues/113)
+- Open log in new windows [\#108](https://github.com/CERT-BDF/TheHive/issues/108)
+- Cannot add an observable which datatype has been added by an admin [\#106](https://github.com/CERT-BDF/TheHive/issues/106)
+- Observables password hint does not reflect backend change [\#83](https://github.com/CERT-BDF/TheHive/issues/83)
+
 ## [2.10.0](https://github.com/CERT-BDF/TheHive/tree/2.10.0) (2017-02-01)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.9.2...2.10.0)
 
 **Implemented enhancements:**
 
 - Improve cases listing page [\#76](https://github.com/CERT-BDF/TheHive/issues/76)
+- Feature Request - Add Case Statistics by Severity [\#70](https://github.com/CERT-BDF/TheHive/issues/70)
+- Use avatars in user profiles [\#69](https://github.com/CERT-BDF/TheHive/issues/69)
+- Allow \(un\)set observable as IOC from the observable's page [\#68](https://github.com/CERT-BDF/TheHive/issues/68)
 - When closing a task, close the associated tab as well [\#66](https://github.com/CERT-BDF/TheHive/issues/66)
 - Load the Current Cases View when Closing a Case [\#61](https://github.com/CERT-BDF/TheHive/issues/61)
 - Externalize observable analysis [\#53](https://github.com/CERT-BDF/TheHive/issues/53)
@@ -31,10 +61,6 @@
 
 **Closed issues:**
 
-- Update BuildGuide [\#102](https://github.com/CERT-BDF/TheHive/issues/102)
-- Feature Request - Add Case Statistics by Severity [\#70](https://github.com/CERT-BDF/TheHive/issues/70)
-- Use avatars in user profiles [\#69](https://github.com/CERT-BDF/TheHive/issues/69)
-- Allow \(un\)set observable as IOC from the observable's page [\#68](https://github.com/CERT-BDF/TheHive/issues/68)
 - Database schema update \(v8\) [\#67](https://github.com/CERT-BDF/TheHive/issues/67)
 - Add support for more filetypes to PE\_info analyser [\#54](https://github.com/CERT-BDF/TheHive/issues/54)
 - Create an analyzer to get information about PE file [\#51](https://github.com/CERT-BDF/TheHive/issues/51)
@@ -48,21 +74,25 @@
 ## [2.9.2](https://github.com/CERT-BDF/TheHive/tree/2.9.2) (2017-01-19)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.9.1...2.9.2)
 
+**Implemented enhancements:**
+
+- Feature Request - Add observable statistics [\#71](https://github.com/CERT-BDF/TheHive/issues/71)
+
 **Fixed bugs:**
 
 - docker image: $.post\(...\).success is not a function [\#95](https://github.com/CERT-BDF/TheHive/issues/95)
 
-**Closed issues:**
-
-- Feature Request - Add observable statistics [\#71](https://github.com/CERT-BDF/TheHive/issues/71)
-
 ## [2.9.1](https://github.com/CERT-BDF/TheHive/tree/2.9.1) (2016-11-28)
 **Implemented enhancements:**
 
+- Statistics on a per case template name / prefix basis [\#31](https://github.com/CERT-BDF/TheHive/issues/31)
+- Observable Viewing Page [\#17](https://github.com/CERT-BDF/TheHive/issues/17)
 - Update logo and favicon [\#45](https://github.com/CERT-BDF/TheHive/issues/45)
 - Inconsistent wording between the login and user management pages [\#44](https://github.com/CERT-BDF/TheHive/issues/44)
 - MaxMind Analyzer 'Short Report' has hard-coded language [\#23](https://github.com/CERT-BDF/TheHive/issues/23)
 - Don't update imported case from MISP if it is deleted or merged [\#22](https://github.com/CERT-BDF/TheHive/issues/22)
+- Case merging [\#14](https://github.com/CERT-BDF/TheHive/issues/14)
+- New analyzer to check URL categories [\#24](https://github.com/CERT-BDF/TheHive/pull/24) ([ecapuano](https://github.com/ecapuano))
 
 **Fixed bugs:**
 
@@ -80,17 +110,13 @@
 **Closed issues:**
 
 - Statistics based on Tags [\#37](https://github.com/CERT-BDF/TheHive/issues/37)
-- Statistics on a per case template name / prefix basis [\#31](https://github.com/CERT-BDF/TheHive/issues/31)
-- Observable Viewing Page [\#17](https://github.com/CERT-BDF/TheHive/issues/17)
 - Give us something to work with! [\#2](https://github.com/CERT-BDF/TheHive/issues/2)
-- Case merging [\#14](https://github.com/CERT-BDF/TheHive/issues/14)
 
 **Merged pull requests:**
 
 - Fix "Run from Docker" [\#9](https://github.com/CERT-BDF/TheHive/pull/9) ([2xyo](https://github.com/2xyo))
 - Fixing a Simple Typo [\#6](https://github.com/CERT-BDF/TheHive/pull/6) ([swannysec](https://github.com/swannysec))
 - Fixed broken link to Wiki [\#1](https://github.com/CERT-BDF/TheHive/pull/1) ([Neo23x0](https://github.com/Neo23x0))
-- New analyzer to check URL categories [\#24](https://github.com/CERT-BDF/TheHive/pull/24) ([ecapuano](https://github.com/ecapuano))
 
 
 
