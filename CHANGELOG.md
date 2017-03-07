@@ -5,6 +5,7 @@
 
 **Implemented enhancements:**
 
+- Remove the "Run all analyzers" option from observables list [\#141](https://github.com/CERT-BDF/TheHive/issues/141)
 - Remove duplicate stream callbacks registration [\#138](https://github.com/CERT-BDF/TheHive/issues/138)
 - Typo in quick filters [\#134](https://github.com/CERT-BDF/TheHive/issues/134)
 - Display a warning when trying to merge an already merged case [\#129](https://github.com/CERT-BDF/TheHive/issues/129)
