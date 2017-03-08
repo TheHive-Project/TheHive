@@ -13,7 +13,7 @@
              * users management page
              */
             $scope.userlist = PSearchSrv(undefined, 'user', {
-                //'filter': {}
+                scope: $scope
             });
             $scope.initNewUser = function() {
                 $scope.apiKey = false;

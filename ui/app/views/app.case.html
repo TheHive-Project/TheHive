@@ -4,9 +4,9 @@
 
 <div class="row">
     <div class="col-md-9">
-        <tabset type="tabs">
-            <tab active="tabs[name].active" ng-click="openTab(name)" ng-init="tab = tabs[name]" ng-repeat="name in notSorted(tabs)">
-                <tab-heading ng-switch on="name">
+        <uib-tabset type="tabs" active="tabSrv.activeIndex">
+            <uib-tab ng-click="openTab(name)" ng-init="tab = tabs[name];" ng-repeat="name in notSorted(tabs)">
+                <uib-tab-heading ng-switch on="name">
                     <span ng-switch-when="details">
                         <i class="glyphicon glyphicon-folder-open"></i>&nbsp;&nbsp;
                         {{tab.label}}
@@ -39,9 +39,9 @@
                             <i class="text-muted glyphicon glyphicon-remove-circle" ng-class="textTask" ng-mouseout="textTask='text-muted'" ng-mouseover="textTask='text-danger'"></i>
                         </a>
                     </span>
-                </tab-heading>
-            </tab>
-        </tabset>
+                </uib-tab-heading>
+            </uib-tab>
+        </uib-tabset>
 
         <div ui-view></div>
     </div>

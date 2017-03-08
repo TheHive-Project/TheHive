@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $modal, TemplateSrv, AlertSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
+        function($scope, $uibModal, TemplateSrv, AlertSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
             $scope.task = '';
             $scope.tags = [];
             $scope.templates = [];
@@ -74,7 +74,7 @@
             };
 
             $scope.openTaskDialog = function(task, action) {
-                $modal.open({
+                $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/admin/case-templates.task.html',
                     controller: 'AdminCaseTemplateTasksCtrl',
@@ -106,7 +106,7 @@
             };
 
             $scope.deleteTemplate = function() {
-                $modal.open({
+                $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/admin/case-templates.delete.html',
                     controller: 'AdminCaseTemplateDeleteCtrl',
@@ -152,12 +152,12 @@
             };
 
         })
-        .controller('AdminCaseTemplateTasksCtrl', function($scope, $modalInstance, action, task) {
+        .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task) {
             $scope.task = task || {};
             $scope.action = action;
 
             $scope.cancel = function() {
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
 
             $scope.addTask = function() {
@@ -165,12 +165,12 @@
                     $scope.template.tasks.push(task);
                 }
 
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
         })
-        .controller('AdminCaseTemplateDeleteCtrl', function($scope, $modalInstance, TemplateSrv) {
+        .controller('AdminCaseTemplateDeleteCtrl', function($scope, $uibModalInstance, TemplateSrv) {
             $scope.cancel = function() {
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
 
             $scope.confirm = function() {
@@ -181,7 +181,7 @@
                     
                     $scope.$emit('templates:refresh');
 
-                    $modalInstance.dismiss();
+                    $uibModalInstance.dismiss();
                 });
             };
         });

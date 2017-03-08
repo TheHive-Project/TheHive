@@ -12,54 +12,28 @@
                 $rootScope.title = 'My tasks';
                 $scope.view.data = 'mytasks';
                 $scope.list = PSearchSrv(undefined, 'case_task', {
-                    'baseFilter': {
+                    scope: $scope,
+                    baseFilter: {
                         '_and': [{
                             'status': 'InProgress'
                         }, {
                             'owner': $scope.currentUser.id
                         }]
                     },
-                    'sort': ['-flag', '-startDate'],
-                    'nparent': 1
+                    sort: ['-flag', '-startDate'],
+                    nparent: 1
                 });
 
             } else if ($stateParams.viewId === 'waitingtasks') {
                 $rootScope.title = 'Waiting tasks';
                 $scope.view.data = 'waitingtasks';
                 $scope.list = PSearchSrv(undefined, 'case_task', {
-                    'baseFilter': {
+                    scope: $scope,
+                    baseFilter: {
                         'status': 'Waiting'
                     },
-                    'sort': '-startDate',
-                    'nparent': 1
-                });
-            } else if ($stateParams.viewId === 'closedcases') {
-                $rootScope.title = 'Closed cases';
-                $scope.view.data = 'closedcases';
-                $scope.list = PSearchSrv(undefined, 'case', {
-                    'baseFilter': {
-                        '_and': [{
-                            'status': 'Resolved'
-                        }, {
-                            '_between': {
-                                '_field': 'endDate',
-                                '_from': 'now-14d',
-                                '_to': 'now'
-                            }
-                        }]
-                    },
-                    'sort': '-startDate',
-                    'nstats': true
-                });
-            } else {
-                $rootScope.title = 'Current cases';
-                $scope.view.data = 'currentcases';
-                $scope.list = PSearchSrv(undefined, 'case', {
-                    'baseFilter': {
-                        'status': 'Open'
-                    },
-                    'sort': ['-flag', '-startDate'],
-                    'nstats': true
+                    sort: '-startDate',
+                    nparent: 1
                 });
             }
 

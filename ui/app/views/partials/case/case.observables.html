@@ -3,12 +3,12 @@
 <div class="row">
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group" dropdown is-open="status.isopen">
-                <button class="btn btn-default dropdown-toggle" dropdown-toggle ng-disabled="selection.artifacts.length == 0" type="button">
+            <div class="btn-group" uib-dropdown is-open="status.isopen">
+                <button class="btn btn-default dropdown-toggle" uib-dropdown-toggle ng-disabled="selection.artifacts.length == 0" type="button">
                     {{uiSrv.actions[selection.Action]}}
                     <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu" style="font-size:0.9em">
+                <ul class="dropdown-menu" uib-dropdown-menu style="font-size:0.9em">
                     <li>
                         <a ng-click="selection.Action = 'export';toggleTEList()">Export</a>
                     </li>
@@ -80,7 +80,7 @@
 <div class="filter-panel" ng-include="'views/partials/observables/list/filters.html'" ng-show="uiSrv.context.showFilters"></div>
 
 <!-- collapse for Tags + TLP + Delete -->
-<div class="row" collapse="!selection.isCollapsed">
+<div class="row" uib-collapse="!selection.isCollapsed">
     <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'setIocFlog'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'unsetIocFlog'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-tlp.html'" ng-if="selection.Action === 'changeTlp'"></div>

@@ -212,7 +212,12 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
             .state('app.case.observables-item', {
                 url: '/observables/{itemId}',
                 templateUrl: 'views/partials/case/case.observables.item.html',
-                controller: 'CaseObservablesItemCtrl'
+                controller: 'CaseObservablesItemCtrl',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
             })
             .state('app.misp-list', {
                 url: 'misp/list',
@@ -226,7 +231,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
 
         $httpProvider.interceptors.push(function($rootScope, $q) {
             var isApiCall = function(url) {
-                return url && url.startsWith('/api') && !url.startsWith('/api/stream');
+                return url && url.startsWith('./api') && !url.startsWith('./api/stream');
             };
 
             return {

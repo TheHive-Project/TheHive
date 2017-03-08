@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AfkSrv', function($rootScope, $q, $modal, $http) {
+        .factory('AfkSrv', function($rootScope, $q, $uibModal, $http) {
             var current = null;
 
             return {
@@ -13,7 +13,7 @@
                 prompt: function() {
                     var defer = $q.defer();
 
-                    $http.get('/api/stream/status').then(function(response) {
+                    $http.get('./api/stream/status').then(function(response) {
 
                         if(response.data.warning === true) {
                             if(current !== null) {
@@ -27,7 +27,7 @@
                                     current = null;
                                 };
 
-                                current = $modal.open({
+                                current = $uibModal.open({
                                     scope: scope,
                                     templateUrl: 'views/partials/afk-modal.html',
                                     size: ''

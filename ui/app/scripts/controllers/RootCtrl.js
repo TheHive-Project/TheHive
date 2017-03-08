@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $modal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
+    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
         'use strict';
 
         $scope.querystring = '';
@@ -18,6 +18,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             $scope.templates = TemplateSrv.query();
 
             $scope.myCurrentTasks = StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {
                     '_and': [{
@@ -32,6 +33,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
 
             $scope.waitingTasks = StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {
                     'status': 'Waiting'
@@ -47,7 +49,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
 
             // Get MISP counts
-            $scope.mispEvents = MispSrv.stats();
+            $scope.mispEvents = MispSrv.stats($scope);
         }, function(data, status) {
             AlertSrv.error('RootCtrl', data, status);
         });
@@ -64,7 +66,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         });
 
         $scope.$on('misp:event-imported', function() {
-            $scope.mispEvents = MispSrv.stats();
+            $scope.mispEvents = MispSrv.stats($scope);
         });
 
         $scope.$on('misp:status-updated', function(event, enabled) {
@@ -93,7 +95,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.createNewCase = function(template) {
-            $modal.open({
+            $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',
                 controller: 'CaseCreationCtrl',
                 size: 'lg',
@@ -104,7 +106,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.aboutTheHive = function() {
-            $modal.open({
+            $uibModal.open({
                 templateUrl: 'views/partials/about.html',
                 controller: 'AboutCtrl',
                 size: ''

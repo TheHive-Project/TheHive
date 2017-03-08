@@ -2,7 +2,7 @@
     'use strict';
     angular.module('theHiveServices')
         .factory('PSearchSrv', function(SearchSrv, StreamSrv) {
-            function update(objectType, control) {
+            function update(objectType, control, updates) {
                 var range = '';
                 if (control.loadAll) {
                     range = 'all';
@@ -27,18 +27,12 @@
                 }
                 SearchSrv(function(data, total) {
                     if (control.loadAll) {
-                        control.allValues.length = 0;
-                        angular.forEach(data, function(d) {
-                            control.allValues.push(d);
-                        });
+                        control.allValues = data;
                         changePage(control);
                     } else {
-                        control.values.length = 0;
-                        angular.forEach(data, function(d) {
-                            control.values.push(d);
-                        });
+                        control.values = data;
                         if (angular.isFunction(control.onUpdate)) {
-                            control.onUpdate();
+                            control.onUpdate(updates);
                         }
                     }
                     control.total = total;
@@ -93,9 +87,16 @@
                 }
 
                 if (control.skipStream !== true) {
-                    StreamSrv.listen(root, control.streamObjectType || objectType, function() {
-                        update(objectType, control);
-                    });
+                    var streamCfg = {
+                        scope: control.scope,
+                        rootId: root,
+                        objectType: control.streamObjectType || objectType,
+                        callback: function(updates) {
+                            update(objectType, control, updates);
+                        }
+                    };
+
+                    StreamSrv.addListener(streamCfg);
                 }
 
                 update(objectType, control);

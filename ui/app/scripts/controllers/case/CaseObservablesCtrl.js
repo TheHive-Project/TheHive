@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $modal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -17,7 +17,8 @@
             $scope.selection = {};
 
             $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
-                'baseFilter': {
+                scope: $scope,
+                baseFilter: {
                     '_and': [{
                         '_parent': {
                             "_type": "case",
@@ -29,16 +30,16 @@
                         'status': 'Ok'
                     }]
                 },
-                'filter': $scope.searchForm.searchQuery !== '' ? {
+                filter: $scope.searchForm.searchQuery !== '' ? {
                     _string: $scope.searchForm.searchQuery
                 } : '',
-                'loadAll': true,
-                'sort': '-startDate',
-                'pageSize': $scope.uiSrv.context.pageSize,
-                'onUpdate': function () {
+                loadAll: true,
+                sort: '-startDate',
+                pageSize: $scope.uiSrv.context.pageSize,
+                onUpdate: function () {
                     $scope.updateSelection();
                 },
-                'nstats': true
+                nstats: true
             });
 
             $scope.$watchCollection('artifacts.pageSize', function (newValue) {
@@ -290,7 +291,7 @@
             // actions on artifacts
 
             $scope.addArtifact = function () {
-                $modal.open({
+                $uibModal.open({
                     animation: 'true',
                     templateUrl: 'views/partials/observables/observable.creation.html',
                     controller: 'ObservableCreationCtrl',

@@ -95,7 +95,7 @@ class ArtifactCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (artifacts, total) = artifactSrv.find(query, range, sort)
-    val artifactWithCase = auxSrv(artifacts, nparent, withStats)
+    val artifactWithCase = auxSrv(artifacts, nparent, withStats, false)
     renderer.toOutput(OK, artifactWithCase, total)
   }
 
@@ -106,7 +106,7 @@ class ArtifactCtrl @Inject() (
       val sort = request.body.getStrings("sort").getOrElse(Nil)
 
       val (artifacts, total) = artifactSrv.findSimilar(artifact, range, sort)
-      val artifactWithCase = auxSrv(artifacts, 1, false)
+      val artifactWithCase = auxSrv(artifacts, 1, false, true)
       renderer.toOutput(OK, artifactWithCase, total)
     }
   }

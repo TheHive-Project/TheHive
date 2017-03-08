@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, JobSrv, AlertSrv, VersionSrv) {
+        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, AlertSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -20,6 +20,7 @@
             $scope.artifact = {};
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
+            $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -45,7 +46,10 @@
                 });
 
                 // Select tab
-                CaseTabsSrv.activateTab(observableName);
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(observableName);
+                }, 0);
+
 
                 // Prepare the scope data
                 $scope.initScope(observable);
@@ -66,12 +70,12 @@
                         $scope.analyzers = [];
                     })
                     .finally(function () {
-                        $scope.jobs = CortexSrv.list($scope.caseId, observableId, $scope.onJobsChange);
+                        $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
             };
 
-            $scope.onJobsChange = function () {
+            $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
                 angular.forEach($scope.analyzers, function (analyzer, analyzerId) {
@@ -95,16 +99,43 @@
                             */
                     }
                 });
+
+                // Check it a job completed successfully and update the observableId
+                if(updates && updates.length > 0) {
+
+                    var statuses = _.pluck(_.map(updates, function(item) {
+                        return item.base.details;
+                    }), 'status');
+
+                    console.log(statuses);
+                    if(statuses.indexOf('Success') > -1) {
+                        CaseArtifactSrv.api().get({
+                            'artifactId': observableId
+                        }, function (observable) {
+                            $scope.artifact = observable;
+                        }, function (response) {
+                            AlertSrv.error('artifactDetails', response.data, response.status);
+                            CaseTabsSrv.activateTab('observables');
+                        });
+                    }
+                }
             };
 
-            $scope.showReport = function (job) {
-                $scope.report = {
-                    template: job.analyzerId,
-                    content: job.report,
-                    status: job.status,
-                    startDate: job.startDate,
-                    endDate: job.endDate
-                };
+            $scope.showReport = function (jobId) {
+                $scope.report = {};
+
+                CortexSrv.getJob(jobId).then(function(response) {
+                    var job = response.data;
+                    $scope.report = {
+                        template: job.analyzerId,
+                        content: job.report,
+                        status: job.status,
+                        startDate: job.startDate,
+                        endDate: job.endDate
+                    };
+                }, function(/*err*/) {
+                    AlertSrv.log('An expected error occured while fetching the job report');
+                });
             };
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
@@ -135,7 +166,7 @@
 
                 return CaseArtifactSrv.api().update({
                     artifactId: $scope.artifact.id
-                }, field, function (response) {                    
+                }, field, function (response) {
                     $scope.artifact = response.toJSON();
                 }, function (response) {
                     AlertSrv.error('artifactDetails', response.data, response.status);

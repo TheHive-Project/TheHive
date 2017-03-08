@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispBulkImportCtrl', function($rootScope, $q, $modalInstance, MispSrv, AlertSrv, events) {
+        .controller('MispBulkImportCtrl', function($rootScope, $q, $uibModalInstance, MispSrv, AlertSrv, events) {
             var self = this;
             self.events = events;
             self.disableButtons = false;
@@ -20,7 +20,7 @@
 
                     $rootScope.$broadcast('misp:event-imported');
 
-                    $modalInstance.close(_.pluck(response, 'data'));
+                    $uibModalInstance.close(_.pluck(response, 'data'));
                 }, function(response) {
                     self.disableButtons = false;
                     AlertSrv.error('MispBulkImportCtrl', response.data, response.status);
@@ -28,7 +28,7 @@
             };
 
             self.cancel = function() {
-                $modalInstance.dismiss();
+                $uibModalInstance.dismiss();
             };
         });
 })();

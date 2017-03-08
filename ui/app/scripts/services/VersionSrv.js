@@ -11,7 +11,7 @@
                     if(cache !== null) {
                         deferred.resolve(cache);
                     } else {
-                        $http.get('/api/status').then(function(response) {
+                        $http.get('./api/status').then(function(response) {
                             cache = response.data;
                             deferred.resolve(cache);
                         }, function(rejection) {

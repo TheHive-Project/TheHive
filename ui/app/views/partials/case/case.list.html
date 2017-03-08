@@ -98,7 +98,7 @@
                             </td>
                             <td>
                                 <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
-                                    <span tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
+                                    <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                 </a>
                             </td>
                         </tr>
@@ -116,7 +116,7 @@
         <div class="row mb-s">
             <div class="col-md-7">
                 <span ng-mouseleave="liveOn='text-muted'" ng-mouseenter="liveOn='text-primary'">
-                    <a href ng-click="live(); $vm.showFlow = false" class="text-muted">
+                    <a href ng-click="$vm.live(); $vm.showFlow = false" class="text-muted">
                         <i ng-class="liveOn" class="text-muted glyphicon glyphicon-new-window"></i>
                         Open in new window</a>
                 </span>

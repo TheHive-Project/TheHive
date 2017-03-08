@@ -64,12 +64,12 @@
                 <div class="col-sm-9">
                     <div class="btn-toolbar" role="toolbar">
                         <div class="btn-group">
-                            <label btn-radio="'TruePositive'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.TruePositive}}</label>
-                            <label btn-radio="'FalsePositive'" class="btn btn-default" name="resolutionStatus " ng-model="formData.resolutionStatus">{{CaseResolutionStatus.FalsePositive}}</label>
-                            <label btn-radio="'Indeterminate'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.Indeterminate}}</label>
+                            <label uib-btn-radio="'TruePositive'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.TruePositive}}</label>
+                            <label uib-btn-radio="'FalsePositive'" class="btn btn-default" name="resolutionStatus " ng-model="formData.resolutionStatus">{{CaseResolutionStatus.FalsePositive}}</label>
+                            <label uib-btn-radio="'Indeterminate'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.Indeterminate}}</label>
                         </div>
                         <div class="btn-group" role="group">
-                            <label btn-radio="'Other'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.Other}}</label>
+                            <label uib-btn-radio="'Other'" class="btn btn-default" name="resolutionStatus" ng-model="formData.resolutionStatus">{{CaseResolutionStatus.Other}}</label>
                         </div>
                     </div>
                     <p class="help-block" ng-switch="formData.resolutionStatus">
@@ -96,8 +96,8 @@
                 <div class="col-sm-9">
                     <input type="hidden" name="tempImpactStatus" ng-model="formData.impactStatus" ng-required="formData.resolutionStatus==='TruePositive'" />
                     <div class="btn-group radio-group">
-                        <label btn-radio="'WithImpact'" class="btn btn-default" name="impactStatus" ng-model="formData.impactStatus">Yes</label>
-                        <label btn-radio="'NoImpact'" class="btn btn-default" name="impactStatus" ng-model="formData.impactStatus">No</label>
+                        <label uib-btn-radio="'WithImpact'" class="btn btn-default" name="impactStatus" ng-model="formData.impactStatus">Yes</label>
+                        <label uib-btn-radio="'NoImpact'" class="btn btn-default" name="impactStatus" ng-model="formData.impactStatus">No</label>
                     </div>
                     <p class="help-block" ng-switch="formData.impactStatus" ng-show="formData.impactStatus">
                         <i class="fa fa-question-circle"></i>
@@ -121,7 +121,7 @@
                 </div>
             </div>
             <div class="form-group" ng-repeat="(k,v) in caze.metrics" ng-class="{ 'has-error' : caseCloseForm['metrics.' + k].$invalid && !caseCloseForm['metrics.' + k].$pristine }">
-                <label class="col-sm-3 control-label" tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title}}
+                <label class="col-sm-3 control-label" uib-tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title}}
                     <i class="fa fa-asterisk text-danger"></i>
                 </label>
                 <div class="col-sm-3">

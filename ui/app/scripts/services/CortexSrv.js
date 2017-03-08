@@ -1,13 +1,14 @@
 (function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CortexSrv', function ($q, $http, $rootScope, $modal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
+        .factory('CortexSrv', function ($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
 
-            var baseUrl = '/api/connector/cortex';
+            var baseUrl = './api/connector/cortex';
 
             var factory = {
-                list: function (caseId, observableId, callback) {
+                list: function (scope, caseId, observableId, callback) {
                     return PSearchSrv(undefined, 'connector/cortex/job', {
+                        scope: scope,
                         sort: '-startDate',
                         loadAll: false,
                         pageSize: 200,
@@ -44,7 +45,7 @@
                 },
 
                 promptForInstance: function (servers) {
-                    var modalInstance = $modal.open({
+                    var modalInstance = $uibModal.open({
                         templateUrl: 'views/partials/cortex/choose-instance-dialog.html',
                         controller: 'CortexInstanceDialogCtrl',
                         controllerAs: 'vm',

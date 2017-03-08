@@ -2,7 +2,7 @@
 	<span ng-if="value!==null && value !==''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value">{{value}}</span>
 	<span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
 	<small ng-show="active">
-		<a tooltip-popup-delay='500' tooltip="edit" target="_self" style="cursor: pointer;">
+		<a tooltip-popup-delay='500' uib-tooltip="edit" target="_self" style="cursor: pointer;">
 			<i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
 		</a>
 	</small>

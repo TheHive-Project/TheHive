@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv) {
+    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv, AlertSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -37,7 +37,7 @@
                         }
                     };
 
-                    $http.post('/api/' + options.params.entity + '/_stats', {
+                    $http.post('./api/' + options.params.entity + '/_stats', {
                         "query": options.params.q,
                         "stats": [{
                             "_agg": "time",
@@ -88,6 +88,8 @@
                                 enabled: scope.options.zoom || false
                             }
                         };
+                    }, function(err) {
+                        AlertSrv.error('histoChart', err.data, err.status);
                     });
                 };
 

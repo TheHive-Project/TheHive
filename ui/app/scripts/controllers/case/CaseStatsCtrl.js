@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('CaseStatsCtrl',
-        function($rootScope, $stateParams, $timeout, StatSrv, StreamStatSrv, CasesUISrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv, CasesUISrv) {
             var self = this;
 
             this.uiSrv = CasesUISrv;
@@ -16,6 +16,7 @@
 
             // Get stats by tags
             StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {},
                 objectType: 'case',
@@ -30,6 +31,7 @@
 
             // Get stats by type
             StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {},
                 objectType: 'case',
@@ -42,6 +44,7 @@
 
             // Get stats by ioc
             StreamStatSrv({
+                scope: $scope,
                 rootId: 'any',
                 query: {},
                 objectType: 'case',

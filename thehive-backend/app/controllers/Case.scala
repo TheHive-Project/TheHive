@@ -56,7 +56,7 @@ class CaseCtrl @Inject() (
 
     for {
       caze ← caseSrv.get(id)
-      casesWithStats ← auxSrv.apply(caze, 0, withStats.getOrElse(false))
+      casesWithStats ← auxSrv.apply(caze, 0, withStats.getOrElse(false), false)
     } yield renderer.toOutput(OK, casesWithStats)
   }
 
@@ -96,7 +96,7 @@ class CaseCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (cases, total) = caseSrv.find(query, range, sort)
-    val casesWithStats = auxSrv.apply(cases, nparent, withStats)
+    val casesWithStats = auxSrv.apply(cases, nparent, withStats, false)
     renderer.toOutput(OK, casesWithStats, total)
   }
 

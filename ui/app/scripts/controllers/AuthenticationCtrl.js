@@ -4,10 +4,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $modalStack, AuthenticationSrv, AlertSrv) {
+        .controller('AuthenticationCtrl', function($scope, $state, $uibModalStack, AuthenticationSrv, AlertSrv) {
             $scope.params = {};
 
-            $modalStack.dismissAll();
+            $uibModalStack.dismissAll();
 
             $scope.login = function() {
                 $scope.params.username = angular.lowercase($scope.params.username);

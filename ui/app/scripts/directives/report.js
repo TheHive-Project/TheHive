@@ -8,7 +8,7 @@
                     return;
                 }
 
-                var reportUrl = '/api/connector/cortex/report/template/content/' + scope.name + '/' + scope.reportType;
+                var reportUrl = './api/connector/cortex/report/template/content/' + scope.name + '/' + scope.reportType;
 
                 // find report template
                 $templateRequest(reportUrl, true)

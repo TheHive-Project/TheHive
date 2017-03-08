@@ -4,7 +4,7 @@
     <div class="col-md-11 col-md-offset-1" ng-show="artifact.data != undefined">
         <div class="col-md-12">
             <h4>
-                <span class="text-muted fa " ng-class="{true:'text-primary fa-star'}[artifact.ioc]" tooltip-placement="bottom" tooltip-popup-delay="500" tooltip="is an IOC"></span>
+                <span class="text-muted fa " ng-class="{true:'text-primary fa-star'}[artifact.ioc]" tooltip-placement="bottom" tooltip-popup-delay="500" uib-tooltip="is an IOC"></span>
                 [<span ng-bind="artifact.dataType" style="text-transform: uppercase;"></span>]: <em><span class="wrap">{{artifact.data | fang}}</span></em>
             </h4>
         </div>
@@ -16,23 +16,21 @@
             </h4>
         </div>
         <div class="col-md-3" style="text-align: center">
-            <a href="/api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name}}" target="_blank">
+            <a href="./api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name}}" target="_blank">
                 <span class="glyphicon glyphicon-download"></span><br/>
                 <span class="wrap">{{artifact.attachment.name}}</span>
             </a><br/>
-            <small class="text-danger">Zip are protected with password "malware"</small>
+            <small class="text-danger">Zip are protected with password "{{protectDownloadsWith}}"</small>
         </div>
     </div>
     <!-- Observable analysers short reports -->
     <div class="col-md-11 col-md-offset-1">
-        <report ng-if="jobs[0]"
-            ng-repeat="(analyzerId, jobs) in analyzerJobs"
+        <report ng-repeat="(analyzerId, summary) in artifact.reports"
             artifact="artifact"
-            content="jobs[0].report.summary"
+            content="summary"
             report-type="short"
             name="analyzerId"
-            status="jobs[0].status"
-            success="jobs[0].success"
+            success="true"
             class="short-report"></report>
     </div>
 </div>

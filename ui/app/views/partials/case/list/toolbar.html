@@ -2,32 +2,32 @@
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
 
-            <div class="btn-group" dropdown>
-                <button class="btn btn-primary dropdown-toggle" dropdown-toggle type="button">
+            <div class="btn-group" uib-dropdown>
+                <button class="btn btn-primary dropdown-toggle" uib-dropdown-toggle type="button">
                     <i class="fa fa-filter"></i>
                     Quick Filters
                     <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu">
+                <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
                         <a ng-click="$vm.filterMyCases()">My cases</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.filterByStatus('Open')">Open Cases ({{$vm.caseStats.Open.count}})</a>
+                        <a ng-click="$vm.filterByStatus('Open')">Open cases ({{$vm.caseStats.Open.count}})</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.filterByStatus('Resolved')">Closes Cases ({{$vm.caseStats.Resolved.count}})</a>
+                        <a ng-click="$vm.filterByStatus('Resolved')">Closed cases ({{$vm.caseStats.Resolved.count}})</a>
                     </li>
                 </ul>
             </div>
 
-            <div class="btn-group" dropdown>
-                <button class="btn btn-primary dropdown-toggle" dropdown-toggle type="button">
+            <div class="btn-group" uib-dropdown>
+                <button class="btn btn-primary dropdown-toggle" uib-dropdown-toggle type="button">
                     <i class="fa fa-sort"></i>
                     Sort by
                     <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu">
+                <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
                         <a ng-click="$vm.sortBy(['-flag', '-startDate'])">Newest first</a>
                     </li>

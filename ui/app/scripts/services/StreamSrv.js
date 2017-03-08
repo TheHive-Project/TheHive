@@ -1,7 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('StreamSrv', function($http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, AlertSrv) {
-        var callbacks = { /* id: { objectType: [ cb ] } */ };
+    angular.module('theHiveServices').factory('StreamSrv', function($rootScope, $http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, AlertSrv) {
 
         var self = {
             isPolling: false,
@@ -13,15 +12,14 @@
             },
 
             runCallbacks: function(id, objectType, message) {
-                var cbs = callbacks[id];
-                if (angular.isDefined(cbs)) {
-                    angular.forEach(cbs[objectType], function(cb) {
-                        cb(message);
-                    });
-                }
+                $rootScope.$broadcast('stream:' + id + '-' + objectType, message);
             },
 
             handleStreamResponse: function(data) {
+                if(!data || data.length === 0) {
+                    return;
+                }
+
                 var byRootIds = {};
                 var byObjectTypes = {};
                 var byRootIdsWithObjectTypes = {};
@@ -76,7 +74,7 @@
                 self.isPolling = true;
 
                 // Poll stream changes
-                $http.get('/api/stream/' + self.streamId).success(function(data, status) {
+                $http.get('./api/stream/' + self.streamId).success(function(data, status) {
                     // Flag polling end
                     self.isPolling = false;
 
@@ -86,7 +84,7 @@
                     // Check if the session will expire soon
                     if (status === 220) {
                         AfkSrv.prompt().then(function() {
-                            UserSrv.getUserInfo.get(AuthenticationSrv.currentUser.id)
+                            UserSrv.getUserInfo(AuthenticationSrv.currentUser.id)
                                 .then(function() {
 
                                 }, function(response) {
@@ -118,7 +116,7 @@
                     return;
                 }
 
-                $http.post('/api/stream').success(function(streamId) {
+                $http.post('./api/stream').success(function(streamId) {
                     self.streamId = streamId;
                     self.poll(self.streamId);
                 }).error(function(data, status) {
@@ -126,17 +124,25 @@
                 });
             },
 
-            listen: function(rootId, objectType, cb) {
-                if (angular.isDefined(callbacks[rootId])) {
-                    if (angular.isDefined(callbacks[rootId][objectType])) {
-                        callbacks[rootId][objectType].push(cb);
-                    } else {
-                        callbacks[rootId][objectType] = [cb];
-                    }
-                } else {
-                    callbacks[rootId] = {};
-                    callbacks[rootId][objectType] = [cb];
+            /**
+             * @param config {Object} This configuration object has the following attributes
+             * <li>rootId</li>
+             * <li>objectType {String}</li>
+             * <li>scope {Object}</li>
+             * <li>callback {Function}</li>
+             */
+            addListener: function(config) {
+                if(!config.scope) {
+                    console.error('No scope provided, use the old listen method', config);
+                    self.listen(config.rootId, config.objectType, config.callback);
+                    return;
                 }
+
+                var eventName = 'stream:' + config.rootId + '-' + config.objectType;
+                config.scope.$on(eventName, function(event, data) {
+                    config.callback(data);
+                });
+
             }
         };
 

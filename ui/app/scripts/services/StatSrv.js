@@ -29,7 +29,7 @@
                     _agg: 'count'
                 });
 
-                return $http.post('/api/' + config.objectType.replace(/_/g, '/') + '/_stats', {
+                return $http.post('./api/' + config.objectType.replace(/_/g, '/') + '/_stats', {
                         query: config.query,
                         stats: stats
                     })

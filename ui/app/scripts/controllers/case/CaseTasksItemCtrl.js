@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -30,6 +30,7 @@
             $scope.initScope = function () {
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
+                    scope: $scope,
                     'filter': {
                         '_and': [{
                             '_parent': {
@@ -129,7 +130,10 @@
             });
 
             // Select tab
-            CaseTabsSrv.activateTab($scope.tabName);
+            $timeout(function() {
+                CaseTabsSrv.activateTab($scope.tabName);
+            }, 0);
+
 
             // Prepare the scope data
             $scope.initScope(task);

@@ -4,6 +4,7 @@ import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
 
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.mvc.{ Action, Controller }
@@ -23,6 +24,7 @@ import org.elastic4play.services.AuthSrv
 @Singleton
 class StatusCtrl @Inject() (
     connectors: immutable.Set[Connector],
+    configuration: Configuration,
     authSrv: AuthSrv) extends Controller {
 
   private[controllers] def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
@@ -38,6 +40,7 @@ class StatusCtrl @Inject() (
         "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
       "connectors" → JsObject(connectors.map(c ⇒ c.name → c.status).toSeq),
       "config" → Json.obj(
+        "protectDownloadsWith" → configuration.getString("datastore.attachment.password").get,
         "authType" → (authSrv match {
           case multiAuthSrv: MultiAuthSrv ⇒ multiAuthSrv.authProviders.map { a ⇒ JsString(a.name) }
           case _                          ⇒ JsString(authSrv.name)

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseLinksCtrl',
-        function($scope, $state, $stateParams, $modal, CaseTabsSrv) {
+        function($scope, $state, $stateParams, $uibModal, $timeout, CaseTabsSrv) {
             $scope.caseId = $stateParams.caseId;
             var tabName = 'links-' + $scope.caseId;
 
@@ -16,7 +16,9 @@
             });
 
             // Select tab
-            CaseTabsSrv.activateTab(tabName);
+            $timeout(function() {
+                CaseTabsSrv.activateTab(tabName);
+            }, 0);
         }
     );
 })();

@@ -46,7 +46,7 @@ class FlowSrv @Inject() (
             }
           }
         }
-      val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, false)
+      val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, false, true)
 
       for {
         summary ← fSummary

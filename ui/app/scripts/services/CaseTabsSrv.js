@@ -1,6 +1,7 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('CaseTabsSrv', function() {
+    angular.module('theHiveServices').service('CaseTabsSrv', function() {
+
         var tabs = {
             'details': {
                 name: 'details',
@@ -22,60 +23,63 @@
             }
         };
 
-        return {
+        this.activeIndex = 0;
 
-            initTabs: function() {
-                angular.forEach(tabs, function(tab, key) {
-                    if (tab.closable === true) {
-                        delete tabs[key];
-                    }
-                });
-            },
-
-            getTabs: function() {
-                return tabs;
-            },
-
-            getTab: function(name) {
-                return tabs[name];
-            },
-
-            activateTab: function(tab) {
-                angular.forEach(tabs, function(tab) {
-                    tab.active = false;
-                });
-
-                if (tabs[tab]) {
-                    tabs[tab].active = true;
-                } else {
-                    tabs.details.active = true;
+        this.initTabs = function() {
+            angular.forEach(tabs, function(tab, key) {
+                if (tab.closable === true) {
+                    delete tabs[key];
                 }
-            },
+            });
+        };
 
-            addTab: function(tab, options) {
-                options.closable = true;
+        this.getTabs = function() {
+            return tabs;
+        };
 
-                tabs[tab] = options;
-            },
+        this.getTab = function(name) {
+            return tabs[name];
+        };
 
-            removeTab: function(tab) {
-                var tabItem = tabs[tab];
+        this.activateTab = function(tab) {
+            angular.forEach(tabs, function(tab) {
+                tab.active = false;
+            });
 
-                if(!tabItem) {
-                    return;
-                }
-
-                var currentIsActive = tabItem.active;
-
-                delete tabs[tab];
-
-                if (currentIsActive) {
-                    return true;
-                } else {
-                    return false;
-                }
-
+            if (tabs[tab]) {
+                tabs[tab].active = true;
+                this.activeIndex = Object.keys(tabs).indexOf(tab);
+            } else {
+                tabs.details.active = true;
+                this.activeIndex = 0;
             }
         };
+
+        this.addTab = function(tab, options) {
+            options.closable = true;
+
+            tabs[tab] = options;
+            this.activeIndex = Object.keys(tabs).length - 1;
+        };
+
+        this.removeTab = function(tab) {
+            var tabItem = tabs[tab];
+
+            if (!tabItem) {
+                return;
+            }
+
+            var currentIsActive = tabItem.active;
+
+            delete tabs[tab];
+
+            if (currentIsActive) {
+                return true;
+            } else {
+                return false;
+            }
+
+        };
+
     });
 })();

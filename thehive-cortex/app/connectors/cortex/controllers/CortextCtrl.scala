@@ -14,7 +14,7 @@ import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ QueryDef, QueryDSL, Role }
+import org.elastic4play.services.{ AuxSrv, QueryDef, QueryDSL, Role }
 import org.elastic4play.services.JsonFormat.queryReads
 
 import connectors.Connector
@@ -26,6 +26,7 @@ class CortextCtrl @Inject() (
     reportTemplateCtrl: ReportTemplateCtrl,
     cortexConfig: CortexConfig,
     cortexSrv: CortexSrv,
+    auxSrv: AuxSrv,
     authenticated: Authenticated,
     fieldsBodyParser: FieldsBodyParser,
     renderer: Renderer,
@@ -74,7 +75,8 @@ class CortextCtrl @Inject() (
     val sort = request.body.getStrings("sort").getOrElse(Nil)
 
     val (jobs, total) = cortexSrv.find(query, range, sort)
-    renderer.toOutput(OK, jobs, total)
+    val jobWithoutReport = auxSrv.apply(jobs, 0, false, true)
+    renderer.toOutput(OK, jobWithoutReport, total)
   }
 
   @Timed

@@ -14,13 +14,13 @@
 
             <div class="collapse navbar-collapse" id="th-navbar-collapse">
                 <ul class="nav navbar-nav" ng-show="currentUser.id">
-                    <li class="dropdown" dropdown>
-                        <a class="dropdown-toggle" dropdown-toggle href>
+                    <li class="dropdown" uib-dropdown>
+                        <a class="dropdown-toggle" uib-dropdown-toggle href>
                             <i class="text-default fa fa-plus"></i>
                             <span class="hpad5">New Case</span>
                             <span class="caret"></span>
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" uib-dropdown-menu>
                             <li>
                                 <a href ng-click="createNewCase()">Empty Case</a>
                             </li>
@@ -70,11 +70,11 @@
                                 </span>
                                 <input class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
                                 <div class="input-group-btn">
-                                    <div class="btn-group dropdown" dropdown>
-                                        <a class="btn btn-sm btn-default dropdown-toggle" dropdown-toggle href>
+                                    <div class="btn-group dropdown" uib-dropdown>
+                                        <a class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle href>
                                             <span class="caret"></span>
                                         </a>
-                                        <ul class="dropdown-menu" role="menu">
+                                        <ul class="dropdown-menu" uib-dropdown-menu>
                                             <li class="dropdown-header" role="presentation">Custom search</li>
                                             <li>
                                                 <a ng-click="querystring = 'status:Resolved' ; search(querystring);">Closed cases</a>
@@ -95,13 +95,13 @@
                             </div>
                         </form>
                     </li>
-                    <li class="dropdown" dropdown ng-if="isAdmin(currentUser)">
-                        <a class="dropdown-toggle" dropdown-toggle href>
+                    <li class="dropdown" uib-dropdown ng-if="isAdmin(currentUser)">
+                        <a class="dropdown-toggle" uib-dropdown-toggle href>
                             <i class="fa fa-cog"></i>
                             <span class="hpad5">Admin</span>
                             <b class="caret"></b>
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" uib-dropdown-menu>
                             <li>
                                 <a ui-sref="app.administration.users">
                                     <i class="fa fa-users"></i>
@@ -136,11 +136,11 @@
                             </li>
                         </ul>
                     </li>
-                    <li class="dropdown" dropdown>
-                        <a class="profile dropdown-toggle" dropdown-toggle href>
+                    <li class="dropdown" uib-dropdown>
+                        <a class="profile dropdown-toggle" uib-dropdown-toggle href>
                             <user user-id="currentUser.id"></user>
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" uib-dropdown-menu>
                             <li>
                                 <a ui-sref="app.settings">Personal settings</a>
                             </li>

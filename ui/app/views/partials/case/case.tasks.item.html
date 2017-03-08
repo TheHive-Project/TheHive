@@ -25,7 +25,7 @@
             </span>
         </h4>
 
-        <div class="alert alert-danger" collapse="!state.isCollapsed">
+        <div class="alert alert-danger" uib-collapse="!state.isCollapsed">
             <i class="glyphicon glyphicon-exclamation-sign"></i>
             You are about to close this task. Are you sure you want to continue ?
             <div align="center">
@@ -84,16 +84,16 @@
             <div class="col-md-12">
                 <div class="clearfix">
                     <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
-                </div>                
+                </div>
                 <textarea name="newLog" autofocus="beforeNewLogShow" class="content-box" markdown-editor="markdownEditorOptions" rows="10" ng-model="newLog.message"></textarea>
-                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>                
+                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>
                 <div class="btn-toolbar mt-xxs">
                     <button class="btn btn-default" ng-click="cancelAddLog();" ng-disabled="loading">Cancel</button>
                     <button class="pull-right btn btn-primary" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
                         <i class="glyphicon glyphicon-comment"></i>
                         Add log
                     </button>
-                    <button btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="pull-right btn btn-default" ng-model="state.attachmentCollapsed" ng-disabled="loading">
+                    <button uib-btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="pull-right btn btn-default" ng-model="state.attachmentCollapsed" ng-disabled="loading">
                         <i class="text-default glyphicon glyphicon-paperclip"></i>
                         {{state.attachmentCollapsed ? 'Add' : 'Discard'}}
                         attachment
@@ -103,6 +103,7 @@
         </div>
 
         <!-- Log list -->
+        <psearch control="logs"></psearch>
         <div ng-repeat="log in logs.values">
             <log-entry log="log"></log-entry>
         </div>

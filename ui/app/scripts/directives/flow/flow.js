@@ -19,7 +19,7 @@
                     }
                     scope.getAnalyzerInfo = AnalyzerInfoSrv;
                     scope.getUserInfo = UserInfoSrv;
-                    scope.values = AuditSrv(rootId, parseInt(scope.max));
+                    scope.values = AuditSrv(rootId, parseInt(scope.max), scope);
 
                     if ($window.opener) {
                         scope.targetWindow = $window.opener;

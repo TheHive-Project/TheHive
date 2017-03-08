@@ -11,7 +11,7 @@
           </div>
         </dd>
       </dl>
-      <dl class="dl-horizontal" ng-if=".abuse_finder.names">
+      <dl class="dl-horizontal" ng-if="content.abuse_finder.names">
         <dt>Abuse addresses:</dt>
         <dd>
           <div ng-repeat="abuse in content.abuse_finder.abuse">
@@ -19,5 +19,15 @@
           </div>
         </dd>
       </dl>
+    </div>
+</div>
+
+<!-- General error -->
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
     </div>
 </div>

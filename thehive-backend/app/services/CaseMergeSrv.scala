@@ -264,6 +264,7 @@ class CaseMergeSrv @Inject() (
       _ ← mergeTasksAndLogs(newCase, cases)
       _ ← mergeArtifactsAndJobs(newCase, cases)
       _ ← markCaseAsDuplicated(cases, newCase)
+      _ ← Future.traverse(cases)(caze ⇒ taskSrv.closeTasksOfCase(caze.id))
     } yield newCase
   }
 }

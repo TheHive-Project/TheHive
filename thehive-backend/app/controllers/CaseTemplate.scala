@@ -59,7 +59,7 @@ class CaseTemplateCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (caseTemplates, total) = caseTemplateSrv.find(query, range, sort)
-    val caseTemplatesWithStats = auxSrv(caseTemplates, nparent, withStats)
+    val caseTemplatesWithStats = auxSrv(caseTemplates, nparent, withStats, false)
     renderer.toOutput(OK, caseTemplatesWithStats, total)
   }
 }

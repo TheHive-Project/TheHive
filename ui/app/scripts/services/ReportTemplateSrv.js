@@ -2,7 +2,7 @@
     'use strict';
     angular.module('theHiveServices')
         .factory('ReportTemplateSrv', function($resource, $http) {
-            var baseUrl = '/api/connector/cortex/report/template'; 
+            var baseUrl = './api/connector/cortex/report/template'; 
             var resource = $resource(baseUrl, {}, {
                 query: {
                     method: 'POST',

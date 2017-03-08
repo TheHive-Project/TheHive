@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservablesStatsCtrl',
-        function($rootScope, $stateParams, $timeout, StatSrv, StreamStatSrv, ObservablesUISrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv, ObservablesUISrv) {
             var self = this;
 
             this.uiSrv = ObservablesUISrv;
@@ -29,6 +29,7 @@
 
             // Get stats by tags
             StreamStatSrv({
+                scope: $scope,
                 rootId: $stateParams.caseId,
                 query: defaultQuery,
                 objectType: 'case_artifact',
@@ -43,6 +44,7 @@
 
             // Get stats by type
             StreamStatSrv({
+                scope: $scope,
                 rootId: $stateParams.caseId,
                 query: defaultQuery,
                 objectType: 'case_artifact',
@@ -55,6 +57,7 @@
 
             // Get stats by ioc
             StreamStatSrv({
+                scope: $scope,
                 rootId: $stateParams.caseId,
                 query: defaultQuery,
                 objectType: 'case_artifact',
@@ -87,63 +90,6 @@
             this.filterBy = function(field, value) {
                 this.uiSrv.addFilter(field, value);
             };
-
-            /*
-            $scope.observableByType = {
-                title: 'Observables by Type',
-                type: 'case_artifact',
-                field: 'dataType',
-                dateField: 'startDate',
-                tagsField: 'tags'
-            };
-
-            $scope.observableByTags = {
-                title: 'Top 10 tags',
-                type: 'case_artifact',
-                field: 'tags',
-                dateField: 'startDate',
-                tagsField: 'tags',
-                limit: 10,
-                sort: ['-count']
-            };
-
-            $scope.observableByIoc = {
-                title: 'IOCs',
-                type: 'case_artifact',
-                field: 'ioc',
-                dateField: 'startDate',
-                tagsField: 'tags',
-                colors: {
-                    '0': '#5cb85c',
-                    '1': '#d9534f'
-                },
-                names: {
-                    '0': 'Not IOC',
-                    '1': 'IOC'
-                }
-            };
-
-            // Prepare the global query
-            $scope.prepareGlobalQuery = function() {
-                return function(options) {
-                    return {
-                        _and: [{
-                            _parent: $stateParams.caseId
-                        }]
-                    };
-                };
-            };
-
-            $scope.filter = function() {
-                $rootScope.$broadcast('refresh-charts', $scope.prepareGlobalQuery());
-            };
-
-            $scope.filter();
-
-            $timeout(function() {
-                $scope.filter();
-            }, 1000);
-            */
         }
     );
 })();
