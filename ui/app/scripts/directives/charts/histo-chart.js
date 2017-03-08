@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv) {
+    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv, AlertSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -88,6 +88,8 @@
                                 enabled: scope.options.zoom || false
                             }
                         };
+                    }, function(err) {
+                        AlertSrv.error('histoChart', err.data, err.status);
                     });
                 };
 
