@@ -23,13 +23,13 @@ import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 
 import models.{ Case, CaseStatus }
-import services.{ CaseSrv, TaskSrv }
-import services.CaseMergeSrv
+import services.{ CaseMergeSrv, CaseSrv, CaseTemplateSrv, TaskSrv }
 import scala.util.Try
 
 @Singleton
 class CaseCtrl @Inject() (
     caseSrv: CaseSrv,
+    caseTemplateSrv: CaseTemplateSrv,
     caseMergeSrv: CaseMergeSrv,
     taskSrv: TaskSrv,
     auxSrv: AuxSrv,
@@ -43,7 +43,17 @@ class CaseCtrl @Inject() (
 
   @Timed
   def create() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
-    caseSrv.create(request.body)
+    request.body
+      .getString("template")
+      .map { templateName ⇒
+        caseTemplateSrv.getByName(templateName)
+          .map(Some(_))
+          .recover { case _ ⇒ None }
+      }
+      .getOrElse(Future.successful(None))
+      .flatMap { caseTemplate ⇒
+        caseSrv.create(request.body.unset("template"), caseTemplate)
+      }
       .map(caze ⇒ renderer.toOutput(CREATED, caze))
   }
 

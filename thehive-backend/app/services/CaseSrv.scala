@@ -3,22 +3,20 @@ package services
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
+import scala.util.{ Success, Try }
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 
 import play.api.Logger
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{ JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
+import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
 
-import models.{ Artifact, ArtifactModel, Case, CaseModel, Task, TaskModel }
-import models.CaseStatus
-import models.CaseResolutionStatus
+import models.{ Artifact, ArtifactModel, Case, CaseModel, CaseResolutionStatus, CaseStatus, CaseTemplate, Task, TaskModel }
 
 @Singleton
 class CaseSrv @Inject() (
@@ -35,18 +33,37 @@ class CaseSrv @Inject() (
 
   lazy val log = Logger(getClass)
 
-  def create(fields: Fields)(implicit authContext: AuthContext): Future[Case] = {
+  def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
+    val metricNames = (originalFields.getStrings("metricNames").getOrElse(Nil) ++ template.metricNames()).distinct
+    val metrics = JsObject(metricNames.map(_ → JsNull))
+    val tags = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
+    originalFields
+      .set("title", originalFields.getString("title").map(title ⇒ JsString(template.titlePrefix().getOrElse("") + " " + title)))
+      .set("description", originalFields.getString("description").orElse(template.description()).map(JsString(_)))
+      .set("severity", originalFields.getLong("severity").orElse(template.severity()).map(JsNumber(_)))
+      .set("tags", JsArray(tags.map(JsString(_))))
+      .set("flag", originalFields.getBoolean("flag").orElse(template.flag()).map(JsBoolean(_)))
+      .set("tlp", originalFields.getLong("tlp").orElse(template.tlp()).map(JsNumber(_)))
+      .set("metrics", originalFields.getValue("metrics").flatMap(_.asOpt[JsObject]).getOrElse(JsObject(Nil)) ++ metrics)
+  }
+
+  def create(fields: Fields, template: Option[CaseTemplate] = None)(implicit authContext: AuthContext): Future[Case] = {
     val fieldsWithOwner = fields.get("owner") match {
       case None    ⇒ fields.set("owner", authContext.userId)
       case Some(_) ⇒ fields
     }
-    createSrv[CaseModel, Case](caseModel, fieldsWithOwner.unset("tasks"))
-      .flatMap { caze ⇒
-        val taskFields = fields.getValues("tasks").collect {
-          case task: JsObject ⇒ Fields(task)
-        }
-        createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
-          .map(_ ⇒ caze)
+    val templatedCaseFields = template match {
+      case None    ⇒ fieldsWithOwner
+      case Some(t) ⇒ applyTemplate(t, fieldsWithOwner)
+    }
+    createSrv[CaseModel, Case](caseModel, templatedCaseFields.unset("tasks"))
+      .andThen {
+        case Success(caze) ⇒
+          val taskFields = fields.getValues("tasks").collect {
+            case task: JsObject ⇒ Fields(task)
+          } ++ template.map(_.tasks().map(Fields(_))).getOrElse(Nil)
+          createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
+            .map(_ ⇒ caze)
       }
   }
 
