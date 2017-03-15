@@ -57,13 +57,12 @@ class CaseSrv @Inject() (
       case Some(t) ⇒ applyTemplate(t, fieldsWithOwner)
     }
     createSrv[CaseModel, Case](caseModel, templatedCaseFields.unset("tasks"))
-      .andThen {
-        case Success(caze) ⇒
-          val taskFields = fields.getValues("tasks").collect {
-            case task: JsObject ⇒ Fields(task)
-          } ++ template.map(_.tasks().map(Fields(_))).getOrElse(Nil)
-          createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
-            .map(_ ⇒ caze)
+      .flatMap { caze ⇒
+        val taskFields = fields.getValues("tasks").collect {
+          case task: JsObject ⇒ Fields(task)
+        } ++ template.map(_.tasks().map(Fields(_))).getOrElse(Nil)
+        createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
+          .map(_ ⇒ caze)
       }
   }
 

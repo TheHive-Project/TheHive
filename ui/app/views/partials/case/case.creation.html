@@ -17,7 +17,7 @@
 
                         <div class="input-group" ng-if="fromTemplate">
                             <span class="input-group-addon">{{template.titlePrefix}}</span>
-                            <input class="form-control" name="title" ng-model="temp.titleSuffix" placeholder="Title" required type="text"/>
+                            <input class="form-control" name="title" ng-model="newCase.title" placeholder="Title" required type="text"/>
                         </div>
 
                         <p class="help-block" ng-show="caseCreateForm.title.$invalid && !caseCreateForm.title.$pristine">The case title is required.</p>

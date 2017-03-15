@@ -71,17 +71,7 @@
 
                 // Append title prefix
                 if ($scope.fromTemplate) {
-                    $scope.newCase.title = $scope.template.titlePrefix + ' ' + $scope.temp.titleSuffix;
-                    
-                    $scope.newCase.tasks = _.map($scope.template.tasks, function (task) {
-                        return {
-                            title: task.title,
-                            description: task.description,
-                            flag: false,
-                            status: 'Waiting'
-                        };
-                    });
-
+                    $scope.newCase.template = $scope.template.name;
                 } else {
                     $scope.newCase.tasks = _.map($scope.tasks, function (task) {
                         return {
