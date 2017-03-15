@@ -12,8 +12,6 @@
             },
 
             runCallbacks: function(id, objectType, message) {
-                console.debug('stream:' + id + '-' + objectType);
-
                 $rootScope.$broadcast('stream:' + id + '-' + objectType, message);
             },
 
