@@ -450,3 +450,19 @@ table tr.tr-warning>td {
 .box.box-navy {
     border-top-color: #001f3f;
 }
+
+tags-input .tags {
+    border-radius: 0;
+}
+
+tags-input.input-sm .tags {
+    border-radius: 0;
+    height: 30px;
+    line-height: 30px;
+}
+
+
+tags-input.input-sm .tags.focused {
+    border-color: #3c8dbc;
+    box-shadow: none;
+}

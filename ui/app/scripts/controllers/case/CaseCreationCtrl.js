@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, AlertSrv, MetricsCacheSrv, template) {
+        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, AlertSrv, MetricsCacheSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -109,6 +109,10 @@
 
             $scope.cancel = function () {
                 $uibModalInstance.dismiss();
+            };
+
+            $scope.getTags = function(query) {
+                return TagSrv.fromCases(query);
             };
         }
     );
