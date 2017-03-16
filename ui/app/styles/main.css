@@ -1,8 +1,8 @@
+body {
+    background-color: #ecf0f5;
+}
 a, body {
-    /*height: 99%;*/
     overflow: hidden;
-    /*font-family: 'Roboto', sans-serif;*/
-    /*font-weight: 300;*/
 }
 a.noline {
     text-decoration: none !important;
@@ -449,6 +449,14 @@ table tr.tr-warning>td {
 
 .box.box-navy {
     border-top-color: #001f3f;
+}
+
+.tags-list {
+    font-size: 12px !important;
+}
+.tags-list .label {
+    font-size: inherit !important;
+    font-weight: normal;
 }
 
 tags-input .tags {
