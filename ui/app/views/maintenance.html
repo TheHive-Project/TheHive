@@ -1,19 +1,11 @@
 <div class="container-fluid">
-    <!--
-    <br>
-    <br>
-
-    <div style="position:absolute; margin:auto; top:0px; left:0px; right:0px; z-index:100; width:50%;">
-        <alert close="closeAlert($index)" ng-repeat="alert in alerts" type="{{alert.type}}">{{alert.message}}</alert>
-    </div> -->
-
     <div class="row mt-m">
         <div class="col-md-8 col-md-offset-2">
             <alert close="closeAlert($index)" ng-repeat="alert in alerts" type="{{alert.type}}">{{alert.message}}</alert>
         </div>
     </div>
 
-<!-- Update Database -->
+    <!-- Update Database -->
     <div class="row" ng-hide="showUserForm">
         <div class="col-md-8 col-md-offset-2">
 
