@@ -5,7 +5,7 @@
         function($scope, ListSrv, AlertSrv) {
             $scope.dataTypeList = [];
             $scope.params = {
-                'newDataTypes': []
+                newDataType: null
             };
 
             $scope.load = function() {
@@ -28,23 +28,18 @@
             $scope.load();
 
             $scope.addArtifactDataTypeList = function() {
-                var datatypes = _.without(_.map($scope.params.newDataTypes, function(dt) {
-                    return dt.trim();
-                }), '', null, undefined);
+                ListSrv.save({
+                        'listId': 'list_artifactDataType'
+                    }, {
+                        'value': $scope.params.newDataType
+                    }, function() {
+                        $scope.load();
+                    },
+                    function(response) {
+                        AlertSrv.error('ListSrv', response.data, response.status);
+                    });
 
-                angular.forEach(datatypes, function(dt) {
-                    ListSrv.save({
-                            'listId': 'list_artifactDataType'
-                        }, {
-                            'value': dt
-                        }, function() {
-                            $scope.load();
-                        },
-                        function(response) {
-                            AlertSrv.error('ListSrv', response.data, response.status);
-                        });
-                });
-                $scope.params.newDataTypes = '';
+                $scope.params.newDataType = '';
             };
 
             $scope.deleteArtifactDataType = function(datatype) {
