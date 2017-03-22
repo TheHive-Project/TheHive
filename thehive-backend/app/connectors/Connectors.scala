@@ -2,16 +2,14 @@ package connectors
 
 import javax.inject.Inject
 
-import scala.collection.immutable
-
+import com.google.inject.AbstractModule
+import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc.{ Action, Results }
-import play.api.routing.{ Router, SimpleRouter }
 import play.api.routing.sird.UrlContext
+import play.api.routing.{ Router, SimpleRouter }
 
-import com.google.inject.AbstractModule
-
-import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
+import scala.collection.immutable
 
 trait Connector {
   val name: String
@@ -20,10 +18,11 @@ trait Connector {
 }
 
 class ConnectorRouter @Inject() (connectors: immutable.Set[Connector]) extends SimpleRouter {
+  def get(connectorName: String): Option[Connector] = connectors.find(_.name == connectorName)
+
   def routes = {
     case request @ p"/$connector/$path<.*>" ⇒
-      connectors
-        .find(_.name == connector)
+      get(connector)
         .flatMap(_.router.withPrefix(s"/$connector/").handlerFor(request))
         .getOrElse(Action { _ ⇒ Results.NotFound(s"connector $connector not found") })
   }
