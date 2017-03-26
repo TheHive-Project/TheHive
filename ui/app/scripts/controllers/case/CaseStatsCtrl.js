@@ -1,5 +1,5 @@
 /**
- * Controller for About The Hive modal page
+ * Controller for About TheHive modal page
  */
 (function() {
     'use strict';
