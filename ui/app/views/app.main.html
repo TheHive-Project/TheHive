@@ -23,24 +23,7 @@
             </div>
             <div class="box-body">
 
-                <!-- <div class="row mb-s">
-                    <div class="col-md-12 clearfix">
-                        <div class="pull-right form-inline">
-                            <div class="input-group input-group-sm">
-                                <filter-box collection="list"></filter-box>
-                            </div>
-                            <div class="form-group">
-                                <page-sizer collection="list"></page-sizer>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
                 <div ng-switch="view.data">
-                    <div class="main-fadein" ng-switch-when="mytasks">
-                        <div ng-include="'views/partials/index-mytasks.html'"></div>
-                    </div>
-
                     <div class="main-fadein" ng-switch-when="waitingtasks">
                         <div ng-include="'views/partials/index-waitingtasks.html'"></div>
                     </div>
@@ -48,15 +31,11 @@
                     <div class="main-fadein" ng-switch-default>
                         <div ng-include="'views/partials/index-mytasks.html'"></div>
                     </div>
-
                 </div>
 
             </div>
         </div>
     </div>
-
-
-
 
     <div ng-show="showFlow" class="col-md-3">
         <div class=" box">
