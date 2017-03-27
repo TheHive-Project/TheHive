@@ -27,6 +27,7 @@
     "c3": false,
     "saveSvgAsPng": false,
     "Blob": false,
-    "File": false
+    "File": false,
+    "hljs": false
   }
 }

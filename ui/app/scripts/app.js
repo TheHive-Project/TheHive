@@ -48,6 +48,17 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 templateUrl: 'views/app.html',
                 controller: 'RootCtrl',
                 resolve: {
+                    currentUser: function($q, AuthenticationSrv) {
+                        var deferred = $q.defer();
+
+                        AuthenticationSrv.current(function(userData) {
+                            deferred.resolve(userData);
+                        }, function(err) {
+                            deferred.reject(err);
+                        });
+
+                        return deferred.promise;
+                    },
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
                     }
@@ -94,7 +105,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
             .state('app.administration', {
                 abstract: true,
                 url: 'administration',
-                template: '<ui-view/>'
+                template: '<ui-view/>',
+                onEnter: function($state, AuthenticationSrv){
+                    var currentUser = AuthenticationSrv.currentUser;
+
+                    if(!currentUser || !currentUser.roles || _.map(currentUser.roles, function(role) {
+                        return role.toLowerCase();
+                    }).indexOf('admin') === -1) {
+                        if(!$state.is('app.cases')) {
+                            $state.go('app.cases');
+                        } else {
+                            return $state.reload();
+                        }
+                    }
+                }
             })
             .state('app.administration.users', {
                 url: '/users',
