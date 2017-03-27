@@ -11,6 +11,7 @@ object Dependencies {
       val cache = "com.typesafe.play" %% "play-cache" % version
       val test = "com.typesafe.play" %% "play-test" % version
       val specs2 = "com.typesafe.play" %% "play-specs2" % version
+      val filters = "com.typesafe.play" %% "filters-helpers" % version
       object Specs2 {
         private val version = "3.6.6"
         val matcherExtra = "org.specs2" %% "specs2-matcher-extra" % version
