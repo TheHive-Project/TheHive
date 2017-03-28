@@ -35,8 +35,8 @@
                             }), 'id');
 
                             deferred.resolve(analyzers);
-                        }, function (/*rejection*/) {
-                            deferred.reject({});
+                        }, function (rejection) {
+                            deferred.reject(rejection);
                         });
 
                     } else {

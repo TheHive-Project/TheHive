@@ -3,7 +3,7 @@ angular.module('theHiveServices', []);
 angular.module('theHiveFilters', []);
 angular.module('theHiveDirectives', []);
 
-angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router',
+angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
@@ -52,9 +52,9 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current(function(userData) {
-                            deferred.resolve(userData);
-                        }, function(err) {
-                            deferred.reject(err);
+                            return deferred.resolve(userData);
+                        }, function( /*err, status*/ ) {
+                            return deferred.resolve(null);
                         });
 
                         return deferred.promise;
@@ -67,7 +67,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
             .state('app.main', {
                 url: 'main/{viewId}',
                 params: {
-                    viewId: 'currentcases'
+                    viewId: 'mytasks'
                 },
                 templateUrl: 'views/app.main.html',
                 controller: 'MainPageCtrl'
@@ -91,6 +91,22 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'SettingsCtrl',
                 title: 'Personal settings',
                 resolve: {
+                    currentUser: function($q, $state, $timeout, AuthenticationSrv) {
+                        var deferred = $q.defer();
+
+                        AuthenticationSrv.current(function(userData) {
+                            return deferred.resolve(userData);
+                        }, function( /*err, status*/ ) {
+
+                            $timeout(function() {
+                                $state.go('login');
+                            });
+
+                            return deferred.reject();
+                        });
+
+                        return deferred.promise;
+                    },
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
                     }
@@ -106,18 +122,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 abstract: true,
                 url: 'administration',
                 template: '<ui-view/>',
-                onEnter: function($state, AuthenticationSrv){
+                onEnter: function($state, AuthenticationSrv) {
                     var currentUser = AuthenticationSrv.currentUser;
 
-                    if(!currentUser || !currentUser.roles || _.map(currentUser.roles, function(role) {
-                        return role.toLowerCase();
-                    }).indexOf('admin') === -1) {
-                        if(!$state.is('app.cases')) {
+                    if (!currentUser || !currentUser.roles || _.map(currentUser.roles, function(role) {
+                            return role.toLowerCase();
+                        }).indexOf('admin') === -1) {
+                        if (!$state.is('app.cases')) {
                             $state.go('app.cases');
                         } else {
                             return $state.reload();
                         }
                     }
+
+                    return true;
                 }
             })
             .state('app.administration.users', {

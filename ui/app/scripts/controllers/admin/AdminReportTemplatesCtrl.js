@@ -8,7 +8,7 @@
         .controller('AdminReportTemplateDeleteCtrl', AdminReportTemplateDeleteCtrl);
 
 
-    function AdminReportTemplatesCtrl($q, $uibModal, AnalyzerSrv, ReportTemplateSrv) {
+    function AdminReportTemplatesCtrl($q, $uibModal, AnalyzerSrv, ReportTemplateSrv, AlertSrv) {
         var self = this;
 
         this.templates = [];
@@ -34,6 +34,8 @@
                 self.analyzers = cleared;
 
                 return $q.resolve(self.analyzers);
+            }, function(rejection) {
+                AlertSrv.error('ReportTemplates', rejection.data, rejection.status);
             }).then(function (analyzersMap) {
                 if(_.isEmpty(analyzersMap)) {
                     _.each(_.pluck(self.templates, 'analyzerId'), function(item) {
