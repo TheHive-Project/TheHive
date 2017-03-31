@@ -1,22 +1,24 @@
 import java.io.File
 
-import scala.concurrent.duration.Duration
+import bintray.BintrayCredentials
+import bintray.BintrayKeys.{bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository}
+import bintry.Client
+import com.typesafe.sbt.packager.debian.DebianPlugin.autoImport.Debian
+import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport.Rpm
+import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
+import dispatch.{FunctionHandler, Http}
+import sbt.Keys._
+import sbt._
+
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-
-import sbt._
-import sbt.Keys._
-
-import dispatch.{ Http, FunctionHandler }
-
-import bintry.Client
-import bintray.BintrayCredentials
-import bintray.BintrayKeys.{ bintrayEnsureCredentials, bintrayOrganization, bintrayRepository, bintrayPackage }
-import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
+import scala.concurrent.duration.Duration
 
 object PublishToBinTray extends Plugin {
-  val publishRelease = taskKey[Unit]("Publish binary in bintray")
-  val publishLatest = taskKey[Unit]("Publish latest binary in bintray")
+  val publishRelease = taskKey[Unit]("Publish binary in Bintray")
+  val publishLatest = taskKey[Unit]("Publish latest binary in Bintray")
+  val publishDebian = taskKey[Unit]("publish debian package in Bintray")
+  val publishRpm = taskKey[Unit]("publish rpm package in Bintray")
 
   override def settings = Seq(
     publishRelease := {
@@ -50,7 +52,31 @@ object PublishToBinTray extends Plugin {
           "latest",
           sLog.value)
       }
-    })
+    },
+    publishDebian := {
+      val file = (packageBin in Debian).value
+      btPublish(file.getName,
+        file,
+        bintrayEnsureCredentials.value,
+        bintrayOrganization.value,
+        bintrayRepository.value,
+        bintrayPackage.value,
+        version.value,
+        sLog.value)
+    },
+    publishRpm := {
+      val file = (packageBin in Rpm).value
+      btPublish(file.getName,
+        file,
+        bintrayEnsureCredentials.value,
+        bintrayOrganization.value,
+        bintrayRepository.value,
+        bintrayPackage.value,
+        version.value,
+        sLog.value)
+    }
+
+  )
 
   private def asStatusAndBody = new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })
 
@@ -71,7 +97,7 @@ object PublishToBinTray extends Plugin {
 
     log.info(s"Uploading $file ...")
     Await.result(repo.get(packageName).version(version).upload(filename, file)(asStatusAndBody), Duration.Inf) match {
-      case (201, _)  => log.info(s"$file was uploaded to $owner/$packageName@$version")
+      case (201, _) => log.info(s"$file was uploaded to $owner/$packageName@$version")
       case (_, fail) => sys.error(s"failed to upload $file to $owner/$packageName@$version: $fail")
     }
   }

@@ -9,69 +9,97 @@
 ### END INIT INFO
 
 NAME=thehive
-DAEMONDIR=/opt/thehive
-DAEMON=$DAEMONDIR/bin/thehive
-PIDDIR=/var/run/thehive
-PIDFILE=$PIDDIR/pid
-DAEMONUSER=thehive
-CONFIGFILE=/etc/thehive/application.conf
-LISTENPORT=9000
-DAEMON_OPTS=
+DAEMON=/opt/thehive/bin/thehive
+PIDFILE=/var/run/thehive/pid
+DAEMON_USER=thehive
+DAEMON_ARGS="-Dconfig.file=/etc/thehive/application.conf -Dlogger.file=/etc/thehive/logback.xml -Dpidfile.path=/dev/null"
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-test -x $DAEMON || exit 0
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
 
-if test -f /etc/default/$NAME
-then
-    . /etc/default/$NAME
-fi
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
 . /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start() {
+        # Return
+        #   0 if daemon has been started
+        #   1 if daemon was already running
+        #   2 if daemon could not be started
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --user $DAEMON_USER --exec $DAEMON --test > /dev/null \
+                || return 1
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --user $DAEMON_USER --exec $DAEMON -- \
+                $DAEMON_ARGS \
+                || return 2
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop() {
+        # Return
+        #   0 if daemon has been stopped
+        #   1 if daemon was already stopped
+        #   2 if daemon could not be stopped
+        #   other if a failure occurred
+        start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+        RETVAL="$?"
+        [ "$RETVAL" = 2 ] && return 2
+        # Wait for children to finish too if this is a daemon that forks
+        # and if the daemon is only ever run from this initscript.
+        # If the above conditions are not satisfied then add some other code
+        # that waits for the process to drop all resources that could be
+        # needed by services started subsequently.  A last resort is to
+        # sleep for some time.
+        start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+        [ "$?" = 2 ] && return 2
+        # Many daemons don't delete their pidfiles when they exit.
+        rm -f $PIDFILE
+        return "$RETVAL"
+}
 
 check_for_upstart() {
   if init_is_upstart; then
+    echo "Your are using upstart. This script should not be used"
     exit $1
-  fi
-}
-
-check_config_file() {
-  if test ! -e $CONFIGFILE
-  then
-    mkdir -p $(dirname $CONFIGFILE) 2>/dev/null || true
-    cat >> $CONFIGFILE <<- _EOF_
-      # Secret key
-      # ~~~~~
-      # The secret key is used to secure cryptographics functions.
-      # If you deploy your application to several instances be sure to use the same key!
-     play.crypto.secret="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
-_EOF_
-    chown $DAEMONUSER $CONFIGFILE
-    chmod o-rwx $CONFIGFILE
   fi
 }
 
 case "$1" in
   start)
     check_for_upstart 1
-    check_config_file
-    log_daemon_msg "Starting TheHive" $NAME || true
-    if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --chdir $DAEMONDIR --exec $DAEMON -- -Dconfig.file=$CONFIGFILE -Dhttp.port=$LISTENPORT -Dpidfile.path=$PIDFILE $DAEMON_OPTS
-    then
-      log_end_msg 0 || true
-    else
-      log_end_msg 1 || true
+    if [ "$ENABLED" = no ]; then
+      echo "The service TheHive is disabled (/etc/default/thehive)"
+      exit 1
     fi
+
+    [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+    do_start
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
     ;;
 
   stop)
     check_for_upstart 1
-    log_daemon_msg "Stopping TheHive" $NAME || true
-    if start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
-    then
-      log_end_msg 0 || true
-    else
-      log_end_msg 1 || true
-    fi
+    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
     ;;
 
   status)
