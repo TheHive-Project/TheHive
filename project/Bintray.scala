@@ -59,10 +59,14 @@ object PublishToBinTray extends Plugin {
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        bintrayRepository.value,
+        "debian",
         bintrayPackage.value,
         version.value,
-        sLog.value)
+        sLog.value,
+        "deb_distribution" -> "any",
+        "deb_component" -> "main",
+        "deb_architecture" -> "all"
+      )
     },
     publishRpm := {
       val file = (packageBin in Rpm).value
@@ -70,12 +74,11 @@ object PublishToBinTray extends Plugin {
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        bintrayRepository.value,
+        "redhat",
         bintrayPackage.value,
         version.value,
         sLog.value)
     }
-
   )
 
   private def asStatusAndBody = new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })
@@ -89,14 +92,29 @@ object PublishToBinTray extends Plugin {
     }
   }
 
-  private def btPublish(filename: String, file: File, credential: BintrayCredentials, org: Option[String], repoName: String, packageName: String, version: String, log: Logger) = {
+  private def btPublish(filename: String,
+                        file: File,
+                        credential: BintrayCredentials,
+                        org: Option[String],
+                        repoName: String,
+                        packageName: String,
+                        version: String,
+                        log: Logger,
+                        additionalParams: (String, String)*) = {
     val BintrayCredentials(user, key) = credential
     val owner: String = org.getOrElse(user)
     val client: Client = Client(user, key, new Http())
     val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
 
-    log.info(s"Uploading $file ...")
-    Await.result(repo.get(packageName).version(version).upload(filename, file)(asStatusAndBody), Duration.Inf) match {
+
+
+    val params = additionalParams
+      .map { case (k, v) => s"$k=$v" }
+      .mkString(";", ";", "")
+    val upload = repo.get(packageName).version(version).upload(filename + params, file)
+
+    log.info(s"Uploading $file ... (${org.getOrElse(user)}/$repoName/$packageName/$version/$filename$params)")
+    Await.result(upload(asStatusAndBody), Duration.Inf) match {
       case (201, _) => log.info(s"$file was uploaded to $owner/$packageName@$version")
       case (_, fail) => sys.error(s"failed to upload $file to $owner/$packageName@$version: $fail")
     }
