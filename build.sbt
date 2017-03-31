@@ -19,7 +19,9 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
-  //.aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .settings(aggregate in Debian := false)
+  .settings(aggregate in Rpm := false)
   .settings(aggregate in Docker := false)
   .settings(PublishToBinTray.settings: _*)
   .settings(Release.settings: _*)
@@ -47,10 +49,6 @@ mappings in Universal ~= {
       file("install/thehive") -> "install/thehive"
     )
 }
-//  mappings in Universal ++= {
-//    val dir = baseDirectory.value / "install"
-//    (dir.***) pair relativeTo(dir.getParentFile)
-//  }
 
 // Package //
 maintainer := "Thomas Franco <toom@thehive-project.org"
@@ -59,18 +57,18 @@ packageDescription := """TheHive is a scalable 3-in-1 open source and free secur
   | for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be
   | investigated and acted upon swiftly.""".stripMargin
 defaultLinuxInstallLocation := "/opt"
-linuxPackageMappings ~= {
-  _.map { pm =>
-    val mappings = pm.mappings.map {
-      case (file, "/opt/thehive/install/thehive.service") => file -> "/etc/systemd/system/thehive.service"
-      case (file, "/opt/thehive/install/thehive.conf") => file -> "/etc/init/thehive.conf"
-      case (file, "/opt/thehive/install/thehive") => file -> "/etc/init.d/thehive"
-      case (file, "/opt/thehive/conf/application.conf") => file -> "/etc/thehive/application.conf"
-      case (file, "/opt/thehive/conf/logback.xml") => file -> "/etc/thehive/logback.xml"
-      case other => other
+linuxPackageMappings ~= { _.map { pm =>
+    val mappings = pm.mappings.filterNot {
+      case (file, path) => path.startsWith("/opt/thehive/install") || path.startsWith("/opt/thehive/conf")
     }
-    com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData)
-  }
+    com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
+  } :+ packageMapping(
+    file("install/thehive.service") -> "/etc/systemd/system/thehive.service",
+    file("install/thehive.conf") -> "/etc/init/thehive.conf",
+    file("install/thehive") -> "/etc/init.d/thehive",
+    file("conf/application.sample") -> "/etc/thehive/application.conf",
+    file("conf/logback.xml") -> "/etc/thehive/logback.xml"
+  ).withConfig()
 }
 
 packageBin := {
