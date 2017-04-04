@@ -9,6 +9,14 @@
             $scope.metrics = [];
             $scope.templateIndex = -1;
 
+            $scope.sortableOptions = {
+                handle: '.drag-handle',
+                stop: function(/*e, ui*/) {
+                    $scope.reorderTasks();
+                },
+                axis: 'y'
+            };
+
             $scope.getMetrics = function() {
                 MetricsCacheSrv.all().then(function(metrics){
                     $scope.metrics = metrics;
@@ -61,12 +69,19 @@
                 $scope.templateIndex = -1;
             };
 
+            $scope.reorderTasks = function() {
+                _.each($scope.template.tasks, function(task, index) {
+                    task.order = index;
+                });
+            };
+
             $scope.removeTask = function(task) {
                 $scope.template.tasks = _.without($scope.template.tasks, task);
+                $scope.reorderTasks();
             };
 
             $scope.addTask = function() {
-                $scope.openTaskDialog({}, 'Add');
+                $scope.openTaskDialog({order: $scope.template.tasks.length}, 'Add');
             };
 
             $scope.editTask = function(task) {
@@ -142,7 +157,7 @@
                     templateId: $scope.template.id
                 }, _.omit($scope.template, ['id', 'user', 'type']), function() {
                     $scope.getList($scope.templateIndex);
-                    
+
                     $scope.$emit('templates:refresh');
 
                     AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly updated', 'success');
@@ -178,7 +193,7 @@
                     templateId: $scope.template.id
                 }, function() {
                     $scope.getList(0);
-                    
+
                     $scope.$emit('templates:refresh');
 
                     $uibModalInstance.dismiss();

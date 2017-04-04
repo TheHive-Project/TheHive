@@ -106,9 +106,12 @@
                                     <i class="fa fa-plus"></i>
                                     Add task</a>
                             </h4>
-                            <div ng-if="template.tasks.length !== 0">
+                            <div ng-if="template.tasks.length !== 0" ui-sortable="sortableOptions" ng-model="template.tasks">
                                 <div class="panel panel-default" ng-init="isCollapsed=true" ng-repeat="t in template.tasks">
                                     <div class="panel-heading">
+                                        <span class="drag-handle text-primary clickable mr-xxs">
+                                            <i class="fa fa-bars"></i>
+                                        </span>
                                         <span>
                                             <a href ng-click="isCollapsed=!isCollapsed">
                                                 <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
@@ -178,7 +181,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-danger" ng-if="template.metricNames.length === 0">
+                            <div class="text-danger" ng-if="!template.metricNames ||template.metricNames.length === 0">
                                 <table class="table table-striped">
                                     <tr>
                                         <td>No metrics have been added</td>

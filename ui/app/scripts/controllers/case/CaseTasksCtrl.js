@@ -32,7 +32,7 @@
                     }
                 }]
             },
-            sort: ['-flag', '+startDate', '+title']
+            sort: ['-flag', '+order', '+startDate', '+title']
         });
 
         $scope.showTask = function(task) {

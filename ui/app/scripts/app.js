@@ -3,7 +3,7 @@ angular.module('theHiveServices', []);
 angular.module('theHiveFilters', []);
 angular.module('theHiveDirectives', []);
 
-angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router',
+angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router', 'ui.sortable',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
