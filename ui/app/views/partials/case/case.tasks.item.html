@@ -1,5 +1,3 @@
-<br/>
-<!-- <task-details case-id="{{caze.id}}" task="task"></task-details> -->
 <div class="row">
     <div class="col-md-5">
         <h4 align="left">
@@ -75,9 +73,29 @@
     <div class="col-md-7">
         <div class="row clearfix" ng-show="!adding">
             <div class="col-md-12">
-                <button class="btn btn-primary pull-right" ng-click="showLogEditor()">
-                    <i class="fa fa-plus"></i>
-                    Add new task log</button>
+                <div class="btn-toolbar" role="toolbar">
+                    <div class="btn-group" uib-dropdown>
+                        <button class="btn btn-sm btn-primary" ng-click="showLogEditor()">
+                            <i class="fa fa-plus"></i>
+                            Add new task log</button>
+                    </div>
+                    <div class="btn-group" uib-dropdown>
+                        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                            <i class="fa fa-sort"></i>
+                            Sort by: {{sortOptions[state.sort]}}
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" uib-dropdown-menu>
+                            <li ng-repeat="(key, value) in sortOptions">
+                                <a ng-click="sortBy(key)">{{value}}</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="btn-group pull-right" role="group">
+                        <page-sizer collection="logs" sizes="[10, 15, 30, 100]"></page-sizer>
+                    </div>
+                </div>
+
             </div>
         </div>
         <div class="row" ng-show="adding">
@@ -88,12 +106,12 @@
                 <textarea name="newLog" autofocus="beforeNewLogShow" class="content-box" markdown-editor="markdownEditorOptions" rows="10" ng-model="newLog.message"></textarea>
                 <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>
                 <div class="btn-toolbar mt-xxs">
-                    <button class="btn btn-default" ng-click="cancelAddLog();" ng-disabled="loading">Cancel</button>
-                    <button class="pull-right btn btn-primary" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
+                    <button class="btn btn-sm btn-default" ng-click="cancelAddLog();" ng-disabled="loading">Cancel</button>
+                    <button class="btn btn-sm btn-primary pull-right" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
                         <i class="glyphicon glyphicon-comment"></i>
                         Add log
                     </button>
-                    <button uib-btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="pull-right btn btn-default" ng-model="state.attachmentCollapsed" ng-disabled="loading">
+                    <button uib-btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="btn btn-sm btn-default pull-right" ng-model="state.attachmentCollapsed" ng-disabled="loading">
                         <i class="text-default glyphicon glyphicon-paperclip"></i>
                         {{state.attachmentCollapsed ? 'Add' : 'Discard'}}
                         attachment
@@ -103,6 +121,12 @@
         </div>
 
         <!-- Log list -->
+        <div class="row mv-s" ng-show="logs.total === 0">
+            <div class="col-md-12">
+                <div class="empty-message">No records</div>
+            </div>
+        </div>
+        
         <psearch control="logs"></psearch>
         <div ng-repeat="log in logs.values">
             <log-entry log="log"></log-entry>

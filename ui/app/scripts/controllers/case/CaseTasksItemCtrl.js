@@ -13,12 +13,17 @@
             $scope.newLog = {
                 message: ''
             };
+            $scope.sortOptions = {
+                '+startDate': 'Oldest first',
+                '-startDate': 'Newest first'
+            };
             $scope.state = {
                 editing: false,
                 isCollapsed: false,
                 dropdownOpen: false,
                 attachmentCollapsed: true,
-                logMissing: ''
+                logMissing: '',
+                sort: '-startDate'
             };
 
             $scope.markdownEditorOptions = {
@@ -45,7 +50,8 @@
                             }
                         }]
                     },
-                    'sort': '-startDate'
+                    'sort': $scope.state.sort,
+                    'pageSize': 10
                 });
             };
 
@@ -116,6 +122,12 @@
                 });
 
                 return true;
+            };
+
+            $scope.sortBy = function(sort) {
+                $scope.state.sort = sort;
+                $scope.logs.sort = sort;
+                $scope.logs.update();
             };
 
             // Add tabs
