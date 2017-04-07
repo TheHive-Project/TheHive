@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity, Tlp) {
         var self = this;
 
         this.showFlow = true;
@@ -203,6 +203,10 @@
 
         this.filterBySeverity = function(numericSev) {
             self.addFilterValue('severity', Severity.values[numericSev]);
+        };
+
+        this.filterByTlp = function(value) {
+            self.addFilterValue('tlp', Tlp.values[value]);
         };
 
         this.sortBy = function(sort) {

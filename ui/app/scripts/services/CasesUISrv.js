@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CasesUISrv', function($q, localStorageService, Severity) {
+        .factory('CasesUISrv', function($q, localStorageService, Severity, Tlp) {
             var defaultFilter = {
                 status: {
                     field: 'status',
@@ -56,7 +56,11 @@
                     tlp: {
                         field: 'tlp',
                         type: 'number',
-                        defaultValue: null
+                        defaultValue: null,
+                        convert: function(value) {
+                            // Convert the text value to its numeric representation
+                            return Tlp.keys[value];
+                        }
                     },
                     title: {
                         field: 'title',

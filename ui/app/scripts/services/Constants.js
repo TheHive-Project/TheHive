@@ -22,9 +22,12 @@
             values: ['Unknown', 'Low', 'Medium', 'High']
         })
         .value('Tlp', {
-            RED: 3,
-            AMBER: 2,
-            GREEN: 1,
-            WHITE: 1
+            keys: {
+                Red: 3,
+                Amber: 2,
+                Green: 1,
+                White: 0
+            },
+            values: ['White', 'Green', 'Amber', 'Red']
         });
 })();

@@ -59,7 +59,7 @@
                             <tbody>
                                 <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
 
-                                    <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
+                                    <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.filterByTlp(currentCase.tlp)"></td>
                                     <td>
                                         <div class="case-title">
                                             <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
