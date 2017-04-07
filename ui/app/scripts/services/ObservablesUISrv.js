@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('ObservablesUISrv', function($q, localStorageService) {
+        .factory('ObservablesUISrv', function($q, localStorageService, Tlp) {
 
             var factory = {
                 actions: {
@@ -43,7 +43,11 @@
                     tlp: {
                         field: 'tlp',
                         type: 'number',
-                        defaultValue: null
+                        defaultValue: null,
+                        convert: function(value) {
+                            // Convert the text value to its numeric representation
+                            return Tlp.keys[value];
+                        }
                     },
                     message: {
                         field: 'description',
@@ -80,7 +84,6 @@
                             factory.filters = storedContext.filters || {};
                             factory.activeFilters = storedContext.activeFilters || {};
 
-                            console.log('Init Observables from localstorage');
                             return;
                         }
                     }
@@ -97,8 +100,6 @@
                         factory.activeFilters = {};
 
                         factory.storeContext();
-
-                        console.log('Init Observables context');
                     }
                 },
 
@@ -145,7 +146,8 @@
 
                 addFilter: function(field, value) {
                     var query,
-                        filterDef = factory.filterDefs[field];
+                        filterDef = factory.filterDefs[field],
+                        convertFn = filterDef.convert || angular.identity;
 
                     // Prepare the filter value
                     /*
@@ -163,7 +165,7 @@
                         query = value;
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
-                            return field + ':"' + val.text + '"';
+                            return field + ':"' + convertFn(val.text) + '"';
                         }).join(' OR ');
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
@@ -173,7 +175,7 @@
                         query = field + ':[ ' + fromDate + ' TO ' + toDate + ' ]';
 
                     } else {
-                        query = field + ':' + value;
+                        query = field + ':' + convertFn(value);
                     }
 
                     factory.filters[field] = {

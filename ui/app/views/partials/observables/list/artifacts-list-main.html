@@ -49,7 +49,7 @@
         </thead>
         <tbody>
             <tr ng-repeat="artifact in artifacts.values">
-                <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="addFilterValue('tlp', artifact.tlp)"></td>
+                <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
                     <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]">
                 </td>

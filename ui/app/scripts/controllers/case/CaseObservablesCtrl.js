@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -128,6 +128,10 @@
                 }
 
                 $scope.filter();
+            };
+
+            $scope.filterByTlp = function(value) {
+                $scope.addFilterValue('tlp', Tlp.values[value]);
             };
 
             $scope.countReports = function(observable) {
