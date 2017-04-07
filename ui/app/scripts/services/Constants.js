@@ -12,5 +12,19 @@
             NoImpact: 'No Impact',
             WithImpact: 'With impact',
             NotApplicable: 'Not Applicable'
+        })
+        .value('Severity', {
+            keys: {
+                High: 3,
+                Medium: 2,
+                Low: 1
+            },
+            values: ['Unknown', 'Low', 'Medium', 'High']
+        })
+        .value('Tlp', {
+            RED: 3,
+            AMBER: 2,
+            GREEN: 1,
+            WHITE: 1
         });
 })();

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CasesUISrv', function($q, localStorageService) {
+        .factory('CasesUISrv', function($q, localStorageService, Severity) {
             var defaultFilter = {
                 status: {
                     field: 'status',
@@ -28,6 +28,15 @@
                         field: 'status',
                         type: 'list',
                         defaultValue: []
+                    },
+                    severity: {
+                        field: 'severity',
+                        type: 'list',
+                        defaultValue: [],
+                        convert: function(value) {
+                            // Convert the text value to its numeric representation
+                            return Severity.keys[value];
+                        }
                     },
                     resolutionStatus: {
                         field: 'resolutionStatus',
@@ -147,14 +156,15 @@
 
                 addFilter: function(field, value) {
                     var query,
-                        filterDef = factory.filterDefs[field];
+                        filterDef = factory.filterDefs[field],
+                        convertFn = filterDef.convert || angular.identity;
 
                     // Prepare the filter value
                     if (field === 'keyword') {
                         query = value;
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
-                            return field + ':"' + val.text + '"';
+                            return field + ':"' + convertFn(val.text) + '"';
                         }).join(' OR ');
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
@@ -164,7 +174,7 @@
                         query = field + ':[ ' + fromDate + ' TO ' + toDate + ' ]';
 
                     } else {
-                        query = field + ':' + value;
+                        query = field + ':' + convertFn(value);
                     }
 
                     factory.filters[field] = {

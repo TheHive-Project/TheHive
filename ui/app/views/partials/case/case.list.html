@@ -48,6 +48,7 @@
                                 <tr>
                                     <th style="width: 10px;" class="p-0"></th>
                                     <th>Title</th>
+                                    <th style="width: 100px;text-align:center;">Severity</th>
                                     <th style="width: 100px;">Tasks</th>
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
@@ -81,6 +82,11 @@
                                                 <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
                                             </small>
                         				</div>
+                                    </td>
+                                    <td align="center">
+                                        <div class="clickable" ng-click="$vm.filterBySeverity(currentCase.severity)">
+                                            <severity active="false" value="currentCase.severity"></severity>
+                                        </div>
                                     </td>
                                     <td>
                                         <a ui-sref="app.case.tasks({caseId: currentCase.id})">

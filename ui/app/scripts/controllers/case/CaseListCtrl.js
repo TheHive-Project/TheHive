@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity) {
         var self = this;
 
         this.showFlow = true;
@@ -133,6 +133,25 @@
             ]);
         };
 
+        this.getSeverities = function(query) {
+            var defer = $q.defer();
+
+            $q.resolve(_.map(Severity.keys, function(value, key) {
+                return {text: key};
+            })).then(function(response) {
+                var severities = [];
+
+                severities = _.filter(response, function(sev) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(sev.text);
+                });
+
+                defer.resolve(severities);
+            });
+
+            return defer.promise;
+        };
+
         this.getTags = function(query) {
             return TagSrv.fromCases(query);
         };
@@ -180,6 +199,10 @@
                 .then(function(){
                     self.addFilterValue('status', status);
                 });
+        };
+
+        this.filterBySeverity = function(numericSev) {
+            self.addFilterValue('severity', Severity.values[numericSev]);
         };
 
         this.sortBy = function(sort) {
