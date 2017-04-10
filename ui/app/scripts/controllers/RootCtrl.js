@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv, AppLayoutSrv, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, appConfig) {
         'use strict';
 
         $rootScope.layoutSrv = AppLayoutSrv;
@@ -50,10 +50,10 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 $scope.metricsCache = list;
             });
 
-            // Get MISP counts
-            $scope.mispEvents = MispSrv.stats($scope);
+            // Get Alert counts
+            $scope.alertEvents = AlertingSrv.stats($scope);
         }, function(data, status) {
-            AlertSrv.error('RootCtrl', data, status);
+            NotificationSrv.error('RootCtrl', data, status);
         });
 
         $scope.$on('templates:refresh', function(){
@@ -67,13 +67,14 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         });
 
-        $scope.$on('misp:event-imported', function() {
-            $scope.mispEvents = MispSrv.stats($scope);
+        $scope.$on('alert:event-imported', function() {
+            $scope.alertEvents = AlertingSrv.stats($scope);
         });
 
-        $scope.$on('misp:status-updated', function(event, enabled) {
-            $scope.mispEnabled = enabled;
-        });
+        // FIXME
+        // $scope.$on('misp:status-updated', function(event, enabled) {
+        //     $scope.mispEnabled = enabled;
+        // });
 
         $scope.isAdmin = function(user) {
             var u = user;
@@ -92,7 +93,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             AuthenticationSrv.logout(function() {
                 $state.go('login');
             }, function(data, status) {
-                AlertSrv.error('RootCtrl', data, status);
+                NotificationSrv.error('RootCtrl', data, status);
             });
         };
 

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispListCtrl', function($scope, $q, $state, $uibModal, MispSrv, AlertSrv, FilteringSrv) {
+        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, AlertingSrv, NotificationSrv, FilteringSrv) {
             var self = this;
 
             self.list = [];
@@ -12,23 +12,23 @@
                 markAsRead: false,
                 selectAll: false
             };
-            self.filtering = new FilteringSrv('misp-section', {
+            self.filtering = new FilteringSrv('alert-section', {
                 defaults: {
                     showFilters: false,
                     showStats: false,
                     pageSize: 15,
-                    sort: ['-publishDate']
+                    sort: ['-date']
                 },
                 defaultFilter: {
-                    eventStatus: {
-                        field: 'eventStatus',
+                    status: {
+                        field: 'status',
                         label: 'Status',
                         value: [{
                             text: 'New'
                         }, {
                             text: 'Update'
                         }],
-                        filter: '(eventStatus:"New" OR eventStatus:"Update")'
+                        filter: '(status:"New" OR status:"Update")'
                     }
                 },
                 filterDefs: {
@@ -37,8 +37,8 @@
                         type: 'string',
                         defaultValue: []
                     },
-                    eventStatus: {
-                        field: 'eventStatus',
+                    status: {
+                        field: 'status',
                         type: 'list',
                         defaultValue: [],
                         label: 'Status'
@@ -49,26 +49,26 @@
                         defaultValue: [],
                         label: 'Tags'
                     },
-                    org: {
-                        field: 'org',
+                    source: {
+                        field: 'source',
                         type: 'list',
                         defaultValue: [],
                         label: 'Source'
                     },
-                    info: {
-                        field: 'info',
+                    title: {
+                        field: 'title',
                         type: 'string',
                         defaultValue: '',
                         label: 'Title'
                     },
-                    publishDate: {
-                        field: 'publishDate',
+                    date: {
+                        field: 'date',
                         type: 'date',
                         defaultValue: {
                             from: null,
                             to: null
                         },
-                        label: 'Publish Date'
+                        label: 'Date'
                     }
                 }
             });
@@ -77,7 +77,7 @@
                 searchQuery: self.filtering.buildQuery() || ''
             };
 
-            $scope.$watch('misp.list.pageSize', function (newValue) {
+            $scope.$watch('$vm.list.pageSize', function (newValue) {
                 self.filtering.setPageSize(newValue);
             });
 
@@ -93,15 +93,15 @@
                 var fn = angular.noop;
 
                 if (event.follow === true) {
-                    fn = MispSrv.unfollow;
+                    fn = AlertingSrv.unfollow;
                 } else {
-                    fn = MispSrv.follow;
+                    fn = AlertingSrv.follow;
                 }
 
                 fn(event.id).then(function( /*data*/ ) {
                     self.list.update();
                 }, function(response) {
-                    AlertSrv.error('MispListCtrl', response.data, response.status);
+                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
@@ -110,9 +110,9 @@
                 var fn = angular.noop;
 
                 if (follow === true) {
-                    fn = MispSrv.follow;
+                    fn = AlertingSrv.follow;
                 } else {
-                    fn = MispSrv.unfollow;
+                    fn = AlertingSrv.unfollow;
                 }
 
                 var promises = _.map(ids, function(id) {
@@ -122,16 +122,16 @@
                 $q.all(promises).then(function( /*response*/ ) {
                     self.list.update();
 
-                    AlertSrv.log('The selected events have been ' + (follow ? 'followed' : 'unfollowed'), 'success');
+                    NotificationSrv.log('The selected events have been ' + (follow ? 'followed' : 'unfollowed'), 'success');
                 }, function(response) {
-                    AlertSrv.error('MispListCtrl', response.data, response.status);
+                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
             self.import = function(event) {
                 $uibModal.open({
-                    templateUrl: 'views/partials/misp/event.dialog.html',
-                    controller: 'MispEventCtrl',
+                    templateUrl: 'views/partials/alert/event.dialog.html',
+                    controller: 'AlertEventCtrl',
                     controllerAs: 'dialog',
                     size: 'lg',
                     resolve: {
@@ -140,43 +140,18 @@
                 });
             };
 
-            self.bulkImport = function() {
-                var modalInstance = $uibModal.open({
-                    templateUrl: 'views/partials/misp/bulk.import.dialog.html',
-                    controller: 'MispBulkImportCtrl',
-                    controllerAs: 'dialog',
-                    size: 'lg',
-                    resolve: {
-                        events: function() {
-                            return self.selection;
-                        }
-                    }
-                });
-
-                modalInstance.result.then(function(data) {
-                    self.list.update();
-
-                    if (data.length === 1) {
-                        $state.go('app.case.details', {
-                            caseId: data[0].id
-                        });
-                    }
-
-                });
-            };
-
             self.bulkIgnore = function() {
                 var ids = _.pluck(self.selection, 'id');
 
                 var promises = _.map(ids, function(id) {
-                    return MispSrv.ignore(id);
+                    return AlertingSrv.ignore(id);
                 });
 
                 $q.all(promises).then(function( /*response*/ ) {
                     self.list.update();
-                    AlertSrv.log('The selected events have been ignored', 'success');
+                    NotificationSrv.log('The selected events have been ignored', 'success');
                 }, function(response) {
-                    AlertSrv.error('MispListCtrl', response.data, response.status);
+                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
@@ -191,7 +166,7 @@
             };
 
             self.ignore = function(event) {
-                MispSrv.ignore(event.id).then(function( /*data*/ ) {
+                AlertingSrv.ignore(event.id).then(function( /*data*/ ) {
                     self.list.update();
                 });
             };
@@ -207,7 +182,7 @@
                     pageSize: self.filtering.context.pageSize,
                 };
 
-                self.list = MispSrv.list(config, self.resetSelection);
+                self.list = AlertingSrv.list(config, self.resetSelection);
             };
 
             self.cancel = function() {
@@ -221,7 +196,7 @@
                 self.menu.follow = temp.length === 1 && temp[0] === false;
 
 
-                temp = _.uniq(_.pluck(self.selection, 'eventStatus'));
+                temp = _.uniq(_.pluck(self.selection, 'status'));
 
                 self.menu.markAsRead = temp.indexOf('Ignore') === -1;
             };
@@ -334,7 +309,7 @@
             this.filterByStatus = function(status) {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('eventStatus', status);
+                        self.addFilterValue('status', status);
                     });
             };
 
@@ -345,11 +320,11 @@
             };
 
             this.getStatuses = function(query) {
-                return MispSrv.statuses(query);
+                return AlertingSrv.statuses(query);
             };
 
             this.getSources = function(query) {
-                return MispSrv.sources(query);
+                return AlertingSrv.sources(query);
             };
 
             self.load();

@@ -4,7 +4,7 @@
     angular.module('theHiveControllers')
         .controller('CaseMergeModalCtrl', CaseMergeModalCtrl);
 
-    function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserInfoSrv, AlertSrv, caze, $http) {
+    function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserInfoSrv, NotificationSrv, caze, $http) {
         var me = this;
 
         this.caze = caze;
@@ -72,10 +72,10 @@
 
                 $uibModalInstance.dismiss();
 
-                AlertSrv.log('The cases have been successfully merged into a new case #' + merged.caseId, 'success');
+                NotificationSrv.log('The cases have been successfully merged into a new case #' + merged.caseId, 'success');
             }, function (response) {
                 this.pendingAsync = false;
-                AlertSrv.error('CaseMergeModalCtrl', response.data, response.status);
+                NotificationSrv.error('CaseMergeModalCtrl', response.data, response.status);
             });
         };
 

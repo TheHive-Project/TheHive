@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -71,7 +71,7 @@
                 return CaseTaskSrv.update({
                     taskId: $scope.task.id
                 }, field, function () {}, function (response) {
-                    AlertSrv.error('taskDetails', response.data, response.status);
+                    NotificationSrv.error('taskDetails', response.data, response.status);
                 });
             };
 
@@ -117,7 +117,7 @@
 
                     $scope.loading = false;
                 }, function (response) {
-                    AlertSrv.error('taskDetails', response.data, response.status);
+                    NotificationSrv.error('taskDetails', response.data, response.status);
                     $scope.loading = false;
                 });
 

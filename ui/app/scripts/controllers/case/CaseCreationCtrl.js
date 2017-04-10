@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, AlertSrv, MetricsCacheSrv, TagSrv, template) {
+        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -91,7 +91,7 @@
                     $uibModalInstance.close();
                 }, function (response) {
                     $scope.pendingAsync = false;
-                    AlertSrv.error('CaseCreationCtrl', response.data, response.status);
+                    NotificationSrv.error('CaseCreationCtrl', response.data, response.status);
                 });
             };
 

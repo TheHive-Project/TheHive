@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($uibModal, TaskLogSrv, UserInfoSrv, AlertSrv) {
+        .directive('logEntry', function($uibModal, TaskLogSrv, UserInfoSrv, NotificationSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
                 link: function(scope) {
@@ -31,7 +31,7 @@
                         return TaskLogSrv.update({
                             logId: scope.log.id
                         }, {message: scope.log.message}, function() {}, function(response) {
-                            AlertSrv.error('CaseTaskLog', response.data, response.status);
+                            NotificationSrv.error('CaseTaskLog', response.data, response.status);
                         });
                     };
 

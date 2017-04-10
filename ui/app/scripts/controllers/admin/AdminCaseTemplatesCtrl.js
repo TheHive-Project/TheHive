@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, TemplateSrv, AlertSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
+        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
             $scope.task = '';
             $scope.tags = [];
             $scope.templates = [];
@@ -112,7 +112,7 @@
                     metrics.push(metric.name);
                     $scope.template.metricNames = metrics;
                 } else {
-                    AlertSrv.log('The metric [' + metric.title + '] has already been added to the template', 'warning');
+                    NotificationSrv.log('The metric [' + metric.title + '] has already been added to the template', 'warning');
                 }
             };
 
@@ -145,9 +145,9 @@
 
                     $scope.$emit('templates:refresh');
 
-                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly created', 'success');
+                    NotificationSrv.log('The template [' + $scope.template.name + '] has been successfuly created', 'success');
                 }, function(response) {
-                    AlertSrv.error('TemplateCtrl', response.data, response.status);
+                    NotificationSrv.error('TemplateCtrl', response.data, response.status);
                 });
             };
 
@@ -160,9 +160,9 @@
 
                     $scope.$emit('templates:refresh');
 
-                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly updated', 'success');
+                    NotificationSrv.log('The template [' + $scope.template.name + '] has been successfuly updated', 'success');
                 }, function(response) {
-                    AlertSrv.error('TemplateCtrl', response.data, response.status);
+                    NotificationSrv.error('TemplateCtrl', response.data, response.status);
                 });
             };
 

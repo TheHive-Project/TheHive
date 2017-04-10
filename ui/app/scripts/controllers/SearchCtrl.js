@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('SearchCtrl', function($scope, $stateParams, $base64, PSearchSrv, CaseTaskSrv, AlertSrv, EntitySrv, UserInfoSrv) {
+        .controller('SearchCtrl', function($scope, $stateParams, $base64, PSearchSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserInfoSrv) {
             $scope.filter = {
                 type: {
                     values: [

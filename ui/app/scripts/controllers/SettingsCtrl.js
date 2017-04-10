@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, AlertSrv, resizeService, readLocalPicService, UserInfoSrv, appConfig) {
+        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, UserInfoSrv, appConfig) {
             $scope.appConfig = appConfig;
 
             $scope.basicData = {
@@ -34,11 +34,11 @@
 
                     UserInfoSrv.update(data._id, data);
 
-                    AlertSrv.log('Your basic information have been successfully updated', 'success');
+                    NotificationSrv.log('Your basic information have been successfully updated', 'success');
 
                     $state.reload();
                 }, function(response) {
-                    AlertSrv.error('SettingsCtrl', response.data, response.status);
+                    NotificationSrv.error('SettingsCtrl', response.data, response.status);
                 });
             };
 
@@ -57,10 +57,10 @@
                     UserSrv.changePass({
                         userId: $scope.currentUser.id
                     }, updatedFields, function( /*data*/ ) {
-                        AlertSrv.log('Your password has been successfully updated', 'success');
+                        NotificationSrv.log('Your password has been successfully updated', 'success');
                         $state.reload();
                     }, function(response) {
-                        AlertSrv.error('SettingsCtrl', response.data, response.status);
+                        NotificationSrv.error('SettingsCtrl', response.data, response.status);
                     });
                 } else {
                     $state.go('app.cases');

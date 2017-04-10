@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv, AlertSrv) {
+    angular.module('theHiveDirectives').directive('histoChart', function($http, ChartSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -89,7 +89,7 @@
                             }
                         };
                     }, function(err) {
-                        AlertSrv.error('histoChart', err.data, err.status);
+                        NotificationSrv.error('histoChart', err.data, err.status);
                     });
                 };
 

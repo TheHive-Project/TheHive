@@ -52,7 +52,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                         return VersionSrv.get();
                     },
                     appLayout: function($q, $rootScope, AppLayoutSrv) {
-                        AppLayoutSrv.init();                        
+                        AppLayoutSrv.init();
                         return $q.resolve();
                     }
                 }
@@ -143,7 +143,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 controller: 'CaseMainCtrl',
                 title: 'Case',
                 resolve: {
-                    caze: function($q, $rootScope, $stateParams, CaseSrv, AlertSrv) {
+                    caze: function($q, $rootScope, $stateParams, CaseSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         CaseSrv.get({
@@ -156,7 +156,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                         }, function(response) {
                             deferred.reject(response);
 
-                            AlertSrv.error('CaseMainCtrl', response.data, response.status);
+                            NotificationSrv.error('CaseMainCtrl', response.data, response.status);
                         });
 
                         return deferred.promise;
@@ -189,7 +189,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 templateUrl: 'views/partials/case/case.tasks.item.html',
                 controller: 'CaseTasksItemCtrl',
                 resolve: {
-                    task: function($q, $stateParams, CaseTaskSrv, AlertSrv) {
+                    task: function($q, $stateParams, CaseTaskSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         CaseTaskSrv.get({
@@ -198,7 +198,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                             deferred.resolve(data);
                         }, function(response) {
                             deferred.reject(response);
-                            AlertSrv.error('taskDetails', response.data, response.status);
+                            NotificationSrv.error('taskDetails', response.data, response.status);
                         });
 
                         return deferred.promise;
@@ -223,11 +223,11 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                     }
                 }
             })
-            .state('app.misp-list', {
-                url: 'misp/list',
-                templateUrl: 'views/partials/misp/list.html',
-                controller: 'MispListCtrl',
-                controllerAs: 'misp'
+            .state('app.alert-list', {
+                url: 'alert/list',
+                templateUrl: 'views/partials/alert/list.html',
+                controller: 'AlertListCtrl',
+                controllerAs: '$vm'
             });
     })
     .config(function($httpProvider) {

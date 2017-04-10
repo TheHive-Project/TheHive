@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('StatSrv', function($http, AlertSrv, UtilsSrv) {
+        .factory('StatSrv', function($http, NotificationSrv, UtilsSrv) {
             function getPromise(config) {
                 var stats = [];
 
@@ -57,7 +57,7 @@
                     if (angular.isFunction(config.error)) {
                         config.error(r.data, r.status, r.headers, r.config);
                     } else {
-                        AlertSrv.error('StatSrv', r.data, r.status);
+                        NotificationSrv.error('StatSrv', r.data, r.status);
                     }
                 });
                 return result;

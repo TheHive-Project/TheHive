@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispEventCtrl', function($rootScope, $state, $uibModalInstance, MispSrv, AlertSrv, event) {
+        .controller('MispEventCtrl', function($rootScope, $state, $uibModalInstance, MispSrv, NotificationSrv, event) {
             var self = this;
             var eventId = event.id;
 
@@ -37,7 +37,7 @@
                     self.loadPage();
                 }, function(response) {
                   self.loading = false;
-                  AlertSrv.error('MispEventCtrl', response.data, response.status);
+                  NotificationSrv.error('MispEventCtrl', response.data, response.status);
                   $uibModalInstance.dismiss();
                 });
             };
@@ -54,7 +54,7 @@
                     });
                 }, function(response) {
                     self.loading = false;
-                    AlertSrv.error('MispEventCtrl', response.data, response.status);
+                    NotificationSrv.error('MispEventCtrl', response.data, response.status);
                 });
             };
 
@@ -76,7 +76,7 @@
                 fn(self.event.id).then(function() {
                     self.load();
                 }).catch(function(response) {
-                    AlertSrv.error('MispEventCtrl', response.data, response.status);
+                    NotificationSrv.error('MispEventCtrl', response.data, response.status);
                 });
             };
 

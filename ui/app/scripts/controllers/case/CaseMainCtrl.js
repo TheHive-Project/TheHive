@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, AlertSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -147,7 +147,7 @@
                     UtilsSrv.shallowClearAndCopy(response, $scope.caze);
                     defer.resolve($scope.caze);
                 }, function(response) {
-                    AlertSrv.error('caseDetails', response.data, response.status);
+                    NotificationSrv.error('caseDetails', response.data, response.status);
                     defer.reject(response);
                 });
 

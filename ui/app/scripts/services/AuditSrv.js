@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AuditSrv', function($http, StreamSrv, AlertSrv) {
+        .factory('AuditSrv', function($http, StreamSrv, NotificationSrv) {
             return function(rootId, max, scope) {
                 var ret = [];
                 if (!isFinite(max)) {
@@ -48,7 +48,7 @@
 
                     StreamSrv.addListener(eventConfig);
                 }).error(function(data, status) {
-                    AlertSrv.error('AuditSrv', data, status);
+                    NotificationSrv.error('AuditSrv', data, status);
                 });
                 return ret;
             };

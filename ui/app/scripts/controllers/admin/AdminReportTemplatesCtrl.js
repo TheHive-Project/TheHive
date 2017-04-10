@@ -110,7 +110,7 @@
         this.load();
     }
 
-    function AdminReportTemplateDialogCtrl($uibModalInstance, reportTemplate, ReportTemplateSrv, AlertSrv, analyzer) {
+    function AdminReportTemplateDialogCtrl($uibModalInstance, reportTemplate, ReportTemplateSrv, NotificationSrv, analyzer) {
         this.reportTemplate = reportTemplate;
         this.analyzer = analyzer;
         this.reportTypes = ['short', 'long'];
@@ -133,12 +133,12 @@
                 .then(function() {
                     $uibModalInstance.close();
                 }, function(response) {
-                    AlertSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
+                    NotificationSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
                 });
         };
     }
 
-    function AdminReportTemplateDeleteCtrl($uibModalInstance, ReportTemplateSrv, AlertSrv, template) {
+    function AdminReportTemplateDeleteCtrl($uibModalInstance, ReportTemplateSrv, NotificationSrv, template) {
         this.template = template;
 
         this.ok = function () {
@@ -146,7 +146,7 @@
                 .then(function() {
                     $uibModalInstance.close();
                 }, function(response) {
-                    AlertSrv.error('AdminReportTemplateDeleteCtrl', response.data, response.status);
+                    NotificationSrv.error('AdminReportTemplateDeleteCtrl', response.data, response.status);
                 });
         };
         this.cancel = function () {
@@ -154,7 +154,7 @@
         };
     }
 
-    function AdminReportTemplateImportCtrl($uibModalInstance, ReportTemplateSrv, AlertSrv) {
+    function AdminReportTemplateImportCtrl($uibModalInstance, ReportTemplateSrv, NotificationSrv) {
         this.formData = {};
 
         this.ok = function () {
@@ -162,7 +162,7 @@
                 .then(function() {
                     $uibModalInstance.close();
                 }, function(response) {
-                    AlertSrv.error('AdminReportTemplateImportCtrl', response.data, response.status);
+                    NotificationSrv.error('AdminReportTemplateImportCtrl', response.data, response.status);
                 });
         };
 

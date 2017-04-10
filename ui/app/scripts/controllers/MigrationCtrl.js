@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('MigrationCtrl',
-        function($rootScope, $scope, $http, $state, $timeout, $window, AlertSrv, StreamSrv, UserSrv) {
+        function($rootScope, $scope, $http, $state, $timeout, $window, NotificationSrv, StreamSrv, UserSrv) {
             $rootScope.title = 'Database migration';
             $scope.migrationStatus = {};
             $scope.showUserForm = false;
@@ -49,7 +49,7 @@
                     console.log('Migration started');
                 }).error(function(response) {
                     if (angular.isObject(response)) {
-                        AlertSrv.error('UserMgmtCtrl', response.data, response.status);
+                        NotificationSrv.error('UserMgmtCtrl', response.data, response.status);
                     } else {
                       console.log("Migration timeout");
                     }
