@@ -2,9 +2,10 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv, AppLayoutSrv, appConfig) {
         'use strict';
 
+        $rootScope.layoutSrv = AppLayoutSrv;
         $scope.appConfig = appConfig;
         $scope.querystring = '';
         $scope.view = {

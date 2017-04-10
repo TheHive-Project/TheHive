@@ -50,6 +50,10 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ui.bootstrap', 'ui.router
                 resolve: {
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
+                    },
+                    appLayout: function($q, $rootScope, AppLayoutSrv) {
+                        AppLayoutSrv.init();                        
+                        return $q.resolve();
                     }
                 }
             })

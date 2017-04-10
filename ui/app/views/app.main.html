@@ -1,27 +1,30 @@
 <div class="row">
-    <div ng-Class="{ 'col-md-9': showFlow, 'col-md-12': !showFlow}">
+    <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
         <div class="box">
             <div class="box-header with-border">
                 <h3 class="box-title" ng-if="view.data == 'mytasks'">My tasks ({{list.total}})</h3>
                 <h3 class="box-title" ng-if="view.data == 'waitingtasks'">Waiting tasks ({{list.total}})</h3>
 
-                <div class="box-tools pull-right">
+                <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
+                            <i class="fa fa-plus"></i> Show live stream
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body">
 
-                    <div class="form-inline">
+                <div class="clearfix">
+                    <div class="form-inline pull-right">
                         <div class="input-group">
                             <filter-box collection="list"></filter-box>
                         </div>
                         <div class="form-group">
                             <page-sizer collection="list"></page-sizer>
                         </div>
-                        <button type="button" class="btn btn-box-tool" tooltip="Hide" ng-click="showFlow = true" ng-show="!showFlow;">
-                            <i class="fa fa-plus"></i> Show live stream
-                        </button>
                     </div>
-
                 </div>
-            </div>
-            <div class="box-body">
 
                 <div ng-switch="view.data">
                     <div class="main-fadein" ng-switch-when="waitingtasks">
@@ -37,18 +40,22 @@
         </div>
     </div>
 
-    <div ng-show="showFlow" class="col-md-3">
+    <div ng-show="appLayout.showFlow" class="col-md-3">
         <div class=" box">
             <div class="box-header">
                 <h3 class="box-title">&nbsp;</h3>
                 <div class="box-tools pull-right">
-                    <button type="button" class="btn btn-box-tool" tooltip="Open in new window" ng-click="showFlow = false">
-                        <i class="fa fa-external-link"></i> Open in new window
-                    </button>
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.detachFlow()">
+                            <i class="fa fa-external-link"></i> Open in new window
+                        </a>
+                    </span>
 
-                    <button type="button" class="btn btn-box-tool" tooltip="Hide" ng-click="showFlow = false">
-                        <i class="fa fa-minus"></i> Hide
-                    </button>
+                    <span class="ml-xs" tooltip="Hide">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(false)">
+                            <i class="fa fa-minus"></i> Hide
+                        </a>
+                    </span>
                 </div>
             </div>
             <div class="box-body no-padding">

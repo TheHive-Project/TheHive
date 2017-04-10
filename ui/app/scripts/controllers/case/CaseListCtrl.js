@@ -6,7 +6,6 @@
     function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity, Tlp) {
         var self = this;
 
-        this.showFlow = true;
         this.openEntity = EntitySrv.open;
         this.getUserInfo = UserInfoSrv;
         this.CaseResolutionStatus = CaseResolutionStatus;
@@ -213,11 +212,6 @@
             this.list.sort = sort;
             this.list.update();
             this.uiSrv.setSort(sort);
-        };
-
-        this.live = function() {
-            $window.open($state.href('live'), 'TheHiveLive',
-                'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');
         };
 
     }

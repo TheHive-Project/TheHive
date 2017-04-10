@@ -1,9 +1,8 @@
 <div class="row">
-    <div class="col-md-12" ng-include="'views/partials/case/case.panelinfo.html'"></div>
-</div>
-
-<div class="row">
-    <div class="col-md-9">
+    <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
+        <div class="row">
+            <div class="col-md-12" ng-include="'views/partials/case/case.panelinfo.html'"></div>
+        </div>
         <uib-tabset type="tabs" active="tabSrv.activeIndex" class="nav-tabs-custom">
             <uib-tab ng-click="openTab(name)" ng-init="tab = tabs[name];" ng-repeat="name in notSorted(tabs)">
                 <uib-tab-heading ng-switch on="name">
@@ -45,7 +44,27 @@
         </uib-tabset>
     </div>
 
-    <div class="col-md-3">
-        <flow ng-if="caze.id" root="{{caze.id}}"></flow>
+    <div ng-show="appLayout.showFlow" class="col-md-3">
+        <div class="box">
+            <div class="box-header">
+                <h3 class="box-title">&nbsp;</h3>
+                <div class="box-tools pull-right">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.detachFlow()">
+                            <i class="fa fa-external-link"></i> Open in new window
+                        </a>
+                    </span>
+
+                    <span class="ml-xs" tooltip="Hide">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(false)">
+                            <i class="fa fa-minus"></i> Hide
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body no-padding">
+                <flow ng-if="caze.id" root="{{caze.id}}"></flow>
+            </div>
+        </div>
     </div>
 </div>
