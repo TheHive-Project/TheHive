@@ -50,6 +50,15 @@ PATCH    /api/case/task/log/:logId                controllers.LogCtrl.update(log
 DELETE   /api/case/task/log/:logId                controllers.LogCtrl.delete(logId)
 GET      /api/case/task/log/:logId                controllers.LogCtrl.get(logId)
 
+GET      /api/alert                               controllers.AlertCtrl.find()
+POST     /api/alert/_search                       controllers.AlertCtrl.find()
+PATCH    /api/alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
+POST     /api/alert/_stats                        controllers.AlertCtrl.stats()
+POST     /api/alert                               controllers.AlertCtrl.create()
+GET      /api/alert/:alertId                      controllers.AlertCtrl.get(alertId)
+PATCH    /api/alert/:alertId                      controllers.AlertCtrl.update(alertId)
+DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId)
+
 GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
 
 GET      /api/datastore/:hash                     controllers.AttachmentCtrl.download(hash, name: Option[String])
