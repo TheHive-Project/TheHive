@@ -87,7 +87,9 @@
                                     </td>
                                     <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
                                     <td class="text-center">
-                                        <severity value="event.severity"></severity>
+                                        <div class="clickable" ng-click="$vm.filterBySeverity(event.severity)">
+                                            <severity active="false" value="event.severity"></severity>
+                                        </div>
                                     </td>
                                     <td class="text-center">{{::event.artifacts.length}}</td>
                                     <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>

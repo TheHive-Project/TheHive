@@ -54,7 +54,7 @@ object JsonFormat {
       tpe ← (json \ "type").validate[String]
       category ← (json \ "category").validate[String]
       uuid ← (json \ "uuid").validate[String]
-      eventId ← (json \ "id").validate[Long]
+      eventId ← (json \ "id").validate[String]
       timestamp ← (json \ "timestamp").validate[String]
       date = new Date(timestamp.toLong * 1000)
       comment ← (json \ "comment").validate[String]
@@ -66,7 +66,7 @@ object JsonFormat {
       tpe,
       category,
       uuid,
-      eventId,
+      eventId.toLong,
       date,
       comment,
       value,

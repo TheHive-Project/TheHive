@@ -20,7 +20,7 @@
                 },
 
                 get: function(alertId) {
-                    return $http.get(baseUrl + '/get/' + alertId);
+                    return $http.get(baseUrl + '/' + alertId);
                 },
 
                 create: function(alertId) {

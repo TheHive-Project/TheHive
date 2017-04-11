@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, AlertingSrv, NotificationSrv, FilteringSrv) {
+        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
             var self = this;
 
             self.list = [];
@@ -54,6 +54,15 @@
                         type: 'list',
                         defaultValue: [],
                         label: 'Source'
+                    },
+                    severity: {
+                        field: 'severity',
+                        type: 'list',
+                        defaultValue: [],
+                        convert: function(value) {
+                            // Convert the text value to its numeric representation
+                            return Severity.keys[value];
+                        }
                     },
                     title: {
                         field: 'title',
@@ -313,11 +322,17 @@
                     });
             };
 
+            this.filterBySeverity = function(numericSev) {
+                self.addFilterValue('severity', Severity.values[numericSev]);
+            };
+
             this.sortBy = function(sort) {
                 self.list.sort = sort;
                 self.list.update();
                 self.filtering.setSort(sort);
             };
+
+            this.getSeverities = self.filtering.getSeverities;
 
             this.getStatuses = function(query) {
                 return AlertingSrv.statuses(query);

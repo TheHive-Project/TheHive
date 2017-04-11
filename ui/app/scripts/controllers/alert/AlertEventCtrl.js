@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('MispEventCtrl', function($rootScope, $state, $uibModalInstance, MispSrv, NotificationSrv, event) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, AlertingSrv, NotificationSrv, event) {
             var self = this;
             var eventId = event.id;
 
@@ -10,15 +10,27 @@
             self.pagination = {
                 pageSize: 10,
                 currentPage: 1,
+                filter: '',
                 data: []
+            };
+            self.filteredArtifacts = [];
+                        
+            this.filterArtifacts = function(value) {
+                self.pagination.currentPage = 1;
+                this.pagination.filter= value;
+                this.loadPage();
             };
 
             self.loadPage = function() {
                 var end = self.pagination.currentPage * self.pagination.pageSize;
                 var start = end - self.pagination.pageSize;
 
+                self.filteredArtifacts = self.pagination.filter === '' ? self.event.artifacts : _.filter(self.event.artifacts, function(item) {
+                    return item.dataType === self.pagination.filter;
+                });
+
                 var data = [];
-                angular.forEach(self.event.attributes.slice(start, end), function(d) {
+                angular.forEach(self.filteredArtifacts.slice(start, end), function(d) {
                     data.push(d);
                 });
 
@@ -26,40 +38,40 @@
             };
 
             self.load = function() {
-                MispSrv.get(eventId).then(function(response) {
+                AlertingSrv.get(eventId).then(function(response) {
                     self.event = response.data;
                     self.loading = false;
 
-                    self.dataTypes = _.countBy(self.event.attributes, function(attr) {
+                    self.dataTypes = _.countBy(self.event.artifacts, function(attr) {
                         return attr.dataType;
                     });
 
                     self.loadPage();
                 }, function(response) {
                   self.loading = false;
-                  NotificationSrv.error('MispEventCtrl', response.data, response.status);
+                  NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                   $uibModalInstance.dismiss();
                 });
             };
 
             self.import = function() {
                 self.loading = true;
-                MispSrv.create(self.event.id).then(function(response) {
+                AlertingSrv.create(self.event.id).then(function(response) {
                     $uibModalInstance.dismiss();
 
-                    $rootScope.$broadcast('misp:event-imported');
+                    $rootScope.$broadcast('alert:event-imported');
 
                     $state.go('app.case.details', {
                         caseId: response.data.id
                     });
                 }, function(response) {
                     self.loading = false;
-                    NotificationSrv.error('MispEventCtrl', response.data, response.status);
+                    NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
 
             self.ignore = function(){
-                MispSrv.ignore(self.event.id).then(function( /*data*/ ) {
+                AlertingSrv.ignore(self.event.id).then(function( /*data*/ ) {
                     $uibModalInstance.dismiss();
                 });
             };
@@ -68,15 +80,15 @@
                 var fn = angular.noop;
 
                 if (self.event.follow === true) {
-                    fn = MispSrv.unfollow;
+                    fn = AlertingSrv.unfollow;
                 } else {
-                    fn = MispSrv.follow;
+                    fn = AlertingSrv.follow;
                 }
 
                 fn(self.event.id).then(function() {
                     self.load();
                 }).catch(function(response) {
-                    NotificationSrv.error('MispEventCtrl', response.data, response.status);
+                    NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
 

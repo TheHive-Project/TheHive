@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('FilteringSrv', function($q, localStorageService) {
+        .service('FilteringSrv', function($q, localStorageService, Severity) {
             return function(sectionName, config) {
                 var self = this;
 
@@ -37,7 +37,7 @@
                             sort: self.defaults.sort || []
                         };
 
-                        self.filters = self.defaultFilter;                        
+                        self.filters = self.defaultFilter;
                         self.activeFilters = _.mapObject(self.defaultFilter || {}, function(val){
                             return _.omit(val, 'field', 'filter');
                         });
@@ -89,14 +89,15 @@
 
                 self.addFilter = function(field, value) {
                     var query,
-                        filterDef = self.filterDefs[field];
+                        filterDef = self.filterDefs[field],
+                        convertFn = filterDef.convert || angular.identity;
 
                     // Prepare the filter value
                     if (field === 'keyword') {
                         query = value;
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
-                            return field + ':"' + val.text + '"';
+                            return field + ':"' + convertFn(val.text) + '"';
                         }).join(' OR ');
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
@@ -106,7 +107,7 @@
                         query = field + ':[ ' + fromDate + ' TO ' + toDate + ' ]';
 
                     } else {
-                        query = field + ':' + value;
+                        query = field + ':' + convertFn(value);
                     }
 
                     self.filters[field] = {
@@ -195,6 +196,25 @@
                     self.context.activeFilters = self.activeFilters;
                     localStorageService.set(self.sectionName, self.context);
                 };
-            }
+
+                this.getSeverities = function(query) {
+                    var defer = $q.defer();
+
+                    $q.resolve(_.map(Severity.keys, function(value, key) {
+                        return {text: key};
+                    })).then(function(response) {
+                        var severities = [];
+
+                        severities = _.filter(response, function(sev) {
+                            var regex = new RegExp(query, 'gi');
+                            return regex.test(sev.text);
+                        });
+
+                        defer.resolve(severities);
+                    });
+
+                    return defer.promise;
+                };
+            };
         });
 })();
