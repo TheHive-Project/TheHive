@@ -5,7 +5,7 @@ import java.util.Date
 import org.elastic4play.models.JsonFormat.enumFormat
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{JsSuccess, JsValue, Json, Reads}
+import play.api.libs.json.{ JsSuccess, JsValue, Json, Reads }
 
 object JsonFormat {
   implicit val eventStatusFormat = enumFormat(EventStatus)
