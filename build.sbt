@@ -87,16 +87,17 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "install" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmRelease := "4"
+rpmRelease := "6"
 rpmVendor in Rpm := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
-rpmRequirements += "java-headless >= 1.8.0"
+rpmRequirements += "java-1.8.0-openjdk-headless"
 maintainerScripts in Rpm := maintainerScriptsFromDirectory(
   baseDirectory.value / "install" / "rpm",
   Seq(RpmConstants.Pre, RpmConstants.Preun, RpmConstants.Postun)
 )
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
+linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "install" / "etc_default_thehive").asURL
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
