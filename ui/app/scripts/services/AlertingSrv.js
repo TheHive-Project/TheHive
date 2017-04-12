@@ -24,7 +24,7 @@
                 },
 
                 create: function(alertId) {
-                    return $http.post(baseUrl + '/case/' + alertId, {});
+                    return $http.post(baseUrl + '/' + alertId + '/createCase', {});
                 },
 
                 ignore: function(alertId) {
@@ -32,11 +32,11 @@
                 },
 
                 follow: function(alertId) {
-                    return $http.get(baseUrl + '/follow/' + alertId);
+                    return $http.post(baseUrl + '/' + alertId + '/follow');
                 },
 
                 unfollow: function(alertId) {
-                    return $http.get(baseUrl + '/unfollow/' + alertId);
+                    return $http.post(baseUrl + '/' + alertId + '/unfollow');
                 },
 
                 stats: function(scope) {
