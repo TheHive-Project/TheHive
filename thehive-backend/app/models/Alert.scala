@@ -1,12 +1,12 @@
 package models
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import models.JsonFormat.alertStatusFormat
-import org.elastic4play.models.{Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat => F, AttributeOption => O}
+import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.utils.Hasher
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.{ JsObject, JsString, Json }
 import services.AuditedModel
 
 import scala.concurrent.Future

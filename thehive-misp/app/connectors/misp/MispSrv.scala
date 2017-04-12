@@ -1,38 +1,38 @@
 package connectors.misp
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{ Path, Paths }
 import java.text.SimpleDateFormat
 import java.util.Date
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{ Inject, Provider, Singleton }
 
 import akka.NotUsed
 import akka.actor.ActorDSL._
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.scaladsl.{FileIO, Sink, Source}
+import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import connectors.misp.JsonFormat._
 import models._
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
-import org.elastic4play.controllers.{Fields, FileInputValue}
+import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services._
 import org.elastic4play.utils.RichJson
-import org.elastic4play.{InternalError, NotFoundError}
+import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.inject.ApplicationLifecycle
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.api.libs.ws.WSClientConfig
-import play.api.libs.ws.ahc.{AhcWSAPI, AhcWSClientConfig}
-import play.api.libs.ws.ssl.{SSLConfig, TrustManagerConfig, TrustStoreConfig}
-import play.api.{Configuration, Environment, Logger}
-import services.{AlertSrv, ArtifactSrv, CaseSrv}
+import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClientConfig }
+import play.api.libs.ws.ssl.{ SSLConfig, TrustManagerConfig, TrustStoreConfig }
+import play.api.{ Configuration, Environment, Logger }
+import services.{ AlertSrv, ArtifactSrv, CaseSrv }
 
-import scala.concurrent.duration.{DurationInt, DurationLong, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
 
 case class MispInstanceConfig(
   name: String,

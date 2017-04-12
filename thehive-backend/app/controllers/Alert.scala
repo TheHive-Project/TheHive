@@ -1,20 +1,20 @@
 package controllers
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import akka.stream.Materializer
-import org.elastic4play.controllers.{Authenticated, FieldsBodyParser, Renderer}
+import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
-import org.elastic4play.{BadRequestError, Timed}
+import org.elastic4play.{ BadRequestError, Timed }
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.JsArray
 import play.api.mvc.Controller
 import services.AlertSrv
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 @Singleton

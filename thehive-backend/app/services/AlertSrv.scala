@@ -4,50 +4,50 @@ import javax.inject.Inject
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
 import models._
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
 import play.api.Configuration
-import play.api.libs.json.{JsNumber, JsObject, Json}
+import play.api.libs.json.{ JsNumber, JsObject, Json }
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Success, Try }
 
 trait AlertTransformer {
   def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case]
 }
 
 class AlertSrv(
-                templates: Map[String, String],
-                alertModel: AlertModel,
-                createSrv: CreateSrv,
-                getSrv: GetSrv,
-                updateSrv: UpdateSrv,
-                deleteSrv: DeleteSrv,
-                findSrv: FindSrv,
-                caseSrv: CaseSrv,
-                artifactSrv: ArtifactSrv,
-                caseTemplateSrv: CaseTemplateSrv,
-                connectors: ConnectorRouter,
-                implicit val ec: ExecutionContext,
-                implicit val mat: Materializer) extends AlertTransformer {
+    templates: Map[String, String],
+    alertModel: AlertModel,
+    createSrv: CreateSrv,
+    getSrv: GetSrv,
+    updateSrv: UpdateSrv,
+    deleteSrv: DeleteSrv,
+    findSrv: FindSrv,
+    caseSrv: CaseSrv,
+    artifactSrv: ArtifactSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    connectors: ConnectorRouter,
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) extends AlertTransformer {
 
   @Inject() def this(
-                      configuration: Configuration,
-                      alertModel: AlertModel,
-                      createSrv: CreateSrv,
-                      getSrv: GetSrv,
-                      updateSrv: UpdateSrv,
-                      deleteSrv: DeleteSrv,
-                      findSrv: FindSrv,
-                      caseSrv: CaseSrv,
-                      artifactSrv: ArtifactSrv,
-                      caseTemplateSrv: CaseTemplateSrv,
-                      connectors: ConnectorRouter,
-                      ec: ExecutionContext,
-                      mat: Materializer) = this(
+    configuration: Configuration,
+    alertModel: AlertModel,
+    createSrv: CreateSrv,
+    getSrv: GetSrv,
+    updateSrv: UpdateSrv,
+    deleteSrv: DeleteSrv,
+    findSrv: FindSrv,
+    caseSrv: CaseSrv,
+    artifactSrv: ArtifactSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    connectors: ConnectorRouter,
+    ec: ExecutionContext,
+    mat: Materializer) = this(
     Map.empty[String, String],
     alertModel: AlertModel,
     createSrv,
@@ -94,14 +94,14 @@ class AlertSrv(
   def markAsRead(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
       case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"))
-      case None ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignore"))
+      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignore"))
     }
   }
 
   def markAsUnread(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
       case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Update"))
-      case None ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"))
+      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"))
     }
   }
 
