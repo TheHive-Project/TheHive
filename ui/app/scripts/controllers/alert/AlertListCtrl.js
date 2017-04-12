@@ -59,6 +59,7 @@
                         field: 'severity',
                         type: 'list',
                         defaultValue: [],
+                        label: 'Severity',
                         convert: function(value) {
                             // Convert the text value to its numeric representation
                             return Severity.keys[value];
@@ -108,7 +109,6 @@
                 }
 
                 fn(event.id).then(function( /*data*/ ) {
-                    self.list.update();
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
@@ -129,8 +129,6 @@
                 });
 
                 $q.all(promises).then(function( /*response*/ ) {
-                    self.list.update();
-
                     NotificationSrv.log('The selected events have been ' + (follow ? 'followed' : 'unfollowed'), 'success');
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
@@ -146,6 +144,12 @@
                     resolve: {
                         event: event
                     }
+                });
+            };
+
+            self.ignore = function(event) {
+                AlertingSrv.ignore(event.id).then(function( /*data*/ ) {
+                    self.list.update();
                 });
             };
 
@@ -172,12 +176,6 @@
                     self.menu.selectAll = false;
                     self.updateMenu();
                 }
-            };
-
-            self.ignore = function(event) {
-                AlertingSrv.ignore(event.id).then(function( /*data*/ ) {
-                    self.list.update();
-                });
             };
 
             self.load = function() {
