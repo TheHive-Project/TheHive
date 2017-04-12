@@ -1,12 +1,12 @@
 package models
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import models.JsonFormat.alertStatusFormat
-import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef }
-import org.elastic4play.models.{ AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.models.{Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat => F, AttributeOption => O}
+import org.elastic4play.utils.Hasher
 import play.api.Logger
-import play.api.libs.json.{ JsObject, JsString, Json }
+import play.api.libs.json.{JsObject, JsString, Json}
 import services.AuditedModel
 
 import scala.concurrent.Future
@@ -55,10 +55,12 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
       if (attrs.keys.contains("_id"))
         attrs
       else {
+        val hasher = Hasher("MD5")
         val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
         val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
         val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
-        attrs + ("_id" → JsString(s"$tpe|$source|$sourceRef"))
+        val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
+        attrs + ("_id" → JsString(_id))
       }
     }
   }

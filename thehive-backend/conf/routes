@@ -58,6 +58,11 @@ POST     /api/alert                               controllers.AlertCtrl.create()
 GET      /api/alert/:alertId                      controllers.AlertCtrl.get(alertId)
 PATCH    /api/alert/:alertId                      controllers.AlertCtrl.update(alertId)
 DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId)
+POST     /api/alert/:alertId/markAsRead           controllers.AlertCtrl.markAsRead(alertId)
+POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUnread(alertId)
+POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)
+POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAlert(alertId)
+POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
 
 GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
 

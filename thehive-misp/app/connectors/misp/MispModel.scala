@@ -3,7 +3,6 @@ package connectors.misp
 import java.util.Date
 
 case class MispAlert(
-  eventUuid: String,
   source: String,
   sourceRef: String,
   date: Date,
@@ -18,9 +17,6 @@ case class MispAlert(
 case class MispAttribute(
   id: String,
   tpe: String,
-  category: String,
-  uuid: String,
-  eventId: Long,
   date: Date,
   comment: String,
   value: String,

@@ -11,7 +11,6 @@ object JsonFormat {
 
   implicit val mispAlertReads = Reads { json ⇒
     for {
-      uuid ← (json \ "uuid").validate[String]
       org ← (json \ "Orgc" \ "name").validate[String]
       info ← (json \ "info").validate[String]
       eventId ← (json \ "id").validate[String]
@@ -33,7 +32,6 @@ object JsonFormat {
       publishDate = new Date(publishTimestamp.toLong * 1000)
       threatLevel ← (json \ "threat_level_id").validate[String]
     } yield MispAlert(
-      uuid,
       org,
       eventId,
       date,
@@ -52,21 +50,15 @@ object JsonFormat {
     for {
       id ← (json \ "id").validate[String]
       tpe ← (json \ "type").validate[String]
-      category ← (json \ "category").validate[String]
-      uuid ← (json \ "uuid").validate[String]
-      eventId ← (json \ "id").validate[String]
       timestamp ← (json \ "timestamp").validate[String]
       date = new Date(timestamp.toLong * 1000)
-      comment ← (json \ "comment").validate[String]
+      comment = (json \ "comment").asOpt[String].getOrElse("")
       value ← (json \ "value").validate[String]
       category ← (json \ "category").validate[String]
       tags ← JsArray((json \ "EventTag" \\ "name")).validate[Seq[String]]
     } yield MispAttribute(
       id,
       tpe,
-      category,
-      uuid,
-      eventId.toLong,
       date,
       comment,
       value,

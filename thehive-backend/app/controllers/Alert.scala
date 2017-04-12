@@ -1,20 +1,20 @@
 package controllers
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import akka.stream.Materializer
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{Authenticated, FieldsBodyParser, Renderer}
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
+import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
 import org.elastic4play.services._
-import org.elastic4play.{ BadRequestError, Timed }
+import org.elastic4play.{BadRequestError, Timed}
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.JsArray
 import play.api.mvc.Controller
 import services.AlertSrv
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 @Singleton
@@ -87,5 +87,39 @@ class AlertCtrl @Inject() (
     val aggs = request.body.getValue("stats")
       .getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
     alertSrv.stats(query, aggs).map(s ⇒ Ok(s))
+  }
+
+  @Timed
+  def markAsRead(id: String) = authenticated(Role.write).async { implicit request ⇒
+    for {
+      alert ← alertSrv.get(id)
+      updatedAlert ← alertSrv.markAsRead(alert)
+    } yield renderer.toOutput(OK, updatedAlert)
+  }
+
+  @Timed
+  def markAsUnread(id: String) = authenticated(Role.write).async { implicit request ⇒
+    for {
+      alert ← alertSrv.get(id)
+      updatedAlert ← alertSrv.markAsUnread(alert)
+    } yield renderer.toOutput(OK, updatedAlert)
+  }
+
+  def createCase(id: String) = authenticated(Role.write).async { implicit request ⇒
+    for {
+      alert ← alertSrv.get(id)
+      updatedAlert ← alertSrv.createCase(alert)
+    } yield renderer.toOutput(CREATED, updatedAlert)
+  }
+
+  @Timed
+  def followAlert(id: String) = authenticated(Role.write).async { implicit request ⇒
+    alertSrv.setFollowAlert(id, follow = true)
+      .map { alert ⇒ renderer.toOutput(OK, alert) }
+  }
+
+  def unfollowAlert(id: String) = authenticated(Role.write).async { implicit request ⇒
+    alertSrv.setFollowAlert(id, follow = false)
+      .map { alert ⇒ renderer.toOutput(OK, alert) }
   }
 }

@@ -7,7 +7,7 @@ import akka.stream.Materializer
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services._
 import org.elastic4play.utils
-import org.elastic4play.utils.RichJson
+import org.elastic4play.utils.{ Hasher, RichJson }
 import play.api.{ Configuration, Logger }
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
@@ -87,6 +87,7 @@ class Migration(
         mapAttribute(_ ⇒ true, "updatedAt", convertDate))
     case DatabaseState(8) ⇒
       requireUpdateMispAlertArtifact = true
+      val hasher = Hasher("MD5")
       Seq(
         renameEntity("misp", "alert"),
         mapEntity("alert") { misp ⇒
@@ -103,12 +104,14 @@ class Migration(
               case "tlp:red"   ⇒ 3L
             }
             .getOrElse(2L)
+          val source = (misp \ "serverId").asOpt[String].getOrElse("<null>")
+          val _id = hasher.fromString(s"misp|$source|$eventId").head.toString()
           (misp \ "caze").asOpt[JsString].fold(JsObject(Nil))(c ⇒ Json.obj("caze" → c)) ++
             Json.obj(
               "_type" → "alert",
-              "_id" → ("misp:" + (misp \ "_id").as[String]),
+              "_id" → _id,
               "type" → "misp",
-              "source" → (misp \ "serverId").as[JsString],
+              "source" → source,
               "sourceRef" → eventId,
               "date" → date,
               "lastSyncDate" → (misp \ "publishDate").as[Date],

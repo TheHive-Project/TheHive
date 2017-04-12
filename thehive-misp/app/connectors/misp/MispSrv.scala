@@ -1,38 +1,38 @@
 package connectors.misp
 
-import java.nio.file.{ Path, Paths }
+import java.nio.file.{Path, Paths}
 import java.text.SimpleDateFormat
 import java.util.Date
-import javax.inject.{ Inject, Provider, Singleton }
+import javax.inject.{Inject, Provider, Singleton}
 
 import akka.NotUsed
 import akka.actor.ActorDSL._
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{FileIO, Sink, Source}
 import connectors.misp.JsonFormat._
 import models._
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
-import org.elastic4play.controllers.{ Fields, FileInputValue }
+import org.elastic4play.controllers.{Fields, FileInputValue}
 import org.elastic4play.services._
 import org.elastic4play.utils.RichJson
-import org.elastic4play.{ InternalError, NotFoundError }
+import org.elastic4play.{InternalError, NotFoundError}
 import play.api.inject.ApplicationLifecycle
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.api.libs.ws.WSClientConfig
-import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClientConfig }
-import play.api.libs.ws.ssl.{ SSLConfig, TrustManagerConfig, TrustStoreConfig }
-import play.api.{ Configuration, Environment, Logger }
-import services.{ AlertSrv, ArtifactSrv, CaseSrv }
+import play.api.libs.ws.ahc.{AhcWSAPI, AhcWSClientConfig}
+import play.api.libs.ws.ssl.{SSLConfig, TrustManagerConfig, TrustStoreConfig}
+import play.api.{Configuration, Environment, Logger}
+import services.{AlertSrv, ArtifactSrv, CaseSrv}
 
-import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.duration.{DurationInt, DurationLong, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 case class MispInstanceConfig(
   name: String,
@@ -102,7 +102,7 @@ class MispSrv @Inject() (
 
   private[misp] def getInstanceConfig(name: String): Future[MispInstanceConfig] = mispConfig.instances
     .find(_.name == name)
-    .fold(Future.failed[MispInstanceConfig](NotFoundError(s"""Configuration of MISP server "${name}" not found"""))) { instanceConfig ⇒
+    .fold(Future.failed[MispInstanceConfig](NotFoundError(s"""Configuration of MISP server "$name" not found"""))) { instanceConfig ⇒
       Future.successful(instanceConfig)
     }
 
@@ -113,10 +113,14 @@ class MispSrv @Inject() (
         .inInitAuthContext { implicit authContext ⇒
           synchronize().andThen { case _ ⇒ tempSrv.releaseTemporaryFiles() }
         }
-        .map(_.collect {
-          case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
-        })
-      ()
+        .onComplete {
+          case Success(a) ⇒
+            logger.info("Misp synchronization completed")
+            a.collect {
+              case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
+            }
+          case Failure(t) ⇒ logger.info("Misp synchronization failed", t)
+        }
     }
     lifecycle.addStopHook { () ⇒
       logger.info("Stopping MISP fetching ...")
@@ -162,31 +166,31 @@ class MispSrv @Inject() (
           getEventsFromDate(mcfg, lastSyncDate).map((mcfg, lastSyncDate, _))
       }
       // get related alert
-      .mapAsyncUnordered(5) {
+      .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event) ⇒
-          alertSrv.get(s"misp:${event.eventUuid}")
-            .map(a ⇒ (mcfg, lastSyncDate, event, Some(a)))
-            .recover { case _ ⇒ (mcfg, lastSyncDate, event, None) }
+          alertSrv.get("misp", event.source, event.sourceRef)
+            .map(a ⇒ (mcfg, lastSyncDate, event, a))
       }
-      .mapAsyncUnordered(5) {
+      .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event, alert) ⇒
+          logger.info(s"getting MISP event ${event.sourceRef}")
           getAttributes(mcfg, event.sourceRef, Some(lastSyncDate)).map((mcfg, lastSyncDate, event, alert, _))
       }
-      .mapAsyncUnordered(5) {
+      .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
         case (mcfg, _, event, None, attrs) ⇒
+          logger.info(s"MISP event ${event.sourceRef} has no related alert, create it")
           val alertJson = Json.toJson(event).as[JsObject] +
-            ("_id" → JsString(s"misp:${event.eventUuid}")) +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mcfg.caseTemplate.fold[JsValue](JsNull)(JsString)) +
-            ("artifacts" → JsArray(attrs)) +
-            ("_id" → JsString(event.eventUuid))
+            ("artifacts" → JsArray(attrs))
           alertSrv.create(Fields(alertJson))
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
 
         // if a related alert exists, update it
         case (mcfg, lastSyncDate, event, Some(alert), attrs) ⇒
+          logger.info(s"MISP event ${event.sourceRef} has related alert, update it")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
             "source" -
@@ -259,8 +263,8 @@ class MispSrv @Inject() (
       dateFormat.format(fd)
     }
     ws
-      .url(s"${instanceConfig.url}/events/restSearch/download/" +
-        s"null/null/null/null/null/null/$date/null/null/$eventId/false")
+      .url(s"${instanceConfig.url}/attributes/restSearch/json/" +
+        s"null/null/null/null/null/$date/null/null/$eventId/false")
       .withHeaders(
         "Authorization" → instanceConfig.key,
         "Accept" → "application/json")
