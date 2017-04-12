@@ -118,7 +118,7 @@ class AlertSrv(
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
-        val caze = connectors.get(alert.tpe()) match {
+        val futureCase = connectors.get(alert.tpe()) match {
           case Some(connector: AlertTransformer) ⇒ connector.createCase(alert)
           case _ ⇒
             getCaseTemplate(alert).flatMap { caseTemplate ⇒
@@ -137,11 +137,15 @@ class AlertSrv(
                 }
             }
         }
-        caze.flatMap { c ⇒
-          updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("case", c.id))
-            .map(_ ⇒ c)
-        }
+        for {
+          caze ← futureCase
+          _ ← setCase(alert, caze)
+        } yield caze
     }
+  }
+
+  def setCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Alert] = {
+    updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)))
   }
 
   def delete(id: String)(implicit Context: AuthContext): Future[Alert] =
@@ -155,10 +159,5 @@ class AlertSrv(
 
   def setFollowAlert(alertId: String, follow: Boolean)(implicit authContext: AuthContext): Future[Alert] = {
     updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)))
-  }
-
-  def setCaseId(alertId: String, caseId: String)(implicit authContext: AuthContext): Future[Alert] = {
-    updateSrv[AlertModel, Alert](alertModel, alertId,
-      Fields(Json.obj("case" → caseId, "status" → AlertStatus.Imported)))
   }
 }
