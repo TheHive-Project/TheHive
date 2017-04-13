@@ -23,12 +23,12 @@
                                     <span>
                                         <strong>{{filter.label}}:</strong>
                                         {{filter.value | filterValue}}</span>
-                                    <a href="" ng-click="$vm.removeFilter(field)">
+                                    <a href ng-click="$vm.removeFilter(field)">
                                         <span class="filter-close fa fa-times text-danger"></span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="" ng-click="$vm.clearFilters()">Clear filters</a>
+                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
                                 </li>
                             </ul>
                         </div>
@@ -91,7 +91,7 @@
                                             <severity active="false" value="event.severity"></severity>
                                         </div>
                                     </td>
-                                    <td class="text-center">{{::event.artifacts.length}}</td>
+                                    <td class="text-center">{{::event.artifacts.length || 0}}</td>
                                     <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>
                                     <td class="clearfix">
                                         <div class="pull-left">
@@ -104,8 +104,11 @@
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
                                                 <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
                                             </a>
-                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.ignore(event)" uib-tooltip="Mark as unread" ng-if="event.status !== 'Ignore' && !event.case">
-                                                <i class="text-info text-20 fa fa-check"></i>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as read" ng-if="$vm.canMarkAsRead(event)">
+                                                <i class="text-info text-20 fa fa-envelope"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
+                                                <i class="text-info text-20 fa fa-envelope-open-o"></i>
                                             </a>
                                         </div>
                                     </td>

@@ -43,12 +43,12 @@
 
             <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">
                 <h4 class="vpad10 text-primary">
-                    Artifacts ({{dialog.event.artifacts.length}})
+                    Artifacts ({{dialog.event.artifacts.length || 0}})
                 </h4>
                 <div class="mb-xs" ng-if="dialog.dataTypes">
                     <span class="label label-lg label-default mr-xxs clickable"
                         ng-click="dialog.filterArtifacts('');"
-                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length}})</a></span>
+                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</a></span>
 
                     <span class="label label-lg label-default mr-xxs clickable"
                         ng-repeat="(type, count) in dialog.dataTypes"
@@ -65,7 +65,7 @@
                     <tbody>
                         <tr ng-repeat="attribute in dialog.pagination.data">
                             <td>{{attribute.dataType}}</td>
-                            <td class="wrap">{{attribute.data | fang | ellipsis:250}}</td>
+                            <td class="wrap">{{(attribute.data.filename || attribute.data) | fang | ellipsis:250}}</td>
                         </tr>
                     </tbody>
                 </table>

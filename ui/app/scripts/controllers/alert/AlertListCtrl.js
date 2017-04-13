@@ -55,6 +55,12 @@
                         defaultValue: [],
                         label: 'Source'
                     },
+                    type: {
+                        field: 'type',
+                        type: 'list',
+                        defaultValue: [],
+                        label: 'Type'
+                    },
                     severity: {
                         field: 'severity',
                         type: 'list',
@@ -97,6 +103,29 @@
 
             this.toggleFilters = function () {
                 this.filtering.toggleFilters();
+            };
+
+            this.canMarkAsRead = function(event) {
+                return event.status === 'New' || event.status === 'Update';
+            };
+
+            this.canMarkAsUnread = function(event) {
+                return event.status === 'Imported' || event.status === 'Ignore';
+            };
+
+            this.markAsRead = function(event) {
+                var fn = angular.noop;
+
+                if(this.canMarkAsRead(event)) {
+                    fn = AlertingSrv.markAsRead;
+                } else {
+                    fn = AlertingSrv.markAsUnread;
+                }
+
+                fn(event.id).then(function( /*data*/ ) {
+                }, function(response) {
+                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
+                });
             };
 
             self.follow = function(event) {

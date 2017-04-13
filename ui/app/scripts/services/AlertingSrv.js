@@ -14,8 +14,7 @@
                         loadAll: config.loadAll || false,
                         pageSize: config.pageSize || 10,
                         filter: config.filter || '',
-                        onUpdate: callback || angular.noop,
-                        streamObjectType: 'alert'
+                        onUpdate: callback || angular.noop
                     });
                 },
 
@@ -27,8 +26,12 @@
                     return $http.post(baseUrl + '/' + alertId + '/createCase', {});
                 },
 
-                ignore: function(alertId) {
-                    return $http.get(baseUrl + '/ignore/' + alertId);
+                markAsRead: function(alertId) {
+                    return $http.post(baseUrl + '/' + alertId + '/markAsRead');
+                },
+
+                markAsUnread: function(alertId) {
+                    return $http.post(baseUrl + '/' + alertId + '/markAsUnread');
                 },
 
                 follow: function(alertId) {

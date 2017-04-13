@@ -44,7 +44,7 @@
                 <li ui-sref-active="active">
                     <a href ui-sref="app.alert-list">
                         Alerts
-                        <span class="badge alert-danger">{{alertEvents.count}}</span>
+                        <span class="badge alert-danger">{{(alertEvents.New.count || 0)  + (alertEvents.Update.count || 0)}}</span>
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>

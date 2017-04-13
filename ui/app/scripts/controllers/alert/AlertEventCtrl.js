@@ -14,7 +14,7 @@
                 data: []
             };
             self.filteredArtifacts = [];
-                        
+
             this.filterArtifacts = function(value) {
                 self.pagination.currentPage = 1;
                 this.pagination.filter= value;
@@ -25,9 +25,9 @@
                 var end = self.pagination.currentPage * self.pagination.pageSize;
                 var start = end - self.pagination.pageSize;
 
-                self.filteredArtifacts = self.pagination.filter === '' ? self.event.artifacts : _.filter(self.event.artifacts, function(item) {
+                self.filteredArtifacts = (self.pagination.filter === '' ? self.event.artifacts : _.filter(self.event.artifacts, function(item) {
                     return item.dataType === self.pagination.filter;
-                });
+                })) || [];
 
                 var data = [];
                 angular.forEach(self.filteredArtifacts.slice(start, end), function(d) {
