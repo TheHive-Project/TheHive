@@ -6,10 +6,11 @@ import models.JsonFormat.alertStatusFormat
 import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.utils.Hasher
 import play.api.Logger
-import play.api.libs.json.{ JsObject, JsString, Json }
+import play.api.libs.json._
 import services.AuditedModel
 
 import scala.concurrent.Future
+import scala.util.Try
 
 object AlertStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -71,6 +72,14 @@ class Alert(model: AlertModel, attributes: JsObject)
     with AlertAttributes {
 
   override def artifactAttributes: Seq[Attribute[_]] = Nil
+
+  override def toJson = super.toJson +
+    ("artifacts" → JsArray(artifacts().map {
+      // for file artifact, parse data as Json
+      case a if (a \ "dataType").asOpt[String].contains("file") ⇒
+        Try(a + ("data" → Json.parse((a \ "data").as[String]))).getOrElse(a)
+      case a ⇒ a
+    }))
 
   def toCaseJson: JsObject = Json.obj(
     //"caseId" -> caseId,
