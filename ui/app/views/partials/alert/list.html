@@ -65,7 +65,7 @@
                                         <strong>{{::event.sourceRef}}</strong>
                                     </td>
                                     <td>
-                                        <span class="label label-default">{{::event.type}}</span>
+                                        <span><a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
                                     </td>
                                     <td>
                                         <span class="clickable label label-default" ng-class="{'label-danger': event.status==='New', 'label-warning': event.status === 'Update'}" ng-click="$vm.addFilterValue('status', event.status)">{{::event.status}}</span>
