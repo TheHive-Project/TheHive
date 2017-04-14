@@ -87,7 +87,7 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "install" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmRelease := "6"
+rpmRelease := "7"
 rpmVendor in Rpm := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
@@ -96,6 +96,7 @@ maintainerScripts in Rpm := maintainerScriptsFromDirectory(
   baseDirectory.value / "install" / "rpm",
   Seq(RpmConstants.Pre, RpmConstants.Preun, RpmConstants.Postun)
 )
+linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "install" / "etc_default_thehive").asURL
 
