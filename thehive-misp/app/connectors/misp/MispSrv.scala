@@ -328,7 +328,10 @@ class MispSrv @Inject() (
         .set("dataType", dataType)
         .set("message", message)
         .set("startDate", Json.toJson(startDate))
-        .set("tags", Json.arr(tags.filterNot(_.toLowerCase.startsWith("tlp:"))))
+        .set("tags", JsArray(
+          tags
+            .filterNot(_.toLowerCase.startsWith("tlp:"))
+            .map(JsString)))
         .set("tlp", tlp)
     } yield attachment.fold(Future.successful(fields.set("data", data)))(_.map { fiv ⇒
       fields.set("attachment", fiv)
@@ -426,7 +429,7 @@ class MispSrv @Inject() (
 
         tempFile = tempSrv.newTemporaryFile("misp_malware", file.name)
         _ = logger.info(s"Extract malware file ${file.filepath} in file $tempFile")
-        _ = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.toString)
+        _ = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.getFileName.toString)
       } yield FileInputValue(filename, tempFile, "application/octet-stream")).getOrElse(file)
     }
     catch {
@@ -453,22 +456,20 @@ class MispSrv @Inject() (
             logger.warn(s"MISP attachment $attachmentId can't be downloaded (status $status) : $message")
             Future.failed(InternalError(s"MISP attachment $attachmentId can't be downloaded (status $status)"))
           }
-        case response ⇒ Future.successful(response)
-      }
-      .flatMap { response ⇒
-        val tempFile = tempSrv.newTemporaryFile("misp_attachment", attachmentId)
-        response.body
-          .runWith(FileIO.toPath(tempFile))
-          .map { ioResult ⇒
-            ioResult.status.get
-            // throw an exception if transfer failed
-            val contentType = response.headers.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
-            val filename = response.headers.headers
-              .get("Content-Disposition")
-              .flatMap(_.collectFirst { case fileNameExtractor(name) ⇒ name })
-              .getOrElse("noname")
-            FileInputValue(filename, tempFile, contentType)
-          }
+        case response ⇒
+          val tempFile = tempSrv.newTemporaryFile("misp_attachment", attachmentId)
+          response.body
+            .runWith(FileIO.toPath(tempFile))
+            .map { ioResult ⇒
+              ioResult.status.get
+              // throw an exception if transfer failed
+              val contentType = response.headers.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
+              val filename = response.headers.headers
+                .get("Content-Disposition")
+                .flatMap(_.collectFirst { case fileNameExtractor(name) ⇒ name })
+                .getOrElse("noname")
+              FileInputValue(filename, tempFile, contentType)
+            }
       }
   }
 
