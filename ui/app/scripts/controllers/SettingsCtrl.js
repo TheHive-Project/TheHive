@@ -1,8 +1,14 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, UserInfoSrv, appConfig) {
+        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, UserInfoSrv, currentUser, appConfig) {
+            $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
+
+            if(!currentUser || !currentUser.id) {
+                $state.go('login');
+                return;
+            }
 
             $scope.basicData = {
                 username: $scope.currentUser.id,

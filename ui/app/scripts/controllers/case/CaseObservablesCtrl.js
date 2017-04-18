@@ -498,6 +498,13 @@
                 });
             };
 
+            $scope.selectAllAnalyzers = function(selected) {
+                $scope.analyzersList.selected = _.mapObject($scope.analyzersList.selected, function(/*val, key*/) {
+                    return selected;
+                });
+            };
+
+
             // run an Analyzer on an artifact
             $scope.runAnalyzer = function (analyzerId, artifact) {
                 var artifactName = artifact.data || artifact.attachment.name;

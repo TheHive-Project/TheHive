@@ -3,6 +3,7 @@ import Dependencies._
 libraryDependencies ++= Seq(
   Library.Play.cache,
   Library.Play.ws,
+  Library.Play.filters,
   Library.scalaGuice,
   Library.elastic4play,
   Library.zip4j,

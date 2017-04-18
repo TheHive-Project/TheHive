@@ -3,6 +3,7 @@ package connectors.misp
 import java.util.Date
 
 import org.elastic4play.JsonFormat.dateFormat
+import org.elastic4play.models.JsonFormat.enumFormat
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
@@ -52,7 +53,7 @@ object JsonFormat {
       tpe ← (json \ "type").validate[String]
       timestamp ← (json \ "timestamp").validate[String]
       date = new Date(timestamp.toLong * 1000)
-      comment = (json \ "comment").asOpt[String].getOrElse("")
+      comment ← (json \ "comment").validate[String].orElse(JsSuccess(""))
       value ← (json \ "value").validate[String]
       category ← (json \ "category").validate[String]
       tags ← JsArray((json \ "EventTag" \\ "name")).validate[Seq[String]]
