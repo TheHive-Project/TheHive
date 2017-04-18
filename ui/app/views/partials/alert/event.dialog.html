@@ -84,10 +84,16 @@
 <div class="modal-footer text-left">
     <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
     <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.import()">Import event</button>
-    <button class="btn btn-default pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.ignore()">
-        <i class="fa fa-check"></i> Mark as read
+    <button class="btn btn-default pull-right" ng-if="dialog.canMarkAsRead(dialog.event)" ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope"></i> Mark as read
     </button>
+    <button class="btn btn-default pull-right" ng-if="dialog.canMarkAsUnread(dialog.event)" ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope-open-o"></i> Mark as unread
+    </button>
+
     <button class="btn btn-default pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
         <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
+
+
 </div>

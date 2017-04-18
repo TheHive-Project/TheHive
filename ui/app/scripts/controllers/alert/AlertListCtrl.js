@@ -10,6 +10,7 @@
                 follow: false,
                 unfollow: false,
                 markAsRead: false,
+                markAsUnRead: false,
                 selectAll: false
             };
             self.filtering = new FilteringSrv('alert-section', {
@@ -105,13 +106,8 @@
                 this.filtering.toggleFilters();
             };
 
-            this.canMarkAsRead = function(event) {
-                return event.status === 'New' || event.status === 'Update';
-            };
-
-            this.canMarkAsUnread = function(event) {
-                return event.status === 'Imported' || event.status === 'Ignore';
-            };
+            this.canMarkAsRead = AlertingSrv.canMarkAsRead;
+            this.canMarkAsUnread = AlertingSrv.canMarkAsUnread;
 
             this.markAsRead = function(event) {
                 var fn = angular.noop;
@@ -164,6 +160,29 @@
                 });
             };
 
+            self.bulkMarkAsRead = function(markAsReadFlag) {
+                var ids = _.pluck(self.selection, 'id');
+                var fn = angular.noop;
+                var markAsRead = markAsReadFlag && this.canMarkAsRead(self.selection[0]);
+
+                if(markAsRead) {
+                    fn = AlertingSrv.markAsRead;
+                } else {
+                    fn = AlertingSrv.markAsUnread;
+                }
+
+                var promises = _.map(ids, function(id) {
+                    return fn(id);
+                });
+
+                $q.all(promises).then(function( /*response*/ ) {
+                    self.list.update();
+                    NotificationSrv.log('The selected events have been ' + (markAsRead ? 'marked as read' : 'marked as unread'), 'success');
+                }, function(response) {
+                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
+                });
+            };
+
             self.import = function(event) {
                 $uibModal.open({
                     templateUrl: 'views/partials/alert/event.dialog.html',
@@ -173,27 +192,6 @@
                     resolve: {
                         event: event
                     }
-                });
-            };
-
-            self.ignore = function(event) {
-                AlertingSrv.ignore(event.id).then(function( /*data*/ ) {
-                    self.list.update();
-                });
-            };
-
-            self.bulkIgnore = function() {
-                var ids = _.pluck(self.selection, 'id');
-
-                var promises = _.map(ids, function(id) {
-                    return AlertingSrv.ignore(id);
-                });
-
-                $q.all(promises).then(function( /*response*/ ) {
-                    self.list.update();
-                    NotificationSrv.log('The selected events have been ignored', 'success');
-                }, function(response) {
-                    NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
@@ -234,7 +232,9 @@
 
                 temp = _.uniq(_.pluck(self.selection, 'status'));
 
-                self.menu.markAsRead = temp.indexOf('Ignore') === -1;
+                self.menu.markAsRead = temp.indexOf('Ignore') === -1 && temp.indexOf('Imported') === -1;
+                self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Update') === -1;
+
             };
 
             self.select = function(event) {

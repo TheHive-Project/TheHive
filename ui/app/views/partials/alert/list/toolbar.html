@@ -20,7 +20,10 @@
                         <a href ng-click="$vm.bulkFollow(false)">Ignore new updates</a>
                     </li>
                     <li ng-show="$vm.menu.markAsRead">
-                        <a href ng-click="$vm.bulkIgnore()">Mark as read</a>
+                        <a href ng-click="$vm.bulkMarkAsRead(true)">Mark as read</a>
+                    </li>
+                    <li ng-show="$vm.menu.markAsUnread">
+                        <a href ng-click="$vm.bulkMarkAsRead(false)">Mark as unread</a>
                     </li>
                 </ul>
             </div>

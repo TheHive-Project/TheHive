@@ -26,6 +26,14 @@
                     return $http.post(baseUrl + '/' + alertId + '/createCase', {});
                 },
 
+                canMarkAsRead: function(event) {
+                    return event.status === 'New' || event.status === 'Update';
+                },
+
+                canMarkAsUnread: function(event) {
+                    return event.status === 'Imported' || event.status === 'Ignore';
+                },
+
                 markAsRead: function(alertId) {
                     return $http.post(baseUrl + '/' + alertId + '/markAsRead');
                 },

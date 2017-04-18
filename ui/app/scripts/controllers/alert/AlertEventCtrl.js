@@ -5,6 +5,8 @@
             var self = this;
             var eventId = event.id;
 
+            self.event = event;
+
             self.loading = true;
 
             self.pagination = {
@@ -70,13 +72,7 @@
                 });
             };
 
-            self.ignore = function(){
-                AlertingSrv.ignore(self.event.id).then(function( /*data*/ ) {
-                    $uibModalInstance.dismiss();
-                });
-            };
-
-            self.follow = function() {
+            this.follow = function() {
                 var fn = angular.noop;
 
                 if (self.event.follow === true) {
@@ -86,8 +82,27 @@
                 }
 
                 fn(self.event.id).then(function() {
-                    self.load();
+                    $uibModalInstance.dismiss();
                 }).catch(function(response) {
+                    NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                });
+            };
+
+            this.canMarkAsRead = AlertingSrv.canMarkAsRead;
+            this.canMarkAsUnread = AlertingSrv.canMarkAsUnread;
+
+            this.markAsRead = function() {
+                var fn = angular.noop;
+
+                if(this.canMarkAsRead(this.event)) {
+                    fn = AlertingSrv.markAsRead;
+                } else {
+                    fn = AlertingSrv.markAsUnread;
+                }
+
+                fn(this.event.id).then(function( /*data*/ ) {
+                    $uibModalInstance.dismiss();
+                }, function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
