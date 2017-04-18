@@ -24,9 +24,9 @@ import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
-import play.api.libs.ws.WSClientConfig
-import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClientConfig }
-import play.api.libs.ws.ssl.{ SSLConfig, TrustManagerConfig, TrustStoreConfig }
+import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClientConfig, AhcWSClientConfigParser }
+import play.api.libs.ws.ssl.TrustStoreConfig
+import play.api.libs.ws.{ DefaultWSProxyServer, WSConfigParser, WSProxyServer }
 import play.api.{ Configuration, Environment, Logger }
 import services.{ AlertSrv, ArtifactSrv, CaseSrv }
 
@@ -34,39 +34,114 @@ import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
-case class MispInstanceConfig(
-  name: String,
-  url: String,
-  key: String,
-  caseTemplate: Option[String],
-  artifactTags: Seq[String])
+object MispConfig {
+  def parseWSConfig(config: Configuration)(implicit environment: Environment): Option[AhcWSClientConfig] = { // FIXME require default config item ?
+    Try {
+      val cfg = Configuration(config.underlying.atPath("play.ws"))
+      new AhcWSClientConfigParser(
+        new WSConfigParser(cfg, environment).parse(),
+        cfg,
+        environment).parse()
+    }
+      .toOption
+  }
 
-object MispInstanceConfig {
-  def apply(
-    name: String,
-    defaultCaseTemplate: Option[String],
-    configuration: Configuration): Option[MispInstanceConfig] =
-    for {
-      url ← configuration.getString("url")
-      key ← configuration.getString("key")
-      tags = configuration.getStringSeq("tags").getOrElse(Nil)
-    } yield MispInstanceConfig(name, url, key, configuration.getString("caseTemplate") orElse defaultCaseTemplate, tags)
+  def parseProxyConfig(config: Configuration): Option[WSProxyServer] = for {
+    proxyHost ← config.getString("host")
+    proxyPort ← config.getInt("port")
+    proxyProtocol = config.getString("protocol")
+    proxyPrincipal = config.getString("user")
+    proxyPassword = config.getString("password")
+    proxyNtlmDomain = config.getString("ntmlDomain")
+    proxyEncoding = config.getString("encoding")
+    proxyNonProxyHosts = config.getStringSeq("nonProxyHosts")
+  } yield DefaultWSProxyServer(proxyHost, proxyPort, proxyProtocol, proxyPrincipal, proxyPassword, proxyNtlmDomain, proxyEncoding, proxyNonProxyHosts)
 }
 
-case class MispConfig(truststore: Option[Path], interval: FiniteDuration, instances: Seq[MispInstanceConfig]) {
+class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnection]) {
 
-  def this(configuration: Configuration, defaultCaseTemplate: Option[String]) = this(
-    configuration.getString("misp.cert").map(p ⇒ Paths.get(p)),
+  def this(configuration: Configuration, defaultCaseTemplate: Option[String], defaultWSConfig: Option[AhcWSClientConfig], environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) = this(
     configuration.getMilliseconds("misp.interval").fold(1.hour)(_.millis),
+
     for {
       cfg ← configuration.getConfig("misp").toSeq
+      defaultWSConfig = cfg.getConfig("ws").flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment))
+      defaultProxyConfig = cfg.getConfig("ws.proxy").flatMap(MispConfig.parseProxyConfig)
+      defaultArtifactTags = cfg.getStringSeq("tags").getOrElse(Nil)
       key ← cfg.subKeys
-      c ← Try(cfg.getConfig(key)).toOption.flatten.toSeq
-      mic ← MispInstanceConfig(key, defaultCaseTemplate, c)
-    } yield mic)
 
-  @Inject def this(configuration: Configuration) =
-    this(configuration, configuration.getString("misp.caseTemplate"))
+      mispConnectionConfig ← Try(cfg.getConfig(key)).toOption.flatten.toSeq
+      url ← mispConnectionConfig.getString("url")
+      key ← mispConnectionConfig.getString("key")
+      wsConfig = mispConnectionConfig.getConfig("ws")
+        .flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment))
+        .orElse(defaultWSConfig)
+        .getOrElse(AhcWSClientConfig())
+      proxyConfig = mispConnectionConfig.getConfig("ws.proxy")
+        .flatMap(MispConfig.parseProxyConfig)
+        .orElse(defaultProxyConfig)
+      artifactTags = mispConnectionConfig.getStringSeq("tags").getOrElse(defaultArtifactTags)
+      caseTemplate = mispConnectionConfig.getString("caseTemplate").orElse(defaultCaseTemplate)
+      /* use of truststore is deprecated */
+      truststore = configuration.getString("misp.cert").map(p ⇒ Paths.get(p))
+    } yield MispConnection(key, url, key, wsConfig, truststore, proxyConfig, caseTemplate, artifactTags)(environment, lifecycle, mat))
+
+  @Inject def this(configuration: Configuration, environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) =
+    this(
+      configuration,
+      configuration.getString("misp.caseTemplate"),
+      configuration.getConfig("misp.ws").flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment)),
+      environment,
+      lifecycle,
+      mat)
+}
+
+case class MispConnection(
+    name: String,
+    baseUrl: String,
+    key: String,
+    clientConfig: AhcWSClientConfig,
+    truststore: Option[Path],
+    proxy: Option[WSProxyServer],
+    caseTemplate: Option[String],
+    artifactTags: Seq[String])(environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) {
+
+  private[MispConnection] lazy val logger = Logger(getClass)
+
+  logger.info(s"Add MISP connection $name ($baseUrl)\n\tproxy configuration: $proxy\n\tclient configuration: $clientConfig")
+  private[misp] lazy val ws = {
+    val clientConfigWithTruststore = truststore match {
+      case Some(p) ⇒
+        logger.warn(
+          """Use of "truststore" parameter in configuration file (in misp section) is deprecated. Please use:
+            | misp {
+            |   ws.ssl {
+            |     trustManager = {
+            |       stores = [
+            |         { type = "PEM", path = "/path/to/cacert.crt" },
+            |         { type = "JKS", path = "/path/to/truststore.jks" }
+            |       ]
+            |     }
+            |   }
+            | }
+          """.stripMargin)
+        clientConfig.copy(
+          wsClientConfig = clientConfig.wsClientConfig.copy(
+            ssl = clientConfig.wsClientConfig.ssl.copy(
+              trustManagerConfig = clientConfig.wsClientConfig.ssl.trustManagerConfig.copy(
+                trustStoreConfigs = clientConfig.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ TrustStoreConfig(filePath = Some(p.toString), data = None)))))
+      case None ⇒ clientConfig
+    }
+    new AhcWSAPI(environment, clientConfigWithTruststore, lifecycle)(mat)
+  }
+
+  private[misp] def apply(url: String) = {
+    val req = ws.url(s"$baseUrl/$url")
+      .withHeaders(
+        "Authorization" → key,
+        "Accept" → "application/json")
+    proxy.fold(req)(req.withProxyServer)
+  }
 }
 
 @Singleton
@@ -88,21 +163,9 @@ class MispSrv @Inject() (
   private[misp] val logger = Logger(getClass)
   private[misp] lazy val alertSrv = alertSrvProvider.get
 
-  private[misp] val ws = {
-    val config = mispConfig.truststore match {
-      case Some(p) ⇒ AhcWSClientConfig(
-        wsClientConfig = WSClientConfig(
-          ssl = SSLConfig(
-            trustManagerConfig = TrustManagerConfig(
-              trustStoreConfigs = Seq(TrustStoreConfig(filePath = Some(p.toString), data = None))))))
-      case None ⇒ AhcWSClientConfig()
-    }
-    new AhcWSAPI(environment, config, lifecycle)
-  }
-
-  private[misp] def getInstanceConfig(name: String): Future[MispInstanceConfig] = mispConfig.instances
+  private[misp] def getInstanceConfig(name: String): Future[MispConnection] = mispConfig.connections
     .find(_.name == name)
-    .fold(Future.failed[MispInstanceConfig](NotFoundError(s"""Configuration of MISP server "$name" not found"""))) { instanceConfig ⇒
+    .fold(Future.failed[MispConnection](NotFoundError(s"""Configuration of MISP server "$name" not found"""))) { instanceConfig ⇒
       Future.successful(instanceConfig)
     }
 
@@ -153,9 +216,9 @@ class MispSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
 
     // for each MISP server
-    Source(mispConfig.instances.toList)
+    Source(mispConfig.connections.toList)
       // get last synchronization
-      .mapAsyncUnordered(5) { mcfg ⇒
+      .mapAsyncUnordered(1) { mcfg ⇒
         alertSrv.stats(and("type" ~= "misp", "source" ~= mcfg.name), Seq(selectMax("lastSyncDate")))
           .map { maxLastSyncDate ⇒ mcfg → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
           .recover { case _ ⇒ mcfg → new Date(0) }
@@ -174,11 +237,12 @@ class MispSrv @Inject() (
       .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event, alert) ⇒
           logger.info(s"getting MISP event ${event.sourceRef}")
-          getAttributes(mcfg, event.sourceRef, Some(lastSyncDate)).map((mcfg, lastSyncDate, event, alert, _))
+          getAttributes(mcfg, event.sourceRef, Some(lastSyncDate))
+            .map((mcfg, event, alert, _))
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
-        case (mcfg, _, event, None, attrs) ⇒
+        case (mcfg, event, None, attrs) ⇒
           logger.info(s"MISP event ${event.sourceRef} has no related alert, create it")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
@@ -189,7 +253,7 @@ class MispSrv @Inject() (
             .recover { case t ⇒ Failure(t) }
 
         // if a related alert exists, update it
-        case (mcfg, lastSyncDate, event, Some(alert), attrs) ⇒
+        case (_, event, Some(alert), attrs) ⇒
           logger.info(s"MISP event ${event.sourceRef} has related alert, update it")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
@@ -210,8 +274,8 @@ class MispSrv @Inject() (
             case Some(caze) ⇒
               for {
                 a ← fAlert
-                caze ← caseSrv.update(caze, Fields(alert.toCaseJson))
-                artifacts ← artifactSrv.create(caze, attrs.map(Fields.apply))
+                _ ← caseSrv.update(caze, Fields(alert.toCaseJson))
+                _ ← artifactSrv.create(caze, attrs.map(Fields.apply))
               } yield a
           })
             .map(Success(_))
@@ -220,15 +284,12 @@ class MispSrv @Inject() (
       .runWith(Sink.seq)
   }
 
-  def getEventsFromDate(instanceConfig: MispInstanceConfig, fromDate: Date): Source[MispAlert, NotUsed] = {
+  def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
     val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
     val date = dateFormat.format(fromDate)
     Source
       .fromFuture {
-        ws.url(s"${instanceConfig.url}/events/index")
-          .withHeaders(
-            "Authorization" → instanceConfig.key,
-            "Accept" → "application/json")
+        mispConnection("events/index")
           .post(Json.obj("searchDatefrom" → date))
       }
       .mapConcat { response ⇒
@@ -240,7 +301,7 @@ class MispSrv @Inject() (
           }
         val events = eventJson.flatMap { j ⇒
           j.asOpt[MispAlert]
-            .map(_.copy(source = instanceConfig.name))
+            .map(_.copy(source = mispConnection.name))
             .orElse {
               logger.warn(s"MISP event can't be parsed\n$j")
               None
@@ -255,23 +316,18 @@ class MispSrv @Inject() (
   }
 
   def getAttributes(
-    instanceConfig: MispInstanceConfig,
+    mispConnection: MispConnection,
     eventId: String,
     fromDate: Option[Date]): Future[Seq[JsObject]] = {
     val date = fromDate.fold("null") { fd ⇒
       val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
       dateFormat.format(fd)
     }
-    ws
-      .url(s"${instanceConfig.url}/attributes/restSearch/json/" +
-        s"null/null/null/null/null/$date/null/null/$eventId/false")
-      .withHeaders(
-        "Authorization" → instanceConfig.key,
-        "Accept" → "application/json")
+    mispConnection(s"attributes/restSearch/json/null/null/null/null/null/$date/null/null/$eventId/false")
       .get()
       .map { response ⇒
         val refDate = fromDate.getOrElse(new Date(0))
-        val artifactTags = JsString(s"src:${instanceConfig.name}") +: JsArray(instanceConfig.artifactTags.map(JsString))
+        val artifactTags = JsString(s"src:${mispConnection.name}") +: JsArray(mispConnection.artifactTags.map(JsString))
         (Json.parse(response.body) \ "response" \\ "Attribute")
           .flatMap(_.as[Seq[MispAttribute]])
           .filter(_.date after refDate)
@@ -296,7 +352,7 @@ class MispSrv @Inject() (
   }
 
   def attributeToArtifact(
-    instanceConfig: MispInstanceConfig,
+    mispConnection: MispConnection,
     alert: Alert,
     attr: JsObject)(implicit authContext: AuthContext): Option[Future[Fields]] = {
     (for {
@@ -310,7 +366,7 @@ class MispSrv @Inject() (
           for {
             attributeId ← (json \ "attributeId").asOpt[String]
             attributeType ← (json \ "attributeType").asOpt[String]
-            fiv = downloadAttachment(instanceConfig, attributeId)
+            fiv = downloadAttachment(mispConnection, attributeId)
           } yield if (attributeType == "malware-sample") fiv.map(extractMalwareAttachment)
           else fiv
         case _ ⇒ None
@@ -357,7 +413,6 @@ class MispSrv @Inject() (
     }
   }
 
-  //
   def updateMispAlertArtifact()(implicit authContext: AuthContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
     logger.info("Update MISP attributes in alerts")
@@ -440,12 +495,11 @@ class MispSrv @Inject() (
   }
 
   def downloadAttachment(
-    instanceConfig: MispInstanceConfig,
+    mispConnection: MispConnection,
     attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
     val fileNameExtractor = """attachment; filename="(.*)"""".r
 
-    ws.url(s"${instanceConfig.url}/attributes/download/$attachmentId")
-      .withHeaders("Authorization" → instanceConfig.key, "Accept" → "application/json")
+    mispConnection(s"attributes/download/$attachmentId")
       .withMethod("GET")
       .stream()
       .flatMap {
@@ -461,8 +515,8 @@ class MispSrv @Inject() (
           response.body
             .runWith(FileIO.toPath(tempFile))
             .map { ioResult ⇒
-              ioResult.status.get
-              // throw an exception if transfer failed
+              if (!ioResult.wasSuccessful) // throw an exception if transfer failed
+                throw ioResult.getError
               val contentType = response.headers.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
               val filename = response.headers.headers
                 .get("Content-Disposition")
