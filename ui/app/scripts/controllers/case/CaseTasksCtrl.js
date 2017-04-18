@@ -32,7 +32,8 @@
                     }
                 }]
             },
-            sort: ['-flag', '+startDate', '+title']
+            sort: ['-flag', '+startDate', '+title'],
+            pageSize: 30
         });
 
         $scope.showTask = function(task) {

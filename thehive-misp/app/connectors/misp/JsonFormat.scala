@@ -2,13 +2,10 @@ package connectors.misp
 
 import java.util.Date
 
-import play.api.libs.json.{ Json, Reads }
-import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
-import play.api.libs.json.JsValue
-import play.api.libs.json.JsValue.jsValueToJsLookup
-
 import org.elastic4play.models.JsonFormat.enumFormat
-import org.elastic4play.JsonFormat.dateFormat
+import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json.{ JsSuccess, JsValue, Json, Reads }
 
 object JsonFormat {
   implicit val eventStatusFormat = enumFormat(EventStatus)
@@ -41,7 +38,7 @@ object JsonFormat {
       eventId ← (json \ "id").validate[String]
       timestamp ← (json \ "timestamp").validate[String]
       date = new Date(timestamp.toLong * 1000)
-      comment ← (json \ "comment").validate[String]
+      comment ← (json \ "comment").validate[String].orElse(JsSuccess(""))
       value ← (json \ "value").validate[String]
     } yield MispAttribute(id, tpe, category, uuid, eventId.toLong, date, comment, value))
 }

@@ -2,57 +2,58 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv) {
+    function($scope, $uibModal, $location, $state, $base64, AuthenticationSrv, MispSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, AlertSrv, currentUser) {
         'use strict';
+
+        if(!currentUser || !currentUser.id) {
+            $state.go('login');
+            return;
+        }
 
         $scope.querystring = '';
         $scope.view = {
-            data: 'currentcases'
+            data: 'mytasks'
         };
         $scope.mispEnabled = false;
 
         StreamSrv.init();
-        $scope.currentUser = AuthenticationSrv.current(function() {
-            // while succeed get myCurrentTasks stats
+        $scope.currentUser = currentUser;
 
-            $scope.templates = TemplateSrv.query();
+        $scope.templates = TemplateSrv.query();
 
-            $scope.myCurrentTasks = StreamStatSrv({
-                scope: $scope,
-                rootId: 'any',
-                query: {
-                    '_and': [{
-                        'status': 'InProgress'
-                    }, {
-                        'owner': $scope.currentUser.id
-                    }]
-                },
-                result: {},
-                objectType: 'case_task',
-                field: 'status'
-            });
-
-            $scope.waitingTasks = StreamStatSrv({
-                scope: $scope,
-                rootId: 'any',
-                query: {
-                    'status': 'Waiting'
-                },
-                result: {},
-                objectType: 'case_task',
-                field: 'status'
-            });
-
-            // Get metrics cache
-            MetricsCacheSrv.all().then(function(list) {
-                $scope.metricsCache = list;
-            });
-
-            // Get MISP counts
-            $scope.mispEvents = MispSrv.stats($scope);
-        }, function(data, status) {
-            AlertSrv.error('RootCtrl', data, status);
+        $scope.myCurrentTasks = StreamStatSrv({
+            scope: $scope,
+            rootId: 'any',
+            query: {
+                '_and': [{
+                    'status': 'InProgress'
+                }, {
+                    'owner': $scope.currentUser.id
+                }]
+            },
+            result: {},
+            objectType: 'case_task',
+            field: 'status'
         });
+
+        $scope.waitingTasks = StreamStatSrv({
+            scope: $scope,
+            rootId: 'any',
+            query: {
+                'status': 'Waiting'
+            },
+            result: {},
+            objectType: 'case_task',
+            field: 'status'
+        });
+
+        // Get metrics cache
+        MetricsCacheSrv.all().then(function(list) {
+            $scope.metricsCache = list;
+        });
+
+        // Get MISP counts
+        $scope.mispEvents = MispSrv.stats($scope);
 
         $scope.$on('templates:refresh', function(){
             $scope.templates = TemplateSrv.query();

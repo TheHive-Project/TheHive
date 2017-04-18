@@ -1,10 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertSrv', function($state, Notification) {
+        .factory('AlertSrv', function($state, HtmlSanitizer, Notification) {
 
             function log(message, type) {
-                Notification[type || 'error'](message);
+                Notification[type || 'error'](HtmlSanitizer.sanitize(message));
             }
 
             return {
