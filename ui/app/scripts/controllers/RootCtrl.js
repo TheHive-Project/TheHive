@@ -5,7 +5,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
     function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
         'use strict';
 
-        if(currentUser === 'maintenance') {
+        if(currentUser === 520) {
             $state.go('maintenance');
             return;
         }else if(!currentUser || !currentUser.id) {

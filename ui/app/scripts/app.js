@@ -54,12 +54,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                         AuthenticationSrv.current(function(userData) {
                             return deferred.resolve(userData);
                         }, function(err, status) {
-                            if (status === 520) {
-                                return deferred.resolve('maintenance')
-                            } else {                                
-                                return deferred.resolve(status);
-                            }
-
+                            return deferred.resolve(status === 520 ? status : null);
                         });
 
                         return deferred.promise;
