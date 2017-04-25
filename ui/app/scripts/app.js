@@ -239,6 +239,17 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/case/case.links.html',
                 controller: 'CaseLinksCtrl'
             })
+            .state('app.case.export', {
+                url: '/export',
+                templateUrl: 'views/partials/case/case.export.html',
+                controller: 'CaseExportCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    categories: function(MispSrv) {
+                        return MispSrv.categories();
+                    }
+                }
+            })
             .state('app.case.tasks-item', {
                 url: '/tasks/{itemId}',
                 templateUrl: 'views/partials/case/case.tasks.item.html',

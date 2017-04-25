@@ -116,6 +116,23 @@
                     });
 
                     return defer.promise;
+                },
+
+                categories: function() {
+                    var defer = $q.defer();
+
+                    $q.resolve({
+                        'category1': [
+                            'type1.1', 'type1.2', 'type1.3'
+                        ],
+                        'category2': [
+                            'type2.1', 'type2.2', 'type2.3'
+                        ]
+                    }).then(function(response) {
+                        defer.resolve(response);
+                    });
+
+                    return defer.promise;
                 }
             };
 
