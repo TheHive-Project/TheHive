@@ -1,6 +1,5 @@
 package connectors.misp
 
-import java.nio.file.{ Path, Paths }
 import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
@@ -16,7 +15,7 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
 import org.elastic4play.controllers.{ Fields, FileInputValue }
-import org.elastic4play.services._
+import org.elastic4play.services.{ AttachmentSrv, AuthContext, EventSrv, TempSrv }
 import org.elastic4play.utils.RichJson
 import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.inject.ApplicationLifecycle
@@ -24,124 +23,58 @@ import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
-import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClientConfig, AhcWSClientConfigParser }
-import play.api.libs.ws.ssl.TrustStoreConfig
-import play.api.libs.ws.{ DefaultWSProxyServer, WSConfigParser, WSProxyServer }
 import play.api.{ Configuration, Environment, Logger }
-import services.{ AlertSrv, ArtifactSrv, CaseSrv }
+import services._
 
 import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
-object MispConfig {
-  def parseWSConfig(config: Configuration)(implicit environment: Environment): Option[AhcWSClientConfig] = { // FIXME require default config item ?
-    Try {
-      val cfg = Configuration(config.underlying.atPath("play.ws"))
-      new AhcWSClientConfigParser(
-        new WSConfigParser(cfg, environment).parse(),
-        cfg,
-        environment).parse()
-    }
-      .toOption
-  }
-
-  def parseProxyConfig(config: Configuration): Option[WSProxyServer] = for {
-    proxyHost ← config.getString("host")
-    proxyPort ← config.getInt("port")
-    proxyProtocol = config.getString("protocol")
-    proxyPrincipal = config.getString("user")
-    proxyPassword = config.getString("password")
-    proxyNtlmDomain = config.getString("ntmlDomain")
-    proxyEncoding = config.getString("encoding")
-    proxyNonProxyHosts = config.getStringSeq("nonProxyHosts")
-  } yield DefaultWSProxyServer(proxyHost, proxyPort, proxyProtocol, proxyPrincipal, proxyPassword, proxyNtlmDomain, proxyEncoding, proxyNonProxyHosts)
-}
-
 class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnection]) {
 
-  def this(configuration: Configuration, defaultCaseTemplate: Option[String], defaultWSConfig: Option[AhcWSClientConfig], environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) = this(
+  def this(configuration: Configuration, defaultCaseTemplate: Option[String], globalWS: CustomWSAPI) = this(
     configuration.getMilliseconds("misp.interval").fold(1.hour)(_.millis),
 
     for {
       cfg ← configuration.getConfig("misp").toSeq
-      defaultWSConfig = cfg.getConfig("ws").flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment))
-      defaultProxyConfig = cfg.getConfig("ws.proxy").flatMap(MispConfig.parseProxyConfig)
-      defaultArtifactTags = cfg.getStringSeq("tags").getOrElse(Nil)
-      key ← cfg.subKeys
+      mispWS = globalWS.withConfig(cfg)
 
-      mispConnectionConfig ← Try(cfg.getConfig(key)).toOption.flatten.toSeq
+      defaultArtifactTags = cfg.getStringSeq("tags").getOrElse(Nil)
+      name ← cfg.subKeys
+
+      mispConnectionConfig ← Try(cfg.getConfig(name)).toOption.flatten.toSeq
       url ← mispConnectionConfig.getString("url")
       key ← mispConnectionConfig.getString("key")
-      wsConfig = mispConnectionConfig.getConfig("ws")
-        .flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment))
-        .orElse(defaultWSConfig)
-        .getOrElse(AhcWSClientConfig())
-      proxyConfig = mispConnectionConfig.getConfig("ws.proxy")
-        .flatMap(MispConfig.parseProxyConfig)
-        .orElse(defaultProxyConfig)
+      instanceWS = mispWS.withConfig(mispConnectionConfig)
       artifactTags = mispConnectionConfig.getStringSeq("tags").getOrElse(defaultArtifactTags)
       caseTemplate = mispConnectionConfig.getString("caseTemplate").orElse(defaultCaseTemplate)
-      /* use of truststore is deprecated */
-      truststore = configuration.getString("misp.cert").map(p ⇒ Paths.get(p))
-    } yield MispConnection(key, url, key, wsConfig, truststore, proxyConfig, caseTemplate, artifactTags)(environment, lifecycle, mat))
+    } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags))
 
-  @Inject def this(configuration: Configuration, environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) =
+  @Inject def this(configuration: Configuration, httpSrv: CustomWSAPI) =
     this(
       configuration,
       configuration.getString("misp.caseTemplate"),
-      configuration.getConfig("misp.ws").flatMap(c ⇒ MispConfig.parseWSConfig(c)(environment)),
-      environment,
-      lifecycle,
-      mat)
+      httpSrv)
 }
 
 case class MispConnection(
     name: String,
     baseUrl: String,
     key: String,
-    clientConfig: AhcWSClientConfig,
-    truststore: Option[Path],
-    proxy: Option[WSProxyServer],
+    ws: CustomWSAPI,
     caseTemplate: Option[String],
-    artifactTags: Seq[String])(environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) {
+    artifactTags: Seq[String]) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
 
-  logger.info(s"Add MISP connection $name ($baseUrl)\n\tproxy configuration: $proxy\n\tclient configuration: $clientConfig")
-  private[misp] lazy val ws = {
-    val clientConfigWithTruststore = truststore match {
-      case Some(p) ⇒
-        logger.warn(
-          """Use of "truststore" parameter in configuration file (in misp section) is deprecated. Please use:
-            | misp {
-            |   ws.ssl {
-            |     trustManager = {
-            |       stores = [
-            |         { type = "PEM", path = "/path/to/cacert.crt" },
-            |         { type = "JKS", path = "/path/to/truststore.jks" }
-            |       ]
-            |     }
-            |   }
-            | }
-          """.stripMargin)
-        clientConfig.copy(
-          wsClientConfig = clientConfig.wsClientConfig.copy(
-            ssl = clientConfig.wsClientConfig.ssl.copy(
-              trustManagerConfig = clientConfig.wsClientConfig.ssl.trustManagerConfig.copy(
-                trustStoreConfigs = clientConfig.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ TrustStoreConfig(filePath = Some(p.toString), data = None)))))
-      case None ⇒ clientConfig
-    }
-    new AhcWSAPI(environment, clientConfigWithTruststore, lifecycle)(mat)
-  }
+  logger.info(s"Add MISP connection $name ($baseUrl)\n\tproxy configuration: ${ws.proxy}")
 
-  private[misp] def apply(url: String) = {
-    val req = ws.url(s"$baseUrl/$url")
+  private[misp] def apply(url: String) =
+    ws.url(s"$baseUrl/$url")
       .withHeaders(
         "Authorization" → key,
         "Accept" → "application/json")
-    proxy.fold(req)(req.withProxyServer)
-  }
+
 }
 
 @Singleton
@@ -154,6 +87,7 @@ class MispSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     tempSrv: TempSrv,
     eventSrv: EventSrv,
+    httpSrv: CustomWSAPI,
     environment: Environment,
     lifecycle: ApplicationLifecycle,
     implicit val system: ActorSystem,
