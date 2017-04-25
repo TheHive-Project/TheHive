@@ -94,13 +94,13 @@ class AlertSrv(
   def markAsRead(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
       case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"))
-      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignore"))
+      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"))
     }
   }
 
   def markAsUnread(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
-      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Update"))
+      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"))
       case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"))
     }
   }

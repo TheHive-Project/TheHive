@@ -14,7 +14,7 @@ import scala.util.Try
 
 object AlertStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val New, Update, Ignore, Imported = Value
+  val New, Updated, Ignored, Imported = Value
 }
 
 trait AlertAttributes {
@@ -47,7 +47,7 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
 
   private[AlertModel] lazy val logger = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
-  override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignore)
+  override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
 
   override def artifactAttributes: Seq[Attribute[_]] = artifactModel.attributes
 

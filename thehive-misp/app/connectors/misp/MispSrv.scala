@@ -58,12 +58,12 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
 }
 
 case class MispConnection(
-    name: String,
-    baseUrl: String,
-    key: String,
-    ws: CustomWSAPI,
-    caseTemplate: Option[String],
-    artifactTags: Seq[String]) {
+                           name: String,
+                           baseUrl: String,
+                           key: String,
+                           ws: CustomWSAPI,
+                           caseTemplate: Option[String],
+                           artifactTags: Seq[String]) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
 
@@ -78,21 +78,21 @@ case class MispConnection(
 }
 
 @Singleton
-class MispSrv @Inject() (
-    mispConfig: MispConfig,
-    alertSrvProvider: Provider[AlertSrv],
-    caseSrv: CaseSrv,
-    artifactSrv: ArtifactSrv,
-    userSrv: UserSrv,
-    attachmentSrv: AttachmentSrv,
-    tempSrv: TempSrv,
-    eventSrv: EventSrv,
-    httpSrv: CustomWSAPI,
-    environment: Environment,
-    lifecycle: ApplicationLifecycle,
-    implicit val system: ActorSystem,
-    implicit val materializer: Materializer,
-    implicit val ec: ExecutionContext) {
+class MispSrv @Inject()(
+                         mispConfig: MispConfig,
+                         alertSrvProvider: Provider[AlertSrv],
+                         caseSrv: CaseSrv,
+                         artifactSrv: ArtifactSrv,
+                         userSrv: UserSrv,
+                         attachmentSrv: AttachmentSrv,
+                         tempSrv: TempSrv,
+                         eventSrv: EventSrv,
+                         httpSrv: CustomWSAPI,
+                         environment: Environment,
+                         lifecycle: ApplicationLifecycle,
+                         implicit val system: ActorSystem,
+                         implicit val materializer: Materializer,
+                         implicit val ec: ExecutionContext) {
 
   private[misp] val logger = Logger(getClass)
   private[misp] lazy val alertSrv = alertSrvProvider.get
@@ -136,7 +136,7 @@ class MispSrv @Inject() (
             updateMispAlertArtifact()
           }
           .onComplete {
-            case Success(_)     ⇒ logger.info("Artifacts in MISP alerts updated")
+            case Success(_) ⇒ logger.info("Artifacts in MISP alerts updated")
             case Failure(error) ⇒ logger.error("Update MISP alert artifacts error :", error)
           }
         ()
@@ -153,21 +153,21 @@ class MispSrv @Inject() (
     Source(mispConfig.connections.toList)
       // get last synchronization
       .mapAsyncUnordered(1) { mcfg ⇒
-        alertSrv.stats(and("type" ~= "misp", "source" ~= mcfg.name), Seq(selectMax("lastSyncDate")))
-          .map { maxLastSyncDate ⇒ mcfg → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
-          .recover { case _ ⇒ mcfg → new Date(0) }
-      }
+      alertSrv.stats(and("type" ~= "misp", "source" ~= mcfg.name), Seq(selectMax("lastSyncDate")))
+        .map { maxLastSyncDate ⇒ mcfg → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
+        .recover { case _ ⇒ mcfg → new Date(0) }
+    }
       // get events that have been published after the last synchronization
       .flatMapConcat {
-        case (mcfg, lastSyncDate) ⇒
-          getEventsFromDate(mcfg, lastSyncDate).map((mcfg, lastSyncDate, _))
-      }
+      case (mcfg, lastSyncDate) ⇒
+        getEventsFromDate(mcfg, lastSyncDate).map((mcfg, lastSyncDate, _))
+    }
       // get related alert
       .mapAsyncUnordered(1) {
-        case (mcfg, lastSyncDate, event) ⇒
-          alertSrv.get("misp", event.source, event.sourceRef)
-            .map(a ⇒ (mcfg, lastSyncDate, event, a))
-      }
+      case (mcfg, lastSyncDate, event) ⇒
+        alertSrv.get("misp", event.source, event.sourceRef)
+          .map(a ⇒ (mcfg, lastSyncDate, event, a))
+    }
       .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event, alert) ⇒
           logger.info(s"getting MISP event ${event.sourceRef}")
@@ -195,11 +195,10 @@ class MispSrv @Inject() (
             "sourceRef" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
-            ("status" → (alert.status() match {
-              case AlertStatus.New      ⇒ JsString("New")
-              case AlertStatus.Update   ⇒ JsString("Update")
-              case AlertStatus.Ignore   ⇒ JsString("Ignore")
-              case AlertStatus.Imported ⇒ JsString("Update")
+            ("status" → (if (!alert.follow()) Json.toJson(alert.status())
+            else alert.status() match {
+              case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
+              case _ ⇒ Json.toJson(AlertStatus.Updated)
             }))
           val fAlert = alertSrv.update(alert.id, Fields(alertJson))
           // if a case have been created, update it
@@ -250,9 +249,9 @@ class MispSrv @Inject() (
   }
 
   def getAttributes(
-    mispConnection: MispConnection,
-    eventId: String,
-    fromDate: Option[Date]): Future[Seq[JsObject]] = {
+                     mispConnection: MispConnection,
+                     eventId: String,
+                     fromDate: Option[Date]): Future[Seq[JsObject]] = {
     val date = fromDate.fold("null") { fd ⇒
       val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
       dateFormat.format(fd)
@@ -286,9 +285,9 @@ class MispSrv @Inject() (
   }
 
   def attributeToArtifact(
-    mispConnection: MispConnection,
-    alert: Alert,
-    attr: JsObject)(implicit authContext: AuthContext): Option[Future[Fields]] = {
+                           mispConnection: MispConnection,
+                           alert: Alert,
+                           attr: JsObject)(implicit authContext: AuthContext): Option[Future[Fields]] = {
     (for {
       dataType ← (attr \ "dataType").validate[String]
       data ← (attr \ "data").validate[String]
@@ -311,7 +310,7 @@ class MispSrv @Inject() (
           case "tlp:white" ⇒ JsNumber(0)
           case "tlp:green" ⇒ JsNumber(1)
           case "tlp:amber" ⇒ JsNumber(2)
-          case "tlp:red"   ⇒ JsNumber(3)
+          case "tlp:red" ⇒ JsNumber(3)
         }
         .getOrElse(JsNumber(alert.tlp()))
       fields = Fields.empty
@@ -429,8 +428,8 @@ class MispSrv @Inject() (
   }
 
   def downloadAttachment(
-    mispConnection: MispConnection,
-    attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
+                          mispConnection: MispConnection,
+                          attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
     val fileNameExtractor = """attachment; filename="(.*)"""".r
 
     mispConnection(s"attributes/download/$attachmentId")
