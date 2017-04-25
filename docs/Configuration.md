@@ -186,6 +186,11 @@ cortex {
     # URL of the Cortex server
     url = "<The_URL_of_the_CORTEX_Server_goes_here>"
   }
+  # HTTP client configuration, more details in section 8
+  # ws {
+  #   proxy {}
+  #   ssl {}
+  # }
 }
 ```
 
@@ -195,6 +200,7 @@ Cortex analyzes observables and outputs reports in JSON format. TheHive show the
  - go to `Admin` > `Report templates` menu
  - click on `Import templates` button and select the downloaded package
 
+HTTP client used by Cortex connector use global configuration (in `play.ws`) but can be overridden in Cortex section and in each Cortex server configuration. Refer to section 8 for more detail on how to configure HTTP client.
 ### 7. MISP
 TheHive has the ability to connect to one or several MISP servers. Within the configuration file, you can register your MISP server(s) under the `misp` configuration keyword. Each server shall be identified using an arbitrary name, its `url`, the corresponding authentication `key` and optional `tags` to add to the corresponding cases when importing MISP events.
 
@@ -209,17 +215,46 @@ misp {
   "MISP-SERVER-ID" {
     # URL of the MISP server
     url = "<The_URL_of_the_MISP_Server_goes_here>"
+    
     # authentication key
     key = "<the_auth_key_goes_here>"
+    
     # tags that must be automatically added to the case corresponding to the imported event
     tags = ["misp"]
+    
+    # truststore configuration using "cert" key is deprecated
+    #cert = /path/to/truststore.jsk
+    
+    # HTTP client configuration, more details in section 8
+    # ws {
+    #   proxy {}
+    #   ssl {}
+    # }
   }
-
-  # truststore to use to validate the MISP certificate (if the default truststore is not sufficient)
-  #cert = /path/to/truststore.jsk
-
   # Interval between two MISP event import in hours (h) or minutes (m)
   interval = 1h
+}
+```
+HTTP client used by MISP connector use global configuration (in `play.ws`) but can be overridden in MISP section and in each MISP server configuration (in `misp.MISP-SERVER-ID.ws`). Refer to section 8 for more detail on how to configure HTTP client.
+ 
+Before TheHive 2.11 one could set truststore using `cert` key. This setting is now deprecated. It support will be remove in next major version (2.12). It can be easily replaced :
+  - before:
+```
+misp {
+  [...]
+  cert = "/path/to/truststore.jks"
+}
+```
+  - after:
+```
+misp {
+  [...]
+  ws.ssl.trustManager.stores = [
+    {
+      type: "JKS"
+      path: "/path/to/truststore.jks"
+    }
+  ]
 }
 ```
 
@@ -249,7 +284,98 @@ misp {
 
 Once the configuration file has been edited, restart TheHive. Every new import of MISP event will generate a case according to the "MISP_CASETEMPLATE" template.
 
-### 8. Monitoring and Performance Metrics
+### 8. HTTP client configuration
+
+HTTP client can be configured by adding `ws` key in sections that needs to connect to remote HTTP service. The key can contains configuration items defined in [play WS configuration](https://www.playframework.com/documentation/2.5.x/ScalaWS#Configuring-WS):
+
+ - `ws.followRedirects`: Configures the client to follow 301 and 302 redirects (default is true).
+ - `ws.useragent`: To configure the User-Agent header field.
+ - `ws.compressionEnabled`: Set it to true to use gzip/deflater encoding (default is false).
+
+#### Timeouts
+There are 3 different timeouts in WS. Reaching a timeout causes the WS request to interrupt.
+ - `ws.timeout.connection`: The maximum time to wait when connecting to the remote host (default is 120 seconds).
+ - `ws.timeout.idle`: The maximum time the request can stay idle (connection is established but waiting for more data) (default is 120 seconds).
+ - `ws.timeout.request`: The total time you accept a request to take (it will be interrupted even if the remote host is still sending data) (default is 120 seconds).
+
+#### Proxy
+Proxy can be used. By default, proxy configured in JVM is used but one can configured specific configuration for each HTTP client.
+ - `ws.useProxyProperties`: To use the JVM system’s HTTP proxy settings (http.proxyHost, http.proxyPort) (default is true). This setting is ignored if `ws.proxy' settings is present.
+ - `ws.proxy.host`: The hostname of the proxy server.
+ - `ws.proxy.post`: The port of the proxy server.
+ - `ws.proxy.protocol`: The protocol of the proxy server.  Use "http" or "https".  Defaults to "http" if not specified.
+ - `ws.proxy.user`: The username of the credentials for the proxy server.
+ - `ws.proxy.password`: The password for the credentials for the proxy server.
+ - `ws.proxy.ntlmDomain`: The password for the credentials for the proxy server.
+ - `ws.proxy.encoding`: The realm's charset.
+ - `ws.proxy.proxyNonProxyHosts`: The list of host on which proxy must not be used.
+
+#### SSL
+SSL of HTTP client can be completely configured in `application.conf` file.
+
+##### Certificate manager
+Certificate manager is used to store client certificates and certificate authorities.
+
+`keyManager` indicates which certificate HTTP client can use to authenticate itself on remote host (when certificate based authentication is used)
+```
+  ws.ssl.keyManager {
+    stores = [
+      {
+        type: "pkcs12" // JKS or PEM
+        path: "mycert.p12"
+        password: "password1"
+      }
+    ]
+  }
+```
+Certificate authorities are configured using `trustManager` key. It is used to establish secure connexion with remote host. Server certificate must be signed by a trusted certificate authority.
+```
+  ws.ssl.trustManager {
+    stores = [
+      {
+        type: "JKS" // JKS or PEM
+        path: "keystore.jks"
+        password: "password1"
+      }
+    ]
+  }
+```
+##### Debugging
+To debug the key manager / trust manager, set the following flags:
+```
+  ws.ssl.debug = {
+    ssl = true
+    trustmanager = true
+    keymanager = true
+    sslctx = true
+    handshake = true
+    verbose = true
+    data = true
+    certpath = true
+  }
+```
+
+##### Protocols
+If you want to define a different default protocol, you can set it specifically in the client:
+```
+ws.ssl.protocol = "TLSv1.2"
+```
+If you want to define the list of enabled protocols, you can do so explicitly:
+```
+ws.ssl.enabledProtocols = ["TLSv1.2", "TLSv1.1", "TLSv1"]
+```
+##### Ciphers
+Cipher suite can be configured using `ws.ssl.enabledCipherSuites`:
+```
+ws.ssl.enabledCipherSuites = [
+  "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+  "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+  "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+  "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+]
+```
+
+### 9. Monitoring and Performance Metrics
 
 Performance metrics (response time, call rate to Elasticsearch and HTTP request, throughput, memory used...) can be collected if enabled in configuration.
 
@@ -315,7 +441,7 @@ metrics {
     }
 }
 ```
-### 9. HTTPS
+### 10. HTTPS
 To enable HTTPS in the application, add the following lines to `/etc/thehive/application.conf`:
 ```
     https.port: 9443
