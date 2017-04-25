@@ -14,7 +14,7 @@
             <div class="alert-details">
                 <h4 class="vpad10 text-primary">
                     Basic details
-                    <span class="label label-default pull-right" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Update'}">{{dialog.event.status}}</span>
+                    <span class="label label-default pull-right" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
                 </h4>
                 <dl class="dl-horizontal clear">
                     <dt>Reference</dt>
@@ -86,7 +86,7 @@
     <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.import()">Import event</button>
     <button class="btn btn-default pull-right" type="button"
         ng-if="dialog.canMarkAsRead(dialog.event)"
-        ng-disabled="dialog.loading" 
+        ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope"></i> Mark as read
     </button>

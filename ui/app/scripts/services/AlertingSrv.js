@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, AlertStatus) {
 
             var baseUrl = './api/alert';
 
@@ -27,11 +27,11 @@
                 },
 
                 canMarkAsRead: function(event) {
-                    return event.status === 'New' || event.status === 'Update';
+                    return event.status === 'New' || event.status === 'Updated';
                 },
 
                 canMarkAsUnread: function(event) {
-                    return event.status === 'Imported' || event.status === 'Ignore';
+                    return event.status === 'Imported' || event.status === 'Ignored';
                 },
 
                 markAsRead: function(alertId) {
@@ -98,12 +98,9 @@
                 statuses: function(query) {
                     var defer = $q.defer();
 
-                    $q.resolve([
-                        {text: 'New'},
-                        {text: 'Update'},
-                        {text: 'Imported'},
-                        {text: 'Ignore'}
-                    ]).then(function(response) {
+                    $q.resolve(_.map(AlertStatus.values, function(status) {
+                        return { text: status};
+                    })).then(function(response) {
                         var statuses = [];
 
                         statuses = _.filter(response, function(status) {

@@ -21,6 +21,9 @@
             },
             values: ['Unknown', 'Low', 'Medium', 'High']
         })
+        .value('AlertStatus', {
+            values: ['New', 'Updated', 'Ignored', 'Imported']
+        })
         .value('Tlp', {
             keys: {
                 Red: 3,

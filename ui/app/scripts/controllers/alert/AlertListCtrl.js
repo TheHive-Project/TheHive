@@ -27,9 +27,9 @@
                         value: [{
                             text: 'New'
                         }, {
-                            text: 'Update'
+                            text: 'Updated'
                         }],
-                        filter: '(status:"New" OR status:"Update")'
+                        filter: '(status:"New" OR status:"Updated")'
                     }
                 },
                 filterDefs: {
@@ -232,8 +232,8 @@
 
                 temp = _.uniq(_.pluck(self.selection, 'status'));
 
-                self.menu.markAsRead = temp.indexOf('Ignore') === -1 && temp.indexOf('Imported') === -1;
-                self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Update') === -1;
+                self.menu.markAsRead = temp.indexOf('Ignores') === -1 && temp.indexOf('Imported') === -1;
+                self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Updated') === -1;
 
             };
 
