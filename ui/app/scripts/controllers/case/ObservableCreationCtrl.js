@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, AlertSrv) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -31,7 +31,7 @@
                 }, function(data) {
                     $scope.types = _.filter(_.values(data), _.isString).sort();
                 }, function(response) {
-                    AlertSrv.error('ObservableCreationCtrl', response.data, response.status);
+                    NotificationSrv.error('ObservableCreationCtrl', response.data, response.status);
                 });
             };
             $scope.getDataTypeList();
@@ -123,12 +123,12 @@
                     $scope.step = 'error';
                     $scope.pendingAsync = false;
 
-                    AlertSrv.log('Observables have been successfully created', 'success');
+                    NotificationSrv.log('Observables have been successfully created', 'success');
 
                 } else {
                     success = angular.isObject(response.data) ? 1 : response.data.length;
 
-                    AlertSrv.log('Observables have been successfully created', 'success');
+                    NotificationSrv.log('Observables have been successfully created', 'success');
 
                     $uibModalInstance.close(response);
                 }
@@ -143,7 +143,7 @@
                     $scope.step = 'error';
 
                 } else {
-                    AlertSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
+                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
 
                     $uibModalInstance.close(response);
                 }

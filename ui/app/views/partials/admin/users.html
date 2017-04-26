@@ -62,8 +62,7 @@
                             <td class="col-md-3" ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]" style="vertical-align:middle; ">
                                 <updatable-simple-text active="state.editing" on-update="updateField(user, 'name', newValue)" value="user.name"></updatable-simple-text>
                             </td>
-                        </span>
-                    </td>
+
                     <td class="col-md-2" style="vertical-align:middle; ">
                         <div class="btn-group" uib-dropdown ng-if="user.status == 'Ok'">
                             <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
@@ -117,10 +116,11 @@
                     </td>
                 </tr>
 
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
 
-        <psearch control="userlist"></psearch>
-
+                <psearch control="userlist"></psearch>
+            </div>
+        </div>
     </div>
 </div>

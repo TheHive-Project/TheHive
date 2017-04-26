@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminObservablesCtrl',
-        function($scope, ListSrv, AlertSrv) {
+        function($scope, ListSrv, NotificationSrv) {
             $scope.dataTypeList = [];
             $scope.params = {
                 newDataType: null
@@ -22,7 +22,7 @@
                         };
                     });
                 }, function(response) {
-                    AlertSrv.error('AdminObservablesCtrl', response.data, response.status);
+                    NotificationSrv.error('AdminObservablesCtrl', response.data, response.status);
                 });
             };
             $scope.load();
@@ -36,7 +36,7 @@
                         $scope.load();
                     },
                     function(response) {
-                        AlertSrv.error('ListSrv', response.data, response.status);
+                        NotificationSrv.error('ListSrv', response.data, response.status);
                     });
 
                 $scope.params.newDataType = '';
@@ -47,10 +47,10 @@
                     'listId': datatype.id
                 }, function(data) {
                     console.log(data);
-                    AlertSrv.log('The datatype ' + datatype.value + ' has been removed', 'success');
+                    NotificationSrv.log('The datatype ' + datatype.value + ' has been removed', 'success');
                     $scope.load();
                 }, function(response) {
-                    AlertSrv.error('ListSrv', response.data, response.status);
+                    NotificationSrv.error('ListSrv', response.data, response.status);
                 });
             };
         });

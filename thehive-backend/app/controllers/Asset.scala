@@ -12,12 +12,12 @@ trait AssetCtrl {
 
 @Singleton
 class AssetCtrlProd @Inject() (errorHandler: HttpErrorHandler) extends Assets(errorHandler) with AssetCtrl {
-  def get(file: String) = at("/ui", file)
+  def get(file: String): Action[AnyContent] = at("/ui", file)
 }
 
 @Singleton
 class AssetCtrlDev @Inject() (environment: Environment) extends ExternalAssets(environment) with AssetCtrl {
-  def get(file: String) = {
+  def get(file: String): Action[AnyContent] = {
     if (file.startsWith("bower_components/")) {
       at("ui", file)
     }

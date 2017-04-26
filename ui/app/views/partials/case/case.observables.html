@@ -1,10 +1,8 @@
-<br/>
-
 <div class="row">
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group" uib-dropdown is-open="status.isopen">
-                <button class="btn btn-default dropdown-toggle" uib-dropdown-toggle ng-disabled="selection.artifacts.length == 0" type="button">
+                <button class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle ng-disabled="selection.artifacts.length == 0" type="button">
                     {{uiSrv.actions[selection.Action]}}
                     <span class="caret"></span>
                 </button>
@@ -38,7 +36,7 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-primary" ng-click="addArtifact()">
+                <button class="btn btn-sm btn-primary" ng-click="addArtifact()">
                     <i class="glyphicon glyphicon-plus"></i>
                     Add observable(s)
                 </button>
@@ -56,13 +54,13 @@
             </div>
 
             <div class="btn-group pull-right" role="group">
-                <button class="btn" ng-class="{true: 'btn-primary', false:'btn-default'}[uiSrv.context.showFilters]" type="button" ng-click="toggleFilters()">
+                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[uiSrv.context.showFilters]" type="button" ng-click="toggleFilters()">
                     <i class="fa fa-search"></i> Filters
                 </button>
             </div>
 
             <div class="btn-group pull-right" role="group">
-                <button class="btn" ng-class="{true: 'btn-primary', false:'btn-default'}[uiSrv.context.showStats]" type="button" ng-click="toggleStats()">
+                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[uiSrv.context.showStats]" type="button" ng-click="toggleStats()">
                     <i class="fa fa-bar-chart"></i> Stats
                 </button>
             </div>

@@ -12,7 +12,7 @@ import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeO
 import org.elastic4play.services.JsonFormat.roleFormat
 import org.elastic4play.services.Role
 
-import JsonFormat.userStatusFormat
+import models.JsonFormat.userStatusFormat
 import services.AuditedModel
 
 object UserStatus extends Enumeration with HiveEnumeration {
@@ -35,7 +35,7 @@ trait UserAttributes { _: AttributeDef ⇒
 
 class UserModel extends ModelDef[UserModel, User]("user") with UserAttributes with AuditedModel {
 
-  private def addKey = (attrs: JsObject) ⇒ (attrs \ "with-key") match {
+  private def addKey = (attrs: JsObject) ⇒ attrs \ "with-key" match {
     case _: JsUndefined ⇒ attrs
     case _              ⇒ attrs + ("key" → JsString(UUID.randomUUID.toString)) - "with-key"
   }

@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, AlertSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -32,7 +32,8 @@
                     }
                 }]
             },
-            sort: ['-flag', '+startDate', '+title']
+            sort: ['-flag', '+order', '+startDate', '+title'],
+            pageSize: 30
         });
 
         $scope.showTask = function(task) {
@@ -49,7 +50,7 @@
                 $scope.isNewTask = false;
                 $scope.newTask.title = '';
             }, function(response) {
-                AlertSrv.error('taskList', response.data, response.status);
+                NotificationSrv.error('taskList', response.data, response.status);
             });
         };
 
@@ -75,7 +76,7 @@
                 }, function() {
                     $scope.$emit('tasks:task-removed', task);
                 }, function(response) {
-                    AlertSrv.error('taskList', response.data, response.status);
+                    NotificationSrv.error('taskList', response.data, response.status);
                 });
             });
 
@@ -91,7 +92,7 @@
                 }, function(data) {
                     $scope.showTask(data);
                 }, function(response) {
-                    AlertSrv.error('taskList', response.data, response.status);
+                    NotificationSrv.error('taskList', response.data, response.status);
                 });
             } else {
                 $scope.showTask(task);

@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $uibModalStack, AuthenticationSrv, AlertSrv) {
+        .controller('AuthenticationCtrl', function($scope, $state, $uibModalStack, AuthenticationSrv, NotificationSrv) {
             $scope.params = {};
 
             $uibModalStack.dismissAll();
@@ -15,9 +15,9 @@
                     $state.go('app.cases');
                 }, function(data, status) {
                     if (status === 520) {
-                        AlertSrv.error('AuthenticationCtrl', data, status);
+                        NotificationSrv.error('AuthenticationCtrl', data, status);
                     } else {
-                        AlertSrv.log(data.message, 'error');
+                        NotificationSrv.log(data.message, 'error');
                     }
                 });
             };

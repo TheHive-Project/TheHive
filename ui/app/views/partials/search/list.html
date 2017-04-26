@@ -8,7 +8,7 @@
     <div class="box-body">
         <div class="row">
             <psearch control="searchResults"></psearch>
-            <div class="col-md-12" ng-repeat="value in searchResults.values" ng-switch="value.type">
+            <div class="col-md-12" ng-repeat="value in searchResults.values" ng-switch="value._type">
                 <search-item type="case" value="value" ng-switch-when="case" icon="glyphicon glyphicon-folder-open"></search-item>
                 <search-item type="task" value="value" ng-switch-when="case_task" icon="glyphicon glyphicon-tasks"></search-item>
                 <search-item type="task-log" value="value" ng-switch-when="case_task_log" icon="glyphicon glyphicon-comment"></search-item>

@@ -42,7 +42,7 @@ class TaskSrv @Inject() (
   def create(caze: Case, fields: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Task]]] =
     createSrv[TaskModel, Task, Case](taskModel, fields.map(caze → _))
 
-  def get(id: String) =
+  def get(id: String): Future[Task] =
     getSrv[TaskModel, Task](taskModel, id)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
@@ -53,7 +53,7 @@ class TaskSrv @Inject() (
   def update(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
     // if update status from waiting to something else and owner is not set, then set owner to user
     val f = if (task.status() == TaskStatus.Waiting &&
-      fields.getString("status").filterNot(_ == TaskStatus.Waiting.toString).isDefined &&
+      !fields.getString("status").forall(_ == TaskStatus.Waiting.toString) &&
       !fields.contains("owner") &&
       task.owner().isEmpty)
       fields.set("owner", authContext.userId)

@@ -2,21 +2,18 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Success, Try }
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-
-import play.api.Logger
-import play.api.libs.json.{ JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, Json }
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
-
+import models._
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
+import org.elastic4play.services._
+import play.api.Logger
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json._
 
-import models.{ Artifact, ArtifactModel, Case, CaseModel, CaseResolutionStatus, CaseStatus, CaseTemplate, Task, TaskModel }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 @Singleton
 class CaseSrv @Inject() (
@@ -38,11 +35,11 @@ class CaseSrv @Inject() (
     val metrics = JsObject(metricNames.map(_ → JsNull))
     val tags = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
     originalFields
-      .set("title", originalFields.getString("title").map(title ⇒ JsString(template.titlePrefix().getOrElse("") + " " + title)))
-      .set("description", originalFields.getString("description").orElse(template.description()).map(JsString(_)))
+      .set("title", originalFields.getString("title").map(t ⇒ JsString(template.titlePrefix().getOrElse("") + " " + t)))
+      .set("description", originalFields.getString("description").orElse(template.description()).map(JsString))
       .set("severity", originalFields.getLong("severity").orElse(template.severity()).map(JsNumber(_)))
-      .set("tags", JsArray(tags.map(JsString(_))))
-      .set("flag", originalFields.getBoolean("flag").orElse(template.flag()).map(JsBoolean(_)))
+      .set("tags", JsArray(tags.map(JsString)))
+      .set("flag", originalFields.getBoolean("flag").orElse(template.flag()).map(JsBoolean))
       .set("tlp", originalFields.getLong("tlp").orElse(template.tlp()).map(JsNumber(_)))
       .set("metrics", originalFields.getValue("metrics").flatMap(_.asOpt[JsObject]).getOrElse(JsObject(Nil)) ++ metrics)
   }
@@ -72,6 +69,9 @@ class CaseSrv @Inject() (
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
     updateSrv[CaseModel, Case](caseModel, id, fields)
 
+  def update(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
+    updateSrv(caze, fields)
+
   def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Case]]] = {
     updateSrv[CaseModel, Case](caseModel, ids, fields)
   }
@@ -91,7 +91,10 @@ class CaseSrv @Inject() (
       taskStats ← findSrv(taskModel, and(
         "_parent" ~= id,
         "status" in ("Waiting", "InProgress", "Completed")), groupByField("status", selectCount))
-      artifactStats ← findSrv(artifactModel, and("_parent" ~= id, "status" ~= "Ok"), groupByField("status", selectCount))
+      artifactStats ← findSrv(
+        artifactModel,
+        and("_parent" ~= id, "status" ~= "Ok"),
+        groupByField("status", selectCount))
     } yield Json.obj(("tasks", taskStats), ("artifacts", artifactStats))
   }
 

@@ -1,16 +1,37 @@
 # Change Log
 
-## [2.10.1](https://github.com/CERT-BDF/TheHive/tree/2.10.0) (2017-03-08)
-[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.0...2.10.0)
+## [2.10.2](https://github.com/CERT-BDF/TheHive/tree/2.10.2) (2017-04-18)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.1...2.10.2)
 
 **Implemented enhancements:**
 
+- Run all analyzers on multiple observables from observables view [\#174](https://github.com/CERT-BDF/TheHive/issues/174)
+- Add CSRF protection [\#158](https://github.com/CERT-BDF/TheHive/issues/158)
+- Persistence for task viewing options [\#157](https://github.com/CERT-BDF/TheHive/issues/157)
+
+**Fixed bugs:**
+
+- MISP import fails [\#169](https://github.com/CERT-BDF/TheHive/issues/169)
+- Unauthenticated access to some pages doesn't redirect to login page [\#161](https://github.com/CERT-BDF/TheHive/issues/161)
+- Disable readonly access to admin pages, for users without 'admin' role [\#160](https://github.com/CERT-BDF/TheHive/issues/160)
+- Secure the usage of angular-ui-notification library [\#159](https://github.com/CERT-BDF/TheHive/issues/159)
+- Pagination does not work with 100 results per page [\#152](https://github.com/CERT-BDF/TheHive/issues/152)
+
+**Closed issues:**
+
+- Observable Tags not displayed in 2.10.1 [\#155](https://github.com/CERT-BDF/TheHive/issues/155)
+
+## [2.10.1](https://github.com/CERT-BDF/TheHive/tree/2.10.1) (2017-03-08)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.0...2.10.1)
+
+**Implemented enhancements:**
+
+- Feature Request: Ansible build scripts [\#124](https://github.com/CERT-BDF/TheHive/issues/124)
 - Remove the "Run all analyzers" option from observables list [\#141](https://github.com/CERT-BDF/TheHive/issues/141)
 - Remove duplicate stream callbacks registration [\#138](https://github.com/CERT-BDF/TheHive/issues/138)
 - Typo in quick filters [\#134](https://github.com/CERT-BDF/TheHive/issues/134)
 - Display a warning when trying to merge an already merged case [\#129](https://github.com/CERT-BDF/TheHive/issues/129)
 - Restyle avatar's upload button [\#126](https://github.com/CERT-BDF/TheHive/issues/126)
-- Feature Request: Ansible build scripts [\#124](https://github.com/CERT-BDF/TheHive/issues/124)
 - Add pagination component at the top of the task log [\#116](https://github.com/CERT-BDF/TheHive/issues/116)
 - Disable buttons in MISP event's preview dialog [\#115](https://github.com/CERT-BDF/TheHive/issues/115)
 - Make The Hive working on any URL path and not only / [\#114](https://github.com/CERT-BDF/TheHive/issues/114)

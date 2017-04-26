@@ -7,32 +7,13 @@
                 -
                 {{caze.title}}</span>
         </h3>
-        <div class="box-tools pull-right">
-            <span class="pull-right">
-                <span class="ml-xs">
-                    <a href ng-click="mergeCase()" class="noline" uib-tooltip="Merge case">
-                        <i class="text-primary fa fa-2x fa-compress"></i>
-                    </a>
-                </span>
-            <span class="ml-xs">
-                    <a href ng-click="switchFlag()" class="noline" uib-tooltip="{{caze.flag ? 'Unflag case' :  'Flag case'}}">
-                        <i class="text-yellow fa fa-2x fa-flag" ng-show="caze.flag"></i>
-                        <i class="text-muted fa fa-2x fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'" ng-show="!caze.flag || caze.flag == undefined"></i>
-                    </a>
-                </span>
-            <span class="ml-xs" ng-hide="isCaseClosed()">
-                    <a href ng-click="openCloseDialog()" class="noline" uib-tooltip="Close case">
-                        <i class="text-muted fa fa-2x fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
-                    </a>
-                </span>
-            <span class="ml-xs" ng-show="isCaseClosed()">
-                    <a href ng-click="reopenCase()" class="noline" uib-tooltip="Reopen case">
-                        <i class="text-success fa fa-2x fa-check-circle"></i>
-                    </a>
-                </spnn>
+        <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
+            <span class="ml-xs" tooltip="Open in new window">
+                <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
+                    <i class="fa fa-plus"></i> Show live stream
+                </a>
             </span>
         </div>
-
     </div>
 
     <div class="box-body">
@@ -54,6 +35,40 @@
                 <ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize>
             </strong>
         </span>
+
+        <!-- Right side -->
+        <span class="ml-xs pull-right">
+            <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
+                <i class="text-primary fa fa-compress"></i>
+                Merge
+            </a>
+        </span>
+
+        <span class="ml-xs pull-right" ng-if="!caze.flag || caze.flag == undefined">
+            <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
+                <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>
+                Flag
+            </a>
+        </span>
+        <span class="ml-xs pull-right" ng-if="caze.flag">
+            <a href ng-click="switchFlag()" class="text-yellow noline" uib-tooltip="Unflag case">
+                <i class="text-yellow fa fa-flag" ng-show="caze.flag"></i>
+                Unflag
+            </a>
+        </span>
+        <span class="ml-xs pull-right" ng-hide="isCaseClosed()">
+            <a href ng-click="openCloseDialog()" class="text-muted noline" uib-tooltip="Close case">
+                <i class="text-muted fa fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                Close
+            </a>
+        </span>
+        <span class="ml-xs pull-right" ng-show="isCaseClosed()">
+            <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
+                <i class="text-success fa fa-check-circle"></i>
+                Reopen
+            </a>
+        </span>
+
     </div>
 </div>
 

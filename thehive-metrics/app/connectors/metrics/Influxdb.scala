@@ -1,16 +1,14 @@
 package connectors.metrics
 
+import java.util
 import java.util.SortedMap
 import java.util.concurrent.TimeUnit
-
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.JavaConversions.{ iterableAsScalaIterable, mapAsScalaMap }
 import scala.concurrent.ExecutionContext
-
 import play.api.Logger
 import play.api.libs.ws.WSClient
-
 import com.codahale.metrics.{ Counter, Gauge, Histogram, Meter, MetricFilter, MetricRegistry, ScheduledReporter, Timer }
 
 trait InfluxValue
@@ -18,11 +16,11 @@ case class InfluxLong(value: Long) extends InfluxValue {
   override def toString = s"${value}i"
 }
 case class InfluxFloat(value: Double) extends InfluxValue {
-  override def toString = "%f".format(value)
+  override def toString: String = "%f".format(value)
 }
 case class InfluxString(value: String) extends InfluxValue {
   val escapedChars = ",=\""
-  def escape(from: String) = {
+  def escape(from: String): StringBuilder = {
     from.foldLeft(new StringBuilder) {
       case (sb, c) if escapedChars.contains(c) ⇒ sb.append(s"\\$c")
       case (sb, c)                             ⇒ sb.append(c)
@@ -32,7 +30,7 @@ case class InfluxString(value: String) extends InfluxValue {
 }
 
 case class InfluxPoint(timestamp: Long, measurement: String, tags: Map[String, String], fields: (String, InfluxValue)*) {
-  def lineProtocol = {
+  def lineProtocol: String = {
     val tagStr = if (tags.isEmpty)
       ""
     else
@@ -47,7 +45,7 @@ case class InfluxPoint(timestamp: Long, measurement: String, tags: Map[String, S
 }
 
 trait InfluxDBAPI {
-  def send(points: InfluxPoint*)
+  def send(points: InfluxPoint*): Unit
 }
 
 @Singleton
@@ -56,7 +54,7 @@ class InfluxDBFactory @Inject() (
     implicit val ec: ExecutionContext) {
   val log = Logger("InfluxDB")
   case class InfluxDB(url: String, user: String, password: String, database: String, retentionPolicy: String) extends InfluxDBAPI {
-    def send(points: InfluxPoint*) = {
+    def send(points: InfluxPoint*): Unit = {
       val x = ws
         .url(url.stripSuffix("/") + "/write")
         .withQueryString(
@@ -84,11 +82,11 @@ class InfluxDBReporter(
     tags: Map[String, String]) extends ScheduledReporter(registry, "influxdb-reporter", filter, rateUnit, durationUnit) {
 
   def report(
-    gauges: SortedMap[String, Gauge[_]],
-    counters: SortedMap[String, Counter],
-    histograms: SortedMap[String, Histogram],
-    meters: SortedMap[String, Meter],
-    timers: SortedMap[String, Timer]) = {
+    gauges: util.SortedMap[String, Gauge[_]],
+    counters: util.SortedMap[String, Counter],
+    histograms: util.SortedMap[String, Histogram],
+    meters: util.SortedMap[String, Meter],
+    timers: util.SortedMap[String, Timer]): Unit = {
 
     val now = System.currentTimeMillis() * 1000000
 
@@ -100,14 +98,14 @@ class InfluxDBReporter(
     influxdb.send(points.toSeq: _*)
   }
 
-  def floatValue(value: Double) = "%f" format value
-  def stringValue(value: String) = "\"" + value.replace("\"", "\\\"") + "\""
+  def floatValue(value: Double): String = "%f" format value
+  def stringValue(value: String): String = "\"" + value.replace("\"", "\\\"") + "\""
 
-  def pointCounter(now: Long, tags: Map[String, String], name: String, counter: Counter) = {
+  def pointCounter(now: Long, tags: Map[String, String], name: String, counter: Counter): InfluxPoint = {
     InfluxPoint(now, name, tags, "value" → InfluxLong(counter.getCount))
   }
 
-  def pointGauge(now: Long, name: String, gauge: Gauge[_]) = {
+  def pointGauge(now: Long, name: String, gauge: Gauge[_]): InfluxPoint = {
     val value = gauge.getValue match {
       case s: String                ⇒ InfluxString(s)
       case i: java.lang.Iterable[_] ⇒ InfluxString(i.mkString(","))
@@ -120,7 +118,7 @@ class InfluxDBReporter(
     InfluxPoint(now, name, tags, "value" → value)
   }
 
-  def pointHistogram(now: Long, tags: Map[String, String], name: String, histogram: Histogram) = {
+  def pointHistogram(now: Long, tags: Map[String, String], name: String, histogram: Histogram): InfluxPoint = {
     val snapshot = histogram.getSnapshot
     InfluxPoint(now, name, tags,
       "value" → InfluxLong(histogram.getCount),
@@ -136,7 +134,7 @@ class InfluxDBReporter(
       "p999" → InfluxFloat(snapshot.get999thPercentile))
   }
 
-  def pointMeter(now: Long, tags: Map[String, String], name: String, meter: Meter) = {
+  def pointMeter(now: Long, tags: Map[String, String], name: String, meter: Meter): InfluxPoint = {
     InfluxPoint(now, name, tags,
       "value" → InfluxLong(meter.getCount),
       "m1_rate" → InfluxFloat(meter.getOneMinuteRate),
@@ -145,7 +143,7 @@ class InfluxDBReporter(
       "mean_rate" → InfluxFloat(meter.getMeanRate))
   }
 
-  def pointTimer(now: Long, tags: Map[String, String], name: String, timer: Timer) = {
+  def pointTimer(now: Long, tags: Map[String, String], name: String, timer: Timer): InfluxPoint = {
     val snapshot = timer.getSnapshot
     InfluxPoint(now, name, tags,
       "max" → InfluxLong(snapshot.getMax),

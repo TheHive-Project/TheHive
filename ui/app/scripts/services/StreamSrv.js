@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('StreamSrv', function($rootScope, $http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, AlertSrv) {
+    angular.module('theHiveServices').factory('StreamSrv', function($rootScope, $http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, NotificationSrv) {
 
         var self = {
             isPolling: false,
@@ -88,7 +88,7 @@
                                 .then(function() {
 
                                 }, function(response) {
-                                    AlertSrv.error('StreamSrv', response.data, response.status);
+                                    NotificationSrv.error('StreamSrv', response.data, response.status);
                                 });
                         });
                     }
@@ -99,7 +99,7 @@
                     self.isPolling = false;
 
                     if (status !== 404) {
-                        AlertSrv.error('StreamSrv', data, status);
+                        NotificationSrv.error('StreamSrv', data, status);
 
                         if (status === 401) {
                             return;
@@ -120,7 +120,7 @@
                     self.streamId = streamId;
                     self.poll(self.streamId);
                 }).error(function(data, status) {
-                    AlertSrv.error('StreamSrv', data, status);
+                    NotificationSrv.error('StreamSrv', data, status);
                 });
             },
 

@@ -26,7 +26,7 @@ class FlowSrv @Inject() (
   lazy val log = Logger(getClass)
 
   def apply(rootId: Option[String], count: Int): (Source[JsObject, NotUsed], Future[Long]) = {
-    import QueryDSL._
+    import org.elastic4play.services.QueryDSL._
 
     val streamableEntities = modelSrv.list.collect {
       case m: AuditedModel if m.name != "user" ⇒ m.name
@@ -46,7 +46,7 @@ class FlowSrv @Inject() (
             }
           }
         }
-      val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, false, true)
+      val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, withStats = false, removeUnaudited = true)
 
       for {
         summary ← fSummary

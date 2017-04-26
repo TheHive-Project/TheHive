@@ -41,10 +41,10 @@
                         <span class="badge alert-danger">{{waitingTasks.count}}</span>
                     </a>
                 </li>
-                <li ng-show="mispEnabled === true" ui-sref-active="active">
-                    <a href ui-sref="app.misp-list">
-                        MISP
-                        <span class="badge alert-danger">{{mispEvents.count}}</span>
+                <li ui-sref-active="active">
+                    <a href ui-sref="app.alert-list">
+                        Alerts
+                        <span class="badge alert-danger">{{(alertEvents.New.count || 0)  + (alertEvents.Update.count || 0)}}</span>
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>

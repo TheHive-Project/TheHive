@@ -1,12 +1,14 @@
 <div class="row">
-    <div ng-Class="{ 'col-md-9': $vm.showFlow, 'col-md-12': !$vm.showFlow}">
+    <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
         <div class="box">
             <div class="box-header with-border">
                 <h3 class="box-title">List of cases ({{$vm.list.total || 0}} of {{$vm.caseStats.count}})</h3>
-                <div class="box-tools pull-right" ng-show="!$vm.showFlow;">
-                    <button type="button" class="btn btn-box-tool" tooltip="Hide" ng-click="$vm.showFlow = true">
-                        <i class="fa fa-plus"></i> Show live stream
-                    </button>
+                <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
+                            <i class="fa fa-plus"></i> Show live stream
+                        </a>
+                    </span>
                 </div>
             </div>
             <div class="box-body">
@@ -40,7 +42,11 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+                        <div class="empty-message">No records</div>
+                    </div>
+
+                    <div class="col-md-12" ng-show="$vm.list.total > 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table table-striped case-list">
@@ -48,6 +54,7 @@
                                 <tr>
                                     <th style="width: 10px;" class="p-0"></th>
                                     <th>Title</th>
+                                    <th style="width: 100px;text-align:center;">Severity</th>
                                     <th style="width: 100px;">Tasks</th>
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
@@ -58,7 +65,7 @@
                             <tbody>
                                 <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
 
-                                    <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
+                                    <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.filterByTlp(currentCase.tlp)"></td>
                                     <td>
                                         <div class="case-title">
                                             <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
@@ -81,6 +88,11 @@
                                                 <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
                                             </small>
                         				</div>
+                                    </td>
+                                    <td align="center">
+                                        <div class="clickable" ng-click="$vm.filterBySeverity(currentCase.severity)">
+                                            <severity active="false" value="currentCase.severity"></severity>
+                                        </div>
                                     </td>
                                     <td>
                                         <a ui-sref="app.case.tasks({caseId: currentCase.id})">
@@ -115,18 +127,22 @@
 
 
 
-    <div ng-show="$vm.showFlow" class="col-md-3">
+    <div ng-show="appLayout.showFlow" class="col-md-3">
         <div class=" box">
             <div class="box-header">
                 <h3 class="box-title">&nbsp;</h3>
                 <div class="box-tools pull-right">
-                    <button type="button" class="btn btn-box-tool" tooltip="Open in new window" ng-click="$vm.live(); $vm.showFlow = false">
-                        <i class="fa fa-external-link"></i> Open in new window
-                    </button>
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.detachFlow()">
+                            <i class="fa fa-external-link"></i> Open in new window
+                        </a>
+                    </span>
 
-                    <button type="button" class="btn btn-box-tool" tooltip="Hide" ng-click="$vm.showFlow = false">
-                        <i class="fa fa-minus"></i> Hide
-                    </button>
+                    <span class="ml-xs" tooltip="Hide">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(false)">
+                            <i class="fa fa-minus"></i> Hide
+                        </a>
+                    </span>
                 </div>
             </div>
             <div class="box-body no-padding">

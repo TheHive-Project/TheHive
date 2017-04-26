@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('durationOverTimeChart', function($http, $interpolate, ChartSrv, AlertSrv) {
+    angular.module('theHiveDirectives').directive('durationOverTimeChart', function($http, $interpolate, ChartSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -128,7 +128,7 @@
                         };
 
                     }, function(err) {
-                        AlertSrv.error('durationOverTimeChart', err.data, err.status);
+                        NotificationSrv.error('durationOverTimeChart', err.data, err.status);
                     });
                 };
 

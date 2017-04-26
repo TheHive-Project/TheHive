@@ -1,0 +1,129 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{alertEvents.count}})</h3>
+            </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
+
+                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
+
+                <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                <!-- Filters preview  -->
+                <div class="row mt-s">
+                    <div class="col-md-12 clearfix">
+                        <div class="active-filters">
+                            <ul ng-if="$vm.filtering.countFilters() > 0">
+                                <li>{{$vm.filtering.countFilters()}}
+                                    filter(s) applied:
+                                </li>
+                                <li class="filter-item" ng-repeat="(field,filter) in $vm.filtering.filters">
+                                    <span>
+                                        <strong>{{filter.label}}:</strong>
+                                        {{filter.value | filterValue}}</span>
+                                    <a href ng-click="$vm.removeFilter(field)">
+                                        <span class="filter-close fa fa-times text-danger"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datalist  -->
+                <div class="row mt-s">
+                    <div class="col-md-12">
+                        <psearch control="$vm.list"></psearch>
+
+                        <table class="table table-striped case-list">
+                            <thead>
+                                <tr>
+                                    <th width="20px"><input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()"></th>
+                                    <th width="80px">Reference</th>
+                                    <th width="80px">Type</th>
+                                    <th width="80px">Status</th>
+                                    <th>Title</th>
+                                    <th width="150px">Source</th>
+                                    <th width="80px">Severity</th>
+                                    <th width="80px">Attributes</th>
+                                    <th style="width: 160px">Date</th>
+                                    <th style="width: 120px"></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr ng-repeat="event in $vm.list.values">
+                                    <td>
+                                        <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
+                                    </td>
+                                    <td>
+                                        <strong>{{::event.sourceRef}}</strong>
+                                    </td>
+                                    <td>
+                                        <span><a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
+                                    </td>
+                                    <td>
+                                        <span class="clickable label label-default" ng-class="{'label-danger': event.status==='New', 'label-warning': event.status === 'Update'}" ng-click="$vm.addFilterValue('status', event.status)">{{::event.status}}</span>
+                                    </td>
+                                    <td class="wrap">
+                                        <div class="case-title">
+                                            <span>
+                                                <span ng-if="!event.case">{{::event.title}}</span>
+                                                <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
+                                                    <a href>{{::event.title}}</a>
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="case-tags flexwrap mt-xxs">
+                                            <span class="mr-xxxs">Tags:</span>
+                                            <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
+                                            <span ng-repeat="tag in event.tags" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
+                                        </div>
+                                    </td>
+                                    <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
+                                    <td class="text-center">
+                                        <div class="clickable" ng-click="$vm.filterBySeverity(event.severity)">
+                                            <severity active="false" value="event.severity"></severity>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">{{::event.artifacts.length || 0}}</td>
+                                    <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>
+                                    <td class="clearfix">
+                                        <div class="pull-left">
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
+                                                <i class="text-info text-20 fa fa-file-text-o"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
+                                                <i class="text-info text-20 fa fa-search"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
+                                                <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as read" ng-if="$vm.canMarkAsRead(event)">
+                                                <i class="text-info text-20 fa fa-envelope"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
+                                                <i class="text-info text-20 fa fa-envelope-open-o"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <psearch control="$vm.list"></psearch>
+
+                    </div>
+                </div>
+
+
+
+            </div>
+        </div>
+    </div>
+</div>

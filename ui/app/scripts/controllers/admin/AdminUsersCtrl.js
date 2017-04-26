@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminUsersCtrl',
-        function($scope, PSearchSrv, UserSrv, AlertSrv, appConfig) {
+        function($scope, PSearchSrv, UserSrv, NotificationSrv, appConfig) {
             $scope.appConfig = appConfig;
             $scope.canSetPass = appConfig.config.capabilities.indexOf('setPassword') !== -1;
             $scope.newUser = {
@@ -66,7 +66,7 @@
                 return UserSrv.update({
                     userId: userModified.id
                 }, field, function() {}, function(response) {
-                    AlertSrv.error('UserMgmtCtrl', response.data, response.status);
+                    NotificationSrv.error('UserMgmtCtrl', response.data, response.status);
                 });
             };
 
@@ -80,9 +80,9 @@
                 }, {
                     password: password
                 }, function() {
-                    AlertSrv.log('The password of user [' + user.id + '] has been successfully updated', 'success');
+                    NotificationSrv.log('The password of user [' + user.id + '] has been successfully updated', 'success');
                 }, function(response) {
-                    AlertSrv.error('UserMgmtCtrl', response.data, response.status);
+                    NotificationSrv.error('UserMgmtCtrl', response.data, response.status);
                 });
             };
 

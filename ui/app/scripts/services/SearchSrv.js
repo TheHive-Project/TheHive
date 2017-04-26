@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('SearchSrv', function($http, AlertSrv) {
+        .factory('SearchSrv', function($http, NotificationSrv) {
             return function(cb, filter, objectType, range, sort, nparent, nstats) {
                 var url;
                 if (!angular.isString(objectType) || objectType === 'any') {
@@ -34,7 +34,7 @@
                 }).success(function(data, status, headers) {
                     cb(data, parseInt(headers('X-Total')));
                 }).error(function(data, status) {
-                    AlertSrv.error('SearchSrv', data, status);
+                    NotificationSrv.error('SearchSrv', data, status);
                 });
             };
         });

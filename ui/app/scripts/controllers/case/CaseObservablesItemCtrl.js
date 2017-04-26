@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, AlertSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -55,7 +55,7 @@
                 $scope.initScope(observable);
 
             }, function (response) {
-                AlertSrv.error('artifactDetails', response.data, response.status);
+                NotificationSrv.error('artifactDetails', response.data, response.status);
                 CaseTabsSrv.activateTab('observables');
             });
 
@@ -114,7 +114,7 @@
                         }, function (observable) {
                             $scope.artifact = observable;
                         }, function (response) {
-                            AlertSrv.error('artifactDetails', response.data, response.status);
+                            NotificationSrv.error('artifactDetails', response.data, response.status);
                             CaseTabsSrv.activateTab('observables');
                         });
                     }
@@ -134,7 +134,7 @@
                         endDate: job.endDate
                     };
                 }, function(/*err*/) {
-                    AlertSrv.log('An expected error occured while fetching the job report');
+                    NotificationSrv.log('An expected error occured while fetching the job report');
                 });
             };
 
@@ -169,7 +169,7 @@
                 }, field, function (response) {
                     $scope.artifact = response.toJSON();
                 }, function (response) {
-                    AlertSrv.error('artifactDetails', response.data, response.status);
+                    NotificationSrv.error('artifactDetails', response.data, response.status);
                 });
             };
 
@@ -189,10 +189,10 @@
                         return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
                     })
                     .then(function () {
-                        AlertSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
+                        NotificationSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
                     }, function (response) {
                         if (response && response.status) {
-                            AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                            NotificationSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
                         }
                     });
             };
@@ -211,7 +211,7 @@
                         }));
                     })
                     .then(function () {
-                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
+                        NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
             };
 

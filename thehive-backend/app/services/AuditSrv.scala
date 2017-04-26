@@ -2,21 +2,17 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.ExecutionContext
-import scala.util.{ Failure, Success }
-
 import akka.actor.ActorDSL.{ Act, actor }
-import akka.actor.ActorSystem
-
+import akka.actor.{ ActorRef, ActorSystem }
+import models.{ Audit, AuditModel }
+import org.elastic4play.controllers.Fields
+import org.elastic4play.models.{ Attribute, BaseEntity, BaseModelDef }
+import org.elastic4play.services._
+import org.elastic4play.utils.Instance
 import play.api.Logger
 import play.api.libs.json.{ JsBoolean, JsObject, Json }
 
-import org.elastic4play.controllers.Fields
-import org.elastic4play.models.{ Attribute, BaseEntity, BaseModelDef }
-import org.elastic4play.services.{ AuditOperation, CreateSrv, EventMessage, EventSrv, RequestProcessEnd }
-import org.elastic4play.utils.Instance
-
-import models.{ Audit, AuditModel }
+import scala.concurrent.ExecutionContext
 
 trait AuditedModel { self: BaseModelDef ⇒
   def attributes: Seq[Attribute[_]]
@@ -27,7 +23,7 @@ trait AuditedModel { self: BaseModelDef ⇒
       .toMap
   def selectAuditedAttributes(attrs: JsObject) = JsObject {
     attrs.fields.flatMap {
-      case nv @ (name, value) ⇒ auditedAttributes.get(name).map(_ ⇒ nv)
+      case nv @ (attrName, _) ⇒ auditedAttributes.get(attrName).map(_ ⇒ nv)
     }
   }
 }
@@ -44,13 +40,13 @@ class AuditSrv @Inject() (
     def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
   }
 
-  val auditActor = actor(new Act {
+  val auditActor: ActorRef = actor(new Act {
 
     lazy val log = Logger(getClass)
     var currentRequestIds = Set.empty[String]
 
     become {
-      case RequestProcessEnd(request, result) ⇒
+      case RequestProcessEnd(request, _) ⇒
         currentRequestIds = currentRequestIds - Instance.getRequestId(request)
       case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
         val requestId = authContext.requestId

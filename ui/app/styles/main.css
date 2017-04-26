@@ -196,6 +196,9 @@ pre.clearpre {
     border-color: #a94442;
 }
 
+.label {
+    font-weight: normal !important;
+}
 .label.label-lg {
 	font-size: 100% !important;
 	font-weight: normal !important;
@@ -239,6 +242,20 @@ ul.observable-reports-summary li {
     padding: 0;
     margin: 0;
     border: none;
+}
+
+
+.case-page .main-tabset {
+    margin-bottom: 0;
+}
+
+.case-page .main-tabset .tab-content{
+    display: none;
+}
+
+.case-page .case-page-content {
+    background-color: #FFF;
+    padding: 20px 10px 10px 10px;
 }
 
 .case-metrics dt {

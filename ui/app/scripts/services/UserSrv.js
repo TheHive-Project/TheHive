@@ -1,5 +1,5 @@
 angular.module('theHiveServices')
-    .factory('UserSrv', function($resource, $http, $q, AlertSrv, UtilsSrv) {
+    .factory('UserSrv', function($resource, $http, $q, NotificationSrv, UtilsSrv) {
         'use strict';
         var res = $resource('./api/user/:userId', {}, {
             query: {
@@ -43,7 +43,7 @@ angular.module('theHiveServices')
                     UtilsSrv.shallowClearAndCopy(data, ret);
                 }, function(data, status) {
                     ret.name = '***unknown***';
-                    AlertSrv.error('UserSrv', data, status);
+                    NotificationSrv.error('UserSrv', data, status);
                 });
                 return ret;
             }

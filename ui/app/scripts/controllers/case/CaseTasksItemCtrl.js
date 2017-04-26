@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, AlertSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -13,12 +13,17 @@
             $scope.newLog = {
                 message: ''
             };
+            $scope.sortOptions = {
+                '+startDate': 'Oldest first',
+                '-startDate': 'Newest first'
+            };
             $scope.state = {
                 editing: false,
                 isCollapsed: false,
                 dropdownOpen: false,
                 attachmentCollapsed: true,
-                logMissing: ''
+                logMissing: '',
+                sort: '-startDate'
             };
 
             $scope.markdownEditorOptions = {
@@ -45,7 +50,8 @@
                             }
                         }]
                     },
-                    'sort': '-startDate'
+                    'sort': $scope.state.sort,
+                    'pageSize': 10
                 });
             };
 
@@ -65,7 +71,7 @@
                 return CaseTaskSrv.update({
                     taskId: $scope.task.id
                 }, field, function () {}, function (response) {
-                    AlertSrv.error('taskDetails', response.data, response.status);
+                    NotificationSrv.error('taskDetails', response.data, response.status);
                 });
             };
 
@@ -111,11 +117,17 @@
 
                     $scope.loading = false;
                 }, function (response) {
-                    AlertSrv.error('taskDetails', response.data, response.status);
+                    NotificationSrv.error('taskDetails', response.data, response.status);
                     $scope.loading = false;
                 });
 
                 return true;
+            };
+
+            $scope.sortBy = function(sort) {
+                $scope.state.sort = sort;
+                $scope.logs.sort = sort;
+                $scope.logs.update();
             };
 
             // Add tabs

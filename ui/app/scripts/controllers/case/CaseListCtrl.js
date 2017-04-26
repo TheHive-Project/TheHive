@@ -3,10 +3,9 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity, Tlp) {
         var self = this;
 
-        this.showFlow = true;
         this.openEntity = EntitySrv.open;
         this.getUserInfo = UserInfoSrv;
         this.CaseResolutionStatus = CaseResolutionStatus;
@@ -133,6 +132,25 @@
             ]);
         };
 
+        this.getSeverities = function(query) {
+            var defer = $q.defer();
+
+            $q.resolve(_.map(Severity.keys, function(value, key) {
+                return {text: key};
+            })).then(function(response) {
+                var severities = [];
+
+                severities = _.filter(response, function(sev) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(sev.text);
+                });
+
+                defer.resolve(severities);
+            });
+
+            return defer.promise;
+        };
+
         this.getTags = function(query) {
             return TagSrv.fromCases(query);
         };
@@ -182,15 +200,18 @@
                 });
         };
 
+        this.filterBySeverity = function(numericSev) {
+            self.addFilterValue('severity', Severity.values[numericSev]);
+        };
+
+        this.filterByTlp = function(value) {
+            self.addFilterValue('tlp', Tlp.values[value]);
+        };
+
         this.sortBy = function(sort) {
             this.list.sort = sort;
             this.list.update();
             this.uiSrv.setSort(sort);
-        };
-
-        this.live = function() {
-            $window.open($state.href('live'), 'TheHiveLive',
-                'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');
         };
 
     }
