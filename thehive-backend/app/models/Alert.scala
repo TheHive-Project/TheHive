@@ -1,5 +1,6 @@
 package models
 
+import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
 import models.JsonFormat.alertStatusFormat
@@ -21,22 +22,22 @@ trait AlertAttributes {
   _: AttributeDef ⇒
   def artifactAttributes: Seq[Attribute[_]]
 
-  val alertId = attribute("_id", F.stringFmt, "Alert id", O.readonly)
-  val tpe = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
-  val source = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
-  val sourceRef = attribute("sourceRef", F.stringFmt, "Source reference of the alert", O.readonly)
-  val date = attribute("date", F.dateFmt, "Date of the alert", O.readonly)
-  val lastSyncDate = attribute("lastSyncDate", F.dateFmt, "Date of the last synchronization")
-  val caze = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
-  val title = attribute("title", F.textFmt, "Title of the alert")
-  val description = attribute("description", F.textFmt, "Description of the alert")
-  val severity = attribute("severity", F.numberFmt, "Severity if the alert (0-5)", 3L)
-  val tags = multiAttribute("tags", F.stringFmt, "Alert tags")
-  val tlp = attribute("tlp", F.numberFmt, "TLP level", 2L)
-  val artifacts = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
-  val caseTemplate = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
-  val status = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
-  val follow = attribute("follow", F.booleanFmt, "", true)
+  val alertId: A[String] = attribute("_id", F.stringFmt, "Alert id", O.readonly)
+  val tpe: A[String] = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
+  val source: A[String] = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
+  val sourceRef: A[String] = attribute("sourceRef", F.stringFmt, "Source reference of the alert", O.readonly)
+  val date: A[Date] = attribute("date", F.dateFmt, "Date of the alert", O.readonly)
+  val lastSyncDate: A[Date] = attribute("lastSyncDate", F.dateFmt, "Date of the last synchronization")
+  val caze: A[Option[String]] = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
+  val title: A[String] = attribute("title", F.textFmt, "Title of the alert")
+  val description: A[String] = attribute("description", F.textFmt, "Description of the alert")
+  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the alert (0-5)", 3L)
+  val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
+  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
+  val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
+  val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
+  val follow: A[Boolean] = attribute("follow", F.booleanFmt, "", true)
 }
 
 @Singleton
@@ -73,7 +74,7 @@ class Alert(model: AlertModel, attributes: JsObject)
 
   override def artifactAttributes: Seq[Attribute[_]] = Nil
 
-  override def toJson = super.toJson +
+  override def toJson: JsObject = super.toJson +
     ("artifacts" → JsArray(artifacts().map {
       // for file artifact, parse data as Json
       case a if (a \ "dataType").asOpt[String].contains("file") ⇒

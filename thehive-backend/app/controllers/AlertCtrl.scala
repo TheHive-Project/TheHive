@@ -3,7 +3,7 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import akka.stream.Materializer
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
@@ -11,7 +11,7 @@ import org.elastic4play.{ BadRequestError, Timed }
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.JsArray
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 import services.AlertSrv
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -30,13 +30,13 @@ class AlertCtrl @Inject() (
   val log = Logger(getClass)
 
   @Timed
-  def create() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def create(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     alertSrv.create(request.body)
       .map(alert ⇒ renderer.toOutput(CREATED, alert))
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     val withStats = for {
       statsValues ← request.queryString.get("nstats")
       firstValue ← statsValues.headOption
@@ -49,26 +49,26 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def update(id: String) = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     alertSrv.update(id, request.body)
       .map { alert ⇒ renderer.toOutput(OK, alert) }
   }
 
   @Timed
-  def bulkUpdate() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def bulkUpdate(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
       alertSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
     }
   }
 
   @Timed
-  def delete(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     alertSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def find() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
@@ -81,7 +81,7 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def stats() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query")
       .fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val aggs = request.body.getValue("stats")
@@ -90,7 +90,7 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def markAsRead(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def markAsRead(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
       updatedAlert ← alertSrv.markAsRead(alert)
@@ -98,14 +98,14 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def markAsUnread(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def markAsUnread(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
       updatedAlert ← alertSrv.markAsUnread(alert)
     } yield renderer.toOutput(OK, updatedAlert)
   }
 
-  def createCase(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def createCase(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
       updatedAlert ← alertSrv.createCase(alert)
@@ -113,12 +113,12 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def followAlert(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def followAlert(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     alertSrv.setFollowAlert(id, follow = true)
       .map { alert ⇒ renderer.toOutput(OK, alert) }
   }
 
-  def unfollowAlert(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def unfollowAlert(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     alertSrv.setFollowAlert(id, follow = false)
       .map { alert ⇒ renderer.toOutput(OK, alert) }
   }

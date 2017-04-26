@@ -17,7 +17,7 @@ trait MetricsFilter extends Filter
 
 @Singleton
 class NoMetricsFilter @Inject() (implicit val mat: Materializer) extends MetricsFilter {
-  def apply(f: (RequestHeader) ⇒ Future[Result])(rh: RequestHeader) = f(rh)
+  def apply(f: (RequestHeader) ⇒ Future[Result])(rh: RequestHeader): Future[Result] = f(rh)
 }
 
 @Singleton

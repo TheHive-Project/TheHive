@@ -16,7 +16,7 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
   .settings(publish := {})
   .settings(SbtScalariform.scalariformSettings: _*)
 
-lazy val main = (project in file("."))
+lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)

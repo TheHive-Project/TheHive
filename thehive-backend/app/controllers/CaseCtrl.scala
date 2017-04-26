@@ -5,25 +5,22 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.runtime.universe
 import scala.util.{ Failure, Success }
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import play.api.mvc.Controller
-
+import play.api.mvc.{ Action, AnyContent, Controller }
 import org.elastic4play.{ BadRequestError, CreateError, Timed }
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.{ baseModelEntityWrites, multiFormat }
 import org.elastic4play.services.{ Agg, AuxSrv }
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
-
 import models.{ Case, CaseStatus }
 import services.{ CaseMergeSrv, CaseSrv, CaseTemplateSrv, TaskSrv }
+
 import scala.util.Try
 
 @Singleton
@@ -42,7 +39,7 @@ class CaseCtrl @Inject() (
   val log = Logger(getClass)
 
   @Timed
-  def create() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def create(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     request.body
       .getString("template")
       .map { templateName ⇒
@@ -58,7 +55,7 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     val withStats = for {
       statsValues ← request.queryString.get("nstats")
       firstValue ← statsValues.headOption
@@ -66,13 +63,13 @@ class CaseCtrl @Inject() (
 
     for {
       caze ← caseSrv.get(id)
-      casesWithStats ← auxSrv.apply(caze, 0, withStats.getOrElse(false), false)
+      casesWithStats ← auxSrv.apply(caze, 0, withStats.getOrElse(false), removeUnaudited = false)
     } yield renderer.toOutput(OK, casesWithStats)
   }
 
   @Timed
-  def update(id: String) = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
-    val isCaseClosing = request.body.getString("status").filter(_ == CaseStatus.Resolved.toString).isDefined
+  def update(id: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+    val isCaseClosing = request.body.getString("status").contains(CaseStatus.Resolved.toString)
 
     for {
       // Closing the case, so lets close the open tasks
@@ -82,8 +79,8 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def bulkUpdate() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
-    val isCaseClosing = request.body.getString("status").filter(_ == CaseStatus.Resolved.toString).isDefined
+  def bulkUpdate(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+    val isCaseClosing = request.body.getString("status").contains(CaseStatus.Resolved.toString)
 
     request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
       if (isCaseClosing) taskSrv.closeTasksOfCase(ids: _*) // FIXME log warning if closedTasks contains errors
@@ -92,13 +89,13 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def delete(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     caseSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def find() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
@@ -106,19 +103,19 @@ class CaseCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (cases, total) = caseSrv.find(query, range, sort)
-    val casesWithStats = auxSrv.apply(cases, nparent, withStats, false)
+    val casesWithStats = auxSrv.apply(cases, nparent, withStats, removeUnaudited = false)
     renderer.toOutput(OK, casesWithStats, total)
   }
 
   @Timed
-  def stats() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val aggs = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
     caseSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 
   @Timed
-  def linkedCases(id: String) = authenticated(Role.read).async { implicit request ⇒
+  def linkedCases(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     caseSrv.linkedCases(id)
       .runWith(Sink.seq)
       .map { cases ⇒
@@ -135,7 +132,7 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def merge(caseId1: String, caseId2: String) = authenticated(Role.read).async { implicit request ⇒
+  def merge(caseId1: String, caseId2: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     caseMergeSrv.merge(caseId1, caseId2).map { caze ⇒
       renderer.toOutput(OK, caze)
     }

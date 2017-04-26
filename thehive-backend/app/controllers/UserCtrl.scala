@@ -4,20 +4,18 @@ import javax.inject.{ Inject, Singleton }
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContext, Future }
-
 import play.api.Logger
 import play.api.http.Status
-import play.api.mvc.{ Action, Controller, Result }
-
+import play.api.mvc.{ Action, AnyContent, Controller, Result }
 import org.elastic4play.{ AuthorizationError, MissingAttributeError, Timed }
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.JsonFormat.{ authContextWrites, queryReads }
-
 import services.UserSrv
 import play.api.libs.json.Json
+
 import scala.util.Try
 import play.api.libs.json.JsObject
 
@@ -33,13 +31,13 @@ class UserCtrl @Inject() (
   lazy val logger = Logger(getClass)
 
   @Timed
-  def create = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
+  def create: Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
     userSrv.create(request.body)
       .map(user ⇒ renderer.toOutput(CREATED, user))
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     userSrv.get(id)
       .map { user ⇒
         val json = if (request.roles.contains(Role.admin)) user.toAdminJson else user.toJson
@@ -48,7 +46,7 @@ class UserCtrl @Inject() (
   }
 
   @Timed
-  def update(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     if (id == request.authContext.userId || request.authContext.roles.contains(Role.admin)) {
       if (request.body.contains("password"))
         logger.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
@@ -62,7 +60,7 @@ class UserCtrl @Inject() (
   }
 
   @Timed
-  def setPassword(login: String) = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
+  def setPassword(login: String): Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
     request.body.getString("password")
       .fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
         authSrv.setPassword(login, password).map(_ ⇒ NoContent)
@@ -70,7 +68,7 @@ class UserCtrl @Inject() (
   }
 
   @Timed
-  def changePassword(login: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def changePassword(login: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     if (login == request.authContext.userId) {
       val fields = request.body
       fields.getString("password").fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
@@ -85,13 +83,13 @@ class UserCtrl @Inject() (
   }
 
   @Timed
-  def delete(id: String) = authenticated(Role.admin).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
     userSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def currentUser = Action.async { implicit request ⇒
+  def currentUser: Action[AnyContent] = Action.async { implicit request ⇒
     for {
       authContext ← authenticated.getContext(request)
       user ← userSrv.get(authContext.userId)
@@ -107,7 +105,7 @@ class UserCtrl @Inject() (
   }
 
   @Timed
-  def find = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)

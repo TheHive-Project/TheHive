@@ -2,19 +2,20 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Try }
-
 import play.api.libs.json.JsValue.jsValueToJsLookup
-
 import org.elastic4play.CreateError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FieldsSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
-
 import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel }
 import org.elastic4play.utils.{ RichFuture, RichOr }
 import models.CaseStatus
 import models.CaseResolutionStatus
+import play.api.libs.json.JsObject
 
 @Singleton
 class ArtifactSrv @Inject() (
@@ -60,38 +61,33 @@ class ArtifactSrv @Inject() (
       .flatMap {
         // if there is failure
         case t if t.exists(_.isFailure) ⇒
-          Future.sequence {
-            // map operation result with related fields
-            t.zip(fieldSet)
-              .map {
-                // for each failure
-                case (Failure(_), fields) ⇒ updateIfDeleted(caze, fields).toTry
-                case (s, fields)          ⇒ Future.successful(s)
-              }
+          Future.traverse(t.zip(fieldSet)) {
+            case (Failure(_), fields) ⇒ updateIfDeleted(caze, fields).toTry
+            case (success, _)         ⇒ Future.successful(success)
           }
         case t ⇒ Future.successful(t)
       }
 
-  def get(id: String, fields: Option[Seq[String]] = None)(implicit authContext: AuthContext) = {
+  def get(id: String, fields: Option[Seq[String]] = None)(implicit authContext: AuthContext): Future[Artifact] = {
     val fieldAttribute = fields.map { _.flatMap(f ⇒ artifactModel.attributes.find(_.name == f)) }
     getSrv[ArtifactModel, Artifact](artifactModel, id, fieldAttribute)
   }
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext) =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
     updateSrv[ArtifactModel, Artifact](artifactModel, id, fields)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext) = {
+  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] = {
     updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields)
   }
 
-  def delete(id: String)(implicit Context: AuthContext) =
+  def delete(id: String)(implicit Context: AuthContext): Future[Artifact] =
     deleteSrv[ArtifactModel, Artifact](artifactModel, id)
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]) = {
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
     findSrv[ArtifactModel, Artifact](artifactModel, queryDef, range, sortBy)
   }
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]) = findSrv(artifactModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(artifactModel, queryDef, aggs: _*)
 
   def isSeen(artifact: Artifact): Future[Long] = {
     import org.elastic4play.services.QueryDSL._
@@ -100,7 +96,7 @@ class ArtifactSrv @Inject() (
     }
   }
 
-  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]) =
+  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(artifact), range, sortBy)
 
   private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {

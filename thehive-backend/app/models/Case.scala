@@ -1,23 +1,18 @@
 package models
 
 import java.util.Date
-
 import javax.inject.{ Inject, Provider, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.math.BigDecimal.{ int2bigDecimal, long2bigDecimal }
-
 import play.api.Logger
-import play.api.libs.json.{ JsArray, JsBoolean, JsNumber, JsObject }
+import play.api.libs.json._
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, EntityDef, HiveEnumeration, ModelDef }
+import org.elastic4play.models.{ AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.services.{ FindSrv, SequenceSrv }
-
-import JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
+import models.JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
 import services.{ AuditedModel, CaseSrv }
 
 object CaseStatus extends Enumeration with HiveEnumeration {
@@ -36,23 +31,23 @@ object CaseImpactStatus extends Enumeration with HiveEnumeration {
 }
 
 trait CaseAttributes { _: AttributeDef ⇒
-  val caseId = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
-  val title = attribute("title", F.textFmt, "Title of the case")
-  val description = attribute("description", F.textFmt, "Description of the case")
-  val severity = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-5)", 3L)
-  val owner = attribute("owner", F.stringFmt, "Owner of the case")
-  val startDate = attribute("startDate", F.dateFmt, "Creation date", new Date)
-  val endDate = optionalAttribute("endDate", F.dateFmt, "Resolution date")
-  val tags = multiAttribute("tags", F.stringFmt, "Case tags")
-  val flag = attribute("flag", F.booleanFmt, "Flag of the case", false)
-  val tlp = attribute("tlp", F.numberFmt, "TLP level", 2L)
-  val status = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
-  val metrics = optionalAttribute("metrics", F.metricsFmt, "List of metrics")
-  val resolutionStatus = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
-  val impactStatus = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
-  val summary = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
-  val mergeInto = optionalAttribute("mergeInto", F.stringFmt, "Id of the case created by the merge")
-  val mergeFrom = multiAttribute("mergeFrom", F.stringFmt, "Id of the cases merged")
+  val caseId: A[Long] = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
+  val title: A[String] = attribute("title", F.textFmt, "Title of the case")
+  val description: A[String] = attribute("description", F.textFmt, "Description of the case")
+  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-5)", 3L)
+  val owner: A[String] = attribute("owner", F.stringFmt, "Owner of the case")
+  val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
+  val endDate: A[Option[Date]] = optionalAttribute("endDate", F.dateFmt, "Resolution date")
+  val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Case tags")
+  val flag: A[Boolean] = attribute("flag", F.booleanFmt, "Flag of the case", false)
+  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val status: A[CaseStatus.Value] = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
+  val metrics: A[Option[JsValue]] = optionalAttribute("metrics", F.metricsFmt, "List of metrics")
+  val resolutionStatus: A[Option[CaseResolutionStatus.Value]] = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
+  val impactStatus: A[Option[CaseImpactStatus.Value]] = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
+  val summary: A[Option[String]] = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
+  val mergeInto: A[Option[String]] = optionalAttribute("mergeInto", F.stringFmt, "Id of the case created by the merge")
+  val mergeFrom: A[Seq[String]] = multiAttribute("mergeFrom", F.stringFmt, "Id of the cases merged")
 }
 
 @Singleton
@@ -66,9 +61,9 @@ class CaseModel @Inject() (
 
   lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" → CaseStatus.Deleted)
+  override val removeAttribute: JsObject = Json.obj("status" → CaseStatus.Deleted)
 
-  override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
+  override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     sequenceSrv("case").map { caseId ⇒
       attrs + ("caseId" → JsNumber(caseId))
     }
@@ -139,7 +134,7 @@ class CaseModel @Inject() (
         }
       }
       .map {
-        case mf if !mf.isEmpty ⇒ Json.obj("mergeFrom" → mf)
+        case mf if mf.nonEmpty ⇒ Json.obj("mergeFrom" → mf)
         case _                 ⇒ Json.obj()
       }
   }

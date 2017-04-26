@@ -26,7 +26,7 @@ class TheHive(
 
   override def configure(): Unit = {
     bind[org.elastic4play.services.UserSrv].to[services.UserSrv]
-    bind[Int].annotatedWith(Names.named("databaseVersion")).toInstance(models.version)
+    bind[Int].annotatedWith(Names.named("databaseVersion")).toInstance(models.modelVersion)
 
     val modelBindings = ScalaMultibinder.newSetBinder[BaseModelDef](binder)
     val auditedModelBindings = ScalaMultibinder.newSetBinder[AuditedModel](binder)

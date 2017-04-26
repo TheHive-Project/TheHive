@@ -3,18 +3,15 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
-
 import play.api.http.Status
 import play.api.libs.json.JsArray
-import play.api.mvc.Controller
-
+import play.api.mvc.{ Action, AnyContent, Controller }
 import org.elastic4play.{ BadRequestError, Timed }
-import org.elastic4play.controllers.{ Authenticated, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ Agg, AuxSrv }
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
-
 import services.ArtifactSrv
 
 @Singleton
@@ -27,7 +24,7 @@ class ArtifactCtrl @Inject() (
     implicit val ec: ExecutionContext) extends Controller with Status {
 
   @Timed
-  def create(caseId: String) = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def create(caseId: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     val fields = request.body
     val data = fields.getStrings("data")
       .getOrElse(fields.getString("data").toSeq)
@@ -50,32 +47,32 @@ class ArtifactCtrl @Inject() (
   }
 
   @Timed
-  def get(id: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def get(id: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     artifactSrv.get(id, request.body.getStrings("fields").map("dataType" +: _))
       .map(artifact ⇒ renderer.toOutput(OK, artifact))
   }
 
   @Timed
-  def update(id: String) = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     artifactSrv.update(id, request.body)
       .map(artifact ⇒ renderer.toOutput(OK, artifact))
   }
 
   @Timed
-  def bulkUpdate() = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def bulkUpdate(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
       artifactSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
     }
   }
 
   @Timed
-  def delete(id: String) = authenticated(Role.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     artifactSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def findInCase(caseId: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def findInCase(caseId: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     import org.elastic4play.services.QueryDSL._
     val childQuery = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val query = and(childQuery, "_parent" ~= caseId)
@@ -87,7 +84,7 @@ class ArtifactCtrl @Inject() (
   }
 
   @Timed
-  def find() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
@@ -95,24 +92,24 @@ class ArtifactCtrl @Inject() (
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (artifacts, total) = artifactSrv.find(query, range, sort)
-    val artifactWithCase = auxSrv(artifacts, nparent, withStats, false)
+    val artifactWithCase = auxSrv(artifacts, nparent, withStats, removeUnaudited = false)
     renderer.toOutput(OK, artifactWithCase, total)
   }
 
   @Timed
-  def findSimilar(artifactId: String) = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def findSimilar(artifactId: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     artifactSrv.get(artifactId).flatMap { artifact ⇒
       val range = request.body.getString("range")
       val sort = request.body.getStrings("sort").getOrElse(Nil)
 
       val (artifacts, total) = artifactSrv.findSimilar(artifact, range, sort)
-      val artifactWithCase = auxSrv(artifacts, 1, false, true)
+      val artifactWithCase = auxSrv(artifacts, 1, withStats = false, removeUnaudited = true)
       renderer.toOutput(OK, artifactWithCase, total)
     }
   }
 
   @Timed
-  def stats() = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val aggs = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
     artifactSrv.stats(query, aggs).map(s ⇒ Ok(s))

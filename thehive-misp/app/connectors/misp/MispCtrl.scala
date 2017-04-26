@@ -12,7 +12,7 @@ import org.elastic4play.{ NotFoundError, Timed }
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.mvc.Controller
+import play.api.mvc.{ Action, AnyContent, Controller }
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, UrlContext }
 import services.AlertTransformer
@@ -36,13 +36,13 @@ class MispCtrl @Inject() (
   }
 
   @Timed
-  def syncAlerts = authenticated(Role.admin).async { implicit request ⇒
+  def syncAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
     mispSrv.synchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
   @Timed
-  def syncArtifacts = authenticated(Role.admin) {
+  def syncArtifacts: Action[AnyContent] = authenticated(Role.admin) {
     eventSrv.publish(UpdateMispAlertArtifact())
     Ok("")
   }

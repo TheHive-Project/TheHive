@@ -48,12 +48,12 @@
                 <div class="mb-xs" ng-if="dialog.dataTypes">
                     <span class="label label-lg label-default mr-xxs clickable"
                         ng-click="dialog.filterArtifacts('');"
-                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</a></span>
+                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
 
                     <span class="label label-lg label-default mr-xxs clickable"
                         ng-repeat="(type, count) in dialog.dataTypes"
                         ng-click="dialog.filterArtifacts(type)"
-                        ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</a></span>
+                        ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
                 </div>
                 <table class="table table-striped">
                     <thead>

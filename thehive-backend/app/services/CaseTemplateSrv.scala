@@ -25,24 +25,24 @@ class CaseTemplateSrv @Inject() (
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
-  def create(fields: Fields)(implicit authContext: AuthContext) =
+  def create(fields: Fields)(implicit authContext: AuthContext): Future[CaseTemplate] =
     createSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, fields)
 
-  def get(id: String)(implicit Context: AuthContext) =
+  def get(id: String)(implicit Context: AuthContext): Future[CaseTemplate] =
     getSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
   def getByName(name: String): Future[CaseTemplate] = {
-    import QueryDSL._
+    import org.elastic4play.services.QueryDSL._
     findSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, "name" ~= name, Some("0-1"), Nil)
       ._1
       .runWith(Sink.headOption)
       .map(_.getOrElse(throw NotFoundError(s"Case template $name not found")))
   }
 
-  def update(id: String, fields: Fields)(implicit Context: AuthContext) =
+  def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[CaseTemplate] =
     updateSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id, fields)
 
-  def delete(id: String)(implicit Context: AuthContext) =
+  def delete(id: String)(implicit Context: AuthContext): Future[Unit] =
     deleteSrv.realDelete[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[CaseTemplate, NotUsed], Future[Long]) = {

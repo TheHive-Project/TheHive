@@ -139,7 +139,7 @@ class Migration(
       logger.warn(s"""Invalid date format : "$json" setting now""")
       new Date
     }
-    org.elastic4play.JsonFormat.dateWrites.writes(date)
+    org.elastic4play.JsonFormat.dateFormat.writes(date)
   }
 
   def removeDot[A <: JsValue](json: A): A = json match {

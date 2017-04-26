@@ -14,7 +14,7 @@ import scala.collection.immutable
 
 @Singleton
 class TheHiveFilters @Inject() (injectedFilters: immutable.Set[EssentialFilter]) extends HttpFilters {
-  override val filters = injectedFilters.toSeq
+  override val filters: Seq[EssentialFilter] = injectedFilters.toSeq
 }
 
 object CSRFFilter {

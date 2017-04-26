@@ -1,36 +1,31 @@
 package connectors.metrics
 
 import java.util.concurrent.TimeUnit
-
 import javax.inject.{ Inject, Provider, Singleton }
+
+import akka.util.ByteString
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{ DurationLong, FiniteDuration }
 import scala.language.implicitConversions
-
 import play.api.{ Configuration, Environment, Logger }
 import play.api.inject.ApplicationLifecycle
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.mvc.{ Action, Filter, Request }
-
+import play.api.mvc._
 import org.aopalliance.intercept.{ MethodInterceptor, MethodInvocation }
-
 import net.codingwell.scalaguice.ScalaMultibinder
-
-import com.codahale.metrics.{ JvmAttributeGaugeSet, MetricFilter, SharedMetricRegistries }
+import com.codahale.metrics._
 import com.codahale.metrics.ganglia.GangliaReporter
 import com.codahale.metrics.graphite.{ Graphite, GraphiteReporter }
-import com.codahale.metrics.json
 import com.codahale.metrics.jvm.{ GarbageCollectorMetricSet, MemoryUsageGaugeSet, ThreadStatesGaugeSet }
 import com.codahale.metrics.logback.InstrumentedAppender
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.matcher.Matchers
-
 import org.elastic4play.Timed
-
 import ch.qos.logback.classic
 import connectors.ConnectorModule
 import info.ganglia.gmetric4j.gmetric.GMetric
+import play.api.libs.streams.Accumulator
 
 trait UnitConverter {
   val validUnits = Some(TimeUnit.values.map(_.toString).toSet)
@@ -59,7 +54,7 @@ object GangliaMetricConfig extends UnitConverter {
     val validMode = Some(GMetric.UDPAddressingMode.values().map(_.toString).toSet)
     val mode = configuration.getString("metrics.ganglia.mode", validMode).getOrElse("UNICAST")
     val ttl = configuration.getInt("metrics.ganglia.ttl").getOrElse(1)
-    val version = configuration.getString("metrics.ganglia.version", Some(Set("3.0", "3.1"))).map(_ == 3.1).getOrElse(true)
+    val version = configuration.getString("metrics.ganglia.version", Some(Set("3.0", "3.1"))).forall(_ == 3.1)
     val rateUnit = configuration.getString("metrics.ganglia.rateUnit", validUnits).getOrElse("SECONDS")
     val durationUnit = configuration.getString("metrics.ganglia.durationUnit", validUnits).getOrElse("MILLISECONDS")
     val tMax = configuration.getInt("metrics.ganglia.tmax").getOrElse(60)
@@ -103,12 +98,12 @@ object MetricConfig extends UnitConverter {
 }
 
 class TimedInterceptor @Inject() (metricsProvider: Provider[Metrics]) extends MethodInterceptor {
-  override def invoke(invocation: MethodInvocation) = {
+  override def invoke(invocation: MethodInvocation): AnyRef = {
     val timerName = invocation.getStaticPart.getAnnotation(classOf[Timed]).value match {
       case "" ⇒
         val method = invocation.getMethod
         method.getClass.getName + "." + method.getName
-      case timerName ⇒ timerName
+      case _timerName ⇒ _timerName
     }
     val timer = metricsProvider.get.registry.timer(timerName).time()
     invocation.proceed() match {
@@ -133,7 +128,7 @@ class TimedInterceptor @Inject() (metricsProvider: Provider[Metrics]) extends Me
 class MetricsModule(
     environment: Environment,
     configuration: Configuration) extends ConnectorModule {
-  def configure() = {
+  def configure(): Unit = {
     if (configuration.getBoolean("metrics.enabled").getOrElse(false)) {
       bind[MetricConfig].toInstance(MetricConfig(configuration))
       bind[Metrics].asEagerSingleton()
@@ -151,7 +146,7 @@ class MetricsModule(
 class Metrics @Inject() (configuration: Configuration, metricConfig: MetricConfig, influxDBFactory: InfluxDBFactory, lifecycle: ApplicationLifecycle) {
   val mapper = new ObjectMapper()
 
-  val registry = SharedMetricRegistries.getOrCreate(metricConfig.registryName)
+  val registry: MetricRegistry = SharedMetricRegistries.getOrCreate(metricConfig.registryName)
 
   if (metricConfig.jvm) {
     registry.register("jvm.attribute", new JvmAttributeGaugeSet())

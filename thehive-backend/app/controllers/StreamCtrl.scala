@@ -7,25 +7,23 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ DurationLong, FiniteDuration }
 import scala.reflect.runtime.universe
 import scala.util.Random
-
 import akka.actor.{ ActorSystem, Props }
 import akka.pattern.ask
 import akka.util.Timeout
-
 import play.api.{ Configuration, Logger }
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import play.api.mvc.{ Action, Controller }
-
+import play.api.mvc.{ Action, AnyContent, Controller }
 import org.elastic4play.{ AuthenticationError, Timed }
 import org.elastic4play.controllers.{ Authenticated, ExpirationError, ExpirationOk, ExpirationWarning, Renderer }
 import org.elastic4play.services.{ AuxSrv, EventSrv, Role }
-
 import services.StreamActor
 import services.StreamActor.StreamMessages
 import akka.actor.ActorPath
 import org.elastic4play.services.MigrationSrv
+
+import scala.collection.immutable
 import scala.concurrent.Future
 
 @Singleton
@@ -69,7 +67,7 @@ class StreamCtrl(
    * Create a new stream entry with the event head
    */
   @Timed("controllers.StreamCtrl.create")
-  def create = authenticated(Role.read) {
+  def create: Action[AnyContent] = authenticated(Role.read) {
     val id = generateStreamId()
     val aref = system.actorOf(Props(
       classOf[StreamActor],
@@ -82,7 +80,7 @@ class StreamCtrl(
     Ok(id)
   }
 
-  val alphanumeric = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')).toSeq
+  val alphanumeric: immutable.IndexedSeq[Char] = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9'))
   private[controllers] def generateStreamId() = Seq.fill(10)(alphanumeric(Random.nextInt(alphanumeric.size))).mkString
   private[controllers] def isValidStreamId(streamId: String): Boolean = {
     streamId.length == 10 && streamId.forall(alphanumeric.contains)
@@ -93,7 +91,7 @@ class StreamCtrl(
    * This call waits up to "refresh", if there is no event, return empty response
    */
   @Timed("controllers.StreamCtrl.get")
-  def get(id: String) = Action.async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = Action.async { implicit request ⇒
     implicit val timeout = Timeout(refresh + globalMaxWait + 1.second)
 
     if (!isValidStreamId(id)) {

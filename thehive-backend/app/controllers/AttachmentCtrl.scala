@@ -1,11 +1,12 @@
 package controllers
 
 import javax.inject.{ Inject, Singleton }
+
 import akka.stream.scaladsl.FileIO
 import play.api.Configuration
 import play.api.http.HttpEntity
 import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{ Controller, ResponseHeader, Result }
+import play.api.mvc._
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.util.Zip4jConstants
@@ -43,13 +44,13 @@ class AttachmentCtrl(
    * open the document directly. It must be used only for safe file
    */
   @Timed("controllers.AttachmentCtrl.download")
-  def download(hash: String, name: Option[String]) = authenticated(Role.read) { implicit request ⇒
+  def download(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
     if (hash.startsWith("{{")) // angularjs hack
       NoContent
     else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty())
       BadRequest("File name is invalid")
     else
-      new Result(
+      Result(
         header = ResponseHeader(
           200,
           Map(
@@ -64,7 +65,7 @@ class AttachmentCtrl(
    * File name can be specified (zip extension is append)
    */
   @Timed("controllers.AttachmentCtrl.downloadZip")
-  def downloadZip(hash: String, name: Option[String]) = authenticated(Role.read) { implicit request ⇒
+  def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
     if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty())
       BadRequest("File name is invalid")
     else {
@@ -80,7 +81,7 @@ class AttachmentCtrl(
       zipParams.setSourceExternalStream(true)
       zipFile.addStream(attachmentSrv.stream(hash), zipParams)
 
-      new Result(
+      Result(
         header = ResponseHeader(
           200,
           Map(

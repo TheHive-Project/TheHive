@@ -2,15 +2,13 @@ package connectors.misp
 
 import java.util.Date
 
-import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.JsonFormat.enumFormat
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
 
 object JsonFormat {
 
-  implicit val mispAlertReads = Reads { json ⇒
+  implicit val mispAlertReads: Reads[MispAlert] = Reads[MispAlert] { json ⇒
     for {
       org ← (json \ "Orgc" \ "name").validate[String]
       info ← (json \ "info").validate[String]
@@ -45,9 +43,9 @@ object JsonFormat {
       "")
   }
 
-  implicit val mispAlertWrites = Json.writes[MispAlert]
+  implicit val mispAlertWrites: Writes[MispAlert] = Json.writes[MispAlert]
 
-  implicit val attributeReads = Reads(json ⇒
+  implicit val attributeReads: Reads[MispAttribute] = Reads(json ⇒
     for {
       id ← (json \ "id").validate[String]
       tpe ← (json \ "type").validate[String]
@@ -56,7 +54,7 @@ object JsonFormat {
       comment ← (json \ "comment").validate[String].orElse(JsSuccess(""))
       value ← (json \ "value").validate[String]
       category ← (json \ "category").validate[String]
-      tags ← JsArray((json \ "EventTag" \\ "name")).validate[Seq[String]]
+      tags ← JsArray(json \ "EventTag" \\ "name").validate[Seq[String]]
     } yield MispAttribute(
       id,
       tpe,

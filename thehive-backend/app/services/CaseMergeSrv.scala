@@ -18,7 +18,6 @@ import play.api.libs.json.Json
 import org.elastic4play.controllers.{ AttachmentInputValue, Fields }
 import org.elastic4play.models.BaseEntity
 import org.elastic4play.services.AuthContext
-import org.elastic4play.services.JsonFormat.log
 import org.elastic4play.services.QueryDSL
 
 import models.{ Artifact, ArtifactStatus, Case, CaseImpactStatus, CaseResolutionStatus, CaseStatus, Task }
@@ -42,9 +41,9 @@ class CaseMergeSrv @Inject() (
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
-  lazy val logger = Logger(getClass)
+  private[CaseMergeSrv] lazy val logger = Logger(getClass)
 
-  import QueryDSL._
+  import org.elastic4play.services.QueryDSL._
   private[services] def concat[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ String) = {
     JsString(entities.map(e ⇒ s"#${getId(e)}:${getStr(e)}").mkString(sep))
   }
@@ -96,7 +95,7 @@ class CaseMergeSrv @Inject() (
     val summary = cases
       .flatMap(c ⇒ c.summary().map(_ → c.caseId()))
       .map {
-        case (summary, caseId) ⇒ s"#$caseId:$summary"
+        case (_summary, caseId) ⇒ s"#$caseId:${_summary}"
       }
     if (summary.isEmpty)
       None
@@ -170,7 +169,7 @@ class CaseMergeSrv @Inject() (
     val caseFilter = and(parent("case", withId(cases.map(_.id): _*)), "status" ~= "Ok")
     // Find artifacts hold by cases
     val (artifacts, futureArtifactCount) = artifactSrv.find(caseFilter, Some("all"), Nil)
-    futureArtifactCount.foreach { count ⇒ log.info(s"Found $count artifact(s) in merging cases") }
+    futureArtifactCount.foreach { count ⇒ logger.info(s"Found $count artifact(s) in merging cases") }
     artifacts
       .mapAsyncUnordered(5) { artifact ⇒
         // For each artifact find similar artifacts
@@ -183,7 +182,7 @@ class CaseMergeSrv @Inject() (
 
         val (artifacts, futureArtifactCount) = artifactSrv.find(filter, Some("all"), Nil)
         futureArtifactCount.foreach { count ⇒
-          logger.debug(s"${count} identical artifact(s) found (${artifact.dataType()}):${(artifact.data() orElse artifact.attachment().map(_.name)).get}")
+          logger.debug(s"$count identical artifact(s) found (${artifact.dataType()}):${(artifact.data() orElse artifact.attachment().map(_.name)).get}")
         }
         artifacts.runWith(Sink.seq)
       }
@@ -252,7 +251,7 @@ class CaseMergeSrv @Inject() (
       .map(_ ⇒ Done)
       .recover {
         case error ⇒
-          log.error("Case update fail", error)
+          logger.error("Case update fail", error)
           Done
       }
   }
