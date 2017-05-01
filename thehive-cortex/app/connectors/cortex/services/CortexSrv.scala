@@ -35,7 +35,14 @@ object CortexConfig {
     try {
       val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
       val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
-      Some(new CortexClient(name, url, key))
+      val basicEnabled = configuration.getString("basicAuth").getOrElse("false")
+      var username = ""
+      var password = ""
+      if (basicEnabled.toLowerCase() == "true") {
+        username = configuration.getString("username").getOrElse(sys.error("Basic Auth username is missing"))
+        password = configuration.getString("password").getOrElse(sys.error("Basic Auth password is missing"))
+      }
+      Some(new CortexClient(name, url, key, username, password, basicEnabled))
     }
     catch {
       case NonFatal(e) ⇒
