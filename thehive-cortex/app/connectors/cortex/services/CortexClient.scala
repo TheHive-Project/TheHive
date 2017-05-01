@@ -6,7 +6,7 @@ import scala.concurrent.duration.Duration
 import akka.stream.scaladsl.Source
 
 import play.api.libs.json.{ JsObject, Json }
-import play.api.libs.ws.{ WSClient, WSRequest, WSResponse }
+import play.api.libs.ws.{ WSClient, WSRequest, WSResponse, WSAuthScheme }
 import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 
 import org.elastic4play.NotFoundError
@@ -15,17 +15,23 @@ import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileAr
 import connectors.cortex.models.JsonFormat._
 import play.api.Logger
 
-class CortexClient(val name: String, baseUrl: String, key: String) {
+class CortexClient(val name: String, baseUrl: String, key: String, username: String, password: String, basicEnabled: String) {
 
   lazy val logger = Logger(getClass)
 
-  logger.info(s"new Cortex($name, $baseUrl, $key)")
-  def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
+  logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: $basicEnabled")
+  def request[A](uri: String, f: WSRequest â‡’ Future[WSResponse], t: WSResponse â‡’ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
     val url = (baseUrl + uri)
     logger.info(s"Requesting Cortex $url")
-    f(ws.url(url).withHeaders("auth" → key)).map {
-      case response if response.status / 100 == 2 ⇒ t(response)
-      case error ⇒
+    var requestBuilder = ws.url(url).withHeaders("auth" â†’ key)
+    if (basicEnabled.toLowerCase() == "true") {
+      logger.info(s"Basic Auth is enabled")
+      requestBuilder = ws.url(url).withHeaders("auth" â†’ key).withAuth(username, password, WSAuthScheme.BASIC)
+    }
+
+    f(requestBuilder).map {
+      case response if response.status / 100 == 2 â‡’ t(response)
+      case error â‡’
         logger.error(s"Cortex error on $url (${error.status}) \n${error.body}")
         sys.error("")
     }
@@ -41,12 +47,12 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ws: WSClient, ec: ExecutionContext) = {
     artifact match {
-      case FileArtifact(data, attributes) ⇒
+      case FileArtifact(data, attributes) â‡’
         val body = Source(List(
           FilePart("data", (attributes \ "attachment" \ "name").asOpt[String].getOrElse("noname"), None, data),
           DataPart("_json", attributes.toString)))
         request(s"/api/analyzer/$analyzerId/run", _.post(body), _.json)
-      case a: DataArtifact ⇒
+      case a: DataArtifact â‡’
         request(s"/api/analyzer/$analyzerId/run", _.post(Json.toJson(a)), _.json.as[JsObject])
     }
   }
@@ -64,14 +70,14 @@ class CortexClient(val name: String, baseUrl: String, key: String) {
   }
 
   def removeJob(jobId: String)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId", _.delete, _ ⇒ ())
+    request(s"/api/job/$jobId", _.delete, _ â‡’ ())
   }
 
   def report(jobId: String)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId/report", _.get, r ⇒ r.json.as[JsObject])
+    request(s"/api/job/$jobId/report", _.get, r â‡’ r.json.as[JsObject])
   }
 
   def waitReport(jobId: String, atMost: Duration)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId/waitreport", _.withQueryString("atMost" → atMost.toString).get, r ⇒ r.json.as[JsObject])
+    request(s"/api/job/$jobId/waitreport", _.withQueryString("atMost" â†’ atMost.toString).get, r â‡’ r.json.as[JsObject])
   }
 }
