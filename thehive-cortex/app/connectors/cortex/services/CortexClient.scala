@@ -20,18 +20,18 @@ class CortexClient(val name: String, baseUrl: String, key: String, username: Str
   lazy val logger = Logger(getClass)
 
   logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: $basicEnabled")
-  def request[A](uri: String, f: WSRequest â‡’ Future[WSResponse], t: WSResponse â‡’ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
+  def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
     val url = (baseUrl + uri)
     logger.info(s"Requesting Cortex $url")
-    var requestBuilder = ws.url(url).withHeaders("auth" â†’ key)
+    var requestBuilder = ws.url(url).withHeaders("auth" → key)
     if (basicEnabled.toLowerCase() == "true") {
       logger.info(s"Basic Auth is enabled")
-      requestBuilder = ws.url(url).withHeaders("auth" â†’ key).withAuth(username, password, WSAuthScheme.BASIC)
+      requestBuilder = ws.url(url).withHeaders("auth" → key).withAuth(username, password, WSAuthScheme.BASIC)
     }
 
     f(requestBuilder).map {
-      case response if response.status / 100 == 2 â‡’ t(response)
-      case error â‡’
+      case response if response.status / 100 == 2 ⇒ t(response)
+      case error ⇒
         logger.error(s"Cortex error on $url (${error.status}) \n${error.body}")
         sys.error("")
     }
@@ -47,12 +47,12 @@ class CortexClient(val name: String, baseUrl: String, key: String, username: Str
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ws: WSClient, ec: ExecutionContext) = {
     artifact match {
-      case FileArtifact(data, attributes) â‡’
+      case FileArtifact(data, attributes) ⇒
         val body = Source(List(
           FilePart("data", (attributes \ "attachment" \ "name").asOpt[String].getOrElse("noname"), None, data),
           DataPart("_json", attributes.toString)))
         request(s"/api/analyzer/$analyzerId/run", _.post(body), _.json)
-      case a: DataArtifact â‡’
+      case a: DataArtifact ⇒
         request(s"/api/analyzer/$analyzerId/run", _.post(Json.toJson(a)), _.json.as[JsObject])
     }
   }
@@ -70,14 +70,14 @@ class CortexClient(val name: String, baseUrl: String, key: String, username: Str
   }
 
   def removeJob(jobId: String)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId", _.delete, _ â‡’ ())
+    request(s"/api/job/$jobId", _.delete, _ ⇒ ())
   }
 
   def report(jobId: String)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId/report", _.get, r â‡’ r.json.as[JsObject])
+    request(s"/api/job/$jobId/report", _.get, r ⇒ r.json.as[JsObject])
   }
 
   def waitReport(jobId: String, atMost: Duration)(implicit ws: WSClient, ec: ExecutionContext) = {
-    request(s"/api/job/$jobId/waitreport", _.withQueryString("atMost" â†’ atMost.toString).get, r â‡’ r.json.as[JsObject])
+    request(s"/api/job/$jobId/waitreport", _.withQueryString("atMost" → atMost.toString).get, r ⇒ r.json.as[JsObject])
   }
 }
