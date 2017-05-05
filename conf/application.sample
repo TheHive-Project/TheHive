@@ -1,0 +1,87 @@
+# Secret key
+# ~~~~~
+# The secret key is used to secure cryptographics functions.
+# If you deploy your application to several instances be sure to use the same key!
+#play.crypto.secret="***changeme***"
+
+
+# ElasticSearch
+search {
+  # Name of the index
+  index = the_hive
+  # Name of the ElasticSearch cluster
+  cluster = hive
+  # Address of the ElasticSearch instance
+  host = ["127.0.0.1:9300"]
+  # Scroll keepalive
+  keepalive = 1m
+  # Size of the page for scroll
+  pagesize = 50
+}
+
+# Authentication
+auth {
+	# "type" parameter contains authentication provider. It can be multi-valued (useful for migration)
+	# available auth types are:
+	# services.LocalAuthSrv : passwords are stored in user entity (in ElasticSearch). No configuration are required.
+	# ad : use ActiveDirectory to authenticate users. Configuration is under "auth.ad" key
+	# ldap : use LDAP to authenticate users. Configuration is under "auth.ldap" key
+	type = [local]
+
+	ad {
+		# Domain Windows name using DNS format. This parameter is required.
+		#domainFQDN = "mydomain.local"
+
+		# Domain Windows name using short format. This parameter is required.
+		#domainName = "MYDOMAIN"
+
+		# Use SSL to connect to domain controller
+		#useSSL = true
+	}
+
+	ldap {
+		# LDAP server name or address. Port can be specified (host:port). This parameter is required.
+		#serverName = "ldap.mydomain.local:389"
+
+		# Use SSL to connect to directory server
+		#useSSL = true
+
+		# Account to use to bind on LDAP server. This parameter is required.
+		#bindDN = "cn=thehive,ou=services,dc=mydomain,dc=local"
+
+		# Password of the binding account. This parameter is required.
+		#bindPW = "***secret*password***"
+
+		# Base DN to search users. This parameter is required.
+		#baseDN = "ou=users,dc=mydomain,dc=local"
+
+		# Filter to search user {0} is replaced by user name. This parameter is required.
+		#filter = "(cn={0})"
+	}
+}
+
+# Cortex
+cortex {
+  #"CORTEX-SERVER-ID" {
+  #  # URL of MISP server
+  #  url = ""
+  #}
+}
+
+# MISP
+misp {
+  #"MISP-SERVER-ID" {
+  #  # URL of MISP server
+  #  url = ""
+  #  # authentication key
+  #  key = ""
+  #  #tags to be added to imported artifact
+  #  tags = ["misp"]
+  #}
+
+  # truststore to used to validate MISP certificate (if default truststore is not suffisient)
+  #cert = /path/to/truststore.jsk
+
+  # Interval between two MISP event import
+  interval = 1h
+}

@@ -1,0 +1,118 @@
+#!/bin/sh
+set -e
+# #######################################
+# ## SBT Native Packager Bash Library  ##
+# #######################################
+
+# Adding system user
+# $1 = user
+# $2 = uid
+# $3 = group
+# $4 = description
+# $5 = shell (defaults to /bin/false)
+addUser() {
+    user="$1"
+    if [ -z "$user" ]; then
+	echo "usage: addUser user [group] [description] [shell]"
+	exit 1
+    fi
+    uid="$2"
+    if [ -z "$uid" ]; then
+	uid_flags=""
+	  else
+  uid_flags="--uid $uid"
+    fi
+    group=${3:-$user}
+    descr=${4:-No description}
+    shell=${5:-/bin/false}
+    if ! getent passwd | grep -q "^$user:";
+    then
+	echo "Creating system user: $user in $group with $descr and shell $shell"
+	useradd $uid_flags --gid $group -r --shell $shell -c "$descr" $user
+    fi
+}
+
+# Adding system group
+# $1 = group
+# $2 = gid
+addGroup() {
+    group="$1"
+    gid="$2"
+    if [ -z "$gid" ]; then
+	  gid_flags=""
+  else
+    gid_flags="--gid $gid"
+  fi
+    if ! getent group | grep -q "^$group:" ;
+    then
+	echo "Creating system group: $group"
+	groupadd $gid_flags -r $group
+    fi
+}
+
+# Will return true even if deletion fails
+# $1 = user
+deleteUser() {
+    if hash deluser 2>/dev/null; then
+	deluser --quiet --system $1 > /dev/null || true
+    elif hash userdel 2>/dev/null; then
+	userdel $1
+    else
+	echo "WARNING: Could not delete user $1 . No suitable program (deluser, userdel) found"
+    fi
+}
+
+# Will return true even if deletion fails
+# $1 = group
+deleteGroup() {
+    if hash delgroup 2>/dev/null; then
+	delgroup --quiet --system $1 > /dev/null || true
+    elif hash groupdel 2>/dev/null; then
+	groupdel $1
+    else
+	echo "WARNING: Could not delete user $1 . No suitable program (delgroup, groupdel) found"
+    fi
+}
+
+# #######################################
+
+# ------------------------------------------------------------------------------------
+#   ____                                _             _          _
+# / ___|  ___ _ ____   _____ _ __     / \   _ __ ___| |__   ___| |_ _   _ _ __   ___
+# \___ \ / _ \ '__\ \ / / _ \ '__|   / _ \ | '__/ __| '_ \ / _ \ __| | | | '_ \ / _ \
+#  ___) |  __/ |   \ V /  __/ |     / ___ \| | | (__| | | |  __/ |_| |_| | |_) |  __/
+# |____/ \___|_|    \_/ \___|_|    /_/   \_\_|  \___|_| |_|\___|\__|\__, | .__/ \___|
+#                                                                   |___/|_|
+# ------------------------------------------------------------------------------------
+
+#
+# Adding service to autostart
+# $1 = service name
+#
+startService() {
+    app_name=$1
+    initctl reload-configuration
+    service $app_name start
+}
+
+#
+# Removing service from autostart
+# $1 = service name
+#
+stopService() {
+    app_name=$1
+    service $app_name stop
+}
+
+#
+# Restarting the service after package upgrade
+# $1 = service name
+#
+restartService() {
+    app_name=$1
+    initctl reload-configuration
+    service $app_name start
+}
+
+
+stopService thehive || echo "thehive wasn't even running!"
