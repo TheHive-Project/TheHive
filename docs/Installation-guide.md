@@ -1,10 +1,14 @@
 # Installation Guide for Ubuntu 16.04 LTS
 
-This guide describes the installation of TheHive from binaries in Ubuntu 16.04. A [docker installation guide](docker-guide) is also available. You can also [build TheHive's source code](Build-Guide).
+This guide describes the manual installation of TheHive from binaries in Ubuntu 16.04. You can choose to install TheHive using:
+ - [rpm package](rpm-installation-guide)
+ - [deb package](deb-installation-guide)
+ - [docker](docker-guide)
+And you can also [build TheHive's source code](Build-Guide).
 
 # 1. Minimal Ubuntu Installation
 
-Install a minimal Ubuntu 16.04 server system with the following software:
+Install a minimal Ubuntu 16.04  system with the following software:
  * Java runtime environment 1.8+ (JRE)
  * ElasticSearch 2.x
 
@@ -102,18 +106,9 @@ docker run \
 
 # 4. Install TheHive
 
-Two binary packages are available. The first one only contains a standalone version of TheHive. A second binary packages is available and also contains [Cortex](https://github.com/CERT-BDF/Cortex) the analysis engine used by TheHive to run analyzers.
+Binary package can be downloaded at [thehive-latest.zip](https://dl.bintray.com/cert-bdf/thehive/thehive-latest.zip)
 
- * [TheHive standalone package](https://dl.bintray.com/cert-bdf/thehive/thehive-latest.zip)
- * [TheHive, Cortex and all available analyzers](https://dl.bintray.com/cert-bdf/thehive/thehive-cortex-latest.zip)
-
-
-TheHive installation and configuration is identical for both packages. If you choose the latter, after installing and configuring TheHive, you will have to:
- * Configure Cortex. Jump to [Cortex configuration documentation](https://github.com/CERT-BDF/Cortex/wiki/Installation-guide#42-configuration) in Cortex wiki
- * Jump back to TheHive configuration and connect it to your Cortex instance.
- * Start TheHive and import the [report templates](https://github.com/CERT-BDF/TheHive/wiki/Administrator's-guide#3-report-template-management) corresponding to the analyzers.
-
-_Note_: in the rest of this guide we'll use TheHive standalone binary package. Do not forget to adapt your command if you prefer installing the package with Cortex.
+After configuring TheHive, if you use Cortex, don't forget to install [report templates](https://github.com/CERT-BDF/TheHive/wiki/Administrator's-guide#3-report-template-management).
 
 ## 4.1. Install from Binaries
 
