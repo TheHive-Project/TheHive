@@ -29,6 +29,7 @@ object Release {
       IO.load(properties, credentialsFile)
       val token = Option(properties.getProperty("token")).fold("")(t => s"-t $t")
       s"github_changelog_generator $token" ! sLog.value
+      ()
     }
   )
 }

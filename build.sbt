@@ -34,10 +34,10 @@ run := {
   (run in Compile).evaluated
   frontendDev.value
 }
-
 mappings in packageBin in Assets ++= frontendFiles.value
 
-// Remove conf files// Install service files //
+// Remove conf files
+// Install service files
 mappings in Universal ~= {
   _.flatMap {
     case (file, "conf/application.conf") => Nil
@@ -87,7 +87,7 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "install" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmRelease := "7"
+rpmRelease := "8"
 rpmVendor in Rpm := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
@@ -101,22 +101,29 @@ rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "install" / "etc_default_thehive").asURL
 
 // DOCKER //
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
 
-dockerBaseImage := "elasticsearch:2.3"
-dockerExposedVolumes += "/data"
+defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("certbdf")
 dockerUpdateLatest := true
-mappings in Docker += file("install/docker/entrypoint") -> "bin/entrypoint"
-
-dockerCommands := dockerCommands.value.map {
-  case ExecCmd("ENTRYPOINT", _*) => ExecCmd("ENTRYPOINT", "bin/entrypoint")
-  case cmd => cmd
+dockerEntrypoint := Seq("/opt/thehive/entrypoint")
+dockerExposedPorts := Seq(9000)
+mappings in Docker ++= Seq(
+  file("install/docker/entrypoint") -> "/opt/thehive/entrypoint",
+  file("conf/logback.xml") -> "/etc/thehive/logback.xml",
+  file("install/empty") -> "/var/log/thehive/application.log")
+mappings in Docker ~= (_.filterNot {
+  case (_, filepath) => filepath == "/opt/thehive/conf/application.conf"
+})
+dockerCommands ~= { dc =>
+  val (dockerInitCmds, dockerTailCmds) = dc.splitAt(4)
+  dockerInitCmds ++
+    Seq(
+      Cmd("ADD", "var", "/var"),
+      Cmd("ADD", "etc", "/etc"),
+      ExecCmd("RUN", "chown", "-R", "daemon:daemon", "/var/log/thehive")) ++
+    dockerTailCmds
 }
-
-dockerCommands := (dockerCommands.value.head +:
-  Cmd("EXPOSE", "9000") +:
-  dockerCommands.value.tail)
 
 // Bintray //
 bintrayOrganization := Some("cert-bdf")
