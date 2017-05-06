@@ -22,6 +22,8 @@ body {
 }
 .navbar-brand>img {
     display: inline;
+    width: 100px;
+    height: 36px;
 }
 
 .main-navbar .nav>li>a {
