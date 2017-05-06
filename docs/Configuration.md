@@ -28,6 +28,10 @@ search {
   keepalive = 1m
   # Size of the page for scroll
   pagesize = 50
+  # Number of shards
+  nbshards = 5
+  # Number of replicas
+  nbreplicas = 1
 }
 ```
 
