@@ -74,7 +74,7 @@ object PublishToBinTray extends Plugin {
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        "redhat",
+        "rpm",
         bintrayPackage.value,
         version.value,
         sLog.value)
