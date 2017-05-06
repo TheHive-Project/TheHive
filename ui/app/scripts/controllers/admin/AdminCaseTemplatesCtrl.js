@@ -130,7 +130,7 @@
 
                     $scope.$emit('templates:refresh');
 
-                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly created', 'success');
+                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfully created', 'success');
                 }, function(response) {
                     AlertSrv.error('TemplateCtrl', response.data, response.status);
                 });
@@ -145,7 +145,7 @@
                     
                     $scope.$emit('templates:refresh');
 
-                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfuly updated', 'success');
+                    AlertSrv.log('The template [' + $scope.template.name + '] has been successfully updated', 'success');
                 }, function(response) {
                     AlertSrv.error('TemplateCtrl', response.data, response.status);
                 });
