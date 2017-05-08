@@ -42,11 +42,13 @@ mappings in Universal ~= {
   _.flatMap {
     case (file, "conf/application.conf") => Nil
     case (file, "conf/application.sample") => Seq(file -> "conf/application.conf")
+    case (file, "conf/logback.xml") => Nil
     case other => Seq(other)
   } ++ Seq(
-      file("install/thehive.service") -> "install/thehive.service",
-      file("install/thehive.conf") -> "install/thehive.conf",
-      file("install/thehive") -> "install/thehive"
+      file("package/thehive.service") -> "package/thehive.service",
+      file("package/thehive.conf") -> "package/thehive.conf",
+      file("package/thehive") -> "package/thehive",
+      file("package/logback.xml") -> "conf/logback.xml"
     )
 }
 
@@ -59,13 +61,13 @@ packageDescription := """TheHive is a scalable 3-in-1 open source and free secur
 defaultLinuxInstallLocation := "/opt"
 linuxPackageMappings ~= { _.map { pm =>
     val mappings = pm.mappings.filterNot {
-      case (file, path) => path.startsWith("/opt/thehive/install") || path.startsWith("/opt/thehive/conf")
+      case (file, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
     }
     com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
   } :+ packageMapping(
-    file("install/thehive.service") -> "/etc/systemd/system/thehive.service",
-    file("install/thehive.conf") -> "/etc/init/thehive.conf",
-    file("install/thehive") -> "/etc/init.d/thehive",
+    file("package/thehive.service") -> "/etc/systemd/system/thehive.service",
+    file("package/thehive.conf") -> "/etc/init/thehive.conf",
+    file("package/thehive") -> "/etc/init.d/thehive",
     file("conf/application.sample") -> "/etc/thehive/application.conf",
     file("conf/logback.xml") -> "/etc/thehive/logback.xml"
   ).withConfig()
@@ -80,10 +82,10 @@ packageBin := {
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "java8-runtime-headless | java8-runtime"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
-  baseDirectory.value / "install" / "debian",
+  baseDirectory.value / "package" / "debian",
   Seq(DebianConstants.Postinst, DebianConstants.Prerm, DebianConstants.Postrm)
 )
-linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "install" / "etc_default_thehive").asURL
+linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "package" / "etc_default_thehive").asURL
 linuxMakeStartScript in Debian := None
 
 // RPM //
@@ -93,12 +95,12 @@ rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
 rpmRequirements += "java-1.8.0-openjdk-headless"
 maintainerScripts in Rpm := maintainerScriptsFromDirectory(
-  baseDirectory.value / "install" / "rpm",
+  baseDirectory.value / "package" / "rpm",
   Seq(RpmConstants.Pre, RpmConstants.Preun, RpmConstants.Postun)
 )
 linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
-linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "install" / "etc_default_thehive").asURL
+linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
@@ -109,9 +111,9 @@ dockerUpdateLatest := true
 dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
 mappings in Docker ++= Seq(
-  file("install/docker/entrypoint") -> "/opt/thehive/entrypoint",
+  file("package/docker/entrypoint") -> "/opt/thehive/entrypoint",
   file("conf/logback.xml") -> "/etc/thehive/logback.xml",
-  file("install/empty") -> "/var/log/thehive/application.log")
+  file("package/empty") -> "/var/log/thehive/application.log")
 mappings in Docker ~= (_.filterNot {
   case (_, filepath) => filepath == "/opt/thehive/conf/application.conf"
 })
