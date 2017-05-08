@@ -1,6 +1,5 @@
 package connectors.cortex.services
 
-import java.nio.file.{ Path, Paths }
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
@@ -54,11 +53,10 @@ object CortexConfig {
 }
 
 @Singleton
-case class CortexConfig(truststore: Option[Path], instances: Seq[CortexClient]) {
+case class CortexConfig(instances: Seq[CortexClient]) {
 
   @Inject
   def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
-    configuration.getString("cortex.cert").map(p ⇒ Paths.get(p)),
     CortexConfig.getInstances(configuration, globalWS))
 }
 
@@ -72,13 +70,35 @@ class CortexSrv @Inject() (
     createSrv: CreateSrv,
     updateSrv: UpdateSrv,
     findSrv: FindSrv,
+    userSrv: UserSrv,
     eventSrv: EventSrv,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem,
     implicit val mat: Materializer) {
 
-  lazy val logger = Logger(getClass)
+  private[CortexSrv] lazy val logger = Logger(getClass)
+
+  userSrv.inInitAuthContext { implicit authContext ⇒
+    import org.elastic4play.services.QueryDSL._
+    logger.info(s"Search for unfinished job ...")
+    val (jobs, total) = find("status" ~= "InProgress", Some("all"), Nil)
+    total.foreach(t ⇒ logger.info(s"$t jobs found"))
+    jobs
+      .runForeach { job ⇒
+        logger.info(s"Found job in progress, request its status to Cortex")
+        (for {
+          cortexJobId ← job.cortexJobId()
+          cortexClient ← cortexConfig.instances.find(_.name == job.cortexId)
+        } yield updateJobWithCortex(job.id, cortexJobId, cortexClient))
+          .getOrElse {
+            val jobFields = Fields.empty
+              .set("status", JobStatus.Failure.toString)
+              .set("endDate", Json.toJson(new Date))
+            update(job.id, jobFields)
+          }
+      }
+  }
 
   private[CortexSrv] val mergeActor = actor(new Act {
     become {
@@ -99,7 +119,11 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext) = {
+  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
+    getJob(jobId).flatMap(job ⇒ update(job, fields))
+  }
+
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
     updateSrv[Job](job, fields)
   }
 
@@ -202,7 +226,13 @@ class CortexSrv @Inject() (
               case _          ⇒
             }
         }
-      case Failure(_) ⇒
+      case Failure(CortexError(404, _, _)) ⇒
+        logger.debug(s"The job $cortexJobId not found")
+        val jobFields = Fields.empty
+          .set("status", JobStatus.Failure.toString)
+          .set("endDate", Json.toJson(new Date))
+        update(jobId, jobFields)
+      case _ ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
         updateJobWithCortex(jobId, cortexJobId, cortex)
     }

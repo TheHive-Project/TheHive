@@ -12,17 +12,15 @@ import services.CustomWSAPI
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Future }
 
+case class CortexError(status: Int, requestUrl: String, message: String) extends Exception(s"Cortex error on $requestUrl ($status) \n$message")
 class CortexClient(val name: String, baseUrl: String, key: String, ws: CustomWSAPI) {
 
-  lazy val logger = Logger(getClass)
+  private[CortexClient] lazy val logger = Logger(getClass)
 
   def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ec: ExecutionContext): Future[A] = {
-    logger.info(s"Requesting Cortex $baseUrl")
     f(ws.url(s"$baseUrl/$uri").withHeaders("auth" → key)).map {
       case response if response.status / 100 == 2 ⇒ t(response)
-      case error ⇒
-        logger.error(s"Cortex error on $baseUrl (${error.status}) \n${error.body}")
-        sys.error("")
+      case error                                  ⇒ throw CortexError(error.status, s"$baseUrl/$uri", error.body)
     }
   }
 
