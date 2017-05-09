@@ -13,6 +13,7 @@
 
         this.templates = [];
         this.analyzers = [];
+        this.analyzerIds = [];
         this.analyzerCount = 0;
 
 
@@ -51,7 +52,8 @@
                     }
                 });
 
-                self.analyzerCount = _.keys(analyzersMap).length;
+                self.analyzerIds = _.keys(analyzersMap);
+                self.analyzerCount = self.analyzerIds.length;
             });
         };
 
