@@ -254,9 +254,12 @@ class CortexSrv @Inject() (
       case Some(cortex) ⇒
         for {
           artifact ← artifactSrv.get(artifactId)
+          artifactAttributes = Json.obj(
+            "tlp" → artifact.tlp(),
+            "dataType" → artifact.dataType())
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
-            case (Some(data), None)       ⇒ DataArtifact(data, artifact.attributes)
-            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifact.attributes)
+            case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
+            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes)
             case _                        ⇒ throw InternalError(s"Artifact has invalid data : ${artifact.attributes}")
           }
           cortexJobJson ← cortex.analyze(analyzerId, cortexArtifact)
