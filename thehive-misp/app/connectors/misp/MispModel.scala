@@ -16,6 +16,7 @@ case class MispAlert(
 
 case class MispAttribute(
   id: String,
+  category: String,
   tpe: String,
   date: Date,
   comment: String,

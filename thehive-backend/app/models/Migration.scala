@@ -71,7 +71,7 @@ class Migration(
           c + ("owner" → owner)
         },
 
-        removeEntity("analyzer")(_ ⇒ false), // analyzer is now stored in cortex
+        removeEntity("analyzer")(_ ⇒ true), // analyzer is now stored in cortex
 
         addAttribute("case_artifact", "reports" → JsString("{}")), // add short reports in artifact
 
@@ -124,6 +124,18 @@ class Migration(
               "caseTemplate" → mispCaseTemplate,
               "status" → (misp \ "eventStatus").as[JsString],
               "follow" → (misp \ "follow").as[JsBoolean])
+        },
+        removeEntity("audit") { o ⇒
+          val objectType = (o \ "objectType").asOpt[String]
+
+          val r = objectType.contains("alert")
+          if (r) {
+            println(s"remove entity $o")
+          }
+          else {
+            println(s"don't remove entity (objectType=$objectType)")
+          }
+          r
         })
   }
 

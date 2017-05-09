@@ -57,6 +57,7 @@ object JsonFormat {
       tags ← JsArray(json \ "EventTag" \\ "name").validate[Seq[String]]
     } yield MispAttribute(
       id,
+      category,
       tpe,
       date,
       comment,

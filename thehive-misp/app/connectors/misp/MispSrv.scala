@@ -461,175 +461,169 @@ class MispSrv @Inject() (
   }
 
   def convertAttribute(mispAttribute: MispAttribute): Seq[JsObject] = {
-    val data = mispAttribute.value
-    val filenameExtractor = "filename\\|(.*)".r
+    val dataType = typeLookup.getOrElse(mispAttribute.tpe, "other")
     val fields = Json.obj(
-      "data" → data,
-      "dataType" → mispAttribute.tpe,
+      "data" → mispAttribute.value,
+      "dataType" → dataType,
       "message" → mispAttribute.comment,
-      "startDate" → mispAttribute.date)
+      "startDate" → mispAttribute.date,
+      "tags" → Json.arr(s"MISP:type=${mispAttribute.tpe}", s"MISP:category=${mispAttribute.category}"))
 
-    mispAttribute.tpe match {
-      case filenameExtractor(hashType) ⇒
-        val Array(file, hash, _*) = (data + "|").split("\\|", 3).map(JsString)
-        Seq(
-          fields + ("data" → file) + ("dataType" → JsString("filename")) + ("message" → JsString(mispAttribute.comment + s"\n$hashType:" + hash)),
-          fields + ("data" → hash) + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString(hashType)))) + ("message" → JsString(mispAttribute.comment + s"\nfilename:" + file)))
-      case "md5" ⇒ /* You are encouraged to use filename|md5 instead. A checksum in md5 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("md5")))))
-      case "sha1" ⇒ /* You are encouraged to use filename|sha1 instead. A checksum in sha1 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha1")))))
-      case "sha256" ⇒ /* You are encouraged to use filename|sha256 instead. A checksum in sha256 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha256")))))
-      case "filename" ⇒ /* Filename */
-        Seq(fields + ("dataType" → JsString("filename")))
-      case "ip-src" ⇒ /* A source IP address of the attacker */
-        Seq(fields + ("dataType" → JsString("ip")) + ("tags" → JsArray(Seq(JsString("src")))))
-      case "ip-dst" ⇒ /* A destination IP address of the attacker or C&C server. Also set the IDS flag on when this IP is hardcoded in malware */
-        Seq(fields + ("dataType" → JsString("ip")) + ("tags" → JsArray(Seq(JsString("dst")))))
-      case "hostname" ⇒ /* A full host/dnsname of an attacker. Also set the IDS flag on when this hostname is hardcoded in malware */
-        Seq(fields + ("dataType" → JsString("fqdn")))
-      case "domain" ⇒ /* A domain name used in the malware. Use this instead of hostname when the upper domain is important or can be used to create links between events. */
-        Seq(fields + ("dataType" → JsString("domain")))
-      case "domain|ip" ⇒ /* A domain name and its IP address (as found in DNS lookup) separated by a | (no spaces) */
-        val Array(domain, ip, _*) = (data + "|").split("\\|", 3).map(JsString)
-        Seq(
-          fields + ("data" → domain) + ("dataType" → JsString("domain")) + ("message" → JsString(mispAttribute.comment + "\nip:" + ip)),
-          fields + ("data" → ip) + ("dataType" → JsString("ip")) + ("message" → JsString(mispAttribute.comment + "\ndomain:" + domain)))
-      case "email-src" ⇒ /* The email address (or domainname) used to send the malware. */
-        Seq(fields + ("dataType" → JsString("mail")) + ("tags" → JsArray(Seq(JsString("src")))))
-      case "email-dst" ⇒ /* A recipient email address that is not related to your constituency. */
-        Seq(fields + ("dataType" → JsString("mail")) + ("tags" → JsArray(Seq(JsString("dst")))))
-      case "email-subject" ⇒ /* The subject of the email */
-        Seq(fields + ("dataType" → JsString("mail_subject")))
-      case "email-attachment" ⇒ /* File name of the email attachment. */
-        Seq(fields + ("dataType" → JsString("filename")) + ("tags" → JsArray(Seq(JsString("mail")))))
-      case "url" ⇒ /* url */
-        Seq(fields + ("dataType" → JsString("url")))
-      case "http-method" ⇒ /* HTTP method used by the malware (e.g. POST, GET, ...). */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("http-method")))))
-      case "user-agent" ⇒ /* The user-agent used by the malware in the HTTP request. */
-        Seq(fields + ("dataType" → JsString("user-agent")))
-      case "regkey" ⇒ /* Registry key or value */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("regkey")))))
-      case "regkey|value" ⇒ /* Registry value + data separated by | */
-        val Array(regkey, value, _*) = (data + "|").split("\\|", 3).map(JsString)
-        Seq(
-          fields + ("data" → regkey) + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("regkey")))) + ("message" → JsString(mispAttribute.comment + "\nvalue:" + value)),
-          fields + ("data" → value) + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("regkey-value")))) + ("message" → JsString(mispAttribute.comment + "\nkey:" + regkey)))
-      case "AS" ⇒ /* Autonomous system */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("AS")))))
-      case "snort" ⇒ /* An IDS rule in Snort rule-format. This rule will be automatically rewritten in the NIDS exports. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("snort")))))
-      case "pattern-in-file" ⇒ /* Pattern in file that identifies the malware */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("pattern-in-file")))))
-      case "pattern-in-traffic" ⇒ /* Pattern in network traffic that identifies the malware */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("pattern-in-traffic")))))
-      case "pattern-in-memory" ⇒ /* Pattern in memory dump that identifies the malware */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("pattern-int-memory")))))
-      case "yara" ⇒ /* Yara signature */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("yara")))))
-      case "vulnerability" ⇒ /* A reference to the vulnerability used in the exploit */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("vulnerability")))))
-      case "attachment" ⇒ /* Please upload files using the Upload Attachment button. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("attachment")))))
-      case "malware-sample" ⇒ /* Please upload files using the Upload Attachment button. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("malware-sample")))))
-      case "link" ⇒ /* Link to an external information */
-        Nil // Don't import link as observable // Seq(fields + ("dataType" -> JsString("url")))
-      case "comment" ⇒ /* Comment or description in a human language. This will not be correlated with other attributes */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("comment")))))
-      case "text" ⇒ /* Name, ID or a reference */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("text")))))
-      case "other" ⇒ /* Other attribute */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("other")))))
-      case "named pipe" ⇒ /* Named pipe, use the format \.\pipe\      */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("named pipe")))))
-      case "mutex" ⇒ /* Mutex, use the format \BaseNamedObjects\      */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("mutex")))))
-      case "target-user" ⇒ /* Attack Targets Username(s) */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("target-user")))))
-      case "target-email" ⇒ /* Attack Targets Email(s) */
-        Seq(fields + ("dataType" → JsString("mail")) + ("tags" → JsArray(Seq(JsString("target-email")))))
-      case "target-machine" ⇒ /* Attack Targets Machine Name(s) */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("target-machine")))))
-      case "target-org" ⇒ /* Attack Targets Department or Orginization(s) */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("target-org")))))
-      case "target-location" ⇒ /* Attack Targets Physical Location(s) */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("target-location")))))
-      case "target-external" ⇒ /* External Target Orginizations Affected by this Attack */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("target-external")))))
-      case "btc" ⇒ /* Bitcoin Address */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("btc")))))
-      case "iban" ⇒ /* International Bank Account Number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("iban")))))
-      case "bic" ⇒ /* Bank Identifier Code Number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("bic")))))
-      case "bank-account-nr" ⇒ /* Bank account number without any routing number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("bank-account-nr")))))
-      case "aba-rtn" ⇒ /* ABA routing transit number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("aba-rtn")))))
-      case "bin" ⇒ /* Bank Identification Number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("bin")))))
-      case "cc-number" ⇒ /* Credit-Card Number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("cc-number")))))
-      case "prtn" ⇒ /* Premium-Rate Telephone Number */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("prtn")))))
-      case "threat-actor" ⇒ /* A string identifying the threat actor */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("threat-actor")))))
-      case "campaign-name" ⇒ /* Associated campaign name */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("campaign-name")))))
-      case "campaign-id" ⇒ /* Associated campaign ID */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("campaign-id")))))
-      case "malware-type" ⇒ /*  */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("malware-type")))))
-      case "uri" ⇒ /* Uniform Resource Identifier */
-        Seq(fields + ("dataType" → JsString("url")))
-      case "authentihash" ⇒ /* You are encouraged to use filename|authentihash instead. Authenticode executable signature hash, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("authentihash")))))
-      case "ssdeep" ⇒ /* You are encouraged to use filename|ssdeep instead. A checksum in the SSDeep format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("ssdeep")))))
-      case "imphash" ⇒ /* You are encouraged to use filename|imphash instead. A hash created based on the imports in the sample, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("imphash")))))
-      case "pehash" ⇒ /* PEhash - a hash calculated based of certain pieces of a PE executable file */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("pehash")))))
-      case "sha224" ⇒ /* You are encouraged to use filename|sha224 instead. A checksum in sha224 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha-224")))))
-      case "sha384" ⇒ /* You are encouraged to use filename|sha384 instead. A checksum in sha384 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha-384")))))
-      case "sha512" ⇒ /* You are encouraged to use filename|sha512 instead. A checksum in sha512 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha-512")))))
-      case "sha512/224" ⇒ /* You are encouraged to use filename|sha512/224 instead. A checksum in sha512/224 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha-512/224")))))
-      case "sha512/256" ⇒ /* You are encouraged to use filename|sha512/256 instead. A checksum in sha512/256 format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("sha-512/256")))))
-      case "tlsh" ⇒ /* You are encouraged to use filename|tlsh instead. A checksum in the Trend Micro Locality Sensitive Hash format, only use this if you don't know the correct filename */
-        Seq(fields + ("dataType" → JsString("hash")) + ("tags" → JsArray(Seq(JsString("tlsh")))))
-      case "windows-scheduled-task" ⇒ /* A scheduled task in windows */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("windows-scheduled-task")))))
-      case "windows-service-name" ⇒ /* A windows service name. This is the name used internally by windows. Not to be confused with the windows-service-displayname. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("windows-service-name")))))
-      case "windows-service-displayname" ⇒ /* A windows service's displayname, not to be confused with the windows-service-name. This is the name that applications will generally display as the service's name in applications. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("windows-service-displayname")))))
-      case "whois-registrant-email" ⇒ /* The e-mail of a domain's registrant, obtained from the WHOIS information. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("whois-registrant-email")))))
-      case "whois-registrant-phone" ⇒ /* The phone number of a domain's registrant, obtained from the WHOIS information. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("whois-registrant-phone")))))
-      case "whois-registar" ⇒ /* The registar of the domain, obtained from the WHOIS information. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("whois-registar")))))
-      case "whois-creation-date" ⇒ /* The date of domain's creation, obtained from the WHOIS information. */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("whois-creation-date")))))
-      case "targeted-threat-index" ⇒ /*  */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("targeted-threat-index")))))
-      case "mailslot" ⇒ /* MailSlot interprocess communication */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("mailslot")))))
-      case "pipe" ⇒ /* Pipeline (for named pipes use the attribute type "named pipe") */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("pipe")))))
-      case "ssl-cert-attributes" ⇒ /* SSL certificate attributes  */
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString("ssl-cert-attributes")))))
-      case other ⇒ /* unknown attribute type */
-        logger.warn(s"Unknown attribute type : $other")
-        Seq(fields + ("dataType" → JsString("other")) + ("tags" → JsArray(Seq(JsString(other)))))
+    val types = mispAttribute.tpe.split('|').toSeq
+    if (types.length > 1) {
+      val values = mispAttribute.value.split('|').toSeq
+      val typesValues = types.zipAll(values, "noType", "noValue")
+      val additionnalMessage = typesValues
+        .map { case (t, v) ⇒ s"$t: $v" }
+        .mkString("\n")
+      typesValues.map {
+        case (tpe, value) ⇒
+          fields +
+            ("dataType" → JsString(typeLookup.getOrElse(tpe, "other"))) +
+            ("data" → JsString(value)) +
+            ("message" → JsString(mispAttribute.comment + "\n" + additionnalMessage))
+      }
+    }
+    else {
+      Seq(fields)
     }
   }
+
+  private val typeLookup = Map(
+    "md5" → "hash",
+    "sha1" → "hash",
+    "sha256" → "hash",
+    "filename" → "filename",
+    "pdb" → "other",
+    "filename|md5" → "other",
+    "filename|sha1" → "other",
+    "filename|sha256" → "other",
+    "ip-src" → "ip",
+    "ip-dst" → "ip",
+    "hostname" → "fqdn",
+    "domain" → "domain",
+    "domain|ip" → "other",
+    "email-src" → "mail",
+    "email-dst" → "mail",
+    "email-subject" → "mail_subject",
+    "email-attachment" → "other",
+    "float" → "other",
+    "url" → "url",
+    "http-method" → "other",
+    "user-agent" → "user-agent",
+    "regkey" → "registry",
+    "regkey|value" → "registry",
+    "AS" → "other",
+    "snort" → "other",
+    "pattern-in-file" → "other",
+    "pattern-in-traffic" → "other",
+    "pattern-in-memory" → "other",
+    "yara" → "other",
+    "sigma" → "other",
+    "vulnerability" → "other",
+    "attachment" → "file",
+    "malware-sample" → "file",
+    "link" → "other",
+    "comment" → "other",
+    "text" → "other",
+    "hex" → "other",
+    "other" → "other",
+    "named" → "other",
+    "mutex" → "other",
+    "target-user" → "other",
+    "target-email" → "mail",
+    "target-machine" → "fqdn",
+    "target-org" → "other",
+    "target-location" → "other",
+    "target-external" → "other",
+    "btc" → "other",
+    "iban" → "other",
+    "bic" → "other",
+    "bank-account-nr" → "other",
+    "aba-rtn" → "other",
+    "bin" → "other",
+    "cc-number" → "other",
+    "prtn" → "other",
+    "threat-actor" → "other",
+    "campaign-name" → "other",
+    "campaign-id" → "other",
+    "malware-type" → "other",
+    "uri" → "uri_path",
+    "authentihash" → "other",
+    "ssdeep" → "hash",
+    "imphash" → "hash",
+    "pehash" → "hash",
+    "impfuzzy" → "hash",
+    "sha224" → "hash",
+    "sha384" → "hash",
+    "sha512" → "hash",
+    "sha512/224" → "hash",
+    "sha512/256" → "hash",
+    "tlsh" → "other",
+    "filename|authentihash" → "other",
+    "filename|ssdeep" → "other",
+    "filename|imphash" → "other",
+    "filename|impfuzzy" → "other",
+    "filename|pehash" → "other",
+    "filename|sha224" → "other",
+    "filename|sha384" → "other",
+    "filename|sha512" → "other",
+    "filename|sha512/224" → "other",
+    "filename|sha512/256" → "other",
+    "filename|tlsh" → "other",
+    "windows-scheduled-task" → "other",
+    "windows-service-name" → "other",
+    "windows-service-displayname" → "other",
+    "whois-registrant-email" → "mail",
+    "whois-registrant-phone" → "other",
+    "whois-registrant-name" → "other",
+    "whois-registrar" → "other",
+    "whois-creation-date" → "other",
+    "x509-fingerprint-sha1" → "other",
+    "dns-soa-email" → "other",
+    "size-in-bytes" → "other",
+    "counter" → "other",
+    "datetime" → "other",
+    "cpe" → "other",
+    "port" → "other",
+    "ip-dst|port" → "other",
+    "ip-src|port" → "other",
+    "hostname|port" → "other",
+    "email-dst-display-name" → "other",
+    "email-src-display-name" → "other",
+    "email-header" → "other",
+    "email-reply-to" → "other",
+    "email-x-mailer" → "other",
+    "email-mime-boundary" → "other",
+    "email-thread-index" → "other",
+    "email-message-id" → "other",
+    "github-username" → "other",
+    "github-repository" → "other",
+    "github-organisation" → "other",
+    "jabber-id" → "other",
+    "twitter-id" → "other",
+    "first-name" → "other",
+    "middle-name" → "other",
+    "last-name" → "other",
+    "date-of-birth" → "other",
+    "place-of-birth" → "other",
+    "gender" → "other",
+    "passport-number" → "other",
+    "passport-country" → "other",
+    "passport-expiration" → "other",
+    "redress-number" → "other",
+    "nationality" → "other",
+    "visa-number" → "other",
+    "issue-date-of-the-visa" → "other",
+    "primary-residence" → "other",
+    "country-of-residence" → "other",
+    "special-service-request" → "other",
+    "frequent-flyer-number" → "other",
+    "travel-details" → "other",
+    "payment-details" → "other",
+    "place-port-of-original-embarkation" → "other",
+    "place-port-of-clearance" → "other",
+    "place-port-of-onward-foreign-destination" → "other",
+    "passenger-name-record-locator-number" → "other",
+    "mobile-application-id" → "other")
 }
