@@ -6,7 +6,7 @@ import scala.concurrent.duration.Duration
 import akka.stream.scaladsl.Source
 
 import play.api.libs.json.{ JsObject, Json }
-import play.api.libs.ws.{ WSClient, WSRequest, WSResponse }
+import play.api.libs.ws.{ WSClient, WSRequest, WSResponse, WSAuthScheme }
 import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 
 import org.elastic4play.NotFoundError
@@ -15,15 +15,21 @@ import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileAr
 import connectors.cortex.models.JsonFormat._
 import play.api.Logger
 
-class CortexClient(val name: String, baseUrl: String, key: String) {
+class CortexClient(val name: String, baseUrl: String, key: String, username: String, password: String, basicEnabled: String) {
 
   lazy val logger = Logger(getClass)
 
-  logger.info(s"new Cortex($name, $baseUrl, $key)")
+  logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: $basicEnabled")
   def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ws: WSClient, ec: ExecutionContext): Future[A] = {
     val url = (baseUrl + uri)
     logger.info(s"Requesting Cortex $url")
-    f(ws.url(url).withHeaders("auth" → key)).map {
+    var requestBuilder = ws.url(url).withHeaders("auth" → key)
+    if (basicEnabled.toLowerCase() == "true") {
+      logger.info(s"Basic Auth is enabled")
+      requestBuilder = ws.url(url).withHeaders("auth" → key).withAuth(username, password, WSAuthScheme.BASIC)
+    }
+
+    f(requestBuilder).map {
       case response if response.status / 100 == 2 ⇒ t(response)
       case error ⇒
         logger.error(s"Cortex error on $url (${error.status}) \n${error.body}")
