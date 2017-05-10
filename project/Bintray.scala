@@ -3,6 +3,7 @@ import java.io.File
 import bintray.BintrayCredentials
 import bintray.BintrayKeys.{bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository}
 import bintry.Client
+import com.typesafe.sbt.packager.Keys._
 import com.typesafe.sbt.packager.debian.DebianPlugin.autoImport.Debian
 import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport.Rpm
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
@@ -21,7 +22,7 @@ object PublishToBinTray extends Plugin {
   val publishRpm = taskKey[Unit]("publish rpm package in Bintray")
 
   override def settings = Seq(
-    publishRelease := {
+    publishRelease in ThisBuild := {
       val file = (packageBin in Universal).value
       btPublish(file.getName,
         file,
@@ -32,7 +33,7 @@ object PublishToBinTray extends Plugin {
         version.value,
         sLog.value)
     },
-    publishLatest := {
+    publishLatest in ThisBuild := {
       val file = (packageBin in Universal).value
       val latestName = file.getName.replace(version.value, "latest")
       if (latestName == file.getName)
@@ -53,8 +54,8 @@ object PublishToBinTray extends Plugin {
           sLog.value)
       }
     },
-    publishDebian := {
-      val file = (packageBin in Debian).value
+    publishDebian in ThisBuild := {
+      val file = (debianSign in Debian).value
       btPublish(file.getName,
         file,
         bintrayEnsureCredentials.value,
@@ -68,7 +69,7 @@ object PublishToBinTray extends Plugin {
         "deb_architecture" -> "all"
       )
     },
-    publishRpm := {
+    publishRpm in ThisBuild := {
       val file = (packageBin in Rpm).value
       btPublish(file.getName,
         file,

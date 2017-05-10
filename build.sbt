@@ -76,7 +76,7 @@ linuxPackageMappings ~= { _.map { pm =>
 packageBin := {
   (packageBin in Universal).value
   (packageBin in Debian).value
-  //(packageBin in Rpm).value
+  (packageBin in Rpm).value
 }
 // DEB //
 debianPackageRecommends := Seq("elasticsearch")
