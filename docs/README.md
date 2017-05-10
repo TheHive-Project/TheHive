@@ -8,7 +8,7 @@ TheHive uses ElasticSearch to store data. Both software use Java VM. We recommen
 
 ### Using docker
 
-TheHive can be run using docker. Follow [this guide](docker-guide) to use it.
+TheHive can be run using docker. Follow [this guide](Docker-guide.md) to use it.
 
 ### Using binaries
 
