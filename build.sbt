@@ -30,9 +30,9 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .enablePlugins(RpmPlugin)
   .settings(
     name := "thehive-project-release",
-    maintainer := "Thomas Franco <toom@thehive-project.org",
+    maintainer := "TheHive Project <support@thehive-project.org>",
     version := "1.0.0",
-    rpmRelease := "2",
+    rpmRelease := "3",
     rpmVendor in Rpm := "TheHive Project",
     rpmUrl := Some("http://thehive-project.org/"),
     rpmLicense := Some("AGPL"),
@@ -42,23 +42,10 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     packageDescription := """This package contains the TheHive-Project packages repository
       |GPG key as well as configuration for yum.""".stripMargin,
     logLevel in packageBin in Rpm := Level.Debug,
-//    mappings in Universal := Seq(
-//      file("GPG-TheHive-Project") -> "/etc/pki/rpm-gpg/GPG-TheHive-Project",
-//      file("thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
-//      file("AGPL-3.0") -> "/usr/share/doc/thehive-project-release/AGPL-3.0"
-//    ),
     linuxPackageMappings in Rpm := Seq(packageMapping(
-//      file(".") -> "/etc",
-//      file(".") -> "/etc/pki",
-//      file(".") -> "/etc/pki/rpm-gpg",
-//      file(".") -> "/etc/yum.repos.d",
-//      file(".") -> "/usr",
-//      file(".") -> "/usr/share",
-//      file(".") -> "/usr/share/doc",
-//      file(".") -> "/usr/share/doc/thehive-project-release",
       file("package/rpm-release/GPG-TheHive-Project") -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
       file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
-      file("package/rpm-release/AGPL-3.0") -> "/usr/share/doc/thehive-project-release/AGPL-3.0"
+      file("LICENSE") -> "/usr/share/doc/thehive-project-release/LICENSE"
     ))
   )
 
@@ -76,9 +63,9 @@ mappings in packageBin in Assets ++= frontendFiles.value
 // Install service files
 mappings in Universal ~= {
   _.flatMap {
-    case (file, "conf/application.conf") => Nil
+    case (_, "conf/application.conf") => Nil
     case (file, "conf/application.sample") => Seq(file -> "conf/application.conf")
-    case (file, "conf/logback.xml") => Nil
+    case (_, "conf/logback.xml") => Nil
     case other => Seq(other)
   } ++ Seq(
     file("package/thehive.service") -> "package/thehive.service",
@@ -89,7 +76,7 @@ mappings in Universal ~= {
 }
 
 // Package //
-maintainer := "Thomas Franco <toom@thehive-project.org"
+maintainer := "TheHive Project <support@thehive-project.org>"
 packageSummary := "Scalable, Open Source and Free Security Incident Response Solutions"
 packageDescription :=
   """TheHive is a scalable 3-in-1 open source and free security incident response platform designed to make life easier
@@ -99,7 +86,7 @@ defaultLinuxInstallLocation := "/opt"
 linuxPackageMappings ~= {
   _.map { pm =>
     val mappings = pm.mappings.filterNot {
-      case (file, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
+      case (_, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
     }
     com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
   } :+ packageMapping(
@@ -142,9 +129,7 @@ rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
 
 // DOCKER //
-import com.typesafe.sbt.SbtNativePackager.autoImport.packageDescription
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
-import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport.rpmVendor
 
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("certbdf")
@@ -179,7 +164,6 @@ publish := {
 
 // Scalariform //
 import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value

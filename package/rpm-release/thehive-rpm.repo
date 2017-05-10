@@ -1,4 +1,3 @@
-#bintray--cert-bdf-rpm - packages by  from Bintray
 [thehive-project]
 name=TheHive Project Repository
 baseurl=https://dl.bintray.com/cert-bdf/rpm
