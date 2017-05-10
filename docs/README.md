@@ -1,26 +1,30 @@
-Welcome to TheHive wiki!
+Welcome to TheHive 
 
 ## Hardware pre-requisites
 
-TheHive uses ElasticSearch to store data. Both software use Java VM. We recommend using a virtual machine with 8vCPU, 8 GB of RAM and 60 GB of disk. You can also use a physical machine with similar specifications.
+TheHive uses ElasticSearch to store data. Both software use Java VM. We recommend using a virtual machine with 8vCPU, 8
+GB of RAM and 60 GB of disk. You can also use a physical machine with similar specifications.
 
 ## Installation guides
 
-### Using docker
+TheHive can be installed using:
+- [rpm package](installation/rpm-guide.md)
+- [deb package](installation/deb-guide.md)
+- [docker](installation/docker-guide.md)
+- [binary](installation/binary-guide.md)
+- [ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by [@drewstinnett](https://github.com/drewstinnett)
+- [build from sources](installation/build-guide.md)
 
-TheHive can be run using docker. Follow [this guide](Docker-guide.md) to use it.
+## Administration guides
 
-### Using binaries
+- [Administrator's guide](admin/admin-guide.md)
+- [Configuration guide](admin/configuration.md)
+- [Updating](admin/updating.md)
+- [Backup & Restore](admin/backup-restore.md)
 
-If you want to use binaries instead of a docker, please follow the steps outlined in the [Installation guide](Installation-guide) for Ubuntu 16.04 LTS.
+## Developer guides
 
-### Building from sources
-If you'd rather build TheHive from the sources, a [step-by-step guide](Build-guide) is available.
+- [API documentation](api/README.md)
 
-### Deploy using [Ansible](https://www.ansible.com/)
-If you want to deploy TheHive using [Ansible](https://www.ansible.com/), you can refer to the [following repository](https://github.com/drewstinnett/ansible-thehive) contributed by [@drewstinnett](https://github.com/drewstinnett)
-
-## Administration Guides
-- [Administrator's guide](Administrator's-guide)
-- [Updating](Updating)
-- [Backup & Restore](Backup-&-Restore)
+## Other documentations
+- [FAQ](FAQ.mf)

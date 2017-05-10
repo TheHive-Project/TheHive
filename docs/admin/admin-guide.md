@@ -4,7 +4,7 @@
 
 Users can be managed through the `Administration` > `Users` page. Only administrators may access it. Each user is identified by their login, full name and role.
 
-![users](files/adminguide_users.png)
+![users](../files/adminguide_users.png)
 
 Please note that you still need to create user accounts if you use LDAP or Active Directory authentication. This is necessary for TheHive to retrieve their role and authenticate them against the local database, LDAP and/or AD directories.
 
@@ -21,7 +21,7 @@ Some cases may share the same structure (tags, tasks, description, metrics). Tem
 
 To create a template, as _admin_ go in the administration menu, and open the "Case templates" item.
 
-![template](files/adminguide_template.png)
+![template](../files/adminguide_template.png)
 
 In this screen, you can add, remove or change template.
 A template contains:
@@ -51,14 +51,14 @@ Metrics are numerical values associated to cases (for example, the number of imp
 
 Metrics are defined globally. To create metrics, as _admin_ got in the administration menu, and open the "Case metrics" item.
 
-![metrics](files/adminguide_metrics.png)
+![metrics](../files/adminguide_metrics.png)
 
 
 Metrics are used to create statistics ("Statistics" item in the user profile menu). They can be filtered on time interval, and case with specific tags.
 
 For example you can show metrics of case with "malspam" tag on January 2016 :
 
-![statistics](files/adminguide_statistics.png)
+![statistics](../files/adminguide_statistics.png)
 
 For graphs based on time, user can choose metrics to show. They are aggregated on interval of time (by day, week, month of year) using a function (sum, min or max).
 

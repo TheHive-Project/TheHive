@@ -10,8 +10,10 @@ From version 2.11, TheHive docker image doesn't come with ElasticSearch. As TheH
 
 ### Use of docker-compose
 
-Docker-compose can start multiple dockers and link them together. It can be installed using the [documentation](https://docs.docker.com/compose/install/).
-The following [docker-compose.yml](https://raw.githubusercontent.com/CERT-BDF/TheHive/master/docker/docker-compose.yml) file starts ElasticSearch, Cortex and TheHive:
+Docker-compose can start multiple dockers and link them together. It can be installed using the
+[documentation](https://docs.docker.com/compose/install/).
+The following [docker-compose.yml](https://raw.githubusercontent.com/CERT-BDF/TheHive/master/docker/docker-compose.yml)
+file starts ElasticSearch, Cortex and TheHive:
 ```
 version: "2"
 services:
@@ -35,19 +37,19 @@ services:
     ports:
       - "0.0.0.0:9000:9000"
 ```
-Put this file in an empty folder and run `docker-compose up`. TheHive is exposed on 9000/tcp port and cortex on 9001/tcp. These ports
-can be changed by modifying docker-compose file.
+Put this file in an empty folder and run `docker-compose up`. TheHive is exposed on 9000/tcp port and cortex on
+9001/tcp. These ports can be changed by modifying docker-compose file.
 
-You can specify custom application.conf file by adding the line `volume: /path/to/application.conf:/etc/thehive/application.conf`
-in `thehive` section.
+You can specify custom application.conf file by adding the line
+`volume: /path/to/application.conf:/etc/thehive/application.conf` in `thehive` section.
 
-You should define where data (ElasticSearch database) will be stored in your server by adding the line `volume: /path/to/data:/usr/share/elasticsearch/data`
-in `elasticsearch` section.
+You should define where data (ElasticSearch database) will be stored in your server by adding the line
+`volume: /path/to/data:/usr/share/elasticsearch/data` in `elasticsearch` section.
 
 ### Manual installation of ElasticSearch
 
 ElasticSearch can be installed in the same server as TheHive or not. You can then configure TheHive according to the
-[documentation](Configuration.md) and run TheHive docker as follow:
+[documentation](../admin/configuration.md) and run TheHive docker as follow:
 ```
 docker run --volume /path/to/thehive/application.conf:/etc/thehive/application.conf certbdf/thehive:latest --no-config
 ```
@@ -61,8 +63,9 @@ By Default, TheHive docker add minimal configuration:
  - search ElasticSearch instance (host named `elasticsearch`) and add it to configuration
  - search Cortex instance (host named `cortex`) and add it to configuration 
 
-This behavious can be disabled by adding `--no-config` to docker command line: `docker run certbdf/thehive:latest --no-config`
-or by adding the line `command: --no-config` in `thehive` section of docker-compose file.
+This behavious can be disabled by adding `--no-config` to docker command line:
+`docker run certbdf/thehive:latest --no-config` or by adding the line `command: --no-config` in `thehive` section of
+docker-compose file.
  
 Docker image accepts more options:
  - --no-config             : do not try to configure TheHive (add secret and elasticsearch)
