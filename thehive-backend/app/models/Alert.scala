@@ -63,7 +63,7 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
         val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
         val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
         attrs + ("_id" → JsString(_id))
-      } - "lastSyncDate" - "date" - "case" - "status" - "follow"
+      } - "lastSyncDate" - "case" - "status" - "follow"
     }
   }
 }
