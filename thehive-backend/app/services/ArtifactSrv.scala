@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Source
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Try }
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import org.elastic4play.CreateError
+import org.elastic4play.{ ConflictError, CreateError }
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FieldsSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
 import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel }
@@ -62,8 +62,8 @@ class ArtifactSrv @Inject() (
         // if there is failure
         case t if t.exists(_.isFailure) ⇒
           Future.traverse(t.zip(fieldSet)) {
-            case (Failure(_), fields) ⇒ updateIfDeleted(caze, fields).toTry
-            case (success, _)         ⇒ Future.successful(success)
+            case (Failure(ConflictError(_, _)), fields) ⇒ updateIfDeleted(caze, fields).toTry
+            case (r, _)                                 ⇒ Future.successful(r)
           }
         case t ⇒ Future.successful(t)
       }

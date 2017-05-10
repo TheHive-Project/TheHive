@@ -26,8 +26,8 @@ trait AlertAttributes {
   val tpe: A[String] = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
   val source: A[String] = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
   val sourceRef: A[String] = attribute("sourceRef", F.stringFmt, "Source reference of the alert", O.readonly)
-  val date: A[Date] = attribute("date", F.dateFmt, "Date of the alert", O.readonly)
-  val lastSyncDate: A[Date] = attribute("lastSyncDate", F.dateFmt, "Date of the last synchronization")
+  val date: A[Date] = attribute("date", F.dateFmt, "Date of the alert", new Date(), O.readonly)
+  val lastSyncDate: A[Date] = attribute("lastSyncDate", F.dateFmt, "Date of the last synchronization", new Date())
   val caze: A[Option[String]] = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
   val title: A[String] = attribute("title", F.textFmt, "Title of the alert")
   val description: A[String] = attribute("description", F.textFmt, "Description of the alert")
@@ -63,7 +63,7 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
         val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
         val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
         attrs + ("_id" → JsString(_id))
-      }
+      } - "lastSyncDate" - "date" - "case" - "status" - "follow"
     }
   }
 }

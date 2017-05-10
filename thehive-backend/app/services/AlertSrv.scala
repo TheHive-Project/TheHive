@@ -9,7 +9,7 @@ import connectors.ConnectorRouter
 import models._
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
-import play.api.Configuration
+import play.api.{ Configuration, Logger }
 import play.api.libs.json._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -61,6 +61,8 @@ class AlertSrv(
     connectors,
     ec,
     mat)
+
+  private[AlertSrv] lazy val logger = Logger(getClass)
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     createSrv[AlertModel, Alert](alertModel, fields)
@@ -132,8 +134,15 @@ class AlertSrv(
                 .set("tags", JsArray(alert.tags().map(JsString)))
                 .set("tlp", JsNumber(alert.tlp()))
                 .set("status", CaseStatus.Open.toString))
-                .andThen {
-                  case Success(_caze) ⇒ artifactSrv.create(_caze, alert.artifacts().map(Fields.apply))
+                .flatMap { caze ⇒
+                  val artifactsFields = alert.artifacts().map { a ⇒
+                    val tags = (a \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
+                    val message = (a \ "message").asOpt[JsString].getOrElse(JsString(""))
+                    Fields(a +
+                      ("tags" → JsArray(tags)) +
+                      ("message" → message))
+                  }
+                  artifactSrv.create(caze, artifactsFields).map(_ ⇒ caze)
                 }
             }
         }
