@@ -493,3 +493,13 @@ tags-input.input-sm .tags.focused {
     border-color: #3c8dbc;
     box-shadow: none;
 }
+
+footer.main-footer {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    line-height: 40px;
+}
+
+footer .footer-logo {
+    height: 40px;
+}

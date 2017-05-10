@@ -7,9 +7,19 @@
 <footer class="main-footer">
 	<div class="container-fluid">
 		<div class="pull-right hidden-xs">
-			<strong>Version</strong>: {{appConfig.versions.TheHive}}
+			<span>
+				<strong>Version</strong>: {{appConfig.versions.TheHive}}
+			</span>
+			<span ng-if="appConfig.connectors.cortex.enabled" uib-tooltip="Cortex integration enabled">
+				<img class="footer-logo" src="images/cortex-logo.svg"/>
+			</span>
+			<span ng-if="appConfig.connectors.misp.enabled" uib-tooltip="MISP integration enabled">
+				<img class="footer-logo" src="images/misp-logo.svg"/>
+			</span>
 		</div>
-		<strong>Copyright &copy; 2016-2017 <a href="http://www.thehive-project.org" target="_blank">TheHive Project</a></strong> All rights reserved.
+		<div>
+			<strong>Copyright &copy; 2016-2017 <a href="http://www.thehive-project.org" target="_blank">TheHive Project</a></strong> All rights reserved.
+		</div>
 	</div>
 </footer>
 <!--
