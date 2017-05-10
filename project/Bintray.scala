@@ -1,15 +1,16 @@
 import java.io.File
 
+import PublishToBinTray.publishRpm
 import bintray.BintrayCredentials
-import bintray.BintrayKeys.{bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository}
+import bintray.BintrayKeys.{ bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository }
 import bintry.Client
 import com.typesafe.sbt.packager.Keys._
 import com.typesafe.sbt.packager.debian.DebianPlugin.autoImport.Debian
 import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport.Rpm
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
-import dispatch.{FunctionHandler, Http}
+import dispatch.{ FunctionHandler, Http }
 import sbt.Keys._
-import sbt._
+import sbt.{ File, _ }
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,6 +21,8 @@ object PublishToBinTray extends Plugin {
   val publishLatest = taskKey[Unit]("Publish latest binary in Bintray")
   val publishDebian = taskKey[Unit]("publish debian package in Bintray")
   val publishRpm = taskKey[Unit]("publish rpm package in Bintray")
+  val rpmReleaseFile = taskKey[File]("The rpm release package file")
+  val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
 
   override def settings = Seq(
     publishRelease in ThisBuild := {
@@ -78,6 +81,17 @@ object PublishToBinTray extends Plugin {
         "rpm",
         bintrayPackage.value,
         version.value,
+        sLog.value)
+    },
+      publishRpmRelease in ThisBuild := {
+      val file = (rpmReleaseFile).value
+      btPublish(file.getName,
+        file,
+        bintrayEnsureCredentials.value,
+        bintrayOrganization.value,
+        "rpm",
+        "thehive-project-release",
+        "1.0.0",
         sLog.value)
     }
   )

@@ -1,0 +1,8 @@
+#bintray--cert-bdf-rpm - packages by  from Bintray
+[thehive-project]
+name=TheHive Project Repository
+baseurl=https://dl.bintray.com/cert-bdf/rpm
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/GPG-TheHive-Project
