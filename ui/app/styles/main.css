@@ -495,8 +495,7 @@ tags-input.input-sm .tags.focused {
 }
 
 footer.main-footer {
-    padding-top: 2px;
-    padding-bottom: 2px;
+    padding: 2px;    
     line-height: 40px;
 }
 
