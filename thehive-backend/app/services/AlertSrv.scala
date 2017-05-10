@@ -1,5 +1,6 @@
 package services
 
+import java.nio.file.Files
 import javax.inject.Inject
 
 import akka.NotUsed
@@ -7,7 +8,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
 import models._
-import org.elastic4play.controllers.Fields
+import org.elastic4play.controllers.{ AttachmentInputValue, Fields, FileInputValue }
 import org.elastic4play.services._
 import play.api.{ Configuration, Logger }
 import play.api.libs.json._
@@ -30,6 +31,7 @@ class AlertSrv(
     caseSrv: CaseSrv,
     artifactSrv: ArtifactSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    attachmentSrv: AttachmentSrv,
     connectors: ConnectorRouter,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends AlertTransformer {
@@ -45,6 +47,7 @@ class AlertSrv(
     caseSrv: CaseSrv,
     artifactSrv: ArtifactSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    attachmentSrv: AttachmentSrv,
     connectors: ConnectorRouter,
     ec: ExecutionContext,
     mat: Materializer) = this(
@@ -58,6 +61,7 @@ class AlertSrv(
     caseSrv,
     artifactSrv,
     caseTemplateSrv,
+    attachmentSrv,
     connectors,
     ec,
     mat)
@@ -116,11 +120,13 @@ class AlertSrv(
       .recover { case _ ⇒ None }
   }
 
+  private val dataExtractor = "^(.*);(.*);(.*)".r
+
   def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case] = {
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
-        val futureCase = connectors.get(alert.tpe()) match {
+        connectors.get(alert.tpe()) match {
           case Some(connector: AlertTransformer) ⇒ connector.createCase(alert)
           case _ ⇒
             getCaseTemplate(alert).flatMap { caseTemplate ⇒
@@ -134,22 +140,40 @@ class AlertSrv(
                 .set("tags", JsArray(alert.tags().map(JsString)))
                 .set("tlp", JsNumber(alert.tlp()))
                 .set("status", CaseStatus.Open.toString))
+                .flatMap { caze ⇒ setCase(alert, caze).map(_ ⇒ caze) }
                 .flatMap { caze ⇒
-                  val artifactsFields = alert.artifacts().map { a ⇒
-                    val tags = (a \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
-                    val message = (a \ "message").asOpt[JsString].getOrElse(JsString(""))
-                    Fields(a +
+                  Future.traverse(alert.artifacts()) { artifact ⇒
+                    val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
+                    val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
+                    val artifactFields = Fields(artifact +
                       ("tags" → JsArray(tags)) +
                       ("message" → message))
+                    if (artifactFields.getString("dataType").contains("file")) {
+                      artifactFields.getString("data").flatMap {
+                        case dataExtractor(filename, contentType, data) ⇒
+                          val f = Files.createTempFile("alert-", "-attachment")
+                          Files.write(f, java.util.Base64.getDecoder.decode(data))
+                          val fiv = FileInputValue(filename, f, contentType)
+                          Some(attachmentSrv.save(fiv).map { attachment ⇒
+                            artifactFields
+                              .set("attachment", AttachmentInputValue(attachment))
+                              .unset("data")
+                          })
+                        case _ ⇒ None
+                      }
+                        .getOrElse(Future.successful(artifactFields))
+                    }
+                    else {
+                      Future.successful(artifactFields)
+                    }
                   }
-                  artifactSrv.create(caze, artifactsFields).map(_ ⇒ caze)
+                    .flatMap { artifactsFields ⇒
+                      artifactSrv.create(caze, artifactsFields)
+                    }
+                    .map(_ ⇒ caze)
                 }
             }
         }
-        for {
-          caze ← futureCase
-          _ ← setCase(alert, caze)
-        } yield caze
     }
   }
 
