@@ -10,7 +10,7 @@ import models._
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
 import play.api.Configuration
-import play.api.libs.json.{ JsNumber, JsObject, Json }
+import play.api.libs.json._
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Success, Try }
@@ -129,7 +129,7 @@ class AlertSrv(
                   .trim)
                 .set("description", alert.description())
                 .set("severity", JsNumber(alert.severity()))
-                .set("tags", Json.arr(alert.tags()))
+                .set("tags", JsArray(alert.tags().map(JsString)))
                 .set("tlp", JsNumber(alert.tlp()))
                 .set("status", CaseStatus.Open.toString))
                 .andThen {
