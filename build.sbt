@@ -114,7 +114,6 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "package" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmReleaseFile := (packageBin in Rpm in rpmPackageRelease).value
 rpmRelease := "8"
 rpmVendor in Rpm := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
@@ -127,6 +126,16 @@ maintainerScripts in Rpm := maintainerScriptsFromDirectory(
 linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
+rpmReleaseFile := {
+  val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
+packageBin in Rpm := {
+  val rpmFile = (packageBin in Rpm).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }

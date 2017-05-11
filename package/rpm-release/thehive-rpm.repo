@@ -1,7 +1,7 @@
 [thehive-project]
 name=TheHive Project Repository
 baseurl=https://dl.bintray.com/cert-bdf/rpm
-gpgcheck=0
+gpgcheck=1
 repo_gpgcheck=0
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/GPG-TheHive-Project
