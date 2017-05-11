@@ -555,7 +555,6 @@
                         );
                     })
                     .then(function() {
-                        console.log(nbArtifacts);
                         NotificationSrv.log('Analyzers have been successfully started for ' + nbArtifacts + ' observables', 'success');
                     }, function() {
 

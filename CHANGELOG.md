@@ -31,6 +31,7 @@
 
 - Duplicate HTTP calls in case page [\#187](https://github.com/CERT-BDF/TheHive/issues/187)
 - Job status refresh [\#171](https://github.com/CERT-BDF/TheHive/issues/171)
+- Fix the success message when running a set of analyzers[\#199](https://github.com/CERT-BDF/TheHive/issues/199)
 
 **Closed issues:**
 
