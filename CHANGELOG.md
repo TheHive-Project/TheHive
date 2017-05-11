@@ -12,7 +12,7 @@
 - Display the logos of the integrated external services [\#198](https://github.com/CERT-BDF/TheHive/issues/198)
 - TheHive send to many information to Cortex when an analyze is requested [\#196](https://github.com/CERT-BDF/TheHive/issues/196)
 - Sort the list of report templates [\#195](https://github.com/CERT-BDF/TheHive/issues/195)
-- Packaging [\#193](https://github.com/CERT-BDF/TheHive/issues/193)
+- Add support to .deb and .rpm package generation [\#193](https://github.com/CERT-BDF/TheHive/issues/193)
 - Cannot distinguish which analysers run on which cortex instance [\#179](https://github.com/CERT-BDF/TheHive/issues/179)
 - Connect to Cortex protected by Basic Auth [\#173](https://github.com/CERT-BDF/TheHive/issues/173)
 - Implement the alerting framework feature [\#170](https://github.com/CERT-BDF/TheHive/issues/170)
@@ -32,6 +32,7 @@
 - Duplicate HTTP calls in case page [\#187](https://github.com/CERT-BDF/TheHive/issues/187)
 - Job status refresh [\#171](https://github.com/CERT-BDF/TheHive/issues/171)
 - Fix the success message when running a set of analyzers[\#199](https://github.com/CERT-BDF/TheHive/issues/199)
+- Authentication fails with wrong message if database migration is needed [\#200](https://github.com/CERT-BDF/TheHive/issues/200)
 
 **Closed issues:**
 
