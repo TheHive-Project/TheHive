@@ -26,6 +26,29 @@ lazy val thehive = (project in file("."))
   .settings(PublishToBinTray.settings: _*)
   .settings(Release.settings: _*)
 
+lazy val rpmPackageRelease = (project in file("package/rpm-release"))
+  .enablePlugins(RpmPlugin)
+  .settings(
+    name := "thehive-project-release",
+    maintainer := "TheHive Project <support@thehive-project.org>",
+    version := "1.0.0",
+    rpmRelease := "3",
+    rpmVendor in Rpm := "TheHive Project",
+    rpmUrl := Some("http://thehive-project.org/"),
+    rpmLicense := Some("AGPL"),
+    maintainerScripts in Rpm := Map.empty,
+    linuxPackageSymlinks in Rpm := Nil,
+    packageSummary := "TheHive-Project RPM repository",
+    packageDescription := """This package contains the TheHive-Project packages repository
+      |GPG key as well as configuration for yum.""".stripMargin,
+    logLevel in packageBin in Rpm := Level.Debug,
+    linuxPackageMappings in Rpm := Seq(packageMapping(
+      file("package/rpm-release/GPG-TheHive-Project") -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
+      file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
+      file("LICENSE") -> "/usr/share/doc/thehive-project-release/LICENSE"
+    ))
+  )
+
 Release.releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
 Release.changelogFile := baseDirectory.value / "CHANGELOG.md"
 
@@ -40,28 +63,30 @@ mappings in packageBin in Assets ++= frontendFiles.value
 // Install service files
 mappings in Universal ~= {
   _.flatMap {
-    case (file, "conf/application.conf") => Nil
+    case (_, "conf/application.conf") => Nil
     case (file, "conf/application.sample") => Seq(file -> "conf/application.conf")
-    case (file, "conf/logback.xml") => Nil
+    case (_, "conf/logback.xml") => Nil
     case other => Seq(other)
   } ++ Seq(
-      file("package/thehive.service") -> "package/thehive.service",
-      file("package/thehive.conf") -> "package/thehive.conf",
-      file("package/thehive") -> "package/thehive",
-      file("package/logback.xml") -> "conf/logback.xml"
-    )
+    file("package/thehive.service") -> "package/thehive.service",
+    file("package/thehive.conf") -> "package/thehive.conf",
+    file("package/thehive") -> "package/thehive",
+    file("package/logback.xml") -> "conf/logback.xml"
+  )
 }
 
 // Package //
-maintainer := "Thomas Franco <toom@thehive-project.org"
+maintainer := "TheHive Project <support@thehive-project.org>"
 packageSummary := "Scalable, Open Source and Free Security Incident Response Solutions"
-packageDescription := """TheHive is a scalable 3-in-1 open source and free security incident response platform designed to make life easier
-  | for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be
-  | investigated and acted upon swiftly.""".stripMargin
+packageDescription :=
+  """TheHive is a scalable 3-in-1 open source and free security incident response platform designed to make life easier
+    | for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be
+    | investigated and acted upon swiftly.""".stripMargin
 defaultLinuxInstallLocation := "/opt"
-linuxPackageMappings ~= { _.map { pm =>
+linuxPackageMappings ~= {
+  _.map { pm =>
     val mappings = pm.mappings.filterNot {
-      case (file, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
+      case (_, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
     }
     com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
   } :+ packageMapping(
@@ -101,6 +126,16 @@ maintainerScripts in Rpm := maintainerScriptsFromDirectory(
 linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
+rpmReleaseFile := {
+  val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
+packageBin in Rpm := {
+  val rpmFile = (packageBin in Rpm).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
@@ -138,7 +173,6 @@ publish := {
 
 // Scalariform //
 import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value
