@@ -5,6 +5,11 @@ Welcome to TheHive
 TheHive uses ElasticSearch to store data. Both software use Java VM. We recommend using a virtual machine with 8vCPU, 8
 GB of RAM and 60 GB of disk. You can also use a physical machine with similar specifications.
 
+## What's new
+
+- [Changelog](/CHANGELOG.md)
+- [Migration guide](migration-guide.md)
+
 ## Installation guides
 
 TheHive can be installed using:
@@ -27,4 +32,4 @@ TheHive can be installed using:
 - [API documentation](api/README.md)
 
 ## Other documentations
-- [FAQ](FAQ.mf)
+- [FAQ](FAQ.md)
