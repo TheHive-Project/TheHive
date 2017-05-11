@@ -267,7 +267,7 @@ As stated in the subsection above, TheHive is able to automatically import MISP 
 
 First, create a case template. Let's call it **MISP_CASETEMPLATE**.
 
-![](files/MISP_caseTemplate.png)
+![](../files/MISP_caseTemplate.png)
 
 Then update TheHive's configuration to add a 'caseTemplate' parameter as shown in the example below:
 
