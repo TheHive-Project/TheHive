@@ -27,16 +27,15 @@ import scala.util.{ Failure, Success, Try }
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
-    try {
-      val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
-      val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
-      Some(new CortexClient(name, url, key, ws))
-    }
-    catch {
-      case NonFatal(e) ⇒
-        Logger.error("Error while loading cortex configuration", e)
-        None
-    }
+    val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
+    val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
+    val authentication = for {
+      basicEnabled ← configuration.getBoolean("basicAuth")
+      if basicEnabled
+      username ← configuration.getString("username")
+      password ← configuration.getString("password")
+    } yield username → password
+    Some(new CortexClient(name, url, key, authentication, ws))
   }
 
   def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {

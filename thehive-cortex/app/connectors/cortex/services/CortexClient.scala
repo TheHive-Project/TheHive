@@ -1,11 +1,11 @@
 package connectors.cortex.services
 
 import akka.stream.scaladsl.Source
-import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileArtifact }
 import connectors.cortex.models.JsonFormat._
+import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileArtifact }
 import play.api.Logger
 import play.api.libs.json.{ JsObject, JsValue, Json }
-import play.api.libs.ws.{ WSRequest, WSResponse }
+import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
 import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 import services.CustomWSAPI
 
@@ -13,12 +13,17 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Future }
 
 case class CortexError(status: Int, requestUrl: String, message: String) extends Exception(s"Cortex error on $requestUrl ($status) \n$message")
-class CortexClient(val name: String, baseUrl: String, key: String, ws: CustomWSAPI) {
+class CortexClient(val name: String, baseUrl: String, key: String, authentication: Option[(String, String)], ws: CustomWSAPI) {
 
   private[CortexClient] lazy val logger = Logger(getClass)
 
+  logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: ${authentication.isDefined}")
   def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ec: ExecutionContext): Future[A] = {
-    f(ws.url(s"$baseUrl/$uri").withHeaders("auth" → key)).map {
+    val requestBuilder = ws.url(s"$baseUrl/$uri").withHeaders("auth" → key)
+    val authenticatedRequestBuilder = authentication.fold(requestBuilder) {
+      case (username, password) ⇒ requestBuilder.withAuth(username, password, WSAuthScheme.BASIC)
+    }
+    f(authenticatedRequestBuilder).map {
       case response if response.status / 100 == 2 ⇒ t(response)
       case error                                  ⇒ throw CortexError(error.status, s"$baseUrl/$uri", error.body)
     }
