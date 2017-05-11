@@ -15,6 +15,7 @@ import models.{ Artifact, ArtifactModel, ArtifactStatus, Case, CaseModel }
 import org.elastic4play.utils.{ RichFuture, RichOr }
 import models.CaseStatus
 import models.CaseResolutionStatus
+import play.api.Logger
 import play.api.libs.json.JsObject
 
 @Singleton
@@ -28,6 +29,8 @@ class ArtifactSrv @Inject() (
     findSrv: FindSrv,
     fieldsSrv: FieldsSrv,
     implicit val ec: ExecutionContext) {
+
+  private[ArtifactSrv] lazy val logger = Logger(getClass)
 
   def create(caseId: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
     getSrv[CaseModel, Case](caseModel, caseId)
@@ -47,7 +50,7 @@ class ArtifactSrv @Inject() (
         updatedArtifact ← updateSrv[ArtifactModel, Artifact](artifactModel, artifact.id, fields.unset("data").unset("dataType").unset("attachment").set("status", "Ok"))
       } yield updatedArtifact
       updatedArtifact.recoverWith {
-        case _ ⇒ Future.failed(CreateError(Some("CONFLICT"), "Artifact already exists", attrs))
+        case _ ⇒ Future.failed(ConflictError("Artifact already exists", attrs))
       }
     }
   }

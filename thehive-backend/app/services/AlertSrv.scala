@@ -14,7 +14,7 @@ import play.api.{ Configuration, Logger }
 import play.api.libs.json._
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Success, Try }
+import scala.util.{ Failure, Try }
 
 trait AlertTransformer {
   def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case]
@@ -142,8 +142,8 @@ class AlertSrv(
                 .set("status", CaseStatus.Open.toString))
                 .flatMap { caze ⇒ setCase(alert, caze).map(_ ⇒ caze) }
                 .flatMap { caze ⇒
-                  Future
-                    .traverse(alert.artifacts()) { artifact ⇒
+                  val artifactsFields = alert.artifacts()
+                    .map { artifact ⇒
                       val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
                       val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
                       val artifactFields = Fields(artifact +
@@ -151,33 +151,42 @@ class AlertSrv(
                         ("message" → message))
                       if (artifactFields.getString("dataType").contains("file")) {
                         artifactFields.getString("data")
-                          .flatMap {
+                          .map {
                             case dataExtractor(filename, contentType, data) ⇒
                               val f = Files.createTempFile("alert-", "-attachment")
                               Files.write(f, java.util.Base64.getDecoder.decode(data))
-                              val fiv = FileInputValue(filename, f, contentType)
-                              Some(attachmentSrv
-                                .save(fiv)
-                                .map { attachment ⇒
-                                  artifactFields
-                                    .set("attachment", AttachmentInputValue(attachment))
-                                    .unset("data")
-                                }
-                                .andThen {
-                                  case _ ⇒ Files.delete(f)
-                                })
-                            case _ ⇒ None
+                              artifactFields
+                                .set("attachment", FileInputValue(filename, f, contentType))
+                                .unset("data")
+                            case data ⇒
+                              logger.warn(s"Invalid data format for file artifact: $data")
+                              artifactFields
                           }
-                          .getOrElse(Future.successful(artifactFields))
+                          .getOrElse(artifactFields)
                       }
                       else {
-                        Future.successful(artifactFields)
+                        artifactFields
                       }
                     }
-                    .flatMap { artifactsFields ⇒
-                      artifactSrv.create(caze, artifactsFields)
+
+                  val createdCase = artifactSrv.create(caze, artifactsFields)
+                    .map { r ⇒
+                      r.foreach {
+                        case Failure(e) ⇒ logger.warn("Create artifact error", e)
+                        case _          ⇒
+                      }
+                      caze
                     }
-                    .map(_ ⇒ caze)
+                  createdCase.onComplete {
+                    // remove temporary files
+                    case _ ⇒ artifactsFields
+                      .flatMap(_.get("Attachment"))
+                      .foreach {
+                        case FileInputValue(_, file, _) ⇒ Files.delete(file)
+                        case _                          ⇒
+                      }
+                  }
+                  createdCase
                 }
             }
         }
