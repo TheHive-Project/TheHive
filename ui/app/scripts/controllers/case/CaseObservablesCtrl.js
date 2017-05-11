@@ -527,6 +527,7 @@
             // run selected analyzers on selected artifacts
             $scope.runAnalyzerOnSelection = function () {
                 var toRun = [];
+                var nbArtifacts = $scope.selection.artifacts.length;
 
                 angular.forEach($scope.selection.artifacts, function (element) {
                     angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
@@ -554,7 +555,8 @@
                         );
                     })
                     .then(function() {
-                        NotificationSrv.log('Analyzers have been successfully started for ' + $scope.selection.artifacts.length + ' observables', 'success');
+                        console.log(nbArtifacts);
+                        NotificationSrv.log('Analyzers have been successfully started for ' + nbArtifacts + ' observables', 'success');
                     }, function() {
 
                     });
