@@ -169,6 +169,8 @@ publish := {
   (publish in Docker).value
   PublishToBinTray.publishRelease.value
   PublishToBinTray.publishLatest.value
+  PublishToBinTray.publishRpm.value
+  PublishToBinTray.publishDebian.value
 }
 
 // Scalariform //
