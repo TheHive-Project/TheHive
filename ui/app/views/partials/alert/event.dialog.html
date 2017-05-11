@@ -65,7 +65,12 @@
                     <tbody>
                         <tr ng-repeat="attribute in dialog.pagination.data">
                             <td>{{attribute.dataType}}</td>
-                            <td class="wrap">{{(attribute.data.filename || attribute.data) | fang | ellipsis:250}}</td>
+                            <td class="wrap" ng-if="attribute.dataType !== 'file'">
+                                {{attribute.data | fang | ellipsis:250}}
+                            </td>
+                            <td class="wrap" ng-if="attribute.dataType === 'file'">
+                                {{(attribute.data.filename || attribute.data.split(';')[0]) | fang | ellipsis:250}}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
