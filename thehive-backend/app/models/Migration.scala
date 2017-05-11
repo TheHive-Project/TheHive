@@ -125,18 +125,7 @@ class Migration(
               "status" → (misp \ "eventStatus").as[JsString],
               "follow" → (misp \ "follow").as[JsBoolean])
         },
-        removeEntity("audit") { o ⇒
-          val objectType = (o \ "objectType").asOpt[String]
-
-          val r = objectType.contains("alert")
-          if (r) {
-            println(s"remove entity $o")
-          }
-          else {
-            println(s"don't remove entity (objectType=$objectType)")
-          }
-          r
-        })
+        removeEntity("audit")(o ⇒ (o \ "objectType").asOpt[String].contains("alert")))
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
