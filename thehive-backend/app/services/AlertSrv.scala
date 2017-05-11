@@ -142,31 +142,38 @@ class AlertSrv(
                 .set("status", CaseStatus.Open.toString))
                 .flatMap { caze ⇒ setCase(alert, caze).map(_ ⇒ caze) }
                 .flatMap { caze ⇒
-                  Future.traverse(alert.artifacts()) { artifact ⇒
-                    val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
-                    val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
-                    val artifactFields = Fields(artifact +
-                      ("tags" → JsArray(tags)) +
-                      ("message" → message))
-                    if (artifactFields.getString("dataType").contains("file")) {
-                      artifactFields.getString("data").flatMap {
-                        case dataExtractor(filename, contentType, data) ⇒
-                          val f = Files.createTempFile("alert-", "-attachment")
-                          Files.write(f, java.util.Base64.getDecoder.decode(data))
-                          val fiv = FileInputValue(filename, f, contentType)
-                          Some(attachmentSrv.save(fiv).map { attachment ⇒
-                            artifactFields
-                              .set("attachment", AttachmentInputValue(attachment))
-                              .unset("data")
-                          })
-                        case _ ⇒ None
+                  Future
+                    .traverse(alert.artifacts()) { artifact ⇒
+                      val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
+                      val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
+                      val artifactFields = Fields(artifact +
+                        ("tags" → JsArray(tags)) +
+                        ("message" → message))
+                      if (artifactFields.getString("dataType").contains("file")) {
+                        artifactFields.getString("data")
+                          .flatMap {
+                            case dataExtractor(filename, contentType, data) ⇒
+                              val f = Files.createTempFile("alert-", "-attachment")
+                              Files.write(f, java.util.Base64.getDecoder.decode(data))
+                              val fiv = FileInputValue(filename, f, contentType)
+                              Some(attachmentSrv
+                                .save(fiv)
+                                .map { attachment ⇒
+                                  artifactFields
+                                    .set("attachment", AttachmentInputValue(attachment))
+                                    .unset("data")
+                                }
+                                .andThen {
+                                  case _ ⇒ Files.delete(f)
+                                })
+                            case _ ⇒ None
+                          }
+                          .getOrElse(Future.successful(artifactFields))
                       }
-                        .getOrElse(Future.successful(artifactFields))
+                      else {
+                        Future.successful(artifactFields)
+                      }
                     }
-                    else {
-                      Future.successful(artifactFields)
-                    }
-                  }
                     .flatMap { artifactsFields ⇒
                       artifactSrv.create(caze, artifactsFields)
                     }
