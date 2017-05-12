@@ -17,7 +17,8 @@ TheHive can be installed using:
 - [deb package](installation/deb-guide.md)
 - [docker](installation/docker-guide.md)
 - [binary](installation/binary-guide.md)
-- [ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by [@drewstinnett](https://github.com/drewstinnett)
+- [ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by
+[@drewstinnett](https://github.com/drewstinnett)
 - [build from sources](installation/build-guide.md)
 
 ## Administration guides
