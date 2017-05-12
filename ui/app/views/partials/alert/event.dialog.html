@@ -1,0 +1,110 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Alert Preview</h3>
+</div>
+<div class="modal-body">
+
+    <div class="row text-center" ng-show="dialog.loading">
+        <div class="m-s">
+            <i class="fa fa-3x fa-spinner fa-spin"></i>
+        </div>
+        Loading...
+    </div>
+    <div class="row" ng-hide="dialog.loading">
+        <div class="col-md-12">
+            <div class="alert-details">
+                <h4 class="vpad10 text-primary">
+                    Basic details
+                    <span class="label label-default pull-right" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
+                </h4>
+                <dl class="dl-horizontal clear">
+                    <dt>Reference</dt>
+                    <dd>{{dialog.event.sourceRef}}</dd>
+                </dl>
+                <dl class="dl-horizontal clear">
+                    <dt>Title</dt>
+                    <dd>
+                        <severity value="dialog.event.severity"></severity>{{dialog.event.title}}</dd>
+                </dl>
+                <dl class="dl-horizontal clear">
+                    <dt>Date</dt>
+                    <dd>{{dialog.event.date | showDate}}</dd>
+                </dl>
+                <dl class="dl-horizontal clear">
+                    <dt>Source</dt>
+                    <dd>{{dialog.event.source}}</dd>
+                </dl>
+                <dl class="dl-horizontal clear">
+                    <dt>Tags</dt>
+                    <dd>
+                        <tag-list data="dialog.event.tags"></tag-list>
+                    </dd>
+                </dl>
+            </div>
+
+            <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">
+                <h4 class="vpad10 text-primary">
+                    Artifacts ({{dialog.event.artifacts.length || 0}})
+                </h4>
+                <div class="mb-xs" ng-if="dialog.dataTypes">
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-click="dialog.filterArtifacts('');"
+                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
+
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-repeat="(type, count) in dialog.dataTypes"
+                        ng-click="dialog.filterArtifacts(type)"
+                        ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">Type</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="attribute in dialog.pagination.data">
+                            <td>{{attribute.dataType}}</td>
+                            <td class="wrap" ng-if="attribute.dataType !== 'file'">
+                                {{attribute.data | fang | ellipsis:250}}
+                            </td>
+                            <td class="wrap" ng-if="attribute.dataType === 'file'">
+                                {{(attribute.data.filename || attribute.data.split(';')[0]) | fang | ellipsis:250}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center" ng-show="dialog.filteredArtifacts.length > dialog.pagination.pageSize">
+                    <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                        total-items="dialog.filteredArtifacts.length"
+                        items-per-page="dialog.pagination.pageSize"
+                        ng-change="dialog.loadPage()"
+                        ng-model="dialog.pagination.currentPage"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.import()">Import event</button>
+    <button class="btn btn-default pull-right" type="button"
+        ng-if="dialog.canMarkAsRead(dialog.event)"
+        ng-disabled="dialog.loading"
+        ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope"></i> Mark as read
+    </button>
+    <button class="btn btn-default pull-right" type="button"
+        ng-if="dialog.canMarkAsUnread(dialog.event)"
+        ng-disabled="dialog.loading"
+        ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope-open-o"></i> Mark as unread
+    </button>
+
+    <button class="btn btn-default pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
+        <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
+    </button>
+
+
+</div>

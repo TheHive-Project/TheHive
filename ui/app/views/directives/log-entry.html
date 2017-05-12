@@ -1,19 +1,17 @@
 <hr/>
 
 <div class="log-entry">
-    <div class="row">
-        <div class="col-md-12">
-            <h5>
-                <i class="text-primary glyphicon glyphicon-comment" style="font-size: 16px;"></i>
-                <span ng-bind="getUserInfo.get(log.user) | getField: 'name'"></span>
-                &nbsp;
-                <small ng-bind="log.startDate | showDate"></small>
-                <span class="pull-right">
-                    <a href ng-click="dropLog()" uib-tooltip="Delete log">
-                        <i class="text-danger glyphicon glyphicon-remove-circle"></i>
-                    </a>
-                </span>
-            </h5>
+    <div class="row mb-xxs">
+        <div class="col-md-6">
+            <user user-id="log.user" icon-size="xs"></user>
+        </div>
+        <div class="col-md-6">
+            <span class="pull-right">
+                <a href ng-click="dropLog()" uib-tooltip="Delete log">
+                    <i class="text-danger glyphicon glyphicon-remove-circle"></i>
+                </a>
+            </span>
+            <span class="text-muted mr-xs pull-right" ng-bind="log.startDate | showDate"></span>
         </div>
     </div>
 

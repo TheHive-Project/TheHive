@@ -23,9 +23,16 @@
     </div>
 </div>
 
+
+<div class="col-md-12 mv-s" ng-show="artifacts.total === 0">
+    <div class="empty-message">No records.</div>
+</div>
+
 <!-- list of artifacts-->
-<div class="col-md-12">
-    <table class="table table-hover valigned">
+<div class="col-md-12" ng-show="artifacts.total > 0">
+    <psearch ng-if="!switchTEList" control="artifacts"></psearch>
+
+    <table class="table table-striped table-hover valigned">
         <thead>
             <tr>
                 <th style="width: 10px;" class="p-0"></th>
@@ -42,7 +49,7 @@
         </thead>
         <tbody>
             <tr ng-repeat="artifact in artifacts.values">
-                <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="addFilterValue('tlp', artifact.tlp)"></td>
+                <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
                     <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]">
                 </td>

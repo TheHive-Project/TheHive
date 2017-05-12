@@ -1,65 +1,62 @@
 package connectors.cortex.services
 
-import java.nio.file.{ Path, Paths }
 import java.util.Date
-
 import javax.inject.{ Inject, Singleton }
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.DurationInt
-import scala.language.implicitConversions
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
 
 import akka.NotUsed
 import akka.actor.ActorDSL.{ Act, actor }
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
-
-import play.api.{ Configuration, Logger }
+import connectors.cortex.models.JsonFormat._
+import connectors.cortex.models._
+import models.Artifact
+import org.elastic4play.controllers.Fields
+import org.elastic4play.services._
+import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
+import play.api.{ Configuration, Logger }
+import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact }
 
-import org.elastic4play.{ InternalError, NotFoundError }
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ AttachmentSrv, AuthContext, CreateSrv, EventSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
-
-import connectors.cortex.models.{ Analyzer, CortexJob, DataArtifact, FileArtifact, Job, JobModel, JobStatus }
-import connectors.cortex.models.JsonFormat.{ cortexJobFormat, jobStatusFormat }
-import models.Artifact
-import services.{ ArtifactSrv, MergeArtifact }
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 object CortexConfig {
-  def getCortexClient(name: String, configuration: Configuration): Option[CortexClient] = {
-    try {
-      val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
-      val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
-      Some(new CortexClient(name, url, key))
-    }
-    catch {
-      case NonFatal(e) ⇒
-        Logger.error("Error while loading cortex configuration", e)
-        None
-    }
+  def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
+    val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
+    val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
+    val authentication = for {
+      basicEnabled ← configuration.getBoolean("basicAuth")
+      if basicEnabled
+      username ← configuration.getString("username")
+      password ← configuration.getString("password")
+    } yield username → password
+    Some(new CortexClient(name, url, key, authentication, ws))
   }
 
-  def getInstances(configuration: Configuration): Seq[CortexClient] = {
+  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {
     for {
       cfg ← configuration.getConfig("cortex").toSeq
+      cortexWS = globalWS.withConfig(cfg)
       key ← cfg.subKeys
+      if key != "ws"
       c ← cfg.getConfig(key)
-      cic ← getCortexClient(key, c)
+      instanceWS = cortexWS.withConfig(c)
+      cic ← getCortexClient(key, c, instanceWS)
     } yield cic
   }
 }
+
 @Singleton
-case class CortexConfig(truststore: Option[Path], instances: Seq[CortexClient]) {
+case class CortexConfig(instances: Seq[CortexClient]) {
 
   @Inject
-  def this(configuration: Configuration) = this(
-    configuration.getString("cortex.cert").map(p ⇒ Paths.get(p)),
-    CortexConfig.getInstances(configuration))
+  def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
+    CortexConfig.getInstances(configuration, globalWS))
 }
 
 @Singleton
@@ -72,15 +69,37 @@ class CortexSrv @Inject() (
     createSrv: CreateSrv,
     updateSrv: UpdateSrv,
     findSrv: FindSrv,
+    userSrv: UserSrv,
     eventSrv: EventSrv,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem,
     implicit val mat: Materializer) {
 
-  lazy val logger = Logger(getClass)
+  private[CortexSrv] lazy val logger = Logger(getClass)
 
-  val mergeActor = actor(new Act {
+  userSrv.inInitAuthContext { implicit authContext ⇒
+    import org.elastic4play.services.QueryDSL._
+    logger.info(s"Search for unfinished job ...")
+    val (jobs, total) = find("status" ~= "InProgress", Some("all"), Nil)
+    total.foreach(t ⇒ logger.info(s"$t jobs found"))
+    jobs
+      .runForeach { job ⇒
+        logger.info(s"Found job in progress, request its status to Cortex")
+        (for {
+          cortexJobId ← job.cortexJobId()
+          cortexClient ← cortexConfig.instances.find(_.name == job.cortexId)
+        } yield updateJobWithCortex(job.id, cortexJobId, cortexClient))
+          .getOrElse {
+            val jobFields = Fields.empty
+              .set("status", JobStatus.Failure.toString)
+              .set("endDate", Json.toJson(new Date))
+            update(job.id, jobFields)
+          }
+      }
+  }
+
+  private[CortexSrv] val mergeActor = actor(new Act {
     become {
       case MergeArtifact(newArtifact, artifacts, authContext) ⇒
         import org.elastic4play.services.QueryDSL._
@@ -99,7 +118,11 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext) = {
+  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
+    getJob(jobId).flatMap(job ⇒ update(job, fields))
+  }
+
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
     updateSrv[Job](job, fields)
   }
 
@@ -109,30 +132,31 @@ class CortexSrv @Inject() (
 
   def getAnalyzer(analyzerId: String): Future[Analyzer] = {
     Future
-      .traverse(cortexConfig.instances) {
-        case cortex ⇒ cortex.getAnalyzer(analyzerId).map(Some(_)).fallbackTo(Future.successful(None))
+      .traverse(cortexConfig.instances) { cortex ⇒
+        cortex.getAnalyzer(analyzerId).map(Some(_)).fallbackTo(Future.successful(None))
       }
       .map { analyzers ⇒
-        analyzers.foldLeft[Option[Analyzer]](None) {
-          case (Some(analyzer1), Some(analyzer2)) ⇒ Some(analyzer1.copy(cortexIds = analyzer1.cortexIds ++ analyzer2.cortexIds))
-          case (maybeAnalyzer1, maybeAnalyzer2)   ⇒ maybeAnalyzer1 orElse maybeAnalyzer2
-        }
+        analyzers
+          .foldLeft[Option[Analyzer]](None) {
+            case (Some(analyzer1), Some(analyzer2)) ⇒ Some(analyzer1.copy(cortexIds = analyzer1.cortexIds ++ analyzer2.cortexIds))
+            case (maybeAnalyzer1, maybeAnalyzer2)   ⇒ maybeAnalyzer1 orElse maybeAnalyzer2
+          }
           .getOrElse(throw NotFoundError(s"Analyzer $analyzerId not found"))
       }
   }
 
   def askAnalyzersOnAllCortex(f: CortexClient ⇒ Future[Seq[Analyzer]]): Future[Seq[Analyzer]] = {
     Future
-      .traverse(cortexConfig.instances) {
-        case cortex ⇒ f(cortex)
+      .traverse(cortexConfig.instances) { cortex ⇒
+        f(cortex)
       }
       .map(_.flatten)
   }
 
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
     Future
-      .traverse(cortexConfig.instances) {
-        case cortex ⇒ cortex.listAnalyzerForType(dataType)
+      .traverse(cortexConfig.instances) { cortex ⇒
+        cortex.listAnalyzerForType(dataType)
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -146,8 +170,8 @@ class CortexSrv @Inject() (
 
   def listAnalyzer: Future[Seq[Analyzer]] = {
     Future
-      .traverse(cortexConfig.instances) {
-        case cortex ⇒ cortex.listAnalyzer
+      .traverse(cortexConfig.instances) { cortex ⇒
+        cortex.listAnalyzer
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -164,7 +188,7 @@ class CortexSrv @Inject() (
   }
 
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
-    logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job ${jobId}")
+    logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
@@ -172,7 +196,7 @@ class CortexSrv @Inject() (
           updateJobWithCortex(jobId, cortexJobId, cortex)
         else {
           val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
-          logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job ${jobId}")
+          logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
           getSrv[JobModel, Job](jobModel, jobId)
             .flatMap { job ⇒
               if (status == JobStatus.Success) {
@@ -201,7 +225,13 @@ class CortexSrv @Inject() (
               case _          ⇒
             }
         }
-      case Failure(e) ⇒
+      case Failure(CortexError(404, _, _)) ⇒
+        logger.debug(s"The job $cortexJobId not found")
+        val jobFields = Fields.empty
+          .set("status", JobStatus.Failure.toString)
+          .set("endDate", Json.toJson(new Date))
+        update(jobId, jobFields)
+      case _ ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
         updateJobWithCortex(jobId, cortexJobId, cortex)
     }
@@ -223,9 +253,12 @@ class CortexSrv @Inject() (
       case Some(cortex) ⇒
         for {
           artifact ← artifactSrv.get(artifactId)
+          artifactAttributes = Json.obj(
+            "tlp" → artifact.tlp(),
+            "dataType" → artifact.dataType())
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
-            case (Some(data), None)       ⇒ DataArtifact(data, artifact.attributes)
-            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifact.attributes)
+            case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
+            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes)
             case _                        ⇒ throw InternalError(s"Artifact has invalid data : ${artifact.attributes}")
           }
           cortexJobJson ← cortex.analyze(analyzerId, cortexArtifact)

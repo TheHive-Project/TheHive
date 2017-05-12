@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('metricHistoChart', function($http, $interpolate, MetricsCacheSrv, ChartSrv, AlertSrv) {
+    angular.module('theHiveDirectives').directive('metricHistoChart', function($http, $interpolate, MetricsCacheSrv, ChartSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -124,7 +124,7 @@
 
                         scope.chart = chart;
                     }, function(err) {
-                        AlertSrv.error('metricHistoChart', err.data, err.status);
+                        NotificationSrv.error('metricHistoChart', err.data, err.status);
                     });
                 };
 

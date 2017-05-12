@@ -1,32 +1,28 @@
 package models
 
 import java.util.Date
-
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
-
 import play.api.{ Configuration, Logger }
 import play.api.libs.json.JsObject
-
-import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, EntityDef, EnumerationAttributeFormat, ModelDef, ObjectAttributeFormat, StringAttributeFormat }
+import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, EnumerationAttributeFormat, ModelDef, ObjectAttributeFormat, StringAttributeFormat, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.services.AuditableAction
 import org.elastic4play.services.JsonFormat.auditableActionFormat
-
 import services.AuditedModel
 
 trait AuditAttributes { _: AttributeDef ⇒
   def detailsAttributes: Seq[Attribute[_]]
 
-  val operation = attribute("operation", F.enumFmt(AuditableAction), "Operation", O.readonly)
-  val details = attribute("details", F.objectFmt(detailsAttributes), "Details", JsObject(Nil), O.readonly)
-  val otherDetails = optionalAttribute("otherDetails", F.textFmt, "Other details", O.readonly)
-  val objectType = attribute("objectType", F.stringFmt, "Table affected by the operation", O.readonly)
-  val objectId = attribute("objectId", F.stringFmt, "Object targeted by the operation", O.readonly)
-  val base = attribute("base", F.booleanFmt, "Indicates if this operation is the first done for a http query", O.readonly)
-  val startDate = attribute("startDate", F.dateFmt, "Date and time of the operation", new Date, O.readonly)
-  val rootId = attribute("rootId", F.stringFmt, "Root element id (routing id)", O.readonly)
-  val requestId = attribute("requestId", F.stringFmt, "Id of the request that do the operation", O.readonly)
+  val operation: A[AuditableAction.Value] = attribute("operation", F.enumFmt(AuditableAction), "Operation", O.readonly)
+  val details: A[JsObject] = attribute("details", F.objectFmt(detailsAttributes), "Details", JsObject(Nil), O.readonly)
+  val otherDetails: A[Option[String]] = optionalAttribute("otherDetails", F.textFmt, "Other details", O.readonly)
+  val objectType: A[String] = attribute("objectType", F.stringFmt, "Table affected by the operation", O.readonly)
+  val objectId: A[String] = attribute("objectId", F.stringFmt, "Object targeted by the operation", O.readonly)
+  val base: A[Boolean] = attribute("base", F.booleanFmt, "Indicates if this operation is the first done for a http query", O.readonly)
+  val startDate: A[Date] = attribute("startDate", F.dateFmt, "Date and time of the operation", new Date, O.readonly)
+  val rootId: A[String] = attribute("rootId", F.stringFmt, "Root element id (routing id)", O.readonly)
+  val requestId: A[String] = attribute("requestId", F.stringFmt, "Id of the request that do the operation", O.readonly)
 }
 
 @Singleton
@@ -43,7 +39,7 @@ class AuditModel(
 
   lazy val log = Logger(getClass)
 
-  def detailsAttributes = {
+  def detailsAttributes: Seq[Attribute[_]] = {
     auditedModels
       .flatMap(_.attributes)
       .flatMap {
@@ -55,9 +51,9 @@ class AuditModel(
       .groupBy(_.name)
       .flatMap {
         // if only one attribute is found for a name, get it
-        case (name, attribute @ Seq(a)) ⇒ attribute
+        case (_, attribute @ Seq(_)) ⇒ attribute
         // otherwise, check if attribute format is compatible
-        case (name, attributes) ⇒
+        case (_, attributes) ⇒
           attributes.headOption.foreach { first ⇒
             val isSensitive = first.isSensitive
             val formatName = first.format.name

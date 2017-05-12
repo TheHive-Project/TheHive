@@ -1,8 +1,8 @@
+body {
+    background-color: #ecf0f5;
+}
 a, body {
-    height: 99%;
     overflow: hidden;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
 }
 a.noline {
     text-decoration: none !important;
@@ -22,6 +22,8 @@ body {
 }
 .navbar-brand>img {
     display: inline;
+    width: 100px;
+    height: 36px;
 }
 
 .main-navbar .nav>li>a {
@@ -196,6 +198,9 @@ pre.clearpre {
     border-color: #a94442;
 }
 
+.label {
+    font-weight: normal !important;
+}
 .label.label-lg {
 	font-size: 100% !important;
 	font-weight: normal !important;
@@ -239,6 +244,20 @@ ul.observable-reports-summary li {
     padding: 0;
     margin: 0;
     border: none;
+}
+
+
+.case-page .main-tabset {
+    margin-bottom: 0;
+}
+
+.case-page .main-tabset .tab-content{
+    display: none;
+}
+
+.case-page .case-page-content {
+    background-color: #FFF;
+    padding: 20px 10px 10px 10px;
 }
 
 .case-metrics dt {
@@ -445,4 +464,41 @@ table tr.tr-warning {
 }
 table tr.tr-warning>td {
     background-color: #fcf8e3;
+}
+
+.box.box-navy {
+    border-top-color: #001f3f;
+}
+
+.tags-list {
+    font-size: 12px !important;
+}
+.tags-list .label {
+    font-size: inherit !important;
+    font-weight: normal;
+}
+
+tags-input .tags {
+    border-radius: 0;
+}
+
+tags-input.input-sm .tags {
+    border-radius: 0;
+    height: 30px;
+    line-height: 30px;
+}
+
+
+tags-input.input-sm .tags.focused {
+    border-color: #3c8dbc;
+    box-shadow: none;
+}
+
+footer.main-footer {
+    padding: 2px;    
+    line-height: 40px;
+}
+
+footer .footer-logo {
+    height: 40px;
 }

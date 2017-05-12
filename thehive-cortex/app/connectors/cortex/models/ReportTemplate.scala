@@ -11,7 +11,7 @@ import play.api.libs.json.JsString
 import scala.concurrent.Future
 import org.elastic4play.models.HiveEnumeration
 
-import JsonFormat._
+import connectors.cortex.models.JsonFormat._
 
 object ReportType extends Enumeration with HiveEnumeration {
   type Type = Value

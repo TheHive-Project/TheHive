@@ -1,4 +1,6 @@
 <div class="input-group">
 	<input type="datetime" class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" />
-	<span class="btn btn-primary input-group-addon" uib-btn-checkbox="" ng-model="dateNow">now</span>
+	<span class="input-group-btn">
+		<button type="button" class="btn btn-sm btn-primary" ng-model="dateNow" uib-btn-checkbox>now</button>
+	</span>
 </div>

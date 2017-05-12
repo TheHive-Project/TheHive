@@ -23,7 +23,7 @@ import org.elastic4play.utils.Instance
 @Singleton
 class StreamMonitor @Inject() (implicit val system: ActorSystem) {
   lazy val logger = Logger(getClass)
-  val monitorActor = actor(new Act {
+  val monitorActor: ActorRef = actor(new Act {
     become {
       case DeadLetter(StreamActor.GetOperations, sender, recipient) ⇒
         logger.warn(s"receive dead GetOperations message, $sender -> $recipient")
@@ -56,7 +56,7 @@ class StreamActor(
     globalMaxWait: FiniteDuration,
     eventSrv: EventSrv,
     auxSrv: AuxSrv) extends Actor with ActorLogging {
-  import StreamActor._
+  import services.StreamActor._
   import context.dispatcher
 
   lazy val logger = Logger(getClass)
@@ -111,17 +111,17 @@ class StreamActor(
   /**
    * renew global timer and rearm it
    */
-  def renewExpiration() = {
+  def renewExpiration(): Unit = {
     if (killCancel.cancel())
       killCancel = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
   }
 
-  override def preStart() = {
+  override def preStart(): Unit = {
     renewExpiration()
     eventSrv.subscribe(self, classOf[EventMessage])
   }
 
-  override def postStop() = {
+  override def postStop(): Unit = {
     killCancel.cancel()
     eventSrv.unsubscribe(self)
   }
@@ -189,7 +189,7 @@ class StreamActor(
     case message                   ⇒ logger.warn(s"Unexpected message $message (${message.getClass})")
   }
 
-  def receive = receiveWithState(None, Map.empty[String, Option[StreamMessageGroup[_]]])
+  def receive: Receive = receiveWithState(None, Map.empty[String, Option[StreamMessageGroup[_]]])
 }
 
 @Singleton

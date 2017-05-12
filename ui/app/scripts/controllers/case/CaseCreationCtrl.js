@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, AlertSrv, MetricsCacheSrv, template) {
+        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -71,17 +71,7 @@
 
                 // Append title prefix
                 if ($scope.fromTemplate) {
-                    $scope.newCase.title = $scope.template.titlePrefix + ' ' + $scope.temp.titleSuffix;
-                    
-                    $scope.newCase.tasks = _.map($scope.template.tasks, function (task) {
-                        return {
-                            title: task.title,
-                            description: task.description,
-                            flag: false,
-                            status: 'Waiting'
-                        };
-                    });
-
+                    $scope.newCase.template = $scope.template.name;
                 } else {
                     $scope.newCase.tasks = _.map($scope.tasks, function (task) {
                         return {
@@ -101,7 +91,7 @@
                     $uibModalInstance.close();
                 }, function (response) {
                     $scope.pendingAsync = false;
-                    AlertSrv.error('CaseCreationCtrl', response.data, response.status);
+                    NotificationSrv.error('CaseCreationCtrl', response.data, response.status);
                 });
             };
 
@@ -119,6 +109,10 @@
 
             $scope.cancel = function () {
                 $uibModalInstance.dismiss();
+            };
+
+            $scope.getTags = function(query) {
+                return TagSrv.fromCases(query);
             };
         }
     );

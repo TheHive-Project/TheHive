@@ -1,0 +1,95 @@
+package models
+
+import java.util.Date
+import javax.inject.{ Inject, Singleton }
+
+import models.JsonFormat.alertStatusFormat
+import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.utils.Hasher
+import play.api.Logger
+import play.api.libs.json._
+import services.AuditedModel
+
+import scala.concurrent.Future
+import scala.util.Try
+
+object AlertStatus extends Enumeration with HiveEnumeration {
+  type Type = Value
+  val New, Updated, Ignored, Imported = Value
+}
+
+trait AlertAttributes {
+  _: AttributeDef ⇒
+  def artifactAttributes: Seq[Attribute[_]]
+
+  val alertId: A[String] = attribute("_id", F.stringFmt, "Alert id", O.readonly)
+  val tpe: A[String] = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
+  val source: A[String] = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
+  val sourceRef: A[String] = attribute("sourceRef", F.stringFmt, "Source reference of the alert", O.readonly)
+  val date: A[Date] = attribute("date", F.dateFmt, "Date of the alert", new Date(), O.readonly)
+  val lastSyncDate: A[Date] = attribute("lastSyncDate", F.dateFmt, "Date of the last synchronization", new Date())
+  val caze: A[Option[String]] = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
+  val title: A[String] = attribute("title", F.textFmt, "Title of the alert")
+  val description: A[String] = attribute("description", F.textFmt, "Description of the alert")
+  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the alert (0-5)", 3L)
+  val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
+  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
+  val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
+  val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
+  val follow: A[Boolean] = attribute("follow", F.booleanFmt, "", true)
+}
+
+@Singleton
+class AlertModel @Inject() (artifactModel: ArtifactModel)
+    extends ModelDef[AlertModel, Alert]("alert")
+    with AlertAttributes
+    with AuditedModel {
+
+  private[AlertModel] lazy val logger = Logger(getClass)
+  override val defaultSortBy: Seq[String] = Seq("-date")
+  override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
+
+  override def artifactAttributes: Seq[Attribute[_]] = artifactModel.attributes
+
+  override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
+    Future.successful {
+      if (attrs.keys.contains("_id"))
+        attrs
+      else {
+        val hasher = Hasher("MD5")
+        val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
+        val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
+        val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
+        val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
+        attrs + ("_id" → JsString(_id))
+      } - "lastSyncDate" - "case" - "status" - "follow"
+    }
+  }
+}
+
+class Alert(model: AlertModel, attributes: JsObject)
+    extends EntityDef[AlertModel, Alert](model, attributes)
+    with AlertAttributes {
+
+  override def artifactAttributes: Seq[Attribute[_]] = Nil
+
+  override def toJson: JsObject = super.toJson +
+    ("artifacts" → JsArray(artifacts().map {
+      // for file artifact, parse data as Json
+      case a if (a \ "dataType").asOpt[String].contains("file") ⇒
+        Try(a + ("data" → Json.parse((a \ "data").as[String]))).getOrElse(a)
+      case a ⇒ a
+    }))
+
+  def toCaseJson: JsObject = Json.obj(
+    //"caseId" -> caseId,
+    "title" → title(),
+    "description" → description(),
+    "severity" → severity(),
+    //"owner" -> owner,
+    "startDate" → date(),
+    "tags" → tags(),
+    "tlp" → tlp(),
+    "status" → CaseStatus.Open)
+}

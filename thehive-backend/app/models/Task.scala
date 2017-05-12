@@ -13,7 +13,7 @@ import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
 import org.elastic4play.utils.RichJson
 
-import JsonFormat.taskStatusFormat
+import models.JsonFormat.taskStatusFormat
 import services.AuditedModel
 
 object TaskStatus extends Enumeration with HiveEnumeration {

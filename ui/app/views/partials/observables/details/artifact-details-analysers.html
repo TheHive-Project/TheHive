@@ -1,45 +1,57 @@
-<h3 class="pad10 text-primary">
-    Observable Analyzers
-    <span class="pull-right" ng-if="analysisEnabled">
-        <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
-    </span>
-</h3>
-<table class="table table-hover">
-    <thead>
-        <th>Analyzer</th>
-        <th width="300">Last analysis</th>
-        <th width="60" ng-if="analysisEnabled">Action</th>
-    </thead>
-    <tbody>
-        <tr ng-repeat="(analyzerId, jobs) in analyzerJobs" ng-init="analyzers[analyzerId].showRows=false;">
-            <td>
-                <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
-                    <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
-                </a>
-                {{::analyzerId}}<br>
-                <small class="text-muted">{{::analyzers[analyzerId] | getField: 'description'}}</small>
-            </td>
-            <td>
-                <ul class="list-unstyled">
-                    <li ng-repeat="job in jobs" ng-show="analyzers[analyzerId].showRows || $first">
-                        <span class="mr-s">
-                            <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]"></i>
-                        </span>
+<div class="row">
+    <div class="col-md-12">
+        <h3 class="pv-xxs pr-xxs text-primary">
+            Observable Analyzers
+            <span class="pull-right" ng-if="analysisEnabled">
+                <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
+            </span>
+        </h3>
+        <table class="table table-striped">
+            <thead>
+                <th>Analyzer</th>
+                <th width="200">Cortex Server</th>
+                <th width="280">Last analysis</th>
+                <th width="60" ng-if="analysisEnabled">Action</th>
+            </thead>
+            <tbody>
+                <tr ng-repeat="(analyzerId, jobs) in analyzerJobs"
+                    ng-init="analyzer=analyzers[analyzerId]; analyzers[analyzerId].showRows=false;">
+                    <td>
+                        <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
+                            <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
+                        </a>
+                        <span>{{::analyzerId}}</span>
+                        <div class="text-muted">{{::analyzer.description}}</div>
+                    </td>
+                    <td>
+                        <ul class="list-unstyled">
+                            <li ng-repeat="cortexId in analyzer.cortexIds">{{cortexId}}</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul class="list-unstyled">
+                            <li ng-if="jobs.length === 0"><em>None</em></li>
+                            <li ng-repeat="job in jobs" ng-show="analyzer.showRows || $first">
+                                <span class="mr-s">
+                                    <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]"></i>
+                                </span>
 
-                        <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
-                    </li>
-                </ul>
-            </td>
-            <td ng-if="analysisEnabled">
-                <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
-                    ng-click="runAnalyzer(analyzerId)"
-                    ng-if="analyzers[analyzerId].active">
-                    <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
-                </span>
-            </td>
-        </tr>
-    </tbody>
-</table>
+                                <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
+                            </li>
+                        </ul>
+                    </td>
+                    <td ng-if="analysisEnabled">
+                        <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
+                            ng-click="runAnalyzer(analyzerId)"
+                            ng-if="analyzer.active">
+                            <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-md-6 col-md-offset-3">

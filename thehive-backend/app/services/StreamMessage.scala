@@ -33,7 +33,7 @@ case class AuditOperationGroup(
       (operation.action.toString → (actionCount + 1)))))
   }
 
-  def makeReady = copy(isReady = true)
+  def makeReady: AuditOperationGroup = copy(isReady = true)
 
   def toJson(implicit ec: ExecutionContext): Future[JsObject] = obj.map { o ⇒
     Json.obj(
@@ -66,7 +66,7 @@ object AuditOperationGroup {
         }
         .collect { case (name, value, Some(attr)) if !attr.isUnaudited ⇒ (name, value) }
     }
-    val obj = auxSrv(operation.entity, 10, false, true)
+    val obj = auxSrv(operation.entity, 10, withStats = false, removeUnaudited = true)
       .recover {
         case error ⇒
           log.error("auxSrv fails", error)
@@ -91,7 +91,7 @@ case class MigrationEventGroup(tableName: String, current: Long, total: Long) ex
   }
 
   val isReady = true
-  def makeReady = this
+  def makeReady: MigrationEventGroup = this
   def toJson(implicit ec: ExecutionContext): Future[JsObject] = Future.successful(Json.obj(
     "base" → Json.obj(
       "rootId" → current,

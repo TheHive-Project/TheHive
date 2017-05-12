@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, AlertSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -128,6 +128,10 @@
                 }
 
                 $scope.filter();
+            };
+
+            $scope.filterByTlp = function(value) {
+                $scope.addFilterValue('tlp', Tlp.values[value]);
             };
 
             $scope.countReports = function(observable) {
@@ -416,7 +420,7 @@
                         $scope.initSelection($scope.selection);
                     },
                     function (response) {
-                        AlertSrv.error('selection', response.data, response.status);
+                        NotificationSrv.error('selection', response.data, response.status);
                         $scope.initSelection($scope.selection);
                     });
             };
@@ -515,7 +519,7 @@
                     })
                     .then(function () {}, function (response) {
                         if (response && response.status) {
-                            AlertSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                            NotificationSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
                         }
                     });
             };
@@ -523,6 +527,7 @@
             // run selected analyzers on selected artifacts
             $scope.runAnalyzerOnSelection = function () {
                 var toRun = [];
+                var nbArtifacts = $scope.selection.artifacts.length;
 
                 angular.forEach($scope.selection.artifacts, function (element) {
                     angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
@@ -550,7 +555,7 @@
                         );
                     })
                     .then(function() {
-                        AlertSrv.log('Analyzers have been successfully started for ' + $scope.selection.artifacts.length + ' observables', 'success');
+                        NotificationSrv.log('Analyzers have been successfully started for ' + nbArtifacts + ' observables', 'success');
                     }, function() {
 
                     });
@@ -579,7 +584,7 @@
                         }));
                     })
                     .then(function () {
-                        AlertSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
+                        NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
             };
 

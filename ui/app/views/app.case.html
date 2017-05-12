@@ -1,52 +1,75 @@
-<div class="row">
-    <div class="col-md-12" ng-include="'views/partials/case/case.panelinfo.html'"></div>
-</div>
-
-<div class="row">
-    <div class="col-md-9">
-        <uib-tabset type="tabs" active="tabSrv.activeIndex">
-            <uib-tab ng-click="openTab(name)" ng-init="tab = tabs[name];" ng-repeat="name in notSorted(tabs)">
-                <uib-tab-heading ng-switch on="name">
-                    <span ng-switch-when="details">
-                        <i class="glyphicon glyphicon-folder-open"></i>&nbsp;&nbsp;
-                        {{tab.label}}
-                    </span>
-
-                    <span ng-switch-when="tasks">
-                        <i class="glyphicon glyphicon-tasks"></i>&nbsp;&nbsp;{{tab.label}}&nbsp;&nbsp;
-                        <span class="badge">{{tasks.count}}</span>
-                    </span>
-
-                    <span ng-switch-when="observables">
-                        <i class="glyphicon glyphicon-pushpin"></i>&nbsp;&nbsp; Observables&nbsp;&nbsp;
-                        <span class="badge badge-primary">{{artifactStats.count}}</span>
-                    </span>
-
-                    <span ng-switch-default>
-                        <span ng-switch on="name[0]">
-                            <span ng-switch-when="t">
-                                <i class="glyphicon glyphicon-tasks"></i> <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
+<div class="row case-page">
+    <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
+        <div class="row">
+            <div class="col-md-12" ng-include="'views/partials/case/case.panelinfo.html'"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <uib-tabset type="tabs" active="tabSrv.activeIndex" class="nav-tabs-custom main-tabset">
+                    <uib-tab ng-click="openTab(name)" ng-init="tab = tabs[name];" ng-repeat="name in notSorted(tabs)">
+                        <uib-tab-heading ng-switch on="name">
+                            <span ng-switch-when="details">
+                                <i class="glyphicon glyphicon-folder-open"></i>&nbsp;&nbsp;
+                                {{tab.label}}
                             </span>
-                            <span ng-switch-when="o">
-                                <i class="glyphicon glyphicon-pushpin" ng-switch-when="o"></i> <strong>&nbsp;&nbsp;{{tab.label | fang | limitTo:25}}&nbsp;&nbsp;</strong>
+
+                            <span ng-switch-when="tasks">
+                                <i class="glyphicon glyphicon-tasks"></i>&nbsp;&nbsp;{{tab.label}}&nbsp;&nbsp;
+                                <span class="badge">{{tasks.count}}</span>
                             </span>
+
+                            <span ng-switch-when="observables">
+                                <i class="glyphicon glyphicon-pushpin"></i>&nbsp;&nbsp; Observables&nbsp;&nbsp;
+                                <span class="badge badge-primary">{{artifactStats.count}}</span>
+                            </span>
+
                             <span ng-switch-default>
-                                <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
+                                <span ng-switch on="name[0]">
+                                    <span ng-switch-when="t">
+                                        <i class="glyphicon glyphicon-tasks"></i> <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
+                                    </span>
+                                    <span ng-switch-when="o">
+                                        <i class="glyphicon glyphicon-pushpin" ng-switch-when="o"></i> <strong>&nbsp;&nbsp;{{tab.label | fang | limitTo:25}}&nbsp;&nbsp;</strong>
+                                    </span>
+                                    <span ng-switch-default>
+                                        <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
+                                    </span>
+                                </span>
+
+                                <a href ng-click="removeTab(name)" ng-if="tab.closable">
+                                    <i class="text-muted glyphicon glyphicon-remove-circle" ng-class="textTask" ng-mouseout="textTask='text-muted'" ng-mouseover="textTask='text-danger'"></i>
+                                </a>
                             </span>
-                        </span>
+                        </uib-tab-heading>
+                    </uib-tab>
+                </uib-tabset>
+                <div ui-view class="case-page-content"></div>
+            </div>
+        </div>
 
-                        <a href ng-click="removeTab(name)" ng-if="tab.closable">
-                            <i class="text-muted glyphicon glyphicon-remove-circle" ng-class="textTask" ng-mouseout="textTask='text-muted'" ng-mouseover="textTask='text-danger'"></i>
-                        </a>
-                    </span>
-                </uib-tab-heading>
-            </uib-tab>
-        </uib-tabset>
-
-        <div ui-view></div>
     </div>
 
-    <div class="col-md-3">
-        <flow ng-if="caze.id" root="{{caze.id}}"></flow>
+    <div ng-show="appLayout.showFlow" class="col-md-3">
+        <div class="box">
+            <div class="box-header">
+                <h3 class="box-title">&nbsp;</h3>
+                <div class="box-tools pull-right">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="layoutSrv.detachFlow()">
+                            <i class="fa fa-external-link"></i> Open in new window
+                        </a>
+                    </span>
+
+                    <span class="ml-xs" tooltip="Hide">
+                        <a class="text-muted" href ng-click="layoutSrv.showFlow(false)">
+                            <i class="fa fa-minus"></i> Hide
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body no-padding">
+                <flow ng-if="caze.id" root="{{caze.id}}"></flow>
+            </div>
+        </div>
     </div>
 </div>

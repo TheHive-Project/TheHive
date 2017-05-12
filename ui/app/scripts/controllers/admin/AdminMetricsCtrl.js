@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminMetricsCtrl',
-        function($scope, ListSrv, MetricsCacheSrv, AlertSrv) {
+        function($scope, ListSrv, MetricsCacheSrv, NotificationSrv) {
             $scope.metrics = [];
 
             $scope.initMetrics = function() {
@@ -21,7 +21,7 @@
                     });
 
                 }, function(response) {
-                    AlertSrv.error('AdminMetricsCtrl', response.data, response.status);
+                    NotificationSrv.error('AdminMetricsCtrl', response.data, response.status);
                 });
             };
             $scope.initMetrics();
@@ -39,7 +39,7 @@
                         $scope.$emit('metrics:refresh');
                     },
                     function(response) {
-                        AlertSrv.error('AdminMetricsCtrl', response.data, response.status);
+                        NotificationSrv.error('AdminMetricsCtrl', response.data, response.status);
                     });
             };
         });

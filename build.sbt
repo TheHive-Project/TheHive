@@ -16,125 +16,192 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
   .settings(publish := {})
   .settings(SbtScalariform.scalariformSettings: _*)
 
-lazy val main = (project in file("."))
+lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .settings(aggregate in Debian := false)
+  .settings(aggregate in Rpm := false)
   .settings(aggregate in Docker := false)
   .settings(PublishToBinTray.settings: _*)
   .settings(Release.settings: _*)
 
-releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
+lazy val rpmPackageRelease = (project in file("package/rpm-release"))
+  .enablePlugins(RpmPlugin)
+  .settings(
+    name := "thehive-project-release",
+    maintainer := "TheHive Project <support@thehive-project.org>",
+    version := "1.0.0",
+    rpmRelease := "3",
+    rpmVendor in Rpm := "TheHive Project",
+    rpmUrl := Some("http://thehive-project.org/"),
+    rpmLicense := Some("AGPL"),
+    maintainerScripts in Rpm := Map.empty,
+    linuxPackageSymlinks in Rpm := Nil,
+    packageSummary := "TheHive-Project RPM repository",
+    packageDescription := """This package contains the TheHive-Project packages repository
+      |GPG key as well as configuration for yum.""".stripMargin,
+    logLevel in packageBin in Rpm := Level.Debug,
+    linuxPackageMappings in Rpm := Seq(packageMapping(
+      file("PGP-PUBLIC-KEY") -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
+      file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
+      file("LICENSE") -> "/usr/share/doc/thehive-project-release/LICENSE"
+    ))
+  )
 
-changelogFile := baseDirectory.value / "CHANGELOG.md"
+Release.releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
+Release.changelogFile := baseDirectory.value / "CHANGELOG.md"
 
 // Front-end //
 run := {
   (run in Compile).evaluated
   frontendDev.value
 }
-
 mappings in packageBin in Assets ++= frontendFiles.value
 
-mappings in Universal ~= { _.filterNot {
-  case (_, name) => name == "conf/application.conf"
-}}
-
-// Install files //
-
-mappings in Universal ++= {
-  val dir = baseDirectory.value / "install"
-  (dir.***) pair relativeTo(dir.getParentFile)
+// Remove conf files
+// Install service files
+mappings in Universal ~= {
+  _.flatMap {
+    case (_, "conf/application.conf") => Nil
+    case (file, "conf/application.sample") => Seq(file -> "conf/application.conf")
+    case (_, "conf/logback.xml") => Nil
+    case other => Seq(other)
+  } ++ Seq(
+    file("package/thehive.service") -> "package/thehive.service",
+    file("package/thehive.conf") -> "package/thehive.conf",
+    file("package/thehive") -> "package/thehive",
+    file("package/logback.xml") -> "conf/logback.xml"
+  )
 }
 
-// Release //
-import ReleaseTransformations._
+// Package //
+maintainer := "TheHive Project <support@thehive-project.org>"
+packageSummary := "Scalable, Open Source and Free Security Incident Response Solutions"
+packageDescription :=
+  """TheHive is a scalable 3-in-1 open source and free security incident response platform designed to make life easier
+    | for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be
+    | investigated and acted upon swiftly.""".stripMargin
+defaultLinuxInstallLocation := "/opt"
+linuxPackageMappings ~= {
+  _.map { pm =>
+    val mappings = pm.mappings.filterNot {
+      case (_, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
+    }
+    com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
+  } :+ packageMapping(
+    file("package/thehive.service") -> "/etc/systemd/system/thehive.service",
+    file("package/thehive.conf") -> "/etc/init/thehive.conf",
+    file("package/thehive") -> "/etc/init.d/thehive",
+    file("conf/application.sample") -> "/etc/thehive/application.conf",
+    file("conf/logback.xml") -> "/etc/thehive/logback.xml"
+  ).withConfig()
+}
 
-import Release._
+packageBin := {
+  (packageBin in Universal).value
+  (packageBin in Debian).value
+  (packageBin in Rpm).value
+}
+// DEB //
+debianPackageRecommends := Seq("elasticsearch")
+debianPackageDependencies += "java8-runtime-headless | java8-runtime"
+maintainerScripts in Debian := maintainerScriptsFromDirectory(
+  baseDirectory.value / "package" / "debian",
+  Seq(DebianConstants.Postinst, DebianConstants.Prerm, DebianConstants.Postrm)
+)
+linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "package" / "etc_default_thehive").asURL
+linuxMakeStartScript in Debian := None
 
+// RPM //
+rpmRelease := "8"
+rpmVendor in Rpm := "TheHive Project"
+rpmUrl := Some("http://thehive-project.org/")
+rpmLicense := Some("AGPL")
+rpmRequirements += "java-1.8.0-openjdk-headless"
+maintainerScripts in Rpm := maintainerScriptsFromDirectory(
+  baseDirectory.value / "package" / "rpm",
+  Seq(RpmConstants.Pre, RpmConstants.Preun, RpmConstants.Postun)
+)
+linuxPackageSymlinks in Rpm := Nil
+rpmPrefix := Some(defaultLinuxInstallLocation.value)
+linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
+rpmReleaseFile := {
+  val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
+packageBin in Rpm := {
+  val rpmFile = (packageBin in Rpm).value
+  s"rpm --addsign $rpmFile".!!
+  rpmFile
+}
+
+// DOCKER //
+import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
+
+defaultLinuxInstallLocation in Docker := "/opt/thehive"
+dockerRepository := Some("certbdf")
+dockerUpdateLatest := true
+dockerEntrypoint := Seq("/opt/thehive/entrypoint")
+dockerExposedPorts := Seq(9000)
+mappings in Docker ++= Seq(
+  file("package/docker/entrypoint") -> "/opt/thehive/entrypoint",
+  file("conf/logback.xml") -> "/etc/thehive/logback.xml",
+  file("package/empty") -> "/var/log/thehive/application.log")
+mappings in Docker ~= (_.filterNot {
+  case (_, filepath) => filepath == "/opt/thehive/conf/application.conf"
+})
+dockerCommands ~= { dc =>
+  val (dockerInitCmds, dockerTailCmds) = dc.splitAt(4)
+  dockerInitCmds ++
+    Seq(
+      Cmd("ADD", "var", "/var"),
+      Cmd("ADD", "etc", "/etc"),
+      ExecCmd("RUN", "chown", "-R", "daemon:daemon", "/var/log/thehive")) ++
+    dockerTailCmds
+}
+
+// Bintray //
 bintrayOrganization := Some("cert-bdf")
-
 bintrayRepository := "thehive"
-
 publish := {
   (publish in Docker).value
   PublishToBinTray.publishRelease.value
   PublishToBinTray.publishLatest.value
+  PublishToBinTray.publishRpm.value
+  PublishToBinTray.publishDebian.value
 }
-
-releaseProcess := Seq[ReleaseStep](
-  checkUncommittedChanges,
-  checkSnapshotDependencies,
-  getVersionFromBranch,
-  runTest,
-  releaseMerge,
-  checkoutMaster,
-  setReleaseVersion,
-  setReleaseUIVersion,
-  generateChangelog,
-  commitChanges,
-  tagRelease,
-  publishArtifacts,
-  checkoutDevelop,
-  setNextVersion,
-  setNextUIVersion,
-  commitChanges,
-  //commitNextVersion,
-  pushChanges)
-
-// DOCKER //
-
-dockerBaseImage := "elasticsearch:2.3"
-
-dockerExposedVolumes += "/data"
-
-dockerRepository := Some("certbdf")
-
-dockerUpdateLatest := true
-
-mappings in Universal += file("docker/entrypoint") -> "bin/entrypoint"
-
-import com.typesafe.sbt.packager.docker.{ ExecCmd, Cmd }
-
-dockerCommands := dockerCommands.value.map {
-  case ExecCmd("ENTRYPOINT", _*) => ExecCmd("ENTRYPOINT", "bin/entrypoint")
-  case cmd                       => cmd
-}
-
-dockerCommands := (dockerCommands.value.head +:
-  Cmd("EXPOSE", "9000") +:
-  dockerCommands.value.tail)
 
 // Scalariform //
 import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, false)
-//  .setPreference(FirstParameterOnNewline, Force)
+  //  .setPreference(FirstParameterOnNewline, Force)
   .setPreference(AlignArguments, true)
-//  .setPreference(FirstArgumentOnNewline, true)
+  //  .setPreference(FirstArgumentOnNewline, true)
   .setPreference(AlignSingleLineCaseStatements, true)
   .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 60)
   .setPreference(CompactControlReadability, true)
   .setPreference(CompactStringConcatenation, false)
   .setPreference(DoubleIndentClassDeclaration, true)
-//  .setPreference(DoubleIndentMethodDeclaration, true)
+  //  .setPreference(DoubleIndentMethodDeclaration, true)
   .setPreference(FormatXml, true)
   .setPreference(IndentLocalDefs, false)
   .setPreference(IndentPackageBlocks, false)
   .setPreference(IndentSpaces, 2)
   .setPreference(IndentWithTabs, false)
   .setPreference(MultilineScaladocCommentsStartOnFirstLine, false)
-//  .setPreference(NewlineAtEndOfFile, true)
+  //  .setPreference(NewlineAtEndOfFile, true)
   .setPreference(PlaceScaladocAsterisksBeneathSecondAsterisk, false)
   .setPreference(PreserveSpaceBeforeArguments, false)
-//  .setPreference(PreserveDanglingCloseParenthesis, false)
+  //  .setPreference(PreserveDanglingCloseParenthesis, false)
   .setPreference(DanglingCloseParenthesis, Prevent)
   .setPreference(RewriteArrowSymbols, true)
   .setPreference(SpaceBeforeColon, false)
-//  .setPreference(SpaceBeforeContextColon, false)
+  //  .setPreference(SpaceBeforeContextColon, false)
   .setPreference(SpaceInsideBrackets, false)
   .setPreference(SpaceInsideParentheses, false)
   .setPreference(SpacesWithinPatternBinders, true)

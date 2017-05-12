@@ -1,25 +1,20 @@
+<psearch control="list"></psearch>
 
-
-<table class="table">
+<table class="table table-striped table-hover valigned">
 	<thead>
 		<tr>
-			<th style="width:90%">
-				Task
-			</th>
-			<th>
-				Action
-			</th>
+			<th>Task</th>
+			<th width="100px;">Action</th>
 		</tr>
 	</thead>
 
 	<tbody>
-		<tr ng-repeat="value in list.values" >
-			<td style="width:90%">
-				<div class="col-md-12">
-				{{value.title}}
-				</div>
-				<div class="col-md-12">
-				<small><entity-link value="value.case"></entity-link></small>
+		<tr class="task-row"
+			ng-repeat="value in list.values">
+			<td>
+				<div>{{value.title}}</div>
+				<div>
+					<small><entity-link value="value.case"></entity-link></small>
 				</div>
 			</td>
 			<td>

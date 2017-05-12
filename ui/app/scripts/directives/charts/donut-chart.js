@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('donutChart', function(StatSrv, $state, $base64, AlertSrv) {
+    angular.module('theHiveDirectives').directive('donutChart', function(StatSrv, $state, $base64, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -75,7 +75,7 @@
                         };
 
                     }, function(err) {
-                        AlertSrv.error('donutChart', err.data, err.status);
+                        NotificationSrv.error('donutChart', err.data, err.status);
                     });
                 };
 

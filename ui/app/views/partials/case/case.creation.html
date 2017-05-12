@@ -17,7 +17,7 @@
 
                         <div class="input-group" ng-if="fromTemplate">
                             <span class="input-group-addon">{{template.titlePrefix}}</span>
-                            <input class="form-control" name="title" ng-model="temp.titleSuffix" placeholder="Title" required type="text"/>
+                            <input class="form-control input-sm" name="title" ng-model="newCase.title" placeholder="Title" required type="text"/>
                         </div>
 
                         <p class="help-block" ng-show="caseCreateForm.title.$invalid && !caseCreateForm.title.$pristine">The case title is required.</p>
@@ -54,7 +54,7 @@
                     </label>
                     <div class="col-md-9">
                         <a href ng-click="activeTlp='active'">
-                            <tlp format="activeTlp" on-update="updateTlp(newValue)" style="float:left; font-size:16px" value="newCase.tlp"></tlp>
+                            <tlp format="activeTlp" on-update="updateTlp(newValue)" value="newCase.tlp"></tlp>
                         </a>
                     </div>
                 </div>
@@ -65,7 +65,15 @@
                 <div class="form-group">
                     <label class="col-md-3 control-label">Tags</label>
                     <div class="col-md-9">
-                        <tags-input class="ti-input-sm" min-length="2" name="tags" ng-model="tags" placeholder="Tags" replace-spaces-with-dashes="false"></tags-input>
+                        <!-- <tags-input class="ti-input-sm" replace-spaces-with-dashes="false"></tags-input> -->
+                        <tags-input class="ti-input-sm input-sm form-control form-control-wrapper"
+                            name="tags"
+                            placeholder="Tags"
+                            min-length="2"
+                            ng-model="tags"
+                            replace-spaces-with-dashes="false">
+                                <auto-complete debounceDelay="400" source="getTags($query)"></auto-complete>
+                            </tags-input>
                     </div>
                 </div>
             </div>
@@ -87,7 +95,7 @@
         </h4>
         <div class="row" ng-if="!fromTemplate">
             <div class="col-md-12">
-                <div class="input-group">
+                <div class="input-group input-group-sm">
                     <input class="form-control task-input" name="task-input" ng-model="temp.task" placeholder="Task title" type="text" />
                     <span class="input-group-btn">
                         <button class="btn btn-primary" type="button" ng-disabled="!temp.task" ng-click="addTask(temp.task)">Add task</button>

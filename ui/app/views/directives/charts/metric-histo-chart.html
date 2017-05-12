@@ -1,29 +1,29 @@
-<div class="panel panel-default">
-    <div class="panel-heading clearfix">
-        <h4 class="panel-title pull-left" style="padding-top: 7.5px;">
-            <span ng-init="collapsed=false">
-                <a class="btn btn-link hpad5" href ng-click="collapsed = !collapsed">
-                    <i class="fa" ng-class="{'fa-minus': !collapsed, 'fa-plus': collapsed}"></i>
-                </a>{{options.title}}
-            </span>
-        </h4>
-        <form class="form-inline pull-right" ng-submit="load()">
-            <div class="form-group hpad10">
-                <label>Metrics</label>
-                <div class="form-control form-control-wrapper" ng-dropdown-multiselect options="allMetrics" selected-model="selectedMetrics"></div>
-            </div>
-            <div class="form-group hpad10">
-                <label>Aggregations</label>
-                <div class="form-control form-control-wrapper" ng-dropdown-multiselect options="allAggregations" selected-model="selectedAggregations"></div>
-            </div>
-            <div class="form-group hpad10">
-                <label>Interval</label>
-                <select class="form-control" ng-model="interval" ng-options="item as item.label for item in intervals track by item.code"></select>
-            </div>
-            <button type="submit" class="btn btn-primary" ng-disabled="metrics.length === 0"><i class="fa fa-search"></i></button>
-        </form>
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">{{options.title}}</h3>
+        <div class="box-tools pull-right">
+            <button type="button" class="btn btn-box-tool pull-right" data-widget="collapse">
+                <i class="fa fa-minus"></i>
+            </button>
+            <form class="form-inline pull-right" ng-submit="load()">
+                <div class="form-group hpad10">
+                    <label>Metrics</label>
+                    <div class="form-control input-sm form-control-wrapper" ng-dropdown-multiselect options="allMetrics" extra-settings="{'buttonClasses': 'btn btn-sm btn-default'}" selected-model="selectedMetrics"></div>
+                </div>
+                <div class="form-group hpad10">
+                    <label>Aggregations</label>
+                    <div class="form-control input-sm form-control-wrapper" ng-dropdown-multiselect options="allAggregations" extra-settings="{'buttonClasses': 'btn btn-sm btn-default'}" selected-model="selectedAggregations"></div>
+                </div>
+                <div class="form-group hpad10">
+                    <label>Interval</label>
+                    <select class="form-control input-sm" ng-model="interval" ng-options="item as item.label for item in intervals track by item.code"></select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary" ng-disabled="metrics.length === 0"><i class="fa fa-search"></i></button>
+            </form>
+
+        </div>
     </div>
-    <div class="panel-body" ng-hide="collapsed">
+    <div class="box-body">
         <c3 chart="chart"></c3>
     </div>
 </div>

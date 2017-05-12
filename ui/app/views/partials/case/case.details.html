@@ -1,4 +1,3 @@
-<br>
 <div class="row">
     <div class="col-md-7">
         <h4 class="vpad10 text-primary">Basic information</h4>
@@ -157,8 +156,8 @@
 </div>
 
 <div class="case-attachments vpad10" ng-if="attachments.values.length > 0">
-    <strong>Attachments</strong>
-    <table class="table table-hover">
+    <h4 class="vpad10 text-primary">Attachments</h4>
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Filename</th>
@@ -171,7 +170,7 @@
         <tbody>
             <tr ng-repeat="attachment in attachments.values" style="cursor: pointer;" tooltip-placement="bottom" tooltip-popup-delay="500" uib-tooltip="{{attachment.message}}">
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.name}}</td>
-                <td ng-click="openAttachment(attachment)">{{attachment.startDate}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.startDate | shortDate}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
                 <td style="text-align:center">

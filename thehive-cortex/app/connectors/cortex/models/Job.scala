@@ -12,7 +12,7 @@ import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
 import org.elastic4play.utils.RichJson
 
-import JsonFormat.jobStatusFormat
+import connectors.cortex.models.JsonFormat.jobStatusFormat
 import models.{ Artifact, ArtifactModel }
 import services.AuditedModel
 

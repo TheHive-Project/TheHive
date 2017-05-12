@@ -1,0 +1,17 @@
+# #####################################
+# ##### Environment Configuration #####
+# #####################################
+
+# *WARNING* This file is not read by if you are using systemd
+
+# This file gets sourced before the actual startscript
+# gets executed. You can use this file to provide
+# environment variables
+
+# Define if TheHive service is enabled (no by default)
+# -----------------
+ENABLED=no
+
+# Setting DAEMON_ARGS
+# pidfile is disabled (/dev/null) has it is handle by system loader (upstart/sysVinit)
+#DAEMON_ARGS=-Dconfig.file=/etc/thehive/thehive.conf -Dlogger.file=/etc/thehive/logback.xml -Dpidfile.path=/dev/null

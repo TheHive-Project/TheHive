@@ -1,0 +1,34 @@
+<div class="report-PT" ng-if="success">
+    <style>
+        .report-PT dl {
+            margin-bottom: 2px;
+        }
+
+    </style>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <strong>PassiveTotal SSL Certificate Information</strong>
+        </div>
+        <div class="panel-body">
+            <div ng-if="content.length === 0">
+                No records found
+            </div>
+            <div ng-if="content.length !== 0" class="panel panel-default">
+                    <dl class="dl-horizontal" ng-repeat="(k,v) in content">
+                        <dt>{{k}}:</dt>
+                        <dd>{{v}}</dd>
+                    </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-danger" ng-if="!success">
+    <div class="panel-heading">
+        <strong>{{(artifact.data || artifact.attachment.name) | fang}}</strong>
+    </div>
+    <div class="panel-body">
+        {{content.errorMessage}}
+    </div>
+</div>

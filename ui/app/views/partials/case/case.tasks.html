@@ -1,10 +1,8 @@
-<br>
-
 <div class="row">
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group">
-                <button class="btn btn-primary" ng-click="state.isNewTask = true">
+                <button class="btn btn-sm btn-primary" ng-click="state.isNewTask = true">
                     <i class="glyphicon glyphicon-plus"></i>
                     Add Task
                 </button>
@@ -23,26 +21,11 @@
     </div>
 </div>
 
-<!--  ng-show="tasks.total == 0 && tasks.filter == '*'" -->
 <div class="row mv-s" ng-show="tasks.total === 0">
     <div class="col-md-12">
         <div class="empty-message">No task found for this case.</div>
     </div>
 </div>
-
-<!-- Filter input -->
-<!-- <div class="row mb-s">
-    <div class="col-md-12 clearfix">
-        <div class="pull-right form-inline">
-            <div class="input-group input-group-sm">
-                <filter-box collection="tasks"></filter-box>
-            </div>
-            <div class="form-group">
-                <page-sizer collection="tasks"></page-sizer>
-            </div>
-        </div>
-    </div>
-</div> -->
 
 <div class="row mt-l" ng-show="state.isNewTask">
     <div class="col-md-12">
@@ -64,7 +47,8 @@
 
 <div class="row mt-l" ng-show="tasks.total !== 0">
     <div class="col-md-12">
-        <table class="table table-hover valigned">
+        <psearch control="tasks"></psearch>
+        <table class="table table-striped table-hover valigned">
             <thead>
                 <tr>
                     <th style="width: 50px"></th>

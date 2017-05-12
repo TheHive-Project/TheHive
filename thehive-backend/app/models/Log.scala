@@ -9,7 +9,7 @@ import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, ChildModelDef, EntityDef, HiveEnumeration }
 
-import JsonFormat.logStatusFormat
+import models.JsonFormat.logStatusFormat
 import services.AuditedModel
 
 object LogStatus extends Enumeration with HiveEnumeration {

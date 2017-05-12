@@ -2,12 +2,18 @@
 <html ng-app="thehive">
   <head>
     <meta charset="utf-8">
-    <title ng-bind="'The Hive' + (title ? ' - ' + title : '')"></title>
+    <title ng-bind="'TheHive' + (title ? ' - ' + title : '')"></title>
 
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
 
-    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <!-- <link rel="icon" type="image/png" href="images/favicon.png" /> -->
+
+    <link rel="icon" type="image/png" href="images/favicons/favicon-196x196.png" sizes="196x196" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-128.png" sizes="128x128" />
 
     <!-- build:css(.) styles/vendor.css -->
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css"/>
@@ -31,6 +37,9 @@
     <!-- endbuild -->
 
     <!-- build:css(.tmp) styles/app.css -->
+    <link rel="stylesheet" href="styles/vendors/AdminLTE.css">
+    <link rel="stylesheet" href="styles/vendors/AdminLTE-skin-blue.css">
+
     <link rel="stylesheet" href="styles/main.css"/>
     <link rel="stylesheet" href="styles/case.css"/>
     <link rel="stylesheet" href="styles/flow.css"/>
@@ -39,9 +48,14 @@
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
     <!-- endbuild -->
+
+    <style>
+		app-container { display: block }
+	</style>
+
   </head>
-  <body ng-cloak>
-    <page-loader></page-loader>
+  <body ng-cloak class="hold-transition skin-blue layout-top-nav">
+    <page-loader bg-color="#ecf0f5"></page-loader>
     <div ui-view></div>
 
     <!-- build:js(.) scripts/vendor.js -->
@@ -89,6 +103,8 @@
     <script src="bower_components/angular-page-loader/dist/angular-page-loader.js"></script>
     <script src="bower_components/angular-images-resizer/angular-images-resizer.js"></script>
     <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
+    <script src="bower_components/jquery-ui/jquery-ui.js"></script>
+    <script src="bower_components/angular-ui-sortable/sortable.js"></script>
     <!-- endbower -->
 
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
@@ -102,6 +118,10 @@
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
     <!-- injector:js -->
     <script src="scripts/app.js"></script>
+    <script src="scripts/components/app-container.component.js"></script>
+    <script src="scripts/components/control-sidebar.component.js"></script>
+    <script src="scripts/components/header.component.js"></script>
+    <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/controllers/AboutCtrl.js"></script>
     <script src="scripts/controllers/AuthenticationCtrl.js"></script>
     <script src="scripts/controllers/LiveCtrl.js"></script>
@@ -116,6 +136,9 @@
     <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminReportTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminUsersCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertEventCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertListCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertStatsCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCloseModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
     <script src="scripts/controllers/case/CaseDetailsCtrl.js"></script>
@@ -133,9 +156,6 @@
     <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
-    <script src="scripts/controllers/misp/MispBulkImportCtrl.js"></script>
-    <script src="scripts/controllers/misp/MispEventCtrl.js"></script>
-    <script src="scripts/controllers/misp/MispListCtrl.js"></script>
     <script src="scripts/directives/charts/c3Chart.js"></script>
     <script src="scripts/directives/charts/chart.js"></script>
     <script src="scripts/directives/charts/donut-chart.js"></script>
@@ -148,6 +168,7 @@
     <script src="scripts/directives/entityLink.js"></script>
     <script src="scripts/directives/fileChooser.js"></script>
     <script src="scripts/directives/filter-box.js"></script>
+    <script src="scripts/directives/fixed-height.js"></script>
     <script src="scripts/directives/flow/flow-item.js"></script>
     <script src="scripts/directives/flow/flow.js"></script>
     <script src="scripts/directives/logEntry.js"></script>
@@ -179,9 +200,10 @@
     <script src="scripts/filters/shortDate.js"></script>
     <script src="scripts/filters/showDate.js"></script>
     <script src="scripts/services/AfkSrv.js"></script>
-    <script src="scripts/services/AlertSrv.js"></script>
+    <script src="scripts/services/AlertingSrv.js"></script>
     <script src="scripts/services/AnalyzerInfoSrv.js"></script>
     <script src="scripts/services/AnalyzerSrv.js"></script>
+    <script src="scripts/services/AppLayoutSrv.js"></script>
     <script src="scripts/services/AuditSrv.js"></script>
     <script src="scripts/services/AuthenticationSrv.js"></script>
     <script src="scripts/services/CaseArtifactSrv.js"></script>
@@ -194,11 +216,13 @@
     <script src="scripts/services/CortexSrv.js"></script>
     <script src="scripts/services/EntitySrv.js"></script>
     <script src="scripts/services/FileResource.js"></script>
+    <script src="scripts/services/FilteringSrv.js"></script>
     <script src="scripts/services/HtmlSanitizeSrv.js"></script>
     <script src="scripts/services/JobSrv.js"></script>
     <script src="scripts/services/ListSrv.js"></script>
     <script src="scripts/services/MetricsCacheSrv.js"></script>
     <script src="scripts/services/MispSrv.js"></script>
+    <script src="scripts/services/NotificationSrv.js"></script>
     <script src="scripts/services/ObservablesUISrv.js"></script>
     <script src="scripts/services/PSearchSrv.js"></script>
     <script src="scripts/services/ReportTemplateSrv.js"></script>
@@ -214,6 +238,7 @@
     <script src="scripts/services/UserSrv.js"></script>
     <script src="scripts/services/UtilsSrv.js"></script>
     <script src="scripts/services/VersionSrv.js"></script>
+    <script src="scripts/thirdparty/theme.js"></script>
     <script src="scripts/utils/highlight.min.js"></script>
     <script src="scripts/utils/saveSvgAsPng.js"></script>
     <!-- endinjector -->
