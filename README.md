@@ -44,6 +44,10 @@ To use TheHive, you can:
 - [Build it from sources](docs/installation/build-guide.md) then run it
 
 # Details
+
+## Documentation
+We have made several guides available in the [Documentation area](docs/).
+
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
 
