@@ -8,7 +8,7 @@ GB of RAM and 60 GB of disk. You can also use a physical machine with similar sp
 ## What's New?
 
 - [Changelog](/CHANGELOG.md)
-- [Migration guide](migration-guide.md)
+- [Migration Guide](migration-guide.md)
 
 ## Installation Guides
 
