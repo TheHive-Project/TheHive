@@ -338,7 +338,8 @@ class MispSrv @Inject() (
       case None ⇒
         for {
           instanceConfig ← getInstanceConfig(alert.source())
-          caze ← caseSrv.create(Fields(alert.toCaseJson))
+          caseTemplate ← alertSrv.getCaseTemplate(alert)
+          caze ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
           _ ← alertSrv.setCase(alert, caze)
           artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
           _ ← artifactSrv.create(caze, artifacts)
