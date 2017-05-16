@@ -139,7 +139,6 @@
             };
 
             $scope.createTemplate = function() {
-                console.log("Create Template: " + $scope.template.name);
                 return TemplateSrv.save($scope.template, function() {
                     $scope.getList(0);
 
@@ -152,10 +151,9 @@
             };
 
             $scope.updateTemplate = function() {
-                console.log("Update Template: " + $scope.template.name);
                 return TemplateSrv.update({
                     templateId: $scope.template.id
-                }, _.omit($scope.template, ['id', 'user', 'type']), function() {
+                }, _.omit($scope.template, ['id', 'user', '_type']), function() {
                     $scope.getList($scope.templateIndex);
 
                     $scope.$emit('templates:refresh');
