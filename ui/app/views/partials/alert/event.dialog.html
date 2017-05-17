@@ -36,7 +36,10 @@
                 <dl class="dl-horizontal clear">
                     <dt>Tags</dt>
                     <dd>
-                        <tag-list data="dialog.event.tags"></tag-list>
+                        <div class="flexwrap mt-xxs">                            
+                            <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags === 0">None</strong>
+                            <span ng-repeat="tag in dialog.event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                        </div>
                     </dd>
                 </dl>
             </div>

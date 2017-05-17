@@ -80,9 +80,9 @@
                                             </span>
                                         </div>
                                         <div class="case-tags flexwrap mt-xxs">
-                                            <span class="mr-xxxs">Tags:</span>
+                                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                                             <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
-                                            <span ng-repeat="tag in event.tags" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
+                                            <span ng-repeat="tag in event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
                                         </div>
                                     </td>
                                     <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
