@@ -35,18 +35,18 @@ Security analysts with a knack for scripting can easily add their own analyzers 
 
 # Try it
 To use TheHive, you can:
-- Install the [RPM package](docs/installation/rpm-guide.md)
-- Install the [DEB package](docs/installation/deb-guide.md)
-- Use [docker](docs/installation/docker-guide.md)
-- Use the [binary](docs/installation/binary-guide.md)
+- Install the [RPM package](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/rpm-guide.md)
+- Install the [DEB package](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/deb-guide.md)
+- Use [docker](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/docker-guide.md)
+- Use the [binary](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/binary-guide.md)
 - Execute the [Ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by
 [@drewstinnett](https://github.com/drewstinnett)
-- [Build it from sources](docs/installation/build-guide.md) then run it
+- [Build it from sources](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/build-guide.md) then run it
 
 # Details
 
 ## Documentation
-We have made several guides available in the [Documentation area](docs/).
+We have made several guides available in the [Documentation repository](https://github.com/CERT-BDF/TheHiveDocs).
 
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
