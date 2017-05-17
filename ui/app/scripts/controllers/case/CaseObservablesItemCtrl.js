@@ -107,7 +107,6 @@
                         return item.base.details;
                     }), 'status');
 
-                    console.log(statuses);
                     if(statuses.indexOf('Success') > -1) {
                         CaseArtifactSrv.api().get({
                             'artifactId': observableId
