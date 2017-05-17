@@ -104,6 +104,7 @@ packageBin := {
   (packageBin in Rpm).value
 }
 // DEB //
+version in Debian := version.value + "-1"
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "java8-runtime-headless | java8-runtime"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
@@ -114,7 +115,7 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "package" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmRelease := "8"
+rpmRelease := "1"
 rpmVendor in Rpm := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
@@ -139,7 +140,7 @@ packageBin in Rpm := {
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
-
+version in Docker := version.value + "-1"
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("certbdf")
 dockerUpdateLatest := true

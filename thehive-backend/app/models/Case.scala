@@ -34,7 +34,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val caseId: A[Long] = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
   val title: A[String] = attribute("title", F.textFmt, "Title of the case")
   val description: A[String] = attribute("description", F.textFmt, "Description of the case")
-  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-5)", 3L)
+  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-3)", 2L)
   val owner: A[String] = attribute("owner", F.stringFmt, "Owner of the case")
   val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val endDate: A[Option[Date]] = optionalAttribute("endDate", F.dateFmt, "Resolution date")

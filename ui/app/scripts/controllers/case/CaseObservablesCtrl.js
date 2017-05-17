@@ -46,6 +46,10 @@
                 $scope.uiSrv.setPageSize(newValue);
             });
 
+            $scope.keys = function(obj) {
+                return _.keys(obj || {});
+            };
+
             $scope.toggleStats = function () {
                 $scope.uiSrv.toggleStats();
             };

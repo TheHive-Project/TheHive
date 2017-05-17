@@ -46,7 +46,6 @@
                 ListSrv['delete']({
                     'listId': datatype.id
                 }, function(data) {
-                    console.log(data);
                     NotificationSrv.log('The datatype ' + datatype.value + ' has been removed', 'success');
                     $scope.load();
                 }, function(response) {

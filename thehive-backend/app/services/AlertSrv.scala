@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
 import models._
-import org.elastic4play.controllers.{ AttachmentInputValue, Fields, FileInputValue }
+import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services._
 import play.api.{ Configuration, Logger }
 import play.api.libs.json._
@@ -111,7 +111,7 @@ class AlertSrv(
     }
   }
 
-  private def getCaseTemplate(alert: Alert) = {
+  def getCaseTemplate(alert: Alert) = {
     val templateName = alert.caseTemplate()
       .orElse(templates.get(alert.tpe()))
       .getOrElse(alert.tpe())
@@ -130,16 +130,16 @@ class AlertSrv(
           case Some(connector: AlertTransformer) ⇒ connector.createCase(alert)
           case _ ⇒
             getCaseTemplate(alert).flatMap { caseTemplate ⇒
-              caseSrv.create(Fields.empty
-                .set("title", (caseTemplate
-                  .flatMap(_.titlePrefix())
-                  .getOrElse("") + s" #${alert.sourceRef()} " + alert.title())
-                  .trim)
-                .set("description", alert.description())
-                .set("severity", JsNumber(alert.severity()))
-                .set("tags", JsArray(alert.tags().map(JsString)))
-                .set("tlp", JsNumber(alert.tlp()))
-                .set("status", CaseStatus.Open.toString))
+              println(s"Create case using template $caseTemplate")
+              caseSrv.create(
+                Fields.empty
+                  .set("title", s"#${alert.sourceRef()} " + alert.title())
+                  .set("description", alert.description())
+                  .set("severity", JsNumber(alert.severity()))
+                  .set("tags", JsArray(alert.tags().map(JsString)))
+                  .set("tlp", JsNumber(alert.tlp()))
+                  .set("status", CaseStatus.Open.toString),
+                caseTemplate)
                 .flatMap { caze ⇒ setCase(alert, caze).map(_ ⇒ caze) }
                 .flatMap { caze ⇒
                   val artifactsFields = alert.artifacts()
@@ -177,9 +177,9 @@ class AlertSrv(
                       }
                       caze
                     }
-                  createdCase.onComplete {
+                  createdCase.onComplete { _ ⇒
                     // remove temporary files
-                    case _ ⇒ artifactsFields
+                    artifactsFields
                       .flatMap(_.get("Attachment"))
                       .foreach {
                         case FileInputValue(_, file, _) ⇒ Files.delete(file)

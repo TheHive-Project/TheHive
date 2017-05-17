@@ -31,7 +31,7 @@ trait AlertAttributes {
   val caze: A[Option[String]] = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
   val title: A[String] = attribute("title", F.textFmt, "Title of the alert")
   val description: A[String] = attribute("description", F.textFmt, "Description of the alert")
-  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the alert (0-5)", 3L)
+  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the alert (0-3)", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
   val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
   val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")

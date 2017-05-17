@@ -1,14 +1,25 @@
 # Change Log
 
-## [2.11.0](https://github.com/CERT-BDF/TheHive/tree/HEAD) (2017-05-12)
+## [2.11.1](https://github.com/CERT-BDF/TheHive/tree/HEAD) (2017-05-17)
+
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.0...2.11.1)
+
+**Implemented enhancements:**
+
+- Show available reports number for each observable [\#211](https://github.com/CERT-BDF/TheHive/issues/211)
+- Merge Duplicate Tasks during Case Merge [\#180](https://github.com/CERT-BDF/TheHive/issues/180)
+
+**Fixed bugs:**
+
+- Case templates not applied when converting an alert to a case [\#206](https://github.com/CERT-BDF/TheHive/issues/206)
+- Observable of merged cased might have duplicate tags [\#205](https://github.com/CERT-BDF/TheHive/issues/205)
+- Error updating case templates [\#204](https://github.com/CERT-BDF/TheHive/issues/204)
+
+## [2.11.0](https://github.com/CERT-BDF/TheHive/tree/2.11.0) (2017-05-14)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.2...2.11.0)
 
 **Implemented enhancements:**
 
-- Improve logs browsing [\#128](https://github.com/CERT-BDF/TheHive/issues/128)
-- Refresh the UI's skin [\#145](https://github.com/CERT-BDF/TheHive/issues/145)
-- Show severity on the "Cases Page" [\#165](https://github.com/CERT-BDF/TheHive/issues/165)
-- Update the datalist filter previews to display meaningful values [\#166](https://github.com/CERT-BDF/TheHive/issues/166)
 - Display the logos of the integrated external services [\#198](https://github.com/CERT-BDF/TheHive/issues/198)
 - TheHive send to many information to Cortex when an analyze is requested [\#196](https://github.com/CERT-BDF/TheHive/issues/196)
 - Sort the list of report templates [\#195](https://github.com/CERT-BDF/TheHive/issues/195)
@@ -17,26 +28,32 @@
 - Connect to Cortex protected by Basic Auth [\#173](https://github.com/CERT-BDF/TheHive/issues/173)
 - Implement the alerting framework feature [\#170](https://github.com/CERT-BDF/TheHive/issues/170)
 - Make the flow collapsible, in case details page [\#167](https://github.com/CERT-BDF/TheHive/issues/167)
-- Connect to Cortex instance via proxy [\#147](https://github.com/CERT-BDF/TheHive/issues/147)
-- Proxy authentication [\#143](https://github.com/CERT-BDF/TheHive/issues/143)
+- Update the datalist filter previews to display meaningful values [\#166](https://github.com/CERT-BDF/TheHive/issues/166)
+- Show severity on the "Cases Page" [\#165](https://github.com/CERT-BDF/TheHive/issues/165)
 - Add pagination component at the top of all the data lists [\#151](https://github.com/CERT-BDF/TheHive/issues/151)
-- Ignored MISP events are no longer visible and cannot be imported [\#107](https://github.com/CERT-BDF/TheHive/issues/107)
-- Reordering Tasks [\#21](https://github.com/CERT-BDF/TheHive/issues/21)
-- MISP import filter / filtering of events [\#86](https://github.com/CERT-BDF/TheHive/issues/86)
-- Add support of case template in back-end API [\#144](https://github.com/CERT-BDF/TheHive/issues/144)
+- Connect to Cortex instance via proxy [\#147](https://github.com/CERT-BDF/TheHive/issues/147)
 - Disable field autocomplete on the login form [\#146](https://github.com/CERT-BDF/TheHive/issues/146)
+- Refresh the UI's skin [\#145](https://github.com/CERT-BDF/TheHive/issues/145)
+- Add support of case template in back-end API [\#144](https://github.com/CERT-BDF/TheHive/issues/144)
+- Proxy authentication [\#143](https://github.com/CERT-BDF/TheHive/issues/143)
+- Improve logs browsing [\#128](https://github.com/CERT-BDF/TheHive/issues/128)
+- Improve logs browsing [\#128](https://github.com/CERT-BDF/TheHive/issues/128)
 - Feature request: Autocomplete tags [\#119](https://github.com/CERT-BDF/TheHive/issues/119)
+- Ignored MISP events are no longer visible and cannot be imported [\#107](https://github.com/CERT-BDF/TheHive/issues/107)
+- MISP import filter / filtering of events [\#86](https://github.com/CERT-BDF/TheHive/issues/86)
+- Reordering Tasks [\#21](https://github.com/CERT-BDF/TheHive/issues/21)
 
 **Fixed bugs:**
 
+- Authentication fails with wrong message if database migration is needed [\#200](https://github.com/CERT-BDF/TheHive/issues/200)
+- Fix the success message when running a set of analyzers [\#199](https://github.com/CERT-BDF/TheHive/issues/199)
 - Duplicate HTTP calls in case page [\#187](https://github.com/CERT-BDF/TheHive/issues/187)
 - Job status refresh [\#171](https://github.com/CERT-BDF/TheHive/issues/171)
-- Fix the success message when running a set of analyzers[\#199](https://github.com/CERT-BDF/TheHive/issues/199)
-- Authentication fails with wrong message if database migration is needed [\#200](https://github.com/CERT-BDF/TheHive/issues/200)
 
 **Closed issues:**
 
 - Support for cuckoo malware analysis plattform \(link analysis\) [\#181](https://github.com/CERT-BDF/TheHive/issues/181)
+- Scala code cleanup [\#153](https://github.com/CERT-BDF/TheHive/issues/153)
 
 **Merged pull requests:**
 
