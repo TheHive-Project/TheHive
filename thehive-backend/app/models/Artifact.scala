@@ -6,7 +6,7 @@ import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.postfixOps
 import akka.stream.Materializer
-import play.api.libs.json.{ JsNull, JsObject, JsString, JsValue }
+import play.api.libs.json.{ JsNull, JsObject, JsString, JsValue, JsArray }
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json
@@ -46,6 +46,11 @@ class ArtifactModel @Inject() (
     implicit val mat: Materializer,
     implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact") with ArtifactAttributes with AuditedModel {
   override val removeAttribute: JsObject = Json.obj("status" → ArtifactStatus.Deleted)
+
+  override def apply(attributes: JsObject) = {
+    val tags = (attributes \ "tags").asOpt[Seq[JsString]].getOrElse(Nil).distinct
+    new Artifact(this, attributes + ("tags" → JsArray(tags)))
+  }
 
   // this method modify request in order to hash artifact and manager file upload
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {

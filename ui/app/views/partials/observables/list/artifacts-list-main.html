@@ -64,7 +64,7 @@
                 </td>
                 <td class="wrap clickable" ng-click="openArtifact(artifact)">{{(artifact.data | fang) || (artifact.attachment.name | fang)}}</td>
                 <td>
-                	<span ng-repeat="l in artifact.tags">
+                	<span ng-repeat="l in artifact.tags track by $index">
                 		<span class="label label-primary mr-xxxs pointer" ng-click="addFilterValue('tags', l)">
                 			<i class="glyphicon glyphicon-tag"></i> <span ng-bind="l"></span>
                     	</span>
