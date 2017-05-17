@@ -105,12 +105,10 @@
                         data: observable.object.data,
                         type: observable.type
                     };
-                });                
+                });
             };
 
             $scope.handleSaveSuccess = function(response) {
-                console.log('Observable create modal closed');
-
                 var success = 0,
                     failure = 0;
 

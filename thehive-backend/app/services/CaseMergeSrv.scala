@@ -1,33 +1,22 @@
 package services
 
 import java.util.Date
-
 import javax.inject.{ Inject, Singleton }
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.math.BigDecimal.long2bigDecimal
 
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-
-import play.api.libs.json.{ JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue }
-import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.Json
-
+import models._
 import org.elastic4play.controllers.{ AttachmentInputValue, Fields }
 import org.elastic4play.models.BaseEntity
-import org.elastic4play.services.AuthContext
-import org.elastic4play.services.QueryDSL
-
-import models.{ Artifact, ArtifactStatus, Case, CaseImpactStatus, CaseResolutionStatus, CaseStatus, Task }
+import org.elastic4play.services.{ AuthContext, EventMessage, EventSrv }
 import play.api.Logger
-import scala.util.Success
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json._
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.math.BigDecimal.long2bigDecimal
 import scala.util.Failure
-import models.TaskStatus
-import models.LogStatus
-import org.elastic4play.services.EventMessage
-import org.elastic4play.services.EventSrv
 
 case class MergeArtifact(newArtifact: Artifact, artifacts: Seq[Artifact], authContext: AuthContext) extends EventMessage
 
@@ -44,12 +33,14 @@ class CaseMergeSrv @Inject() (
   private[CaseMergeSrv] lazy val logger = Logger(getClass)
 
   import org.elastic4play.services.QueryDSL._
+
   private[services] def concat[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ String) = {
     JsString(entities.map(e ⇒ s"#${getId(e)}:${getStr(e)}").mkString(sep))
   }
 
   private[services] def concatCaseDescription(cases: Seq[Case]) = {
     val str = cases
+      .filterNot(_.description().trim.isEmpty)
       .map { caze ⇒
         s"#### ${caze.title()} ([#${caze.caseId()}](#/case/${caze.id}/details))\n\n${caze.description()}"
       }
@@ -132,8 +123,13 @@ class CaseMergeSrv @Inject() (
   }
 
   private[services] def mergeTasksAndLogs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext): Future[Done] = {
-    val (tasks, futureTaskCount) = taskSrv.find(and(parent("case", withId(cases.map(_.id): _*)), "status" ~!= TaskStatus.Cancel), Some("all"), Nil)
+    val (tasks, futureTaskCount) = taskSrv.find(and(
+      parent("case", withId(cases.map(_.id): _*)),
+      "status" ~!= TaskStatus.Cancel,
+      "status" ~!= TaskStatus.Waiting), Some("all"), Nil)
+
     futureTaskCount.foreach(count ⇒ logger.info(s"Creating $count task(s):"))
+
     tasks
       .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task → _) }
       .flatMapConcat {
@@ -151,6 +147,28 @@ class CaseMergeSrv @Inject() (
           logSrv.create(task, fields)
       }
       .runWith(Sink.ignore)
+      .andThen {
+        case _ ⇒
+          taskSrv.find(and(
+            parent("case", withId(cases.map(_.id): _*)),
+            "status" ~= TaskStatus.Waiting), Some("all"), Nil)
+            ._1
+            .fold(Seq.empty[Task]) {
+              case (uniqueTasks, task) if !uniqueTasks.exists(_.title() == task.title()) ⇒
+                uniqueTasks :+ task
+              case (uniqueTasks, _) ⇒ uniqueTasks
+            }
+            .map(_.map(baseFields))
+            .mapAsyncUnordered(5) { tasksFields ⇒
+              taskSrv.create(newCase, tasksFields)
+            }
+            .mapConcat(_.toList)
+            .map {
+              case Failure(error) ⇒ logger.warn("Task creation fails", error)
+              case _              ⇒
+            }
+            .runWith(Sink.ignore)
+      }
   }
 
   private[services] def mergeArtifactStatus(artifacts: Seq[Artifact]) = {
@@ -197,7 +215,7 @@ class CaseMergeSrv @Inject() (
           .set("message", concat[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
           .set("startDate", firstDate(sameArtifacts.map(_.startDate())))
           .set("tlp", JsNumber(sameArtifacts.map(_.tlp()).min))
-          .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).map(JsString)))
+          .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).distinct.map(JsString)))
           .set("ioc", JsBoolean(sameArtifacts.map(_.ioc()).reduce(_ || _)))
           .set("status", mergeArtifactStatus(sameArtifacts))
         // Merged artifact is created under new case

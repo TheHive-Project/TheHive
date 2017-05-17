@@ -150,17 +150,6 @@
                         convertFn = filterDef.convert || angular.identity;
 
                     // Prepare the filter value
-                    /*
-                    if(factory.hasFilter(field)) {
-                        var oldValue = factory.getFilterValue(field);
-                        console.log('Filter ['+field+'] already exists = ' + oldValue);
-
-                        if(factory.filterDefs[field].type === 'list') {
-                            value = angular.isArray(oldValue) ? oldValue.push({text: value}) : [{text: oldValue}, {text: value}];
-                        }
-                    }
-                    */
-
                     if (field === 'keyword') {
                         query = value;
                     } else if (angular.isArray(value) && value.length > 0) {

@@ -1,6 +1,6 @@
 # Change Log
 
-## [2.11.0](https://github.com/CERT-BDF/TheHive/tree/HEAD)
+## [2.11.0](https://github.com/CERT-BDF/TheHive/tree/HEAD) (2017-05-12)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.10.2...2.11.0)
 
 **Implemented enhancements:**

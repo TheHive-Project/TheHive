@@ -43,6 +43,7 @@
                 <th style="width: 15px"></th>
                 <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
                 <th>Data/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th style="width: 400px">Analysis</th>
                 <th style="width: 120px">Date added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
             </tr>
         </thead>
@@ -74,6 +75,9 @@
                             {{tag}}
                         </span>
                     </div>
+                </td>
+                <td>
+                    <ng-pluralize count="keys(artifact.reports).length" when="{'0': 'No reports available', 'one': '1 report available', 'other': '{} reports available'}"></ng-pluralize>
                 </td>
                 <td>
                     <a href ng-click="addFilterValue('startDate', artifact.startDate)"><span uib-tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>
