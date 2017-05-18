@@ -1,8 +1,9 @@
 <psearch control="list"></psearch>
 
-<table class="table table-striped table-hover valigned">
+<table class="table table-striped table-hover">
 	<thead>
 		<tr>
+			<th class="text-center" style="width: 60px;">Severity</th>
 			<th>Task</th>
 			<th width="250px;">Date</th>
 		</tr>
@@ -13,6 +14,9 @@
 			ng-repeat="value in list.values"
 			ng-class="{'warning': (value.flag == true)}"
 			ng-click="openEntity(value)">
+			<td class="text-center">
+				<severity active="false" value="value.case.severity"></severity>
+			</td>
 			<td>
 				<div>
 					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
