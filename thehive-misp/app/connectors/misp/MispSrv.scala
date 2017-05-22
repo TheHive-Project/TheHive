@@ -67,7 +67,12 @@ case class MispConnection(
 
   private[MispConnection] lazy val logger = Logger(getClass)
 
-  logger.info(s"Add MISP connection $name ($baseUrl)\n\tproxy configuration: ${ws.proxy}")
+  logger.info(
+    s"""Add MISP connection $name
+       |\turl:           $baseUrl
+       |\tproxy:         ${ws.proxy}
+       |\tcase template: ${caseTemplate.getOrElse("<not set>")}
+       |\tartifact tags: ${artifactTags.mkString}""".stripMargin)
 
   private[misp] def apply(url: String) =
     ws.url(s"$baseUrl/$url")
@@ -193,6 +198,7 @@ class MispSrv @Inject() (
             "type" -
             "source" -
             "sourceRef" -
+            "caseTemplate" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
             ("status" → (if (!alert.follow()) Json.toJson(alert.status())
@@ -232,14 +238,17 @@ class MispSrv @Inject() (
             logger.warn(s"Invalid MISP event format:\n${response.body}")
             Nil
           }
-        val events = eventJson.flatMap { j ⇒
-          j.asOpt[MispAlert]
-            .map(_.copy(source = mispConnection.name))
-            .orElse {
-              logger.warn(s"MISP event can't be parsed\n$j")
-              None
-            }
-        }
+        val events = eventJson
+          .flatMap { j ⇒
+            j.asOpt[MispAlert]
+              .map(_.copy(source = mispConnection.name))
+              .orElse {
+                logger.warn(s"MISP event can't be parsed\n$j")
+                None
+              }
+          }
+          .filter(_.date after fromDate)
+
         val eventJsonSize = eventJson.size
         val eventsSize = events.size
         if (eventJsonSize != eventsSize)
