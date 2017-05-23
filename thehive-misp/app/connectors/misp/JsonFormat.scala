@@ -30,11 +30,13 @@ object JsonFormat {
       publishTimestamp ← (json \ "publish_timestamp").validate[String]
       publishDate = new Date(publishTimestamp.toLong * 1000)
       threatLevel ← (json \ "threat_level_id").validate[String]
+      isPublished ← (json \ "published").validate[Boolean]
     } yield MispAlert(
       org,
       eventId,
       date,
       publishDate,
+      isPublished,
       s"#$eventId ${info.trim}",
       s"Imported from MISP Event #$eventId, created at $date",
       threatLevel.toLong,
@@ -43,7 +45,7 @@ object JsonFormat {
       "")
   }
 
-  implicit val mispAlertWrites: Writes[MispAlert] = Json.writes[MispAlert]
+  implicit val mispAlertWrites: Writes[MispAlert] = Json.writes[MispAlert].transform((_: JsValue).asInstanceOf[JsObject] - "isPublished")
 
   implicit val attributeReads: Reads[MispAttribute] = Reads(json ⇒
     for {
