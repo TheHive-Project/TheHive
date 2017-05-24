@@ -1,7 +1,25 @@
 # Change Log
 
-## [2.11.1](https://github.com/CERT-BDF/TheHive/tree/HEAD) (2017-05-17)
+## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.1...2.11.2)
 
+**Implemented enhancements:**
+
+- Visually distinguish between analyzed and non analyzer observables [\#224](https://github.com/CERT-BDF/TheHive/issues/224)
+- Add Description Field to Alert Preview Modal [\#218](https://github.com/CERT-BDF/TheHive/issues/218)
+- Show case severity in lists [\#188](https://github.com/CERT-BDF/TheHive/issues/188)
+
+**Fixed bugs:**
+
+- MISP synchronization - attributes are not retrieve [\#221](https://github.com/CERT-BDF/TheHive/issues/221)
+- MISP synchronization - Alerts are wrongly updated [\#220](https://github.com/CERT-BDF/TheHive/issues/220)
+- Cortex jobs from thehive fail silently [\#219](https://github.com/CERT-BDF/TheHive/issues/219)
+
+**Merged pull requests:**
+
+- Fixing links to docu repo [\#213](https://github.com/CERT-BDF/TheHive/pull/213) ([SHSauler](https://github.com/SHSauler))
+
+## [2.11.1](https://github.com/CERT-BDF/TheHive/tree/2.11.1) (2017-05-17)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.0...2.11.1)
 
 **Implemented enhancements:**

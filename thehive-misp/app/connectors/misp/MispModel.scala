@@ -7,6 +7,7 @@ case class MispAlert(
   sourceRef: String,
   date: Date,
   lastSyncDate: Date,
+  isPublished: Boolean,
   title: String,
   description: String,
   severity: Long,

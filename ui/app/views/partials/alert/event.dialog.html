@@ -1,5 +1,5 @@
 <div class="modal-header bg-primary">
-    <h3 class="modal-title">Alert Preview</h3>
+    <h3 class="modal-title">Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span></h3>
 </div>
 <div class="modal-body">
 
@@ -12,36 +12,42 @@
     <div class="row" ng-hide="dialog.loading">
         <div class="col-md-12">
             <div class="alert-details">
-                <h4 class="vpad10 text-primary">
-                    Basic details
-                    <span class="label label-default pull-right" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
+                <h4 class="text-primary">
+                    <severity value="dialog.event.severity"></severity>
+                    <span>{{dialog.event.title}}</span>
                 </h4>
-                <dl class="dl-horizontal clear">
-                    <dt>Reference</dt>
-                    <dd>{{dialog.event.sourceRef}}</dd>
-                </dl>
-                <dl class="dl-horizontal clear">
-                    <dt>Title</dt>
-                    <dd>
-                        <severity value="dialog.event.severity"></severity>{{dialog.event.title}}</dd>
-                </dl>
-                <dl class="dl-horizontal clear">
-                    <dt>Date</dt>
-                    <dd>{{dialog.event.date | showDate}}</dd>
-                </dl>
-                <dl class="dl-horizontal clear">
-                    <dt>Source</dt>
-                    <dd>{{dialog.event.source}}</dd>
-                </dl>
-                <dl class="dl-horizontal clear">
-                    <dt>Tags</dt>
-                    <dd>
-                        <div class="flexwrap mt-xxs">
-                            <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags === 0">None</strong>
-                            <span ng-repeat="tag in dialog.event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
-                        </div>
-                    </dd>
-                </dl>
+                <div class="mt-xxs">
+                    <span>
+                        <strong><i class="fa fa-calendar"></i> Date: </strong>
+                        <span>{{dialog.event.date | showDate}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-certificate"></i> Type: </strong>
+                        <span>{{dialog.event.type}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-barcode"></i> Reference: </strong>
+                        <span>{{dialog.event.sourceRef}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-bullseye"></i> Source: </strong>
+                        <span>{{dialog.event.source}}</span>
+                    </span>
+                </div>
+                <div class="case-tags flexwrap mt-xxs">
+                    <strong><i class="fa fa-tags mr-xxxs"></i></strong>
+                    <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags === 0">None</strong>
+                    <span ng-repeat="tag in dialog.event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
+                </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Description
+                    </h4>
+                    <div>
+                        <div marked="dialog.event.description" class="markdown"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">

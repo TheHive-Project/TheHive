@@ -67,7 +67,12 @@ case class MispConnection(
 
   private[MispConnection] lazy val logger = Logger(getClass)
 
-  logger.info(s"Add MISP connection $name ($baseUrl)\n\tproxy configuration: ${ws.proxy}")
+  logger.info(
+    s"""Add MISP connection $name
+       |\turl:           $baseUrl
+       |\tproxy:         ${ws.proxy}
+       |\tcase template: ${caseTemplate.getOrElse("<not set>")}
+       |\tartifact tags: ${artifactTags.mkString}""".stripMargin)
 
   private[misp] def apply(url: String) =
     ws.url(s"$baseUrl/$url")
@@ -165,19 +170,21 @@ class MispSrv @Inject() (
       // get related alert
       .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event) ⇒
+          logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
           alertSrv.get("misp", event.source, event.sourceRef)
             .map(a ⇒ (mcfg, lastSyncDate, event, a))
       }
       .mapAsyncUnordered(1) {
         case (mcfg, lastSyncDate, event, alert) ⇒
+          logger.trace(s"MISP synchro ${mcfg.name} last sync at $lastSyncDate, event ${event.sourceRef}, alert ${alert.fold("no alert")("alert" + _.alertId())}")
           logger.info(s"getting MISP event ${event.sourceRef}")
-          getAttributes(mcfg, event.sourceRef, Some(lastSyncDate))
+          getAttributes(mcfg, event.sourceRef, alert.map(_ ⇒ lastSyncDate))
             .map((mcfg, event, alert, _))
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
         case (mcfg, event, None, attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has no related alert, create it")
+          logger.info(s"MISP event ${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mcfg.caseTemplate.fold[JsValue](JsNull)(JsString)) +
@@ -188,11 +195,12 @@ class MispSrv @Inject() (
 
         // if a related alert exists, update it
         case (_, event, Some(alert), attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has related alert, update it")
+          logger.info(s"MISP event ${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
             "source" -
             "sourceRef" -
+            "caseTemplate" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
             ("status" → (if (!alert.follow()) Json.toJson(alert.status())
@@ -232,14 +240,17 @@ class MispSrv @Inject() (
             logger.warn(s"Invalid MISP event format:\n${response.body}")
             Nil
           }
-        val events = eventJson.flatMap { j ⇒
-          j.asOpt[MispAlert]
-            .map(_.copy(source = mispConnection.name))
-            .orElse {
-              logger.warn(s"MISP event can't be parsed\n$j")
-              None
-            }
-        }
+        val events = eventJson
+          .flatMap { j ⇒
+            j.asOpt[MispAlert]
+              .map(_.copy(source = mispConnection.name))
+              .orElse {
+                logger.warn(s"MISP event can't be parsed\n$j")
+                None
+              }
+          }
+          .filter(event ⇒ event.isPublished && event.date.after(fromDate))
+
         val eventJsonSize = eventJson.size
         val eventsSize = events.size
         if (eventJsonSize != eventsSize)
