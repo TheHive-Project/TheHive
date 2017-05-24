@@ -85,4 +85,4 @@ addUser thehive "" thehive "thehive daemon-user" "/bin/false"
 chown thehive:thehive /var/log/thehive
 chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml
 chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml
-mkdir /opt/thehive/conf
+mkdir -p /opt/thehive/conf
