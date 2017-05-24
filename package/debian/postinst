@@ -76,13 +76,29 @@ deleteGroup() {
 
 # #######################################
 
+case "$1" in
+  configure)
+    addGroup thehive ""
+    addUser thehive "" thehive "thehive daemon-user" "/bin/false"
 
-addGroup thehive ""
-addUser thehive "" thehive "thehive daemon-user" "/bin/false"
+    # Chown definitions created by SBT Native Packager
 
-# Chown definitions created by SBT Native Packager
+    chown thehive:thehive /var/log/thehive
+    chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml
+    chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml
+    mkdir -p /opt/thehive/conf
 
-chown thehive:thehive /var/log/thehive
-chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml
-chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml
-mkdir -p /opt/thehive/conf
+    test -n "$2" && service thehive start
+    exit 0
+  ;;
+  abort-upgrade|abort-remove|abort-deconfigure)
+  ;;
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+  ;;
+esac
+
+
+
+
