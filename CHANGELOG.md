@@ -1,8 +1,7 @@
 # Change Log
 
-## [Unreleased](https://github.com/CERT-BDF/TheHive/tree/HEAD)
-
-[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.1...HEAD)
+## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.1...2.11.2)
 
 **Implemented enhancements:**
 
