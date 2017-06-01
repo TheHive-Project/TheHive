@@ -32,7 +32,7 @@
         <span class="ml-xxs text-danger" ng-show="links.length > 0">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
-                <ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize>
+                <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})"><ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize></a>
             </strong>
         </span>
 

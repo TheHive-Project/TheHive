@@ -1,42 +1,65 @@
 <div class="case-links" ng-show="links.length > 0">
     <h4 class="vpad10 text-primary">Related cases ({{links.length}})</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Case</th>
-                <th>Tags</th>
-                <th colspan="2">Linked observables</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr ng-repeat="link in links">
-                <td class="wrap">
-                    <div>
-                        {{link.startDate | showDate:'YYYY-MM-DD HH:mm'}}
-                        <tlp value="link.tlp"></tlp>
-                    </div>
-                    <div class="small">
-                        <i class="glyphicon glyphicon-folder-open text-muted mr-xxxs"></i>
-                        <a href ui-sref="app.case.details({caseId: link.id})"># {{link.caseId}} - {{link.title | limitTo: 100}}</a>
-                    </div>
-                </td>
-                <td>
-                    <tag-list data="link.tags"></tag-list>
-                </td>
-                <td><span class="badge">{{link.linkedWith.length}}</span></td>
-                <td>
-                    <div ng-repeat="observable in link.linkedWith | limitTo:5" class="wrap">
-                        <a href ui-sref="app.case.observables-item({caseId: link.id, itemId: observable.id})">
-                            <strong>[{{observable.dataType}}]</strong>:
-                            <span ng-if="observable.attachment"></span>{{observable.attachment.name}}
-                            <span ng-if="!observable.attachment"></span>{{observable.data | fang}}
-                        </a>
-                    </div>
-                    <div class="mt-xs" ng-if="link.linkedWith.length > 5">
-                        <a href ui-sref="app.case.observables({caseId: caseId})"><strong>See ({{link.linkedWith.length - 5}}) more links</strong></a>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="case-item">
+        <div class="case-details text-bold">Title</div>
+        <div class="case-date text-bold">Date</div>
+        <div class="case-observables-list text-bold">Linked observables</div>
+    </div>
+    <div class="case-collection" ng-repeat="item in links">
+        <div class="case-item" >
+            <!-- case severity -->
+            <div class="case-tlp bg-tlp-{{item.tlp}}"></div>
+
+            <!-- case title and main details -->
+            <div class="case-details">
+                <div class="case-title">
+                    <a ui-sref="app.case.details({caseId: item.id})">#{{item.caseId}} - {{item.title}}</a>
+                </div>
+                <div class="case-tags flexwrap mt-xxs">
+                    <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                    <strong class="text-muted mr-xxxs" ng-if="!item.tags || item.tags.length === 0">None</strong>
+                    <span ng-repeat="tag in item.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                </div>
+                <div class="text-success" ng-show="item.status !== 'Open'">
+                    <small>
+                        (Closed at {{item.endDate | showDate}} as <strong>{{CaseResolutionStatus[item.resolutionStatus]}}</strong>)
+                    </small>
+                </div>
+                <div class="text-danger" ng-if="item.mergeFrom">
+                    <small>
+                        Merged from <a href ui-sref="app.case.details({caseId: item.mergeFrom[0]})"> Case #{{item.stats.mergeFrom[0].caseId}}</a> and
+                        <a href ui-sref="app.case.details({caseId: item.mergeFrom[1]})"> Case #{{utem.stats.mergeFrom[1].caseId}}</a>
+                    </small>
+                </div>
+            </div>
+
+            <div class="case-severity">
+                <div class="clickable">
+                    <severity active="false" value="item.severity"></severity>
+                </div>
+            </div>
+
+            <div class="case-date">
+                <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
+            </div>
+
+            <div class="case-observables-count">
+                <span class="badge">{{item.linkedWith.length}}</span>
+            </div>
+
+            <div class="case-observables-list">
+                <div ng-repeat="observable in item.linkedWith | limitTo:5" class="wrap">
+                    <a href ui-sref="app.case.observables-item({caseId: item.id, itemId: observable.id})">
+                        <strong>[{{observable.dataType}}]</strong>:
+                        <span ng-if="observable.attachment"></span>{{observable.attachment.name}}
+                        <span ng-if="!observable.attachment"></span>{{observable.data | fang}}
+                    </a>
+                </div>
+                <div class="mt-xs" ng-if="item.linkedWith.length > 5">
+                    <a href ui-sref="app.case.observables({caseId: caseId})"><strong>See ({{item.linkedWith.length - 5}}) more links</strong></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
