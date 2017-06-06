@@ -13,7 +13,7 @@
         <span class="label label-lg label-default mr-xxs clickable"
             ng-repeat="statsItem in linkStats"
             ng-click="filterLinks(statsItem.key)"
-            ng-class="{'label-primary': currentFilter===statsItem.key}">{{statsItem.key}} ({{statsItem.value}})</span>
+            ng-class="{'label-primary': currentFilter===statsItem.key}">{{CaseResolutionStatus[statsItem.key] || statsItem.key}} ({{statsItem.value}})</span>
     </div>
 
     <div class="row" ng-show="filteredLinks.length === 0">

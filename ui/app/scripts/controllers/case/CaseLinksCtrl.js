@@ -11,7 +11,7 @@
             // Add tab
             CaseTabsSrv.addTab(tabName, {
                 name: tabName,
-                label: 'Links',
+                label: 'Related Cases',
                 closable: true,
                 state: 'app.case.links',
                 params: {}
