@@ -72,6 +72,7 @@
 
             <div class="case-observables-list">
                 <div ng-repeat="observable in item.linkedWith | limitTo:5" class="wrap">
+                    <i class="fa fa-star" ng-if="observable.ioc"></i>
                     <a href ui-sref="app.case.observables-item({caseId: item.id, itemId: observable.id})">
                         <strong>[{{observable.dataType}}]</strong>:
                         <span ng-if="observable.attachment"></span>{{observable.attachment.name}}
