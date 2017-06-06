@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('donutChart', function(StatSrv, $state, $base64, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('donutChart', function(StatSrv, $state, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -60,7 +60,7 @@
                                     };
 
                                     $state.go('app.search', {
-                                        q: $base64.encode(angular.toJson(searchQuery))
+                                        q: Base64.encode(angular.toJson(searchQuery))
                                     });
                                 }
                             },

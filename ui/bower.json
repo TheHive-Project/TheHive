@@ -30,7 +30,6 @@
     "cryptojslib": "~3.1.2",
     "angular-ui-notification": "0.3.6",
     "c3": "~0.4.11",
-    "angular-base64": "~2.0.5",
     "css-spaces": "~0.3.5",
     "angular-messages": "1.5.8",
     "ng-file-upload-shim": "^12.2.5",
@@ -47,7 +46,8 @@
     "angular-page-loader": "*",
     "angular-images-resizer": "^2.0.2",
     "angular-base64-upload": "^0.1.19",
-    "angular-ui-sortable": "^0.17.0"
+    "angular-ui-sortable": "^0.17.0",
+    "js-base64": "^2.1.9"
   },
   "devDependencies": {
     "angular-mocks": "1.5.8"

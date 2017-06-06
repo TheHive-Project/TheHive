@@ -6,7 +6,7 @@ angular.module('theHiveDirectives', []);
 angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router', 'ui.sortable',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
-        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
+        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
         'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer'
     ])
     .config(function($resourceProvider) {

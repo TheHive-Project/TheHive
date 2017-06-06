@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -122,7 +122,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.search = function(querystring) {
-            var query = $base64.encode(angular.toJson({
+            var query = Base64.encode(angular.toJson({
                 _string: querystring
             }));
 
