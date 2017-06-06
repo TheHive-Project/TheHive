@@ -8,17 +8,22 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
 import models._
+import org.elastic4play.InternalError
 import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services._
-import play.api.{ Configuration, Logger }
+import org.elastic4play.utils.Hasher
 import play.api.libs.json._
+import play.api.{ Configuration, Logger }
 
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Try }
 
 trait AlertTransformer {
   def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case]
 }
+
+case class CaseSimilarity(caze: Case, similarIOCCount: Int, iocCount: Int, similarArtifactCount: Int, artifactCount: Int)
 
 class AlertSrv(
     templates: Map[String, String],
@@ -33,6 +38,7 @@ class AlertSrv(
     caseTemplateSrv: CaseTemplateSrv,
     attachmentSrv: AttachmentSrv,
     connectors: ConnectorRouter,
+    hashAlg: Seq[String],
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends AlertTransformer {
 
@@ -63,6 +69,7 @@ class AlertSrv(
     caseTemplateSrv,
     attachmentSrv,
     connectors,
+    (configuration.getString("datastore.hash.main").get +: configuration.getStringSeq("datastore.hash.extra").get).distinct,
     ec,
     mat)
 
@@ -111,7 +118,7 @@ class AlertSrv(
     }
   }
 
-  def getCaseTemplate(alert: Alert) = {
+  def getCaseTemplate(alert: Alert): Future[Option[CaseTemplate]] = {
     val templateName = alert.caseTemplate()
       .orElse(templates.get(alert.tpe()))
       .getOrElse(alert.tpe())
@@ -208,5 +215,58 @@ class AlertSrv(
 
   def setFollowAlert(alertId: String, follow: Boolean)(implicit authContext: AuthContext): Future[Alert] = {
     updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)))
+  }
+
+  def similarCases(alert: Alert): Future[Seq[CaseSimilarity]] = {
+    def similarArtifacts(artifact: JsObject): Option[Source[Artifact, NotUsed]] = {
+      for {
+        dataType ← (artifact \ "dataType").asOpt[String]
+        d ← (artifact \ "data").asOpt[String]
+        data ← (dataType, d) match {
+          case ("file", dataExtractor(filename, contentType, b64content)) ⇒
+            val content = java.util.Base64.getDecoder.decode(b64content)
+            val hashes = Hasher(hashAlg: _*).fromByteArray(content)
+            Some(Right(Attachment(filename, hashes, content.length.toLong, contentType, "")))
+          case ("file", _) ⇒
+            logger.warn(s"Invalid data format for file artifact: $d")
+            None
+          case _ ⇒
+            Some(Left(d))
+        }
+      } yield artifactSrv.findSimilar(dataType, data, None, Some("all"), Nil)._1
+    }
+
+    def getCaseAndArtifactCount(caseId: String): Future[(Case, Int, Int)] = {
+      import org.elastic4play.services.QueryDSL._
+      for {
+        caze ← caseSrv.get(caseId)
+        artifactCountJs ← artifactSrv.stats(parent("case", withId(caseId)), Seq(groupByField("ioc", selectCount)))
+        iocCount = (artifactCountJs \ "1" \ "count").asOpt[Int].getOrElse(0)
+        artifactCount = (artifactCountJs \ "0" \ "count").asOpt[Int].getOrElse(0)
+      } yield (caze, iocCount, artifactCount)
+    }
+
+    Source(alert.artifacts().to[immutable.Iterable])
+      .flatMapConcat { artifact ⇒
+        similarArtifacts(artifact)
+          .getOrElse(Source.empty)
+      }
+      .groupBy(100, _.parentId)
+      .map {
+        case a if a.ioc() ⇒ (a.parentId, 1, 0)
+        case a            ⇒ (a.parentId, 0, 1)
+      }
+      .reduce[(Option[String], Int, Int)] {
+        case ((caze, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caze, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
+      }
+      .mergeSubstreams
+      .mapAsyncUnordered(5) {
+        case (Some(caseId), similarIOCCount, similarArtifactCount) ⇒
+          getCaseAndArtifactCount(caseId).map {
+            case (caze, iocCount, artifactCount) ⇒ CaseSimilarity(caze, similarIOCCount, iocCount, similarArtifactCount, artifactCount)
+          }
+        case _ ⇒ Future.failed(InternalError("Case not found"))
+      }
+      .runWith(Sink.seq)
   }
 }

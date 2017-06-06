@@ -10,9 +10,10 @@ import org.elastic4play.services._
 import org.elastic4play.{ BadRequestError, Timed }
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.JsArray
+import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.mvc.{ Action, AnyContent, Controller }
 import services.AlertSrv
+import services.JsonFormat.caseSimilarityWrites
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -37,15 +38,30 @@ class AlertCtrl @Inject() (
 
   @Timed
   def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
-    val withStats = for {
-      statsValues ← request.queryString.get("nstats")
-      firstValue ← statsValues.headOption
-    } yield Try(firstValue.toBoolean).getOrElse(firstValue == "1")
+    val withStats = request
+      .queryString
+      .get("nstats")
+      .flatMap(_.headOption)
+      .exists(v ⇒ Try(v.toBoolean).getOrElse(v == "1"))
+
+    val withSimilarity = request
+      .queryString
+      .get("similarity")
+      .flatMap(_.headOption)
+      .exists(v ⇒ Try(v.toBoolean).getOrElse(v == "1"))
+    println(s"similarity=$withSimilarity")
 
     for {
       alert ← alertSrv.get(id)
-      alertsWithStats ← auxSrv.apply(alert, 0, withStats.getOrElse(false), removeUnaudited = false)
-    } yield renderer.toOutput(OK, alertsWithStats)
+      alertsWithStats ← auxSrv.apply(alert, 0, withStats, removeUnaudited = false)
+      similarCases ← if (withSimilarity)
+        alertSrv.similarCases(alert)
+          .map(sc ⇒ Json.obj("similarCases" → Json.toJson(sc)))
+      else Future.successful(JsObject(Nil))
+    } yield {
+      println(s"Similar cases = $similarCases")
+      renderer.toOutput(OK, alertsWithStats ++ similarCases)
+    }
   }
 
   @Timed
