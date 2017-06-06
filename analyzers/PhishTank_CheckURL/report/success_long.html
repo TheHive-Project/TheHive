@@ -1,0 +1,35 @@
+<div class="panel panel-info">
+    <div class="panel-heading">
+        PhishTank Report for <strong>{{artifact.data}}</strong>
+    </div>
+    <div class="panel-body">
+	<dl class="dl-horizontal" ng-if="content.errortext">
+                <dt>ERROR: </dt>
+                <dd class="wrap">{{content.errortext}}&nbsp;</dd>
+        </dl>
+	<dl class="dl-horizontal" ng-if="content.in_database">
+                <dt>In database: </dt>
+                <dd class="wrap">{{content.in_database}}&nbsp;</dd>
+	</dl>
+        <dl class="dl-horizontal" ng-if="content.verified">
+                <dt>Verified: </dt>
+                <dd class="wrap">{{content.verified}}&nbsp;</dd>
+        </dl>
+        <dl class="dl-horizontal" ng-if="content.verified_at">
+                <dt>Verified at: </dt>
+                <dd class="wrap">{{content.verified_at}}&nbsp;</dd>
+        </dl>
+	<dl class="dl-horizontal" ng-if="content.phish_detail_page">
+                <dt>Phish Detail Page: </dt>
+		<dd class="wrap">
+			<a ng-href="{{content.phish_detail_page}}" target="_blank">{{content.phish_detail_page}}</a>
+		</dd>
+       	</dl>
+	<dl class="dl-horizontal" ng-if="content.in_database === 'False'">
+		<dt>Submit to PhishTank: </dat>
+		<dd class="wrap">
+			<i class="fa fa-bullhorn"></i><a ng-href="mailto:phish@phishtank.com?subject=New Phishing Site Found&Body=PhishTank,%0dPlease take notice of this phishing site recently observed by our analysts.%0d%0d{{artifact.data}}"> Click here to submit this site to PhishTank</a>
+		</dd>
+	</dl>
+    </div>
+</div>
