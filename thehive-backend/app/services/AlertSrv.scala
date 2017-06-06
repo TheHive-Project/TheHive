@@ -242,7 +242,7 @@ class AlertSrv(
         caze ← caseSrv.get(caseId)
         artifactCountJs ← artifactSrv.stats(parent("case", withId(caseId)), Seq(groupByField("ioc", selectCount)))
         iocCount = (artifactCountJs \ "1" \ "count").asOpt[Int].getOrElse(0)
-        artifactCount = (artifactCountJs \ "0" \ "count").asOpt[Int].getOrElse(0)
+        artifactCount = (artifactCountJs \\ "count").map(_.as[Int]).sum
       } yield (caze, iocCount, artifactCount)
     }
 
@@ -253,7 +253,7 @@ class AlertSrv(
       }
       .groupBy(100, _.parentId)
       .map {
-        case a if a.ioc() ⇒ (a.parentId, 1, 0)
+        case a if a.ioc() ⇒ (a.parentId, 1, 1)
         case a            ⇒ (a.parentId, 0, 1)
       }
       .reduce[(Option[String], Int, Int)] {
