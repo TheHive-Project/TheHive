@@ -1,11 +1,34 @@
-<div class="case-links" ng-show="links.length > 0">
-    <h4 class="vpad10 text-primary">Related cases ({{links.length}})</h4>
-    <div class="case-item">
+<div class="row" ng-show="links.length === 0">
+    <div class="col-md-12">
+        <div class=" empty-message">No records</div>
+    </div>
+</div>
+
+<div class="case-links" ng-show="links.length > 0" ng-init="filteredLinks = (links | filter:filtering)">
+    <div class="mv-s" ng-if="linkStats">
+        <span class="label label-lg label-default mr-xxs clickable"
+            ng-click="filterLinks('');"
+            ng-class="{'label-primary': currentFilter===''}">All ({{links.length || 0}})</span>
+
+        <span class="label label-lg label-default mr-xxs clickable"
+            ng-repeat="statsItem in linkStats"
+            ng-click="filterLinks(statsItem.key)"
+            ng-class="{'label-primary': currentFilter===statsItem.key}">{{statsItem.key}} ({{statsItem.value}})</span>
+    </div>
+
+    <div class="row" ng-show="filteredLinks.length === 0">
+        <div class="col-md-12">
+            <div class=" empty-message">No records</div>
+        </div>
+    </div>
+
+    <div class="case-item" ng-show="filteredLinks.length !== 0">
         <div class="case-details text-bold">Title</div>
         <div class="case-date text-bold">Date</div>
         <div class="case-observables-list text-bold">Linked observables</div>
     </div>
-    <div class="case-collection" ng-repeat="item in links">
+
+    <div class="case-collection" ng-repeat="item in filteredLinks = (links | filter:filtering)">
         <div class="case-item" >
             <!-- case severity -->
             <div class="case-tlp bg-tlp-{{item.tlp}}"></div>
