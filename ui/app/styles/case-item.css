@@ -40,3 +40,6 @@ div.case-item>div.case-observables-count {
 div.case-item>div.case-observables-list {
     width: 450px;
 }
+div.case-item>div.case-similarity {
+    width: 200px;
+}

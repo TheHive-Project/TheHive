@@ -188,7 +188,7 @@
                     templateUrl: 'views/partials/alert/event.dialog.html',
                     controller: 'AlertEventCtrl',
                     controllerAs: 'dialog',
-                    size: 'lg',
+                    size: 'max',
                     resolve: {
                         event: event
                     }

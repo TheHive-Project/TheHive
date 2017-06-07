@@ -8,6 +8,7 @@ object JsonFormat {
       Json.obj(
         "id" → caze.id,
         "_id" → caze.id,
+        "caseId" → caze.caseId(),
         "title" → caze.title(),
         "tags" → caze.tags(),
         "status" → caze.status(),

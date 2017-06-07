@@ -19,7 +19,11 @@
                 },
 
                 get: function(alertId) {
-                    return $http.get(baseUrl + '/' + alertId);
+                    return $http.get(baseUrl + '/' + alertId, {
+                        params: {
+                            similarity: 1
+                        }
+                    });
                 },
 
                 create: function(alertId) {

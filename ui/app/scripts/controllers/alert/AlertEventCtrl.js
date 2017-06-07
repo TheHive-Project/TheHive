@@ -1,10 +1,11 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, AlertingSrv, NotificationSrv, event) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, CaseResolutionStatus, AlertingSrv, NotificationSrv, event) {
             var self = this;
             var eventId = event.id;
 
+            self.CaseResolutionStatus = CaseResolutionStatus;
             self.event = event;
 
             self.loading = true;
