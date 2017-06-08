@@ -22,7 +22,6 @@ import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.implicitConversions
-import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 object CortexConfig {
@@ -199,26 +198,26 @@ class CortexSrv @Inject() (
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
           getSrv[JobModel, Job](jobModel, jobId)
             .flatMap { job ⇒
-              if (status == JobStatus.Success) {
-                val jobSummary = Try(Json.parse(report))
-                  .toOption
-                  .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
-                  .getOrElse(JsObject(Nil))
-                for {
-                  artifact ← artifactSrv.get(job.artifactId())
-                  reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject(Nil))
-                  newReports = reports + (job.analyzerId() → jobSummary)
-                } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
-                  .onComplete {
-                    case Failure(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
-                    case Success(_) ⇒
-                  }
-              }
               val jobFields = Fields.empty
                 .set("status", status.toString)
                 .set("report", report)
                 .set("endDate", Json.toJson(new Date))
               update(job, jobFields)
+                .andThen {
+                  case _ if status == JobStatus.Success ⇒
+                    val jobSummary = Try(Json.parse(report))
+                      .toOption
+                      .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
+                      .getOrElse(JsObject(Nil))
+                    for {
+                      artifact ← artifactSrv.get(job.artifactId())
+                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject(Nil))
+                      newReports = reports + (job.analyzerId() → jobSummary)
+                    } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
+                      .recover {
+                        case t ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
+                      }
+                }
             }
             .onComplete {
               case Failure(e) ⇒ logger.error(s"Update job fails", e)
