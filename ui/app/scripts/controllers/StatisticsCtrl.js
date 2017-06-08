@@ -8,7 +8,14 @@
         $scope.globalFilters = StatisticSrv.getFilters() || {
             fromDate: moment().subtract(30, 'd').toDate(),
             toDate: moment().toDate(),
-            tags: []
+            tags: [],
+            tagsAggregator: 'any'
+        };
+
+        $scope.tagsAggregators = {
+            any: 'Any of',
+            all: 'All of',
+            none: 'None of'
         };
 
         $scope.caseByTlp = {
@@ -150,6 +157,10 @@
             }
         };
 
+        $scope.setTagsAggregator = function(aggregator) {
+            $scope.globalFilters.tagsAggregator = aggregator;
+        };
+
 
         // Prepare the global query
         $scope.prepareGlobalQuery = function() {
@@ -157,28 +168,50 @@
             var start = $scope.globalFilters.fromDate ? $scope.globalFilters.fromDate.getTime() : '*';
             var end = $scope.globalFilters.toDate ? $scope.globalFilters.toDate.setHours(23,59,59,999) : '*';
 
-            // Handle date queries
+            // Handle tags query
             var tags = _.map($scope.globalFilters.tags, function(tag) {
                 return tag.text;
             });
 
             return function(options) {
-                return {
+                var queryCriteria = {
                     _and: [
                         {
                             _between: { _field: options.dateField, _from: start, _to: end}
-                        },
-                        {
-                            _or: _.map(tags, function(t) {
-                                return { _field: options.tagsField, _value: t };
-                            })
                         }
                     ]
                 };
+
+                // Adding tags criteria
+                if(tags.length > 0) {
+                    var tagsCriterions = _.map(tags, function(t) {
+                        return { _field: options.tagsField, _value: t };
+                    });
+                    var tagsCriteria = {};
+                    switch($scope.globalFilters.tagsAggregator) {
+                        case 'all':
+                            tagsCriteria = {
+                                _and: tagsCriterions
+                            };
+                            break;
+                        case 'none':
+                            tagsCriteria = {
+                                _not: {
+                                    _or: tagsCriterions
+                                }
+                            };
+                            break;
+                        case 'any':
+                        default:
+                            tagsCriteria = {
+                                _or: tagsCriterions
+                            }
+                    }
+                    queryCriteria._and.push(tagsCriteria);
+                }
+
+                return queryCriteria;
             };
-
-            //return segments.join(' AND ');
-
         };
 
         $scope.filter = function() {

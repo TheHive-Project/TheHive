@@ -14,7 +14,20 @@
                         </div>
                         <div class="form-group hpad10">
                             <label>Tags</label>
-                            <tags-input class="form-control form-control-wrapper" style="width: 300px;" min-length="2" ng-model="globalFilters.tags" placeholder="Add tags" replace-spaces-with-dashes="false"></tags-input>
+                            <div class="input-group">
+                              <div class="input-group-btn" uib-dropdown>
+                                  <button type="button" class="btn btn-default dropdown-toggle" uib-dropdown-toggle>
+                                      {{tagsAggregators[globalFilters.tagsAggregator]}} <span class="caret"></span>
+                                  </button>
+                                  <ul class="dropdown-menu" uib-dropdown-menu>
+                                    <li><a href ng-click="setTagsAggregator('any')">Any of</a></li>
+                                    <li><a href ng-click="setTagsAggregator('all')">All of</a></li>
+                                    <li><a href ng-click="setTagsAggregator('none')">None of</a></li>
+                                  </ul>
+                              </div>
+                              <tags-input class="form-control form-control-wrapper" style="width: 300px;" min-length="2" ng-model="globalFilters.tags" placeholder="Add tags" replace-spaces-with-dashes="false"></tags-input>
+                            </div>
+                            <!-- <tags-input class="form-control form-control-wrapper" style="width: 300px;" min-length="2" ng-model="globalFilters.tags" placeholder="Add tags" replace-spaces-with-dashes="false"></tags-input> -->
                         </div>
                         <button type="submit" class="btn btn-primary" uib-tooltip="Apply global filters to all charts">
                             <i class="fa fa-search"></i>
