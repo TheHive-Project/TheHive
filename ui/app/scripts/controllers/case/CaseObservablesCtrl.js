@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
+        function ($scope, $q, $state, $stateParams, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -40,6 +40,29 @@
                     $scope.updateSelection();
                 },
                 nstats: true
+            });
+
+            // Add a listener to refresh observables list on job finish
+            StreamSrv.addListener({
+                scope: $scope,
+                rootId: $scope.caseId,
+                objectType: 'case_artifact_job',
+                callback: function(data) {
+                    var successFound = false;
+                    var i = 0;
+                    var ln = data.length;
+
+                    while(!successFound && i < ln) {
+                        if(data[i].base.operation === 'Update' && data[i].base.details.status === 'Success') {
+                            successFound = true;
+                        }
+                        i++;
+                    }
+
+                    if(successFound) {
+                        $scope.artifacts.update();
+                    }
+                }
             });
 
             $scope.$watchCollection('artifacts.pageSize', function (newValue) {
