@@ -110,7 +110,7 @@ class CaseSrv @Inject() (
         "status" ~= "Ok"), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
-      .groupBy(20, _.parentId)
+      .groupBy(100, _.parentId)
       .map { a ⇒ (a.parentId, Seq(a)) }
       .reduce((l, r) ⇒ (l._1, r._2 ++ l._2))
       .mergeSubstreams
