@@ -6,7 +6,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.collection.immutable
 import play.api.{ Configuration, Logger }
 import play.api.libs.json.JsObject
-import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, EnumerationAttributeFormat, ModelDef, ObjectAttributeFormat, StringAttributeFormat, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, EnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.services.AuditableAction
 import org.elastic4play.services.JsonFormat.auditableActionFormat
 import services.AuditedModel
@@ -48,6 +48,11 @@ class AuditModel(
         case attr ⇒ Seq(attr)
       }
       .filter(_.isModel)
+      .map {
+        case attr @ Attribute(_, _, OptionalAttributeFormat(_), _, _, _) ⇒ attr
+        case attr @ Attribute(_, _, MultiAttributeFormat(_), _, _, _)    ⇒ attr
+        case attr                                                        ⇒ attr.toOptional
+      }
       .groupBy(_.name)
       .flatMap {
         // if only one attribute is found for a name, get it

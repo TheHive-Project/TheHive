@@ -4,6 +4,8 @@ import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
 import models.JsonFormat.alertStatusFormat
+import org.elastic4play.controllers.JsonInputValue
+import org.elastic4play.{ AttributeCheckingError, InvalidFormatAttributeError }
 import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.utils.Hasher
 import play.api.Logger
@@ -50,21 +52,35 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
   override val defaultSortBy: Seq[String] = Seq("-date")
   override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
 
-  override def artifactAttributes: Seq[Attribute[_]] = artifactModel.attributes
+  override def artifactAttributes: Seq[Attribute[_]] = artifactModel
+    .attributes
+    .filter(_.isForm)
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
-    Future.successful {
-      if (attrs.keys.contains("_id"))
-        attrs
-      else {
-        val hasher = Hasher("MD5")
-        val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
-        val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
-        val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
-        val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
-        attrs + ("_id" → JsString(_id))
-      } - "lastSyncDate" - "case" - "status" - "follow"
-    }
+    // check if data attribute is present on all artifacts
+    val missingDataErrors = (attrs \ "artifacts")
+      .asOpt[Seq[JsValue]]
+      .getOrElse(Nil)
+      .filter { a ⇒
+        (a \ "data").toOption.isEmpty ||
+          ((a \ "tags").toOption.isEmpty && (a \ "message").toOption.isEmpty)
+      }
+      .map(v ⇒ InvalidFormatAttributeError("artifacts", "artifact", JsonInputValue(v)))
+    if (missingDataErrors.nonEmpty)
+      Future.failed(AttributeCheckingError("alert", missingDataErrors))
+    else
+      Future.successful {
+        if (attrs.keys.contains("_id"))
+          attrs
+        else {
+          val hasher = Hasher("MD5")
+          val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
+          val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
+          val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
+          val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
+          attrs + ("_id" → JsString(_id))
+        } - "lastSyncDate" - "case" - "status" - "follow"
+      }
   }
 }
 

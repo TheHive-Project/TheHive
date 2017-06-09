@@ -34,6 +34,10 @@ class CaseMergeSrv @Inject() (
 
   import org.elastic4play.services.QueryDSL._
 
+  private[services] def concatOpt[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ Option[String]) = {
+    JsString(entities.flatMap(e ⇒ getStr(e).map(s ⇒ s"#${getId(e)}:$s")).mkString(sep))
+  }
+
   private[services] def concat[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ String) = {
     JsString(entities.map(e ⇒ s"#${getId(e)}:${getStr(e)}").mkString(sep))
   }
@@ -212,7 +216,7 @@ class CaseMergeSrv @Inject() (
         }
           .set("data", firstArtifact.data().map(JsString))
           .set("dataType", firstArtifact.dataType())
-          .set("message", concat[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
+          .set("message", concatOpt[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
           .set("startDate", firstDate(sameArtifacts.map(_.startDate())))
           .set("tlp", JsNumber(sameArtifacts.map(_.tlp()).min))
           .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).distinct.map(JsString)))
