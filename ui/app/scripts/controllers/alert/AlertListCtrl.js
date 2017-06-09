@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
+        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
             var self = this;
 
             self.list = [];
@@ -190,7 +190,10 @@
                     controllerAs: 'dialog',
                     size: 'max',
                     resolve: {
-                        event: event
+                        event: event,
+                        templates: function() {
+                            return TemplateSrv.query().$promise;
+                        }
                     }
                 });
             };

@@ -1,3 +1,15 @@
+<div class="mv-s">
+    <span class="label label-lg label-default mr-xxs clickable"
+        ng-click="dialog.filterSimilarCases('');"
+        ng-class="{'label-primary': dialog.currentSimilarFilter===''}">All ({{dialog.event.similarCases.length || 0}})</span>
+
+    <span class="label label-lg label-default mr-xxs clickable"
+        ng-repeat="statsItem in dialog.similarCasesStats"
+        ng-if="statsItem.value > 0"
+        ng-click="dialog.filterSimilarCases(statsItem.key)"
+        ng-class="{'label-primary': dialog.currentSimilarFilter===statsItem.key}">{{dialog.CaseResolutionStatus[statsItem.key] || statsItem.key}} ({{statsItem.value}})</span>
+</div>
+
 <div class="case-item">
     <div class="case-details text-bold">Title</div>
     <div class="case-date text-bold">Date</div>
@@ -5,7 +17,7 @@
     <div class="case-similarity text-bold">IOCs</div>
 </div>
 
-<div class="case-collection" ng-repeat="item in dialog.event.similarCases | orderBy:['-similarIocCount','-similarArtifactCount', '-iocCount', '-startDate']">
+<div class="case-collection" ng-repeat="item in filteredLinks = (dialog.event.similarCases | filter:dialog.similarityFilters | orderBy:dialog.similaritySorts) ">
     <div class="case-item" >
         <!-- case severity -->
         <div class="case-tlp bg-tlp-{{item.tlp}}"></div>

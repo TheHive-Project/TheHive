@@ -26,8 +26,8 @@
                     });
                 },
 
-                create: function(alertId) {
-                    return $http.post(baseUrl + '/' + alertId + '/createCase', {});
+                create: function(alertId, data) {
+                    return $http.post(baseUrl + '/' + alertId + '/createCase', data || {});
                 },
 
                 canMarkAsRead: function(event) {
