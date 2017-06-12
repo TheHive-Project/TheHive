@@ -343,12 +343,12 @@ class MispSrv @Inject() (
     }
   }
 
-  def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case] = {
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         for {
-          caseTemplate ← alertSrv.getCaseTemplate(alert)
+          caseTemplate ← alertSrv.getCaseTemplate(alert, customCaseTemplate)
           caze ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
           _ ← mergeWithCase(alert, caze)
         } yield caze

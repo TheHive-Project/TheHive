@@ -129,10 +129,11 @@ class AlertCtrl @Inject() (
     } yield renderer.toOutput(OK, updatedAlert)
   }
 
-  def createCase(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
+  def createCase(id: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
-      caze ← alertSrv.createCase(alert)
+      customCaseTemplate = request.body.getString("caseTemplate")
+      caze ← alertSrv.createCase(alert, customCaseTemplate)
     } yield renderer.toOutput(CREATED, caze)
   }
 

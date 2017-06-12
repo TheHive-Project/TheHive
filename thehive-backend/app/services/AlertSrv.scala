@@ -20,7 +20,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 trait AlertTransformer {
-  def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case]
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
   def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case]
 }
 
@@ -119,8 +119,9 @@ class AlertSrv(
     }
   }
 
-  def getCaseTemplate(alert: Alert): Future[Option[CaseTemplate]] = {
-    val templateName = alert.caseTemplate()
+  def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] = {
+    val templateName = customCaseTemplate
+      .orElse(alert.caseTemplate())
       .orElse(templates.get(alert.tpe()))
       .getOrElse(alert.tpe())
     caseTemplateSrv.getByName(templateName)
@@ -130,15 +131,15 @@ class AlertSrv(
 
   private val dataExtractor = "^(.*);(.*);(.*)".r
 
-  def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case] = {
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         connectors.get(alert.tpe()) match {
-          case Some(connector: AlertTransformer) ⇒ connector.createCase(alert)
+          case Some(connector: AlertTransformer) ⇒ connector.createCase(alert, customCaseTemplate)
           case _ ⇒
             for {
-              caseTemplate ← getCaseTemplate(alert)
+              caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
               caze ← caseSrv.create(
                 Fields.empty
                   .set("title", s"#${alert.sourceRef()} " + alert.title())
