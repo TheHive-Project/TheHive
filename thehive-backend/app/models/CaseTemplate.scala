@@ -28,7 +28,9 @@ trait CaseTemplateAttributes { _: AttributeDef ⇒
 
 @Singleton
 class CaseTemplateModel @Inject() (taskModel: TaskModel) extends ModelDef[CaseTemplateModel, CaseTemplate]("caseTemplate") with CaseTemplateAttributes {
-  def taskAttributes: Seq[Attribute[_]] = taskModel.attributes
+  def taskAttributes: Seq[Attribute[_]] = taskModel
+    .attributes
+    .filter(_.isForm)
 }
 class CaseTemplate(model: CaseTemplateModel, attributes: JsObject) extends EntityDef[CaseTemplateModel, CaseTemplate](model, attributes) with CaseTemplateAttributes {
   def taskAttributes = Nil

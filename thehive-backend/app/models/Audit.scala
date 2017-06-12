@@ -49,7 +49,7 @@ class AuditModel(
       case (ObjectAttributeFormat(subAttributes1), ObjectAttributeFormat(subAttributes2)) ⇒ mergeAttributes(context, subAttributes1 ++ subAttributes2)
       case (f1, f2) if f1 == f2                                                           ⇒ Some(f1)
       case (f1, f2) ⇒
-        logger.warn(s"$f1 != $f2")
+        logger.warn(s"Attribute $f1 != $f2")
         None
 
     }
@@ -92,10 +92,6 @@ class AuditModel(
       .getOrElse(Nil)
   }
 
-  logger.info("Audit attributes:")
-  detailsAttributes.foreach { a ⇒
-    logger.info(s"\t${a.name}: ${a.format}")
-  }
   override def apply(attributes: JsObject): Audit = new Audit(this, attributes)
 }
 
