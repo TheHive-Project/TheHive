@@ -48,7 +48,7 @@ class ArtifactCtrl @Inject() (
 
   @Timed
   def get(id: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
-    artifactSrv.get(id, request.body.getStrings("fields").map("dataType" +: _))
+    artifactSrv.get(id)
       .map(artifact ⇒ renderer.toOutput(OK, artifact))
   }
 

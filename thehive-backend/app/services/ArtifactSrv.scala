@@ -69,9 +69,8 @@ class ArtifactSrv @Inject() (
         case t ⇒ Future.successful(t)
       }
 
-  def get(id: String, fields: Option[Seq[String]] = None)(implicit authContext: AuthContext): Future[Artifact] = {
-    val fieldAttribute = fields.map { _.flatMap(f ⇒ artifactModel.attributes.find(_.name == f)) }
-    getSrv[ArtifactModel, Artifact](artifactModel, id, fieldAttribute)
+  def get(id: String)(implicit authContext: AuthContext): Future[Artifact] = {
+    getSrv[ArtifactModel, Artifact](artifactModel, id)
   }
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
