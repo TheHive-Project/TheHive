@@ -14,9 +14,15 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
 
         $resourceProvider.defaults.stripTrailingSlashes = true;
     })
-    .config(function($compileProvider) {
+    .config(function($compileProvider, markedProvider) {
         'use strict';
         $compileProvider.debugInfoEnabled(false);
+
+        markedProvider.setRenderer({
+            link: function(href, title, text) {
+                return "<a href='" + href + "'" + (title ? " title='" + title + "'" : '') + " target='_blank'>" + text + "</a>";
+            }
+        });
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
