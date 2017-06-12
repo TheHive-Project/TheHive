@@ -165,20 +165,21 @@ class MispSrv @Inject() (
       // get events that have been published after the last synchronization
       .flatMapConcat {
         case (mcfg, lastSyncDate) ⇒
-          getEventsFromDate(mcfg, lastSyncDate).map((mcfg, lastSyncDate, _))
+          getEventsFromDate(mcfg, lastSyncDate)
+            .map((mcfg, _))
       }
       // get related alert
       .mapAsyncUnordered(1) {
-        case (mcfg, lastSyncDate, event) ⇒
+        case (mcfg, event) ⇒
           logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
           alertSrv.get("misp", event.source, event.sourceRef)
-            .map(a ⇒ (mcfg, lastSyncDate, event, a))
+            .map((mcfg, event, _))
       }
       .mapAsyncUnordered(1) {
-        case (mcfg, lastSyncDate, event, alert) ⇒
-          logger.trace(s"MISP synchro ${mcfg.name} last sync at $lastSyncDate, event ${event.sourceRef}, alert ${alert.fold("no alert")("alert" + _.alertId())}")
+        case (mcfg, event, alert) ⇒
+          logger.trace(s"MISP synchro ${mcfg.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
           logger.info(s"getting MISP event ${event.sourceRef}")
-          getAttributes(mcfg, event.sourceRef, alert.map(_ ⇒ lastSyncDate))
+          getAttributes(mcfg, event.sourceRef, alert.map(_.lastSyncDate()))
             .map((mcfg, event, alert, _))
       }
       .mapAsyncUnordered(1) {
@@ -226,12 +227,11 @@ class MispSrv @Inject() (
   }
 
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-    val date = dateFormat.format(fromDate)
+    val date = fromDate.getTime / 1000
     Source
       .fromFuture {
         mispConnection("events/index")
-          .post(Json.obj("searchDatefrom" → date))
+          .post(Json.obj("searchpublish_timestamp" → date))
       }
       .mapConcat { response ⇒
         val eventJson = Json.parse(response.body)
@@ -249,7 +249,6 @@ class MispSrv @Inject() (
                 None
               }
           }
-          .filter(event ⇒ event.isPublished && event.date.after(fromDate))
 
         val eventJsonSize = eventJson.size
         val eventsSize = events.size
@@ -263,12 +262,16 @@ class MispSrv @Inject() (
     mispConnection: MispConnection,
     eventId: String,
     fromDate: Option[Date]): Future[Seq[JsObject]] = {
-    val date = fromDate.fold("null") { fd ⇒
-      val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-      dateFormat.format(fd)
-    }
-    mispConnection(s"attributes/restSearch/json/null/null/null/null/null/$date/null/null/$eventId/false")
-      .get()
+
+    val date = fromDate.fold(0L)(_.getTime / 1000)
+
+    mispConnection(s"attributes/restSearch/json")
+      .post(Json.obj(
+        "request" → Json.obj(
+          "timestamp" → date,
+          "eventid" → eventId)))
+      // add ("deleted" → 1) to see also deleted attributes
+      // add ("deleted" → "only") to see only deleted attributes
       .map { response ⇒
         val refDate = fromDate.getOrElse(new Date(0))
         val artifactTags = JsString(s"src:${mispConnection.name}") +: JsArray(mispConnection.artifactTags.map(JsString))
