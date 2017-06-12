@@ -15,6 +15,7 @@
     <div class="case-date text-bold">Date</div>
     <div class="case-similarity text-bold">Observables</div>
     <div class="case-similarity text-bold">IOCs</div>
+    <div class="case-similarity-merge text-bold">Action</div>
 </div>
 
 <div class="case-collection" ng-repeat="item in filteredLinks = (dialog.event.similarCases | filter:dialog.similarityFilters | orderBy:dialog.similaritySorts) ">
@@ -57,22 +58,22 @@
 
         <div class="case-similarity">
             <div>
-                <strong>{{item.similarArtifactCount}} / {{item.artifactCount}}</strong>
-                <uib-progressbar class="progress" max="item.artifactCount" value="item.similarArtifactCount" type="primary">
-                    <i>{{(item.similarArtifactCount / item.artifactCount) | percentage:0}}</i>
-                </uib-progressbar>
+                <strong>{{(item.similarArtifactCount / item.artifactCount) | percentage:0}}</strong> ({{item.similarArtifactCount}} / {{item.artifactCount}})
+                <uib-progressbar class="progress progress-sm" max="item.artifactCount" value="item.similarArtifactCount" type="primary"></uib-progressbar>
             </div>
         </div>
         <div class="case-similarity">
             <div ng-if="item.iocCount > 0">
-                <strong>{{item.similarIocCount}} / {{item.iocCount}}</strong>
-                <uib-progressbar class="progress" max="item.iocCount" value="item.similarIocCount" type="danger">
-                    <i>{{(item.similarIocCount / item.iocCount) | percentage:0}}</i>
-                </uib-progressbar>
+                <strong>{{(item.similarIocCount / item.iocCount) | percentage:0}}</strong> ({{item.similarIocCount}} / {{item.iocCount}})
+                <uib-progressbar class="progress progress-sm" max="item.iocCount" value="item.similarIocCount" type="danger"></uib-progressbar>
             </div>
             <div ng-if="item.iocCount === 0">
                 <em>N/A</em>
             </div>
+        </div>
+
+        <div class="case-similarity-merge text-center">
+            <button class="btn btn-sm btn-primary" ng-click="dialog.mergeIntoCase(item.id)">Merge in this case</button>
         </div>
     </div>
 </div>

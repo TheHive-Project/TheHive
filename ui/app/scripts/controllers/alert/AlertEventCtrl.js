@@ -82,6 +82,23 @@
                 });
             };
 
+            self.mergeIntoCase = function(caseId) {
+                self.loading = true;
+                AlertingSrv.mergeInto(self.event.id, caseId)
+                    .then(function(response) {
+                        $uibModalInstance.dismiss();
+
+                        $rootScope.$broadcast('alert:event-imported');
+
+                        $state.go('app.case.details', {
+                            caseId: response.data.id
+                        });
+                    }, function(response) {
+                        self.loading = false;
+                        NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                    });
+            };
+
             this.follow = function() {
                 var fn = angular.noop;
 

@@ -43,3 +43,7 @@ div.case-item>div.case-observables-list {
 div.case-item>div.case-similarity {
     width: 200px;
 }
+div.case-item>div.case-similarity-merge {
+    width: 150px;
+    text-align: center;
+}

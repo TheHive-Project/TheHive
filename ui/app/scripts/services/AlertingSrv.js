@@ -30,6 +30,10 @@
                     return $http.post(baseUrl + '/' + alertId + '/createCase', data || {});
                 },
 
+                mergeInto: function(alertId, caseId) {
+                    return $http.post(baseUrl + '/' + alertId + '/merge/' + caseId);
+                },
+
                 canMarkAsRead: function(event) {
                     return event.status === 'New' || event.status === 'Updated';
                 },
