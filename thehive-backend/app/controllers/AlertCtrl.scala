@@ -12,7 +12,7 @@ import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.mvc.{ Action, AnyContent, Controller }
-import services.AlertSrv
+import services.{ AlertSrv, CaseSrv }
 import services.JsonFormat.caseSimilarityWrites
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -21,6 +21,7 @@ import scala.util.Try
 @Singleton
 class AlertCtrl @Inject() (
     alertSrv: AlertSrv,
+    caseSrv: CaseSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
@@ -37,6 +38,15 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
+  def mergeWithCase(alertId: String, caseId: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+    for {
+      alert ← alertSrv.get(alertId)
+      caze ← caseSrv.get(caseId)
+      _ ← alertSrv.mergeWithCase(alert, caze)
+    } yield renderer.toOutput(CREATED, caze)
+  }
+
+  @Timed
   def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
     val withStats = request
       .queryString
@@ -49,7 +59,6 @@ class AlertCtrl @Inject() (
       .get("similarity")
       .flatMap(_.headOption)
       .exists(v ⇒ Try(v.toBoolean).getOrElse(v == "1"))
-    println(s"similarity=$withSimilarity")
 
     for {
       alert ← alertSrv.get(id)
@@ -59,7 +68,6 @@ class AlertCtrl @Inject() (
           .map(sc ⇒ Json.obj("similarCases" → Json.toJson(sc)))
       else Future.successful(JsObject(Nil))
     } yield {
-      println(s"Similar cases = $similarCases")
       renderer.toOutput(OK, alertsWithStats ++ similarCases)
     }
   }
@@ -124,8 +132,8 @@ class AlertCtrl @Inject() (
   def createCase(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
-      updatedAlert ← alertSrv.createCase(alert)
-    } yield renderer.toOutput(CREATED, updatedAlert)
+      caze ← alertSrv.createCase(alert)
+    } yield renderer.toOutput(CREATED, caze)
   }
 
   @Timed

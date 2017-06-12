@@ -348,14 +348,20 @@ class MispSrv @Inject() (
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         for {
-          instanceConfig ← getInstanceConfig(alert.source())
           caseTemplate ← alertSrv.getCaseTemplate(alert)
           caze ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
-          _ ← alertSrv.setCase(alert, caze)
-          artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
-          _ ← artifactSrv.create(caze, artifacts)
+          _ ← mergeWithCase(alert, caze)
         } yield caze
     }
+  }
+
+  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    for {
+      instanceConfig ← getInstanceConfig(alert.source())
+      _ ← alertSrv.setCase(alert, caze)
+      artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
+      _ ← artifactSrv.create(caze, artifacts)
+    } yield caze
   }
 
   def updateMispAlertArtifact()(implicit authContext: AuthContext): Future[Unit] = {

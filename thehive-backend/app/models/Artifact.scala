@@ -55,8 +55,6 @@ class ArtifactModel @Inject() (
   // this method modify request in order to hash artifact and manager file upload
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     val keys = attrs.keys
-    println(s"keys=$keys")
-    println(s"attrs=$attrs")
     if (!keys.contains("message") && (attrs \ "tags").asOpt[Seq[JsValue]].forall(_.isEmpty))
       throw BadRequestError(s"Artifact must contain a message or on ore more tags")
     if (keys.contains("data") == keys.contains("attachment"))
