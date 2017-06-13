@@ -90,6 +90,9 @@ class AlertSrv(
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     updateSrv[AlertModel, Alert](alertModel, id, fields)
 
+  def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
+    updateSrv(alert, fields)
+
   def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] = {
     updateSrv[AlertModel, Alert](alertModel, ids, fields)
   }

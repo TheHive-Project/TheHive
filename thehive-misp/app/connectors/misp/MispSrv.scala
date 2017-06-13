@@ -1,6 +1,5 @@
 package connectors.misp
 
-import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
@@ -157,46 +156,86 @@ class MispSrv @Inject() (
     // for each MISP server
     Source(mispConfig.connections.toList)
       // get last synchronization
-      .mapAsyncUnordered(1) { mcfg ⇒
-        alertSrv.stats(and("type" ~= "misp", "source" ~= mcfg.name), Seq(selectMax("lastSyncDate")))
-          .map { maxLastSyncDate ⇒ mcfg → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
-          .recover { case _ ⇒ mcfg → new Date(0) }
+      .mapAsyncUnordered(1) { mispConnection ⇒
+        alertSrv.stats(and("type" ~= "misp", "source" ~= mispConnection.name), Seq(selectMax("lastSyncDate")))
+          .map { maxLastSyncDate ⇒ mispConnection → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
+          .recover { case _ ⇒ mispConnection → new Date(0) }
       }
-      // get events that have been published after the last synchronization
       .flatMapConcat {
-        case (mcfg, lastSyncDate) ⇒
-          getEventsFromDate(mcfg, lastSyncDate)
-            .map((mcfg, _))
+        case (mispConnection, lastSyncDate) ⇒
+          synchronize(mispConnection, lastSyncDate)
       }
+      .runWith(Sink.seq)
+  }
+
+  def fullSynchronize()(implicit authContext: AuthContext) = {
+    import org.elastic4play.services.QueryDSL._
+
+    val updatedStatusFields = Fields.empty.set("status", "Updated")
+    val (updateAlerts, updateAlertCount) = alertSrv.find("status" ~= "Update", Some("all"), Nil)
+    updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
+    updateAlerts
+      .mapAsyncUnordered(1) { alert ⇒
+        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated")
+        alertSrv.update(alert, updatedStatusFields)
+          .recover {
+            case error ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
+          }
+      }
+      .runWith(Sink.ignore)
+
+    val ignoredStatusFields = Fields.empty.set("status", "Ignored")
+    val (ignoreAlerts, ignoreAlertCount) = alertSrv.find("status" ~= "Ignore", Some("all"), Nil)
+    ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
+    ignoreAlerts
+      .mapAsyncUnordered(1) { alert ⇒
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored")
+        alertSrv.update(alert, ignoredStatusFields)
+          .recover {
+            case error ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)
+          }
+      }
+      .runWith(Sink.ignore)
+
+    Source(mispConfig.connections.toList)
+      .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, new Date(0)))
+      .runWith(Sink.seq)
+  }
+
+  def synchronize(mispConnection: MispConnection, lastSyncDate: Date)(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
+    logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
+    val fullSynchro = if (lastSyncDate.getTime == 0) Some(lastSyncDate) else None
+    // get events that have been published after the last synchronization
+    getEventsFromDate(mispConnection, lastSyncDate)
       // get related alert
       .mapAsyncUnordered(1) {
-        case (mcfg, event) ⇒
+        case event ⇒
           logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
           alertSrv.get("misp", event.source, event.sourceRef)
-            .map((mcfg, event, _))
+            .map((event, _))
       }
       .mapAsyncUnordered(1) {
-        case (mcfg, event, alert) ⇒
-          logger.trace(s"MISP synchro ${mcfg.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
-          logger.info(s"getting MISP event ${event.sourceRef}")
-          getAttributes(mcfg, event.sourceRef, alert.map(_.lastSyncDate()))
-            .map((mcfg, event, alert, _))
+        case (event, alert) ⇒
+          logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
+          logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
+          getAttributes(mispConnection, event.sourceRef, fullSynchro.orElse(alert.map(_.lastSyncDate())))
+            .map((event, alert, _))
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
-        case (mcfg, event, None, attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
+        case (event, None, attrs) ⇒
+          logger.info(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
-            ("caseTemplate" → mcfg.caseTemplate.fold[JsValue](JsNull)(JsString)) +
+            ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
             ("artifacts" → JsArray(attrs))
           alertSrv.create(Fields(alertJson))
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
 
         // if a related alert exists, update it
-        case (_, event, Some(alert), attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
+        case (event, Some(alert), attrs) ⇒
+          logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
             "source" -
@@ -223,7 +262,6 @@ class MispSrv @Inject() (
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
       }
-      .runWith(Sink.seq)
   }
 
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {

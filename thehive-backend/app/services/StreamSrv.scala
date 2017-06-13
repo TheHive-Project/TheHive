@@ -43,7 +43,7 @@ object StreamActor {
   /* Ask messages, wait if there is no ready messages*/
   case object GetOperations
   /* Pending messages must be sent to sender */
-  case class Submit(senderRef: ActorRef)
+  case object Submit
   /* List of ready messages */
   case class StreamMessages(messages: Seq[JsObject])
   case object StreamNotFound
@@ -70,25 +70,25 @@ class StreamActor(
     def this(senderRef: ActorRef) = this(
       senderRef,
       FakeCancellable,
-      context.system.scheduler.scheduleOnce(refresh, self, Submit(senderRef)),
+      context.system.scheduler.scheduleOnce(refresh, self, Submit),
       false)
 
     /**
      * Renew timers
      */
-    def renew(): WaitingRequest = {
+    def renew: WaitingRequest = {
       if (itemCancellable.cancel()) {
         if (!hasResult && globalCancellable.cancel()) {
           new WaitingRequest(
             senderRef,
-            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit(senderRef)),
-            context.system.scheduler.scheduleOnce(globalMaxWait, self, Submit(senderRef)),
+            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit),
+            context.system.scheduler.scheduleOnce(globalMaxWait, self, Submit),
             true)
         }
         else
           new WaitingRequest(
             senderRef,
-            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit(senderRef)),
+            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit),
             globalCancellable,
             true)
       }
@@ -162,7 +162,7 @@ class StreamActor(
           aog :+ operation
         case _ ⇒
           logger.debug("Impossible")
-          ???
+          sys.error("")
       }
       context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId → Some(updatedOperationGroup))))
 
@@ -174,7 +174,7 @@ class StreamActor(
       }
       context.become(receiveWithState(Some(new WaitingRequest(sender)), currentMessages))
 
-    case Submit(senderRef) ⇒
+    case Submit ⇒
       waitingRequest match {
         case Some(wr) ⇒
           val (readyMessages, pendingMessages) = currentMessages.partition(_._2.fold(false)(_.isReady))
@@ -184,9 +184,9 @@ class StreamActor(
           logger.error("No request to submit !")
       }
 
-    case Initialize(requestId)     ⇒ context.become(receiveWithState(waitingRequest, currentMessages + (requestId → None)))
-    case operation: AuditOperation ⇒
-    case message                   ⇒ logger.warn(s"Unexpected message $message (${message.getClass})")
+    case Initialize(requestId) ⇒ context.become(receiveWithState(waitingRequest, currentMessages + (requestId → None)))
+    case _: AuditOperation     ⇒
+    case message               ⇒ logger.warn(s"Unexpected message $message (${message.getClass})")
   }
 
   def receive: Receive = receiveWithState(None, Map.empty[String, Option[StreamMessageGroup[_]]])
