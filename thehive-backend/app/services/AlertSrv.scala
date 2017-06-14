@@ -98,6 +98,9 @@ class AlertSrv(
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     updateSrv[AlertModel, Alert](alertModel, id, fields)
 
+  def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
+    updateSrv(alert, fields)
+
   def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] = {
     updateSrv[AlertModel, Alert](alertModel, ids, fields)
   }
@@ -274,5 +277,37 @@ class AlertSrv(
         case _ ⇒ Future.failed(InternalError("Case not found"))
       }
       .runWith(Sink.seq)
+  }
+
+  def fixStatus()(implicit authContext: AuthContext): Future[Unit] = {
+    import org.elastic4play.services.QueryDSL._
+
+    val updatedStatusFields = Fields.empty.set("status", "Updated")
+    val (updateAlerts, updateAlertCount) = find("status" ~= "Update", Some("all"), Nil)
+    updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
+    val updateAlertProcess = updateAlerts
+      .mapAsyncUnordered(3) { alert ⇒
+        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated)")
+        update(alert, updatedStatusFields)
+          .andThen {
+            case Failure(error) ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
+          }
+      }
+
+    val ignoredStatusFields = Fields.empty.set("status", "Ignored")
+    val (ignoreAlerts, ignoreAlertCount) = find("status" ~= "Ignore", Some("all"), Nil)
+    ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
+    val ignoreAlertProcess = ignoreAlerts
+      .mapAsyncUnordered(3) { alert ⇒
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored)")
+        update(alert, ignoredStatusFields)
+          .andThen {
+            case Failure(error) ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)
+          }
+      }
+
+    (updateAlertProcess ++ ignoreAlertProcess)
+      .runWith(Sink.ignore)
+      .map(_ ⇒ ())
   }
 }

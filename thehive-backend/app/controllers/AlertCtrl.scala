@@ -129,6 +129,7 @@ class AlertCtrl @Inject() (
     } yield renderer.toOutput(OK, updatedAlert)
   }
 
+  @Timed
   def createCase(id: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
@@ -143,8 +144,15 @@ class AlertCtrl @Inject() (
       .map { alert ⇒ renderer.toOutput(OK, alert) }
   }
 
+  @Timed
   def unfollowAlert(id: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     alertSrv.setFollowAlert(id, follow = false)
       .map { alert ⇒ renderer.toOutput(OK, alert) }
+  }
+
+  @Timed
+  def fixStatus() = authenticated(Role.admin).async { implicit request ⇒
+    alertSrv.fixStatus()
+      .map(_ ⇒ NoContent)
   }
 }

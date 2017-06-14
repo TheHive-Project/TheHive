@@ -1,6 +1,5 @@
 package connectors.misp
 
-import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
@@ -26,6 +25,7 @@ import play.api.libs.json._
 import play.api.{ Configuration, Environment, Logger }
 import services._
 
+import scala.collection.immutable
 import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
@@ -157,45 +157,57 @@ class MispSrv @Inject() (
     // for each MISP server
     Source(mispConfig.connections.toList)
       // get last synchronization
-      .mapAsyncUnordered(1) { mcfg ⇒
-        alertSrv.stats(and("type" ~= "misp", "source" ~= mcfg.name), Seq(selectMax("lastSyncDate")))
-          .map { maxLastSyncDate ⇒ mcfg → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
-          .recover { case _ ⇒ mcfg → new Date(0) }
+      .mapAsyncUnordered(1) { mispConnection ⇒
+        alertSrv.stats(and("type" ~= "misp", "source" ~= mispConnection.name), Seq(selectMax("lastSyncDate")))
+          .map { maxLastSyncDate ⇒ mispConnection → new Date((maxLastSyncDate \ "max_lastSyncDate").as[Long]) }
+          .recover { case _ ⇒ mispConnection → new Date(0) }
       }
-      // get events that have been published after the last synchronization
       .flatMapConcat {
-        case (mcfg, lastSyncDate) ⇒
-          getEventsFromDate(mcfg, lastSyncDate).map((mcfg, lastSyncDate, _))
+        case (mispConnection, lastSyncDate) ⇒
+          synchronize(mispConnection, lastSyncDate)
       }
+      .runWith(Sink.seq)
+  }
+
+  def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
+    Source(mispConfig.connections.toList)
+      .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, new Date(1)))
+      .runWith(Sink.seq)
+  }
+
+  def synchronize(mispConnection: MispConnection, lastSyncDate: Date)(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
+    logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
+    val fullSynchro = if (lastSyncDate.getTime == 1) Some(lastSyncDate) else None
+    // get events that have been published after the last synchronization
+    getEventsFromDate(mispConnection, lastSyncDate)
       // get related alert
-      .mapAsyncUnordered(1) {
-        case (mcfg, lastSyncDate, event) ⇒
-          logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
-          alertSrv.get("misp", event.source, event.sourceRef)
-            .map(a ⇒ (mcfg, lastSyncDate, event, a))
+      .mapAsyncUnordered(1) { event ⇒
+        logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
+        alertSrv.get("misp", event.source, event.sourceRef)
+          .map((event, _))
       }
       .mapAsyncUnordered(1) {
-        case (mcfg, lastSyncDate, event, alert) ⇒
-          logger.trace(s"MISP synchro ${mcfg.name} last sync at $lastSyncDate, event ${event.sourceRef}, alert ${alert.fold("no alert")("alert" + _.alertId())}")
-          logger.info(s"getting MISP event ${event.sourceRef}")
-          getAttributes(mcfg, event.sourceRef, alert.map(_ ⇒ lastSyncDate))
-            .map((mcfg, event, alert, _))
+        case (event, alert) ⇒
+          logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
+          logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
+          getAttributes(mispConnection, event.sourceRef, fullSynchro.orElse(alert.map(_.lastSyncDate())))
+            .map((event, alert, _))
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
-        case (mcfg, event, None, attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
+        case (event, None, attrs) ⇒
+          logger.info(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
-            ("caseTemplate" → mcfg.caseTemplate.fold[JsValue](JsNull)(JsString)) +
+            ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
             ("artifacts" → JsArray(attrs))
           alertSrv.create(Fields(alertJson))
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
 
         // if a related alert exists, update it
-        case (_, event, Some(alert), attrs) ⇒
-          logger.info(s"MISP event ${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
+        case (event, Some(alert), attrs) ⇒
+          logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
             "source" -
@@ -203,11 +215,13 @@ class MispSrv @Inject() (
             "caseTemplate" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
-            ("status" → (if (!alert.follow()) Json.toJson(alert.status())
+            // if this is a full synchronization, don't update alert status
+            ("status" → (if (!alert.follow() || fullSynchro.isDefined) Json.toJson(alert.status())
             else alert.status() match {
               case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
               case _               ⇒ Json.toJson(AlertStatus.Updated)
             }))
+          logger.debug(s"Update alert ${alert.id} with\n$alertJson")
           val fAlert = alertSrv.update(alert.id, Fields(alertJson))
           // if a case have been created, update it
           (alert.caze() match {
@@ -215,23 +229,24 @@ class MispSrv @Inject() (
             case Some(caze) ⇒
               for {
                 a ← fAlert
-                _ ← caseSrv.update(caze, Fields(alert.toCaseJson))
+                // if this is a full synchronization, don't update case status
+                caseFields = if (fullSynchro.isDefined) Fields(alert.toCaseJson).unset("status")
+                else Fields(alert.toCaseJson)
+                _ ← caseSrv.update(caze, caseFields)
                 _ ← artifactSrv.create(caze, attrs.map(Fields.apply))
               } yield a
           })
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
       }
-      .runWith(Sink.seq)
   }
 
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
-    val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-    val date = dateFormat.format(fromDate)
+    val date = fromDate.getTime / 1000
     Source
       .fromFuture {
         mispConnection("events/index")
-          .post(Json.obj("searchDatefrom" → date))
+          .post(Json.obj("searchpublish_timestamp" → date))
       }
       .mapConcat { response ⇒
         val eventJson = Json.parse(response.body)
@@ -249,7 +264,6 @@ class MispSrv @Inject() (
                 None
               }
           }
-          .filter(event ⇒ event.isPublished && event.date.after(fromDate))
 
         val eventJsonSize = eventJson.size
         val eventsSize = events.size
@@ -263,12 +277,16 @@ class MispSrv @Inject() (
     mispConnection: MispConnection,
     eventId: String,
     fromDate: Option[Date]): Future[Seq[JsObject]] = {
-    val date = fromDate.fold("null") { fd ⇒
-      val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-      dateFormat.format(fd)
-    }
-    mispConnection(s"attributes/restSearch/json/null/null/null/null/null/$date/null/null/$eventId/false")
-      .get()
+
+    val date = fromDate.fold(0L)(_.getTime / 1000)
+
+    mispConnection(s"attributes/restSearch/json")
+      .post(Json.obj(
+        "request" → Json.obj(
+          "timestamp" → date,
+          "eventid" → eventId)))
+      // add ("deleted" → 1) to see also deleted attributes
+      // add ("deleted" → "only") to see only deleted attributes
       .map { response ⇒
         val refDate = fromDate.getOrElse(new Date(0))
         val artifactTags = JsString(s"src:${mispConnection.name}") +: JsArray(mispConnection.artifactTags.map(JsString))
