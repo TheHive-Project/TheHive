@@ -170,46 +170,14 @@ class MispSrv @Inject() (
   }
 
   def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
-    import org.elastic4play.services.QueryDSL._
-
-    val updatedStatusFields = Fields.empty.set("status", "Updated")
-    val (updateAlerts, updateAlertCount) = alertSrv.find("status" ~= "Update", Some("all"), Nil)
-    updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
-    val updateAlertProcess = updateAlerts
-      .mapAsyncUnordered(1) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated")
-        alertSrv.update(alert, updatedStatusFields)
-          .recover {
-            case error ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
-          }
-      }
-      .runWith(Sink.ignore)
-
-    val ignoredStatusFields = Fields.empty.set("status", "Ignored")
-    val (ignoreAlerts, ignoreAlertCount) = alertSrv.find("status" ~= "Ignore", Some("all"), Nil)
-    ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
-    val ignoreAlertProcess = ignoreAlerts
-      .mapAsyncUnordered(1) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored")
-        alertSrv.update(alert, ignoredStatusFields)
-          .recover {
-            case error ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)
-          }
-      }
-      .runWith(Sink.ignore)
-
-    updateAlertProcess
-      .flatMap(_ ⇒ ignoreAlertProcess)
-      .flatMap { _ ⇒
-        Source(mispConfig.connections.toList)
-          .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, new Date(0)))
-          .runWith(Sink.seq)
-      }
+    Source(mispConfig.connections.toList)
+      .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, new Date(1)))
+      .runWith(Sink.seq)
   }
 
   def synchronize(mispConnection: MispConnection, lastSyncDate: Date)(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
-    val fullSynchro = if (lastSyncDate.getTime == 0) Some(lastSyncDate) else None
+    val fullSynchro = if (lastSyncDate.getTime == 1) Some(lastSyncDate) else None
     // get events that have been published after the last synchronization
     getEventsFromDate(mispConnection, lastSyncDate)
       // get related alert
@@ -247,7 +215,8 @@ class MispSrv @Inject() (
             "caseTemplate" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
-            ("status" → (if (!alert.follow()) Json.toJson(alert.status())
+            // if this is a full synchronization, don't update alert status
+            ("status" → (if (!alert.follow() || fullSynchro.isDefined) Json.toJson(alert.status())
             else alert.status() match {
               case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
               case _               ⇒ Json.toJson(AlertStatus.Updated)
@@ -260,7 +229,10 @@ class MispSrv @Inject() (
             case Some(caze) ⇒
               for {
                 a ← fAlert
-                _ ← caseSrv.update(caze, Fields(alert.toCaseJson))
+                // if this is a full synchronization, don't update case status
+                caseFields = if (fullSynchro.isDefined) Fields(alert.toCaseJson).unset("status")
+                else Fields(alert.toCaseJson)
+                _ ← caseSrv.update(caze, caseFields)
                 _ ← artifactSrv.create(caze, attrs.map(Fields.apply))
               } yield a
           })

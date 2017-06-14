@@ -63,6 +63,7 @@ POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUn
 POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)
 POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAlert(alertId)
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
+GET      /api/alert/_fixStatus                    controllers.AlertCtrl.fixStatus()
 
 GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
 
