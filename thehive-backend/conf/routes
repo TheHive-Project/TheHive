@@ -54,6 +54,7 @@ GET      /api/alert                               controllers.AlertCtrl.find()
 POST     /api/alert/_search                       controllers.AlertCtrl.find()
 PATCH    /api/alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
 POST     /api/alert/_stats                        controllers.AlertCtrl.stats()
+GET      /api/alert/_fixStatus                    controllers.AlertCtrl.fixStatus()
 POST     /api/alert                               controllers.AlertCtrl.create()
 GET      /api/alert/:alertId                      controllers.AlertCtrl.get(alertId)
 PATCH    /api/alert/:alertId                      controllers.AlertCtrl.update(alertId)
@@ -63,7 +64,6 @@ POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUn
 POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)
 POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAlert(alertId)
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
-GET      /api/alert/_fixStatus                    controllers.AlertCtrl.fixStatus()
 
 GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
 
