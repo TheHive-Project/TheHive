@@ -104,9 +104,9 @@ packageBin := {
   (packageBin in Rpm).value
 }
 // DEB //
-version in Debian := version.value + "-2"
+version in Debian := version.value + "-1"
 debianPackageRecommends := Seq("elasticsearch")
-debianPackageDependencies += "java8-runtime-headless | java8-runtime"
+debianPackageDependencies += "openjdk-8-jre-headless"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
   baseDirectory.value / "package" / "debian",
   Seq(DebianConstants.Postinst, DebianConstants.Prerm, DebianConstants.Postrm)
