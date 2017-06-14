@@ -135,7 +135,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-danger" ng-if="template.tasks.length === 0">
+                            <div class="text-danger" ng-if="!template.tasks || template.tasks.length === 0">
                                 <table class="table table-striped">
                                     <tr>
                                         <td>No tasks have been specified</td>

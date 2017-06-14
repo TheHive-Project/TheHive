@@ -31,6 +31,7 @@ class MispCtrl @Inject() (
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {
     case GET(p"/_syncAlerts")    ⇒ syncAlerts
+    case GET(p"/_syncAllAlerts") ⇒ syncAllAlerts
     case GET(p"/_syncArtifacts") ⇒ syncArtifacts
     case r                       ⇒ throw NotFoundError(s"${r.uri} not found")
   }
@@ -38,6 +39,12 @@ class MispCtrl @Inject() (
   @Timed
   def syncAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
     mispSrv.synchronize()
+      .map { m ⇒ Ok(Json.toJson(m)) }
+  }
+
+  @Timed
+  def syncAllAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
+    mispSrv.fullSynchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
