@@ -1,6 +1,15 @@
 # Change Log
 
-## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2)
+## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2-2...2.11.3)
+
+**Fixed bugs:**
+
+- Unable to add tasks to case template [\#239](https://github.com/CERT-BDF/TheHive/issues/239)
+- Problem Start TheHive on Ubuntu 16.04 [\#238](https://github.com/CERT-BDF/TheHive/issues/238)
+- MISP synchronization doesn't retrieve all events [\#236](https://github.com/CERT-BDF/TheHive/issues/236)
+
+## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2) (2017-05-24)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.1...2.11.2)
 
 **Implemented enhancements:**
