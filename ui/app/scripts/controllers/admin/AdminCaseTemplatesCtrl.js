@@ -81,7 +81,9 @@
             };
 
             $scope.addTask = function() {
-                $scope.openTaskDialog({order: $scope.template.tasks.length}, 'Add');
+                var order = $scope.template.tasks ? $scope.template.tasks.length : 0;
+
+                $scope.openTaskDialog({order: order}, 'Add');
             };
 
             $scope.editTask = function(task) {
@@ -175,7 +177,11 @@
 
             $scope.addTask = function() {
                 if(action === 'Add') {
+                    if($scope.template.tasks) {
                     $scope.template.tasks.push(task);
+                    } else {
+                        $scope.template.tasks = [task];
+                    }                    
                 }
 
                 $uibModalInstance.dismiss();
