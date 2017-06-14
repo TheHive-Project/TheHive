@@ -2,11 +2,12 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
+        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv) {
             $scope.task = '';
             $scope.tags = [];
             $scope.templates = [];
             $scope.metrics = [];
+            $scope.fields = [];
             $scope.templateIndex = -1;
 
             $scope.sortableOptions = {
@@ -17,12 +18,21 @@
                 axis: 'y'
             };
 
-            $scope.getMetrics = function() {
+            $scope.sortableFields = {
+                handle: '.drag-handle',
+                axis: 'y'
+            };
+
+            $scope.loadCache = function() {
                 MetricsCacheSrv.all().then(function(metrics){
                     $scope.metrics = metrics;
                 });
+
+                CustomFieldsCacheSrv.all().then(function(fields){
+                    $scope.fields = fields;
+                });
             };
-            $scope.getMetrics();
+            $scope.loadCache();
 
             $scope.getList = function(index) {
                 TemplateSrv.query(function(templates) {
@@ -63,6 +73,7 @@
                     tags: [],
                     tasks: [],
                     metricNames: [],
+                    customFieldNames: [],
                     description: ''
                 };
                 $scope.tags = [];
@@ -122,6 +133,21 @@
                 $scope.template.metricNames = _.without($scope.template.metricNames, metricName);
             };
 
+            $scope.addCustomField = function(field) {
+                var fields = $scope.template.customFieldNames || [];
+
+                if(fields.indexOf(field.name) === -1) {
+                    fields.push(field.name);
+                    $scope.template.customFieldNames = fields;
+                } else {
+                    NotificationSrv.log('The custom field [' + field.label + '] has already been added to the template', 'warning');
+                }
+            };
+
+            $scope.removeCustomField = function(fieldName) {
+                $scope.template.customFieldNames = _.without($scope.template.customFieldNames, fieldName);
+            };
+
             $scope.deleteTemplate = function() {
                 $uibModal.open({
                     scope: $scope,
@@ -178,7 +204,7 @@
             $scope.addTask = function() {
                 if(action === 'Add') {
                     if($scope.template.tasks) {
-                    $scope.template.tasks.push(task);
+                        $scope.template.tasks.push(task);
                     } else {
                         $scope.template.tasks = [task];
                     }                    

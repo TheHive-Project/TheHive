@@ -191,6 +191,59 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="vpad10 text-primary">
+                                Case custom fields ({{template.customFieldNames.length || 0}})
+
+                                <span uib-dropdown class="pull-right">
+                                    <a href class="dropdown-toggle" uib-dropdown-toggle>
+                                        <i class="fa fa-plus"></i>
+                                        Add Custom Field
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu" uib-dropdown-menu>
+                                        <li ng-repeat="(key, value) in fields">
+                                            <a ng-click="addCustomField(value)">{{value.label}}</a>
+                                        </li>
+                                    </ul>
+                                </span>
+                            </h4>
+
+                            <div ng-if="template.customFieldNames.length !== 0" ng-init="isCollapsed=true"  ui-sortable="sortableFields" ng-model="template.customFieldNames">
+                                <div class="panel panel-default" ng-repeat="m in template.customFieldNames" ng-init="description=fields[m].description">
+                                    <div class="panel-heading">
+                                        <span class="drag-handle text-primary clickable mr-xxs">
+                                            <i class="fa fa-bars"></i>
+                                        </span>
+                                        <a href ng-click="isCollapsed=!isCollapsed">
+                                            <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
+                                        </a>
+                                        <span class="hpad5">{{fields[m].label}}</span>
+                                        <span class="pull-right">
+                                            <a class="text-danger" href ng-click="removeCustomField(m)">
+                                                <i class="fa fa-times"></i>&nbsp;Delete</a>
+                                        </span>
+                                    </div>
+                                    <div class="panel-body" ng-hide="isCollapsed">
+                                        <p ng-show="description != ''">{{description}}</p>
+                                        <p class="text-warning" ng-show="!description || description===''">
+                                            <em>No description specified</em>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-danger" ng-if="!template.customFieldNames || template.customFieldNames.length === 0">
+                                <table class="table table-striped">
+                                    <tr>
+                                        <td>No customfields have been added</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
                     <div class="vpad10"></div>
                     <div class="vpad10"></div>
 

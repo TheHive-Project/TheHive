@@ -178,6 +178,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 controller: 'AdminMetricsCtrl',
                 title: 'Metrics administration'
             })
+            .state('app.administration.custom-fields', {
+                url: '/custom-fields',
+                templateUrl: 'views/partials/admin/custom-fields.html',
+                controller: 'AdminCustomFieldsCtrl',
+                controllerAs: '$vm',
+                title: 'Custom fields administration'
+            })
             .state('app.administration.observables', {
                 url: '/observables',
                 templateUrl: 'views/partials/admin/observables.html',

@@ -1,0 +1,75 @@
+<div class="box">
+    <div class="box-header">
+        <h3 class="box-title">Case custom fields ({{$vm.customFields.length}})</h3>
+    </div>
+    <div class="box-body">
+        <form name="fieldsForm" ng-submit="$vm.addCustomField()">
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control" ng-model="$vm.formData.name" placeholder="Field's name" required type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>Label</label>
+                        <input class="form-control" ng-model="$vm.formData.label" placeholder="Field's label" required type="text">
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input class="form-control" ng-model="$vm.formData.description" placeholder="A brief description of the custom field" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <!-- <input class="form-control" ng-model="$vm.formData.type" placeholder="Field's type" required type="text"> -->
+                        <select class="form-control" ng-model="$vm.formData.type"
+                            ng-options="fieldType for fieldType in $vm.reference.types"
+                            placeholder="Field's type"></select>
+                    </div>
+                </div>
+
+
+                <div class="form-group col-sm-4">
+                    <label>Options</label>
+                    <textarea class="form-control" ng-model="$vm.formData.options" rows="5" placeholder="Possible values, one per line" type="text"></textarea>
+                </div>
+            </div>
+            <div class="text-right">
+                <button class="btn btn-primary" type="submit" ng-disabled="fieldsForm.$invalid">Add custom field</button>
+            </div>
+        </form>
+        <hr>
+
+        <div class="row mt-xs">
+            <div class="col-md-12" ng-if="$vm.customFields.length === 0">
+                <div class="empty-message">No custom fields defined yet</div>
+            </div>
+            <div class="col-md-12" ng-if="$vm.customFields.length !== 0">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-md-3">Name</th>
+                            <th class="col-md-3">Label</th>
+                            <th class="col-md-3">Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="field in $vm.customFields">
+                            <td>{{field.name}}</td>
+                            <td>{{field.label}}</td>
+                            <td><span class="label label-default">{{field.type | uppercase}}</span></td>
+                            <td>{{field.description || 'N/A'}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="vpad10"></div>
+
+    </div>
+</div>
