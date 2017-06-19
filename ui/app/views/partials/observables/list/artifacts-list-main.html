@@ -43,7 +43,6 @@
                 <th style="width: 15px"></th>
                 <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
                 <th>Data/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th style="width: 200px">Analysis</th>
                 <th style="width: 120px">Date added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
             </tr>
         </thead>
@@ -75,16 +74,8 @@
                             {{tag}}
                         </span>
                     </div>
-                </td>
-                <td>
-                    <div ng-show="keys(artifact.reports).length === 0" class="text-muted">
-                        <em>No reports available</em>
-                    </div>
-                    <div ng-show="keys(artifact.reports).length > 0">
-                        <span class="badge">{{keys(artifact.reports).length}}</span>
-                        <ng-pluralize count="keys(artifact.reports).length" when="{'one': 'report available', 'other': 'reports available'}"></ng-pluralize>
-                    </div>
 
+                    <mini-report-list reports="artifact.reports"></mini-report-list>
                 </td>
                 <td>
                     <a href ng-click="addFilterValue('startDate', artifact.startDate)"><span uib-tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>

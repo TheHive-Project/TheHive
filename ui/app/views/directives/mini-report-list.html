@@ -1,0 +1,17 @@
+<div class="tags-list flexwrap mt-xxs" ng-if="taxonomies.length > 0">
+    <span class="mr-xxxs text-muted"><i class="fa fa-cog"></i></span>
+    <span class="label mb-xxxs mr-xxxs"
+        ng-repeat="taxonomy in taxonomies"
+        ng-class="{'info': 'label-info',
+            'safe': 'label-success',
+            'suspicious': 'label-warning',
+            'malicious': 'label-danger'
+        }[taxonomy.level]">
+        {{taxonomy.namespace}}:{{taxonomy.predicate}}{{taxonomy.value ? '='+taxonomy.value: ''}}
+    </span>
+</div>
+
+<div ng-if="taxonomies.length === 0">
+    <span class="mr-xxxs text-muted"><i class="fa fa-cog"></i></span>
+    <em class="text-muted mr-xxxs">No reports available</em>
+</div>

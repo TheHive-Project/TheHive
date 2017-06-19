@@ -66,12 +66,14 @@ span.link-id {
     left: 0 !important;
 }
 
+.tags-list,
 table.case-list .case-tags {
     font-size: 12px !important;
 }
 
 table.case-list .case-tags .label,
-.case-tags .label  {
+.case-tags .label,
+.tags-list .label  {
     font-size: inherit !important;
     font-weight: normal;
 }
