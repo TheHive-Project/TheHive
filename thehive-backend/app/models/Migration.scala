@@ -126,6 +126,7 @@ class Migration(
               "follow" → (misp \ "follow").as[JsBoolean])
         },
         removeEntity("audit")(o ⇒ (o \ "objectType").asOpt[String].contains("alert")))
+    case DatabaseState(9) ⇒ Nil
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)

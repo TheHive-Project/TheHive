@@ -48,6 +48,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val summary: A[Option[String]] = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
   val mergeInto: A[Option[String]] = optionalAttribute("mergeInto", F.stringFmt, "Id of the case created by the merge")
   val mergeFrom: A[Seq[String]] = multiAttribute("mergeFrom", F.stringFmt, "Id of the cases merged")
+  val customFields: A[Option[JsValue]] = optionalAttribute("customFields", F.customFields, "Custom fields")
 }
 
 @Singleton
