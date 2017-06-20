@@ -8,7 +8,27 @@
             $scope.templates = [];
             $scope.metrics = [];
             $scope.fields = [];
+            $scope.templateCustomFields = [];
             $scope.templateIndex = -1;
+
+            /**
+             * Convert the template custom fields definition to a list of ordered field names
+             * to be used for drag&drop sorting feature
+             */
+            var getTemplateCustomFields = function(customFields) {
+                var result = [];
+
+                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                    return {
+                        name: name,
+                        order: definition.order
+                    }
+                }), function(item){
+                    return item.order;
+                }), 'name');
+
+                return result;
+            }
 
             $scope.sortableOptions = {
                 handle: '.drag-handle',
@@ -21,6 +41,13 @@
             $scope.sortableFields = {
                 handle: '.drag-handle',
                 axis: 'y'
+            };
+
+            $scope.keys = function(obj) {
+                if(!obj) {
+                    return [];
+                }
+                return _.keys(obj);
             };
 
             $scope.loadCache = function() {
@@ -59,6 +86,8 @@
 
                     $scope.template = template;
                     $scope.tags = UtilsSrv.objectify($scope.template.tags, 'text');
+
+                    $scope.templateCustomFields = getTemplateCustomFields(template.customFields);
                 });
 
                 $scope.templateIndex = index;
@@ -73,7 +102,7 @@
                     tags: [],
                     tasks: [],
                     metricNames: [],
-                    customFieldNames: [],
+                    customFields: {},
                     description: ''
                 };
                 $scope.tags = [];
@@ -134,18 +163,15 @@
             };
 
             $scope.addCustomField = function(field) {
-                var fields = $scope.template.customFieldNames || [];
-
-                if(fields.indexOf(field.name) === -1) {
-                    fields.push(field.name);
-                    $scope.template.customFieldNames = fields;
+                if($scope.templateCustomFields.indexOf(field.name) === -1) {
+                    $scope.templateCustomFields.push(field.name);
                 } else {
                     NotificationSrv.log('The custom field [' + field.label + '] has already been added to the template', 'warning');
                 }
             };
 
             $scope.removeCustomField = function(fieldName) {
-                $scope.template.customFieldNames = _.without($scope.template.customFieldNames, fieldName);
+                $scope.templateCustomFields = _.without($scope.templateCustomFields, fieldName);
             };
 
             $scope.deleteTemplate = function() {
@@ -158,7 +184,19 @@
             };
 
             $scope.saveTemplate = function() {
+                // Set tags
                 $scope.template.tags = _.pluck($scope.tags, 'text');
+
+                // Set custom fields
+                $scope.template.customFields = {};
+                _.each($scope.templateCustomFields, function(value, index) {
+                    var fieldDef = $scope.fields[value];
+
+                    $scope.template.customFields[value] = {};
+                    $scope.template.customFields[value][fieldDef.type] = null;
+                    $scope.template.customFields[value].order = index + 1;
+                });
+
                 if (_.isEmpty($scope.template.id)) {
                     $scope.createTemplate();
                 } else {
@@ -207,7 +245,7 @@
                         $scope.template.tasks.push(task);
                     } else {
                         $scope.template.tasks = [task];
-                    }                    
+                    }
                 }
 
                 $uibModalInstance.dismiss();
