@@ -71,7 +71,6 @@
                 <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags"></updatable-tags>
             </dd>
         </dl>
-
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Description</dt>
             <dd>
@@ -80,78 +79,10 @@
         </dl>
     </div>
     <div class="col-md-5 case-metrics">
-        <div class="case-links" ng-show="links.length > 0">
-            <h4 class="vpad10 text-primary">Related cases</h4>
 
-            <div>
-                <h5>Newest (<a href ui-sref="app.case.details({caseId:links[0].id})">Case # {{newestLink.caseId}} - {{newestLink.title}}</a>)</h5>
-                <div>
-                    Created on <strong>{{newestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
-                </div>
-                <div>
-                    Shares <strong><ng-pluralize count="newestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
-                    <strong ng-if="newestLink.iocCount > 0" class="text-danger">
-                        (<ng-pluralize count="newestLink.iocCount" when="{'0': 'No IOCs', 'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
-                    </strong>
-                </div>
-                <div>
-                    Tagged as <tag-list data="newestLink.tags"></tag-list>
-                </div>
-                <div class="hr-line-dashed"></div>
-            </div>
-
-            <div ng-show="links.length > 1">
-                <h5>Oldest (<a href ui-sref="app.case.details({caseId:oldestLink.id})">Case # {{oldestLink.caseId}} - {{oldestLink.title}}</a>)</h5>
-                <div>
-                    Created on <strong>{{oldestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
-                </div>
-                <div>
-                    Shares
-                    <strong><ng-pluralize count="oldestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
-                    <strong ng-if="oldestLink.iocCount > 0" class="text-danger">
-                        (<ng-pluralize count="oldestLink.iocCount" when="{'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
-                    </strong>
-                </div>
-                <div>
-                    Tagged as <tag-list data="oldestLink.tags"></tag-list>
-                </div>
-                <div class="hr-line-dashed"></div>
-            </div>
-
-            <div class="mt-xs">
-                <a href ui-sref="app.case.links({caseId:caze.id})">
-                    See all (<ng-pluralize count="links.length" when="{'one': '1 related case', 'other': '{} related cases'}"></ng-pluralize>)
-                </a>
-            </div>
-        </div>
-        <div class="case-metrics">
-            <h4 class="vpad10 text-primary">
-                Metrics
-                <span uib-dropdown class="pull-right" ng-show="metricsAvailable">
-                    <a href class="dropdown-toggle" uib-dropdown-toggle>
-                        <i class="fa fa-plus"></i>
-                        Add metric
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" uib-dropdown-menu>
-                        <li ng-repeat="(key, value) in allMetrics">
-                            <a ng-click="addMetric(value)">{{value.title}}</a>
-                        </li>
-                    </ul>
-                </span>
-            </h4>
-
-            <div ng-if="hasNoMetrics(caze)">
-                <em>No metrics need to be set</em>
-            </div>
-
-            <dl class="dl-horizontal clear" ng-repeat="(k,v) in caze.metrics">
-                <dt class="pull-left" uib-tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title}}</dt>
-                <dd>
-                    <updatable-simple-text input-type="number" on-update="updateField('metrics.' + k, newValue)" value="caze.metrics[k]"></updatable-simple-text>
-                </dd>
-            </dl>
-        </div>
+        <ng-include src="'views/partials/case/details/custom.fields.html'"></ng-include>
+        <ng-include src="'views/partials/case/details/metrics.html'"></ng-include>
+        <ng-include src="'views/partials/case/details/related.cases.html'"></ng-include>
     </div>
 </div>
 

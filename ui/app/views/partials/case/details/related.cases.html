@@ -1,0 +1,44 @@
+<div class="case-links" ng-show="links.length > 0">
+    <h4 class="vpad10 text-primary">Related cases</h4>
+
+    <div>
+        <h5>Newest (<a href ui-sref="app.case.details({caseId:links[0].id})">Case # {{newestLink.caseId}} - {{newestLink.title}}</a>)</h5>
+        <div>
+            Created on <strong>{{newestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+        </div>
+        <div>
+            Shares <strong><ng-pluralize count="newestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
+            <strong ng-if="newestLink.iocCount > 0" class="text-danger">
+                (<ng-pluralize count="newestLink.iocCount" when="{'0': 'No IOCs', 'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
+            </strong>
+        </div>
+        <div>
+            Tagged as <tag-list data="newestLink.tags"></tag-list>
+        </div>
+        <div class="hr-line-dashed"></div>
+    </div>
+
+    <div ng-show="links.length > 1">
+        <h5>Oldest (<a href ui-sref="app.case.details({caseId:oldestLink.id})">Case # {{oldestLink.caseId}} - {{oldestLink.title}}</a>)</h5>
+        <div>
+            Created on <strong>{{oldestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+        </div>
+        <div>
+            Shares
+            <strong><ng-pluralize count="oldestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
+            <strong ng-if="oldestLink.iocCount > 0" class="text-danger">
+                (<ng-pluralize count="oldestLink.iocCount" when="{'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
+            </strong>
+        </div>
+        <div>
+            Tagged as <tag-list data="oldestLink.tags"></tag-list>
+        </div>
+        <div class="hr-line-dashed"></div>
+    </div>
+
+    <div class="mt-xs">
+        <a href ui-sref="app.case.links({caseId:caze.id})">
+            See all (<ng-pluralize count="links.length" when="{'one': '1 related case', 'other': '{} related cases'}"></ng-pluralize>)
+        </a>
+    </div>
+</div>

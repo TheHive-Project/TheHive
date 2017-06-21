@@ -1,0 +1,44 @@
+<div class="case-custom-fields" ng-controller="CaseCustomFieldsCtrl">
+    <h4 class="vpad10 text-primary">
+        Custom fields
+        <span uib-dropdown class="pull-right" ng-show="customFieldsAvailable">
+            <a href class="dropdown-toggle" uib-dropdown-toggle>
+                <i class="fa fa-plus"></i>
+                Add Custom field
+                <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li ng-repeat="(key, value) in allCustomFields">
+                    <a ng-click="addCustomField(value)">{{value.label}}</a>
+                </li>
+            </ul>
+        </span>
+    </h4>
+
+    <div ng-if="!orderedFields || orderedFields.length === 0">
+        <em>No custom fields need to be set</em>
+    </div>
+
+    <dl class="dl-horizontal clear"
+        ng-repeat="k in orderedFields"
+        ng-init="fieldDef = customFieldsCache[k]; customFieldValue=caze.customFields[fieldDef.name][fieldDef.type];">
+        <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.label}}</dt>
+        <dd ng-switch="fieldDef.type">
+            <updatable-simple-text ng-switch-when="string"
+                input-type="text"
+                on-update="updateField(getCustomFieldName(fieldDef), newValue)"
+                value="customFieldValue"></updatable-simple-text>
+
+            <updatable-date ng-switch-when="date"
+                on-update="updateField(getCustomFieldName(fieldDef), newValue)"
+                value="customFieldValue"></updatable-date>
+
+            <updatable-simple-text ng-switch-when="number"
+                input-type="number"
+                on-update="updateField(getCustomFieldName(fieldDef), newValue)"
+                value="customFieldValue"></updatable-simple-text>
+
+            <span ng-switch-default>Not Editable</span>
+        </dd>
+    </dl>
+</div>
