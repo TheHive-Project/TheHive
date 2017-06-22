@@ -23,7 +23,7 @@
                 var postData = _.pick(self.customField, 'name', 'title', 'label', 'description', 'type');
                 postData.options = _.isArray(self.customField.options) ? self.customField.options : self.customField.options.split('\n');
 
-                if(self.customField.id) {                    
+                if(self.customField.id) {
                     ListSrv.update(
                         {'itemId': self.customField.id},
                         {'value': JSON.stringify(postData)},

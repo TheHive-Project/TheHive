@@ -19,7 +19,7 @@
                             <th width="250">Label</th>
                             <th>Description</th>
                             <th width="200">Options</th>
-                            <th width="200">Actions</th>
+                            <th width="80" class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,6 +37,9 @@
                                 <ul class="list list-unstyled" ng-repeat="option in field.options track by $index">
                                     <li>{{option}}</li>
                                 </ul>
+                            </td>
+                            <td align="center">
+                                <button class="btn btn-xs btn-primary" ng-click="$vm.showFieldDialog(field)"><i class="fa fa-pencil"></i> Edit</button>
                             </td>
                         </tr>
                     </tbody>

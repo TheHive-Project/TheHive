@@ -101,7 +101,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h4 class="vpad10 text-primary">
-                                Case tasks ({{template.tasks.length || 0}})
+                                Tasks ({{template.tasks.length || 0}})
                                 <a class="pull-right" href ng-click="addTask()">
                                     <i class="fa fa-plus"></i>
                                     Add task</a>
@@ -145,7 +145,7 @@
                         </div>
                         <div class="col-md-6">
                             <h4 class="vpad10 text-primary">
-                                Case metrics ({{template.metricNames.length || 0}})
+                                Metrics ({{template.metricNames.length || 0}})
 
                                 <span uib-dropdown class="pull-right">
                                     <a href class="dropdown-toggle" uib-dropdown-toggle>
@@ -194,11 +194,11 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h4 class="vpad10 text-primary">
-                                Case custom fields ({{keys(template.customFields).length}})
+                                Custom fields ({{keys(template.customFields).length}})
                                 <span uib-dropdown class="pull-right">
                                     <a href class="dropdown-toggle" uib-dropdown-toggle>
                                         <i class="fa fa-plus"></i>
-                                        Add Custom Field
+                                        Add custom field
                                         <span class="caret"></span>
                                     </a>
                                     <ul class="dropdown-menu" uib-dropdown-menu>
