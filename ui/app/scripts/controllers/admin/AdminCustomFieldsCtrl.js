@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCustomFieldsCtrl',
-        function($scope, ListSrv, CustomFieldsCacheSrv, NotificationSrv) {
+        function($scope, $uibModal, ListSrv, CustomFieldsCacheSrv, NotificationSrv) {
             var self = this;
 
             self.reference = {
@@ -24,8 +24,15 @@
                     'listId': 'custom_fields'
                 }, {}, function(response) {
 
-                    self.customFields = _.values(response).filter(_.isString).map(function(item) {
-                        return JSON.parse(item);
+                    // self.customFields = _.values(response).filter(_.isString).map(function(item) {
+                    //     return JSON.parse(item);
+                    // });
+
+                    self.customFields = _.map(response.toJSON(), function(value, key) {
+                        var obj = JSON.parse(value);
+                        obj.id = key;
+
+                        return obj;
                     });
 
                 }, function(response) {
@@ -33,22 +40,23 @@
                 });
             };
 
-            self.addCustomField = function() {
-                ListSrv.save({
-                        'listId': 'custom_fields'
-                    }, {
-                        'value': JSON.stringify(self.formData)
-                    }, function() {
-                        self.initCustomfields();
+            self.showFieldDialog = function(customField) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'views/partials/admin/custom-field-dialog.html',
+                    controller: 'AdminCustomFieldDialogCtrl',
+                    controllerAs: '$vm',
+                    size: 'lg',
+                    resolve: {
+                        customField: angular.copy(customField) || {}
+                    }
+                });
 
-                        CustomFieldsCacheSrv.clearCache();
-
-                        $scope.$emit('custom-fields:refresh');
-                    },
-                    function(response) {
-                        NotificationSrv.error('AdminCustomfieldsCtrl', response.data, response.status);
-                    });
-            };
+                modalInstance.result.then(function(data) {
+                    self.initCustomfields();
+                    CustomFieldsCacheSrv.clearCache();
+                    $scope.$emit('custom-fields:refresh');
+                });
+            }
 
             self.initCustomfields();
         });

@@ -76,8 +76,10 @@ POST     /api/maintenance/migrate                 org.elastic4play.controllers.M
 
 GET      /api/list                                org.elastic4play.controllers.DBListCtrl.list()
 DELETE   /api/list/:itemId                        org.elastic4play.controllers.DBListCtrl.deleteItem(itemId)
+PATCH    /api/list/:itemId                        org.elastic4play.controllers.DBListCtrl.updateItem(itemId)
 POST     /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.addItem(listName)
 GET      /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.listItems(listName)
+
 
 GET      /api/user/current                        controllers.UserCtrl.currentUser()
 POST     /api/user/_search                        controllers.UserCtrl.find()

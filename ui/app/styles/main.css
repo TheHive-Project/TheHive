@@ -260,8 +260,9 @@ ul.observable-reports-summary li {
     padding: 20px 10px 10px 10px;
 }
 
-.case-metrics dt {
-    width: 300px !important;
+.case-metrics dt,
+.case-custom-fields dt {
+    width: 200px !important;
 }
 
 .scrollable {
@@ -495,7 +496,7 @@ tags-input.input-sm .tags.focused {
 }
 
 footer.main-footer {
-    padding: 2px;    
+    padding: 2px;
     line-height: 40px;
 }
 
