@@ -25,10 +25,9 @@
                 }
 
                 var type = self.customField.type;
-                //var values = _.isArray(self.customField.options) ? self.customField.options : self.customField.options.split('\n');
                 var values = self.customField.options.split('\n');
 
-                if(type === 'number') {                    
+                if(type === 'number') {
                     return _.without(values.map(function(item) {
                         return Number(item);
                     }), NaN);
