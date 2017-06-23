@@ -74,6 +74,6 @@ table.case-list .case-tags {
 table.case-list .case-tags .label,
 .case-tags .label,
 .tags-list .label  {
-    font-size: inherit !important;
+    font-size: 12px !important;
     font-weight: normal;
 }

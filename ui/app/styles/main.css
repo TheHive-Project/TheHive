@@ -54,7 +54,7 @@ body {
     margin: 0 !important;
 }
 
-.short-report {
+.short-report .label {
     margin-right: 5px;
 }
 .empty-message {
@@ -120,6 +120,8 @@ pre.clearpre {
 .flexwrap{
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
 }
 .wrap {
     word-wrap: break-word;
