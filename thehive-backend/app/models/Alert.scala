@@ -5,9 +5,10 @@ import javax.inject.{ Inject, Singleton }
 
 import models.JsonFormat.alertStatusFormat
 import org.elastic4play.controllers.JsonInputValue
-import org.elastic4play.{ AttributeCheckingError, InvalidFormatAttributeError }
-import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, MultiAttributeFormat, OptionalAttributeFormat, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.services.DBLists
 import org.elastic4play.utils.Hasher
+import org.elastic4play.{ AttributeCheckingError, InvalidFormatAttributeError }
 import play.api.Logger
 import play.api.libs.json._
 import services.AuditedModel
@@ -43,7 +44,7 @@ trait AlertAttributes {
 }
 
 @Singleton
-class AlertModel @Inject() (artifactModel: ArtifactModel)
+class AlertModel @Inject() (dblists: DBLists)
     extends ModelDef[AlertModel, Alert]("alert")
     with AlertAttributes
     with AuditedModel {
@@ -52,9 +53,26 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
   override val defaultSortBy: Seq[String] = Seq("-date")
   override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
 
-  override def artifactAttributes: Seq[Attribute[_]] = artifactModel
-    .attributes
-    .filter(_.isForm)
+  override def artifactAttributes: Seq[Attribute[_]] = {
+    val remoteAttachmentAttributes = Seq(
+      Attribute("alert", "reference", F.stringFmt, Nil, None, ""),
+      Attribute("alert", "filename", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "contentType", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "size", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
+      Attribute("alert", "hash", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "type", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+
+    Seq(
+      Attribute("alert", "data", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "dataType", F.stringFmt, Nil, None, ""),
+      Attribute("alert", "message", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
+      Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
+      Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
+      Attribute("alert", "tlp", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
+      Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "ioc", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+  }
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     // check if data attribute is present on all artifacts
@@ -62,7 +80,7 @@ class AlertModel @Inject() (artifactModel: ArtifactModel)
       .asOpt[Seq[JsValue]]
       .getOrElse(Nil)
       .filter { a ⇒
-        (a \ "data").toOption.isEmpty ||
+        ((a \ "data").toOption.isEmpty && (a \ "attachment").toOption.isEmpty && (a \ "remoteAttachment").toOption.isEmpty) ||
           ((a \ "tags").toOption.isEmpty && (a \ "message").toOption.isEmpty)
       }
       .map(v ⇒ InvalidFormatAttributeError("artifacts", "artifact", JsonInputValue(v)))

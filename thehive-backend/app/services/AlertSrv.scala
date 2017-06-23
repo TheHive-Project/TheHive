@@ -17,10 +17,12 @@ import play.api.{ Configuration, Logger }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Try }
+import org.elastic4play.services.JsonFormat.attachmentFormat
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
+
   def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case]
 }
 
@@ -76,8 +78,23 @@ class AlertSrv(
 
   private[AlertSrv] lazy val logger = Logger(getClass)
 
-  def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
-    createSrv[AlertModel, Alert](alertModel, fields)
+  def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] = {
+
+    val artifactsFields =
+      Future.traverse(fields.getValues("artifacts")) {
+        case a: JsObject if (a \ "dataType").asOpt[String].contains("file") ⇒
+          (a \ "data").asOpt[String] match {
+            case Some(dataExtractor(filename, contentType, data)) ⇒
+              attachmentSrv.save(filename, contentType, java.util.Base64.getDecoder.decode(data))
+                .map(attachment ⇒ a - "data" + ("attachment" → Json.toJson(attachment)))
+            case _ ⇒ Future.successful(a)
+          }
+        case a ⇒ Future.successful(a)
+      }
+    artifactsFields.flatMap { af ⇒
+      createSrv[AlertModel, Alert](alertModel, fields.set("artifacts", JsArray(af)))
+    }
+  }
 
   def bulkCreate(fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
     createSrv[AlertModel, Alert](alertModel, fieldSet)

@@ -76,8 +76,11 @@
                             <td class="wrap" ng-if="attribute.dataType !== 'file'">
                                 {{attribute.data | fang | ellipsis:250}}
                             </td>
-                            <td class="wrap" ng-if="attribute.dataType === 'file'">
-                                {{(attribute.data.filename || attribute.data.split(';')[0]) | fang | ellipsis:250}}
+                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
+                                {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
+                            </td>
+                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
+                                {{attribute.remoteAttachment.filename}}
                             </td>
                         </tr>
                     </tbody>
@@ -133,7 +136,7 @@
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">
                 <!-- <input type="text" class="form-control" placeholder="Search for..."> -->
-                <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates" required>
+                <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
                     <option value="">Empty case</option>
                 </select>
                 <!-- <select class="form-control">
@@ -141,7 +144,7 @@
                     <option value="MISP">MISP</option>
                 </select> -->
                 <span class="input-group-btn">
-                    <button class="btn btn-primary" type="submit" ng-disabled="eventForm.$invalid || dialog.loading">Yes, Import</button>
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
                 </span>
             </div>
 

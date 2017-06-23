@@ -300,10 +300,10 @@ class MispSrv @Inject() (
                   "dataType" → "file",
                   "message" → a.comment,
                   "tags" → (artifactTags.value ++ a.tags.map(JsString)),
-                  "data" → Json.obj(
+                  "remoteAttachment" → Json.obj(
                     "filename" → a.value,
-                    "attributeId" → a.id,
-                    "attributeType" → a.tpe).toString,
+                    "reference" → a.id,
+                    "type" → a.tpe),
                   "startDate" → a.date))
             case a ⇒ convertAttribute(a).map { j ⇒
               val tags = artifactTags ++ (j \ "tags").asOpt[JsArray].getOrElse(JsArray(Nil))
@@ -319,20 +319,20 @@ class MispSrv @Inject() (
     attr: JsObject)(implicit authContext: AuthContext): Option[Future[Fields]] = {
     (for {
       dataType ← (attr \ "dataType").validate[String]
-      data ← (attr \ "data").validate[String]
+      data ← (attr \ "data").validateOpt[String]
       message ← (attr \ "message").validate[String]
       startDate ← (attr \ "startDate").validate[Date]
-      attachment = dataType match {
-        case "file" ⇒
-          val json = Json.parse(data)
-          for {
-            attributeId ← (json \ "attributeId").asOpt[String]
-            attributeType ← (json \ "attributeType").asOpt[String]
-            fiv = downloadAttachment(mispConnection, attributeId)
-          } yield if (attributeType == "malware-sample") fiv.map(extractMalwareAttachment)
-          else fiv
-        case _ ⇒ None
-      }
+      attachmentReference ← (attr \ "remoteAttachment" \ "reference").validateOpt[String]
+      attachmentType ← (attr \ "remoteAttachment" \ "type").validateOpt[String]
+      attachment = attachmentReference
+        .flatMap {
+          case ref if dataType == "file" ⇒ Some(downloadAttachment(mispConnection, ref))
+          case _                         ⇒ None
+        }
+        .map {
+          case f if attachmentType.contains("malware-sample") ⇒ f.map(extractMalwareAttachment)
+          case f                                              ⇒ f
+        }
       tags = (attr \ "tags").asOpt[Seq[String]].getOrElse(Nil)
       tlp = tags.map(_.toLowerCase)
         .collectFirst {
@@ -351,7 +351,8 @@ class MispSrv @Inject() (
             .filterNot(_.toLowerCase.startsWith("tlp:"))
             .map(JsString)))
         .set("tlp", tlp)
-    } yield attachment.fold(Future.successful(fields.set("data", data)))(_.map { fiv ⇒
+      if attachment.isDefined != data.isDefined
+    } yield attachment.fold(Future.successful(fields.set("data", data.get)))(_.map { fiv ⇒
       fields.set("attachment", fiv)
     })) match {
       case JsSuccess(r, _) ⇒ Some(r)
