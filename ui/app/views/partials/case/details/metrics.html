@@ -4,8 +4,6 @@
         <span uib-dropdown class="pull-right" ng-show="metricsAvailable">
             <a href class="dropdown-toggle" uib-dropdown-toggle>
                 <i class="fa fa-plus"></i>
-                Add metric
-                <span class="caret"></span>
             </a>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li ng-repeat="(key, value) in allMetrics">
@@ -16,7 +14,7 @@
     </h4>
 
     <div ng-if="hasNoMetrics(caze)">
-        <em>No metrics need to be set</em>
+        <em>No metrics have been set</em>
     </div>
 
     <dl class="dl-horizontal clear" ng-repeat="(k,v) in caze.metrics">
