@@ -19,9 +19,27 @@
                 NotificationSrv.error('AdminCustomFieldDialogCtrl', response.data, response.status);
             };
 
+            var buildOptionsCollection = function(options) {
+                if(!options || options === '') {
+                    return [];
+                }
+
+                var type = self.customField.type;
+                //var values = _.isArray(self.customField.options) ? self.customField.options : self.customField.options.split('\n');
+                var values = self.customField.options.split('\n');
+
+                if(type === 'number') {                    
+                    return _.without(values.map(function(item) {
+                        return Number(item);
+                    }), NaN);
+                }
+
+                return values;
+            };
+
             self.saveField = function() {
                 var postData = _.pick(self.customField, 'name', 'title', 'label', 'description', 'type');
-                postData.options = _.isArray(self.customField.options) ? self.customField.options : self.customField.options.split('\n');
+                postData.options = buildOptionsCollection(self.customField.options);
 
                 if(self.customField.id) {
                     ListSrv.update(

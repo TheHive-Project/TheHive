@@ -21,7 +21,14 @@
         ng-repeat="k in orderedFields"
         ng-init="fieldDef = customFieldsCache[k]; customFieldValue=caze.customFields[fieldDef.name][fieldDef.type];">
         <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.label}}</dt>
-        <dd ng-switch="fieldDef.type">
+        <dd ng-if="fieldDef.options.length > 0">
+            <updatable-select
+                options="fieldDef.options"
+                on-update="updateField(getCustomFieldName(fieldDef), newValue)"
+                value="customFieldValue"></updatable-select>
+        </dd>
+
+        <dd ng-if="fieldDef.options.length === 0" ng-switch="fieldDef.type">
             <updatable-simple-text ng-switch-when="string"
                 input-type="text"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
@@ -40,8 +47,6 @@
                 input-type="number"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
                 value="customFieldValue"></updatable-boolean>
-
-
 
             <span ng-switch-default>Not Editable</span>
         </dd>
