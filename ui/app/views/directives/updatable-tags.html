@@ -3,7 +3,8 @@
 
     <span class="tags-list flexwrap">
         <span ng-repeat="tag in value" class="label label-primary mb-xxxs mr-xxxs">{{tag.text}}</span>
-        <small ng-show="active">
+        <!-- -->
+        <small ng-show="active" style="line-height:18px;" class="mb-xxxs mr-xxxs">
             <a href class="clickable" tooltip-popup-delay='500' uib-tooltip="edit">
                 <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
             </a>

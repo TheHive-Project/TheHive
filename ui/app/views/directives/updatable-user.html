@@ -1,7 +1,7 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
     <span class="updatable-value" ng-bind="getUserInfo.get(value) | getField:'name'" style="vertical-align:top"></span>
     <small ng-show="active">
-        <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
+        <a class="clickable" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
             <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
         </a>
     </small>
