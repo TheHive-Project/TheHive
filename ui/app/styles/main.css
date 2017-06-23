@@ -503,3 +503,7 @@ footer.main-footer {
 footer .footer-logo {
     height: 40px;
 }
+
+report:empty {
+   display: none;
+}
