@@ -126,6 +126,11 @@ class StreamActor(
     eventSrv.unsubscribe(self)
   }
 
+  private def normalizeOperation(operation: AuditOperation) = {
+    operation.entity.model match {
+      case am: AuditedModel ⇒ operation.copy(details = am.selectAuditedAttributes(operation.details))
+    }
+  }
   private def receiveWithState(waitingRequest: Option[WaitingRequest], currentMessages: Map[String, Option[StreamMessageGroup[_]]]): Receive = {
     /* End of HTTP request, mark received messages to ready*/
     case Commit(requestId) ⇒
@@ -149,17 +154,18 @@ class StreamActor(
     /* */
     case operation: AuditOperation if operation.entity.model.isInstanceOf[AuditedModel] ⇒
       val requestId = operation.authContext.requestId
-      logger.debug(s"Receiving audit operation : $operation")
+      val normalizedOperation = normalizeOperation(operation)
+      logger.debug(s"Receiving audit operation : $operation => $normalizedOperation")
       val updatedOperationGroup = currentMessages.get(requestId) match {
         case None ⇒
           logger.debug("Operation that comes after the end of request, make operation ready to send")
-          AuditOperationGroup(auxSrv, operation).makeReady // Operation that comes after the end of request
+          AuditOperationGroup(auxSrv, normalizedOperation).makeReady // Operation that comes after the end of request
         case Some(None) ⇒
           logger.debug("First operation of the request, creating operation group")
-          AuditOperationGroup(auxSrv, operation) // First operation related to the given request
+          AuditOperationGroup(auxSrv, normalizedOperation) // First operation related to the given request
         case Some(Some(aog: AuditOperationGroup)) ⇒
           logger.debug("Operation included in existing group")
-          aog :+ operation
+          aog :+ normalizedOperation
         case _ ⇒
           logger.debug("Impossible")
           sys.error("")

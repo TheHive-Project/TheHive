@@ -23,7 +23,12 @@ trait AuditedModel { self: BaseModelDef ⇒
       .toMap
   def selectAuditedAttributes(attrs: JsObject) = JsObject {
     attrs.fields.flatMap {
-      case nv @ (attrName, _) ⇒ auditedAttributes.get(attrName).map(_ ⇒ nv)
+      case (attrName, value) ⇒
+        val attrNames = attrName.split("\\.").toSeq
+        auditedAttributes.get(attrNames.head).map { _ ⇒
+          val reverseNames = attrNames.reverse
+          reverseNames.drop(1).foldLeft(reverseNames.head → value)((jsTuple, name) ⇒ name → JsObject(Seq(jsTuple)))
+        }
     }
   }
 }
