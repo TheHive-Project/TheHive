@@ -79,6 +79,7 @@ DELETE   /api/list/:itemId                        org.elastic4play.controllers.D
 PATCH    /api/list/:itemId                        org.elastic4play.controllers.DBListCtrl.updateItem(itemId)
 POST     /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.addItem(listName)
 GET      /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.listItems(listName)
+POST     /api/list/:listName/_exists              org.elastic4play.controllers.DBListCtrl.itemExists(listName)
 
 
 GET      /api/user/current                        controllers.UserCtrl.currentUser()

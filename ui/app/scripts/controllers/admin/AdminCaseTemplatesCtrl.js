@@ -163,10 +163,10 @@
             };
 
             $scope.addCustomField = function(field) {
-                if($scope.templateCustomFields.indexOf(field.name) === -1) {
-                    $scope.templateCustomFields.push(field.name);
+                if($scope.templateCustomFields.indexOf(field.reference) === -1) {
+                    $scope.templateCustomFields.push(field.reference);
                 } else {
-                    NotificationSrv.log('The custom field [' + field.label + '] has already been added to the template', 'warning');
+                    NotificationSrv.log('The custom field [' + field.name + '] has already been added to the template', 'warning');
                 }
             };
 

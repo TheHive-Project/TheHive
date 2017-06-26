@@ -24,10 +24,6 @@
                     'listId': 'custom_fields'
                 }, {}, function(response) {
 
-                    // self.customFields = _.values(response).filter(_.isString).map(function(item) {
-                    //     return JSON.parse(item);
-                    // });
-
                     self.customFields = _.map(response.toJSON(), function(value, key) {
                         var obj = JSON.parse(value);
                         obj.id = key;

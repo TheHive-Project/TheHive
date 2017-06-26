@@ -16,7 +16,7 @@
                         <tr>
                             <th width="80">Type</th>
                             <th width="250">Name</th>
-                            <th width="250">Label</th>
+                            <th width="250">Internal Reference</th>
                             <th>Description</th>
                             <th width="200">Options</th>
                             <th width="80" class="text-center">Actions</th>
@@ -28,7 +28,7 @@
                                 <span class="label label-default">{{field.type | uppercase}}</span>
                             </td>
                             <td><a href ng-click="$vm.showFieldDialog(field)">{{field.name}}</a></td>
-                            <td>{{field.label}}</td>
+                            <td>{{field.reference}}</td>
                             <td>{{field.description || 'N/A'}}</td>
                             <td ng-if="field.options.length === 0">
                                 <em>None</em>

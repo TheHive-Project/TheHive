@@ -32,8 +32,8 @@
                             return JSON.parse(item);
                         });
 
-                        _.each(data, function(m){
-                            cache[m.name] = m;
+                        _.each(data, function(field){
+                            cache[field.reference] = field;
                         });
 
                         deferred.resolve(cache);

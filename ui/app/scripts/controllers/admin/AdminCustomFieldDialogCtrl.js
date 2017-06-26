@@ -4,8 +4,9 @@
     angular.module('theHiveControllers').controller('AdminCustomFieldDialogCtrl',
         function($scope, $uibModalInstance, ListSrv, NotificationSrv, customField) {
             var self = this;
-            self.reference = {
-                types: ['string', 'number', 'boolean', 'date']
+            self.config = {
+                types: ['string', 'number', 'boolean', 'date'],
+                referencePattern: '^[a-zA-Z]{1}[a-zA-Z0-9_-]*'
             };
 
             self.customField = customField;
@@ -36,8 +37,12 @@
                 return values;
             };
 
-            self.saveField = function() {
-                var postData = _.pick(self.customField, 'name', 'title', 'label', 'description', 'type');
+            self.saveField = function(form) {
+                if (!form.$valid) {
+                    return;
+                }
+
+                var postData = _.pick(self.customField, 'name', 'reference', 'description', 'type');
                 postData.options = buildOptionsCollection(self.customField.options);
 
                 if(self.customField.id) {
@@ -47,17 +52,52 @@
                         onSuccess,
                         onFailure);
                 } else {
-                    ListSrv.save(
+                    ListSrv.exists(
                         {'listId': 'custom_fields'},
-                        {'value': JSON.stringify(postData)},
-                        onSuccess,
-                        onFailure);
+                        {
+                            key: 'reference',
+                            value: postData.reference
+                        },
+                        function(response) {
+                            if(response.data) {
+                                ListSrv.save(
+                                    {'listId': 'custom_fields'},
+                                    {'value': JSON.stringify(postData)},
+                                    onSuccess,
+                                    onFailure);
+                            } else {
+                                // TODO handle field validation
+                                form.reference.$setValidity('unique', false);
+                                form.reference.$setDirty();
+                                NotificationSrv.error('AdminCustomFieldDialogCtrl', 'There is already a custom field with the specified reference: ' + postData.reference);
+                            }
+                        },
+                        onFailure
+                    )
                 }
             };
+
+            self.clearUniqueReferenceError = function(form) {
+                form.reference.$setValidity('unique', true);
+                form.reference.$setPristine();
+            }
 
             self.cancel = function() {
                 $uibModalInstance.dismiss();
             }
+
+            self.onNamechanged = function(form) {
+                if(!self.customField.name) {
+                    return;
+                }
+
+                var reference = s.trim(s.classify(self.customField.name));
+                reference = reference.charAt(0).toLowerCase() + reference.slice(1);
+
+                self.customField.reference = reference;
+
+                self.clearUniqueReferenceError(form);
+            };
 
         });
 })();

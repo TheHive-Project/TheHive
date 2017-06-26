@@ -203,7 +203,7 @@
                                     </a>
                                     <ul class="dropdown-menu" uib-dropdown-menu>
                                         <li ng-repeat="(key, value) in fields">
-                                            <a ng-click="addCustomField(value)">{{value.label}}</a>
+                                            <a ng-click="addCustomField(value)">{{value.name}}</a>
                                         </li>
                                     </ul>
                                 </span>
@@ -218,7 +218,7 @@
                                         <a href ng-click="isCollapsed=!isCollapsed">
                                             <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
                                         </a>
-                                        <span class="hpad5">{{fields[m].label}}</span>
+                                        <span class="hpad5">{{fields[m].name}}</span>
                                         <span class="pull-right">
                                             <a class="text-danger" href ng-click="removeCustomField(m)">
                                                 <i class="fa fa-times"></i>&nbsp;Delete</a>

@@ -92,7 +92,7 @@
         }
 
         $scope.getCustomFieldName = function(fieldDef) {
-            return 'customFields.' + fieldDef.name + '.' + fieldDef.type;
+            return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
         };
 
         $scope.addCustomField = function(customField) {
@@ -111,14 +111,14 @@
             modalInstance.result.then(function() {
                 var temp = $scope.caze.customFields || {};
 
-                temp[customField.name] = {};
-                temp[customField.name][customField.type] = null;
-                temp[customField.name].order = _.keys(temp).length;
+                var customFieldValue = {};
+                customFieldValue[customField.type] = null;
+                customFieldValue.order = _.keys(temp).length + 1;
 
-                $scope.caze.customFields = temp;
-
-                $scope.updateField('customFields.', $scope.caze.customFields);
+                $scope.updateField('customFields.' + customField.reference, customFieldValue);
                 $scope.updateCustomFieldsList();
+
+                $scope.caze.customFields[customField.reference] = customFieldValue;
             });
         };
 

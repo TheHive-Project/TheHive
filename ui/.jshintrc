@@ -23,6 +23,7 @@
     "updatableLink": false,
     "setTimeout": false,
     "_": false,
+    "s": false,
     "CryptoJS": false,
     "c3": false,
     "saveSvgAsPng": false,
