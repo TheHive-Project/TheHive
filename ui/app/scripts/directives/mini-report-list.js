@@ -6,7 +6,9 @@
                 restrict: 'E',
                 templateUrl: 'views/directives/mini-report-list.html',
                 scope: {
-                    reports: '='
+                    observable: '=',
+                    reports: '=',
+                    onItemClicked: '&'
                 },
                 link: function(scope) {
                     scope.taxonomies = [];
@@ -16,7 +18,10 @@
                         var taxonomies = [];
 
                         _.each(keys, function(key) {
-                            taxonomies = taxonomies.concat(data[key].taxonomies || []);
+                            taxonomies = taxonomies.concat(_.map(data[key].taxonomies || [], function(item) {
+                                item.id = key;
+                                return item;
+                            }));
                         });
 
                         scope.taxonomies = taxonomies;

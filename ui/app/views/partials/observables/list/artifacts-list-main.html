@@ -75,7 +75,7 @@
                         </span>
                     </div>
 
-                    <mini-report-list reports="artifact.reports"></mini-report-list>
+                    <mini-report-list observable="artifact" reports="artifact.reports" on-item-clicked="showReport(observable, analyzerId)"></mini-report-list>
                 </td>
                 <td>
                     <a href ng-click="addFilterValue('startDate', artifact.startDate)"><span uib-tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>

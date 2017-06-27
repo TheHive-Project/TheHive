@@ -623,6 +623,44 @@
                     itemId: artifact.id
                 });
             };
+
+            $scope.showReport = function(observable, analyzerId) {
+                CortexSrv.getJobs($scope.caseId, observable.id, analyzerId, 1)
+                    .then(function(response) {
+                        return CortexSrv.getJob(response.data[0].id)
+                    })
+                    .then(function(response){
+                        var job = response.data;
+                        var report = {
+                            job: job,
+                            template: job.analyzerId,
+                            content: job.report,
+                            status: job.status,
+                            startDate: job.startDate,
+                            endDate: job.endDate
+                        };
+
+                        var modalInstance = $uibModal.open({
+                            templateUrl: 'views/partials/observables/list/job-report-dialog.html',
+                            controller: function($uibModalInstance, report, observable) {
+                                this.report = report;
+                                this.observable = observable;
+                                this.close = function() {
+                                    $uibModalInstance.dismiss();
+                                }
+                            },
+                            controllerAs: '$vm',
+                            size: 'max',
+                            resolve: {
+                                report: report,
+                                observable: observable
+                            }
+                        });
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Unable to fetch the analysis report');
+                    })
+            }
         }
     );
 
