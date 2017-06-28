@@ -642,18 +642,16 @@
 
                         var modalInstance = $uibModal.open({
                             templateUrl: 'views/partials/observables/list/job-report-dialog.html',
-                            controller: function($uibModalInstance, report, observable) {
-                                this.report = report;
-                                this.observable = observable;
-                                this.close = function() {
-                                    $uibModalInstance.dismiss();
-                                }
-                            },
+                            controller: 'JobReportModalCtrl',
                             controllerAs: '$vm',
                             size: 'max',
                             resolve: {
-                                report: report,
-                                observable: observable
+                                report: function() {
+                                    return report
+                                },
+                                observable: function() {
+                                    return observable;
+                                }
                             }
                         });
                     })
@@ -662,6 +660,13 @@
                     })
             }
         }
-    );
+    )
+    .controller('JobReportModalCtrl', function($uibModalInstance, report, observable) {
+        this.report = report;
+        this.observable = observable;
+        this.close = function() {
+            $uibModalInstance.dismiss();
+        }
+    });
 
 })();
