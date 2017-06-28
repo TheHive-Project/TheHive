@@ -51,11 +51,11 @@
         <table class="table table-striped table-hover valigned">
             <thead>
                 <tr>
-                    <th style="width: 50px"></th>
-                    <th style="width: 550px;">Task</th>
-                    <th style="width: 200px">Date</th>
+                    <th style="width: 40px"></th>
+                    <th>Task</th>
+                    <th style="width: 240px">Date</th>
                     <th style="width: 200px">Assignee</th>
-                    <th style="width: 50px"></th>
+                    <th style="width: 200px"></th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +64,7 @@
                         <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                         <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                     </td>
-                    <td ng-click="openTask(task)" class="pointer">{{task.title}}</td>
+                    <td ng-click="startTask(task)" class="pointer">{{task.title}}</td>
                     <td>{{task.startDate | showDate}}</td>
                     <td>
                         <span ng-show="task.owner">
@@ -72,8 +72,24 @@
                         </span>
                         <em ng-show="!task.owner">Not assigned</em>
                     </td>
-                    <td class="task-delete clickable" align="center" ng-click="removeTask(task)">
-                        <i class="glyphicon glyphicon-remove text-danger"></i>
+                    <!--  class="task-delete" -->
+                    <td align="right">
+                        <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
+                            <i class="fa fa-times"></i>
+                            Delete
+                        </span>
+                        <span class="ml-xs clickable text-success" ng-show="task.status == 'Completed'" ng-click="openTask(task)">
+                            <i class="fa fa-check-circle"></i>
+                            Open
+                        </span>
+                        <span class="ml-xs clickable text-muted" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)">
+                            <i class="fa fa-check-circle-o"></i>
+                            Close
+                        </span>
+                        <span class="ml-xs clickable text-primary" ng-show="task.status == 'Waiting'" ng-click="startTask(task)">
+                            <i class="fa fa-play"></i>
+                            Start
+                        </span>
                     </td>
                 </tr>
             </tbody>

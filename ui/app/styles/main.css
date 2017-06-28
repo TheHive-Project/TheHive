@@ -400,14 +400,13 @@ ul.observable-reports-summary li {
     /* IE 9 */
 }
 
-tr.task-row td.task-delete {
+tr.task-row .task-delete {
     text-align: center;
 }
-tr.task-row:hover td.task-delete i {
-    display: block !important;
+tr.task-row:hover .task-delete {
+    display: inline !important;
 }
-tr.task-row td.task-delete i {
-    cursor: pointer;
+tr.task-row .task-delete {
     display: none;
 }
 tr.task-row .tast-status {
@@ -508,4 +507,8 @@ footer .footer-logo {
 
 report:empty {
    display: none;
+}
+
+span.action-button {
+    font-size: 14px;
 }

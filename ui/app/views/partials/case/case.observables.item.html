@@ -13,17 +13,21 @@
             [<span ng-bind="artifact.dataType" style="text-transform: uppercase;"></span>]: <em><span class="wrap" ng-bind="artifact.attachment.name"></span></em>
         </h4>
     </div>
-    <div class="col-md-3" style="text-align: center">
-        <a href="./api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name}}" target="_blank">
-            <span class="glyphicon glyphicon-download"></span><br/>
-            <span class="wrap">{{artifact.attachment.name}}</span>
-        </a><br/>
-        <small class="text-danger">Zip are protected with password "{{protectDownloadsWith}}"</small>
+    <div class="col-md-3 text-center">
+        <div>
+            <a href="./api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name}}" target="_blank">
+                <i class="glyphicon glyphicon-download"></i>
+                <span class="wrap">{{artifact.attachment.name | ellipsis:30}}</span>
+            </a>
+        </div>
+        <div>
+            <small class="text-danger">Zip are protected with password "{{protectDownloadsWith}}"</small>
+        </div>
     </div>
 </div>
 <div class="row">
     <!-- Observable analysers short reports -->
-    <div class="col-md-12">
+    <div class="col-md-12 flexwrap">
         <report ng-repeat="(analyzerId, summary) in artifact.reports"
             artifact="artifact"
             content="summary"

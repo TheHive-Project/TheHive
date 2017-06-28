@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -83,20 +83,42 @@
         };
 
         // open task tab with its details
-        $scope.openTask = function(task) {
+        $scope.startTask = function(task) {
             if (task.status === 'Waiting') {
-                CaseTaskSrv.update({
-                    'taskId': task.id
-                }, {
-                    'status': 'InProgress'
-                }, function(data) {
-                    $scope.showTask(data);
-                }, function(response) {
-                    NotificationSrv.error('taskList', response.data, response.status);
-                });
+                $scope.updateTaskStatus(task.id, 'InProgress');
             } else {
                 $scope.showTask(task);
             }
+        };
+
+        $scope.openTask = function(task) {
+            if (task.status === 'Completed') {
+                $scope.updateTaskStatus(task.id, 'InProgress')
+                    .then($scope.showTask);
+            }
+        };
+
+        $scope.closeTask = function(task) {
+            if (task.status === 'InProgress') {
+                $scope.updateTaskStatus(task.id, 'Completed');
+            }
+        };
+
+        $scope.updateTaskStatus = function(taskId, status) {
+            var defer = $q.defer();
+
+            CaseTaskSrv.update({
+                'taskId': taskId
+            }, {
+                'status': status
+            }, function(data) {
+                defer.resolve(data);
+            }, function(response) {
+                NotificationSrv.error('taskList', response.data, response.status);
+                defer.reject(response);
+            });
+
+            return defer.promise;
         };
 
     }

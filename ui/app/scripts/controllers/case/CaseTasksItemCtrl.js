@@ -75,7 +75,7 @@
                 });
             };
 
-            $scope.complete = function () {
+            $scope.closeTask = function () {
                 $scope.task.status = 'Completed';
                 $scope.updateField('status', 'Completed');
 
@@ -83,6 +83,11 @@
                 $state.go('app.case.tasks', {
                     caseId: $scope.caseId
                 });
+            };
+
+            $scope.openTask = function() {
+                $scope.task.status = 'InProgress';
+                $scope.updateField('status', 'InProgress');
             };
 
             $scope.showLogEditor = function () {
