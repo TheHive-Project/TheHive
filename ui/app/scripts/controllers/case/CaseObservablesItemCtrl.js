@@ -78,25 +78,15 @@
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
-                angular.forEach($scope.analyzers, function (analyzer, analyzerId) {
+                _.each(_.keys($scope.analyzers).sort(), function(analyzerId) {
                     $scope.analyzerJobs[analyzerId] = [];
-                });
+                });                
 
                 angular.forEach($scope.jobs.values, function (job) {
                     if (job.analyzerId in $scope.analyzerJobs) {
                         $scope.analyzerJobs[job.analyzerId].push(job);
                     } else {
                         $scope.analyzerJobs[job.analyzerId] = [job];
-
-                        /*
-                        AnalyzerSrv.get(job.analyzerId)
-                            .finally(function (data) {
-                                $scope.analyzers[data.analyzerId] = {
-                                    active: false,
-                                    showRows: false
-                                };
-                            });
-                            */
                     }
                 });
 
