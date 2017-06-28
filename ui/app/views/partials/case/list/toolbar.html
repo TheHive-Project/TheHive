@@ -34,6 +34,18 @@
                     <li>
                         <a ng-click="$vm.sortBy(['-flag', '+startDate'])">Oldest first</a>
                     </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-flag', '-severity'])">High Severity first</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-flag', '+severity'])">Low Severity first</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-flag', '+owner'])">Ascendant assignee</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-flag', '-owner'])">Descendant assignee</a>
+                    </li>
                 </ul>
             </div>
 
