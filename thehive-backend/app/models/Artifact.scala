@@ -3,20 +3,25 @@ package models
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
+import akka.{ Done, NotUsed }
+
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.postfixOps
-import akka.stream.Materializer
-import play.api.libs.json.{ JsNull, JsObject, JsString, JsValue, JsArray }
+import akka.stream.{ IOResult, Materializer }
+import play.api.libs.json.{ JsArray, JsNull, JsObject, JsString, JsValue }
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import org.elastic4play.BadRequestError
+import org.elastic4play.{ BadRequestError, InternalError }
 import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
-import org.elastic4play.services.{ Attachment, DBLists }
+import org.elastic4play.services.{ Attachment, AttachmentSrv, DBLists }
 import org.elastic4play.utils.MultiHash
 import models.JsonFormat.artifactStatusFormat
+import play.api.Logger
 import services.{ ArtifactSrv, AuditedModel }
+
+import scala.util.Success
 
 object ArtifactStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -42,9 +47,11 @@ trait ArtifactAttributes { _: AttributeDef ⇒
 class ArtifactModel @Inject() (
     caseModel: CaseModel,
     val dblists: DBLists,
+    attachmentSrv: AttachmentSrv,
     artifactSrv: Provider[ArtifactSrv],
     implicit val mat: Materializer,
     implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact") with ArtifactAttributes with AuditedModel {
+  private[ArtifactModel] lazy val logger = Logger(getClass)
   override val removeAttribute: JsObject = Json.obj("status" → ArtifactStatus.Deleted)
 
   override def apply(attributes: JsObject): Artifact = {
@@ -59,7 +66,7 @@ class ArtifactModel @Inject() (
       throw BadRequestError(s"Artifact must contain a message or on ore more tags")
     if (keys.contains("data") == keys.contains("attachment"))
       throw BadRequestError(s"Artifact must contain data or attachment (but not both)")
-    computeId(parent, attrs).map { id ⇒
+    computeId(parent.getOrElse(throw InternalError(s"artifact $attrs has no parent")), attrs).map { id ⇒
       attrs + ("_id" → JsString(id))
     }
   }
@@ -85,17 +92,23 @@ class ArtifactModel @Inject() (
           Future.successful(updateAttrs)
     }
   }
-  def computeId(parent: Option[BaseEntity], attrs: JsObject): Future[String] = {
+  def computeId(parent: BaseEntity, attrs: JsObject): Future[String] = {
     // in order to make sure that there is no duplicated artifact, calculate its id from its content (dataType, data, attachment and parent)
     val mm = new MultiHash("MD5")
     mm.addValue((attrs \ "data").asOpt[JsValue].getOrElse(JsNull))
     mm.addValue((attrs \ "dataType").asOpt[JsValue].getOrElse(JsNull))
-    (attrs \ "attachment" \ "filepath").asOpt[String]
-      .fold(Future.successful(()))(file ⇒ mm.addFile(file))
-      .map { _ ⇒
-        mm.addValue(JsString(parent.fold("")(_.id)))
-        mm.digest.toString
-      }
+    for {
+      IOResult(_, done) ← (attrs \ "attachment" \ "filepath").asOpt[String]
+        .fold(Future.successful(IOResult(0, Success(Done))))(file ⇒ mm.addFile(file))
+      _ ← Future.fromTry(done)
+      _ ← (attrs \ "attachment" \ "id").asOpt[String]
+        .fold(Future.successful(NotUsed: NotUsed)) { fileId ⇒
+          mm.addFile(attachmentSrv.source(fileId))
+        }
+    } yield {
+      mm.addValue(JsString(parent.id))
+      mm.digest.toString
+    }
   }
 
   override def getStats(entity: BaseEntity): Future[JsObject] = {
