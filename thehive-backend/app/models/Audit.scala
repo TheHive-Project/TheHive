@@ -6,7 +6,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.collection.immutable
 import play.api.{ Configuration, Logger }
 import play.api.libs.json.JsObject
-import org.elastic4play.models.{ Attribute, AttributeFormat, AttributeDef, EntityDef, EnumerationAttributeFormat, ListEnumeration, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
+import org.elastic4play.models.{ Attribute, AttributeFormat, AttributeDef, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
 import org.elastic4play.services.AuditableAction
 import org.elastic4play.services.JsonFormat.auditableActionFormat
 import services.AuditedModel
@@ -44,8 +44,8 @@ class AuditModel(
       case (OptionalAttributeFormat(f1), f2)                                              ⇒ mergeAttributeFormat(context, f1, f2)
       case (f1, OptionalAttributeFormat(f2))                                              ⇒ mergeAttributeFormat(context, f1, f2)
       case (MultiAttributeFormat(f1), MultiAttributeFormat(f2))                           ⇒ mergeAttributeFormat(context, f1, f2).map(MultiAttributeFormat(_))
-      case (f1, EnumerationAttributeFormat(_) | ListEnumeration(_))                       ⇒ mergeAttributeFormat(context, f1, StringAttributeFormat)
-      case (EnumerationAttributeFormat(_) | ListEnumeration(_), f2)                       ⇒ mergeAttributeFormat(context, StringAttributeFormat, f2)
+      case (f1, EnumerationAttributeFormat(_) | ListEnumerationAttributeFormat(_))        ⇒ mergeAttributeFormat(context, f1, StringAttributeFormat)
+      case (EnumerationAttributeFormat(_) | ListEnumerationAttributeFormat(_), f2)        ⇒ mergeAttributeFormat(context, StringAttributeFormat, f2)
       case (ObjectAttributeFormat(subAttributes1), ObjectAttributeFormat(subAttributes2)) ⇒ mergeAttributes(context, subAttributes1 ++ subAttributes2)
       case (f1, f2) if f1 == f2                                                           ⇒ Some(f1)
       case (f1, f2) ⇒

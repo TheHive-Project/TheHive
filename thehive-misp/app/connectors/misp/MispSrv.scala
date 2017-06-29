@@ -14,7 +14,7 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
 import org.elastic4play.controllers.{ Fields, FileInputValue }
-import org.elastic4play.services.{ AttachmentSrv, AuthContext, EventSrv, TempSrv }
+import org.elastic4play.services.{ UserSrv ⇒ _, _ }
 import org.elastic4play.utils.RichJson
 import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.inject.ApplicationLifecycle
@@ -92,6 +92,7 @@ class MispSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     tempSrv: TempSrv,
     eventSrv: EventSrv,
+    migrationSrv: MigrationSrv,
     httpSrv: CustomWSAPI,
     environment: Environment,
     lifecycle: ApplicationLifecycle,
@@ -110,19 +111,24 @@ class MispSrv @Inject() (
 
   private[misp] def initScheduler() = {
     val task = system.scheduler.schedule(0.seconds, mispConfig.interval) {
-      logger.info("Update of MISP events is starting ...")
-      userSrv
-        .inInitAuthContext { implicit authContext ⇒
-          synchronize().andThen { case _ ⇒ tempSrv.releaseTemporaryFiles() }
-        }
-        .onComplete {
-          case Success(a) ⇒
-            logger.info("Misp synchronization completed")
-            a.collect {
-              case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
-            }
-          case Failure(t) ⇒ logger.info("Misp synchronization failed", t)
-        }
+      if (migrationSrv.isReady) {
+        logger.info("Update of MISP events is starting ...")
+        userSrv
+          .inInitAuthContext { implicit authContext ⇒
+            synchronize().andThen { case _ ⇒ tempSrv.releaseTemporaryFiles() }
+          }
+          .onComplete {
+            case Success(a) ⇒
+              logger.info("Misp synchronization completed")
+              a.collect {
+                case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
+              }
+            case Failure(t) ⇒ logger.info("Misp synchronization failed", t)
+          }
+      }
+      else {
+        logger.info("MISP synchronization cancel, database is not ready")
+      }
     }
     lifecycle.addStopHook { () ⇒
       logger.info("Stopping MISP fetching ...")
