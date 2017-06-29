@@ -10,15 +10,14 @@ import connectors.ConnectorRouter
 import models._
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.{ Fields, FileInputValue }
+import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
-import org.elastic4play.utils.Hasher
 import play.api.libs.json._
 import play.api.{ Configuration, Logger }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Try }
-import org.elastic4play.services.JsonFormat.attachmentFormat
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
@@ -250,18 +249,10 @@ class AlertSrv(
     def similarArtifacts(artifact: JsObject): Option[Source[Artifact, NotUsed]] = {
       for {
         dataType ← (artifact \ "dataType").asOpt[String]
-        d ← (artifact \ "data").asOpt[String]
-        data ← (dataType, d) match {
-          case ("file", dataExtractor(filename, contentType, b64content)) ⇒
-            val content = java.util.Base64.getDecoder.decode(b64content)
-            val hashes = Hasher(hashAlg: _*).fromByteArray(content)
-            Some(Right(Attachment(filename, hashes, content.length.toLong, contentType, "")))
-          case ("file", _) ⇒
-            logger.warn(s"Invalid data format for file artifact: $d")
-            None
-          case _ ⇒
-            Some(Left(d))
-        }
+        data ← if (dataType == "file")
+          (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
+        else
+          (artifact \ "data").asOpt[String].map(Left.apply)
       } yield artifactSrv.findSimilar(dataType, data, None, Some("all"), Nil)._1
     }
 
