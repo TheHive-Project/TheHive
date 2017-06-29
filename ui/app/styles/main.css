@@ -512,3 +512,8 @@ report:empty {
 span.action-button {
     font-size: 14px;
 }
+
+table tr td.task-actions span.action-button {
+    width: 60px;
+    display: inline-block;    
+}

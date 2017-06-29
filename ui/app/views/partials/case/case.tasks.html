@@ -55,7 +55,7 @@
                     <th>Task</th>
                     <th style="width: 240px">Date</th>
                     <th style="width: 200px">Assignee</th>
-                    <th style="width: 200px"></th>
+                    <th style="width: 200px" class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,20 +73,20 @@
                         <em ng-show="!task.owner">Not assigned</em>
                     </td>
                     <!--  class="task-delete" -->
-                    <td align="right">
+                    <td align="right" class="task-actions">
                         <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
                             <i class="fa fa-times"></i>
                             Delete
                         </span>
-                        <span class="ml-xs clickable text-success" ng-show="task.status == 'Completed'" ng-click="openTask(task)">
+                        <span class="ml-xs clickable text-success action-button" ng-show="task.status == 'Completed'" ng-click="openTask(task)">
                             <i class="fa fa-check-circle"></i>
-                            Open
+                            Reopen
                         </span>
-                        <span class="ml-xs clickable text-muted" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)">
+                        <span class="ml-xs clickable text-muted action-button" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)">
                             <i class="fa fa-check-circle-o"></i>
                             Close
                         </span>
-                        <span class="ml-xs clickable text-primary" ng-show="task.status == 'Waiting'" ng-click="startTask(task)">
+                        <span class="ml-xs clickable text-primary action-button" ng-show="task.status == 'Waiting'" ng-click="startTask(task)">
                             <i class="fa fa-play"></i>
                             Start
                         </span>
