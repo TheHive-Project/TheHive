@@ -27,14 +27,13 @@
 
                 if(metrics === null) {
                     resource.query({listId: 'case_metrics'}, {}, function(response) {
-                        metrics = {};
-                        var data = _.values(response).filter(_.isString).map(function(item) {
-                            return JSON.parse(item);
-                        });
+                        var json = response.toJSON();
 
-                        _.each(data, function(m){
-                            metrics[m.name] = m;
-                        });
+                        metrics = {};
+                        
+                        _.each(_.values(json), function(metric) {
+                            metrics[metric.name] = metric;
+                        })
 
                         deferred.resolve(metrics);
                     }, function(response) {
