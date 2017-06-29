@@ -28,6 +28,10 @@ trait AlertTransformer {
 
 case class CaseSimilarity(caze: Case, similarIOCCount: Int, iocCount: Int, similarArtifactCount: Int, artifactCount: Int)
 
+object AlertSrv {
+  val dataExtractor = "^(.*);(.*);(.*)".r
+}
+
 class AlertSrv(
     templates: Map[String, String],
     alertModel: AlertModel,
@@ -77,6 +81,7 @@ class AlertSrv(
     mat)
 
   private[AlertSrv] lazy val logger = Logger(getClass)
+  import AlertSrv._
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] = {
 
@@ -148,8 +153,6 @@ class AlertSrv(
       .map { ct ⇒ Some(ct) }
       .recover { case _ ⇒ None }
   }
-
-  private val dataExtractor = "^(.*);(.*);(.*)".r
 
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
     alert.caze() match {
