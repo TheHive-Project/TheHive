@@ -145,6 +145,7 @@ class Migration(
         def unapply(data: String): Option[Array[Byte]] = Try(java.util.Base64.getDecoder.decode(data)).toOption
       }
 
+      // store attachment id and check to prevent document already exists error
       var dataIds = Set.empty[String]
       def containsOrAdd(id: String) = {
         dataIds.synchronized {
@@ -155,45 +156,56 @@ class Migration(
           }
         }
       }
+
       val mainHasher = Hasher(mainHash)
       val extraHashers = Hasher(mainHash +: extraHashes: _*)
       Seq(
+        // store alert attachment in datastore
         Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
-        case "alert" ⇒ f("alert").flatMapConcat { alert ⇒
-          val artifactsAndData = Future.traverse((alert \ "artifacts").asOpt[List[JsObject]].getOrElse(Nil)) { artifact ⇒
-            (artifact \ "data").asOpt[String]
-              .collect {
-                case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
-                  val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
-                  ds.getEntity(datastoreName, s"${attachmentId}_0")
-                    .map(_ ⇒ Nil)
-                    .recover {
-                      case _ if containsOrAdd(attachmentId) ⇒ Nil
-                      case _ ⇒
-                        Seq(Json.obj(
-                          "_type" → datastoreName,
-                          "_id" → s"${attachmentId}_0",
-                          "data" → data))
-                    }
-                    .map { dataEntity ⇒
-                      val attachment = Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
-                      (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
-                    }
-              }
-              .getOrElse(Future.successful(artifact → Nil))
-          }
-          Source.fromFuture(artifactsAndData)
-            .mapConcat { ad ⇒
-              val updatedAlert = alert + ("artifacts" → JsArray(ad.map(_._1)))
-              updatedAlert :: ad.flatMap(_._2)
+          case "alert" ⇒ f("alert").flatMapConcat { alert ⇒
+            val artifactsAndData = Future.traverse((alert \ "artifacts").asOpt[List[JsObject]].getOrElse(Nil)) { artifact ⇒
+              (artifact \ "data").asOpt[String]
+                .collect {
+                  case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
+                    val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
+                    ds.getEntity(datastoreName, s"${attachmentId}_0")
+                      .map(_ ⇒ Nil)
+                      .recover {
+                        case _ if containsOrAdd(attachmentId) ⇒ Nil
+                        case _ ⇒
+                          Seq(Json.obj(
+                            "_type" → datastoreName,
+                            "_id" → s"${attachmentId}_0",
+                            "data" → data))
+                      }
+                      .map { dataEntity ⇒
+                        val attachment = Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
+                        (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
+                      }
+                }
+                .getOrElse(Future.successful(artifact → Nil))
             }
-        }
-        case other ⇒ f(other)
-      }),
+            Source.fromFuture(artifactsAndData)
+              .mapConcat { ad ⇒
+                val updatedAlert = alert + ("artifacts" → JsArray(ad.map(_._1)))
+                updatedAlert :: ad.flatMap(_._2)
+              }
+          }
+          case other ⇒ f(other)
+        }),
+        // Fix alert status
         mapAttribute("alert", "status") {
           case JsString("Update") ⇒ JsString("Updated")
           case JsString("Ignore") ⇒ JsString("Ignored")
           case other              ⇒ other
+        },
+        // Fix double encode of metrics
+        mapEntity("dblist") {
+          case dblist if (dblist \ "dblist").asOpt[String].contains("case_metrics") ⇒
+            (dblist \ "value").asOpt[String].map(Json.parse).fold(dblist) { value ⇒
+              dblist + ("value" → value)
+            }
+          case other ⇒ other
         })
   }
 
