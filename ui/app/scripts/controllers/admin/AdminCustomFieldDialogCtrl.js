@@ -68,7 +68,7 @@
                         ListSrv.save({
                             'listId': 'custom_fields'
                         }, {
-                            'value': JSON.stringify(postData)
+                            'value': postData
                         }, onSuccess, onFailure);
                     }
                 }, onFailure);

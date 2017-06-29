@@ -107,6 +107,7 @@
                 };
                 $scope.tags = [];
                 $scope.templateIndex = -1;
+                $scope.templateCustomFields = [];
             };
 
             $scope.reorderTasks = function() {
