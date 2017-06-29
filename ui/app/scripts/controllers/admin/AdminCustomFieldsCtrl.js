@@ -25,10 +25,8 @@
                 }, {}, function(response) {
 
                     self.customFields = _.map(response.toJSON(), function(value, key) {
-                        var obj = JSON.parse(value);
-                        obj.id = key;
-
-                        return obj;
+                        value.id = key;
+                        return value;
                     });
 
                 }, function(response) {

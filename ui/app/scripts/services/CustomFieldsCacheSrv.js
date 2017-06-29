@@ -27,14 +27,12 @@
 
                 if(cache === null) {
                     resource.query({listId: 'custom_fields'}, {}, function(response) {
+                        var json = response.toJSON();
                         cache = {};
-                        var data = _.values(response).filter(_.isString).map(function(item) {
-                            return JSON.parse(item);
-                        });
 
-                        _.each(data, function(field){
+                        _.each(_.values(json), function(field) {
                             cache[field.reference] = field;
-                        });
+                        })
 
                         deferred.resolve(cache);
                     }, function(response) {
