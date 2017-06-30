@@ -1,6 +1,43 @@
 # Change Log
 
-## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2)
+## [2.12.0](https://github.com/CERT-BDF/TheHive/tree/2.12.0)
+
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.3...2.12.0)
+
+**Implemented enhancements:**
+
+- Sort the analyzers list in observable details page [\#245](https://github.com/CERT-BDF/TheHive/issues/245)
+- More options to sort cases [\#243](https://github.com/CERT-BDF/TheHive/issues/243)
+- Alert Preview and management improvements [\#232](https://github.com/CERT-BDF/TheHive/issues/232)
+- Ability to Reopen Tasks [\#156](https://github.com/CERT-BDF/TheHive/issues/156)
+- Display short reports on the Observables tab [\#131](https://github.com/CERT-BDF/TheHive/issues/131)
+- Custom fields for case template [\#12](https://github.com/CERT-BDF/TheHive/issues/12)
+- Show case status and category \(FP, TP, IND\) in related cases  [\#229](https://github.com/CERT-BDF/TheHive/issues/229)
+- Open External Links in New Tab [\#228](https://github.com/CERT-BDF/TheHive/issues/228)
+- Observable analyzers view reports. [\#191](https://github.com/CERT-BDF/TheHive/issues/191)
+- Specifying tags on statistics page or performing a search [\#186](https://github.com/CERT-BDF/TheHive/issues/186)
+- Choose case template while importing events from MISP [\#175](https://github.com/CERT-BDF/TheHive/issues/175)
+
+**Fixed bugs:**
+
+- Fix case metrics malformed definitions [\#248](https://github.com/CERT-BDF/TheHive/issues/248)
+- Sorting alerts by severity fails [\#242](https://github.com/CERT-BDF/TheHive/issues/242)
+- Alerting Panel: Typo Correction [\#240](https://github.com/CERT-BDF/TheHive/issues/240)
+- files in alerts are limited to 32kB [\#237](https://github.com/CERT-BDF/TheHive/issues/237)
+- Alert can contain inconsistent data [\#234](https://github.com/CERT-BDF/TheHive/issues/234)
+- Search do not work with non-latin characters [\#223](https://github.com/CERT-BDF/TheHive/issues/223)
+- report status not updated after finish [\#212](https://github.com/CERT-BDF/TheHive/issues/212)
+
+## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2...2.11.3)
+
+**Fixed bugs:**
+
+- Unable to add tasks to case template [\#239](https://github.com/CERT-BDF/TheHive/issues/239)
+- Problem Start TheHive on Ubuntu 16.04 [\#238](https://github.com/CERT-BDF/TheHive/issues/238)
+- MISP synchronization doesn't retrieve all events [\#236](https://github.com/CERT-BDF/TheHive/issues/236)
+
+## [2.11.2](https://github.com/CERT-BDF/TheHive/tree/2.11.2) (2017-05-24)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.1...2.11.2)
 
 **Implemented enhancements:**
