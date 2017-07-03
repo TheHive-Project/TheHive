@@ -101,8 +101,7 @@ class CaseMergeSrv @Inject() (
   private[services] def mergeMetrics(cases: Seq[Case]): JsObject = {
     val metrics = for {
       caze ← cases
-      metrics ← caze.metrics()
-      metricsObject ← metrics.asOpt[JsObject]
+      metricsObject ← caze.metrics().asOpt[JsObject]
     } yield metricsObject
 
     val mergedMetrics: Seq[(String, JsValue)] = metrics.flatMap(_.keys).distinct.map { key ⇒
@@ -114,6 +113,23 @@ class CaseMergeSrv @Inject() (
     }
 
     JsObject(mergedMetrics)
+  }
+
+  private[services] def mergeCustomFields(cases: Seq[Case]): JsObject = {
+    val customFields = for {
+      caze ← cases
+      customFieldsObject ← caze.customFields().asOpt[JsObject]
+    } yield customFieldsObject
+
+    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.map { key ⇒
+      val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
+      if (customFieldsValues.size != 1)
+        key → JsNull
+      else
+        key → customFieldsValues.head
+    }
+
+    JsObject(mergedCustomFieldsObject)
   }
 
   private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
@@ -253,6 +269,7 @@ class CaseMergeSrv @Inject() (
       .set("tlp", JsNumber(cases.map(_.tlp()).max))
       .set("status", JsString(CaseStatus.Open.toString))
       .set("metrics", mergeMetrics(cases))
+      .set("customFields", mergeCustomFields(cases))
       .set("resolutionStatus", mergeResolutionStatus(cases))
       .set("impactStatus", mergeImpactStatus(cases))
       .set("summary", mergeSummary(cases))
