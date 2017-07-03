@@ -23,7 +23,26 @@ object AlertStatus extends Enumeration with HiveEnumeration {
 
 trait AlertAttributes {
   _: AttributeDef ⇒
-  def artifactAttributes: Seq[Attribute[_]]
+  val artifactAttributes: Seq[Attribute[_]] = {
+    val remoteAttachmentAttributes = Seq(
+      Attribute("alert", "reference", F.stringFmt, Nil, None, ""),
+      Attribute("alert", "filename", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "contentType", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "size", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
+      Attribute("alert", "hash", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "type", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+
+    Seq(
+      Attribute("alert", "data", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "dataType", F.stringFmt, Nil, None, ""),
+      Attribute("alert", "message", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
+      Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
+      Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
+      Attribute("alert", "tlp", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
+      Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
+      Attribute("alert", "ioc", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+  }
 
   val alertId: A[String] = attribute("_id", F.stringFmt, "Alert id", O.readonly)
   val tpe: A[String] = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
@@ -52,27 +71,6 @@ class AlertModel @Inject() (dblists: DBLists)
   private[AlertModel] lazy val logger = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
   override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
-
-  override def artifactAttributes: Seq[Attribute[_]] = {
-    val remoteAttachmentAttributes = Seq(
-      Attribute("alert", "reference", F.stringFmt, Nil, None, ""),
-      Attribute("alert", "filename", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "contentType", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "size", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
-      Attribute("alert", "hash", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "type", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
-
-    Seq(
-      Attribute("alert", "data", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "dataType", F.stringFmt, Nil, None, ""),
-      Attribute("alert", "message", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
-      Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
-      Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
-      Attribute("alert", "tlp", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
-      Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "ioc", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
-  }
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     // check if data attribute is present on all artifacts
@@ -105,8 +103,6 @@ class AlertModel @Inject() (dblists: DBLists)
 class Alert(model: AlertModel, attributes: JsObject)
     extends EntityDef[AlertModel, Alert](model, attributes)
     with AlertAttributes {
-
-  override def artifactAttributes: Seq[Attribute[_]] = Nil
 
   override def toJson: JsObject = super.toJson +
     ("artifacts" → JsArray(artifacts().map {
