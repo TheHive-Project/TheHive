@@ -365,14 +365,20 @@ module.exports = function(grunt) {
                         '*.{ico,png,txt}',
                         '.htaccess',
                         '*.html',
-                        'images/{,*/}*.{webp}',
-                        'styles/fonts/{,*/}*.*'
+                        'images/{,*/}*.{webp}'
+                        //'styles/fonts/{,*/}*.*'
                     ]
                 }, {
                     expand: true,
                     cwd: '.tmp/images',
                     dest: '<%= yeoman.dist %>/images',
                     src: ['generated/*']
+                }, {
+                    expand: true,
+                    dot: true,
+                    cwd: '<%= yeoman.app %>/styles',
+                    src: ['fonts/*.*'],
+                    dest: '<%= yeoman.dist %>'
                 }, {
                     expand: true,
                     cwd: 'bower_components/bootstrap/dist',
