@@ -43,13 +43,13 @@ trait CaseAttributes { _: AttributeDef ⇒
   val flag: A[Boolean] = attribute("flag", F.booleanFmt, "Flag of the case", false)
   val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
   val status: A[CaseStatus.Value] = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
-  val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics")
+  val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics", JsObject(Nil))
   val resolutionStatus: A[Option[CaseResolutionStatus.Value]] = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
   val impactStatus: A[Option[CaseImpactStatus.Value]] = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
   val summary: A[Option[String]] = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
   val mergeInto: A[Option[String]] = optionalAttribute("mergeInto", F.stringFmt, "Id of the case created by the merge")
   val mergeFrom: A[Seq[String]] = multiAttribute("mergeFrom", F.stringFmt, "Id of the cases merged")
-  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields")
+  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields", JsObject(Nil))
 }
 
 @Singleton
