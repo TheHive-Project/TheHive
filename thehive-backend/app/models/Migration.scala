@@ -7,8 +7,8 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import org.elastic4play.models.BaseModelDef
-import org.elastic4play.services._
 import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services._
 import org.elastic4play.utils
 import org.elastic4play.utils.{ Hasher, RichJson }
 import play.api.libs.json.JsValue.jsValueToJsLookup
@@ -164,26 +164,47 @@ class Migration(
         Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
           case "alert" ⇒ f("alert").flatMapConcat { alert ⇒
             val artifactsAndData = Future.traverse((alert \ "artifacts").asOpt[List[JsObject]].getOrElse(Nil)) { artifact ⇒
-              (artifact \ "data").asOpt[String]
-                .collect {
-                  case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
-                    val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
-                    ds.getEntity(datastoreName, s"${attachmentId}_0")
-                      .map(_ ⇒ Nil)
-                      .recover {
-                        case _ if containsOrAdd(attachmentId) ⇒ Nil
-                        case _ ⇒
-                          Seq(Json.obj(
-                            "_type" → datastoreName,
-                            "_id" → s"${attachmentId}_0",
-                            "data" → data))
+              val isFile = (artifact \ "dataType").asOpt[String].contains("file")
+              // get MISP attachment
+              if (!isFile)
+                Future.successful(artifact → Nil)
+              else {
+                (for {
+                  dataStr ← (artifact \ "data").asOpt[String]
+                  dataJson ← Try(Json.parse(dataStr)).toOption
+                  dataObj ← dataJson.asOpt[JsObject]
+                  filename ← (dataObj \ "filename").asOpt[String].map(_.split("|").head)
+                  attributeId ← (dataObj \ "attributeId").asOpt[String]
+                  attributeType ← (dataObj \ "attributeType").asOpt[String]
+                } yield Future.successful((artifact - "data" + ("remoteAttachment" → Json.obj(
+                  "reference" → attributeId,
+                  "filename" → filename,
+                  "type" → attributeType))) → Nil))
+                  .orElse {
+                    (artifact \ "data").asOpt[String]
+                      .collect {
+                        // get attachment encoded in data field
+                        case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
+                          val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
+                          ds.getEntity(datastoreName, s"${attachmentId}_0")
+                            .map(_ ⇒ Nil)
+                            .recover {
+                              case _ if containsOrAdd(attachmentId) ⇒ Nil
+                              case _ ⇒
+                                Seq(Json.obj(
+                                  "_type" → datastoreName,
+                                  "_id" → s"${attachmentId}_0",
+                                  "data" → data))
+                            }
+                            .map { dataEntity ⇒
+                              val attachment = Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
+                              (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
+                            }
                       }
-                      .map { dataEntity ⇒
-                        val attachment = Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
-                        (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
-                      }
-                }
-                .getOrElse(Future.successful(artifact → Nil))
+
+                  }
+                  .getOrElse(Future.successful(artifact → Nil))
+              }
             }
             Source.fromFuture(artifactsAndData)
               .mapConcat { ad ⇒
@@ -206,6 +227,12 @@ class Migration(
               dblist + ("value" → value)
             }
           case other ⇒ other
+        },
+        // Add empty metrics and custom fields in cases
+        mapEntity("case") { caze ⇒
+          val metrics = (caze \ "metrics").asOpt[JsObject].getOrElse(JsObject(Nil))
+          val customFields = (caze \ "customFields").asOpt[JsObject].getOrElse(JsObject(Nil))
+          caze + ("metrics" → metrics) + ("customFields" → customFields)
         })
   }
 
