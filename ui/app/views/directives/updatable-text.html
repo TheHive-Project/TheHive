@@ -1,8 +1,8 @@
 <span ng-if="!updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
     <span ng-if="value.length > 0">
         <small>
-            <a style="cursor: pointer;" uib-tooltip="edit">
-                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+            <a href class="clickable" uib-tooltip="edit" ng-click="edit()">
+                <i class="glyphicon glyphicon-pencil"></i>
             </a>
         </small>
         <!-- <span btf-markdown="value"></span> -->
@@ -13,8 +13,8 @@
             <em>Not specified</em>
         </span>
         <small ng-show="active">
-            <a href class="clickable" uib-tooltip="edit">
-                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+            <a href class="clickable" uib-tooltip="edit" ng-click="edit()">
+                <i class="glyphicon glyphicon-pencil"></i>
             </a>
         </small>
     </span>

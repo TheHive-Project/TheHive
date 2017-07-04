@@ -25,6 +25,13 @@
         </h4>
 
         <dl class="dl-horizontal">
+            <dt class="pull-left">Title</dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('title', newValue)" value="task.title"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
             <dt class="pull-left">Owner</dt>
             <dd>
                 <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
