@@ -19,11 +19,19 @@
                 },
 
                 get: function(alertId) {
-                    return $http.get(baseUrl + '/' + alertId);
+                    return $http.get(baseUrl + '/' + alertId, {
+                        params: {
+                            similarity: 1
+                        }
+                    });
                 },
 
-                create: function(alertId) {
-                    return $http.post(baseUrl + '/' + alertId + '/createCase', {});
+                create: function(alertId, data) {
+                    return $http.post(baseUrl + '/' + alertId + '/createCase', data || {});
+                },
+
+                mergeInto: function(alertId, caseId) {
+                    return $http.post(baseUrl + '/' + alertId + '/merge/' + caseId);
                 },
 
                 canMarkAsRead: function(event) {

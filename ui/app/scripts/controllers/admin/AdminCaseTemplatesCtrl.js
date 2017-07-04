@@ -2,12 +2,33 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv) {
+        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv) {
             $scope.task = '';
             $scope.tags = [];
             $scope.templates = [];
             $scope.metrics = [];
+            $scope.fields = [];
+            $scope.templateCustomFields = [];
             $scope.templateIndex = -1;
+
+            /**
+             * Convert the template custom fields definition to a list of ordered field names
+             * to be used for drag&drop sorting feature
+             */
+            var getTemplateCustomFields = function(customFields) {
+                var result = [];
+
+                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                    return {
+                        name: name,
+                        order: definition.order
+                    }
+                }), function(item){
+                    return item.order;
+                }), 'name');
+
+                return result;
+            }
 
             $scope.sortableOptions = {
                 handle: '.drag-handle',
@@ -17,12 +38,28 @@
                 axis: 'y'
             };
 
-            $scope.getMetrics = function() {
+            $scope.sortableFields = {
+                handle: '.drag-handle',
+                axis: 'y'
+            };
+
+            $scope.keys = function(obj) {
+                if(!obj) {
+                    return [];
+                }
+                return _.keys(obj);
+            };
+
+            $scope.loadCache = function() {
                 MetricsCacheSrv.all().then(function(metrics){
                     $scope.metrics = metrics;
                 });
+
+                CustomFieldsCacheSrv.all().then(function(fields){
+                    $scope.fields = fields;
+                });
             };
-            $scope.getMetrics();
+            $scope.loadCache();
 
             $scope.getList = function(index) {
                 TemplateSrv.query(function(templates) {
@@ -49,6 +86,8 @@
 
                     $scope.template = template;
                     $scope.tags = UtilsSrv.objectify($scope.template.tags, 'text');
+
+                    $scope.templateCustomFields = getTemplateCustomFields(template.customFields);
                 });
 
                 $scope.templateIndex = index;
@@ -63,10 +102,12 @@
                     tags: [],
                     tasks: [],
                     metricNames: [],
+                    customFields: {},
                     description: ''
                 };
                 $scope.tags = [];
                 $scope.templateIndex = -1;
+                $scope.templateCustomFields = [];
             };
 
             $scope.reorderTasks = function() {
@@ -122,6 +163,18 @@
                 $scope.template.metricNames = _.without($scope.template.metricNames, metricName);
             };
 
+            $scope.addCustomField = function(field) {
+                if($scope.templateCustomFields.indexOf(field.reference) === -1) {
+                    $scope.templateCustomFields.push(field.reference);
+                } else {
+                    NotificationSrv.log('The custom field [' + field.name + '] has already been added to the template', 'warning');
+                }
+            };
+
+            $scope.removeCustomField = function(fieldName) {
+                $scope.templateCustomFields = _.without($scope.templateCustomFields, fieldName);
+            };
+
             $scope.deleteTemplate = function() {
                 $uibModal.open({
                     scope: $scope,
@@ -132,7 +185,19 @@
             };
 
             $scope.saveTemplate = function() {
+                // Set tags
                 $scope.template.tags = _.pluck($scope.tags, 'text');
+
+                // Set custom fields
+                $scope.template.customFields = {};
+                _.each($scope.templateCustomFields, function(value, index) {
+                    var fieldDef = $scope.fields[value];
+
+                    $scope.template.customFields[value] = {};
+                    $scope.template.customFields[value][fieldDef.type] = null;
+                    $scope.template.customFields[value].order = index + 1;
+                });
+
                 if (_.isEmpty($scope.template.id)) {
                     $scope.createTemplate();
                 } else {
@@ -178,10 +243,10 @@
             $scope.addTask = function() {
                 if(action === 'Add') {
                     if($scope.template.tasks) {
-                    $scope.template.tasks.push(task);
+                        $scope.template.tasks.push(task);
                     } else {
                         $scope.template.tasks = [task];
-                    }                    
+                    }
                 }
 
                 $uibModalInstance.dismiss();

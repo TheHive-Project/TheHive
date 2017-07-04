@@ -1,6 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
+        .value('duScrollOffset', 30)
         .value('CaseResolutionStatus', {
             Indeterminate: 'Indeterminate',
             FalsePositive: 'False Positive',

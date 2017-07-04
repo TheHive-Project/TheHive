@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, $base64, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -21,6 +21,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             data: 'mytasks'
         };
         $scope.mispEnabled = false;
+        $scope.customFieldsCache = [];
 
         StreamSrv.init();
         $scope.currentUser = currentUser;
@@ -72,6 +73,11 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         });
 
+        $scope.$on('custom-fields:refresh', function() {
+            // Get custom fields cache
+            $scope.initCustomFieldsCache();
+        });
+
         $scope.$on('alert:event-imported', function() {
             $scope.alertEvents = AlertingSrv.stats($scope);
         });
@@ -80,6 +86,13 @@ angular.module('theHiveControllers').controller('RootCtrl',
         // $scope.$on('misp:status-updated', function(event, enabled) {
         //     $scope.mispEnabled = enabled;
         // });
+
+        $scope.initCustomFieldsCache = function() {
+            CustomFieldsCacheSrv.all().then(function(list) {
+                $scope.customFieldsCache = list;
+            });
+        };
+        $scope.initCustomFieldsCache();
 
         $scope.isAdmin = function(user) {
             var u = user;
@@ -122,7 +135,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.search = function(querystring) {
-            var query = $base64.encode(angular.toJson({
+            var query = Base64.encode(angular.toJson({
                 _string: querystring
             }));
 

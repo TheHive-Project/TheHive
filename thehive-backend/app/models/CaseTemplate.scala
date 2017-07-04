@@ -2,7 +2,7 @@ package models
 
 import javax.inject.{ Inject, Singleton }
 
-import play.api.libs.json.JsObject
+import play.api.libs.json.{ JsObject, JsValue }
 import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F }
 import models.JsonFormat.caseTemplateStatusFormat
 
@@ -23,12 +23,15 @@ trait CaseTemplateAttributes { _: AttributeDef ⇒
   val tlp: A[Option[Long]] = optionalAttribute("tlp", F.numberFmt, "TLP level")
   val status: A[CaseTemplateStatus.Value] = attribute("status", F.enumFmt(CaseTemplateStatus), "Status of the case", CaseTemplateStatus.Ok)
   val metricNames: A[Seq[String]] = multiAttribute("metricNames", F.stringFmt, "List of acceptable metric name")
+  val customFields: A[Option[JsValue]] = optionalAttribute("customFields", F.customFields, "List of acceptable custom fields")
   val tasks: A[Seq[JsObject]] = multiAttribute("tasks", F.objectFmt(taskAttributes), "List of created tasks")
 }
 
 @Singleton
 class CaseTemplateModel @Inject() (taskModel: TaskModel) extends ModelDef[CaseTemplateModel, CaseTemplate]("caseTemplate") with CaseTemplateAttributes {
-  def taskAttributes: Seq[Attribute[_]] = taskModel.attributes
+  def taskAttributes: Seq[Attribute[_]] = taskModel
+    .attributes
+    .filter(_.isForm)
 }
 class CaseTemplate(model: CaseTemplateModel, attributes: JsObject) extends EntityDef[CaseTemplateModel, CaseTemplate](model, attributes) with CaseTemplateAttributes {
   def taskAttributes = Nil

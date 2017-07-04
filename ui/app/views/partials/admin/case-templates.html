@@ -101,7 +101,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h4 class="vpad10 text-primary">
-                                Case tasks ({{template.tasks.length || 0}})
+                                Tasks ({{template.tasks.length || 0}})
                                 <a class="pull-right" href ng-click="addTask()">
                                     <i class="fa fa-plus"></i>
                                     Add task</a>
@@ -145,7 +145,7 @@
                         </div>
                         <div class="col-md-6">
                             <h4 class="vpad10 text-primary">
-                                Case metrics ({{template.metricNames.length || 0}})
+                                Metrics ({{template.metricNames.length || 0}})
 
                                 <span uib-dropdown class="pull-right">
                                     <a href class="dropdown-toggle" uib-dropdown-toggle>
@@ -189,6 +189,58 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="vpad10 text-primary">
+                                Custom fields ({{keys(template.customFields).length}})
+                                <span uib-dropdown class="pull-right">
+                                    <a href class="dropdown-toggle" uib-dropdown-toggle>
+                                        <i class="fa fa-plus"></i>
+                                        Add custom field
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu" uib-dropdown-menu>
+                                        <li ng-repeat="(key, value) in fields">
+                                            <a ng-click="addCustomField(value)">{{value.name}}</a>
+                                        </li>
+                                    </ul>
+                                </span>
+                            </h4>
+
+                            <div ng-if="templateCustomFields.length !== 0" ng-init="isCollapsed=true" ui-sortable="sortableFields" ng-model="templateCustomFields">
+                                <div class="panel panel-default" ng-repeat="m in templateCustomFields" ng-init="description=fields[m].description">
+                                    <div class="panel-heading">
+                                        <span class="drag-handle text-primary clickable mr-xxs">
+                                            <i class="fa fa-bars"></i>
+                                        </span>
+                                        <a href ng-click="isCollapsed=!isCollapsed">
+                                            <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
+                                        </a>
+                                        <span class="hpad5">{{fields[m].name}}</span>
+                                        <span class="pull-right">
+                                            <a class="text-danger" href ng-click="removeCustomField(m)">
+                                                <i class="fa fa-times"></i>&nbsp;Delete</a>
+                                        </span>
+                                    </div>
+                                    <div class="panel-body" ng-hide="isCollapsed">
+                                        <p ng-show="description != ''">{{description}}</p>
+                                        <p class="text-warning" ng-show="!description || description===''">
+                                            <em>No description specified</em>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-danger" ng-if="templateCustomFields.length === 0">
+                                <table class="table table-striped">
+                                    <tr>
+                                        <td>No custom fields have been added</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div class="vpad10"></div>

@@ -6,17 +6,23 @@ angular.module('theHiveDirectives', []);
 angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router', 'ui.sortable',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
-        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'base64', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer'
+        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll'
     ])
     .config(function($resourceProvider) {
         'use strict';
 
         $resourceProvider.defaults.stripTrailingSlashes = true;
     })
-    .config(function($compileProvider) {
+    .config(function($compileProvider, markedProvider) {
         'use strict';
         $compileProvider.debugInfoEnabled(false);
+
+        markedProvider.setRenderer({
+            link: function(href, title, text) {
+                return "<a href='" + href + "'" + (title ? " title='" + title + "'" : '') + " target='_blank'>" + text + "</a>";
+            }
+        });
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
@@ -171,6 +177,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/admin/metrics.html',
                 controller: 'AdminMetricsCtrl',
                 title: 'Metrics administration'
+            })
+            .state('app.administration.custom-fields', {
+                url: '/custom-fields',
+                templateUrl: 'views/partials/admin/custom-fields.html',
+                controller: 'AdminCustomFieldsCtrl',
+                controllerAs: '$vm',
+                title: 'Custom fields administration'
             })
             .state('app.administration.observables', {
                 url: '/observables',

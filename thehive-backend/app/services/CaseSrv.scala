@@ -31,9 +31,16 @@ class CaseSrv @Inject() (
   lazy val log = Logger(getClass)
 
   def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
+    def getJsObjectOrEmpty(value: Option[JsValue]) = value.fold(JsObject(Nil)) {
+      case obj: JsObject ⇒ obj
+      case _             ⇒ JsObject(Nil)
+    }
+
     val metricNames = (originalFields.getStrings("metricNames").getOrElse(Nil) ++ template.metricNames()).distinct
     val metrics = JsObject(metricNames.map(_ → JsNull))
     val tags = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
+    val customFields = getJsObjectOrEmpty(template.customFields()) ++ getJsObjectOrEmpty(originalFields.getValue("customFields"))
+
     originalFields
       .set("title", originalFields.getString("title").map(t ⇒ JsString(template.titlePrefix().getOrElse("") + " " + t)))
       .set("description", originalFields.getString("description").orElse(template.description()).map(JsString))
@@ -42,6 +49,7 @@ class CaseSrv @Inject() (
       .set("flag", originalFields.getBoolean("flag").orElse(template.flag()).map(JsBoolean))
       .set("tlp", originalFields.getLong("tlp").orElse(template.tlp()).map(JsNumber(_)))
       .set("metrics", originalFields.getValue("metrics").flatMap(_.asOpt[JsObject]).getOrElse(JsObject(Nil)) ++ metrics)
+      .set("customFields", customFields)
   }
 
   def create(fields: Fields, template: Option[CaseTemplate] = None)(implicit authContext: AuthContext): Future[Case] = {
@@ -110,7 +118,7 @@ class CaseSrv @Inject() (
         "status" ~= "Ok"), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
-      .groupBy(20, _.parentId)
+      .groupBy(100, _.parentId)
       .map { a ⇒ (a.parentId, Seq(a)) }
       .reduce((l, r) ⇒ (l._1, r._2 ++ l._2))
       .mergeSubstreams

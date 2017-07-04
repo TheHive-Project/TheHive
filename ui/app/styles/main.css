@@ -54,7 +54,7 @@ body {
     margin: 0 !important;
 }
 
-.short-report {
+.short-report .label {
     margin-right: 5px;
 }
 .empty-message {
@@ -120,6 +120,8 @@ pre.clearpre {
 .flexwrap{
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
 }
 .wrap {
     word-wrap: break-word;
@@ -260,8 +262,9 @@ ul.observable-reports-summary li {
     padding: 20px 10px 10px 10px;
 }
 
-.case-metrics dt {
-    width: 300px !important;
+.case-metrics dt,
+.case-custom-fields dt {
+    width: 200px !important;
 }
 
 .scrollable {
@@ -397,14 +400,13 @@ ul.observable-reports-summary li {
     /* IE 9 */
 }
 
-tr.task-row td.task-delete {
+tr.task-row .task-delete {
     text-align: center;
 }
-tr.task-row:hover td.task-delete i {
-    display: block !important;
+tr.task-row:hover .task-delete {
+    display: inline !important;
 }
-tr.task-row td.task-delete i {
-    cursor: pointer;
+tr.task-row .task-delete {
     display: none;
 }
 tr.task-row .tast-status {
@@ -495,10 +497,23 @@ tags-input.input-sm .tags.focused {
 }
 
 footer.main-footer {
-    padding: 2px;    
+    padding: 2px;
     line-height: 40px;
 }
 
 footer .footer-logo {
     height: 40px;
+}
+
+report:empty {
+   display: none;
+}
+
+span.action-button {
+    font-size: 14px;
+}
+
+table tr td.task-actions span.action-button {
+    width: 60px;
+    display: inline-block;    
 }

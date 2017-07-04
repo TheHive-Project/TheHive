@@ -64,6 +64,7 @@ POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUn
 POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)
 POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAlert(alertId)
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
+POST     /api/alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
 GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
 
@@ -75,8 +76,11 @@ POST     /api/maintenance/migrate                 org.elastic4play.controllers.M
 
 GET      /api/list                                org.elastic4play.controllers.DBListCtrl.list()
 DELETE   /api/list/:itemId                        org.elastic4play.controllers.DBListCtrl.deleteItem(itemId)
+PATCH    /api/list/:itemId                        org.elastic4play.controllers.DBListCtrl.updateItem(itemId)
 POST     /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.addItem(listName)
 GET      /api/list/:listName                      org.elastic4play.controllers.DBListCtrl.listItems(listName)
+POST     /api/list/:listName/_exists              org.elastic4play.controllers.DBListCtrl.itemExists(listName)
+
 
 GET      /api/user/current                        controllers.UserCtrl.currentUser()
 POST     /api/user/_search                        controllers.UserCtrl.find()

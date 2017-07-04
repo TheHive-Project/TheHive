@@ -34,6 +34,10 @@ class CaseMergeSrv @Inject() (
 
   import org.elastic4play.services.QueryDSL._
 
+  private[services] def concatOpt[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ Option[String]) = {
+    JsString(entities.flatMap(e ⇒ getStr(e).map(s ⇒ s"#${getId(e)}:$s")).mkString(sep))
+  }
+
   private[services] def concat[E](entities: Seq[E], sep: String, getId: E ⇒ Long, getStr: E ⇒ String) = {
     JsString(entities.map(e ⇒ s"#${getId(e)}:${getStr(e)}").mkString(sep))
   }
@@ -97,8 +101,7 @@ class CaseMergeSrv @Inject() (
   private[services] def mergeMetrics(cases: Seq[Case]): JsObject = {
     val metrics = for {
       caze ← cases
-      metrics ← caze.metrics()
-      metricsObject ← metrics.asOpt[JsObject]
+      metricsObject ← caze.metrics().asOpt[JsObject]
     } yield metricsObject
 
     val mergedMetrics: Seq[(String, JsValue)] = metrics.flatMap(_.keys).distinct.map { key ⇒
@@ -110,6 +113,23 @@ class CaseMergeSrv @Inject() (
     }
 
     JsObject(mergedMetrics)
+  }
+
+  private[services] def mergeCustomFields(cases: Seq[Case]): JsObject = {
+    val customFields = for {
+      caze ← cases
+      customFieldsObject ← caze.customFields().asOpt[JsObject]
+    } yield customFieldsObject
+
+    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.map { key ⇒
+      val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
+      if (customFieldsValues.size != 1)
+        key → JsNull
+      else
+        key → customFieldsValues.head
+    }
+
+    JsObject(mergedCustomFieldsObject)
   }
 
   private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
@@ -212,7 +232,7 @@ class CaseMergeSrv @Inject() (
         }
           .set("data", firstArtifact.data().map(JsString))
           .set("dataType", firstArtifact.dataType())
-          .set("message", concat[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
+          .set("message", concatOpt[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
           .set("startDate", firstDate(sameArtifacts.map(_.startDate())))
           .set("tlp", JsNumber(sameArtifacts.map(_.tlp()).min))
           .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).distinct.map(JsString)))
@@ -249,6 +269,7 @@ class CaseMergeSrv @Inject() (
       .set("tlp", JsNumber(cases.map(_.tlp()).max))
       .set("status", JsString(CaseStatus.Open.toString))
       .set("metrics", mergeMetrics(cases))
+      .set("customFields", mergeCustomFields(cases))
       .set("resolutionStatus", mergeResolutionStatus(cases))
       .set("impactStatus", mergeImpactStatus(cases))
       .set("summary", mergeSummary(cases))

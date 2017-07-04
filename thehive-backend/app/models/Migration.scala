@@ -3,14 +3,18 @@ package models
 import java.util.Date
 import javax.inject.Inject
 
+import akka.NotUsed
 import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import org.elastic4play.models.BaseModelDef
+import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
 import org.elastic4play.utils
 import org.elastic4play.utils.{ Hasher, RichJson }
-import play.api.{ Configuration, Logger }
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
+import play.api.{ Configuration, Logger }
+import services.AlertSrv
 
 import scala.collection.immutable.{ Set ⇒ ISet }
 import scala.concurrent.{ ExecutionContext, Future }
@@ -21,6 +25,9 @@ case class UpdateMispAlertArtifact() extends EventMessage
 
 class Migration(
     mispCaseTemplate: Option[String],
+    mainHash: String,
+    extraHashes: Seq[String],
+    datastoreName: String,
     models: ISet[BaseModelDef],
     dblists: DBLists,
     eventSrv: EventSrv,
@@ -33,10 +40,17 @@ class Migration(
     eventSrv: EventSrv,
     ec: ExecutionContext,
     materializer: Materializer) = {
-    this(configuration.getString("misp.caseTemplate"), models, dblists, eventSrv, ec, materializer)
+    this(
+      configuration.getString("misp.caseTemplate"),
+      configuration.getString("datastore.hash.main").get,
+      configuration.getStringSeq("datastore.hash.extra").get,
+      configuration.getString("datastore.name").get,
+      models, dblists,
+      eventSrv, ec, materializer)
   }
 
   import org.elastic4play.services.Operation._
+
   val logger = Logger(getClass)
   private var requireUpdateMispAlertArtifact = false
 
@@ -126,9 +140,104 @@ class Migration(
               "follow" → (misp \ "follow").as[JsBoolean])
         },
         removeEntity("audit")(o ⇒ (o \ "objectType").asOpt[String].contains("alert")))
+    case ds @ DatabaseState(9) ⇒
+      object Base64 {
+        def unapply(data: String): Option[Array[Byte]] = Try(java.util.Base64.getDecoder.decode(data)).toOption
+      }
+
+      // store attachment id and check to prevent document already exists error
+      var dataIds = Set.empty[String]
+      def containsOrAdd(id: String) = {
+        dataIds.synchronized {
+          if (dataIds.contains(id)) true
+          else {
+            dataIds = dataIds + id
+            false
+          }
+        }
+      }
+
+      val mainHasher = Hasher(mainHash)
+      val extraHashers = Hasher(mainHash +: extraHashes: _*)
+      Seq(
+        // store alert attachment in datastore
+        Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
+          case "alert" ⇒ f("alert").flatMapConcat { alert ⇒
+            val artifactsAndData = Future.traverse((alert \ "artifacts").asOpt[List[JsObject]].getOrElse(Nil)) { artifact ⇒
+              val isFile = (artifact \ "dataType").asOpt[String].contains("file")
+              // get MISP attachment
+              if (!isFile)
+                Future.successful(artifact → Nil)
+              else {
+                (for {
+                  dataStr ← (artifact \ "data").asOpt[String]
+                  dataJson ← Try(Json.parse(dataStr)).toOption
+                  dataObj ← dataJson.asOpt[JsObject]
+                  filename ← (dataObj \ "filename").asOpt[String].map(_.split("|").head)
+                  attributeId ← (dataObj \ "attributeId").asOpt[String]
+                  attributeType ← (dataObj \ "attributeType").asOpt[String]
+                } yield Future.successful((artifact - "data" + ("remoteAttachment" → Json.obj(
+                  "reference" → attributeId,
+                  "filename" → filename,
+                  "type" → attributeType))) → Nil))
+                  .orElse {
+                    (artifact \ "data").asOpt[String]
+                      .collect {
+                        // get attachment encoded in data field
+                        case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
+                          val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
+                          ds.getEntity(datastoreName, s"${attachmentId}_0")
+                            .map(_ ⇒ Nil)
+                            .recover {
+                              case _ if containsOrAdd(attachmentId) ⇒ Nil
+                              case _ ⇒
+                                Seq(Json.obj(
+                                  "_type" → datastoreName,
+                                  "_id" → s"${attachmentId}_0",
+                                  "data" → data))
+                            }
+                            .map { dataEntity ⇒
+                              val attachment = Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
+                              (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
+                            }
+                      }
+
+                  }
+                  .getOrElse(Future.successful(artifact → Nil))
+              }
+            }
+            Source.fromFuture(artifactsAndData)
+              .mapConcat { ad ⇒
+                val updatedAlert = alert + ("artifacts" → JsArray(ad.map(_._1)))
+                updatedAlert :: ad.flatMap(_._2)
+              }
+          }
+          case other ⇒ f(other)
+        }),
+        // Fix alert status
+        mapAttribute("alert", "status") {
+          case JsString("Update") ⇒ JsString("Updated")
+          case JsString("Ignore") ⇒ JsString("Ignored")
+          case other              ⇒ other
+        },
+        // Fix double encode of metrics
+        mapEntity("dblist") {
+          case dblist if (dblist \ "dblist").asOpt[String].contains("case_metrics") ⇒
+            (dblist \ "value").asOpt[String].map(Json.parse).fold(dblist) { value ⇒
+              dblist + ("value" → value)
+            }
+          case other ⇒ other
+        },
+        // Add empty metrics and custom fields in cases
+        mapEntity("case") { caze ⇒
+          val metrics = (caze \ "metrics").asOpt[JsObject].getOrElse(JsObject(Nil))
+          val customFields = (caze \ "customFields").asOpt[JsObject].getOrElse(JsObject(Nil))
+          caze + ("metrics" → metrics) + ("customFields" → customFields)
+        })
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
+
   def getRequestId: String = {
     utils.Instance.id + ":mig:" + requestCounter.incrementAndGet()
   }

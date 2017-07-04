@@ -8,6 +8,14 @@
             },
             add: {
                 method: 'PUT'
+            },
+            update: {
+                url: './api/list/:itemId',
+                method: 'PATCH'
+            },
+            exists: {
+                url: './api/list/:listId/_exists',
+                method: 'POST',
             }
         });
     });

@@ -1,15 +1,16 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
     <span class="updatable-value" ng-show="!value || value.length === 0" style="vertical-align:top; white-space: pre-wrap"><span class="text-warning"><em>Not Specified</em></span></span>
-    <span ng-repeat="tag in value">
-        <span class="label label-primary mr-xxxs"><span ng-bind="tag.text"></span>
-        </span>
+
+    <span class="tags-list flexwrap">
+        <span ng-repeat="tag in value" class="label label-primary mb-xxxs mr-xxxs">{{tag.text}}</span>
+        <!-- -->
+        <small ng-show="active" style="line-height:18px;" class="mb-xxxs mr-xxxs">
+            <a href class="clickable" tooltip-popup-delay='500' uib-tooltip="edit">
+                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+            </a>
+        </small>
     </span>
 
-    <small ng-show="active">
-        <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
-            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
-        </a>
-    </small>
 </span>
 
 <span ng-show="updatable.updating">

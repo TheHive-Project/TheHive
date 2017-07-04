@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -78,25 +78,15 @@
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
-                angular.forEach($scope.analyzers, function (analyzer, analyzerId) {
+                _.each(_.keys($scope.analyzers).sort(), function(analyzerId) {
                     $scope.analyzerJobs[analyzerId] = [];
-                });
+                });                
 
                 angular.forEach($scope.jobs.values, function (job) {
                     if (job.analyzerId in $scope.analyzerJobs) {
                         $scope.analyzerJobs[job.analyzerId].push(job);
                     } else {
                         $scope.analyzerJobs[job.analyzerId] = [job];
-
-                        /*
-                        AnalyzerSrv.get(job.analyzerId)
-                            .finally(function (data) {
-                                $scope.analyzers[data.analyzerId] = {
-                                    active: false,
-                                    showRows: false
-                                };
-                            });
-                            */
                     }
                 });
 
@@ -132,6 +122,16 @@
                         startDate: job.startDate,
                         endDate: job.endDate
                     };
+
+                    $timeout(function() {
+                        var reportEl = angular.element(document.getElementById('analysis-report'))[0];
+
+                        // Scrolling hack using jQuery stuff
+                        $('html,body').animate({
+                            scrollTop: $(reportEl).offset().top
+                        }, 'fast');
+                    }, 500);
+
                 }, function(/*err*/) {
                     NotificationSrv.log('An expected error occured while fetching the job report');
                 });

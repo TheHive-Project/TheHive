@@ -54,7 +54,11 @@ class MispCtrl @Inject() (
     Ok("")
   }
 
-  def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case] = {
-    mispSrv.createCase(alert)
+  override def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
+    mispSrv.createCase(alert, customCaseTemplate)
+  }
+
+  override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    mispSrv.mergeWithCase(alert, caze)
   }
 }

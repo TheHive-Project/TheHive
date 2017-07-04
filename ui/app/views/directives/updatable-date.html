@@ -1,27 +1,29 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <span class="updatable-value" ng-bind="value | showDate" style="vertical-align:top"></span>
+    <span ng-if="value!==null && value !==''" style="vertical-align:top" class="updatable-value" >{{value | showDate}}</span>
+    <span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
     <small ng-show="active">
         <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
             <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
         </a>
     </small>
-    <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    <small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
 </span>
 <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
-    <div class="form-inline">
-        <div class="form-group">
-            <div class="input-group">
-                <input class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" type="datetime"/>
-                <span uib-btn-checkbox="" class="btn btn-primary input-group-addon" ng-model="dateNow">now</span>
-            </div>
-        </div>
-        <div class="form-group">
-            <span class="btn" ng-click='update()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="save">
-                <i class="text-success glyphicon glyphicon-ok"></i>
+
+    <form ng-submit="update()">
+		<div class="input-group input-group-sm">
+			<input class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" type="datetime"/>
+			<span class="input-group-btn">
+                <span uib-btn-checkbox="" class="btn btn-sm btn-primary" ng-model="dateNow">
+					Now
+				</span>
+				<button class="btn btn-sm btn-default" type="submit">
+					<i class="text-success glyphicon glyphicon-ok"></i>
+				</button>
+                <button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
+					<i class="text-danger glyphicon glyphicon-remove"></i>
+				</button>
             </span>
-            <span class="btn" ng-click='cancel()' target="_self" tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="cancel">
-                <i class="text-danger glyphicon glyphicon-remove"></i>
-            </span>
-        </div>
-    </div>
+		</div>
+	</form>
 </span>

@@ -1,10 +1,12 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, AlertingSrv, NotificationSrv, event) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, CaseResolutionStatus, AlertingSrv, NotificationSrv, event, templates) {
             var self = this;
             var eventId = event.id;
 
+            self.templates = _.pluck(templates, 'name');
+            self.CaseResolutionStatus = CaseResolutionStatus;
             self.event = event;
 
             self.loading = true;
@@ -16,6 +18,11 @@
                 data: []
             };
             self.filteredArtifacts = [];
+
+            self.similarityFilters = {};
+            self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
+            self.currentSimilarFilter = '';
+            self.similarCasesStats = [];
 
             this.filterArtifacts = function(value) {
                 self.pagination.currentPage = 1;
@@ -43,6 +50,7 @@
                 AlertingSrv.get(eventId).then(function(response) {
                     self.event = response.data;
                     self.loading = false;
+                    self.initSimilarCasesFilter(self.event.similarCases);
 
                     self.dataTypes = _.countBy(self.event.artifacts, function(attr) {
                         return attr.dataType;
@@ -58,7 +66,9 @@
 
             self.import = function() {
                 self.loading = true;
-                AlertingSrv.create(self.event.id).then(function(response) {
+                AlertingSrv.create(self.event.id, {
+                    caseTemplate: self.event.caseTemplate
+                }).then(function(response) {
                     $uibModalInstance.dismiss();
 
                     $rootScope.$broadcast('alert:event-imported');
@@ -70,6 +80,23 @@
                     self.loading = false;
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
+            };
+
+            self.mergeIntoCase = function(caseId) {
+                self.loading = true;
+                AlertingSrv.mergeInto(self.event.id, caseId)
+                    .then(function(response) {
+                        $uibModalInstance.dismiss();
+
+                        $rootScope.$broadcast('alert:event-imported');
+
+                        $state.go('app.case.details', {
+                            caseId: response.data.id
+                        });
+                    }, function(response) {
+                        self.loading = false;
+                        NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                    });
             };
 
             this.follow = function() {
@@ -109,6 +136,50 @@
 
             self.cancel = function() {
                 $uibModalInstance.dismiss();
+            };
+
+            self.initSimilarCasesFilter = function(data) {
+                var stats = {
+                    'Open': 0
+                };
+
+                // Init the stats object
+                _.each(_.without(_.keys(CaseResolutionStatus), 'Duplicated'), function(key) {
+                    stats[key] = 0
+                });
+
+                _.each(data, function(item) {
+                    if(item.status === 'Open') {
+                        stats[item.status] = stats[item.status] + 1;
+                    } else {
+                        stats[item.resolutionStatus] = stats[item.resolutionStatus] + 1;
+                    }
+                });
+
+                var result = [];
+                _.each(_.keys(stats), function(key) {
+                    result.push({
+                        key: key,
+                        value: stats[key]
+                    })
+                });
+
+                self.similarCasesStats = result;
+            };
+
+            self.filterSimilarCases = function(filter) {
+                self.currentSimilarFilter = filter;
+                if(filter === '') {
+                    self.similarityFilters = {};
+                } else if(filter === 'Open') {
+                    self.similarityFilters = {
+                        status: filter
+                    };
+                } else {
+                    self.similarityFilters = {
+                        resolutionStatus: filter
+                    };
+                }
             };
 
             self.load();

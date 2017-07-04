@@ -1,38 +1,28 @@
 <div class="row">
     <div class="col-md-5">
-        <h4 align="left">
-            <updatable-simple-text on-update="updateField('title', newValue)" placeholder="Task title" value="task.title"></updatable-simple-text>
-            <span ng-hide="task.status == 'Completed'" style="float: right">
-                <!-- <button ng-click="state.isCollapsed=!state.isCollapsed" class="btn btn-default btn-xs">Complete tasks</button> -->
-                <span>
-                    <a href ng-click="switchFlag()" style="text-decoration: none">
-                        <i class="text-yellow glyphicon glyphicon-flag" ng-show="task.flag"></i>
-                        <i class="text-muted glyphicon glyphicon-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted glyphicon-flag'" ng-mouseover="setFlag='text-yellow glyphicon-flag'" ng-show="!task.flag || task.flag == undefined"></i>
-                    </a>
-                </span>
-                <span>
-                    <a href ng-click="state.isCollapsed=!state.isCollapsed" style="text-decoration: none">
-                        <i class="text-muted glyphicon glyphicon-ok-circle" ng-class="CompleteTask" ng-mouseout="CompleteTask='text-muted glyphicon-ok-circle'" ng-mouseover="CompleteTask='text-success glyphicon-ok-sign'"></i>
-                    </a>
-                </span>
-            </span>
-            <span ng-show="task.status == 'Completed'" style="float: right;">
-                <span>
-                    <i class="text-success glyphicon glyphicon-ok-sign"></i>
-                </span>
-            </span>
-        </h4>
+        <h4 class="mb-xs text-primary">
+            Basic Information
 
-        <div class="alert alert-danger" uib-collapse="!state.isCollapsed">
-            <i class="glyphicon glyphicon-exclamation-sign"></i>
-            You are about to close this task. Are you sure you want to continue ?
-            <div align="center">
-                <br>
-                <button class="btn btn-danger btn-xs" ng-click="complete(); state.isCollapsed = !state.isCollapsed">Complete</button>
+            <div class="task-actions pull-right">
+                <a href ng-click="switchFlag()">
+                    <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
+                        <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
+                    </span>
+                </a>
+
+                <a href ng-click="openTask(task)">
+                    <span ng-show="task.status == 'Completed'" class="action-button text-success">
+                        <i class="fa fa-check-circle"></i> Reopen
+                    </span>
+                </a>
+
+                <a href ng-click="closeTask(task)">
+                    <span ng-show="task.status == 'InProgress'" class="action-button text-muted">
+                        <i class="fa fa-check-circle-o"></i> Close
+                    </span>
+                </a>
             </div>
-        </div>
-
-        <br>
+        </h4>
 
         <dl class="dl-horizontal">
             <dt class="pull-left">Owner</dt>
@@ -71,6 +61,8 @@
 
     <!-- New Log -->
     <div class="col-md-7">
+        <h4 class="mb-xs text-primary">Task logs</h4>
+
         <div class="row clearfix" ng-show="!adding">
             <div class="col-md-12">
                 <div class="btn-toolbar" role="toolbar">

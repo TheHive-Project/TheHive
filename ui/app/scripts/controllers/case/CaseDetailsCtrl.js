@@ -1,21 +1,21 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl',
-        function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
 
-            CaseTabsSrv.activateTab($state.current.data.tab);
+        CaseTabsSrv.activateTab($state.current.data.tab);
 
-            $scope.isDefined = false;
-            $scope.state = {
-                'editing': false,
-                'isCollapsed': true
-            };
+        $scope.isDefined = false;
+        $scope.state = {
+            'editing': false,
+            'isCollapsed': true
+        };
 
-            $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
-                scope: $scope,
-                filter: {
-                    '_and': [{
+        $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
+            scope: $scope,
+            filter: {
+                '_and': [
+                    {
                         '_not': {
                             'status': 'Deleted'
                         }
@@ -33,57 +33,115 @@
                                 }
                             }
                         }
-                    }]
-                },
-                pageSize: 100,
-                nparent: 1
+                    }
+                ]
+            },
+            pageSize: 100,
+            nparent: 1
+        });
+
+        $scope.hasNoMetrics = function(caze) {
+            return !caze.metrics || _.keys(caze.metrics).length === 0 || caze.metrics.length === 0;
+        };
+
+        $scope.addMetric = function(metric) {
+            var modalInstance = $uibModal.open({
+                scope: $scope,
+                templateUrl: 'views/partials/case/case.add.metric.html',
+                controller: 'CaseAddMetadataConfirmCtrl',
+                size: '',
+                resolve: {
+                    data: function() {
+                        return metric;
+                    }
+                }
             });
 
-            $scope.hasNoMetrics = function(caze) {
-                return !caze.metrics || _.keys(caze.metrics).length === 0 || caze.metrics.length === 0;
-            };
+            modalInstance.result.then(function() {
+                if (!$scope.caze.metrics) {
+                    $scope.caze.metrics = {};
+                }
+                $scope.caze.metrics[metric.name] = null;
+                $scope.updateField('metrics', $scope.caze.metrics);
+                $scope.updateMetricsList();
+            });
+        };
 
-            $scope.addMetric = function(metric) {
-                var modalInstance = $uibModal.open({
-                    scope: $scope,
-                    templateUrl: 'views/partials/case/case.add.metric.html',
-                    controller: 'CaseAddMetricConfirmCtrl',
-                    size: '',
-                    resolve: {
-                        metric: function() {
-                            return metric;
-                        }
-                    }
-                });
+        $scope.openAttachment = function(attachment) {
+            $state.go('app.case.tasks-item', {
+                caseId: $scope.caze.id,
+                itemId: attachment.case_task.id
+            });
+        };
+    });
 
-                modalInstance.result.then(function() {
-                    if (!$scope.caze.metrics) {
-                        $scope.caze.metrics = {};
-                    }
-                    $scope.caze.metrics[metric.name] = null;
-                    $scope.updateField('metrics', $scope.caze.metrics);
-                    $scope.updateMetricsList();
-                });
-            };
+    angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsCacheSrv) {
+        var getTemplateCustomFields = function(customFields) {
+            var result = [];
 
-            $scope.openAttachment = function(attachment) {
-                $state.go('app.case.tasks-item', {
-                    caseId: $scope.caze.id,
-                    itemId: attachment.case_task.id
-                });
-            };
+            result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                return {
+                    name: name,
+                    order: definition.order
+                }
+            }), function(item){
+                return item.order;
+            }), 'name');
+
+            return result;
         }
-    );
 
-    angular.module('theHiveControllers').controller('CaseAddMetricConfirmCtrl', function($scope, $uibModalInstance, metric) {
-        $scope.metric = metric;
+        $scope.getCustomFieldName = function(fieldDef) {
+            return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
+        };
+
+        $scope.addCustomField = function(customField) {
+            var modalInstance = $uibModal.open({
+                scope: $scope,
+                templateUrl: 'views/partials/case/case.add.field.html',
+                controller: 'CaseAddMetadataConfirmCtrl',
+                size: '',
+                resolve: {
+                    data: function() {
+                        return customField;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function() {
+                var temp = $scope.caze.customFields || {};
+
+                var customFieldValue = {};
+                customFieldValue[customField.type] = null;
+                customFieldValue.order = _.keys(temp).length + 1;
+
+                $scope.updateField('customFields.' + customField.reference, customFieldValue);
+                $scope.updateCustomFieldsList();
+
+                $scope.caze.customFields[customField.reference] = customFieldValue;
+            });
+        };
+
+        $scope.updateCustomFieldsList = function() {
+            CustomFieldsCacheSrv.all().then(function(fields) {
+                $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
+                $scope.allCustomFields = _.omit(fields, _.keys($scope.caze.customFields));
+                $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;
+            });
+        };
+
+        $scope.updateCustomFieldsList();
+    });
+
+    angular.module('theHiveControllers').controller('CaseAddMetadataConfirmCtrl', function($scope, $uibModalInstance, data) {
+        $scope.data = data;
 
         $scope.cancel = function() {
-            $uibModalInstance.dismiss(metric);
+            $uibModalInstance.dismiss(data);
         };
 
         $scope.confirm = function() {
-            $uibModalInstance.close(metric);
+            $uibModalInstance.close(data);
         };
     });
 

@@ -14,7 +14,7 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
 import org.elastic4play.controllers.{ Fields, FileInputValue }
-import org.elastic4play.services.{ AttachmentSrv, AuthContext, EventSrv, TempSrv }
+import org.elastic4play.services.{ UserSrv ⇒ _, _ }
 import org.elastic4play.utils.RichJson
 import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.inject.ApplicationLifecycle
@@ -92,6 +92,7 @@ class MispSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     tempSrv: TempSrv,
     eventSrv: EventSrv,
+    migrationSrv: MigrationSrv,
     httpSrv: CustomWSAPI,
     environment: Environment,
     lifecycle: ApplicationLifecycle,
@@ -110,19 +111,24 @@ class MispSrv @Inject() (
 
   private[misp] def initScheduler() = {
     val task = system.scheduler.schedule(0.seconds, mispConfig.interval) {
-      logger.info("Update of MISP events is starting ...")
-      userSrv
-        .inInitAuthContext { implicit authContext ⇒
-          synchronize().andThen { case _ ⇒ tempSrv.releaseTemporaryFiles() }
-        }
-        .onComplete {
-          case Success(a) ⇒
-            logger.info("Misp synchronization completed")
-            a.collect {
-              case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
-            }
-          case Failure(t) ⇒ logger.info("Misp synchronization failed", t)
-        }
+      if (migrationSrv.isReady) {
+        logger.info("Update of MISP events is starting ...")
+        userSrv
+          .inInitAuthContext { implicit authContext ⇒
+            synchronize().andThen { case _ ⇒ tempSrv.releaseTemporaryFiles() }
+          }
+          .onComplete {
+            case Success(a) ⇒
+              logger.info("Misp synchronization completed")
+              a.collect {
+                case Failure(t) ⇒ logger.warn(s"Update MISP error", t)
+              }
+            case Failure(t) ⇒ logger.info("Misp synchronization failed", t)
+          }
+      }
+      else {
+        logger.info("MISP synchronization cancel, database is not ready")
+      }
     }
     lifecycle.addStopHook { () ⇒
       logger.info("Stopping MISP fetching ...")
@@ -300,10 +306,10 @@ class MispSrv @Inject() (
                   "dataType" → "file",
                   "message" → a.comment,
                   "tags" → (artifactTags.value ++ a.tags.map(JsString)),
-                  "data" → Json.obj(
+                  "remoteAttachment" → Json.obj(
                     "filename" → a.value,
-                    "attributeId" → a.id,
-                    "attributeType" → a.tpe).toString,
+                    "reference" → a.id,
+                    "type" → a.tpe),
                   "startDate" → a.date))
             case a ⇒ convertAttribute(a).map { j ⇒
               val tags = artifactTags ++ (j \ "tags").asOpt[JsArray].getOrElse(JsArray(Nil))
@@ -319,20 +325,20 @@ class MispSrv @Inject() (
     attr: JsObject)(implicit authContext: AuthContext): Option[Future[Fields]] = {
     (for {
       dataType ← (attr \ "dataType").validate[String]
-      data ← (attr \ "data").validate[String]
+      data ← (attr \ "data").validateOpt[String]
       message ← (attr \ "message").validate[String]
       startDate ← (attr \ "startDate").validate[Date]
-      attachment = dataType match {
-        case "file" ⇒
-          val json = Json.parse(data)
-          for {
-            attributeId ← (json \ "attributeId").asOpt[String]
-            attributeType ← (json \ "attributeType").asOpt[String]
-            fiv = downloadAttachment(mispConnection, attributeId)
-          } yield if (attributeType == "malware-sample") fiv.map(extractMalwareAttachment)
-          else fiv
-        case _ ⇒ None
-      }
+      attachmentReference ← (attr \ "remoteAttachment" \ "reference").validateOpt[String]
+      attachmentType ← (attr \ "remoteAttachment" \ "type").validateOpt[String]
+      attachment = attachmentReference
+        .flatMap {
+          case ref if dataType == "file" ⇒ Some(downloadAttachment(mispConnection, ref))
+          case _                         ⇒ None
+        }
+        .map {
+          case f if attachmentType.contains("malware-sample") ⇒ f.map(extractMalwareAttachment)
+          case f                                              ⇒ f
+        }
       tags = (attr \ "tags").asOpt[Seq[String]].getOrElse(Nil)
       tlp = tags.map(_.toLowerCase)
         .collectFirst {
@@ -351,7 +357,8 @@ class MispSrv @Inject() (
             .filterNot(_.toLowerCase.startsWith("tlp:"))
             .map(JsString)))
         .set("tlp", tlp)
-    } yield attachment.fold(Future.successful(fields.set("data", data)))(_.map { fiv ⇒
+      if attachment.isDefined != data.isDefined
+    } yield attachment.fold(Future.successful(fields.set("data", data.get)))(_.map { fiv ⇒
       fields.set("attachment", fiv)
     })) match {
       case JsSuccess(r, _) ⇒ Some(r)
@@ -361,19 +368,25 @@ class MispSrv @Inject() (
     }
   }
 
-  def createCase(alert: Alert)(implicit authContext: AuthContext): Future[Case] = {
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         for {
-          instanceConfig ← getInstanceConfig(alert.source())
-          caseTemplate ← alertSrv.getCaseTemplate(alert)
+          caseTemplate ← alertSrv.getCaseTemplate(alert, customCaseTemplate)
           caze ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
-          _ ← alertSrv.setCase(alert, caze)
-          artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
-          _ ← artifactSrv.create(caze, artifacts)
+          _ ← mergeWithCase(alert, caze)
         } yield caze
     }
+  }
+
+  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    for {
+      instanceConfig ← getInstanceConfig(alert.source())
+      _ ← alertSrv.setCase(alert, caze)
+      artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
+      _ ← artifactSrv.create(caze, artifacts)
+    } yield caze
   }
 
   def updateMispAlertArtifact()(implicit authContext: AuthContext): Future[Unit] = {

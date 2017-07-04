@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
+        function ($scope, $q, $state, $stateParams, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -40,6 +40,29 @@
                     $scope.updateSelection();
                 },
                 nstats: true
+            });
+
+            // Add a listener to refresh observables list on job finish
+            StreamSrv.addListener({
+                scope: $scope,
+                rootId: $scope.caseId,
+                objectType: 'case_artifact_job',
+                callback: function(data) {
+                    var successFound = false;
+                    var i = 0;
+                    var ln = data.length;
+
+                    while(!successFound && i < ln) {
+                        if(data[i].base.operation === 'Update' && data[i].base.details.status === 'Success') {
+                            successFound = true;
+                        }
+                        i++;
+                    }
+
+                    if(successFound) {
+                        $scope.artifacts.update();
+                    }
+                }
             });
 
             $scope.$watchCollection('artifacts.pageSize', function (newValue) {
@@ -600,7 +623,50 @@
                     itemId: artifact.id
                 });
             };
+
+            $scope.showReport = function(observable, analyzerId) {
+                CortexSrv.getJobs($scope.caseId, observable.id, analyzerId, 1)
+                    .then(function(response) {
+                        return CortexSrv.getJob(response.data[0].id)
+                    })
+                    .then(function(response){
+                        var job = response.data;
+                        var report = {
+                            job: job,
+                            template: job.analyzerId,
+                            content: job.report,
+                            status: job.status,
+                            startDate: job.startDate,
+                            endDate: job.endDate
+                        };
+
+                        var modalInstance = $uibModal.open({
+                            templateUrl: 'views/partials/observables/list/job-report-dialog.html',
+                            controller: 'JobReportModalCtrl',
+                            controllerAs: '$vm',
+                            size: 'max',
+                            resolve: {
+                                report: function() {
+                                    return report
+                                },
+                                observable: function() {
+                                    return observable;
+                                }
+                            }
+                        });
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Unable to fetch the analysis report');
+                    })
+            }
         }
-    );
+    )
+    .controller('JobReportModalCtrl', function($uibModalInstance, report, observable) {
+        this.report = report;
+        this.observable = observable;
+        this.close = function() {
+            $uibModalInstance.dismiss();
+        }
+    });
 
 })();

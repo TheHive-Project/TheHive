@@ -45,6 +45,7 @@
     <link rel="stylesheet" href="styles/flow.css"/>
     <link rel="stylesheet" href="styles/search.css"/>
     <link rel="stylesheet" href="styles/filters.css"/>
+    <link rel="stylesheet" href="styles/case-item.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
     <!-- endbuild -->
@@ -87,7 +88,6 @@
     <script src="bower_components/angular-ui-notification/dist/angular-ui-notification.js"></script>
     <script src="bower_components/d3/d3.js"></script>
     <script src="bower_components/c3/c3.js"></script>
-    <script src="bower_components/angular-base64/angular-base64.js"></script>
     <script src="bower_components/angular-messages/angular-messages.js"></script>
     <script src="bower_components/ng-file-upload/ng-file-upload.js"></script>
     <script src="bower_components/ng-file-upload-shim/ng-file-upload-shim.js"></script>
@@ -105,6 +105,9 @@
     <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
     <script src="bower_components/jquery-ui/jquery-ui.js"></script>
     <script src="bower_components/angular-ui-sortable/sortable.js"></script>
+    <script src="bower_components/js-base64/base64.js"></script>
+    <script src="bower_components/angular-scroll/angular-scroll.js"></script>
+    <script src="bower_components/underscore.string/dist/underscore.string.js"></script>
     <!-- endbower -->
 
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
@@ -132,6 +135,8 @@
     <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/controllers/StatisticsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCustomFieldDialogCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminMetricsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminReportTemplatesCtrl.js"></script>
@@ -173,6 +178,7 @@
     <script src="scripts/directives/flow/flow.js"></script>
     <script src="scripts/directives/logEntry.js"></script>
     <script src="scripts/directives/markdown-editor.js"></script>
+    <script src="scripts/directives/mini-report-list.js"></script>
     <script src="scripts/directives/page-sizer.js"></script>
     <script src="scripts/directives/psearch.js"></script>
     <script src="scripts/directives/report.js"></script>
@@ -182,8 +188,10 @@
     <script src="scripts/directives/task-progress.js"></script>
     <script src="scripts/directives/tlp.js"></script>
     <script src="scripts/directives/updatable.js"></script>
+    <script src="scripts/directives/updatableBoolean.js"></script>
     <script src="scripts/directives/updatableDataDropdown.js"></script>
     <script src="scripts/directives/updatableDate.js"></script>
+    <script src="scripts/directives/updatableSelect.js"></script>
     <script src="scripts/directives/updatableSimpleText.js"></script>
     <script src="scripts/directives/updatableTags.js"></script>
     <script src="scripts/directives/updatableText.js"></script>
@@ -196,6 +204,7 @@
     <script src="scripts/filters/getField.js"></script>
     <script src="scripts/filters/hash-type.js"></script>
     <script src="scripts/filters/order-object-by.js"></script>
+    <script src="scripts/filters/percent.js"></script>
     <script src="scripts/filters/sha256.js"></script>
     <script src="scripts/filters/shortDate.js"></script>
     <script src="scripts/filters/showDate.js"></script>
@@ -214,6 +223,7 @@
     <script src="scripts/services/ChartSrv.js"></script>
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
+    <script src="scripts/services/CustomFieldsCacheSrv.js"></script>
     <script src="scripts/services/EntitySrv.js"></script>
     <script src="scripts/services/FileResource.js"></script>
     <script src="scripts/services/FilteringSrv.js"></script>

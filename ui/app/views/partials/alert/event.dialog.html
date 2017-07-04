@@ -2,7 +2,6 @@
     <h3 class="modal-title">Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span></h3>
 </div>
 <div class="modal-body">
-
     <div class="row text-center" ng-show="dialog.loading">
         <div class="m-s">
             <i class="fa fa-3x fa-spinner fa-spin"></i>
@@ -52,7 +51,7 @@
 
             <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">
                 <h4 class="vpad10 text-primary">
-                    Artifacts ({{dialog.event.artifacts.length || 0}})
+                    Observables ({{dialog.event.artifacts.length || 0}})
                 </h4>
                 <div class="mb-xs" ng-if="dialog.dataTypes">
                     <span class="label label-lg label-default mr-xxs clickable"
@@ -77,8 +76,11 @@
                             <td class="wrap" ng-if="attribute.dataType !== 'file'">
                                 {{attribute.data | fang | ellipsis:250}}
                             </td>
-                            <td class="wrap" ng-if="attribute.dataType === 'file'">
-                                {{(attribute.data.filename || attribute.data.split(';')[0]) | fang | ellipsis:250}}
+                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
+                                {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
+                            </td>
+                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
+                                {{attribute.remoteAttachment.filename}}
                             </td>
                         </tr>
                     </tbody>
@@ -91,29 +93,74 @@
                         ng-model="dialog.pagination.currentPage"></ul>
                 </div>
             </div>
+
+            <div class="alert-similarity" ng-if="dialog.event.similarCases.length > 0">
+                <div class="mt-xs">
+                    <h4 class="vpad10 text-primary">
+                        Similar cases ({{dialog.event.similarCases.length}})
+                    </h4>
+                    <!-- <div>
+                        <pre>{{dialog.event.similarCases | json}}</pre>
+                    </div> -->
+                    <div ng-include="'views/partials/alert/event.similarity.html'"></div>
+                </div>
+            </div>
         </div>
     </div>
 
 </div>
 <div class="modal-footer text-left">
     <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
-    <button class="btn btn-primary pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.import()">Import event</button>
-    <button class="btn btn-default pull-right" type="button"
+
+
+
+    <button class="btn btn-default" type="button"
         ng-if="dialog.canMarkAsRead(dialog.event)"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope"></i> Mark as read
     </button>
-    <button class="btn btn-default pull-right" type="button"
+    <button class="btn btn-default" type="button"
         ng-if="dialog.canMarkAsUnread(dialog.event)"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope-open-o"></i> Mark as unread
     </button>
 
-    <button class="btn btn-default pull-right" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
+    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
         <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
 
+    <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
+        <div class="form-group">
+            <label class="col-sm-4 control-label">Import alert as</label>
+            <div class="col-sm-8 input-group">
+                <!-- <input type="text" class="form-control" placeholder="Search for..."> -->
+                <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
+                    <option value="">Empty case</option>
+                </select>
+                <!-- <select class="form-control">
+
+                    <option value="MISP">MISP</option>
+                </select> -->
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
+                </span>
+            </div>
+
+        </div>
+    </form>
+
+    <!-- <div class="btn-group pull-right dropup" ng-disabled="dialog.loading">
+        <button type="button" class="btn btn-primary">Import event</button>
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <span class="caret"></span>
+      </button>
+        <ul class="dropdown-menu">
+            <li ng-repeat="tpl in dialog.templates">
+                <a href>{{tpl}}</a>
+            </li>
+        </ul>
+    </div> -->
 
 </div>

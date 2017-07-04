@@ -23,11 +23,13 @@
     "updatableLink": false,
     "setTimeout": false,
     "_": false,
+    "s": false,
     "CryptoJS": false,
     "c3": false,
     "saveSvgAsPng": false,
     "Blob": false,
     "File": false,
-    "hljs": false
+    "hljs": false,
+    "Base64": false
   }
 }

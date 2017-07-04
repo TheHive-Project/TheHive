@@ -6,7 +6,7 @@
             'details': {
                 name: 'details',
                 active: true,
-                label: 'Summary',
+                label: 'Details',
                 state: 'app.case.details'
             },
             'tasks': {

@@ -49,7 +49,6 @@ module.exports = function(config) {
       'bower_components/angular-ui-notification/dist/angular-ui-notification.js',
       'bower_components/d3/d3.js',
       'bower_components/c3/c3.js',
-      'bower_components/angular-base64/angular-base64.js',
       'bower_components/angular-messages/angular-messages.js',
       'bower_components/ng-file-upload/ng-file-upload.js',
       'bower_components/ng-file-upload-shim/ng-file-upload-shim.js',
@@ -68,6 +67,9 @@ module.exports = function(config) {
       'bower_components/angular-base64-upload/src/angular-base64-upload.js',
       'bower_components/jquery-ui/jquery-ui.js',
       'bower_components/angular-ui-sortable/sortable.js',
+      'bower_components/js-base64/base64.js',
+      'bower_components/angular-scroll/angular-scroll.js',
+      'bower_components/underscore.string/dist/underscore.string.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       "bower_components/cryptojslib/components/core-min.js",
