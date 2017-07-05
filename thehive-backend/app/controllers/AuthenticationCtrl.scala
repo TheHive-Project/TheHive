@@ -3,7 +3,7 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import models.UserStatus
-import org.elastic4play.Timed
+import org.elastic4play.{ AuthorizationError, Timed }
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
@@ -34,7 +34,7 @@ class AuthenticationCtrl @Inject() (
           if (user.status() == UserStatus.Ok)
             authenticated.setSessingUser(Ok, authContext)
           else
-            Unauthorized("Your account is locked")
+            throw AuthorizationError("Your account is locked")
         }
     }
   }
