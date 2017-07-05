@@ -27,6 +27,7 @@
 - Alert can contain inconsistent data [\#234](https://github.com/CERT-BDF/TheHive/issues/234)
 - Search do not work with non-latin characters [\#223](https://github.com/CERT-BDF/TheHive/issues/223)
 - report status not updated after finish [\#212](https://github.com/CERT-BDF/TheHive/issues/212)
+- A locked user can use the API to create / delete / list cases \(and more\) [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
 
 ## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2...2.11.3)

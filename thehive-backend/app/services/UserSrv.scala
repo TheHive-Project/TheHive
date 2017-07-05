@@ -1,26 +1,18 @@
 package services
 
-import javax.inject.{ Inject, Named, Singleton }
-
-import scala.annotation.implicitNotFound
-import scala.concurrent.{ ExecutionContext, Future }
+import javax.inject.{ Inject, Provider, Singleton }
 
 import akka.NotUsed
-import akka.actor.{ ActorRef, actorRef2Scala }
 import akka.stream.scaladsl.Source
-
-import play.api.mvc.RequestHeader
-
-import org.elastic4play.AuthenticationError
+import models.{ User, UserModel, UserStatus }
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.DBIndex
-import org.elastic4play.services.{ AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, Role, UpdateSrv }
+import org.elastic4play.services._
 import org.elastic4play.utils.Instance
+import org.elastic4play.{ AuthenticationError, AuthorizationError }
+import play.api.mvc.RequestHeader
 
-import models.{ User, UserModel }
-import org.elastic4play.services.EventSrv
-import org.elastic4play.services.AuthSrv
-import javax.inject.Provider
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class UserSrv @Inject() (
@@ -42,7 +34,13 @@ class UserSrv @Inject() (
       .flatMap { user ⇒ getFromUser(request, user) }
   }
 
-  override def getFromUser(request: RequestHeader, user: org.elastic4play.services.User): Future[AuthContext] = Future.successful(AuthContextImpl(user.id, user.getUserName, Instance.getRequestId(request), user.getRoles))
+  override def getFromUser(request: RequestHeader, user: org.elastic4play.services.User): Future[AuthContext] = {
+    user match {
+      case u: User if u.status() == UserStatus.Ok ⇒ Future.successful(AuthContextImpl(user.id, user.getUserName, Instance.getRequestId(request), user.getRoles))
+      case _                                      ⇒ Future.failed(AuthorizationError("Your account is locked"))
+    }
+
+  }
 
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
     dbIndex.getSize(userModel.name).map {
