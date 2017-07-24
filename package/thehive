@@ -113,6 +113,11 @@ case "$1" in
     start
     ;;
 
+  force-reload)
+    stop
+    start
+    ;;
+    
   *)
     log_action_msg "Usage: /etc/init.d/thehive {start|stop|restart|status}" || true
     exit 1
