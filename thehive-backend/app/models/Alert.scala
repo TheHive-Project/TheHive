@@ -41,7 +41,7 @@ trait AlertAttributes {
       Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
       Attribute("alert", "tlp", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
       Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "ioc", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+      Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, ""))
   }
 
   val alertId: A[String] = attribute("_id", F.stringFmt, "Alert id", O.readonly)
