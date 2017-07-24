@@ -2,16 +2,16 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.ExecutionContext
-import scala.reflect.runtime.universe
-import play.api.http.Status
-import play.api.mvc.{ Action, AnyContent, Controller }
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import play.api.http.Status
+import play.api.mvc.{ Action, AnyContent, Controller }
 import services.LogSrv
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class LogCtrl @Inject() (
@@ -49,7 +49,7 @@ class LogCtrl @Inject() (
   def findInTask(taskId: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
     import org.elastic4play.services.QueryDSL._
     val childQuery = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
-    val query = and(childQuery, "_parent" ~= taskId)
+    val query = and(childQuery, parent("case_task", withId(taskId)))
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
 
