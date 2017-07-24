@@ -17,6 +17,7 @@
 - Observable analyzers view reports. [\#191](https://github.com/CERT-BDF/TheHive/issues/191)
 - Specifying tags on statistics page or performing a search [\#186](https://github.com/CERT-BDF/TheHive/issues/186)
 - Choose case template while importing events from MISP [\#175](https://github.com/CERT-BDF/TheHive/issues/175)
+- Use local font files [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
 
 **Fixed bugs:**
 
@@ -27,7 +28,7 @@
 - Alert can contain inconsistent data [\#234](https://github.com/CERT-BDF/TheHive/issues/234)
 - Search do not work with non-latin characters [\#223](https://github.com/CERT-BDF/TheHive/issues/223)
 - report status not updated after finish [\#212](https://github.com/CERT-BDF/TheHive/issues/212)
-- A locked user can use the API to create / delete / list cases \(and more\) [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
+- A locked user can use the API to create / delete / list cases \(and more\) [\#251](https://github.com/CERT-BDF/TheHive/issues/251)
 
 ## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2...2.11.3)
