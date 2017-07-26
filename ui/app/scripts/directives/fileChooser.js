@@ -10,11 +10,9 @@
                 $(element[0].children[0]).remove();
                 // create a Dropzone for the element with the given options
                 dropzone = new Dropzone(element[0], {
-                    // 'clickable' : '.dz-clickable',
                     'url': 'dummy',
                     'autoProcessQueue': false,
                     'maxFiles': 1,
-                    // 'addRemoveLinks' : true,
                     'createImageThumbnails': (angular.isString(scope.preview)) ? (scope.preview === 'true') : true,
                     'acceptedFiles': (angular.isString(scope.accept)) ? scope.accept : undefined,
                     'previewTemplate': template
@@ -26,12 +24,19 @@
                     });
                 });
                 dropzone.on('removedfile', function() {
-                    setTimeout(function() {
+                    var files = this.files;
+
+                    if(files && files.length !== 1) {
+                        setTimeout(function() {
+                            scope.$apply(function() {
+                                delete scope.filemodel;
+                            });
+                        }, 0);
+                    } else {
                         scope.$apply(function() {
-                            delete scope.filemodel;
-                            // scope.filemodel = undefined;
+                            scope.filemodel = files[0];
                         });
-                    }, 0);
+                    }
                 });
                 dropzone.on('maxfilesexceeded', function(file) {
                     this.removeFile(file);
