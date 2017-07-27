@@ -13,7 +13,6 @@ import play.api.http.Status
 import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.mvc.{ Action, AnyContent, Controller }
 import services.{ AlertSrv, CaseSrv }
-import services.JsonFormat.caseSimilarityWrites
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -42,8 +41,8 @@ class AlertCtrl @Inject() (
     for {
       alert ← alertSrv.get(alertId)
       caze ← caseSrv.get(caseId)
-      _ ← alertSrv.mergeWithCase(alert, caze)
-    } yield renderer.toOutput(CREATED, caze)
+      updatedCaze ← alertSrv.mergeWithCase(alert, caze)
+    } yield renderer.toOutput(CREATED, updatedCaze)
   }
 
   @Timed
@@ -151,7 +150,7 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
-  def fixStatus() = authenticated(Role.admin).async { implicit request ⇒
+  def fixStatus(): Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
     alertSrv.fixStatus()
       .map(_ ⇒ NoContent)
   }

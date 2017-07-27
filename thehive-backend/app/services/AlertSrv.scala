@@ -17,6 +17,7 @@ import play.api.{ Configuration, Logger }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.matching.Regex
 import scala.util.{ Failure, Try }
 
 trait AlertTransformer {
@@ -28,7 +29,7 @@ trait AlertTransformer {
 case class CaseSimilarity(caze: Case, similarIOCCount: Int, iocCount: Int, similarArtifactCount: Int, artifactCount: Int)
 
 object AlertSrv {
-  val dataExtractor = "^(.*);(.*);(.*)".r
+  val dataExtractor: Regex = "^(.*);(.*);(.*)".r
 }
 
 class AlertSrv(
@@ -80,6 +81,7 @@ class AlertSrv(
     mat)
 
   private[AlertSrv] lazy val logger = Logger(getClass)
+
   import AlertSrv._
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] = {
@@ -158,7 +160,11 @@ class AlertSrv(
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         connectors.get(alert.tpe()) match {
-          case Some(connector: AlertTransformer) ⇒ connector.createCase(alert, customCaseTemplate)
+          case Some(connector: AlertTransformer) ⇒
+            for {
+              caze ← connector.createCase(alert, customCaseTemplate)
+              _ ← setCase(alert, caze)
+            } yield caze
           case _ ⇒
             for {
               caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
@@ -171,61 +177,79 @@ class AlertSrv(
                   .set("tlp", JsNumber(alert.tlp()))
                   .set("status", CaseStatus.Open.toString),
                 caseTemplate)
-              _ ← mergeWithCase(alert, caze)
+              _ ← importArtifacts(alert, caze)
+              _ ← setCase(alert, caze)
             } yield caze
         }
     }
   }
 
   override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
-    setCase(alert, caze)
-      .map { _ ⇒
-        val artifactsFields = alert.artifacts()
-          .map { artifact ⇒
-            val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
-            val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
-            val artifactFields = Fields(artifact +
-              ("tags" → JsArray(tags)) +
-              ("message" → message))
-            if (artifactFields.getString("dataType").contains("file")) {
-              artifactFields.getString("data")
-                .map {
-                  case dataExtractor(filename, contentType, data) ⇒
-                    val f = Files.createTempFile("alert-", "-attachment")
-                    Files.write(f, java.util.Base64.getDecoder.decode(data))
-                    artifactFields
-                      .set("attachment", FileInputValue(filename, f, contentType))
-                      .unset("data")
-                  case data ⇒
-                    logger.warn(s"Invalid data format for file artifact: $data")
-                    artifactFields
-                }
-                .getOrElse(artifactFields)
-            }
-            else {
-              artifactFields
-            }
-          }
+    alert.caze() match {
+      case Some(id) ⇒ caseSrv.get(id)
+      case None ⇒
+        connectors.get(alert.tpe()) match {
+          case Some(connector: AlertTransformer) ⇒
+            for {
+              updatedCase ← connector.mergeWithCase(alert, caze)
+              _ ← setCase(alert, updatedCase)
+            } yield updatedCase
+          case _ ⇒
+            for {
+              _ ← importArtifacts(alert, caze)
+              description = caze.description() + s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}"
+              updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
+              _ ← setCase(alert, caze)
+            } yield updatedCase
+        }
+    }
+  }
 
-        artifactSrv.create(caze, artifactsFields)
-          .map {
-            _.foreach {
-              case Failure(e) ⇒ logger.warn("Create artifact error", e)
-              case _          ⇒
+  def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    val artifactsFields = alert.artifacts()
+      .map { artifact ⇒
+        val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
+        val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
+        val artifactFields = Fields(artifact +
+          ("tags" → JsArray(tags)) +
+          ("message" → message))
+        if (artifactFields.getString("dataType").contains("file")) {
+          artifactFields.getString("data")
+            .map {
+              case dataExtractor(filename, contentType, data) ⇒
+                val f = Files.createTempFile("alert-", "-attachment")
+                Files.write(f, java.util.Base64.getDecoder.decode(data))
+                artifactFields
+                  .set("attachment", FileInputValue(filename, f, contentType))
+                  .unset("data")
+              case data ⇒
+                logger.warn(s"Invalid data format for file artifact: $data")
+                artifactFields
             }
-          }
-          .onComplete { _ ⇒
-            // remove temporary files
-            artifactsFields
-              .flatMap(_.get("Attachment"))
-              .foreach {
-                case FileInputValue(_, file, _) ⇒ Files.delete(file)
-                case _                          ⇒
-              }
-          }
-        caze
+            .getOrElse(artifactFields)
+        }
+        else {
+          artifactFields
+        }
       }
 
+    val updatedCase = artifactSrv.create(caze, artifactsFields)
+      .map { artifacts ⇒
+        artifacts.collect {
+          case Failure(e) ⇒ logger.warn("Create artifact error", e)
+        }
+        caze
+      }
+    updatedCase.onComplete { _ ⇒
+      // remove temporary files
+      artifactsFields
+        .flatMap(_.get("Attachment"))
+        .foreach {
+          case FileInputValue(_, file, _) ⇒ Files.delete(file)
+          case _                          ⇒
+        }
+    }
+    updatedCase
   }
 
   def setCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Alert] = {
