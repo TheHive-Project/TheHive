@@ -13,6 +13,7 @@ import play.api.http.Status
 import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.mvc.{ Action, AnyContent, Controller }
 import services.{ AlertSrv, CaseSrv }
+import services.JsonFormat.caseSimilarityWrites
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
