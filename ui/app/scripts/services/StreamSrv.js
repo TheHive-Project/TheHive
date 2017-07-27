@@ -23,10 +23,13 @@
                 var byRootIds = {};
                 var byObjectTypes = {};
                 var byRootIdsWithObjectTypes = {};
+                var bySecondaryObjectTypes = {};
+
                 angular.forEach(data, function(message) {
                     var rootId = message.base.rootId;
                     var objectType = message.base.objectType;
                     var rootIdWithObjectType = rootId + '|' + objectType;
+                    var secondaryObjectTypes = message.summary ? _.without(_.keys(message.summary), objectType) : [];
 
                     if (rootId in byRootIds) {
                         byRootIds[rootId].push(message);
@@ -45,6 +48,15 @@
                     } else {
                         byRootIdsWithObjectTypes[rootIdWithObjectType] = [message];
                     }
+
+                    _.each(secondaryObjectTypes, function(type) {
+                        if (type in bySecondaryObjectTypes) {
+                            bySecondaryObjectTypes[type].push(message);
+                        } else {
+                            bySecondaryObjectTypes[type] = [message];
+                        }
+                    });
+
                 });
 
                 angular.forEach(byRootIds, function(messages, rootId) {
@@ -53,6 +65,12 @@
                 angular.forEach(byObjectTypes, function(messages, objectType) {
                     self.runCallbacks('any', objectType, messages);
                 });
+
+                // Trigger strem event for sub object types
+                angular.forEach(bySecondaryObjectTypes, function(messages, objectType) {
+                    self.runCallbacks('any', objectType, messages);
+                });
+
                 angular.forEach(byRootIdsWithObjectTypes, function(messages, rootIdWithObjectType) {
                     var temp = rootIdWithObjectType.split('|', 2),
                         rootId = temp[0],
