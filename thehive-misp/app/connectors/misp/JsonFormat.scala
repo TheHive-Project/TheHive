@@ -65,4 +65,13 @@ object JsonFormat {
       comment,
       value,
       tags :+ s"MISP:category$category" :+ s"MISP:type=$tpe"))
+
+  implicit val exportedAttributeWrites: Writes[ExportedMispAttribute] = Writes[ExportedMispAttribute] { attribute ⇒
+    Json.obj(
+      "category" → attribute.category,
+      "type" → attribute.tpe,
+      "value" → attribute.value.fold[String](identity, _.name),
+      "comment" → attribute.comment,
+      "status" → attribute.status)
+  }
 }

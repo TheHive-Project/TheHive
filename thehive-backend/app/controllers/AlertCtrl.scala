@@ -33,7 +33,11 @@ class AlertCtrl @Inject() (
 
   @Timed
   def create(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
-    alertSrv.create(request.body)
+    alertSrv.create(request.body
+      .unset("lastSyncDate")
+      .unset("case")
+      .unset("status")
+      .unset("follow"))
       .map(alert ⇒ renderer.toOutput(CREATED, alert))
   }
 

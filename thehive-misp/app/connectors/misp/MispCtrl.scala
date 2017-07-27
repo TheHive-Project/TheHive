@@ -15,13 +15,15 @@ import play.api.libs.json.Json
 import play.api.mvc.{ Action, AnyContent, Controller }
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, UrlContext }
-import services.AlertTransformer
+import services.{ AlertTransformer, CaseSrv }
+import connectors.misp.JsonFormat.exportedAttributeWrites
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class MispCtrl @Inject() (
     mispSrv: MispSrv,
+    caseSrv: CaseSrv,
     authenticated: Authenticated,
     eventSrv: EventSrv,
     implicit val ec: ExecutionContext) extends Controller with Connector with Status with AlertTransformer {
@@ -30,10 +32,11 @@ class MispCtrl @Inject() (
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {
-    case GET(p"/_syncAlerts")    ⇒ syncAlerts
-    case GET(p"/_syncAllAlerts") ⇒ syncAllAlerts
-    case GET(p"/_syncArtifacts") ⇒ syncArtifacts
-    case r                       ⇒ throw NotFoundError(s"${r.uri} not found")
+    case GET(p"/_syncAlerts")                 ⇒ syncAlerts
+    case GET(p"/_syncAllAlerts")              ⇒ syncAllAlerts
+    case GET(p"/_syncArtifacts")              ⇒ syncArtifacts
+    case GET(p"/export/$caseId/to/$mispName") ⇒ exportCase(mispName, caseId)
+    case r                                    ⇒ throw NotFoundError(s"${r.uri} not found")
   }
 
   @Timed
@@ -52,6 +55,18 @@ class MispCtrl @Inject() (
   def syncArtifacts: Action[AnyContent] = authenticated(Role.admin) {
     eventSrv.publish(UpdateMispAlertArtifact())
     Ok("")
+  }
+
+  @Timed
+  def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
+    caseSrv
+      .get(caseId)
+      .flatMap { caze ⇒ mispSrv.export(mispName, caze) }
+      .map {
+        case (eventId, exportedAttributes) ⇒ Ok(Json.obj(
+          "eventId" → eventId,
+          "attributes" → exportedAttributes))
+      }
   }
 
   override def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
