@@ -1,26 +1,46 @@
 # Change Log
 
-## [2.12.0](https://github.com/CERT-BDF/TheHive/tree/2.12.0)
+## [2.12.1](https://github.com/CERT-BDF/TheHive/tree/2.12.1) (2017-08-01)
 
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.12.0...2.12.1)
+
+**Implemented enhancements:**
+
+- Fix warnings in debian package [\#267](https://github.com/CERT-BDF/TheHive/issues/267)
+- Merging alert into existing case does not merge alert description into case description [\#255](https://github.com/CERT-BDF/TheHive/issues/255)
+
+**Fixed bugs:**
+
+- Case similarity reports merged cases [\#272](https://github.com/CERT-BDF/TheHive/issues/272)
+- Closing a case with an open task does not dismiss task in "My tasks" [\#269](https://github.com/CERT-BDF/TheHive/issues/269)
+- API: cannot create alert if one alert artifact contains the IOC field set [\#268](https://github.com/CERT-BDF/TheHive/issues/268)
+- Can't get logs of a task via API [\#259](https://github.com/CERT-BDF/TheHive/issues/259)
+- Add multiple attachments in a single task log doesn't work [\#257](https://github.com/CERT-BDF/TheHive/issues/257)
+- Cortex Connector Not Found [\#256](https://github.com/CERT-BDF/TheHive/issues/256)
+- TheHive doesn't send the file name to Cortex [\#254](https://github.com/CERT-BDF/TheHive/issues/254)
+- Renaming of users does not work [\#249](https://github.com/CERT-BDF/TheHive/issues/249)
+
+## [2.12.0](https://github.com/CERT-BDF/TheHive/tree/2.12.0) (2017-07-04)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.11.3...2.12.0)
 
 **Implemented enhancements:**
 
+- Use local font files [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
 - Sort the analyzers list in observable details page [\#245](https://github.com/CERT-BDF/TheHive/issues/245)
 - More options to sort cases [\#243](https://github.com/CERT-BDF/TheHive/issues/243)
 - Alert Preview and management improvements [\#232](https://github.com/CERT-BDF/TheHive/issues/232)
-- Ability to Reopen Tasks [\#156](https://github.com/CERT-BDF/TheHive/issues/156)
-- Display short reports on the Observables tab [\#131](https://github.com/CERT-BDF/TheHive/issues/131)
-- Custom fields for case template [\#12](https://github.com/CERT-BDF/TheHive/issues/12)
 - Show case status and category \(FP, TP, IND\) in related cases  [\#229](https://github.com/CERT-BDF/TheHive/issues/229)
 - Open External Links in New Tab [\#228](https://github.com/CERT-BDF/TheHive/issues/228)
 - Observable analyzers view reports. [\#191](https://github.com/CERT-BDF/TheHive/issues/191)
 - Specifying tags on statistics page or performing a search [\#186](https://github.com/CERT-BDF/TheHive/issues/186)
 - Choose case template while importing events from MISP [\#175](https://github.com/CERT-BDF/TheHive/issues/175)
-- Use local font files [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
+- Ability to Reopen Tasks [\#156](https://github.com/CERT-BDF/TheHive/issues/156)
+- Display short reports on the Observables tab [\#131](https://github.com/CERT-BDF/TheHive/issues/131)
+- Custom fields for case template [\#12](https://github.com/CERT-BDF/TheHive/issues/12)
 
 **Fixed bugs:**
 
+- A locked user can use the API to create / delete / list cases \(and more\) [\#251](https://github.com/CERT-BDF/TheHive/issues/251)
 - Fix case metrics malformed definitions [\#248](https://github.com/CERT-BDF/TheHive/issues/248)
 - Sorting alerts by severity fails [\#242](https://github.com/CERT-BDF/TheHive/issues/242)
 - Alerting Panel: Typo Correction [\#240](https://github.com/CERT-BDF/TheHive/issues/240)
@@ -28,7 +48,7 @@
 - Alert can contain inconsistent data [\#234](https://github.com/CERT-BDF/TheHive/issues/234)
 - Search do not work with non-latin characters [\#223](https://github.com/CERT-BDF/TheHive/issues/223)
 - report status not updated after finish [\#212](https://github.com/CERT-BDF/TheHive/issues/212)
-- A locked user can use the API to create / delete / list cases \(and more\) [\#251](https://github.com/CERT-BDF/TheHive/issues/251)
+- A locked user can use the API to create / delete / list cases \(and more\) [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
 
 ## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2...2.11.3)
