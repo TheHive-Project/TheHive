@@ -2,25 +2,21 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.reflect.runtime.universe
-import scala.util.{ Failure, Success }
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
+import models.CaseStatus
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
+import org.elastic4play.services._
+import org.elastic4play.{ BadRequestError, Timed }
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsArray, JsObject, Json }
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.mvc.{ Action, AnyContent, Controller }
-import org.elastic4play.{ BadRequestError, CreateError, Timed }
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.models.JsonFormat.{ baseModelEntityWrites, multiFormat }
-import org.elastic4play.services.{ Agg, AuxSrv }
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
-import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
-import models.{ Case, CaseStatus }
 import services.{ CaseMergeSrv, CaseSrv, CaseTemplateSrv, TaskSrv }
 
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 @Singleton

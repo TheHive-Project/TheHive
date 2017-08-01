@@ -375,18 +375,25 @@ class MispSrv @Inject() (
         for {
           caseTemplate ← alertSrv.getCaseTemplate(alert, customCaseTemplate)
           caze ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
-          _ ← mergeWithCase(alert, caze)
+          _ ← importArtifacts(alert, caze)
         } yield caze
     }
   }
 
-  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+  def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     for {
       instanceConfig ← getInstanceConfig(alert.source())
-      _ ← alertSrv.setCase(alert, caze)
       artifacts ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, alert, _)))
       _ ← artifactSrv.create(caze, artifacts)
     } yield caze
+  }
+
+  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    for {
+      _ ← importArtifacts(alert, caze)
+      description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}"
+      updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
+    } yield updatedCase
   }
 
   def updateMispAlertArtifact()(implicit authContext: AuthContext): Future[Unit] = {

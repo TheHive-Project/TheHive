@@ -11,12 +11,14 @@ import models._
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
 import org.elastic4play.services._
 import play.api.libs.json._
 import play.api.{ Configuration, Logger }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.matching.Regex
 import scala.util.{ Failure, Try }
 
 trait AlertTransformer {
@@ -28,7 +30,7 @@ trait AlertTransformer {
 case class CaseSimilarity(caze: Case, similarIOCCount: Int, iocCount: Int, similarArtifactCount: Int, artifactCount: Int)
 
 object AlertSrv {
-  val dataExtractor = "^(.*);(.*);(.*)".r
+  val dataExtractor: Regex = "^(.*);(.*);(.*)".r
 }
 
 class AlertSrv(
@@ -80,6 +82,7 @@ class AlertSrv(
     mat)
 
   private[AlertSrv] lazy val logger = Logger(getClass)
+
   import AlertSrv._
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] = {
@@ -158,7 +161,11 @@ class AlertSrv(
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         connectors.get(alert.tpe()) match {
-          case Some(connector: AlertTransformer) ⇒ connector.createCase(alert, customCaseTemplate)
+          case Some(connector: AlertTransformer) ⇒
+            for {
+              caze ← connector.createCase(alert, customCaseTemplate)
+              _ ← setCase(alert, caze)
+            } yield caze
           case _ ⇒
             for {
               caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
@@ -171,61 +178,79 @@ class AlertSrv(
                   .set("tlp", JsNumber(alert.tlp()))
                   .set("status", CaseStatus.Open.toString),
                 caseTemplate)
-              _ ← mergeWithCase(alert, caze)
+              _ ← importArtifacts(alert, caze)
+              _ ← setCase(alert, caze)
             } yield caze
         }
     }
   }
 
   override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
-    setCase(alert, caze)
-      .map { _ ⇒
-        val artifactsFields = alert.artifacts()
-          .map { artifact ⇒
-            val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
-            val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
-            val artifactFields = Fields(artifact +
-              ("tags" → JsArray(tags)) +
-              ("message" → message))
-            if (artifactFields.getString("dataType").contains("file")) {
-              artifactFields.getString("data")
-                .map {
-                  case dataExtractor(filename, contentType, data) ⇒
-                    val f = Files.createTempFile("alert-", "-attachment")
-                    Files.write(f, java.util.Base64.getDecoder.decode(data))
-                    artifactFields
-                      .set("attachment", FileInputValue(filename, f, contentType))
-                      .unset("data")
-                  case data ⇒
-                    logger.warn(s"Invalid data format for file artifact: $data")
-                    artifactFields
-                }
-                .getOrElse(artifactFields)
-            }
-            else {
-              artifactFields
-            }
-          }
+    alert.caze() match {
+      case Some(id) ⇒ caseSrv.get(id)
+      case None ⇒
+        connectors.get(alert.tpe()) match {
+          case Some(connector: AlertTransformer) ⇒
+            for {
+              updatedCase ← connector.mergeWithCase(alert, caze)
+              _ ← setCase(alert, updatedCase)
+            } yield updatedCase
+          case _ ⇒
+            for {
+              _ ← importArtifacts(alert, caze)
+              description = caze.description() + s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}"
+              updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
+              _ ← setCase(alert, caze)
+            } yield updatedCase
+        }
+    }
+  }
 
-        artifactSrv.create(caze, artifactsFields)
-          .map {
-            _.foreach {
-              case Failure(e) ⇒ logger.warn("Create artifact error", e)
-              case _          ⇒
+  def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    val artifactsFields = alert.artifacts()
+      .map { artifact ⇒
+        val tags = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
+        val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
+        val artifactFields = Fields(artifact +
+          ("tags" → JsArray(tags)) +
+          ("message" → message))
+        if (artifactFields.getString("dataType").contains("file")) {
+          artifactFields.getString("data")
+            .map {
+              case dataExtractor(filename, contentType, data) ⇒
+                val f = Files.createTempFile("alert-", "-attachment")
+                Files.write(f, java.util.Base64.getDecoder.decode(data))
+                artifactFields
+                  .set("attachment", FileInputValue(filename, f, contentType))
+                  .unset("data")
+              case data ⇒
+                logger.warn(s"Invalid data format for file artifact: $data")
+                artifactFields
             }
-          }
-          .onComplete { _ ⇒
-            // remove temporary files
-            artifactsFields
-              .flatMap(_.get("Attachment"))
-              .foreach {
-                case FileInputValue(_, file, _) ⇒ Files.delete(file)
-                case _                          ⇒
-              }
-          }
-        caze
+            .getOrElse(artifactFields)
+        }
+        else {
+          artifactFields
+        }
       }
 
+    val updatedCase = artifactSrv.create(caze, artifactsFields)
+      .map { artifacts ⇒
+        artifacts.collect {
+          case Failure(e) ⇒ logger.warn("Create artifact error", e)
+        }
+        caze
+      }
+    updatedCase.onComplete { _ ⇒
+      // remove temporary files
+      artifactsFields
+        .flatMap(_.get("Attachment"))
+        .foreach {
+          case FileInputValue(_, file, _) ⇒ Files.delete(file)
+          case _                          ⇒
+        }
+    }
+    updatedCase
   }
 
   def setCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Alert] = {
@@ -256,16 +281,6 @@ class AlertSrv(
       } yield artifactSrv.findSimilar(dataType, data, None, Some("all"), Nil)._1
     }
 
-    def getCaseAndArtifactCount(caseId: String): Future[(Case, Int, Int)] = {
-      import org.elastic4play.services.QueryDSL._
-      for {
-        caze ← caseSrv.get(caseId)
-        artifactCountJs ← artifactSrv.stats(parent("case", withId(caseId)), Seq(groupByField("ioc", selectCount)))
-        iocCount = (artifactCountJs \ "1" \ "count").asOpt[Int].getOrElse(0)
-        artifactCount = (artifactCountJs \\ "count").map(_.as[Int]).sum
-      } yield (caze, iocCount, artifactCount)
-    }
-
     Source(alert.artifacts().to[immutable.Iterable])
       .flatMapConcat { artifact ⇒
         similarArtifacts(artifact)
@@ -273,18 +288,27 @@ class AlertSrv(
       }
       .groupBy(100, _.parentId)
       .map {
-        case a if a.ioc() ⇒ (a.parentId, 1, 1)
-        case a            ⇒ (a.parentId, 0, 1)
+        case a if a.ioc() ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 1, 1)
+        case a            ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 0, 1)
       }
-      .reduce[(Option[String], Int, Int)] {
-        case ((caze, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caze, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
+      .reduce[(String, Int, Int)] {
+        case ((caseId, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caseId, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
       }
       .mergeSubstreams
       .mapAsyncUnordered(5) {
-        case (Some(caseId), similarIOCCount, similarArtifactCount) ⇒
-          getCaseAndArtifactCount(caseId).map {
-            case (caze, iocCount, artifactCount) ⇒ CaseSimilarity(caze, similarIOCCount, iocCount, similarArtifactCount, artifactCount)
-          }
+        case (caseId, similarIOCCount, similarArtifactCount) ⇒
+          caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
+      }
+      .filter {
+        case (caze, _, _) ⇒ caze.status() != CaseStatus.Deleted && caze.resolutionStatus != CaseResolutionStatus.Duplicated
+      }
+      .mapAsyncUnordered(5) {
+        case (caze, similarIOCCount, similarArtifactCount) ⇒
+          for {
+            artifactCountJs ← artifactSrv.stats(parent("case", withId(caze.id)), Seq(groupByField("ioc", selectCount)))
+            iocCount = (artifactCountJs \ "1" \ "count").asOpt[Int].getOrElse(0)
+            artifactCount = (artifactCountJs \\ "count").map(_.as[Int]).sum
+          } yield CaseSimilarity(caze, similarIOCCount, iocCount, similarArtifactCount, artifactCount)
         case _ ⇒ Future.failed(InternalError("Case not found"))
       }
       .runWith(Sink.seq)

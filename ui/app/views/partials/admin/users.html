@@ -57,64 +57,64 @@
                     <tbody>
                         <tr ng-repeat="user in userlist.values | orderBy:'id'">
                             <td class="col-md-2" ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]" style="vertical-align:middle; ">
-                                <updatable-simple-text active="state.editing" on-update="updateField(user, 'login', newValue)" value="user.id"></updatable-simple-text>
+                                <strong>{{user.id}}</strong>
                             </td>
                             <td class="col-md-3" ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]" style="vertical-align:middle; ">
                                 <updatable-simple-text active="state.editing" on-update="updateField(user, 'name', newValue)" value="user.name"></updatable-simple-text>
                             </td>
 
-                    <td class="col-md-2" style="vertical-align:middle; ">
-                        <div class="btn-group" uib-dropdown ng-if="user.status == 'Ok'">
-                            <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
-                                <span ng-bind="user.roles.join(', ')">&nbsp;&nbsp;
-                                    <span class="caret"></span>
-                                </span>
-                            </button>
-                            <ul class="dropdown-menu" uib-dropdown-menu>
-                                <li>
-                                    <a ng-click="newValue = ['read'] ; updateField(user, 'roles', newValue)">read</a>
-                                    <a ng-click="newValue = ['read','write'];updateField(user, 'roles', newValue)">read, write</a>
-                                    <a ng-click="newValue = ['read','write','admin'];updateField(user, 'roles', newValue)">read, write, admin</a>
-                                </li>
-                            </ul>
-                        </div>
-                        <div ng-if="user.status == 'Locked'">
-                            <span class="text-muted" ng-bind="user.roles"></span>
-                        </div>
-                    </td>
-
-                    <td class="col-md-3" ng-init="showPwdForm[user] = false" style="vertical-align:middle; ">
-                        <span ng-if="canSetPass === true">
-                            <span class="btn btn-sm btn-default" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="showPwdForm[user] = true" ng-hide="showPwdForm[user]">New password</span>
-                            <form ng-show="showPwdForm[user]" ng-submit="setPassword(user, newValue); showPwdForm[user] = false;">
-                                <div class="input-group input-group-sm">
-                                    <input autofocus="autofocus" class="form-control input-sm" ng-model="newValue" type="password">
-                                    <span class="input-group-btn">
-                                        <button class="btn btn-xs btn-default" ng-click="showPwdForm[user] = false" type="button">
-                                            <i class="text-danger glyphicon glyphicon-remove"></i>
-                                        </button>
-                                    </span>
+                            <td class="col-md-2" style="vertical-align:middle; ">
+                                <div class="btn-group" uib-dropdown ng-if="user.status == 'Ok'">
+                                    <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                                        <span ng-bind="user.roles.join(', ')">&nbsp;&nbsp;
+                                            <span class="caret"></span>
+                                        </span>
+                                    </button>
+                                    <ul class="dropdown-menu" uib-dropdown-menu>
+                                        <li>
+                                            <a ng-click="newValue = ['read'] ; updateField(user, 'roles', newValue)">read</a>
+                                            <a ng-click="newValue = ['read','write'];updateField(user, 'roles', newValue)">read, write</a>
+                                            <a ng-click="newValue = ['read','write','admin'];updateField(user, 'roles', newValue)">read, write, admin</a>
+                                        </li>
+                                    </ul>
                                 </div>
-                            </form>
-                        </span>
-                        <span ng-hide="showPwdForm[user]">
-                            <span class="btn btn-sm btn-default" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="createKey(user)" ng-if="!user['has-key']">Create API Key</span>
-                            <span class="btn btn-sm btn-primary" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="getKey(user)" ng-hide="usrKey[user.id] || !user['has-key']">Show API Key</span>
-                            <span ng-if="user['has-key'] && !showApiKey">{{usrKey[user.id]}}</span>
-                        </span>
+                                <div ng-if="user.status == 'Locked'">
+                                    <span class="text-muted" ng-bind="user.roles"></span>
+                                </div>
+                            </td>
 
-                    </td>
-                    <!-- <td ng-mouseenter="showDropUser[user] = 'text-danger'" ng-mouseleave="showDropUser[user] = 'text-muted'" style="vertical-align:middle; " class="col-md-3"><center> <span><a href ng-click="lockUser(user)"> -->
-                    <td class="col-md-3" style="vertical-align:middle; ">
-                        <center>
-                            <span>
-                                <a href ng-click="lockUser(user)">
-                                    <i class="glyphicon glyphicon-lock" ng-class="{'Locked':'text-danger', 'Ok':'text-muted' }[user.status]"></i>
-                                </a>
-                            </span>
-                        </center>
-                    </td>
-                </tr>
+                            <td class="col-md-3" ng-init="showPwdForm[user] = false" style="vertical-align:middle; ">
+                                <span ng-if="canSetPass === true">
+                                    <span class="btn btn-sm btn-default" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="showPwdForm[user] = true" ng-hide="showPwdForm[user]">New password</span>
+                                    <form ng-show="showPwdForm[user]" ng-submit="setPassword(user, newValue); showPwdForm[user] = false;">
+                                        <div class="input-group input-group-sm">
+                                            <input autofocus="autofocus" class="form-control input-sm" ng-model="newValue" type="password">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-xs btn-default" ng-click="showPwdForm[user] = false" type="button">
+                                                    <i class="text-danger glyphicon glyphicon-remove"></i>
+                                                </button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </span>
+                                <span ng-hide="showPwdForm[user]">
+                                    <span class="btn btn-sm btn-default" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="createKey(user)" ng-if="!user['has-key']">Create API Key</span>
+                                    <span class="btn btn-sm btn-primary" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="getKey(user)" ng-hide="usrKey[user.id] || !user['has-key']">Show API Key</span>
+                                    <span ng-if="user['has-key'] && !showApiKey">{{usrKey[user.id]}}</span>
+                                </span>
+
+                            </td>
+                            <!-- <td ng-mouseenter="showDropUser[user] = 'text-danger'" ng-mouseleave="showDropUser[user] = 'text-muted'" style="vertical-align:middle; " class="col-md-3"><center> <span><a href ng-click="lockUser(user)"> -->
+                            <td class="col-md-3" style="vertical-align:middle; ">
+                                <center>
+                                    <span>
+                                        <a href ng-click="lockUser(user)">
+                                            <i class="glyphicon glyphicon-lock" ng-class="{'Locked':'text-danger', 'Ok':'text-muted' }[user.status]"></i>
+                                        </a>
+                                    </span>
+                                </center>
+                            </td>
+                        </tr>
 
                     </tbody>
                 </table>

@@ -44,6 +44,7 @@ PATCH    /api/case/task/:taskId                   controllers.TaskCtrl.update(ta
 POST     /api/case/:caseId/task                   controllers.TaskCtrl.create(caseId)
 
 GET      /api/case/task/:taskId/log               controllers.LogCtrl.findInTask(taskId)
+POST     /api/case/task/:taskId/log/_search       controllers.LogCtrl.findInTask(taskId)
 POST     /api/case/task/log/_search               controllers.LogCtrl.find()
 POST     /api/case/task/:taskId/log               controllers.LogCtrl.create(taskId)
 PATCH    /api/case/task/log/:logId                controllers.LogCtrl.update(logId)

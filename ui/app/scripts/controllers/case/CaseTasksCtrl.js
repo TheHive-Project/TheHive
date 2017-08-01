@@ -85,7 +85,8 @@
         // open task tab with its details
         $scope.startTask = function(task) {
             if (task.status === 'Waiting') {
-                $scope.updateTaskStatus(task.id, 'InProgress');
+                $scope.updateTaskStatus(task.id, 'InProgress')
+                    .then($scope.showTask);
             } else {
                 $scope.showTask(task);
             }

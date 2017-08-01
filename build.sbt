@@ -49,6 +49,7 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     ))
   )
 
+
 Release.releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
 Release.changelogFile := baseDirectory.value / "CHANGELOG.md"
 
@@ -79,24 +80,31 @@ mappings in Universal ~= {
 maintainer := "TheHive Project <support@thehive-project.org>"
 packageSummary := "Scalable, Open Source and Free Security Incident Response Solutions"
 packageDescription :=
-  """TheHive is a scalable 3-in-1 open source and free security incident response platform designed to make life easier
-    | for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be
-    | investigated and acted upon swiftly.""".stripMargin
+  """TheHive is a scalable 3-in-1 open source and free security incident response
+    | platform designed to make life easier for SOCs, CSIRTs, CERTs and any
+    | information security practitioner dealing with security incidents that need to
+    | be investigated and acted upon swiftly.""".stripMargin
 defaultLinuxInstallLocation := "/opt"
 linuxPackageMappings ~= {
   _.map { pm =>
     val mappings = pm.mappings.filterNot {
       case (_, path) => path.startsWith("/opt/thehive/package") || path.startsWith("/opt/thehive/conf")
     }
-    com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData).withConfig()
-  } :+ packageMapping(
-    file("package/thehive.service") -> "/etc/systemd/system/thehive.service",
+    com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData)
+  }
+}
+linuxPackageMappings ++= Seq(
+  packageMapping(
+    file("package/thehive.service") -> "/usr/lib/systemd/system/thehive.service"
+  ).withPerms("644"),
+  packageMapping(
     file("package/thehive.conf") -> "/etc/init/thehive.conf",
-    file("package/thehive") -> "/etc/init.d/thehive",
     file("conf/application.sample") -> "/etc/thehive/application.conf",
     file("conf/logback.xml") -> "/etc/thehive/logback.xml"
-  ).withConfig()
-}
+  ).withPerms("644").withConfig(),
+  packageMapping(
+    file("package/thehive") -> "/etc/init.d/thehive"
+  ).withPerms("755").withConfig())
 
 packageBin := {
   (packageBin in Universal).value
@@ -104,6 +112,7 @@ packageBin := {
   (packageBin in Rpm).value
 }
 // DEB //
+linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
 version in Debian := version.value + "-1"
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "openjdk-8-jre-headless"

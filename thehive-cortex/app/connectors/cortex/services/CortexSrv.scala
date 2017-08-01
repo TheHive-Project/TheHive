@@ -13,6 +13,7 @@ import connectors.cortex.models._
 import models.Artifact
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
+import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
@@ -257,7 +258,7 @@ class CortexSrv @Inject() (
             "dataType" → artifact.dataType())
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
             case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
-            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes)
+            case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))
             case _                        ⇒ throw InternalError(s"Artifact has invalid data : ${artifact.attributes}")
           }
           cortexJobJson ← cortex.analyze(analyzerId, cortexArtifact)
