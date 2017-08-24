@@ -5,7 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.ExecutionContext
 
 import play.api.Logger
-import play.api.libs.json.{ JsBoolean, JsObject, Json }
+import play.api.libs.json.{ JsObject, Json }
 
 import akka.actor.Actor
 import models.{ Audit, AuditModel }
@@ -39,7 +39,9 @@ class AuditActor @Inject() (
     auditModel: AuditModel,
     createSrv: CreateSrv,
     eventSrv: EventSrv,
+    webHooks: WebHooks,
     implicit val ec: ExecutionContext) extends Actor {
+
   object EntityExtractor {
     def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
   }
@@ -61,16 +63,20 @@ class AuditActor @Inject() (
       currentRequestIds = currentRequestIds - Instance.getRequestId(request)
     case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
       val requestId = authContext.requestId
-      createSrv[AuditModel, Audit](auditModel, Fields.empty
-        .set("operation", action.toString)
-        .set("details", model.selectAuditedAttributes(details))
-        .set("objectType", model.name)
-        .set("objectId", id)
-        .set("base", JsBoolean(!currentRequestIds.contains(requestId)))
-        .set("startDate", Json.toJson(date))
-        .set("rootId", routing)
-        .set("requestId", requestId))(authContext)
+      val audit = Json.obj(
+        "operation" → action,
+        "details" → model.selectAuditedAttributes(details),
+        "objectType" → model.name,
+        "objectId" → id,
+        "base" → !currentRequestIds.contains(requestId),
+        "startDate" → date,
+        "rootId" → routing,
+        "requestId" → requestId)
+
+      createSrv[AuditModel, Audit](auditModel, Fields(audit))(authContext)
         .failed.foreach(t ⇒ logger.error("Audit error", t))
       currentRequestIds = currentRequestIds + requestId
+
+      webHooks.send(audit)
   }
 }
