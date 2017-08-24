@@ -1,20 +1,26 @@
 package services
 
-import javax.inject.{ Inject, Provider, Singleton }
+import javax.inject.{Inject, Provider, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.mvc.RequestHeader
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import models.{ User, UserModel, UserStatus }
+import models.{User, UserModel, UserStatus}
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
-import org.elastic4play.{ AuthenticationError, AuthorizationError }
+import org.elastic4play.{AuthenticationError, AuthorizationError}
+
+object Roles {
+  object read extends Role
+  object write extends Role
+  object admin extends Role
+}
 
 @Singleton
 class UserSrv @Inject() (
@@ -29,7 +35,7 @@ class UserSrv @Inject() (
     dbIndex: DBIndex,
     implicit val ec: ExecutionContext) extends org.elastic4play.services.UserSrv {
 
-  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role.Type]) extends AuthContext
+  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role]) extends AuthContext
 
   override def getFromId(request: RequestHeader, userId: String): Future[AuthContext] = {
     getSrv[UserModel, User](userModel, userId)
