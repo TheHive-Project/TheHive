@@ -2,18 +2,20 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import models._
-import org.elastic4play.InternalError
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services._
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
+
 import play.api.Logger
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import models._
+
+import org.elastic4play.InternalError
+import org.elastic4play.controllers.Fields
+import org.elastic4play.services._
 
 @Singleton
 class CaseSrv @Inject() (
@@ -28,7 +30,7 @@ class CaseSrv @Inject() (
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) {
 
-  lazy val log = Logger(getClass)
+  private[CaseSrv] lazy val logger = Logger(getClass)
 
   def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
     def getJsObjectOrEmpty(value: Option[JsValue]) = value.fold(JsObject(Nil)) {

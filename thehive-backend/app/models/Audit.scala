@@ -4,12 +4,15 @@ import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
-import play.api.{ Configuration, Logger }
+
 import play.api.libs.json.JsObject
-import org.elastic4play.models.{ Attribute, AttributeFormat, AttributeDef, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
+import play.api.{ Configuration, Logger }
+
+import services.AuditedModel
+
+import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
 import org.elastic4play.services.AuditableAction
 import org.elastic4play.services.JsonFormat.auditableActionFormat
-import services.AuditedModel
 
 trait AuditAttributes { _: AttributeDef ⇒
   def detailsAttributes: Seq[Attribute[_]]
@@ -34,10 +37,10 @@ class AuditModel(
     configuration: Configuration,
     auditedModels: immutable.Set[AuditedModel]) =
     this(
-      configuration.getString("audit.name").get,
+      configuration.get[String]("audit.name"),
       auditedModels)
 
-  lazy val logger = Logger(getClass)
+  private[AuditModel] lazy val logger = Logger(getClass)
 
   def mergeAttributeFormat(context: String, format1: AttributeFormat[_], format2: AttributeFormat[_]): Option[AttributeFormat[_]] = {
     (format1, format2) match {

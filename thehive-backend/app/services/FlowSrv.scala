@@ -2,28 +2,28 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContext, Future }
+
+import play.api.Logger
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json.{ JsObject, JsValue }
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import models.{ Audit, AuditModel }
 
-import play.api.libs.json.{ JsObject, JsValue }
-import play.api.libs.json.JsValue.jsValueToJsLookup
-
-import org.elastic4play.services.{ AuxSrv, FindSrv, ModelSrv, QueryDSL }
+import org.elastic4play.services.{ AuxSrv, FindSrv, ModelSrv }
 import org.elastic4play.utils.RichJson
 
-import models.{ Audit, AuditModel }
-import play.api.Logger
-
+@Singleton
 class FlowSrv @Inject() (
     auditModel: AuditModel,
     modelSrv: ModelSrv,
     auxSrv: AuxSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) {
-  lazy val log = Logger(getClass)
+
+  private[FlowSrv] lazy val logger = Logger(getClass)
 
   def apply(rootId: Option[String], count: Int): (Source[JsObject, NotUsed], Future[Long]) = {
     import org.elastic4play.services.QueryDSL._

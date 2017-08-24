@@ -2,18 +2,20 @@ package connectors.cortex.controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConverters._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.io.Source
 import scala.util.control.NonFatal
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsBoolean, JsObject }
-import play.api.mvc.{ Action, AnyContent, Controller }
+import play.api.mvc._
+
 import org.elastic4play.{ BadRequestError, Timed }
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, FileInputValue, Renderer }
+import org.elastic4play.controllers._
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.AuxSrv
@@ -29,10 +31,11 @@ class ReportTemplateCtrl @Inject() (
     authenticated: Authenticated,
     renderer: Renderer,
     fieldsBodyParser: FieldsBodyParser,
+    components: ControllerComponents,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) extends Controller with Status {
+    implicit val mat: Materializer) extends AbstractController(components) with Status {
 
-  lazy val logger = Logger(getClass)
+  private[ReportTemplateCtrl] lazy val logger = Logger(getClass)
 
   @Timed
   def create: Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
@@ -89,10 +92,10 @@ class ReportTemplateCtrl @Inject() (
   @Timed
   def importTemplatePackage: Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
     val zipFile = request.body.get("templates") match {
-      case Some(FileInputValue(name, filepath, contentType)) ⇒ new ZipFile(filepath.toFile)
-      case _                                                 ⇒ throw BadRequestError("")
+      case Some(FileInputValue(_, filepath, _)) ⇒ new ZipFile(filepath.toFile)
+      case _                                    ⇒ throw BadRequestError("")
     }
-    val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.toSeq.filter(_ != null).collect {
+    val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.asScala.filter(_ != null).collect {
       case fileHeader: FileHeader if !fileHeader.isDirectory ⇒
         val Array(analyzerId, reportTypeHtml, _*) = (fileHeader.getFileName + "/").split("/", 3)
         val inputStream = zipFile.getInputStream(fileHeader)

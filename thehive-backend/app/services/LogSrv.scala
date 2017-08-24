@@ -3,12 +3,15 @@ package services
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
+
+import play.api.libs.json.JsObject
+
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
 import models.{ Log, LogModel, Task, TaskModel }
-import play.api.libs.json.JsObject
+
+import org.elastic4play.controllers.Fields
+import org.elastic4play.services._
 
 @Singleton
 class LogSrv @Inject() (
@@ -28,7 +31,7 @@ class LogSrv @Inject() (
   def create(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Log] =
     createSrv[LogModel, Log, Task](logModel, task, fields)
 
-  def get(id: String)(implicit Context: AuthContext): Future[Log] =
+  def get(id: String): Future[Log] =
     getSrv[LogModel, Log](logModel, id)
 
   def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[Log] =

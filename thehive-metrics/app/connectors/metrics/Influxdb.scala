@@ -1,11 +1,10 @@
 package connectors.metrics
 
 import java.util
-import java.util.SortedMap
 import java.util.concurrent.TimeUnit
 import javax.inject.{ Inject, Singleton }
 
-import scala.collection.JavaConversions.{ iterableAsScalaIterable, mapAsScalaMap }
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import play.api.Logger
 import play.api.libs.ws.WSClient
@@ -52,21 +51,21 @@ trait InfluxDBAPI {
 class InfluxDBFactory @Inject() (
     ws: WSClient,
     implicit val ec: ExecutionContext) {
-  val log = Logger("InfluxDB")
+  private[InfluxDBFactory] lazy val logger = Logger(classOf[InfluxDB])
   case class InfluxDB(url: String, user: String, password: String, database: String, retentionPolicy: String) extends InfluxDBAPI {
     def send(points: InfluxPoint*): Unit = {
-      val x = ws
+      ws
         .url(url.stripSuffix("/") + "/write")
-        .withQueryString(
+        .withQueryStringParameters(
           "u" → user,
           "p" → password,
           "db" → database,
           "rp" → retentionPolicy)
-        .withHeaders("Content-Type" → "text/plain")
+        .withHttpHeaders("Content-Type" → "text/plain")
         .post(points.map(_.lineProtocol).mkString("\n"))
         .map { response ⇒
           if ((response.status / 100) != 2)
-            log.warn(s"Send metrics to InfluxDB error : ${response.body}")
+            logger.warn(s"Send metrics to InfluxDB error : ${response.body}")
         }
       ()
     }
@@ -90,11 +89,11 @@ class InfluxDBReporter(
 
     val now = System.currentTimeMillis() * 1000000
 
-    val points = gauges.map { case (name, gauge) ⇒ pointGauge(now, name, gauge) } ++
-      counters.map { case (name, counter) ⇒ pointCounter(now, tags, name, counter) } ++
-      histograms.map { case (name, histogram) ⇒ pointHistogram(now, tags, name, histogram) } ++
-      meters.map { case (name, meter) ⇒ pointMeter(now, tags, name, meter) } ++
-      timers.map { case (name, timer) ⇒ pointTimer(now, tags, name, timer) }
+    val points = gauges.asScala.map { case (name, gauge) ⇒ pointGauge(now, name, gauge) } ++
+      counters.asScala.map { case (name, counter) ⇒ pointCounter(now, tags, name, counter) } ++
+      histograms.asScala.map { case (name, histogram) ⇒ pointHistogram(now, tags, name, histogram) } ++
+      meters.asScala.map { case (name, meter) ⇒ pointMeter(now, tags, name, meter) } ++
+      timers.asScala.map { case (name, timer) ⇒ pointTimer(now, tags, name, timer) }
     influxdb.send(points.toSeq: _*)
   }
 
@@ -108,7 +107,7 @@ class InfluxDBReporter(
   def pointGauge(now: Long, name: String, gauge: Gauge[_]): InfluxPoint = {
     val value = gauge.getValue match {
       case s: String                ⇒ InfluxString(s)
-      case i: java.lang.Iterable[_] ⇒ InfluxString(i.mkString(","))
+      case i: java.lang.Iterable[_] ⇒ InfluxString(i.asScala.mkString(","))
       case d: Double                ⇒ InfluxFloat(d)
       case f: Float                 ⇒ InfluxFloat(f.toDouble)
       case l: Long                  ⇒ InfluxLong(l)

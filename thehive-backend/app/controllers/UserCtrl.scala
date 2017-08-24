@@ -2,22 +2,21 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
+
 import play.api.Logger
 import play.api.http.Status
-import play.api.mvc.{ Action, AnyContent, Controller, Result }
-import org.elastic4play.{ AuthorizationError, MissingAttributeError, Timed }
+import play.api.libs.json.{ JsObject, Json }
+import play.api.mvc._
+
+import services.UserSrv
+
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
-import org.elastic4play.services.AuthSrv
-import org.elastic4play.services.JsonFormat.{ authContextWrites, queryReads }
-import services.UserSrv
-import play.api.libs.json.Json
-
-import scala.util.Try
-import play.api.libs.json.JsObject
+import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{ AuthSrv, QueryDSL, QueryDef, Role }
+import org.elastic4play.{ AuthorizationError, MissingAttributeError, Timed }
 
 @Singleton
 class UserCtrl @Inject() (
@@ -26,9 +25,10 @@ class UserCtrl @Inject() (
     authenticated: Authenticated,
     renderer: Renderer,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    components: ControllerComponents,
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
-  lazy val logger = Logger(getClass)
+  private[UserCtrl] lazy val logger = Logger(getClass)
 
   @Timed
   def create: Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
@@ -95,7 +95,7 @@ class UserCtrl @Inject() (
       user ← userSrv.get(authContext.userId)
       preferences = Try(Json.parse(user.preferences()))
         .recover {
-          case error ⇒
+          case _ ⇒
             logger.warn(s"User ${authContext.userId} has invalid preference format: ${user.preferences()}")
             JsObject(Nil)
         }

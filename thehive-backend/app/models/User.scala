@@ -3,17 +3,16 @@ package models
 import java.util.UUID
 
 import scala.concurrent.Future
-import scala.language.postfixOps
 
-import play.api.libs.json.{ JsBoolean, JsObject, JsString, JsUndefined }
 import play.api.libs.json.JsValue.jsValueToJsLookup
-
-import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, EntityDef, HiveEnumeration, ModelDef }
-import org.elastic4play.services.JsonFormat.roleFormat
-import org.elastic4play.services.Role
+import play.api.libs.json.{ JsBoolean, JsObject, JsString, JsUndefined }
 
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
+
+import org.elastic4play.models.{ AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.services.JsonFormat.roleFormat
+import org.elastic4play.services.Role
 
 object UserStatus extends Enumeration with HiveEnumeration {
   type Type = Value

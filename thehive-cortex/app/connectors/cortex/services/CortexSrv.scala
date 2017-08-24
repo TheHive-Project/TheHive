@@ -4,13 +4,13 @@ import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
 import akka.NotUsed
-import akka.actor.ActorDSL.{ Act, actor }
-import akka.actor.ActorSystem
+import akka.actor.Actor
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
 import models.Artifact
+
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
 import org.elastic4play.services.JsonFormat.attachmentFormat
@@ -18,33 +18,32 @@ import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
 import play.api.{ Configuration, Logger }
-import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact }
 
+import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.language.implicitConversions
 import scala.util.{ Failure, Success, Try }
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
-    val url = configuration.getString("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
+    val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
     val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
     val authentication = for {
-      basicEnabled ← configuration.getBoolean("basicAuth")
+      basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
       if basicEnabled
-      username ← configuration.getString("username")
-      password ← configuration.getString("password")
+      username ← configuration.getOptional[String]("username")
+      password ← configuration.getOptional[String]("password")
     } yield username → password
     Some(new CortexClient(name, url, key, authentication, ws))
   }
 
   def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {
     for {
-      cfg ← configuration.getConfig("cortex").toSeq
+      cfg ← configuration.getOptional[Configuration]("cortex").toSeq
       cortexWS = globalWS.withConfig(cfg)
       key ← cfg.subKeys
       if key != "ws"
-      c ← cfg.getConfig(key)
+      c ← cfg.getOptional[Configuration](key)
       instanceWS = cortexWS.withConfig(c)
       cic ← getCortexClient(key, c, instanceWS)
     } yield cic
@@ -60,6 +59,34 @@ case class CortexConfig(instances: Seq[CortexClient]) {
 }
 
 @Singleton
+class JobReplicateActor @Inject() (
+    cortexSrv: CortexSrv,
+    eventSrv: EventSrv,
+    implicit val mat: Materializer) extends Actor {
+
+  override def preStart(): Unit = {
+    eventSrv.subscribe(self, classOf[MergeArtifact])
+    super.preStart()
+  }
+
+  override def postStop(): Unit = {
+    eventSrv.unsubscribe(self)
+    super.postStop()
+  }
+
+  override def receive: Receive = {
+    case MergeArtifact(newArtifact, artifacts, authContext) ⇒
+      import org.elastic4play.services.QueryDSL._
+      cortexSrv.find(and(parent("case_artifact", withId(artifacts.map(_.id): _*)), "status" ~= JobStatus.Success), Some("all"), Nil)._1
+        .mapAsyncUnordered(5) { job ⇒
+          val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+          cortexSrv.create(newArtifact, baseFields)(authContext)
+        }
+        .runWith(Sink.ignore)
+  }
+}
+
+@Singleton
 class CortexSrv @Inject() (
     cortexConfig: CortexConfig,
     jobModel: JobModel,
@@ -70,10 +97,8 @@ class CortexSrv @Inject() (
     updateSrv: UpdateSrv,
     findSrv: FindSrv,
     userSrv: UserSrv,
-    eventSrv: EventSrv,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
-    implicit val system: ActorSystem,
     implicit val mat: Materializer) {
 
   private[CortexSrv] lazy val logger = Logger(getClass)
@@ -99,22 +124,7 @@ class CortexSrv @Inject() (
       }
   }
 
-  private[CortexSrv] val mergeActor = actor(new Act {
-    become {
-      case MergeArtifact(newArtifact, artifacts, authContext) ⇒
-        import org.elastic4play.services.QueryDSL._
-        find(and(parent("case_artifact", withId(artifacts.map(_.id): _*)), "status" ~= JobStatus.Success), Some("all"), Nil)._1
-          .mapAsyncUnordered(5) { job ⇒
-            val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
-            create(newArtifact, baseFields)(authContext)
-          }
-          .runWith(Sink.ignore)
-    }
-  })
-
-  eventSrv.subscribe(mergeActor, classOf[MergeArtifact]) // need to unsubsribe ?
-
-  private[CortexSrv] def create(artifact: Artifact, fields: Fields)(implicit authContext: AuthContext): Future[Job] = {
+  private[services] def create(artifact: Artifact, fields: Fields)(implicit authContext: AuthContext): Future[Job] = {
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 

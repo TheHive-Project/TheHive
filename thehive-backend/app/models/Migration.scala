@@ -1,28 +1,31 @@
 package models
 
 import java.util.Date
-import javax.inject.Inject
-
-import akka.NotUsed
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import org.elastic4play.models.BaseModelDef
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services._
-import org.elastic4play.utils
-import org.elastic4play.utils.{ Hasher, RichJson }
-import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json._
-import play.api.{ Configuration, Logger }
-import services.AlertSrv
+import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable.{ Set ⇒ ISet }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.math.BigDecimal.int2bigDecimal
 import scala.util.Try
 
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json._
+import play.api.{ Configuration, Logger }
+
+import akka.NotUsed
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import services.AlertSrv
+
+import org.elastic4play.models.BaseModelDef
+import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services._
+import org.elastic4play.utils
+import org.elastic4play.utils.{ Hasher, RichJson }
+
 case class UpdateMispAlertArtifact() extends EventMessage
 
+@Singleton
 class Migration(
     mispCaseTemplate: Option[String],
     mainHash: String,
@@ -41,17 +44,17 @@ class Migration(
     ec: ExecutionContext,
     materializer: Materializer) = {
     this(
-      configuration.getString("misp.caseTemplate"),
-      configuration.getString("datastore.hash.main").get,
-      configuration.getStringSeq("datastore.hash.extra").get,
-      configuration.getString("datastore.name").get,
+      configuration.getOptional[String]("misp.caseTemplate"),
+      configuration.get[String]("datastore.hash.main"),
+      configuration.get[Seq[String]]("datastore.hash.extra"),
+      configuration.get[String]("datastore.name"),
       models, dblists,
       eventSrv, ec, materializer)
   }
 
   import org.elastic4play.services.Operation._
 
-  val logger = Logger(getClass)
+  private[Migration] lazy val logger = Logger(getClass)
   private var requireUpdateMispAlertArtifact = false
 
   override def beginMigration(version: Int): Future[Unit] = Future.successful(())

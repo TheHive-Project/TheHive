@@ -3,16 +3,18 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
+
 import play.api.http.Status
 import play.api.libs.json.JsArray
-import play.api.mvc.{ Action, AnyContent, Controller }
-import org.elastic4play.{ BadRequestError, Timed }
+import play.api.mvc._
+
+import services.ArtifactSrv
+
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ Agg, AuxSrv }
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
-import services.ArtifactSrv
+import org.elastic4play.services._
+import org.elastic4play.{ BadRequestError, Timed }
 
 @Singleton
 class ArtifactCtrl @Inject() (
@@ -20,8 +22,9 @@ class ArtifactCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
+    components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Timed
   def create(caseId: String): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒

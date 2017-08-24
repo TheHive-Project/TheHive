@@ -2,8 +2,9 @@ package models
 
 import java.nio.file.Path
 
-import org.elastic4play.models.JsonFormat.enumFormat
 import play.api.libs.json.{ Format, JsString, Writes }
+
+import org.elastic4play.models.JsonFormat.enumFormat
 
 object JsonFormat {
   implicit val userStatusFormat: Format[UserStatus.Type] = enumFormat(UserStatus)

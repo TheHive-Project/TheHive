@@ -2,16 +2,18 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import org.elastic4play.Timed
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.services.JsonFormat.queryReads
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
-import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import scala.concurrent.ExecutionContext
+
 import play.api.http.Status
-import play.api.mvc.{ Action, AnyContent, Controller }
+import play.api.mvc._
+
 import services.LogSrv
 
-import scala.concurrent.ExecutionContext
+import org.elastic4play.Timed
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 
 @Singleton
 class LogCtrl @Inject() (
@@ -19,7 +21,8 @@ class LogCtrl @Inject() (
     authenticated: Authenticated,
     renderer: Renderer,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    components: ControllerComponents,
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Timed
   def create(taskId: String): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒

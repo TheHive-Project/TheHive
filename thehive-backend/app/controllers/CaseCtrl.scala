@@ -2,22 +2,24 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
+
+import play.api.Logger
+import play.api.http.Status
+import play.api.libs.json.{ JsArray, JsObject, Json }
+import play.api.mvc._
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import models.CaseStatus
+import services.{ CaseMergeSrv, CaseSrv, CaseTemplateSrv, TaskSrv }
+
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
 import org.elastic4play.{ BadRequestError, Timed }
-import play.api.Logger
-import play.api.http.Status
-import play.api.libs.json.{ JsArray, JsObject, Json }
-import play.api.mvc.{ Action, AnyContent, Controller }
-import services.{ CaseMergeSrv, CaseSrv, CaseTemplateSrv, TaskSrv }
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -28,11 +30,12 @@ class CaseCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
+    components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) extends Controller with Status {
+    implicit val mat: Materializer) extends AbstractController(components) with Status {
 
-  val log = Logger(getClass)
+  private[CaseCtrl] lazy val logger = Logger(getClass)
 
   @Timed
   def create(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
@@ -70,7 +73,7 @@ class CaseCtrl @Inject() (
     for {
       // Closing the case, so lets close the open tasks
       caze ← caseSrv.update(id, request.body)
-      closedTasks ← if (isCaseClosing) taskSrv.closeTasksOfCase(id) else Future.successful(Nil) // FIXME log warning if closedTasks contains errors
+      _ ← if (isCaseClosing) taskSrv.closeTasksOfCase(id) else Future.successful(Nil) // FIXME log warning if closedTasks contains errors
     } yield renderer.toOutput(OK, caze)
   }
 

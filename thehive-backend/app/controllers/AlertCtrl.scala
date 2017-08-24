@@ -2,21 +2,23 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
+
+import play.api.Logger
+import play.api.http.Status
+import play.api.libs.json.{ JsArray, JsObject, Json }
+import play.api.mvc._
+
 import akka.stream.Materializer
+import services.JsonFormat.caseSimilarityWrites
+import services.{ AlertSrv, CaseSrv }
+
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
 import org.elastic4play.{ BadRequestError, Timed }
-import play.api.Logger
-import play.api.http.Status
-import play.api.libs.json.{ JsArray, JsObject, Json }
-import play.api.mvc.{ Action, AnyContent, Controller }
-import services.{ AlertSrv, CaseSrv }
-import services.JsonFormat.caseSimilarityWrites
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
 
 @Singleton
 class AlertCtrl @Inject() (
@@ -25,11 +27,12 @@ class AlertCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
+    components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) extends Controller with Status {
+    implicit val mat: Materializer) extends AbstractController(components) with Status {
 
-  val log = Logger(getClass)
+  private[AlertCtrl] lazy val logger = Logger(getClass)
 
   @Timed
   def create(): Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒

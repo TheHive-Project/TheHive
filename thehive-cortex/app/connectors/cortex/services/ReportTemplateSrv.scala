@@ -28,7 +28,7 @@ class ReportTemplateSrv @Inject() (
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) {
 
-  lazy val log = Logger(getClass)
+  private[ReportTemplateSrv] lazy val logger = Logger(getClass)
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[ReportTemplate] = {
     createSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, fields)

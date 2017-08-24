@@ -3,25 +3,24 @@ package models
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
-import akka.{ Done, NotUsed }
-
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.language.postfixOps
-import akka.stream.{ IOResult, Materializer }
-import play.api.libs.json.{ JsArray, JsNull, JsObject, JsString, JsValue }
+import scala.util.Success
+
+import play.api.Logger
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import org.elastic4play.{ BadRequestError, InternalError }
+import play.api.libs.json._
+
+import akka.stream.{ IOResult, Materializer }
+import akka.{ Done, NotUsed }
+import models.JsonFormat.artifactStatusFormat
+import services.{ ArtifactSrv, AuditedModel }
+
 import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.services.{ Attachment, AttachmentSrv, DBLists }
 import org.elastic4play.utils.MultiHash
-import models.JsonFormat.artifactStatusFormat
-import play.api.Logger
-import services.{ ArtifactSrv, AuditedModel }
-
-import scala.util.Success
+import org.elastic4play.{ BadRequestError, InternalError }
 
 object ArtifactStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -75,14 +74,14 @@ class ArtifactModel @Inject() (
     entity match {
       case artifact: Artifact ⇒
         val removeMessage = (updateAttrs \ "message").toOption.exists {
-          case JsNull       ⇒ true
-          case JsArray(Nil) ⇒ true
-          case _            ⇒ false
+          case JsNull         ⇒ true
+          case JsArray(Seq()) ⇒ true
+          case _              ⇒ false
         }
         val removeTags = (updateAttrs \ "tags").toOption.exists {
-          case JsNull       ⇒ true
-          case JsArray(Nil) ⇒ true
-          case _            ⇒ false
+          case JsNull         ⇒ true
+          case JsArray(Seq()) ⇒ true
+          case _              ⇒ false
         }
         if ((removeMessage && removeTags) ||
           (removeMessage && artifact.tags().isEmpty) ||
@@ -115,6 +114,7 @@ class ArtifactModel @Inject() (
     entity match {
       case artifact: Artifact ⇒
         val (_, total) = artifactSrv.get.findSimilar(artifact, Some("0-0"), Nil)
+        total.failed.foreach(t ⇒ logger.error("Artifact.getStats error", t))
         total.map { t ⇒ Json.obj("seen" → t) }
       case _ ⇒ Future.successful(JsObject(Nil))
     }

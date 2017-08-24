@@ -1,39 +1,41 @@
 package services
 
-import javax.inject.Inject
+import javax.inject.{ Inject, Singleton }
+
+import play.api.inject.ApplicationLifecycle
+import play.api.libs.ws._
+import play.api.libs.ws.ahc.{ AhcWSClient, AhcWSClientConfig, AhcWSClientConfigParser }
+import play.api.{ Configuration, Environment, Logger }
 
 import akka.stream.Materializer
-import play.api.inject.ApplicationLifecycle
-import play.api.libs.ws.ahc.{ AhcWSAPI, AhcWSClient, AhcWSClientConfig, AhcWSClientConfigParser }
-import play.api.libs.ws.ssl.TrustStoreConfig
-import play.api.libs.ws._
-import play.api.{ Configuration, Environment, Logger }
+import com.typesafe.sslconfig.ssl.TrustStoreConfig
 
 object CustomWSAPI {
   private[CustomWSAPI] lazy val logger = Logger(getClass)
 
-  def parseWSConfig(config: Configuration, environment: Environment): AhcWSClientConfig = {
+  def parseWSConfig(config: Configuration): AhcWSClientConfig = {
     new AhcWSClientConfigParser(
-      new WSConfigParser(config, environment).parse(),
-      config,
-      environment).parse()
+      new WSConfigParser(config.underlying, getClass.getClassLoader).parse(),
+      config.underlying,
+      getClass.getClassLoader).parse()
   }
 
-  def parseProxyConfig(config: Configuration): Option[WSProxyServer] = for {
-    proxyConfig ← config.getConfig("play.ws.proxy")
-    proxyHost ← proxyConfig.getString("host")
-    proxyPort ← proxyConfig.getInt("port")
-    proxyProtocol = proxyConfig.getString("protocol")
-    proxyPrincipal = proxyConfig.getString("user")
-    proxyPassword = proxyConfig.getString("password")
-    proxyNtlmDomain = proxyConfig.getString("ntlmDomain")
-    proxyEncoding = proxyConfig.getString("encoding")
-    proxyNonProxyHosts = proxyConfig.getStringSeq("nonProxyHosts")
-  } yield DefaultWSProxyServer(proxyHost, proxyPort, proxyProtocol, proxyPrincipal, proxyPassword, proxyNtlmDomain, proxyEncoding, proxyNonProxyHosts)
+  def parseProxyConfig(config: Configuration): Option[WSProxyServer] =
+    config.getOptional[Configuration]("play.ws.proxy").map { proxyConfig ⇒
+      DefaultWSProxyServer(
+        proxyConfig.get[String]("host"),
+        proxyConfig.get[Int]("port"),
+        proxyConfig.getOptional[String]("protocol"),
+        proxyConfig.getOptional[String]("user"),
+        proxyConfig.getOptional[String]("password"),
+        proxyConfig.getOptional[String]("ntlmDomain"),
+        proxyConfig.getOptional[String]("encoding"),
+        proxyConfig.getOptional[Seq[String]]("nonProxyHosts"))
+    }
 
-  def getWS(config: Configuration, environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer): AhcWSAPI = {
-    val clientConfig = parseWSConfig(config, environment)
-    val clientConfigWithTruststore = config.getString("play.cert") match {
+  def getWS(config: Configuration)(implicit mat: Materializer): AhcWSClient = {
+    val clientConfig = parseWSConfig(config)
+    val clientConfigWithTruststore = config.getOptional[String]("play.cert") match {
       case Some(p) ⇒
         logger.warn(
           """Use of "cert" parameter in configuration file is deprecated. Please use:
@@ -48,36 +50,45 @@ object CustomWSAPI {
           """.stripMargin)
         clientConfig.copy(
           wsClientConfig = clientConfig.wsClientConfig.copy(
-            ssl = clientConfig.wsClientConfig.ssl.copy(
-              trustManagerConfig = clientConfig.wsClientConfig.ssl.trustManagerConfig.copy(
-                trustStoreConfigs = clientConfig.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ TrustStoreConfig(filePath = Some(p.toString), data = None)))))
+            ssl = clientConfig.wsClientConfig.ssl.withTrustManagerConfig(
+              clientConfig.wsClientConfig.ssl.trustManagerConfig.withTrustStoreConfigs(
+                clientConfig.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ TrustStoreConfig(filePath = Some(p.toString), data = None)))))
       case None ⇒ clientConfig
     }
-    new AhcWSAPI(environment, clientConfigWithTruststore, lifecycle)(mat)
+    AhcWSClient(clientConfigWithTruststore, None)
   }
 
   def getConfig(config: Configuration, path: String): Configuration = {
     Configuration(
-      config.getConfig(s"play.$path").getOrElse(Configuration.empty).underlying.withFallback(
-        config.getConfig(path).getOrElse(Configuration.empty).underlying))
+      config.getOptional[Configuration](s"play.$path").getOrElse(Configuration.empty).underlying.withFallback(
+        config.getOptional[Configuration](path).getOrElse(Configuration.empty).underlying))
   }
 }
 
-class CustomWSAPI(ws: AhcWSAPI, val proxy: Option[WSProxyServer], config: Configuration, environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) extends WSAPI {
+@Singleton
+class CustomWSAPI(
+    ws: AhcWSClient,
+    val proxy: Option[WSProxyServer],
+    config: Configuration,
+    environment: Environment,
+    lifecycle: ApplicationLifecycle,
+    mat: Materializer) extends WSClient {
   private[CustomWSAPI] lazy val logger = Logger(getClass)
 
   @Inject() def this(config: Configuration, environment: Environment, lifecycle: ApplicationLifecycle, mat: Materializer) =
     this(
-      CustomWSAPI.getWS(config, environment, lifecycle, mat),
+      CustomWSAPI.getWS(config)(mat),
       CustomWSAPI.parseProxyConfig(config),
       config, environment, lifecycle, mat)
+
+  override def close(): Unit = ws.close()
 
   override def url(url: String): WSRequest = {
     val req = ws.url(url)
     proxy.fold(req)(req.withProxyServer)
   }
 
-  override def client: AhcWSClient = ws.client
+  override def underlying[T]: T = ws.underlying[T]
 
   def withConfig(subConfig: Configuration): CustomWSAPI = {
     logger.debug(s"Override WS configuration using $subConfig")

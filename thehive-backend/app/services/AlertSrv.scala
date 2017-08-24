@@ -1,25 +1,27 @@
 package services
 
 import java.nio.file.Files
-import javax.inject.Inject
+import javax.inject.{ Inject, Singleton }
+
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.matching.Regex
+import scala.util.{ Failure, Try }
+
+import play.api.libs.json._
+import play.api.{ Configuration, Logger }
 
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
 import models._
+
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
 import org.elastic4play.services._
-import play.api.libs.json._
-import play.api.{ Configuration, Logger }
-
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.matching.Regex
-import scala.util.{ Failure, Try }
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
@@ -33,6 +35,7 @@ object AlertSrv {
   val dataExtractor: Regex = "^(.*);(.*);(.*)".r
 }
 
+@Singleton
 class AlertSrv(
     templates: Map[String, String],
     alertModel: AlertModel,
@@ -77,7 +80,7 @@ class AlertSrv(
     caseTemplateSrv,
     attachmentSrv,
     connectors,
-    (configuration.getString("datastore.hash.main").get +: configuration.getStringSeq("datastore.hash.extra").get).distinct,
+    (configuration.get[String]("datastore.hash.main") +: configuration.get[Seq[String]]("datastore.hash.extra")).distinct,
     ec,
     mat)
 
@@ -300,7 +303,7 @@ class AlertSrv(
           caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
       }
       .filter {
-        case (caze, _, _) ⇒ caze.status() != CaseStatus.Deleted && caze.resolutionStatus != CaseResolutionStatus.Duplicated
+        case (caze, _, _) ⇒ caze.status() != CaseStatus.Deleted && !caze.resolutionStatus().contains(CaseResolutionStatus.Duplicated)
       }
       .mapAsyncUnordered(5) {
         case (caze, similarIOCCount, similarArtifactCount) ⇒

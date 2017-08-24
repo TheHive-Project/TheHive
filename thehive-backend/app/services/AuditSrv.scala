@@ -2,17 +2,18 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import akka.actor.ActorDSL.{ Act, actor }
-import akka.actor.{ ActorRef, ActorSystem }
+import scala.concurrent.ExecutionContext
+
+import play.api.Logger
+import play.api.libs.json.{ JsBoolean, JsObject, Json }
+
+import akka.actor.Actor
 import models.{ Audit, AuditModel }
+
 import org.elastic4play.controllers.Fields
 import org.elastic4play.models.{ Attribute, BaseEntity, BaseModelDef }
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
-import play.api.Logger
-import play.api.libs.json.{ JsBoolean, JsObject, Json }
-
-import scala.concurrent.ExecutionContext
 
 trait AuditedModel { self: BaseModelDef ⇒
   def attributes: Seq[Attribute[_]]
@@ -34,39 +35,42 @@ trait AuditedModel { self: BaseModelDef ⇒
 }
 
 @Singleton
-class AuditSrv @Inject() (
+class AuditActor @Inject() (
     auditModel: AuditModel,
-    eventSrv: EventSrv,
     createSrv: CreateSrv,
-    implicit val ec: ExecutionContext,
-    implicit val system: ActorSystem) {
-
+    eventSrv: EventSrv,
+    implicit val ec: ExecutionContext) extends Actor {
   object EntityExtractor {
     def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
   }
+  var currentRequestIds = Set.empty[String]
+  private[AuditActor] lazy val logger = Logger(getClass)
 
-  val auditActor: ActorRef = actor(new Act {
+  override def preStart(): Unit = {
+    eventSrv.subscribe(self, classOf[EventMessage])
+    super.preStart()
+  }
 
-    lazy val log = Logger(getClass)
-    var currentRequestIds = Set.empty[String]
+  override def postStop(): Unit = {
+    eventSrv.unsubscribe(self)
+    super.postStop()
+  }
 
-    become {
-      case RequestProcessEnd(request, _) ⇒
-        currentRequestIds = currentRequestIds - Instance.getRequestId(request)
-      case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
-        val requestId = authContext.requestId
-        createSrv[AuditModel, Audit](auditModel, Fields.empty
-          .set("operation", action.toString)
-          .set("details", model.selectAuditedAttributes(details))
-          .set("objectType", model.name)
-          .set("objectId", id)
-          .set("base", JsBoolean(!currentRequestIds.contains(requestId)))
-          .set("startDate", Json.toJson(date))
-          .set("rootId", routing)
-          .set("requestId", requestId))(authContext)
-          .onFailure { case t ⇒ log.error("Audit error", t) }
-        currentRequestIds = currentRequestIds + requestId
-    }
-  })
-  eventSrv.subscribe(auditActor, classOf[EventMessage]) // need to unsubsribe ?
+  override def receive: Receive = {
+    case RequestProcessEnd(request, _) ⇒
+      currentRequestIds = currentRequestIds - Instance.getRequestId(request)
+    case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
+      val requestId = authContext.requestId
+      createSrv[AuditModel, Audit](auditModel, Fields.empty
+        .set("operation", action.toString)
+        .set("details", model.selectAuditedAttributes(details))
+        .set("objectType", model.name)
+        .set("objectId", id)
+        .set("base", JsBoolean(!currentRequestIds.contains(requestId)))
+        .set("startDate", Json.toJson(date))
+        .set("rootId", routing)
+        .set("requestId", requestId))(authContext)
+        .failed.foreach(t ⇒ logger.error("Audit error", t))
+      currentRequestIds = currentRequestIds + requestId
+  }
 }

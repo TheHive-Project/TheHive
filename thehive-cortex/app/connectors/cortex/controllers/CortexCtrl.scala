@@ -3,23 +3,25 @@ package connectors.cortex.controllers
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.ExecutionContext
+
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
-import play.api.mvc.{ Action, AnyContent, Controller }
+import play.api.mvc._
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
+
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ AuxSrv, QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.queryReads
 import connectors.Connector
-import connectors.cortex.models.JsonFormat.{ analyzerFormats, cortexJobFormat }
+import connectors.cortex.models.JsonFormat.analyzerFormats
 import connectors.cortex.services.{ CortexConfig, CortexSrv }
 
 @Singleton
-class CortextCtrl @Inject() (
+class CortexCtrl @Inject() (
     reportTemplateCtrl: ReportTemplateCtrl,
     cortexConfig: CortexConfig,
     cortexSrv: CortexSrv,
@@ -27,10 +29,14 @@ class CortextCtrl @Inject() (
     authenticated: Authenticated,
     fieldsBodyParser: FieldsBodyParser,
     renderer: Renderer,
-    implicit val ec: ExecutionContext) extends Controller with Connector with Status {
+    components: ControllerComponents,
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Connector with Status {
+
   val name = "cortex"
-  val log = Logger(getClass)
+  private[CortexCtrl] lazy val logger = Logger(getClass)
+
   override val status: JsObject = Json.obj("enabled" → true, "servers" → cortexConfig.instances.map(_.name))
+
   val router = SimpleRouter {
     case POST(p"/job") ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)

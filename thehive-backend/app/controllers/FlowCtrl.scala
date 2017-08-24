@@ -2,14 +2,16 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.ExecutionContext
+
 import play.api.http.Status
-import play.api.mvc.{ Action, AnyContent, Controller }
+import play.api.mvc._
+
+import services.FlowSrv
+
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Renderer }
 import org.elastic4play.services.{ AuxSrv, Role }
-import services.FlowSrv
 
 @Singleton
 class FlowCtrl @Inject() (
@@ -17,7 +19,8 @@ class FlowCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    components: ControllerComponents,
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   /**
    * Return audit logs. For each item, include ancestor entities

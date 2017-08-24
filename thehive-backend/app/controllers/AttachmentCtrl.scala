@@ -1,21 +1,22 @@
 package controllers
 
+import java.nio.file.Files
 import javax.inject.{ Inject, Singleton }
 
-import akka.stream.scaladsl.FileIO
-import play.api.Configuration
 import play.api.http.HttpEntity
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.mvc._
+import play.api.{ Configuration, mvc }
+
+import akka.stream.scaladsl.FileIO
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.util.Zip4jConstants
+
 import org.elastic4play.Timed
+import org.elastic4play.controllers.{ Authenticated, Renderer }
+import org.elastic4play.models.AttachmentAttributeFormat
 import org.elastic4play.services.{ AttachmentSrv, Role }
-import org.elastic4play.models.AttachmentAttributeFormat
-import org.elastic4play.models.AttachmentAttributeFormat
-import org.elastic4play.controllers.Authenticated
-import org.elastic4play.controllers.Renderer
 
 /**
  * Controller used to access stored attachments (plain or zipped)
@@ -23,19 +24,25 @@ import org.elastic4play.controllers.Renderer
 @Singleton
 class AttachmentCtrl(
     password: String,
+    tempFileCreator: DefaultTemporaryFileCreator,
     attachmentSrv: AttachmentSrv,
     authenticated: Authenticated,
-    renderer: Renderer) extends Controller {
+    components: ControllerComponents,
+    renderer: Renderer) extends AbstractController(components) {
 
   @Inject() def this(
     configuration: Configuration,
+    tempFileCreator: DefaultTemporaryFileCreator,
     attachmentSrv: AttachmentSrv,
     authenticated: Authenticated,
+    components: ControllerComponents,
     renderer: Renderer) =
     this(
-      configuration.getString("datastore.attachment.password").get,
+      configuration.get[String]("datastore.attachment.password"),
+      tempFileCreator,
       attachmentSrv,
       authenticated,
+      components,
       renderer)
 
   /**
@@ -47,8 +54,8 @@ class AttachmentCtrl(
   def download(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
     if (hash.startsWith("{{")) // angularjs hack
       NoContent
-    else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty())
-      BadRequest("File name is invalid")
+    else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
+      mvc.Results.BadRequest("File name is invalid")
     else
       Result(
         header = ResponseHeader(
@@ -66,12 +73,12 @@ class AttachmentCtrl(
    */
   @Timed("controllers.AttachmentCtrl.downloadZip")
   def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
-    if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty())
+    if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
       BadRequest("File name is invalid")
     else {
-      val f = TemporaryFile("zip", hash).file
-      f.delete()
-      val zipFile = new ZipFile(f)
+      val f = tempFileCreator.create("zip", hash).path
+      Files.delete(f)
+      val zipFile = new ZipFile(f.toFile)
       val zipParams = new ZipParameters
       zipParams.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_FASTEST)
       zipParams.setEncryptFiles(true)
@@ -88,8 +95,8 @@ class AttachmentCtrl(
             "Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
             "Content-Type" → "application/zip",
             "Content-Transfer-Encoding" → "binary",
-            "Content-Length" → f.length.toString)),
-        body   = HttpEntity.Streamed(FileIO.fromPath(f.toPath), Some(f.length), Some("application/zip")))
+            "Content-Length" → Files.size(f).toString)),
+        body   = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip")))
     }
   }
 }

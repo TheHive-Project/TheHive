@@ -6,6 +6,7 @@ import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileAr
 import play.api.Logger
 import play.api.libs.json.{ JsObject, JsValue, Json }
 import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
+import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
 import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 import services.CustomWSAPI
 
@@ -19,7 +20,7 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
 
   logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: ${authentication.isDefined}")
   def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ec: ExecutionContext): Future[A] = {
-    val requestBuilder = ws.url(s"$baseUrl/$uri").withHeaders("auth" → key)
+    val requestBuilder = ws.url(s"$baseUrl/$uri").withHttpHeaders("auth" → key)
     val authenticatedRequestBuilder = authentication.fold(requestBuilder) {
       case (username, password) ⇒ requestBuilder.withAuth(username, password, WSAuthScheme.BASIC)
     }
@@ -70,6 +71,6 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
   }
 
   def waitReport(jobId: String, atMost: Duration)(implicit ec: ExecutionContext): Future[JsObject] = {
-    request(s"api/job/$jobId/waitreport", _.withQueryString("atMost" → atMost.toString).get, r ⇒ r.json.as[JsObject])
+    request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, r ⇒ r.json.as[JsObject])
   }
 }

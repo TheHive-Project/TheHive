@@ -2,17 +2,19 @@ package services
 
 import javax.inject.{ Inject, Provider, Singleton }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
+import play.api.mvc.RequestHeader
+
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import models.{ User, UserModel, UserStatus }
+
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
 import org.elastic4play.{ AuthenticationError, AuthorizationError }
-import play.api.mvc.RequestHeader
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class UserSrv @Inject() (
@@ -44,7 +46,7 @@ class UserSrv @Inject() (
 
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
     dbIndex.getSize(userModel.name).map {
-      case size if size > 0 ⇒ throw AuthenticationError(s"Not authenticated")
+      case size if size > 0 ⇒ throw AuthenticationError(s"Use of initial user is forbidden because users exist in database")
       case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Role.admin, Role.read))
     }
 

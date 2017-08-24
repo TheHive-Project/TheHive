@@ -4,8 +4,7 @@ import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
 import akka.NotUsed
-import akka.actor.ActorDSL._
-import akka.actor.ActorSystem
+import akka.actor.{ Actor, ActorSystem }
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import connectors.misp.JsonFormat._
@@ -13,6 +12,7 @@ import models._
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
+
 import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.services.{ UserSrv ⇒ _, _ }
 import org.elastic4play.utils.RichJson
@@ -23,37 +23,38 @@ import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.api.{ Configuration, Environment, Logger }
-import services._
+import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
 
+import services._
 import scala.collection.immutable
-import scala.concurrent.duration.{ DurationInt, DurationLong, FiniteDuration }
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnection]) {
 
   def this(configuration: Configuration, defaultCaseTemplate: Option[String], globalWS: CustomWSAPI) = this(
-    configuration.getMilliseconds("misp.interval").fold(1.hour)(_.millis),
+    configuration.getOptional[FiniteDuration]("misp.interval").getOrElse(1.hour),
 
     for {
-      cfg ← configuration.getConfig("misp").toSeq
+      cfg ← configuration.getOptional[Configuration]("misp").toSeq
       mispWS = globalWS.withConfig(cfg)
 
-      defaultArtifactTags = cfg.getStringSeq("tags").getOrElse(Nil)
+      defaultArtifactTags = cfg.getOptional[Seq[String]]("tags").getOrElse(Nil)
       name ← cfg.subKeys
 
-      mispConnectionConfig ← Try(cfg.getConfig(name)).toOption.flatten.toSeq
-      url ← mispConnectionConfig.getString("url")
-      key ← mispConnectionConfig.getString("key")
+      mispConnectionConfig ← Try(cfg.get[Configuration](name)).toOption.toSeq
+      url ← mispConnectionConfig.getOptional[String]("url")
+      key ← mispConnectionConfig.getOptional[String]("key")
       instanceWS = mispWS.withConfig(mispConnectionConfig)
-      artifactTags = mispConnectionConfig.getStringSeq("tags").getOrElse(defaultArtifactTags)
-      caseTemplate = mispConnectionConfig.getString("caseTemplate").orElse(defaultCaseTemplate)
+      artifactTags = mispConnectionConfig.getOptional[Seq[String]]("tags").getOrElse(defaultArtifactTags)
+      caseTemplate = mispConnectionConfig.getOptional[String]("caseTemplate").orElse(defaultCaseTemplate)
     } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags))
 
   @Inject def this(configuration: Configuration, httpSrv: CustomWSAPI) =
     this(
       configuration,
-      configuration.getString("misp.caseTemplate"),
+      configuration.getOptional[String]("misp.caseTemplate"),
       httpSrv)
 }
 
@@ -76,12 +77,54 @@ case class MispConnection(
 
   private[misp] def apply(url: String) =
     ws.url(s"$baseUrl/$url")
-      .withHeaders(
+      .withHttpHeaders(
         "Authorization" → key,
         "Accept" → "application/json")
 
 }
 
+/**
+ * This actor listens message from migration (message UpdateMispAlertArtifact) which indicates that artifacts in
+ * MISP event must be retrieved in inserted in alerts.
+ *
+ * @param eventSrv event bus used to receive migration message
+ * @param userSrv user service used to do operations on database without real user request
+ * @param mispSrv misp service to invoke artifact update action
+ * @param ec execution context
+ */
+class UpdateMispAlertArtifactActor @Inject() (
+    eventSrv: EventSrv,
+    userSrv: UserSrv,
+    mispSrv: MispSrv,
+    implicit val ec: ExecutionContext) extends Actor {
+
+  private[UpdateMispAlertArtifactActor] lazy val logger = Logger(getClass)
+  override def preStart(): Unit = {
+    eventSrv.subscribe(self, classOf[UpdateMispAlertArtifact])
+    super.preStart()
+  }
+
+  override def postStop(): Unit = {
+    eventSrv.unsubscribe(self)
+    super.postStop()
+  }
+
+  override def receive: Receive = {
+    case UpdateMispAlertArtifact() ⇒
+      logger.info("UpdateMispAlertArtifact")
+      userSrv
+        .inInitAuthContext { implicit authContext ⇒
+          mispSrv.updateMispAlertArtifact()
+        }
+        .onComplete {
+          case Success(_)     ⇒ logger.info("Artifacts in MISP alerts updated")
+          case Failure(error) ⇒ logger.error("Update MISP alert artifacts error :", error)
+        }
+      ()
+    case msg ⇒
+      logger.info(s"Receiving unexpected message: $msg (${msg.getClass})")
+  }
+}
 @Singleton
 class MispSrv @Inject() (
     mispConfig: MispConfig,
@@ -100,7 +143,7 @@ class MispSrv @Inject() (
     implicit val materializer: Materializer,
     implicit val ec: ExecutionContext) {
 
-  private[misp] val logger = Logger(getClass)
+  private[misp] lazy val logger = Logger(getClass)
   private[misp] lazy val alertSrv = alertSrvProvider.get
 
   private[misp] def getInstanceConfig(name: String): Future[MispConnection] = mispConfig.connections
@@ -109,7 +152,7 @@ class MispSrv @Inject() (
       Future.successful(instanceConfig)
     }
 
-  private[misp] def initScheduler() = {
+  private[misp] def initScheduler(): Unit = {
     val task = system.scheduler.schedule(0.seconds, mispConfig.interval) {
       if (migrationSrv.isReady) {
         logger.info("Update of MISP events is starting ...")
@@ -138,24 +181,6 @@ class MispSrv @Inject() (
   }
 
   initScheduler()
-  eventSrv.subscribe(actor(new Act {
-    become {
-      case UpdateMispAlertArtifact() ⇒
-        logger.info("UpdateMispAlertArtifact")
-        userSrv
-          .inInitAuthContext { implicit authContext ⇒
-            updateMispAlertArtifact()
-          }
-          .onComplete {
-            case Success(_)     ⇒ logger.info("Artifacts in MISP alerts updated")
-            case Failure(error) ⇒ logger.error("Update MISP alert artifacts error :", error)
-          }
-        ()
-      case msg ⇒
-        logger.info(s"Receiving unexpected message: $msg (${msg.getClass})")
-    }
-  }), classOf[UpdateMispAlertArtifact])
-  logger.info("subscribe actor")
 
   def synchronize()(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] = {
     import org.elastic4play.services.QueryDSL._
@@ -435,7 +460,7 @@ class MispSrv @Inject() (
   }
 
   def extractMalwareAttachment(file: FileInputValue)(implicit authContext: AuthContext): FileInputValue = {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     try {
       val zipFile = new ZipFile(file.filepath.toFile)
 
@@ -443,7 +468,7 @@ class MispSrv @Inject() (
         zipFile.setPassword("infected")
 
       // Get the list of file headers from the zip file
-      val fileHeaders = zipFile.getFileHeaders.toList.asInstanceOf[List[FileHeader]]
+      val fileHeaders = zipFile.getFileHeaders.asScala.toList.asInstanceOf[List[FileHeader]]
       val (fileNameHeaders, contentFileHeaders) = fileHeaders.partition { fileHeader ⇒
         fileHeader.getFileName.endsWith(".filename.txt")
       }
@@ -486,22 +511,19 @@ class MispSrv @Inject() (
       .withMethod("GET")
       .stream()
       .flatMap {
-        case response if response.headers.status != 200 ⇒
-          val status = response.headers.status
-          response.body.runWith(Sink.headOption).flatMap { body ⇒
-            val message = body.fold("<no body>")(_.decodeString("UTF-8"))
-            logger.warn(s"MISP attachment $attachmentId can't be downloaded (status $status) : $message")
-            Future.failed(InternalError(s"MISP attachment $attachmentId can't be downloaded (status $status)"))
-          }
+        case response if response.status != 200 ⇒
+          val status = response.status
+          logger.warn(s"MISP attachment $attachmentId can't be downloaded (status $status) : ${response.body}")
+          Future.failed(InternalError(s"MISP attachment $attachmentId can't be downloaded (status $status)"))
         case response ⇒
           val tempFile = tempSrv.newTemporaryFile("misp_attachment", attachmentId)
-          response.body
+          response.bodyAsSource
             .runWith(FileIO.toPath(tempFile))
             .map { ioResult ⇒
               if (!ioResult.wasSuccessful) // throw an exception if transfer failed
                 throw ioResult.getError
-              val contentType = response.headers.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
-              val filename = response.headers.headers
+              val contentType = response.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
+              val filename = response.headers
                 .get("Content-Disposition")
                 .flatMap(_.collectFirst { case fileNameExtractor(name) ⇒ name })
                 .getOrElse("noname")

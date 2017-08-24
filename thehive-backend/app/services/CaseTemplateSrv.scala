@@ -7,12 +7,11 @@ import scala.concurrent.{ ExecutionContext, Future }
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
+import models.{ CaseTemplate, CaseTemplateModel }
 
 import org.elastic4play.NotFoundError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDSL, QueryDef, UpdateSrv }
-
-import models.{ CaseTemplate, CaseTemplateModel }
+import org.elastic4play.services._
 
 @Singleton
 class CaseTemplateSrv @Inject() (
@@ -28,7 +27,7 @@ class CaseTemplateSrv @Inject() (
   def create(fields: Fields)(implicit authContext: AuthContext): Future[CaseTemplate] =
     createSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, fields)
 
-  def get(id: String)(implicit Context: AuthContext): Future[CaseTemplate] =
+  def get(id: String): Future[CaseTemplate] =
     getSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
   def getByName(name: String): Future[CaseTemplate] = {

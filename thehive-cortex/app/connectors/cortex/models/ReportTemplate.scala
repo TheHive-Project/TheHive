@@ -5,7 +5,6 @@ import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.JsObject
 
 import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, EntityDef, ModelDef }
-import org.elastic4play.BadRequestError
 import org.elastic4play.models.BaseEntity
 import play.api.libs.json.JsString
 import scala.concurrent.Future

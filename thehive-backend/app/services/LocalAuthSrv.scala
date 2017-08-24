@@ -2,19 +2,18 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Random
 
 import play.api.libs.json.{ JsObject, JsString }
 import play.api.mvc.RequestHeader
 
-import org.elastic4play.{ AuthenticationError, AuthorizationError }
+import models.{ User, UserModel }
+
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ AuthCapability, AuthContext, AuthSrv, UpdateSrv }
 import org.elastic4play.utils.Hasher
-
-import models.{ User, UserModel }
+import org.elastic4play.{ AuthenticationError, AuthorizationError }
 
 @Singleton
 class LocalAuthSrv @Inject() (

@@ -2,15 +2,17 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
+import play.api.mvc._
+
 import models.UserStatus
-import org.elastic4play.{ AuthorizationError, Timed }
+import services.UserSrv
+
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
-import play.api.mvc.{ Action, Controller, Results }
-import services.UserSrv
-
-import scala.concurrent.{ ExecutionContext, Future }
+import org.elastic4play.{ AuthorizationError, Timed }
 
 @Singleton
 class AuthenticationCtrl @Inject() (
@@ -19,8 +21,9 @@ class AuthenticationCtrl @Inject() (
     authenticated: Authenticated,
     dbIndex: DBIndex,
     renderer: Renderer,
+    components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller {
+    implicit val ec: ExecutionContext) extends AbstractController(components) {
 
   @Timed
   def login: Action[Fields] = Action.async(fieldsBodyParser) { implicit request ⇒

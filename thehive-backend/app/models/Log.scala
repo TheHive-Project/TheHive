@@ -1,16 +1,15 @@
 package models
 
 import java.util.Date
-
 import javax.inject.{ Inject, Singleton }
 
-import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-
-import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, ChildModelDef, EntityDef, HiveEnumeration }
+import play.api.libs.json.{ JsObject, Json }
 
 import models.JsonFormat.logStatusFormat
 import services.AuditedModel
+
+import org.elastic4play.models.{ AttributeDef, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 
 object LogStatus extends Enumeration with HiveEnumeration {
   type Type = Value

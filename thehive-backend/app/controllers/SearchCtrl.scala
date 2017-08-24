@@ -3,13 +3,14 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.ExecutionContext
+
 import play.api.http.Status
-import play.api.mvc.{ Action, Controller }
+import play.api.mvc.{ AbstractController, Action, ControllerComponents }
+
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.services.{ AuxSrv, FindSrv }
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
 import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services._
 
 @Singleton
 class SearchCtrl @Inject() (
@@ -17,8 +18,9 @@ class SearchCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
+    components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Timed
   def find(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
