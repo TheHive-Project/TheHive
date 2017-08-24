@@ -21,7 +21,7 @@ import services.StreamActor.StreamMessages
 
 import org.elastic4play.controllers._
 import org.elastic4play.services.{ AuxSrv, EventSrv, MigrationSrv, Role }
-import org.elastic4play.{ AuthenticationError, Timed }
+import org.elastic4play.Timed
 
 @Singleton
 class StreamCtrl(
@@ -98,16 +98,17 @@ class StreamCtrl(
       Future.successful(BadRequest("Invalid stream id"))
     }
     else {
-      val status = authenticated.expirationStatus(request) match {
-        case ExpirationError if !migrationSrv.isMigrating ⇒ throw AuthenticationError("Not authenticated")
-        case _: ExpirationWarning                         ⇒ 220
-        case _                                            ⇒ OK
-
+      val futureStatus = authenticated.expirationStatus(request) match {
+        case ExpirationError if !migrationSrv.isMigrating ⇒ authenticated.getFromApiKey(request).map(_ ⇒ OK)
+        case _: ExpirationWarning                         ⇒ Future.successful(220)
+        case _                                            ⇒ Future.successful(OK)
       }
 
-      (system.actorSelection(s"/user/stream-$id") ? StreamActor.GetOperations) map {
-        case StreamMessages(operations) ⇒ renderer.toOutput(status, operations)
-        case m                          ⇒ InternalServerError(s"Unexpected message : $m (${m.getClass})")
+      futureStatus.flatMap { status ⇒
+        (system.actorSelection(s"/user/stream-$id") ? StreamActor.GetOperations) map {
+          case StreamMessages(operations) ⇒ renderer.toOutput(status, operations)
+          case m                          ⇒ InternalServerError(s"Unexpected message : $m (${m.getClass})")
+        }
       }
     }
   }
