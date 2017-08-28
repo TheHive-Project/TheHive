@@ -4,31 +4,36 @@ import javax.inject.{ Inject, Singleton }
 
 import connectors.Connector
 import models.{ Alert, Case, UpdateMispAlertArtifact }
+
 import org.elastic4play.JsonFormat.tryWrites
-import org.elastic4play.controllers.Authenticated
+import org.elastic4play.controllers.{ Authenticated, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services._
 import org.elastic4play.{ NotFoundError, Timed }
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc.{ Action, AnyContent, Controller }
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, UrlContext }
+
 import services.{ AlertTransformer, CaseSrv }
 import connectors.misp.JsonFormat.exportedAttributeWrites
-
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class MispCtrl @Inject() (
     mispSrv: MispSrv,
+    mispConfig: MispConfig,
     caseSrv: CaseSrv,
     authenticated: Authenticated,
+    renderer: Renderer,
     eventSrv: EventSrv,
     implicit val ec: ExecutionContext) extends Controller with Connector with Status with AlertTransformer {
 
   override val name: String = "misp"
+
+  override val status: JsObject = Json.obj("enabled" → true, "servers" → mispConfig.connections.map(_.name))
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {
@@ -63,9 +68,8 @@ class MispCtrl @Inject() (
       .get(caseId)
       .flatMap { caze ⇒ mispSrv.export(mispName, caze) }
       .map {
-        case (eventId, exportedAttributes) ⇒ Ok(Json.obj(
-          "eventId" → eventId,
-          "attributes" → exportedAttributes))
+        case (_, exportedAttributes) ⇒
+          renderer.toMultiOutput(CREATED, exportedAttributes)
       }
   }
 

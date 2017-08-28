@@ -71,7 +71,6 @@ object JsonFormat {
       "category" → attribute.category,
       "type" → attribute.tpe,
       "value" → attribute.value.fold[String](identity, _.name),
-      "comment" → attribute.comment,
-      "status" → attribute.status)
+      "comment" → attribute.comment)
   }
 }
