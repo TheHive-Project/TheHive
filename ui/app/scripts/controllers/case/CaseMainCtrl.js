@@ -198,6 +198,12 @@
                 });
             };
 
+            $scope.shareCase = function() {
+                $state.go('app.case.export', {
+                    caseId: $scope.caseId
+                });
+            };
+
             /**
              * A workaround filter to make sure the ngRepeat doesn't order the
              * object keys

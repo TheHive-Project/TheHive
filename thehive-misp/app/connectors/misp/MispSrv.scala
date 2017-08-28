@@ -1,7 +1,21 @@
 package connectors.misp
 
+import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
+
+import scala.collection.immutable
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
+
+import play.api.inject.ApplicationLifecycle
+import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json._
+import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
+import play.api.{ Configuration, Environment, Logger }
 
 import akka.NotUsed
 import akka.actor.{ Actor, ActorSystem }
@@ -12,24 +26,13 @@ import models._
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
+import services._
 
 import org.elastic4play.controllers.{ Fields, FileInputValue }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ UserSrv ⇒ _, _ }
-import org.elastic4play.utils.RichJson
+import org.elastic4play.utils.{ RichFuture, RichJson }
 import org.elastic4play.{ InternalError, NotFoundError }
-import play.api.inject.ApplicationLifecycle
-import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
-import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import play.api.libs.json._
-import play.api.{ Configuration, Environment, Logger }
-import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
-
-import services._
-import scala.collection.immutable
-import scala.concurrent.duration.{ DurationInt, FiniteDuration }
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
 
 class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnection]) {
 
@@ -56,6 +59,8 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
       configuration,
       configuration.getOptional[String]("misp.caseTemplate"),
       httpSrv)
+
+  def getConnection(name: String): Option[MispConnection] = connections.find(_.name == name)
 }
 
 case class MispConnection(
@@ -195,22 +200,21 @@ class MispSrv @Inject() (
       }
       .flatMapConcat {
         case (mispConnection, lastSyncDate) ⇒
-          synchronize(mispConnection, lastSyncDate)
+          synchronize(mispConnection, Some(lastSyncDate))
       }
       .runWith(Sink.seq)
   }
 
   def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
     Source(mispConfig.connections.toList)
-      .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, new Date(1)))
+      .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, None))
       .runWith(Sink.seq)
   }
 
-  def synchronize(mispConnection: MispConnection, lastSyncDate: Date)(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
+  def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
-    val fullSynchro = if (lastSyncDate.getTime == 1) Some(lastSyncDate) else None
     // get events that have been published after the last synchronization
-    getEventsFromDate(mispConnection, lastSyncDate)
+    getEventsFromDate(mispConnection, lastSyncDate.getOrElse(new Date(0)))
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
@@ -221,7 +225,7 @@ class MispSrv @Inject() (
         case (event, alert) ⇒
           logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
           logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
-          getAttributes(mispConnection, event.sourceRef, fullSynchro.orElse(alert.map(_.lastSyncDate())))
+          getAttributes(mispConnection, event.sourceRef, lastSyncDate.flatMap(_ ⇒ alert.map(_.lastSyncDate())))
             .map((event, alert, _))
       }
       .mapAsyncUnordered(1) {
@@ -236,8 +240,8 @@ class MispSrv @Inject() (
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
 
-        // if a related alert exists, update it
-        case (event, Some(alert), attrs) ⇒
+        // if a related alert exists and we follow it or a fullSync, update it
+        case (event, Some(alert), attrs) if alert.follow() || lastSyncDate.isEmpty ⇒
           logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] -
             "type" -
@@ -246,8 +250,8 @@ class MispSrv @Inject() (
             "caseTemplate" -
             "date" +
             ("artifacts" → JsArray(attrs)) +
-            // if this is a full synchronization, don't update alert status
-            ("status" → (if (!alert.follow() || fullSynchro.isDefined) Json.toJson(alert.status())
+            // if this is a full synchronization,  don't update alert status
+            ("status" → (if (lastSyncDate.isEmpty) Json.toJson(alert.status())
             else alert.status() match {
               case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
               case _               ⇒ Json.toJson(AlertStatus.Updated)
@@ -261,7 +265,7 @@ class MispSrv @Inject() (
               for {
                 a ← fAlert
                 // if this is a full synchronization, don't update case status
-                caseFields = if (fullSynchro.isDefined) Fields(alert.toCaseJson).unset("status")
+                caseFields = if (lastSyncDate.isEmpty) Fields(alert.toCaseJson).unset("status")
                 else Fields(alert.toCaseJson)
                 _ ← caseSrv.update(caze, caseFields)
                 _ ← artifactSrv.create(caze, attrs.map(Fields.apply))
@@ -269,6 +273,10 @@ class MispSrv @Inject() (
           })
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
+
+        // if the alert is not followed, do nothing
+        case (_, Some(alert), _) ⇒
+          Future.successful(Success(alert))
       }
   }
 
@@ -532,26 +540,192 @@ class MispSrv @Inject() (
       }
   }
 
+  def exportStatus(caseId: String): Future[Seq[(String, String)]] = {
+    import org.elastic4play.services.QueryDSL._
+    alertSrv.find(and("type" ~= "misp", "case" ~= caseId), Some("all"), Nil)
+      ._1
+      .map { alert ⇒
+        alert.source() → alert.sourceRef()
+      }
+      .runWith(Sink.seq)
+  }
+
+  def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
+    import org.elastic4play.services.QueryDSL._
+    alertSrv.find(and("type" ~= "misp", "case" ~= caseId, "source" ~= mispName), Some("0-1"), Nil)
+      ._1
+      .map { alert ⇒ alert.id → alert.sourceRef() }
+      .runWith(Sink.headOption)
+      .map(alertIdSource ⇒ alertIdSource.map(_._1) → alertIdSource.map(_._2))
+  }
+
+  def export(mispName: String, caze: Case)(implicit authContext: AuthContext): Future[(String, Seq[Try[Artifact]])] = {
+    val mispConnection = mispConfig.getConnection(mispName).getOrElse(sys.error("MISP instance not found"))
+    val dateFormat = new SimpleDateFormat("yy-MM-dd")
+
+    def buildAttributeList(): Future[Seq[ExportedMispAttribute]] = {
+      import org.elastic4play.services.QueryDSL._
+      artifactSrv
+        .find(parent("case", withId(caze.id)), Some("all"), Nil)
+        ._1
+        .map { artifact ⇒
+          val (category, tpe) = artifact2attribute(artifact.dataType(), artifact.data())
+          val value = (artifact.data(), artifact.attachment()) match {
+            case (Some(data), None)       ⇒ Left(data)
+            case (None, Some(attachment)) ⇒ Right(attachment)
+            case _                        ⇒ sys.error("???")
+          }
+          ExportedMispAttribute(artifact, tpe, category, value, artifact.message())
+        }
+        .runWith(Sink.seq)
+    }
+
+    def removeDuplicateAttributes(attributes: Seq[ExportedMispAttribute]): Seq[ExportedMispAttribute] = {
+      val attrIndex = attributes.zipWithIndex
+
+      attrIndex
+        .filter {
+          case (ExportedMispAttribute(_, category, tpe, value, _), index) ⇒ attrIndex.exists {
+            case (ExportedMispAttribute(_, `category`, `tpe`, `value`, _), otherIndex) ⇒ otherIndex >= index
+            case _ ⇒ true
+          }
+        }
+        .map(_._1)
+    }
+
+    def createEvent(title: String, severity: String, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
+      val mispEvent = Json.obj(
+        "Event" → Json.obj(
+          "distribution" → 0,
+          "threat_level_id" → caze.severity().toString,
+          "analysis" → 0,
+          "info" → caze.title(),
+          "date" → dateFormat.format(caze.startDate()),
+          "published" → false,
+          "Attribute" → attributes))
+      mispConnection("events")
+        .post(mispEvent)
+        .map { mispResponse ⇒
+          val eventId = (mispResponse.json \ "Event" \ "id")
+            .asOpt[String]
+            .getOrElse(throw InternalError(s"Unexpected MISP response: ${mispResponse.status} ${mispResponse.statusText}\n${mispResponse.body}"))
+          val messages = (mispResponse.json \ "errors" \ "Attribute")
+            .asOpt[JsObject]
+            .getOrElse(JsObject(Nil))
+            .fields
+            .toMap
+            .mapValues { m ⇒
+              (m \ "value")
+                .asOpt[Seq[String]]
+                .flatMap(_.headOption)
+                .getOrElse(s"Unexpected message format: $m")
+            }
+          val exportedAttributes = attributes.zipWithIndex.collect {
+            case (attr, index) if !messages.contains(index.toString) ⇒ attr
+          }
+          eventId → exportedAttributes
+        }
+    }
+
+    def exportAttribute(eventId: String, attribute: ExportedMispAttribute): Future[Artifact] = {
+      val mispResponse = attribute match {
+        case ExportedMispAttribute(_, _, _, Right(attachment), comment) ⇒
+          attachmentSrv
+            .source(attachment.id)
+            .runReduce(_ ++ _)
+            .flatMap { data ⇒
+              val b64data = java.util.Base64.getEncoder.encodeToString(data.toArray[Byte])
+              val body = Json.obj(
+                "request" → Json.obj(
+                  "event_id" → eventId.toInt,
+                  "category" → "Payload delivery",
+                  "type" → "malware-sample",
+                  "comment" → comment,
+                  "files" → Json.arr(
+                    Json.obj(
+                      "filename" → attachment.name,
+                      "data" → b64data))))
+              mispConnection("events/upload_sample").post(body)
+            }
+        case attr ⇒ mispConnection(s"attributes/add/$eventId").post(Json.toJson(attr))
+
+      }
+
+      mispResponse.map {
+        case response if response.status / 100 == 2 ⇒ attribute.artifact
+        case response ⇒
+          val json = response.json
+          val message = (json \ "message").asOpt[String]
+          val error = (json \ "errors" \ "value").head.asOpt[String]
+          val errorMessage = for (m ← message; e ← error) yield s"$m $e"
+          throw MispExportError(errorMessage orElse message orElse error getOrElse s"Unexpected MISP response: ${response.status} ${response.statusText}\n${response.body}", attribute.artifact)
+      }
+    }
+
+    for {
+      (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
+      attributes ← buildAttributeList()
+      uniqueAttributes = removeDuplicateAttributes(attributes)
+      simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // FIXME used only if event doesn't exist
+      (eventId, existingAttributes) ← maybeEventId.fold {
+        // if no event is associated to this case, create a new one
+        createEvent(caze.title(), caze.severity().toString, caze.startDate(), simpleAttributes).map {
+          case (eventId, exportedAttributes) ⇒ eventId → exportedAttributes.map(_.value.left.get)
+        }
+      } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
+        getAttributes(mispConnection, eventId, None).map { attributes ⇒
+          eventId → attributes.map { attribute ⇒
+            (attribute \ "data").asOpt[String].getOrElse((attribute \ "remoteAttachment" \ "filename").as[String])
+          }
+        }
+      }
+      newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.fold(identity, _.name)))
+      exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(eventId, attr).toTry)
+      alertFields = Fields(Json.obj(
+        "type" → "misp",
+        "source" → mispName,
+        "sourceRef" → eventId,
+        "date" → caze.startDate(),
+        "lastSyncDate" → new Date(0),
+        "case" → caze.id,
+        "title" → caze.title(),
+        "description" → "Case have been exported to MISP",
+        "severity" → caze.severity(),
+        "tags" → caze.tags(),
+        "tlp" → caze.tlp(),
+        "artifacts" → uniqueAttributes.map(_.artifact),
+        "status" → "Imported",
+        "follow" → false))
+      alert ← maybeAlertId.fold(alertSrv.create(alertFields))(alertId ⇒ alertSrv.update(alertId, alertFields))
+    } yield alert.id → exportedArtifact
+  }
+
   def convertAttribute(mispAttribute: MispAttribute): Seq[JsObject] = {
-    val dataType = typeLookup.getOrElse(mispAttribute.tpe, "other")
+    val dataType = attribute2artifact(mispAttribute.tpe)
     val fields = Json.obj(
       "data" → mispAttribute.value,
       "dataType" → dataType,
       "message" → mispAttribute.comment,
       "startDate" → mispAttribute.date,
-      "tags" → Json.arr(s"MISP:type=${mispAttribute.tpe}", s"MISP:category=${mispAttribute.category}"))
+      "tags" → Json.arr(s"MISP:type=${
+        mispAttribute.tpe
+      }", s"MISP:category=${
+        mispAttribute.category
+      }"))
 
     val types = mispAttribute.tpe.split('|').toSeq
     if (types.length > 1) {
       val values = mispAttribute.value.split('|').toSeq
       val typesValues = types.zipAll(values, "noType", "noValue")
       val additionnalMessage = typesValues
-        .map { case (t, v) ⇒ s"$t: $v" }
+        .map {
+          case (t, v) ⇒ s"$t: $v"
+        }
         .mkString("\n")
       typesValues.map {
         case (tpe, value) ⇒
           fields +
-            ("dataType" → JsString(typeLookup.getOrElse(tpe, "other"))) +
+            ("dataType" → JsString(attribute2artifact(tpe))) +
             ("data" → JsString(value)) +
             ("message" → JsString(mispAttribute.comment + "\n" + additionnalMessage))
       }
@@ -561,7 +735,37 @@ class MispSrv @Inject() (
     }
   }
 
-  private val typeLookup = Map(
+  private def artifact2attribute(dataType: String, data: Option[String]): (String, String) = {
+    dataType match {
+      case "filename"     ⇒ "Payload delivery" → "filename"
+      case "fqdn"         ⇒ "Network activity" → "hostname"
+      case "url"          ⇒ "External analysis" → "url"
+      case "user-agent"   ⇒ "Network activity" → "user-agent"
+      case "domain"       ⇒ "Network activity" → "domain"
+      case "ip"           ⇒ "Network activity" → "ip-src"
+      case "mail_subject" ⇒ "Payload delivery" → "email-subject"
+      case "hash" ⇒ data.fold(0)(_.length) match {
+        case 32  ⇒ "Payload delivery" → "md5"
+        case 40  ⇒ "Payload delivery" → "sha1"
+        case 64  ⇒ "Payload delivery" → "sha256"
+        case 56  ⇒ "Payload delivery" → "sha224"
+        case 71  ⇒ "Payload delivery" → "sha384"
+        case 128 ⇒ "Payload delivery" → "sha512"
+        case _   ⇒ "Payload delivery" → "other"
+      }
+      case "mail"     ⇒ "Payload delivery" → "email-src"
+      case "registry" ⇒ "Persistence mechanism" → "regkey"
+      case "uri_path" ⇒ "Network activity" → "uri"
+      case "regexp"   ⇒ "Other" → "other"
+      case "other"    ⇒ "Other" → "other"
+      case "file"     ⇒ "Payload delivery" → "malware-sample"
+      case _          ⇒ "Other" → "other"
+    }
+  }
+
+  private def attribute2artifact(tpe: String): String = attribute2artifactLookup.getOrElse(tpe, "other")
+
+  private lazy val attribute2artifactLookup = Map(
     "md5" → "hash",
     "sha1" → "hash",
     "sha256" → "hash",

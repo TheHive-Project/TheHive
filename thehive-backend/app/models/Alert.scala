@@ -97,7 +97,7 @@ class AlertModel @Inject() (dblists: DBLists)
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
           attrs + ("_id" → JsString(_id))
-        } - "lastSyncDate" - "case" - "status" - "follow"
+        }
       }
   }
 }

@@ -59,6 +59,7 @@ class CaseModel @Inject() (
     artifactModel: Provider[ArtifactModel],
     taskModel: Provider[TaskModel],
     caseSrv: Provider[CaseSrv],
+    alertModel: Provider[AlertModel],
     sequenceSrv: SequenceSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case") with CaseAttributes with AuditedModel { caseModel ⇒
@@ -142,6 +143,22 @@ class CaseModel @Inject() (
         case _                 ⇒ Json.obj()
       }
   }
+
+  private[models] def buildAlertStats(caze: Case): Future[JsObject] = {
+    import org.elastic4play.services.QueryDSL._
+    findSrv(
+      alertModel.get,
+      "case" ~= caze.id,
+      groupByField("type", groupByField("source", selectCount)))
+      .map { alertStatsJson ⇒
+        val alertStats = for {
+          (tpe, JsObject(srcStats)) ← alertStatsJson.value
+          src ← srcStats.keys
+        } yield Json.obj("type" → tpe, "source" → src)
+        Json.obj("alerts" → alertStats)
+      }
+  }
+
   override def getStats(entity: BaseEntity): Future[JsObject] = {
 
     entity match {
@@ -149,9 +166,10 @@ class CaseModel @Inject() (
         for {
           taskStats ← buildTaskStats(caze)
           artifactStats ← buildArtifactStats(caze)
+          alertStats ← buildAlertStats(caze)
           mergeIntoStats ← buildMergeIntoStats(caze)
           mergeFromStats ← buildMergeFromStats(caze)
-        } yield taskStats ++ artifactStats ++ mergeIntoStats ++ mergeFromStats
+        } yield taskStats ++ artifactStats ++ alertStats ++ mergeIntoStats ++ mergeFromStats
       case other ⇒
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
         Future.successful(Json.obj())

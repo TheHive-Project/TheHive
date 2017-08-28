@@ -2,6 +2,10 @@ package connectors.misp
 
 import java.util.Date
 
+import models.Artifact
+
+import org.elastic4play.services.Attachment
+
 case class MispAlert(
   source: String,
   sourceRef: String,
@@ -23,3 +27,12 @@ case class MispAttribute(
   comment: String,
   value: String,
   tags: Seq[String])
+
+case class ExportedMispAttribute(
+  artifact: Artifact,
+  tpe: String,
+  category: String,
+  value: Either[String, Attachment],
+  comment: Option[String])
+
+case class MispExportError(message: String, artifact: Artifact) extends Exception(message)
