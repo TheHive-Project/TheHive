@@ -23,7 +23,9 @@ import org.elastic4play.{ NotFoundError, Timed }
 
 @Singleton
 class MispCtrl @Inject() (
+    mispSynchro: MispSynchro,
     mispSrv: MispSrv,
+    mispExport: MispExport,
     mispConfig: MispConfig,
     caseSrv: CaseSrv,
     authenticated: Authenticated,
@@ -47,13 +49,13 @@ class MispCtrl @Inject() (
 
   @Timed
   def syncAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
-    mispSrv.synchronize()
+    mispSynchro.synchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
   @Timed
   def syncAllAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
-    mispSrv.fullSynchronize()
+    mispSynchro.fullSynchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
@@ -67,7 +69,7 @@ class MispCtrl @Inject() (
   def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
     caseSrv
       .get(caseId)
-      .flatMap { caze ⇒ mispSrv.export(mispName, caze) }
+      .flatMap { caze ⇒ mispExport.export(mispName, caze) }
       .map {
         case (_, exportedAttributes) ⇒
           renderer.toMultiOutput(CREATED, exportedAttributes)
