@@ -39,7 +39,7 @@ object JsonFormat {
       isPublished,
       s"#$eventId ${info.trim}",
       s"Imported from MISP Event #$eventId, created at $date",
-      threatLevel.toLong,
+      4 - threatLevel.toLong,
       alertTags,
       tlp,
       "")

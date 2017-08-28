@@ -71,11 +71,11 @@ class MispExport @Inject() (
       .map(_._1)
   }
 
-  def createEvent(mispConnection: MispConnection, title: String, severity: String, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
+  def createEvent(mispConnection: MispConnection, title: String, severity: Long, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution" → 0,
-        "threat_level_id" → severity,
+        "threat_level_id" → (4 - severity),
         "analysis" → 0,
         "info" → title,
         "date" → dateFormat.format(date),
@@ -150,7 +150,7 @@ class MispExport @Inject() (
       simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // FIXME used only if event doesn't exist
       (eventId, existingAttributes) ← maybeEventId.fold {
         // if no event is associated to this case, create a new one
-        createEvent(mispConnection, caze.title(), caze.severity().toString, caze.startDate(), simpleAttributes).map {
+        createEvent(mispConnection, caze.title(), caze.severity(), caze.startDate(), simpleAttributes).map {
           case (eventId, exportedAttributes) ⇒ eventId → exportedAttributes.map(_.value.left.get)
         }
       } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
