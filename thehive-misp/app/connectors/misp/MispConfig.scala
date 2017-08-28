@@ -1,6 +1,6 @@
 package connectors.misp
 
-import javax.inject.Inject
+import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.util.Try
@@ -9,6 +9,7 @@ import play.api.Configuration
 
 import services.CustomWSAPI
 
+@Singleton
 class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnection]) {
 
   def this(configuration: Configuration, defaultCaseTemplate: Option[String], globalWS: CustomWSAPI) = this(

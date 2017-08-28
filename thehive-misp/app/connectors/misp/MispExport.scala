@@ -2,7 +2,7 @@ package connectors.misp
 
 import java.text.SimpleDateFormat
 import java.util.Date
-import javax.inject.Inject
+import javax.inject.{ Inject, Provider, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -21,16 +21,18 @@ import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ AttachmentSrv, AuthContext }
 import org.elastic4play.utils.RichFuture
 
+@Singleton
 class MispExport @Inject() (
     mispConfig: MispConfig,
     mispSrv: MispSrv,
     artifactSrv: ArtifactSrv,
-    alertSrv: AlertSrv,
+    alertSrvProvider: Provider[AlertSrv],
     attachmentSrv: AttachmentSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends MispConverter {
 
   lazy val dateFormat = new SimpleDateFormat("yy-MM-dd")
+  private[misp] lazy val alertSrv = alertSrvProvider.get
 
   def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
     import org.elastic4play.services.QueryDSL._

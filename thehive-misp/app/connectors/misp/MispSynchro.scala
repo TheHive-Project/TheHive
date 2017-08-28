@@ -1,7 +1,7 @@
 package connectors.misp
 
 import java.util.Date
-import javax.inject.Inject
+import javax.inject.{ Inject, Provider, Singleton }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
@@ -23,13 +23,14 @@ import JsonFormat.mispAlertWrites
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ AuthContext, MigrationSrv, TempSrv }
 
+@Singleton
 class MispSynchro @Inject() (
     mispConfig: MispConfig,
     migrationSrv: MigrationSrv,
     mispSrv: MispSrv,
     caseSrv: CaseSrv,
     artifactSrv: ArtifactSrv,
-    alertSrv: AlertSrv,
+    alertSrvProvider: Provider[AlertSrv],
     userSrv: UserSrv,
     tempSrv: TempSrv,
     lifecycle: ApplicationLifecycle,
@@ -38,6 +39,7 @@ class MispSynchro @Inject() (
     implicit val mat: Materializer) {
 
   private[misp] lazy val logger = Logger(getClass)
+  private[misp] lazy val alertSrv = alertSrvProvider.get
 
   private[misp] def initScheduler(): Unit = {
     val task = system.scheduler.schedule(0.seconds, mispConfig.interval) {
