@@ -102,7 +102,7 @@
 
                 return _.map(failures, function(observable) {
                     return {
-                        data: observable.object.data,
+                        data: observable.object.dataType === 'file' ? observable.object.attachment.name : observable.object.data,
                         type: observable.type
                     };
                 });
