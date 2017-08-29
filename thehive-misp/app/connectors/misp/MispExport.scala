@@ -18,7 +18,8 @@ import akka.stream.Materializer
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ AttachmentSrv, AuthContext }
+import org.elastic4play.services.{ Attachment, AttachmentSrv, AuthContext }
+import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.utils.RichFuture
 
 @Singleton
@@ -41,23 +42,6 @@ class MispExport @Inject() (
       .map { alert ⇒ alert.id → alert.sourceRef() }
       .runWith(Sink.headOption)
       .map(alertIdSource ⇒ alertIdSource.map(_._1) → alertIdSource.map(_._2))
-  }
-
-  def buildAttributeList(caze: Case): Future[Seq[ExportedMispAttribute]] = {
-    import org.elastic4play.services.QueryDSL._
-    artifactSrv
-      .find(parent("case", withId(caze.id)), Some("all"), Nil)
-      ._1
-      .map { artifact ⇒
-        val (category, tpe) = fromArtifact(artifact.dataType(), artifact.data())
-        val value = (artifact.data(), artifact.attachment()) match {
-          case (Some(data), None)       ⇒ Left(data)
-          case (None, Some(attachment)) ⇒ Right(attachment)
-          case _                        ⇒ sys.error("???")
-        }
-        ExportedMispAttribute(artifact, tpe, category, value, artifact.message())
-      }
-      .runWith(Sink.seq)
   }
 
   def removeDuplicateAttributes(attributes: Seq[ExportedMispAttribute]): Seq[ExportedMispAttribute] = {
@@ -147,39 +131,64 @@ class MispExport @Inject() (
 
     for {
       (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
-      attributes ← buildAttributeList(caze)
+      _ = println(s"[0] $maybeAlertId $maybeEventId")
+      attributes ← mispSrv.getAttributesFromCase(caze)
+      _ = println(s"[1] $attributes")
       uniqueAttributes = removeDuplicateAttributes(attributes)
-      simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // FIXME used only if event doesn't exist
+      _ = println(s"[2] $uniqueAttributes")
       (eventId, existingAttributes) ← maybeEventId.fold {
+        val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
+        println(s"[3] $simpleAttributes")
         // if no event is associated to this case, create a new one
         createEvent(mispConnection, caze.title(), caze.severity(), caze.startDate(), simpleAttributes).map {
-          case (eventId, exportedAttributes) ⇒ eventId → exportedAttributes.map(_.value.left.get)
+          case (eventId, exportedAttributes) ⇒ eventId → exportedAttributes.map(_.value.map(_.name))
         }
       } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
-        mispSrv.getAttributes(mispConnection, eventId, None).map { attributes ⇒
-          eventId → attributes.map { attribute ⇒
-            (attribute \ "data").asOpt[String].getOrElse((attribute \ "remoteAttachment" \ "filename").as[String])
+        mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes ⇒
+          eventId → attributes.map {
+            case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             ⇒ Left(data)
+            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             ⇒ Right(filename)
+            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) ⇒ Right(filename)
           }
         }
       }
-      newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.fold(identity, _.name)))
+      _ = println(s"[4] $existingAttributes")
+      newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
+      _ = println(s"[5] $newAttributes")
       exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
-      alertFields = Fields(Json.obj(
-        "type" → "misp",
-        "source" → mispName,
-        "sourceRef" → eventId,
-        "date" → caze.startDate(),
-        "lastSyncDate" → new Date(0),
-        "case" → caze.id,
-        "title" → caze.title(),
-        "description" → "Case have been exported to MISP",
-        "severity" → caze.severity(),
-        "tags" → caze.tags(),
-        "tlp" → caze.tlp(),
-        "artifacts" → uniqueAttributes.map(_.artifact),
-        "status" → "Imported",
-        "follow" → false))
-      alert ← maybeAlertId.fold(alertSrv.create(alertFields))(alertId ⇒ alertSrv.update(alertId, alertFields))
+      _ = println(s"[6] $exportedArtifact")
+      alert ← maybeAlertId.fold {
+        alertSrv.create(Fields(Json.obj(
+          "type" → "misp",
+          "source" → mispName,
+          "sourceRef" → eventId,
+          "date" → caze.startDate(),
+          "lastSyncDate" → new Date(0),
+          "case" → caze.id,
+          "title" → caze.title(),
+          "description" → "Case have been exported to MISP",
+          "severity" → caze.severity(),
+          "tags" → caze.tags(),
+          "tlp" → caze.tlp(),
+          "artifacts" → uniqueAttributes.map(_.artifact),
+          "status" → "Imported",
+          "follow" → false)))
+      } { alertId ⇒
+        val artifacts = uniqueAttributes.map { exportedArtifact ⇒
+          Json.obj(
+            "data" → exportedArtifact.artifact.data(),
+            "dataType" → exportedArtifact.artifact.dataType(),
+            "message" → exportedArtifact.artifact.message(),
+            "startDate" → exportedArtifact.artifact.startDate(),
+            "attachment" → exportedArtifact.artifact.attachment(),
+            "tlp" → exportedArtifact.artifact.tlp(),
+            "tags" → exportedArtifact.artifact.tags(),
+            "ioc" → exportedArtifact.artifact.ioc())
+        }
+        alertSrv.update(alertId, Fields(Json.obj(
+          "artifacts" → artifacts,
+          "status" → "Imported")))
+      }
     } yield alert.id → exportedArtifact
   }
 }

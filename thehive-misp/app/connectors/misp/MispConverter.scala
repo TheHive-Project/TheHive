@@ -1,37 +1,49 @@
 package connectors.misp
 
-import play.api.libs.json.{ JsObject, JsString, Json }
-
 trait MispConverter {
-  def convertAttribute(mispAttribute: MispAttribute): Seq[JsObject] = {
-    val dataType = toArtifact(mispAttribute.tpe)
+  def convertAttribute(mispAttribute: MispAttribute): Seq[MispArtifact] = {
     val tags = Seq(s"MISP:type=${mispAttribute.tpe}", s"MISP:category=${mispAttribute.category}")
-    val fields = Json.obj(
-      "data" → mispAttribute.value,
-      "dataType" → dataType,
-      "message" → mispAttribute.comment,
-      "startDate" → mispAttribute.date,
-      "tags" → tags)
-
-    val types = mispAttribute.tpe.split('|').toSeq
-    if (types.length > 1) {
-      val values = mispAttribute.value.split('|').toSeq
-      val typesValues = types.zipAll(values, "noType", "noValue")
-      val additionnalMessage = typesValues
-        .map {
-          case (t, v) ⇒ s"$t: $v"
-        }
-        .mkString("\n")
-      typesValues.map {
-        case (tpe, value) ⇒
-          fields +
-            ("dataType" → JsString(toArtifact(tpe))) +
-            ("data" → JsString(value)) +
-            ("message" → JsString(mispAttribute.comment + "\n" + additionnalMessage))
-      }
+    if (mispAttribute.tpe == "attachment" || mispAttribute.tpe == "malware-sample") {
+      Seq(
+        MispArtifact(
+          value     = RemoteAttachmentArtifact(mispAttribute.value.split("\\|").head, mispAttribute.id, mispAttribute.tpe),
+          dataType  = "file",
+          message   = mispAttribute.comment,
+          tlp       = 0,
+          tags      = tags ++ mispAttribute.tags,
+          startDate = mispAttribute.date))
     }
     else {
-      Seq(fields)
+      val dataType = toArtifact(mispAttribute.tpe)
+      val artifact =
+        MispArtifact(
+          value     = SimpleArtifactData(mispAttribute.value),
+          dataType  = dataType,
+          message   = mispAttribute.comment,
+          tlp       = 0,
+          tags      = tags ++ mispAttribute.tags,
+          startDate = mispAttribute.date)
+
+      val types = mispAttribute.tpe.split('|').toSeq
+      if (types.length > 1) {
+        val values = mispAttribute.value.split('|').toSeq
+        val typesValues = types.zipAll(values, "noType", "noValue")
+        val additionnalMessage = typesValues
+          .map {
+            case (t, v) ⇒ s"$t: $v"
+          }
+          .mkString("\n")
+        typesValues.map {
+          case (tpe, value) ⇒
+            artifact.copy(
+              dataType = toArtifact(tpe),
+              value    = SimpleArtifactData(value),
+              message  = mispAttribute.comment + "\n" + additionnalMessage)
+        }
+      }
+      else {
+        Seq(artifact)
+      }
     }
   }
 

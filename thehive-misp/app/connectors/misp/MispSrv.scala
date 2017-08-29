@@ -23,8 +23,7 @@ import net.lingala.zip4j.model.FileHeader
 import services._
 
 import org.elastic4play.controllers.{ Fields, FileInputValue }
-import org.elastic4play.services.{ AuthContext, TempSrv }
-import org.elastic4play.utils.RichJson
+import org.elastic4play.services.{ Attachment, AuthContext, TempSrv }
 import org.elastic4play.{ InternalError, NotFoundError }
 
 @Singleton
@@ -74,14 +73,35 @@ class MispSrv @Inject() (
         val eventsSize = events.size
         if (eventJsonSize != eventsSize)
           logger.warn(s"MISP returns $eventJsonSize events but only $eventsSize contain valid data")
-        events.toList
+        events.filter(_.lastSyncDate after fromDate).toList
       }
   }
 
-  def getAttributes(
+  def getAttributesFromCase(caze: Case): Future[Seq[ExportedMispAttribute]] = {
+    import org.elastic4play.services.QueryDSL._
+    val (artifacts, totalArtifacts) = artifactSrv
+      .find(and(withParent(caze), "status" ~= "Ok"), Some("all"), Nil)
+    totalArtifacts.foreach(t ⇒ println(s"Case ${caze.id} has $t artifact(s)"))
+    artifacts
+      .map { artifact ⇒
+        println(s"[-] $artifact")
+        val (category, tpe) = fromArtifact(artifact.dataType(), artifact.data())
+        val value = (artifact.data(), artifact.attachment()) match {
+          case (Some(data), None)       ⇒ Left(data)
+          case (None, Some(attachment)) ⇒ Right(attachment)
+          case _ ⇒
+            logger.error(s"Artifact $artifact has neither data nor attachment")
+            sys.error("???")
+        }
+        ExportedMispAttribute(artifact, tpe, category, value, artifact.message())
+      }
+      .runWith(Sink.seq)
+  }
+
+  def getAttributesFromMisp(
     mispConnection: MispConnection,
     eventId: String,
-    fromDate: Option[Date]): Future[Seq[JsObject]] = {
+    fromDate: Option[Date]): Future[Seq[MispArtifact]] = {
 
     val date = fromDate.fold(0L)(_.getTime / 1000)
 
@@ -94,27 +114,23 @@ class MispSrv @Inject() (
       // add ("deleted" → "only") to see only deleted attributes
       .map { response ⇒
         val refDate = fromDate.getOrElse(new Date(0))
-        val artifactTags = JsString(s"src:${mispConnection.name}") +: JsArray(mispConnection.artifactTags.map(JsString))
+        val artifactTags = s"src:${mispConnection.name}" +: mispConnection.artifactTags
         (Json.parse(response.body) \ "response" \\ "Attribute")
           .flatMap(_.as[Seq[MispAttribute]])
           .filter(_.date after refDate)
-          .flatMap {
-            case a if a.tpe == "attachment" || a.tpe == "malware-sample" ⇒
-              Seq(
-                Json.obj(
-                  "dataType" → "file",
-                  "message" → a.comment,
-                  "tags" → (artifactTags.value ++ a.tags.map(JsString)),
-                  "remoteAttachment" → Json.obj(
-                    "filename" → a.value,
-                    "reference" → a.id,
-                    "type" → a.tpe),
-                  "startDate" → a.date))
-            case a ⇒ convertAttribute(a).map { j ⇒
-              val tags = artifactTags ++ (j \ "tags").asOpt[JsArray].getOrElse(JsArray(Nil))
-              j.setIfAbsent("tlp", 2L) + ("tags" → tags)
-            }
+          .flatMap(convertAttribute)
+          .groupBy {
+            case MispArtifact(SimpleArtifactData(data), dataType, _, _, _, _)                             ⇒ dataType → Right(data)
+            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), dataType, _, _, _, _)             ⇒ dataType → Left(filename)
+            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), dataType, _, _, _, _) ⇒ dataType → Left(filename)
           }
+          .values
+          .map { mispArtifact ⇒
+            mispArtifact.head.copy(
+              tags = (mispArtifact.head.tags ++ artifactTags).distinct,
+              tlp  = 2L)
+          }
+          .toSeq
       }
   }
 
@@ -207,7 +223,7 @@ class MispSrv @Inject() (
       else {
         getInstanceConfig(alert.source())
           .flatMap { mcfg ⇒
-            getAttributes(mcfg, alert.sourceRef(), None)
+            getAttributesFromMisp(mcfg, alert.sourceRef(), None)
           }
           .map(alert → _)
           .recover {
@@ -224,7 +240,7 @@ class MispSrv @Inject() (
       .mapAsyncUnordered(5) {
         case (alert, artifacts) ⇒
           logger.info(s"Updating alert ${alert.id}")
-          alertSrv.update(alert.id, Fields.empty.set("artifacts", JsArray(artifacts)))
+          alertSrv.update(alert.id, Fields.empty.set("artifacts", Json.toJson(artifacts)))
             .recover {
               case t ⇒ logger.error(s"Update alert ${alert.id} fail", t)
             }
@@ -276,10 +292,10 @@ class MispSrv @Inject() (
     }
   }
 
+  private[MispSrv] val fileNameExtractor = """attachment; filename="(.*)"""".r
   def downloadAttachment(
     mispConnection: MispConnection,
     attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
-    val fileNameExtractor = """attachment; filename="(.*)"""".r
 
     mispConnection(s"attributes/download/$attachmentId")
       .withMethod("GET")

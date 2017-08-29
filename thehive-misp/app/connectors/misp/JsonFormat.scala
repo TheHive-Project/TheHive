@@ -6,6 +6,8 @@ import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
 
+import org.elastic4play.services.JsonFormat.attachmentFormat
+
 object JsonFormat {
 
   implicit val mispAlertReads: Reads[MispAlert] = Reads[MispAlert] { json ⇒
@@ -64,7 +66,7 @@ object JsonFormat {
       date,
       comment,
       value,
-      tags :+ s"MISP:category$category" :+ s"MISP:type=$tpe"))
+      tags))
 
   implicit val exportedAttributeWrites: Writes[ExportedMispAttribute] = Writes[ExportedMispAttribute] { attribute ⇒
     Json.obj(
@@ -72,5 +74,18 @@ object JsonFormat {
       "type" → attribute.tpe,
       "value" → attribute.value.fold[String](identity, _.name),
       "comment" → attribute.comment)
+  }
+
+  implicit val mispArtifactWrites: Writes[MispArtifact] = OWrites[MispArtifact] { artifact ⇒
+    Json.obj(
+      "dataType" → artifact.dataType,
+      "message" → artifact.message,
+      "tlp" → artifact.tlp,
+      "tags" → artifact.tags,
+      "startDate" → artifact.startDate) + (artifact.value match {
+        case SimpleArtifactData(data)                           ⇒ "data" → JsString(data)
+        case RemoteAttachmentArtifact(filename, reference, tpe) ⇒ "remoteAttachment" → Json.obj("filename" → filename, "reference" → reference, "type" → tpe)
+        case AttachmentArtifact(attachment)                     ⇒ "attachment" → Json.toJson(attachment)
+      })
   }
 }

@@ -16,12 +16,13 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
-import models.{ Alert, AlertStatus }
+import connectors.misp.JsonFormat.mispArtifactWrites
+import models.{ Alert, AlertStatus, Artifact, CaseStatus }
 import services.{ AlertSrv, ArtifactSrv, CaseSrv, UserSrv }
 import JsonFormat.mispAlertWrites
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ AuthContext, MigrationSrv, TempSrv }
+import org.elastic4play.services.{ Attachment, AuthContext, MigrationSrv, TempSrv }
 
 @Singleton
 class MispSynchro @Inject() (
@@ -95,6 +96,31 @@ class MispSynchro @Inject() (
       .runWith(Sink.seq)
   }
 
+  def updateArtifacts(mispConnection: MispConnection, caseId: String, mispArtifacts: Seq[MispArtifact])(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] = {
+    import org.elastic4play.services.QueryDSL._
+
+    for {
+      // Either data or filename
+      existingArtifacts: Seq[Either[String, String]] ← artifactSrv.find(and(withParent("case", caseId), "status" ~= "Ok"), Some("all"), Nil)._1.map { artifact ⇒
+        artifact.data().map(Left.apply).getOrElse(Right(artifact.attachment().get.name))
+      }
+        .runWith(Sink.seq)
+      newAttributes ← Future.traverse(mispArtifacts) {
+        case artifact @ MispArtifact(SimpleArtifactData(data), _, _, _, _, _) if !existingArtifacts.contains(Right(data))                                ⇒ Future.successful(Fields(Json.toJson(artifact).as[JsObject]))
+        case artifact @ MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) if !existingArtifacts.contains(Left(filename)) ⇒ Future.successful(Fields(Json.toJson(artifact).as[JsObject]))
+        case artifact @ MispArtifact(RemoteAttachmentArtifact(filename, reference, tpe), _, _, _, _, _) if !existingArtifacts.contains(Left(filename)) ⇒
+          mispSrv.downloadAttachment(mispConnection, reference)
+            .map {
+              case fiv if tpe == "malware-sample" ⇒ mispSrv.extractMalwareAttachment(fiv)
+              case fiv                            ⇒ fiv
+            }
+            .map(fiv ⇒ Fields(Json.toJson(artifact).as[JsObject]).unset("remoteAttachment").set("attachment", fiv))
+        case _ ⇒ Future.successful(Fields.empty)
+      }
+      createdArtifacts ← artifactSrv.create(caseId, newAttributes.filterNot(_.isEmpty))
+    } yield createdArtifacts
+  }
+
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
     // get events that have been published after the last synchronization
@@ -109,7 +135,7 @@ class MispSynchro @Inject() (
         case (event, alert) ⇒
           logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
           logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
-          mispSrv.getAttributes(mispConnection, event.sourceRef, lastSyncDate.flatMap(_ ⇒ alert.map(_.lastSyncDate())))
+          mispSrv.getAttributesFromMisp(mispConnection, event.sourceRef, lastSyncDate.flatMap(_ ⇒ alert.map(_.lastSyncDate())))
             .map((event, alert, _))
       }
       .mapAsyncUnordered(1) {
@@ -119,48 +145,42 @@ class MispSynchro @Inject() (
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
-            ("artifacts" → JsArray(attrs))
+            ("artifacts" → Json.toJson(attrs))
           alertSrv.create(Fields(alertJson))
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
 
-        // if a related alert exists and we follow it or a fullSync, update it
-        case (event, Some(alert), attrs) if alert.follow() || lastSyncDate.isEmpty ⇒
+        case (event, Some(alert), attrs) ⇒
           logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
-          val alertJson = Json.toJson(event).as[JsObject] -
-            "type" -
-            "source" -
-            "sourceRef" -
-            "caseTemplate" -
-            "date" +
-            ("artifacts" → JsArray(attrs)) +
-            // if this is a full synchronization,  don't update alert status
-            ("status" → (if (lastSyncDate.isEmpty) Json.toJson(alert.status())
-            else alert.status() match {
-              case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
-              case _               ⇒ Json.toJson(AlertStatus.Updated)
-            }))
-          logger.debug(s"Update alert ${alert.id} with\n$alertJson")
-          val fAlert = alertSrv.update(alert.id, Fields(alertJson))
-          // if a case have been created, update it
-          (alert.caze() match {
-            case None ⇒ fAlert
-            case Some(caze) ⇒
+
+          alert.caze().fold[Future[Boolean]](Future.successful(lastSyncDate.isDefined && attrs.nonEmpty && alert.follow())) {
+            case caze if alert.follow() ⇒
               for {
-                a ← fAlert
-                // if this is a full synchronization, don't update case status
-                caseFields = if (lastSyncDate.isEmpty) Fields(alert.toCaseJson).unset("status")
-                else Fields(alert.toCaseJson)
-                _ ← caseSrv.update(caze, caseFields)
-                _ ← artifactSrv.create(caze, attrs.map(Fields.apply))
-              } yield a
-          })
+                addedArtifacts ← updateArtifacts(mispConnection, caze, attrs)
+                updateStatus = lastSyncDate.nonEmpty && addedArtifacts.exists(_.isSuccess)
+                _ ← if (updateStatus) caseSrv.update(caze, Fields.empty.set("status", CaseStatus.Open.toString)) else Future.successful(())
+              } yield updateStatus
+            case _ ⇒ Future.successful(false)
+          }
+            .flatMap { updateStatus ⇒
+              val artifacts = JsArray(alert.artifacts() ++ attrs.map(Json.toJson(_)))
+              val alertJson = Json.toJson(event).as[JsObject] -
+                "type" -
+                "source" -
+                "sourceRef" -
+                "caseTemplate" -
+                "date" +
+                ("artifacts" → artifacts) +
+                ("status" → (if (!updateStatus) Json.toJson(alert.status())
+                else alert.status() match {
+                  case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
+                  case _               ⇒ Json.toJson(AlertStatus.Updated)
+                }))
+              logger.debug(s"Update alert ${alert.id} with\n$alertJson")
+              alertSrv.update(alert.id, Fields(alertJson))
+            }
             .map(Success(_))
             .recover { case t ⇒ Failure(t) }
-
-        // if the alert is not followed, do nothing
-        case (_, Some(alert), _) ⇒
-          Future.successful(Success(alert))
       }
   }
 }
