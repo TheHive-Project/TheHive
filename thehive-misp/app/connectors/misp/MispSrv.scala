@@ -79,12 +79,10 @@ class MispSrv @Inject() (
 
   def getAttributesFromCase(caze: Case): Future[Seq[ExportedMispAttribute]] = {
     import org.elastic4play.services.QueryDSL._
-    val (artifacts, totalArtifacts) = artifactSrv
+    artifactSrv
       .find(and(withParent(caze), "status" ~= "Ok"), Some("all"), Nil)
-    totalArtifacts.foreach(t ⇒ println(s"Case ${caze.id} has $t artifact(s)"))
-    artifacts
+      ._1
       .map { artifact ⇒
-        println(s"[-] $artifact")
         val (category, tpe) = fromArtifact(artifact.dataType(), artifact.data())
         val value = (artifact.data(), artifact.attachment()) match {
           case (Some(data), None)       ⇒ Left(data)

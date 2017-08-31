@@ -131,14 +131,10 @@ class MispExport @Inject() (
 
     for {
       (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
-      _ = println(s"[0] $maybeAlertId $maybeEventId")
       attributes ← mispSrv.getAttributesFromCase(caze)
-      _ = println(s"[1] $attributes")
       uniqueAttributes = removeDuplicateAttributes(attributes)
-      _ = println(s"[2] $uniqueAttributes")
       (eventId, existingAttributes) ← maybeEventId.fold {
         val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
-        println(s"[3] $simpleAttributes")
         // if no event is associated to this case, create a new one
         createEvent(mispConnection, caze.title(), caze.severity(), caze.startDate(), simpleAttributes).map {
           case (eventId, exportedAttributes) ⇒ eventId → exportedAttributes.map(_.value.map(_.name))
@@ -152,11 +148,9 @@ class MispExport @Inject() (
           }
         }
       }
-      _ = println(s"[4] $existingAttributes")
       newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
-      _ = println(s"[5] $newAttributes")
       exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
-      _ = println(s"[6] $exportedArtifact")
+      alert ← maybeAlertId.fold {
       alert ← maybeAlertId.fold {
         alertSrv.create(Fields(Json.obj(
           "type" → "misp",
