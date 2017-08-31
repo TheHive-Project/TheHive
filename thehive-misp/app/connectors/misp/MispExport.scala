@@ -151,7 +151,6 @@ class MispExport @Inject() (
       newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
       exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
       alert ← maybeAlertId.fold {
-      alert ← maybeAlertId.fold {
         alertSrv.create(Fields(Json.obj(
           "type" → "misp",
           "source" → mispName,
