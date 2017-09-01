@@ -4,6 +4,7 @@ import java.util.Date
 
 import models.Artifact
 
+import org.elastic4play.ErrorWithObject
 import org.elastic4play.services.Attachment
 import org.elastic4play.utils.Hash
 
@@ -55,5 +56,4 @@ case class MispArtifact(
   tags: Seq[String],
   startDate: Date)
 
-case class MispExportError(message: String, artifact: Artifact) extends Exception(message)
-
+case class MispExportError(message: String, artifact: Artifact) extends ErrorWithObject(message, artifact.attributes)
