@@ -12,7 +12,7 @@ import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, UrlContext }
 
 import connectors.Connector
-import models.{ Alert, Case, UpdateMispAlertArtifact }
+import models.{ Alert, Case, Roles, UpdateMispAlertArtifact }
 import services.{ AlertTransformer, CaseSrv }
 
 import org.elastic4play.JsonFormat.tryWrites
@@ -48,25 +48,25 @@ class MispCtrl @Inject() (
   }
 
   @Timed
-  def syncAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
+  def syncAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     mispSynchro.synchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
   @Timed
-  def syncAllAlerts: Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
+  def syncAllAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     mispSynchro.fullSynchronize()
       .map { m ⇒ Ok(Json.toJson(m)) }
   }
 
   @Timed
-  def syncArtifacts: Action[AnyContent] = authenticated(Role.admin) {
+  def syncArtifacts: Action[AnyContent] = authenticated(Roles.admin) {
     eventSrv.publish(UpdateMispAlertArtifact())
     Ok("")
   }
 
   @Timed
-  def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Role.write).async { implicit request ⇒
+  def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
     caseSrv
       .get(caseId)
       .flatMap { caze ⇒ mispExport.export(mispName, caze) }

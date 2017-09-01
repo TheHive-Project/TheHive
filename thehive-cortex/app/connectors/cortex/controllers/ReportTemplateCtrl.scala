@@ -17,10 +17,11 @@ import play.api.mvc._
 import org.elastic4play.{ BadRequestError, Timed }
 import org.elastic4play.controllers._
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ QueryDSL, QueryDef, Role }
+import org.elastic4play.services.{ QueryDSL, QueryDef }
 import org.elastic4play.services.AuxSrv
 import org.elastic4play.services.JsonFormat.queryReads
 import connectors.cortex.services.ReportTemplateSrv
+import models.Roles
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
 
@@ -38,19 +39,19 @@ class ReportTemplateCtrl @Inject() (
   private[ReportTemplateCtrl] lazy val logger = Logger(getClass)
 
   @Timed
-  def create: Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
+  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
     reportTemplateSrv.create(request.body)
       .map(reportTemplate ⇒ renderer.toOutput(CREATED, reportTemplate))
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
     reportTemplateSrv.get(id)
       .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
   }
 
   @Timed
-  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
+  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
     import org.elastic4play.services.QueryDSL._
     val (reportTemplates, total) = reportTemplateSrv.find(and("analyzerId" ~= analyzerId, "reportType" ~= reportType), Some("0-1"), Nil)
     total.foreach { t ⇒
@@ -65,19 +66,19 @@ class ReportTemplateCtrl @Inject() (
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Role.admin).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
     reportTemplateSrv.update(id, request.body)
       .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Role.admin).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     reportTemplateSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
@@ -90,7 +91,7 @@ class ReportTemplateCtrl @Inject() (
   }
 
   @Timed
-  def importTemplatePackage: Action[Fields] = authenticated(Role.write).async(fieldsBodyParser) { implicit request ⇒
+  def importTemplatePackage: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     val zipFile = request.body.get("templates") match {
       case Some(FileInputValue(_, filepath, _)) ⇒ new ZipFile(filepath.toFile)
       case _                                    ⇒ throw BadRequestError("")

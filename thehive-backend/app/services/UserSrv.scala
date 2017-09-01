@@ -1,26 +1,20 @@
 package services
 
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{ Inject, Provider, Singleton }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.mvc.RequestHeader
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import models.{User, UserModel, UserStatus}
+import models.{ Roles, User, UserModel, UserStatus }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
-import org.elastic4play.{AuthenticationError, AuthorizationError}
-
-object Roles {
-  object read extends Role
-  object write extends Role
-  object admin extends Role
-}
+import org.elastic4play.{ AuthenticationError, AuthorizationError }
 
 @Singleton
 class UserSrv @Inject() (
@@ -53,11 +47,11 @@ class UserSrv @Inject() (
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
     dbIndex.getSize(userModel.name).map {
       case size if size > 0 ⇒ throw AuthenticationError(s"Use of initial user is forbidden because users exist in database")
-      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Role.admin, Role.read))
+      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Roles.admin, Roles.read, Roles.alert))
     }
 
   override def inInitAuthContext[A](block: AuthContext ⇒ Future[A]): Future[A] = {
-    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Role.admin, Role.read))
+    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Roles.admin, Roles.read, Roles.alert))
     eventSrv.publish(StreamActor.Initialize(authContext.requestId))
     block(authContext).andThen {
       case _ ⇒ eventSrv.publish(StreamActor.Commit(authContext.requestId))

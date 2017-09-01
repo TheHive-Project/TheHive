@@ -16,11 +16,12 @@ import play.api.{ Configuration, Logger }
 import akka.actor.{ ActorSystem, Props }
 import akka.pattern.ask
 import akka.util.Timeout
+import models.Roles
 import services.StreamActor
 import services.StreamActor.StreamMessages
 
 import org.elastic4play.controllers._
-import org.elastic4play.services.{ AuxSrv, EventSrv, MigrationSrv, Role }
+import org.elastic4play.services.{ AuxSrv, EventSrv, MigrationSrv }
 import org.elastic4play.Timed
 
 @Singleton
@@ -67,7 +68,7 @@ class StreamCtrl(
    * Create a new stream entry with the event head
    */
   @Timed("controllers.StreamCtrl.create")
-  def create: Action[AnyContent] = authenticated(Role.read) {
+  def create: Action[AnyContent] = authenticated(Roles.read) {
     val id = generateStreamId()
     system.actorOf(Props(
       classOf[StreamActor],

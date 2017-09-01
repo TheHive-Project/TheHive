@@ -11,8 +11,6 @@ import models.JsonFormat.userStatusFormat
 import services.AuditedModel
 
 import org.elastic4play.models.{ AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
-import org.elastic4play.services.JsonFormat.roleFormat
-import org.elastic4play.services.Role
 
 object UserStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -25,7 +23,7 @@ trait UserAttributes { _: AttributeDef ⇒
   val withKey = optionalAttribute("with-key", F.booleanFmt, "Generate an API key", O.form)
   val key = optionalAttribute("key", F.uuidFmt, "API key", O.model, O.sensitive, O.unaudited)
   val userName = attribute("name", F.stringFmt, "Full name (Firstname Lastname)")
-  val roles = multiAttribute("roles", F.enumFmt(Role), "Comma separated role list (READ, WRITE and ADMIN)")
+  val roles = multiAttribute("roles", RoleAttributeFormat, "Comma separated role list (READ, WRITE and ADMIN)")
   val status = attribute("status", F.enumFmt(UserStatus), "Status of the user", UserStatus.Ok)
   val password = optionalAttribute("password", F.stringFmt, "Password", O.sensitive, O.unaudited)
   val avatar = optionalAttribute("avatar", F.stringFmt, "Base64 representation of user avatar image", O.unaudited)
