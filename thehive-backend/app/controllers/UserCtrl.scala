@@ -40,10 +40,7 @@ class UserCtrl @Inject() (
   @Timed
   def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
     userSrv.get(id)
-      .map { user ⇒
-        val json = if (request.roles.contains(Roles.admin)) user.toAdminJson else user.toJson
-        renderer.toOutput(OK, json)
-      }
+      .map { user ⇒ renderer.toOutput(OK, user) }
   }
 
   @Timed
@@ -112,5 +109,15 @@ class UserCtrl @Inject() (
     val sort = request.body.getStrings("sort").getOrElse(Nil)
     val (users, total) = userSrv.find(query, range, sort)
     renderer.toOutput(OK, users, total)
+  }
+
+  @Timed
+  def getKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
+    authSrv.getKey(id).map(Ok(_))
+  }
+
+  @Timed
+  def renewKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
+    authSrv.renewKey(id).map(Ok(_))
   }
 }

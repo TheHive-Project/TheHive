@@ -73,6 +73,10 @@ class UserSrv @Inject() (
     updateSrv[UserModel, User](userModel, id, fields)
   }
 
+  def update(user: User, fields: Fields)(implicit Context: AuthContext): Future[User] = {
+    updateSrv(user, fields)
+  }
+
   def delete(id: String)(implicit Context: AuthContext): Future[User] =
     deleteSrv[UserModel, User](userModel, id)
 
