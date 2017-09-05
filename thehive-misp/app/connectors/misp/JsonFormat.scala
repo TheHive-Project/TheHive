@@ -31,7 +31,8 @@ object JsonFormat {
       date = new Date(timestamp.toLong * 1000)
       publishTimestamp ← (json \ "publish_timestamp").validate[String]
       publishDate = new Date(publishTimestamp.toLong * 1000)
-      threatLevel ← (json \ "threat_level_id").validate[String]
+      threatLevelString ← (json \ "threat_level_id").validate[String]
+      threatLevel = threatLevelString.toLong
       isPublished ← (json \ "published").validate[Boolean]
     } yield MispAlert(
       org,
@@ -41,7 +42,7 @@ object JsonFormat {
       isPublished,
       s"#$eventId ${info.trim}",
       s"Imported from MISP Event #$eventId, created at $date",
-      4 - threatLevel.toLong,
+      if (0 < threatLevel && threatLevel < 4) 4 - threatLevel else 2,
       alertTags,
       tlp,
       "")
