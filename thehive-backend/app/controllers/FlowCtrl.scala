@@ -7,11 +7,12 @@ import scala.concurrent.ExecutionContext
 import play.api.http.Status
 import play.api.mvc._
 
+import models.Roles
 import services.FlowSrv
 
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Renderer }
-import org.elastic4play.services.{ AuxSrv, Role }
+import org.elastic4play.services.AuxSrv
 
 @Singleton
 class FlowCtrl @Inject() (
@@ -26,7 +27,7 @@ class FlowCtrl @Inject() (
    * Return audit logs. For each item, include ancestor entities
    */
   @Timed
-  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Role.read).async { implicit request ⇒
+  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
     val (audits, total) = flowSrv(rootId.filterNot(_ == "any"), count.getOrElse(10))
     renderer.toOutput(OK, audits, total)
   }

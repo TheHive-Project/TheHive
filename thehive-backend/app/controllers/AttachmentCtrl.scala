@@ -12,11 +12,12 @@ import akka.stream.scaladsl.FileIO
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.util.Zip4jConstants
+import models.Roles
 
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Renderer }
 import org.elastic4play.models.AttachmentAttributeFormat
-import org.elastic4play.services.{ AttachmentSrv, Role }
+import org.elastic4play.services.AttachmentSrv
 
 /**
  * Controller used to access stored attachments (plain or zipped)
@@ -51,7 +52,7 @@ class AttachmentCtrl(
    * open the document directly. It must be used only for safe file
    */
   @Timed("controllers.AttachmentCtrl.download")
-  def download(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
+  def download(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     if (hash.startsWith("{{")) // angularjs hack
       NoContent
     else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
@@ -72,7 +73,7 @@ class AttachmentCtrl(
    * File name can be specified (zip extension is append)
    */
   @Timed("controllers.AttachmentCtrl.downloadZip")
-  def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Role.read) { implicit request ⇒
+  def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
       BadRequest("File name is invalid")
     else {

@@ -7,6 +7,8 @@ import scala.concurrent.ExecutionContext
 import play.api.http.Status
 import play.api.mvc.{ AbstractController, Action, ControllerComponents }
 
+import models.Roles
+
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.services.JsonFormat.queryReads
@@ -23,7 +25,7 @@ class SearchCtrl @Inject() (
     implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Timed
-  def find(): Action[Fields] = authenticated(Role.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     import org.elastic4play.services.QueryDSL._
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")

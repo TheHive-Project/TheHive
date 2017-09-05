@@ -5,25 +5,25 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Random
 
-import play.api.libs.json.{ JsObject, JsString }
 import play.api.mvc.RequestHeader
 
-import models.{ User, UserModel }
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+import models.User
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ AuthCapability, AuthContext, AuthSrv, UpdateSrv }
+import org.elastic4play.services.{ AuthCapability, AuthContext, AuthSrv }
 import org.elastic4play.utils.Hasher
-import org.elastic4play.{ AuthenticationError, AuthorizationError }
+import org.elastic4play.{ AuthenticationError, AuthorizationError, BadRequestError }
 
 @Singleton
 class LocalAuthSrv @Inject() (
-    userModel: UserModel,
     userSrv: UserSrv,
-    updateSrv: UpdateSrv,
-    implicit val ec: ExecutionContext) extends AuthSrv {
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) extends AuthSrv {
 
   val name = "local"
-  def capabilities = Set(AuthCapability.changePassword, AuthCapability.setPassword)
+  override val capabilities = Set(AuthCapability.changePassword, AuthCapability.setPassword, AuthCapability.renewKey)
 
   private[services] def doAuthenticate(user: User, password: String): Boolean = {
     user.password().map(_.split(",", 2)).fold(false) {
@@ -34,24 +34,46 @@ class LocalAuthSrv @Inject() (
     }
   }
 
-  def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] = {
+  override def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] = {
     userSrv.get(username).flatMap { user ⇒
       if (doAuthenticate(user, password)) userSrv.getFromUser(request, user)
       else Future.failed(AuthenticationError("Authentication failure"))
     }
   }
 
-  def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] = {
+  override def authenticate(key: String)(implicit request: RequestHeader): Future[AuthContext] = {
+    import org.elastic4play.services.QueryDSL._
+    // key attribute is sensitive so it is not possible to search on that field
+    userSrv.find("status" ~= "Ok", Some("all"), Nil)
+      ._1
+      .filter(_.key().contains(key))
+      .runWith(Sink.headOption)
+      .flatMap {
+        case Some(user) ⇒ userSrv.getFromUser(request, user)
+        case None       ⇒ Future.failed(AuthenticationError("Authentication failure"))
+      }
+  }
+
+  override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] = {
     userSrv.get(username).flatMap { user ⇒
       if (doAuthenticate(user, oldPassword)) setPassword(username, newPassword)
       else Future.failed(AuthorizationError("Authentication failure"))
     }
   }
 
-  def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] = {
+  override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] = {
     val seed = Random.nextString(10).replace(',', '!')
     val newHash = seed + "," + Hasher("SHA-256").fromString(seed + newPassword).head.toString
-    userSrv.update(username, Fields(JsObject(Seq("password" → JsString(newHash)))))
-      .map(_ ⇒ ())
+    userSrv.update(username, Fields.empty.set("password", newHash)).map(_ ⇒ ())
   }
+
+  override def renewKey(username: String)(implicit authContext: AuthContext): Future[String] = {
+    val newKey = generateKey()
+    userSrv.update(username, Fields.empty.set("key", newKey)).map(_ ⇒ newKey)
+  }
+
+  override def getKey(username: String)(implicit authContext: AuthContext): Future[String] = {
+    userSrv.get(username).map(_.key().getOrElse(throw BadRequestError(s"User $username hasn't key")))
+  }
+
 }

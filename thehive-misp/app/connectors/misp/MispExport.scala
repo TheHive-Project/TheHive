@@ -17,7 +17,6 @@ import akka.stream.Materializer
 
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ Attachment, AttachmentSrv, AuthContext }
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.utils.RichFuture

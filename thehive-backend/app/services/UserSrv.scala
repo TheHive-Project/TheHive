@@ -8,7 +8,7 @@ import play.api.mvc.RequestHeader
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import models.{ User, UserModel, UserStatus }
+import models.{ Roles, User, UserModel, UserStatus }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.DBIndex
@@ -29,7 +29,7 @@ class UserSrv @Inject() (
     dbIndex: DBIndex,
     implicit val ec: ExecutionContext) extends org.elastic4play.services.UserSrv {
 
-  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role.Type]) extends AuthContext
+  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role]) extends AuthContext
 
   override def getFromId(request: RequestHeader, userId: String): Future[AuthContext] = {
     getSrv[UserModel, User](userModel, userId)
@@ -47,11 +47,11 @@ class UserSrv @Inject() (
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
     dbIndex.getSize(userModel.name).map {
       case size if size > 0 ⇒ throw AuthenticationError(s"Use of initial user is forbidden because users exist in database")
-      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Role.admin, Role.read))
+      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Roles.admin, Roles.read, Roles.alert))
     }
 
   override def inInitAuthContext[A](block: AuthContext ⇒ Future[A]): Future[A] = {
-    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Role.admin, Role.read))
+    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Roles.admin, Roles.read, Roles.alert))
     eventSrv.publish(StreamActor.Initialize(authContext.requestId))
     block(authContext).andThen {
       case _ ⇒ eventSrv.publish(StreamActor.Commit(authContext.requestId))
@@ -71,6 +71,10 @@ class UserSrv @Inject() (
 
   def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[User] = {
     updateSrv[UserModel, User](userModel, id, fields)
+  }
+
+  def update(user: User, fields: Fields)(implicit Context: AuthContext): Future[User] = {
+    updateSrv(user, fields)
   }
 
   def delete(id: String)(implicit Context: AuthContext): Future[User] =

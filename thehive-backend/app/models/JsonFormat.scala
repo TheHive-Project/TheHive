@@ -2,9 +2,10 @@ package models
 
 import java.nio.file.Path
 
-import play.api.libs.json.{ Format, JsString, Writes }
+import play.api.libs.json._
 
 import org.elastic4play.models.JsonFormat.enumFormat
+import org.elastic4play.services.Role
 
 object JsonFormat {
   implicit val userStatusFormat: Format[UserStatus.Type] = enumFormat(UserStatus)
@@ -18,4 +19,11 @@ object JsonFormat {
   implicit val alertStatusFormat: Format[AlertStatus.Type] = enumFormat(AlertStatus)
 
   implicit val pathWrites: Writes[Path] = Writes((value: Path) ⇒ JsString(value.toString))
+
+  private val roleWrites: Writes[Role] = Writes((role: Role) ⇒ JsString(role.name))
+  private val roleReads: Reads[Role] = Reads {
+    case JsString(s) if Roles.isValid(s) ⇒ JsSuccess(Roles.withName(s).get)
+    case _                               ⇒ JsError(Seq(JsPath → Seq(JsonValidationError(s"error.expected.role(${Roles.roleNames}"))))
+  }
+  implicit val roleFormat: Format[Role] = Format[Role](roleReads, roleWrites)
 }

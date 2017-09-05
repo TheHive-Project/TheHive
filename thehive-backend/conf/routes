@@ -91,6 +91,9 @@ DELETE   /api/user/:userId                        controllers.UserCtrl.delete(us
 PATCH    /api/user/:userId                        controllers.UserCtrl.update(userId)
 POST     /api/user/:userId/password/set           controllers.UserCtrl.setPassword(userId)
 POST     /api/user/:userId/password/change        controllers.UserCtrl.changePassword(userId)
+GET      /api/user/:userId/key                    controllers.UserCtrl.getKey(userId)
+POST     /api/user/:userId/key/renew              controllers.UserCtrl.renewKey(userId)
+
 
 POST     /api/stream                              controllers.StreamCtrl.create()
 GET      /api/stream/status                       controllers.StreamCtrl.status
