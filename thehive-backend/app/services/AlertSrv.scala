@@ -37,6 +37,7 @@ object AlertSrv {
 
 @Singleton
 class AlertSrv(
+    maxSimilarCases: Int,
     templates: Map[String, String],
     alertModel: AlertModel,
     createSrv: CreateSrv,
@@ -68,6 +69,7 @@ class AlertSrv(
     connectors: ConnectorRouter,
     ec: ExecutionContext,
     mat: Materializer) = this(
+    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     Map.empty[String, String],
     alertModel: AlertModel,
     createSrv,

@@ -5,7 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-import play.api.Logger
+import play.api.{ Configuration, Logger }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 
@@ -18,7 +18,8 @@ import org.elastic4play.controllers.Fields
 import org.elastic4play.services._
 
 @Singleton
-class CaseSrv @Inject() (
+class CaseSrv(
+    maxSimilarCases: Int,
     caseModel: CaseModel,
     artifactModel: ArtifactModel,
     taskModel: TaskModel,
@@ -29,6 +30,30 @@ class CaseSrv @Inject() (
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) {
+
+  @Inject() def this(
+    configuration: Configuration,
+    caseModel: CaseModel,
+    artifactModel: ArtifactModel,
+    taskModel: TaskModel,
+    createSrv: CreateSrv,
+    artifactSrv: ArtifactSrv,
+    getSrv: GetSrv,
+    updateSrv: UpdateSrv,
+    deleteSrv: DeleteSrv,
+    findSrv: FindSrv,
+    ec: ExecutionContext) = this(
+    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
+    caseModel,
+    artifactModel,
+    taskModel,
+    createSrv,
+    artifactSrv,
+    getSrv,
+    updateSrv,
+    deleteSrv,
+    findSrv,
+    ec)
 
   private[CaseSrv] lazy val logger = Logger(getClass)
 
@@ -120,7 +145,7 @@ class CaseSrv @Inject() (
         "status" ~= "Ok"), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
-      .groupBy(100, _.parentId)
+      .groupBy(maxSimilarCases, _.parentId)
       .map { a ⇒ (a.parentId, Seq(a)) }
       .reduce((l, r) ⇒ (l._1, r._2 ++ l._2))
       .mergeSubstreams
