@@ -1,5 +1,6 @@
 package controllers
 
+import java.net.URLEncoder
 import java.nio.file.Files
 import javax.inject.{ Inject, Singleton }
 
@@ -62,7 +63,7 @@ class AttachmentCtrl(
         header = ResponseHeader(
           200,
           Map(
-            "Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}"""",
+            "Content-Disposition" → s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}"""",
             "Content-Transfer-Encoding" → "binary")),
         body   = HttpEntity.Streamed(attachmentSrv.source(hash), None, None))
   }
@@ -93,7 +94,7 @@ class AttachmentCtrl(
         header = ResponseHeader(
           200,
           Map(
-            "Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
+            "Content-Disposition" → s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}.zip"""",
             "Content-Type" → "application/zip",
             "Content-Transfer-Encoding" → "binary",
             "Content-Length" → Files.size(f).toString)),
