@@ -13,15 +13,18 @@ import org.elastic4play.models.AttributeFormat
 import org.elastic4play.services.Role
 
 object Roles {
-  object read extends Role("READ")
-  object write extends Role("WRITE")
-  object admin extends Role("ADMIN")
-  object alert extends Role("ALERT")
+  object read extends Role("read")
+  object write extends Role("write")
+  object admin extends Role("admin")
+  object alert extends Role("alert")
   val roles: List[Role] = read :: write :: admin :: alert :: Nil
 
   val roleNames: List[String] = roles.map(_.name)
-  def isValid(roleName: String): Boolean = roleNames.contains(roleName)
-  def withName(roleName: String): Option[Role] = roles.find(_.name == roleName)
+  def isValid(roleName: String): Boolean = roleNames.contains(roleName.toLowerCase())
+  def withName(roleName: String): Option[Role] = {
+    val lowerCaseRole = roleName.toLowerCase()
+    roles.find(_.name == lowerCaseRole)
+  }
 }
 
 object RoleAttributeFormat extends AttributeFormat[Role]("role") {

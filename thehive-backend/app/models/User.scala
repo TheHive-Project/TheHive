@@ -3,7 +3,7 @@ package models
 import scala.concurrent.Future
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{ JsObject, JsString }
+import play.api.libs.json.{ JsArray, JsObject, JsString }
 
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
@@ -39,4 +39,6 @@ class UserModel extends ModelDef[UserModel, User]("user") with UserAttributes wi
 class User(model: UserModel, attributes: JsObject) extends EntityDef[UserModel, User](model, attributes) with UserAttributes with org.elastic4play.services.User {
   override def getUserName = userName()
   override def getRoles = roles()
+
+  override def toJson: JsObject = super.toJson + ("roles" → JsArray(roles().map(r ⇒ JsString(r.name.toLowerCase()))))
 }

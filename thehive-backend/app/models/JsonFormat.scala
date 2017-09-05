@@ -20,7 +20,7 @@ object JsonFormat {
 
   implicit val pathWrites: Writes[Path] = Writes((value: Path) ⇒ JsString(value.toString))
 
-  private val roleWrites: Writes[Role] = Writes((role: Role) ⇒ JsString(role.name))
+  private val roleWrites: Writes[Role] = Writes((role: Role) ⇒ JsString(role.name.toLowerCase()))
   private val roleReads: Reads[Role] = Reads {
     case JsString(s) if Roles.isValid(s) ⇒ JsSuccess(Roles.withName(s).get)
     case _                               ⇒ JsError(Seq(JsPath → Seq(JsonValidationError(s"error.expected.role(${Roles.roleNames}"))))
