@@ -43,8 +43,10 @@ class LocalAuthSrv @Inject() (
 
   override def authenticate(key: String)(implicit request: RequestHeader): Future[AuthContext] = {
     import org.elastic4play.services.QueryDSL._
-    userSrv.find(and("status" ~= "Ok", "key" ~= key), Some("0-1"), Nil)
+    // key attribute is sensitive so it is not possible to search on that field
+    userSrv.find("status" ~= "Ok", Some("all"), Nil)
       ._1
+      .filter(_.key().contains(key))
       .runWith(Sink.headOption)
       .flatMap {
         case Some(user) ⇒ userSrv.getFromUser(request, user)

@@ -46,9 +46,9 @@ class UserCtrl @Inject() (
   @Timed
   def update(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     if (id == request.authContext.userId || request.authContext.roles.contains(Roles.admin)) {
-      if (request.body.contains("password"))
-        logger.warn("Change password attribute using update operation is deprecated. Please use dedicated API (setPassword and changePassword)")
-      userSrv.update(id, request.body.unset("password")).map { user ⇒
+      if (request.body.contains("password") || request.body.contains("key"))
+        logger.warn("Change password or key using update operation is deprecated. Please use dedicated API (setPassword, changePassword or renewKey)")
+      userSrv.update(id, request.body.unset("password").unset("key")).map { user ⇒
         renderer.toOutput(OK, user)
       }
     }
