@@ -1,0 +1,28 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Export case to MISP</h3>
+</div>
+
+<div class="modal-body">
+    <div class="alert alert-danger">
+        Failed to export the following observables
+    </div>
+    <table class="table table-striped">
+        <thead>
+            <th>Observable</th>
+            <th>Reason</th>
+        </thead>
+        <tbody>
+            <tr ng-repeat="o in failures">
+                <td class="wrap">{{o.data | fang}}</td>
+                <td class="nowrap">{{o.message}}</td>
+            </tr>
+        </tbody>
+
+    </table>
+
+</div>
+
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" ng-click="copyToClipboard()" type="button"><i class="fa fa-copy"></i> Copy to clipboard</button>
+</div>

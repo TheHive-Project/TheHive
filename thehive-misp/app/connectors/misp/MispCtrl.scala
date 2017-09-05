@@ -9,7 +9,7 @@ import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
 import play.api.routing.SimpleRouter
-import play.api.routing.sird.{ GET, UrlContext }
+import play.api.routing.sird.{ GET, POST, UrlContext }
 
 import connectors.Connector
 import models.{ Alert, Case, Roles, UpdateMispAlertArtifact }
@@ -40,11 +40,11 @@ class MispCtrl @Inject() (
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {
-    case GET(p"/_syncAlerts")                 ⇒ syncAlerts
-    case GET(p"/_syncAllAlerts")              ⇒ syncAllAlerts
-    case GET(p"/_syncArtifacts")              ⇒ syncArtifacts
-    case GET(p"/export/$caseId/to/$mispName") ⇒ exportCase(mispName, caseId)
-    case r                                    ⇒ throw NotFoundError(s"${r.uri} not found")
+    case GET(p"/_syncAlerts")               ⇒ syncAlerts
+    case GET(p"/_syncAllAlerts")            ⇒ syncAllAlerts
+    case GET(p"/_syncArtifacts")            ⇒ syncArtifacts
+    case POST(p"/export/$caseId/$mispName") ⇒ exportCase(mispName, caseId)
+    case r                                  ⇒ throw NotFoundError(s"${r.uri} not found")
   }
 
   @Timed

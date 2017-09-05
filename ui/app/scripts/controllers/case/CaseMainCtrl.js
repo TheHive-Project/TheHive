@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -199,9 +199,16 @@
             };
 
             $scope.shareCase = function() {
-                $state.go('app.case.export', {
-                    caseId: $scope.caseId
-                });
+                var mispConfig = $scope.appConfig.connectors.misp;
+                MispSrv.getServer(mispConfig)
+                    .then(function(server) {
+                        return MispSrv.export($scope.caseId, server);
+                    })
+                    .then(function(response){
+                        console.log(response);
+                    }, function(err) {
+                        console.log(err);
+                    });
             };
 
             /**

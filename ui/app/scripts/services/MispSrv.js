@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('MispSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('MispSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, PSearchSrv) {
 
             var baseUrl = './api/connector/misp';
 
@@ -118,21 +118,37 @@
                     return defer.promise;
                 },
 
-                categories: function() {
-                    var defer = $q.defer();
-
-                    $q.resolve({
-                        'category1': [
-                            'type1.1', 'type1.2', 'type1.3'
-                        ],
-                        'category2': [
-                            'type2.1', 'type2.2', 'type2.3'
-                        ]
-                    }).then(function(response) {
-                        defer.resolve(response);
+                promptForInstance: function(servers) {
+                    var modalInstance = $uibModal.open({
+                        templateUrl: 'views/partials/misp/choose-instance-dialog.html',
+                        controller: 'ServerInstanceDialogCtrl',
+                        controllerAs: 'vm',
+                        size: '',
+                        resolve: {
+                            servers: function() {
+                                return servers;
+                            }
+                        }
                     });
 
-                    return defer.promise;
+                    return modalInstance.result;
+                },
+
+                getServer: function(mispConfig) {
+                    if(!mispConfig || !mispConfig.enabled || !mispConfig.servers) {
+                        return $q.reject();
+                    }
+
+                    var servers = mispConfig.servers;
+                    if (servers.length === 1) {
+                        return $q.resolve(servers[0]);
+                    } else {
+                        return factory.promptForInstance(servers);
+                    }
+                },
+
+                export: function(caseId, server) {
+                    return $http.post(baseUrl + '/export/' + caseId + '/' + server, {});
                 }
             };
 
