@@ -3,7 +3,7 @@ package models
 import scala.concurrent.Future
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{ JsArray, JsObject, JsString }
+import play.api.libs.json.{ JsArray, JsBoolean, JsObject, JsString }
 
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
@@ -40,5 +40,7 @@ class User(model: UserModel, attributes: JsObject) extends EntityDef[UserModel, 
   override def getUserName = userName()
   override def getRoles = roles()
 
-  override def toJson: JsObject = super.toJson + ("roles" → JsArray(roles().map(r ⇒ JsString(r.name.toLowerCase()))))
+  override def toJson: JsObject = super.toJson +
+    ("roles" → JsArray(roles().map(r ⇒ JsString(r.name.toLowerCase())))) +
+    ("hasKey" → JsBoolean(key().isDefined))
 }

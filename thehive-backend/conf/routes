@@ -92,6 +92,7 @@ PATCH    /api/user/:userId                        controllers.UserCtrl.update(us
 POST     /api/user/:userId/password/set           controllers.UserCtrl.setPassword(userId)
 POST     /api/user/:userId/password/change        controllers.UserCtrl.changePassword(userId)
 GET      /api/user/:userId/key                    controllers.UserCtrl.getKey(userId)
+DELETE   /api/user/:userId/key                    controllers.UserCtrl.removeKey(userId)
 POST     /api/user/:userId/key/renew              controllers.UserCtrl.renewKey(userId)
 
 

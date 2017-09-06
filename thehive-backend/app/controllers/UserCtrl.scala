@@ -117,6 +117,11 @@ class UserCtrl @Inject() (
   }
 
   @Timed
+  def removeKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+    authSrv.removeKey(id).map(_ ⇒ Ok)
+  }
+
+  @Timed
   def renewKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     authSrv.renewKey(id).map(Ok(_))
   }

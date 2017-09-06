@@ -2,9 +2,9 @@ package global
 
 import scala.collection.JavaConverters._
 
+import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.mvc.EssentialFilter
 import play.api.{ Configuration, Environment, Logger, Mode }
-import play.api.libs.concurrent.AkkaGuiceSupport
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
@@ -19,7 +19,7 @@ import services._
 
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services.auth.MultiAuthSrv
-import org.elastic4play.services.{ AuthSrv, AuthSrvFactory, MigrationOperations, TempFilter }
+import org.elastic4play.services.{ AuthSrv, MigrationOperations, TempFilter }
 
 class TheHive(
     environment: Environment,
@@ -33,7 +33,6 @@ class TheHive(
     val modelBindings = ScalaMultibinder.newSetBinder[BaseModelDef](binder)
     val auditedModelBindings = ScalaMultibinder.newSetBinder[AuditedModel](binder)
     val authBindings = ScalaMultibinder.newSetBinder[AuthSrv](binder)
-    val authFactoryBindings = ScalaMultibinder.newSetBinder[AuthSrvFactory](binder)
 
     val reflectionClasses = new Reflections(new ConfigurationBuilder()
       .forPackages("org.elastic4play")
@@ -61,17 +60,9 @@ class TheHive(
       .getSubTypesOf(classOf[AuthSrv])
       .asScala
       .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
-      .filterNot(_ == classOf[MultiAuthSrv])
-      .foreach { modelClass ⇒
-        authBindings.addBinding.to(modelClass)
-      }
-
-    reflectionClasses
-      .getSubTypesOf(classOf[AuthSrvFactory])
-      .asScala
-      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
-      .foreach { modelClass ⇒
-        authFactoryBindings.addBinding.to(modelClass)
+      .filterNot(c ⇒ c == classOf[MultiAuthSrv] || c == classOf[TheHiveAuthSrv])
+      .foreach { authSrvClass ⇒
+        authBindings.addBinding.to(authSrvClass)
       }
 
     val filterBindings = ScalaMultibinder.newSetBinder[EssentialFilter](binder)
@@ -80,7 +71,7 @@ class TheHive(
     filterBindings.addBinding.to[CSRFFilter]
 
     bind[MigrationOperations].to[Migration]
-    bind[AuthSrv].to[MultiAuthSrv]
+    bind[AuthSrv].to[TheHiveAuthSrv]
 
     bindActor[AuditActor]("AuditActor")
     bindActor[DeadLetterMonitoringActor]("DeadLetterMonitoringActor")
