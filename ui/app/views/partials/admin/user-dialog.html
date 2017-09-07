@@ -1,0 +1,75 @@
+<form class="form-horizontal" name="userForm" ng-submit="$vm.saveUser(userForm)" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">{{$vm.formData.id ? 'Update' : 'Add'}} user</h3>
+    </div>
+    <div class="modal-body">
+        <div class="form-group" ng-class="{ 'has-error' : userForm.id.$invalid && !userForm.id.$pristine }">
+            <label class="col-sm-3 control-label">
+                Login
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="id"
+                    placeholder="User's login"
+                    ng-disabled="$vm.isEdit"
+                    ng-model="$vm.formData.id"
+                    required type="text">
+                <p class="help-block" ng-show="userForm.id.$invalid && !userForm.id.$pristine">This field is required.</p>
+            </div>
+        </div>
+
+        <div class="form-group" ng-class="{ 'has-error' : userForm.name.$invalid && !userForm.name.$pristine }">
+            <label class="col-sm-3 control-label">
+                Full name
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="login"
+                    placeholder="User's name"
+                    ng-model="$vm.formData.name"
+                    required type="text">
+                <p class="help-block" ng-show="userForm.name.$invalid && !userForm.name.$pristine">This field is required.</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-3 control-label">
+                Roles
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <div class="btn-group" uib-dropdown>
+                    <button class="btn btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                        {{$vm.formData.roles.join(', ') || 'none'}}&nbsp;&nbsp;
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" uib-dropdown-menu>
+                        <li>
+                            <a ng-click="$vm.formData.roles = []">none</a>
+                            <a ng-click="$vm.formData.roles = ['read']">read</a>
+                            <a ng-click="$vm.formData.roles = ['read','write']">read, write</a>
+                            <a ng-click="$vm.formData.roles = ['read','write','admin']">read, write, admin</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-3 control-label">
+                Additional Permissions
+            </label>
+            <div class="col-sm-9">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" ng-model="$vm.formData.alert"> Allow alerts creation
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$vm.cancel()" type="button">Cancel</button>
+        <button class="btn btn-primary pull-right" ng-disabled="userForm.$invalid" type="submit">Save user</button>
+    </div>
+</form>
