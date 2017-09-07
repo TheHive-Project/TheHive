@@ -38,10 +38,7 @@
                                     <form ng-show="showPwdForm[user]" ng-submit="setPassword(user, newValue); showPwdForm[user] = false;">
                                         <div class="input-group input-group-sm">
                                             <input autofocus="autofocus" class="form-control input-sm" ng-model="newValue" type="password">
-                                            <span class="input-group-btn">
-                                                <button class="btn btn-primary" type="button" ng-click="copyPwd(newValue)" uib-tooltip="Copy password">
-                                                    <i class="fa fa-copy"></i>
-                                                </button>
+                                            <span class="input-group-btn">                                                
                                                 <button class="btn btn-default" type="button" ng-click="showPwdForm[user] = false">
                                                     <i class="fa fa-times text-danger"></i>
                                                 </button>

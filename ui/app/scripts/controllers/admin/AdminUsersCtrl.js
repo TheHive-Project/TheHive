@@ -106,10 +106,6 @@
                 });
             };
 
-            $scope.copyPwd = function(password) {
-                clipboard.copyText(password);
-            };
-
             $scope.showUserDialog = function(user) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/admin/user-dialog.html',
