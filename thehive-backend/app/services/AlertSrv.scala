@@ -176,7 +176,7 @@ class AlertSrv(
               caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
               caze ← caseSrv.create(
                 Fields.empty
-                  .set("title", s"#${alert.sourceRef()} " + alert.title())
+                  .set("title", alert.title())
                   .set("description", alert.description())
                   .set("severity", JsNumber(alert.severity()))
                   .set("tags", JsArray(alert.tags().map(JsString)))

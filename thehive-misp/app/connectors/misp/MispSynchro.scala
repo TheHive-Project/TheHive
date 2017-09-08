@@ -143,6 +143,7 @@ class MispSynchro @Inject() (
         case (event, None, attrs) ⇒
           logger.info(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
+            ("title" → JsString(s"#${event.sourceRef} ${event.title}")) +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
             ("artifacts" → Json.toJson(attrs))
