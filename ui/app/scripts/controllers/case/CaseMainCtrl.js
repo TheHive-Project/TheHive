@@ -202,7 +202,6 @@
             var extractExportErrors = function (errors) {
                 var result = [];
 
-                console.log(errors);
                 result = errors.map(function(item) {
                     return {
                         data: item.object.dataType === 'file' ? item.object.attachment.name : item.object.data,
