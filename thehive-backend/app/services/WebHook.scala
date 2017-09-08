@@ -17,7 +17,7 @@ case class WebHook(name: String, ws: WSRequest)(implicit ec: ExecutionContext) {
 
   def send(obj: JsObject): Unit = ws.post(obj).onComplete {
     case Success(resp) if resp.status / 100 != 2 ⇒ logger.error(s"WebHook returns status ${resp.status} ${resp.statusText}")
-    case Failure(ce: ConnectException)           ⇒ logger.error(s"Connection to WebHook $name error", ce)
+    case Failure(_: ConnectException)            ⇒ logger.error(s"Connection to WebHook $name error")
     case Failure(error)                          ⇒ logger.error("WebHook call error", error)
     case _                                       ⇒
   }
