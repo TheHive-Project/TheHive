@@ -2,7 +2,7 @@
     <div class="flow-item-title wrap">
         <i class="fa fa-download"></i>
         <span ng-show="bulk">Alert updates</span>
-        <span ng-show="!bulk">{{base.object.title}}</span>
+        <span ng-show="!bulk">[{{base.object.source}}] {{base.object.title}}</span>
     </div>
 
     <div class="flow-item-updates wrap" ng-show="bulk">
@@ -18,14 +18,31 @@
     </div>
 
     <div class="flow-item-updates wrap" ng-hide="bulk" ng-switch-default>
-        <span ng-repeat="(k,v) in base.details" ng-switch="k">
+        <span ng-repeat="(k,v) in base.details"
+            ng-switch="k" 
+            ng-if="['description', 'caseTemplate', 'title', 'follow', 'lastSyncDate'].indexOf(k) === -1">
             <div ng-switch-when="artifacts">
                 {{k}}:
                 <em>{{v.length}}</em>
             </div>
+            <div ng-switch-when="severity">
+                {{k}}: <severity active="false" value="v"></severity>
+            </div>
+            <div ng-switch-when="tags">
+                {{k}}:
+                <span ng-repeat="tag in v">
+                    <span class="label label-primary">{{tag}}</span>
+                </span>
+                <span ng-if="v.length === 0">
+                    <em>None</em>
+                </span>
+            </div>
+            <div ng-switch-when="tlp">
+                {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
             <div ng-switch-default>
                 {{k}}:
-                <em>{{v}}</em>
+                <em>{{v | limitTo: 250}}</em>
             </div>
         </span>
     </div>
