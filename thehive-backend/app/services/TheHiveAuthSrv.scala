@@ -32,7 +32,7 @@ class TheHiveAuthSrv @Inject() (
   userSrv: UserSrv,
   override implicit val ec: ExecutionContext) extends MultiAuthSrv(
   TheHiveAuthSrv.getAuthSrv(
-    configuration.getOptional[Seq[String]]("auth.type").getOrElse(Seq("local")),
+    configuration.getDeprecated[Option[Seq[String]]]("auth.provider", "auth.type").getOrElse(Seq("local")),
     authModules),
   ec) {
 
