@@ -8,4 +8,3 @@ libraryDependencies ++= Seq(
   Library.zip4j
 )
 
-enablePlugins(PlayScala)

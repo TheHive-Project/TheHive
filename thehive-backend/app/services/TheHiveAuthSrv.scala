@@ -3,14 +3,11 @@ package services
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.ExecutionContext
 
-import play.api.mvc.RequestHeader
 import play.api.{ Configuration, Logger }
 
-import org.elastic4play.AuthenticationError
-import org.elastic4play.services.{ AuthContext, AuthSrv }
+import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.auth.MultiAuthSrv
 
 object TheHiveAuthSrv {

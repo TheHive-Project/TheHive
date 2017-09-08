@@ -12,4 +12,4 @@ libraryDependencies ++= Seq(
   Library.reflections
 )
 
-enablePlugins(PlayScala)
+play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"

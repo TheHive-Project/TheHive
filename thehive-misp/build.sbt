@@ -7,5 +7,3 @@ libraryDependencies ++= Seq(
   Library.zip4j,
   Library.elastic4play
 )
-
-enablePlugins(PlayScala)

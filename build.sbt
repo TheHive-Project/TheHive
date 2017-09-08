@@ -1,17 +1,21 @@
 name := "TheHive"
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
+  .enablePlugins(PlayScala)
   .settings(publish := {})
 
 lazy val thehiveMetrics = (project in file("thehive-metrics"))
+  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
 lazy val thehiveMisp = (project in file("thehive-misp"))
+  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
 lazy val thehiveCortex = (project in file("thehive-cortex"))
+  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
   .settings(SbtScalariform.scalariformSettings: _*)
@@ -25,6 +29,11 @@ lazy val thehive = (project in file("."))
   .settings(aggregate in Docker := false)
   .settings(PublishToBinTray.settings: _*)
   .settings(Release.settings: _*)
+
+
+// Redirect logs from ElasticSearch (which uses log4j2) to slf4j
+libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.0"
+excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .enablePlugins(RpmPlugin)
