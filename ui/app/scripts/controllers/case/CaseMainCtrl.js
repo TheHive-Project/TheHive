@@ -198,17 +198,100 @@
                 });
             };
 
+
+            var extractExportErrors = function (errors) {
+                var result = [];
+
+                console.log(errors);
+                result = errors.map(function(item) {
+                    return {
+                        data: item.object.dataType === 'file' ? item.object.attachment.name : item.object.data,
+                        message: item.message
+                    };
+                });
+
+                return result;
+            }
+
+            var showExportErrors = function(errors) {
+                $uibModal.open({
+                    templateUrl: 'views/partials/misp/error.dialog.html',
+                    controller: function(clipboard, $uibModalInstance, failures) {
+                        this.failures = failures;
+                        this.cancel = function() {
+                            $uibModalInstance.dismiss();
+                        }
+
+                        this.copyToClipboard = function() {
+                            clipboard.copyText(_.pluck(failures, 'data').join('\n'));
+                            $uibModalInstance.dismiss();
+                        }
+                    },
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        failures: function() {
+                            return errors;
+                        }
+                    }
+                })
+            }
+
             $scope.shareCase = function() {
-                var mispConfig = $scope.appConfig.connectors.misp;
-                MispSrv.getServer(mispConfig)
-                    .then(function(server) {
-                        return MispSrv.export($scope.caseId, server);
-                    })
-                    .then(function(response){
-                        console.log(response);
-                    }, function(err) {
-                        console.log(err);
-                    });
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'views/partials/misp/case.export.confirm.html',
+                    controller: function($uibModalInstance, data) {
+                        this.caze = data;
+                        this.cancel = function() {
+                            $uibModalInstance.dismiss();
+                        }
+
+                        this.confirm = function() {
+                            $uibModalInstance.close();
+                        }
+                    },
+                    controllerAs: 'dialog',
+                    resolve: {
+                        data: function() {
+                            return $scope.caze;
+                        }
+                    }
+                });
+
+                modalInstance.result.then(function() {
+                    var mispConfig = $scope.appConfig.connectors.misp;
+                    return MispSrv.getServer(mispConfig)
+                }).then(function(server) {
+                    return MispSrv.export($scope.caseId, server);
+                })
+                .then(function(response){
+                    var success = 0,
+                        failure = 0;
+
+                    if (response.status === 207) {
+                        success = response.data.success.length;
+                        failure = response.data.failure.length;
+
+                        showExportErrors(extractExportErrors(response.data.failure));
+
+                        NotificationSrv.log('The case has been successfully exported, but '+ failure +' observable(s) failed', 'warning');
+                    } else {
+                        success = angular.isObject(response.data) ? 1 : response.data.length;
+                        NotificationSrv.log('The case has been successfully exported with ' + success+ ' observable(s)', 'success');
+                    }
+
+                }, function(err) {
+                    if(!err) {
+                        return;
+                    }
+
+                    if (err.status === 400) {
+                        showExportErrors(extractExportErrors(err.data));
+                    } else {
+                        NotificationSrv.error('CaseExportCtrl', 'An unexpected error occurred while exporting case', response.status);
+                    }
+                });
+
             };
 
             /**

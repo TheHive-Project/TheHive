@@ -12,7 +12,7 @@
             <th>Reason</th>
         </thead>
         <tbody>
-            <tr ng-repeat="o in failures">
+            <tr ng-repeat="o in dialog.failures">
                 <td class="wrap">{{o.data | fang}}</td>
                 <td class="nowrap">{{o.message}}</td>
             </tr>
@@ -23,6 +23,6 @@
 </div>
 
 <div class="modal-footer text-left">
-    <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
-    <button class="btn btn-primary pull-right" ng-click="copyToClipboard()" type="button"><i class="fa fa-copy"></i> Copy to clipboard</button>
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" ng-click="dialog.copyToClipboard()" type="button"><i class="fa fa-copy"></i> Copy to clipboard</button>
 </div>
