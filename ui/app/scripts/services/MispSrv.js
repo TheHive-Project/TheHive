@@ -118,35 +118,6 @@
                     return defer.promise;
                 },
 
-                promptForInstance: function(servers) {
-                    var modalInstance = $uibModal.open({
-                        templateUrl: 'views/partials/misp/choose-instance-dialog.html',
-                        controller: 'ServerInstanceDialogCtrl',
-                        controllerAs: 'vm',
-                        size: '',
-                        resolve: {
-                            servers: function() {
-                                return servers;
-                            }
-                        }
-                    });
-
-                    return modalInstance.result;
-                },
-
-                getServer: function(mispConfig) {
-                    if(!mispConfig || !mispConfig.enabled || !mispConfig.servers) {
-                        return $q.reject();
-                    }
-
-                    var servers = mispConfig.servers;
-                    if (servers.length === 1) {
-                        return $q.resolve(servers[0]);
-                    } else {
-                        return factory.promptForInstance(servers);
-                    }
-                },
-
                 export: function(caseId, server) {
                     return $http.post(baseUrl + '/export/' + caseId + '/' + server, {});
                 }

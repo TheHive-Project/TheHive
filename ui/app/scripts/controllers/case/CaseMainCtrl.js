@@ -26,6 +26,13 @@
             $scope.caze = caze;
             $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
 
+            $scope.initExports = function() {
+                $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
+                    return item.type === 'misp';
+                }).length;
+            };
+            $scope.initExports();
+
             $scope.updateMetricsList = function() {
                 MetricsCacheSrv.all().then(function(metrics) {
                     $scope.allMetrics = _.omit(metrics, _.keys($scope.caze.metrics));
@@ -198,99 +205,31 @@
                 });
             };
 
-
-            var extractExportErrors = function (errors) {
-                var result = [];
-
-                result = errors.map(function(item) {
-                    return {
-                        data: item.object.dataType === 'file' ? item.object.attachment.name : item.object.data,
-                        message: item.message
-                    };
-                });
-
-                return result;
-            }
-
-            var showExportErrors = function(errors) {
-                $uibModal.open({
-                    templateUrl: 'views/partials/misp/error.dialog.html',
-                    controller: function(clipboard, $uibModalInstance, failures) {
-                        this.failures = failures;
-                        this.cancel = function() {
-                            $uibModalInstance.dismiss();
-                        }
-
-                        this.copyToClipboard = function() {
-                            clipboard.copyText(_.pluck(failures, 'data').join('\n'));
-                            $uibModalInstance.dismiss();
-                        }
-                    },
-                    controllerAs: 'dialog',
-                    size: 'lg',
-                    resolve: {
-                        failures: function() {
-                            return errors;
-                        }
-                    }
-                })
-            }
-
             $scope.shareCase = function() {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/misp/case.export.confirm.html',
-                    controller: function($uibModalInstance, data) {
-                        this.caze = data;
-                        this.cancel = function() {
-                            $uibModalInstance.dismiss();
-                        }
-
-                        this.confirm = function() {
-                            $uibModalInstance.close();
-                        }
-                    },
+                    controller: 'CaseExportDialogCtrl',
                     controllerAs: 'dialog',
+                    size: 'lg',
                     resolve: {
-                        data: function() {
+                        caze: function() {
                             return $scope.caze;
+                        },
+                        config: function() {
+                            return $scope.appConfig.connectors.misp;
                         }
                     }
                 });
 
                 modalInstance.result.then(function() {
-                    var mispConfig = $scope.appConfig.connectors.misp;
-                    return MispSrv.getServer(mispConfig)
-                }).then(function(server) {
-                    return MispSrv.export($scope.caseId, server);
+                    return CaseSrv.get({
+                        'caseId': $scope.caseId,
+                        'nstats': true
+                    }).$promise;
+                }).then(function(data) {
+                    $scope.caze = data.toJSON();
+                    $scope.initExports();
                 })
-                .then(function(response){
-                    var success = 0,
-                        failure = 0;
-
-                    if (response.status === 207) {
-                        success = response.data.success.length;
-                        failure = response.data.failure.length;
-
-                        showExportErrors(extractExportErrors(response.data.failure));
-
-                        NotificationSrv.log('The case has been successfully exported, but '+ failure +' observable(s) failed', 'warning');
-                    } else {
-                        success = angular.isObject(response.data) ? 1 : response.data.length;
-                        NotificationSrv.log('The case has been successfully exported with ' + success+ ' observable(s)', 'success');
-                    }
-
-                }, function(err) {
-                    if(!err) {
-                        return;
-                    }
-
-                    if (err.status === 400) {
-                        showExportErrors(extractExportErrors(err.data));
-                    } else {
-                        NotificationSrv.error('CaseExportCtrl', 'An unexpected error occurred while exporting case', response.status);
-                    }
-                });
-
             };
 
             /**
