@@ -7,13 +7,16 @@
         self.user = user;
         self.isEdit = user.id;
 
-        self.formData = _.defaults(_.pick(self.user, 'id', 'name', 'roles'), {
+        var formData = _.defaults(_.pick(self.user, 'id', 'name', 'roles'), {
             id: null,
             name: null,
             roles: [],
             alert: false
         });
-        self.formData.alert = self.formData.roles.indexOf('alert') !== -1;
+        formData.alert = formData.roles.indexOf('alert') !== -1;
+        formData.roles = _.without(formData.roles, 'alert');
+
+        self.formData = formData;
 
         var onSuccess = function(data) {
             $uibModalInstance.close(data);
