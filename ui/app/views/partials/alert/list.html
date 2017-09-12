@@ -44,7 +44,7 @@
                             <thead>
                                 <tr>
                                     <th width="20px"><input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()"></th>
-                                    <th width="80px">Reference</th>
+                                    <th width="150px">Reference</th>
                                     <th width="80px">Type</th>
                                     <th width="80px">Status</th>
                                     <th>Title</th>
@@ -61,7 +61,7 @@
                                     <td>
                                         <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
                                     </td>
-                                    <td>
+                                    <td class="wrap">
                                         <strong>{{::event.sourceRef}}</strong>
                                     </td>
                                     <td>
