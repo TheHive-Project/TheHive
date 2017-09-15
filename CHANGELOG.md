@@ -1,7 +1,34 @@
 # Change Log
 
-## [2.12.1](https://github.com/CERT-BDF/TheHive/tree/2.12.1) (2017-08-01)
+## [2.13](https://github.com/CERT-BDF/TheHive/tree/2.13) (2017-09-15)
 
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.12.1...2.13)
+
+**Implemented enhancements:**
+
+- Group ownership in Docker image prevents running on OpenShift [\#307](https://github.com/CERT-BDF/TheHive/issues/307)
+- Improve the content of alert flow items [\#304](https://github.com/CERT-BDF/TheHive/issues/304)
+- Add a basic support for webhooks [\#293](https://github.com/CERT-BDF/TheHive/issues/293)
+- Add basic authentication to Stream API [\#291](https://github.com/CERT-BDF/TheHive/issues/291)
+- Add Support for Play 2.6.x and Elasticsearch 5.x [\#275](https://github.com/CERT-BDF/TheHive/issues/275)
+- Fine grained user permissions for API access [\#263](https://github.com/CERT-BDF/TheHive/issues/263)
+- Alert Pane: Catch Incorrect Keywords [\#241](https://github.com/CERT-BDF/TheHive/issues/241)
+- Specify multiple AD servers in TheHive configuration [\#231](https://github.com/CERT-BDF/TheHive/issues/231)
+- Export cases in MISP events [\#52](https://github.com/CERT-BDF/TheHive/issues/52)
+
+**Fixed bugs:**
+
+- Download attachment with non-latin filename [\#302](https://github.com/CERT-BDF/TheHive/issues/302)
+- Undefined threat level from MISP events becomes severity "4" [\#300](https://github.com/CERT-BDF/TheHive/issues/300)
+- File name is not displayed in observable conflict dialog [\#295](https://github.com/CERT-BDF/TheHive/issues/295)
+- A colon punctuation mark in a search query results in 500 [\#285](https://github.com/CERT-BDF/TheHive/issues/285)
+- Previewing alerts fails with "too many substreams open" due to case similarity process [\#280](https://github.com/CERT-BDF/TheHive/issues/280)
+
+**Closed issues:**
+
+- Threat level/severity code inverted between The Hive and MISP [\#292](https://github.com/CERT-BDF/TheHive/issues/292)
+
+## [2.12.1](https://github.com/CERT-BDF/TheHive/tree/2.12.1) (2017-08-01)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.12.0...2.12.1)
 
 **Implemented enhancements:**
@@ -11,12 +38,12 @@
 
 **Fixed bugs:**
 
+- Cortex Connector Not Found [\#256](https://github.com/CERT-BDF/TheHive/issues/256)
 - Case similarity reports merged cases [\#272](https://github.com/CERT-BDF/TheHive/issues/272)
 - Closing a case with an open task does not dismiss task in "My tasks" [\#269](https://github.com/CERT-BDF/TheHive/issues/269)
 - API: cannot create alert if one alert artifact contains the IOC field set [\#268](https://github.com/CERT-BDF/TheHive/issues/268)
 - Can't get logs of a task via API [\#259](https://github.com/CERT-BDF/TheHive/issues/259)
 - Add multiple attachments in a single task log doesn't work [\#257](https://github.com/CERT-BDF/TheHive/issues/257)
-- Cortex Connector Not Found [\#256](https://github.com/CERT-BDF/TheHive/issues/256)
 - TheHive doesn't send the file name to Cortex [\#254](https://github.com/CERT-BDF/TheHive/issues/254)
 - Renaming of users does not work [\#249](https://github.com/CERT-BDF/TheHive/issues/249)
 
