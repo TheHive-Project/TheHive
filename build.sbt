@@ -42,7 +42,7 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     maintainer := "TheHive Project <support@thehive-project.org>",
     version := "1.0.0",
     rpmRelease := "3",
-    rpmVendor in Rpm := "TheHive Project",
+    rpmVendor := "TheHive Project",
     rpmUrl := Some("http://thehive-project.org/"),
     rpmLicense := Some("AGPL"),
     maintainerScripts in Rpm := Map.empty,
@@ -134,7 +134,7 @@ linuxMakeStartScript in Debian := None
 
 // RPM //
 rpmRelease := "1"
-rpmVendor in Rpm := "TheHive Project"
+rpmVendor := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")
 rpmRequirements += "java-1.8.0-openjdk-headless"
@@ -180,7 +180,7 @@ dockerCommands ~= { dc =>
     .splitAt(4)
   dockerInitCmds ++
     Seq(
-      Cmd("ADD", "var", "/var"),
+        Cmd("ADD", "var", "/var"),
       Cmd("ADD", "etc", "/etc"),
       ExecCmd("RUN", "chown", "-R", "daemon:root", "/var/log/thehive"),
       ExecCmd("RUN", "chmod", "+x", "/opt/thehive/bin/thehive", "/opt/thehive/entrypoint")) ++
