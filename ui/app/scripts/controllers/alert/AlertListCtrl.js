@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
+        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TagSrv, TemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
             var self = this;
 
             self.list = [];
@@ -93,6 +93,7 @@
             self.searchForm = {
                 searchQuery: self.filtering.buildQuery() || ''
             };
+            self.lastSearch = null;
 
             $scope.$watch('$vm.list.pageSize', function (newValue) {
                 self.filtering.setPageSize(newValue);
@@ -275,7 +276,11 @@
 
             this.applyFilters = function () {
                 self.searchForm.searchQuery = self.filtering.buildQuery();
-                self.search();
+
+                if(self.lastSearch !== self.searchForm.searchQuery) {
+                    self.lastSearch = self.searchForm.searchQuery;
+                    self.search();
+                }
             };
 
             this.clearFilters = function () {
@@ -370,6 +375,10 @@
 
             this.getSources = function(query) {
                 return AlertingSrv.sources(query);
+            };
+
+            this.getTags = function(query) {
+                return TagSrv.fromAlerts(query);
             };
 
             self.load();

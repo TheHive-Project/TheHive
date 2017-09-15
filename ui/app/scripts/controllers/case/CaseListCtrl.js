@@ -15,6 +15,7 @@
         this.searchForm = {
             searchQuery: this.uiSrv.buildQuery() || ''
         };
+        this.lastQuery = null;
 
         this.list = PSearchSrv(undefined, 'case', {
             scope: $scope,
@@ -36,7 +37,6 @@
             field: 'status'
         });
 
-
         $scope.$watch('$vm.list.pageSize', function (newValue) {
             self.uiSrv.setPageSize(newValue);
         });
@@ -55,7 +55,12 @@
 
         this.applyFilters = function () {
             self.searchForm.searchQuery = self.uiSrv.buildQuery();
-            self.search();
+
+            if(self.lastQuery !== self.searchForm.searchQuery) {
+                self.lastQuery = self.searchForm.searchQuery;
+                self.search();
+            }
+
         };
 
         this.clearFilters = function () {

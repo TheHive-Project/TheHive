@@ -3,27 +3,40 @@
     angular.module('theHiveServices')
         .service('TagSrv', function(StatSrv, $q) {
 
-            this.fromCases = function(query) {
-                var defer = $q.defer();
-
-                StatSrv.getPromise({
-                    objectType: 'case',
+            var getPromiseFor = function(objectType) {
+                return StatSrv.getPromise({
+                    objectType: objectType,
                     field: 'tags',
                     limit: 1000
-                }).then(function(response) {
-                    var tags = [];
+                });
+            };
 
-                    tags = _.map(_.filter(_.keys(response.data), function(tag) {
-                        var regex = new RegExp(query, 'gi');
-                        return regex.test(tag);
-                    }), function(tag) {
-                        return {text: tag};
-                    });
+            var mapTags = function(collection, term) {
+                return _.map(_.filter(_.keys(collection), function(tag) {
+                    var regex = new RegExp(term, 'gi');
+                    return regex.test(tag);
+                }), function(tag) {
+                    return {text: tag};
+                });
+            };
 
-                    defer.resolve(tags);
+            var getTags = function(objectType, term) {
+                var defer = $q.defer();
+
+                getPromiseFor(objectType).then(function(response) {
+                    defer.resolve(mapTags(response.data, term) || []);
                 });
 
                 return defer.promise;
+            }
+
+
+            this.fromCases = function(term) {
+                return getTags('case', term);
+            };
+
+            this.fromAlerts = function(term) {
+                return getTags('alert', term);
             };
 
         });

@@ -16,7 +16,7 @@
                             <th>Roles</th>
                             <th width="300">Password</th>
                             <th width="400">API key</th>
-                            <th width="100" class="text-center">Lock</th>
+                            <th width="150" class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -38,7 +38,7 @@
                                     <form ng-show="showPwdForm[user]" ng-submit="setPassword(user, newValue); showPwdForm[user] = false;">
                                         <div class="input-group input-group-sm">
                                             <input autofocus="autofocus" class="form-control input-sm" ng-model="newValue" type="password">
-                                            <span class="input-group-btn">                                                
+                                            <span class="input-group-btn">
                                                 <button class="btn btn-default" type="button" ng-click="showPwdForm[user] = false">
                                                     <i class="fa fa-times text-danger"></i>
                                                 </button>
@@ -54,7 +54,6 @@
                                 </span>
                                 <span ng-if="user.hasKey">
 
-                                    <!-- <span class="btn btn-sm btn-primary" ng-if="usrKey[user.id]" ng-click="hideKey(user)">{{usrKey[user.id]}}</span> -->
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-btn">
                                             <span class="btn btn-sm btn-default" ng-class="{'Locked':'disabled'}[user.status]" ng-click="createKey(user)">Renew</span>
@@ -71,13 +70,14 @@
 
                                 </span>
                             </td>
-                            <!-- <td ng-mouseenter="showDropUser[user] = 'text-danger'" ng-mouseleave="showDropUser[user] = 'text-muted'" style="vertical-align:middle; " class="col-md-3"><center> <span><a href ng-click="lockUser(user)"> -->
-                            <td class="text-center">
-                                <span>
-                                    <a href ng-click="lockUser(user)">
-                                        <i class="glyphicon glyphicon-lock" ng-class="{'Locked':'text-danger', 'Ok':'text-muted' }[user.status]"></i>
-                                    </a>
-                                </span>
+                            <td>
+                                <button class="btn btn-sm btn-primary pull-right" ng-click="showUserDialog(user)">
+                                    <i class="fa fa-pencil"></i> Edit
+                                </button>
+                                <button class="btn btn-sm pull-right mr-xxxs" ng-class="{'Locked':'btn-danger', 'Ok': 'btn-default'}[user.status]" ng-click="lockUser(user)">
+                                    <i class="fa fa-lock"></i> {{user.status === 'Ok' ? 'Lock' : 'Unlock'}}
+                                </button>
+
                             </td>
                         </tr>
 

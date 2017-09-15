@@ -59,7 +59,7 @@ then
 			SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
 		fi
 		echo Using secret: $SECRET
-		echo play.crypto.secret=\"$SECRET\" >> $CONFIG_FILE
+		echo play.http.secret.key=\"$SECRET\" >> $CONFIG_FILE
 	fi
 
 	if test $CONFIG_ES = 1
