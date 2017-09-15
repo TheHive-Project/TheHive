@@ -66,7 +66,7 @@
             promptForInstance: function(servers) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/cortex/choose-instance-dialog.html',
-                    controller: 'CortexInstanceDialogCtrl',
+                    controller: 'ServerInstanceDialogCtrl',
                     controllerAs: 'vm',
                     size: '',
                     resolve: {

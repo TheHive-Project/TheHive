@@ -2,19 +2,21 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import models.{ CaseResolutionStatus, CaseStatus, _ }
-import org.elastic4play.ConflictError
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services._
-import org.elastic4play.utils.{ RichFuture, RichOr }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Try }
+
 import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue.jsValueToJsLookup
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Try }
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import models.{ CaseResolutionStatus, CaseStatus, _ }
+
+import org.elastic4play.ConflictError
+import org.elastic4play.controllers.Fields
+import org.elastic4play.services._
+import org.elastic4play.utils.{ RichFuture, RichOr }
 
 @Singleton
 class ArtifactSrv @Inject() (
@@ -37,7 +39,7 @@ class ArtifactSrv @Inject() (
   def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] = {
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
-        case error ⇒ updateIfDeleted(caze, fields) // maybe the artifact already exists. If so, search it and update it
+        case _ ⇒ updateIfDeleted(caze, fields) // maybe the artifact already exists. If so, search it and update it
       }
   }
 
@@ -71,7 +73,7 @@ class ArtifactSrv @Inject() (
         case t ⇒ Future.successful(t)
       }
 
-  def get(id: String)(implicit authContext: AuthContext): Future[Artifact] = {
+  def get(id: String): Future[Artifact] = {
     getSrv[ArtifactModel, Artifact](artifactModel, id)
   }
 

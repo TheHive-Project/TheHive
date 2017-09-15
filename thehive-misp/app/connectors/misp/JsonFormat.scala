@@ -6,6 +6,8 @@ import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
 
+import org.elastic4play.services.JsonFormat.attachmentFormat
+
 object JsonFormat {
 
   implicit val mispAlertReads: Reads[MispAlert] = Reads[MispAlert] { json ⇒
@@ -29,7 +31,8 @@ object JsonFormat {
       date = new Date(timestamp.toLong * 1000)
       publishTimestamp ← (json \ "publish_timestamp").validate[String]
       publishDate = new Date(publishTimestamp.toLong * 1000)
-      threatLevel ← (json \ "threat_level_id").validate[String]
+      threatLevelString ← (json \ "threat_level_id").validate[String]
+      threatLevel = threatLevelString.toLong
       isPublished ← (json \ "published").validate[Boolean]
     } yield MispAlert(
       org,
@@ -39,7 +42,7 @@ object JsonFormat {
       isPublished,
       s"#$eventId ${info.trim}",
       s"Imported from MISP Event #$eventId, created at $date",
-      threatLevel.toLong,
+      if (0 < threatLevel && threatLevel < 4) 4 - threatLevel else 2,
       alertTags,
       tlp,
       "")
@@ -64,5 +67,26 @@ object JsonFormat {
       date,
       comment,
       value,
-      tags :+ s"MISP:category$category" :+ s"MISP:type=$tpe"))
+      tags))
+
+  implicit val exportedAttributeWrites: Writes[ExportedMispAttribute] = Writes[ExportedMispAttribute] { attribute ⇒
+    Json.obj(
+      "category" → attribute.category,
+      "type" → attribute.tpe,
+      "value" → attribute.value.fold[String](identity, _.name),
+      "comment" → attribute.comment)
+  }
+
+  implicit val mispArtifactWrites: Writes[MispArtifact] = OWrites[MispArtifact] { artifact ⇒
+    Json.obj(
+      "dataType" → artifact.dataType,
+      "message" → artifact.message,
+      "tlp" → artifact.tlp,
+      "tags" → artifact.tags,
+      "startDate" → artifact.startDate) + (artifact.value match {
+        case SimpleArtifactData(data)                           ⇒ "data" → JsString(data)
+        case RemoteAttachmentArtifact(filename, reference, tpe) ⇒ "remoteAttachment" → Json.obj("filename" → filename, "reference" → reference, "type" → tpe)
+        case AttachmentArtifact(attachment)                     ⇒ "attachment" → Json.toJson(attachment)
+      })
+  }
 }

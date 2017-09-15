@@ -3,18 +3,20 @@ package models
 import java.util.Date
 import javax.inject.{ Inject, Provider, Singleton }
 
-import models.JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
-import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
-import org.elastic4play.services.{ FindSrv, SequenceSrv }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.math.BigDecimal.{ int2bigDecimal, long2bigDecimal }
+
 import play.api.Logger
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
+
+import models.JsonFormat.{ caseImpactStatusFormat, caseResolutionStatusFormat, caseStatusFormat }
 import services.{ AuditedModel, CaseSrv }
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.math.BigDecimal.{ int2bigDecimal, long2bigDecimal }
+import org.elastic4play.JsonFormat.dateFormat
+import org.elastic4play.models.{ AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.services.{ FindSrv, SequenceSrv }
 
 object CaseStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -57,11 +59,12 @@ class CaseModel @Inject() (
     artifactModel: Provider[ArtifactModel],
     taskModel: Provider[TaskModel],
     caseSrv: Provider[CaseSrv],
+    alertModel: Provider[AlertModel],
     sequenceSrv: SequenceSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case") with CaseAttributes with AuditedModel { caseModel ⇒
 
-  lazy val logger = Logger(getClass)
+  private[CaseModel] lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")
   override val removeAttribute: JsObject = Json.obj("status" → CaseStatus.Deleted)
 
@@ -140,6 +143,22 @@ class CaseModel @Inject() (
         case _                 ⇒ Json.obj()
       }
   }
+
+  private[models] def buildAlertStats(caze: Case): Future[JsObject] = {
+    import org.elastic4play.services.QueryDSL._
+    findSrv(
+      alertModel.get,
+      "case" ~= caze.id,
+      groupByField("type", groupByField("source", selectCount)))
+      .map { alertStatsJson ⇒
+        val alertStats = for {
+          (tpe, JsObject(srcStats)) ← alertStatsJson.value
+          src ← srcStats.keys
+        } yield Json.obj("type" → tpe, "source" → src)
+        Json.obj("alerts" → alertStats)
+      }
+  }
+
   override def getStats(entity: BaseEntity): Future[JsObject] = {
 
     entity match {
@@ -147,9 +166,10 @@ class CaseModel @Inject() (
         for {
           taskStats ← buildTaskStats(caze)
           artifactStats ← buildArtifactStats(caze)
+          alertStats ← buildAlertStats(caze)
           mergeIntoStats ← buildMergeIntoStats(caze)
           mergeFromStats ← buildMergeFromStats(caze)
-        } yield taskStats ++ artifactStats ++ mergeIntoStats ++ mergeFromStats
+        } yield taskStats ++ artifactStats ++ alertStats ++ mergeIntoStats ++ mergeFromStats
       case other ⇒
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
         Future.successful(Json.obj())

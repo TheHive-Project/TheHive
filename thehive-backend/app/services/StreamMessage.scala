@@ -1,17 +1,12 @@
 package services
 
-import javax.inject.Singleton
-
-import scala.annotation.elidable
-import scala.annotation.elidable.ASSERTION
-import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContext, Future }
 
-import play.api.libs.json.{ JsObject, Json }
+import play.api.Logger
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json.{ JsObject, Json }
 
 import org.elastic4play.services.{ AuditOperation, AuxSrv, MigrationEvent }
-import play.api.Logger
 
 trait StreamMessageGroup[M] {
   def :+(message: M): StreamMessageGroup[M]
@@ -54,7 +49,7 @@ case class AuditOperationGroup(
 }
 
 object AuditOperationGroup {
-  lazy val log = Logger(getClass)
+  private[AuditOperationGroup] lazy val logger = Logger(classOf[AuditOperationGroup])
 
   def apply(auxSrv: AuxSrv, operation: AuditOperation)(implicit ec: ExecutionContext): AuditOperationGroup = {
     val auditedAttributes = JsObject {
@@ -69,7 +64,7 @@ object AuditOperationGroup {
     val obj = auxSrv(operation.entity, 10, withStats = false, removeUnaudited = true)
       .recover {
         case error ⇒
-          log.error("auxSrv fails", error)
+          logger.error("auxSrv fails", error)
           JsObject(Nil)
       }
     new AuditOperationGroup(

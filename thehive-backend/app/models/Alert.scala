@@ -3,18 +3,20 @@ package models
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
+import scala.concurrent.Future
+import scala.util.Try
+
+import play.api.Logger
+import play.api.libs.json._
+
 import models.JsonFormat.alertStatusFormat
+import services.AuditedModel
+
 import org.elastic4play.controllers.JsonInputValue
 import org.elastic4play.models.{ Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, MultiAttributeFormat, OptionalAttributeFormat, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.services.DBLists
 import org.elastic4play.utils.Hasher
 import org.elastic4play.{ AttributeCheckingError, InvalidFormatAttributeError }
-import play.api.Logger
-import play.api.libs.json._
-import services.AuditedModel
-
-import scala.concurrent.Future
-import scala.util.Try
 
 object AlertStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -95,7 +97,7 @@ class AlertModel @Inject() (dblists: DBLists)
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
           attrs + ("_id" → JsString(_id))
-        } - "lastSyncDate" - "case" - "status" - "follow"
+        }
       }
   }
 }

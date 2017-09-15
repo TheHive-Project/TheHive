@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -25,6 +25,13 @@
 
             $scope.caze = caze;
             $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
+
+            $scope.initExports = function() {
+                $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
+                    return item.type === 'misp';
+                }).length;
+            };
+            $scope.initExports();
 
             $scope.updateMetricsList = function() {
                 MetricsCacheSrv.all().then(function(metrics) {
@@ -196,6 +203,33 @@
                         }
                     }
                 });
+            };
+
+            $scope.shareCase = function() {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'views/partials/misp/case.export.confirm.html',
+                    controller: 'CaseExportDialogCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return $scope.caze;
+                        },
+                        config: function() {
+                            return $scope.appConfig.connectors.misp;
+                        }
+                    }
+                });
+
+                modalInstance.result.then(function() {
+                    return CaseSrv.get({
+                        'caseId': $scope.caseId,
+                        'nstats': true
+                    }).$promise;
+                }).then(function(data) {
+                    $scope.caze = data.toJSON();
+                    $scope.initExports();
+                })
             };
 
             /**

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('MispSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('MispSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, PSearchSrv) {
 
             var baseUrl = './api/connector/misp';
 
@@ -116,6 +116,10 @@
                     });
 
                     return defer.promise;
+                },
+
+                export: function(caseId, server) {
+                    return $http.post(baseUrl + '/export/' + caseId + '/' + server, {});
                 }
             };
 

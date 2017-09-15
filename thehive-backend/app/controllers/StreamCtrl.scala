@@ -2,29 +2,27 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.annotation.implicitNotFound
-import scala.concurrent.ExecutionContext
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ DurationLong, FiniteDuration }
-import scala.reflect.runtime.universe
 import scala.util.Random
-import akka.actor.{ ActorSystem, Props }
-import akka.pattern.ask
-import akka.util.Timeout
-import play.api.{ Configuration, Logger }
+
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import play.api.mvc.{ Action, AnyContent, Controller }
-import org.elastic4play.{ AuthenticationError, Timed }
-import org.elastic4play.controllers.{ Authenticated, ExpirationError, ExpirationOk, ExpirationWarning, Renderer }
-import org.elastic4play.services.{ AuxSrv, EventSrv, Role }
+import play.api.mvc._
+import play.api.{ Configuration, Logger }
+
+import akka.actor.{ ActorSystem, Props }
+import akka.pattern.ask
+import akka.util.Timeout
+import models.Roles
 import services.StreamActor
 import services.StreamActor.StreamMessages
-import akka.actor.ActorPath
-import org.elastic4play.services.MigrationSrv
 
-import scala.collection.immutable
-import scala.concurrent.Future
+import org.elastic4play.controllers._
+import org.elastic4play.services.{ AuxSrv, EventSrv, MigrationSrv }
+import org.elastic4play.Timed
 
 @Singleton
 class StreamCtrl(
@@ -37,8 +35,9 @@ class StreamCtrl(
     eventSrv: EventSrv,
     auxSrv: AuxSrv,
     migrationSrv: MigrationSrv,
+    components: ControllerComponents,
     implicit val system: ActorSystem,
-    implicit val ec: ExecutionContext) extends Controller with Status {
+    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Inject() def this(
     configuration: Configuration,
@@ -47,29 +46,31 @@ class StreamCtrl(
     eventSrv: EventSrv,
     auxSrv: AuxSrv,
     migrationSrv: MigrationSrv,
+    components: ControllerComponents,
     system: ActorSystem,
     ec: ExecutionContext) =
     this(
-      configuration.getMilliseconds("stream.longpolling.cache").get.millis,
-      configuration.getMilliseconds("stream.longpolling.refresh").get.millis,
-      configuration.getMilliseconds("stream.longpolling.nextItemMaxWait").get.millis,
-      configuration.getMilliseconds("stream.longpolling.globalMaxWait").get.millis,
+      configuration.getMillis("stream.longpolling.cache").millis,
+      configuration.getMillis("stream.longpolling.refresh").millis,
+      configuration.getMillis("stream.longpolling.nextItemMaxWait").millis,
+      configuration.getMillis("stream.longpolling.globalMaxWait").millis,
       authenticated,
       renderer,
       eventSrv,
       auxSrv,
       migrationSrv,
+      components,
       system,
       ec)
-  val log = Logger(getClass)
+  private[StreamCtrl] lazy val logger = Logger(getClass)
 
   /**
    * Create a new stream entry with the event head
    */
   @Timed("controllers.StreamCtrl.create")
-  def create: Action[AnyContent] = authenticated(Role.read) {
+  def create: Action[AnyContent] = authenticated(Roles.read) {
     val id = generateStreamId()
-    val aref = system.actorOf(Props(
+    system.actorOf(Props(
       classOf[StreamActor],
       cacheExpiration,
       refresh,
@@ -80,7 +81,7 @@ class StreamCtrl(
     Ok(id)
   }
 
-  val alphanumeric: immutable.IndexedSeq[Char] = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9'))
+  val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
   private[controllers] def generateStreamId() = Seq.fill(10)(alphanumeric(Random.nextInt(alphanumeric.size))).mkString
   private[controllers] def isValidStreamId(streamId: String): Boolean = {
     streamId.length == 10 && streamId.forall(alphanumeric.contains)
@@ -92,22 +93,23 @@ class StreamCtrl(
    */
   @Timed("controllers.StreamCtrl.get")
   def get(id: String): Action[AnyContent] = Action.async { implicit request ⇒
-    implicit val timeout = Timeout(refresh + globalMaxWait + 1.second)
+    implicit val timeout: Timeout = Timeout(refresh + globalMaxWait + 1.second)
 
     if (!isValidStreamId(id)) {
       Future.successful(BadRequest("Invalid stream id"))
     }
     else {
-      val status = authenticated.expirationStatus(request) match {
-        case ExpirationError if !migrationSrv.isMigrating ⇒ throw AuthenticationError("Not authenticated")
-        case _: ExpirationWarning                         ⇒ 220
-        case _                                            ⇒ OK
-
+      val futureStatus = authenticated.expirationStatus(request) match {
+        case ExpirationError if !migrationSrv.isMigrating ⇒ authenticated.getFromApiKey(request).map(_ ⇒ OK)
+        case _: ExpirationWarning                         ⇒ Future.successful(220)
+        case _                                            ⇒ Future.successful(OK)
       }
 
-      (system.actorSelection(s"/user/stream-$id") ? StreamActor.GetOperations) map {
-        case StreamMessages(operations) ⇒ renderer.toOutput(status, operations)
-        case m                          ⇒ InternalServerError(s"Unexpected message : $m (${m.getClass})")
+      futureStatus.flatMap { status ⇒
+        (system.actorSelection(s"/user/stream-$id") ? StreamActor.GetOperations) map {
+          case StreamMessages(operations) ⇒ renderer.toOutput(status, operations)
+          case m                          ⇒ InternalServerError(s"Unexpected message : $m (${m.getClass})")
+        }
       }
     }
   }

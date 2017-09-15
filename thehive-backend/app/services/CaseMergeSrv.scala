@@ -3,20 +3,22 @@ package services
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
-import akka.Done
-import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
-import models._
-import org.elastic4play.controllers.{ AttachmentInputValue, Fields }
-import org.elastic4play.models.BaseEntity
-import org.elastic4play.services.{ AuthContext, EventMessage, EventSrv }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.math.BigDecimal.long2bigDecimal
+import scala.util.Failure
+
 import play.api.Logger
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.math.BigDecimal.long2bigDecimal
-import scala.util.Failure
+import akka.Done
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+import models._
+
+import org.elastic4play.controllers.{ AttachmentInputValue, Fields }
+import org.elastic4play.models.BaseEntity
+import org.elastic4play.services.{ AuthContext, EventMessage, EventSrv }
 
 case class MergeArtifact(newArtifact: Artifact, artifacts: Seq[Artifact], authContext: AuthContext) extends EventMessage
 

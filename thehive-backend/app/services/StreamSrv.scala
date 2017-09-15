@@ -2,37 +2,43 @@ package services
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.{ ActorLogging, ActorRef, ActorSystem, Cancellable, DeadLetter, PoisonPill, actorRef2Scala }
-import akka.actor.Actor
-import akka.actor.ActorDSL.{ Act, actor }
-import akka.stream.Materializer
+import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.mvc.{ Filter, RequestHeader, Result }
 
-import org.elastic4play.services.{ AuditOperation, AuxSrv, EndOfMigrationEvent, EventMessage, EventSrv, MigrationEvent }
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, DeadLetter, PoisonPill, actorRef2Scala }
+import akka.stream.Materializer
+
+import org.elastic4play.services._
 import org.elastic4play.utils.Instance
 
 /**
  * This actor monitors dead messages and log them
  */
 @Singleton
-class StreamMonitor @Inject() (implicit val system: ActorSystem) {
-  lazy val logger = Logger(getClass)
-  val monitorActor: ActorRef = actor(new Act {
-    become {
-      case DeadLetter(StreamActor.GetOperations, sender, recipient) ⇒
-        logger.warn(s"receive dead GetOperations message, $sender -> $recipient")
-        sender ! StreamActor.StreamNotFound
-      case other ⇒
-        logger.error(s"receive dead message : $other")
-    }
-  })
-  system.eventStream.subscribe(monitorActor, classOf[DeadLetter])
+class DeadLetterMonitoringActor @Inject() (system: ActorSystem) extends Actor {
+  private[DeadLetterMonitoringActor] lazy val logger = Logger(getClass)
+
+  override def preStart(): Unit = {
+    system.eventStream.subscribe(self, classOf[DeadLetter])
+    super.preStart()
+  }
+
+  override def postStop(): Unit = {
+    system.eventStream.unsubscribe(self)
+    super.postStop()
+  }
+
+  override def receive: Receive = {
+    case DeadLetter(StreamActor.GetOperations, sender, recipient) ⇒
+      logger.warn(s"receive dead GetOperations message, $sender -> $recipient")
+      sender ! StreamActor.StreamNotFound
+    case other ⇒
+      logger.error(s"receive dead message : $other")
+  }
 }
 
 object StreamActor {
@@ -56,10 +62,10 @@ class StreamActor(
     globalMaxWait: FiniteDuration,
     eventSrv: EventSrv,
     auxSrv: AuxSrv) extends Actor with ActorLogging {
-  import services.StreamActor._
   import context.dispatcher
+  import services.StreamActor._
 
-  lazy val logger = Logger(getClass)
+  private[StreamActor] lazy val logger = Logger(getClass)
 
   private object FakeCancellable extends Cancellable {
     def cancel() = true
@@ -204,7 +210,7 @@ class StreamFilter @Inject() (
     implicit val mat: Materializer,
     implicit val ec: ExecutionContext) extends Filter {
 
-  val log = Logger(getClass)
+  private[StreamFilter] lazy val logger = Logger(getClass)
   def apply(nextFilter: RequestHeader ⇒ Future[Result])(requestHeader: RequestHeader): Future[Result] = {
     val requestId = Instance.getRequestId(requestHeader)
     eventSrv.publish(StreamActor.Initialize(requestId))

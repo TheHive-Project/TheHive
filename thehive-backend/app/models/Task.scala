@@ -1,20 +1,19 @@
 package models
 
 import java.util.Date
-
 import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.Future
 
-import play.api.libs.json.{ JsBoolean, JsObject }
 import play.api.libs.json.JsValue.jsValueToJsLookup
-
-import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
-import org.elastic4play.utils.RichJson
+import play.api.libs.json.{ JsBoolean, JsObject }
 
 import models.JsonFormat.taskStatusFormat
 import services.AuditedModel
+
+import org.elastic4play.JsonFormat.dateFormat
+import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F }
+import org.elastic4play.utils.RichJson
 
 object TaskStatus extends Enumeration with HiveEnumeration {
   type Type = Value

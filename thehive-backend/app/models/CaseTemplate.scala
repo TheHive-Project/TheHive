@@ -3,8 +3,10 @@ package models
 import javax.inject.{ Inject, Singleton }
 
 import play.api.libs.json.{ JsObject, JsValue }
-import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F }
+
 import models.JsonFormat.caseTemplateStatusFormat
+
+import org.elastic4play.models.{ Attribute, AttributeDef, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F }
 
 object CaseTemplateStatus extends Enumeration with HiveEnumeration {
   type Type = Value

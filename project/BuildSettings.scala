@@ -13,7 +13,7 @@ object BasicSettings extends AutoPlugin {
       "-deprecation", // Emit warning and location for usages of deprecated APIs.
       "-feature", // Emit warning and location for usages of features that should be imported explicitly.
       "-unchecked", // Enable additional warnings where generated code depends on assumptions.
-      "-Xfatal-warnings", // Fail the compilation if there are any warnings.
+      //"-Xfatal-warnings", // Fail the compilation if there are any warnings.
       "-Xlint", // Enable recommended additional warnings.
       "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver.
       "-Ywarn-dead-code", // Warn when dead code is identified.

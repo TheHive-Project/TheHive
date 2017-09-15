@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminUsersCtrl',
-        function($scope, PSearchSrv, UserSrv, NotificationSrv, appConfig) {
+        function($scope, $uibModal, PSearchSrv, UserSrv, NotificationSrv, clipboard, appConfig) {
             $scope.appConfig = appConfig;
             $scope.canSetPass = appConfig.config.capabilities.indexOf('setPassword') !== -1;
             $scope.newUser = {
@@ -48,15 +48,35 @@
 
             $scope.usrKey = {};
             $scope.getKey = function(user) {
-                UserSrv.get({
-                    userId: user.id
-                }, function(usr) {
-                    $scope.usrKey[user.id] = usr.key;
-                });
+                UserSrv.getKey(user.id)
+                    .then(function(key) {
+                        $scope.usrKey[user.id] = key;
+                    });
 
             };
             $scope.createKey = function(user) {
-                $scope.updateField(user, 'with-key', true);
+                UserSrv.setKey({
+                    userId: user.id
+                },{}, function() {
+                    delete $scope.usrKey[user.id];
+                }, function(response) {
+                    NotificationSrv.error('AdminUsersCtrl', response.data, response.status);
+                });
+            };
+
+            $scope.revokeKey = function(user) {
+                UserSrv.revokeKey({
+                    userId: user.id
+                },{}, function() {
+                    delete $scope.usrKey[user.id];
+                }, function(response) {
+                    NotificationSrv.error('AdminUsersCtrl', response.data, response.status);
+                });
+            };
+
+            $scope.copyKey = function(user) {
+                clipboard.copyText($scope.usrKey[user.id]);
+                delete $scope.usrKey[user.id];
             };
 
             $scope.updateField = function(user, fieldName, newValue) {
@@ -85,6 +105,24 @@
                     NotificationSrv.error('UserMgmtCtrl', response.data, response.status);
                 });
             };
+
+            $scope.showUserDialog = function(user) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'views/partials/admin/user-dialog.html',
+                    controller: 'AdminUserDialogCtrl',
+                    controllerAs: '$vm',
+                    size: 'lg',
+                    resolve: {
+                        user: angular.copy(user) || {}
+                    }
+                });
+
+                modalInstance.result.then(function(data) {
+                    //self.initCustomfields();
+                    //CustomFieldsCacheSrv.clearCache();
+                    //$scope.$emit('custom-fields:refresh');
+                });
+            }
 
         });
 

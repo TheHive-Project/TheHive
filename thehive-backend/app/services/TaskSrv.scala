@@ -5,16 +5,15 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
+import play.api.libs.json.{ JsBoolean, JsObject }
+
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
-
-import play.api.libs.json.{ JsBoolean, JsObject }
+import models._
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
-
-import models.{ Case, CaseModel, Task, TaskModel, TaskStatus }
+import org.elastic4play.services._
 
 @Singleton
 class TaskSrv @Inject() (

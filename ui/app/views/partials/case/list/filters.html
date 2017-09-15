@@ -31,8 +31,9 @@
                                 min-length="2"
                                 ng-model="$vm.uiSrv.activeFilters.status.value"
                                 placeholder="ex: Open, Resolved"
-                                replace-spaces-with-dashes="false">
-                                    <auto-complete load-on-focus="true" min-length="1" source="$vm.getStatuses($query)"></auto-complete>
+                                replace-spaces-with-dashes="false"
+                                add-from-autocomplete-only="true">
+                                    <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1" source="$vm.getStatuses($query)"></auto-complete>
                                 </tags-input>
                         </div>
                     </div>
@@ -56,6 +57,7 @@
                                 ng-model="$vm.uiSrv.activeFilters.owner.value"
                                 placeholder="ex: Firstname Lastname"
                                 replace-spaces-with-dashes="false"
+                                add-from-autocomplete-only="true"
                                 display-property="label">
                                     <auto-complete debounceDelay="400" source="$vm.getUsers($query)" display-property="label"></auto-complete>
                                 </tags-input>
@@ -70,8 +72,9 @@
                                 min-length="2"
                                 ng-model="$vm.uiSrv.activeFilters.severity.value"
                                 placeholder="ex: High, Medium, Low"
-                                replace-spaces-with-dashes="false">
-                                    <auto-complete load-on-focus="true" min-length="1" source="$vm.getSeverities($query)"></auto-complete>
+                                replace-spaces-with-dashes="false"
+                                add-from-autocomplete-only="true">
+                                    <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1" source="$vm.getSeverities($query)"></auto-complete>
                                 </tags-input>
                         </div>
                     </div>

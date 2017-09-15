@@ -17,6 +17,18 @@ angular.module('theHiveServices')
             setPass: {
                 method: 'POST',
                 url: './api/user/:userId/password/set'
+            },
+            // getKey: {
+            //     method: 'GET',
+            //     url: './api/user/:userId/key'
+            // },
+            setKey: {
+                method: 'POST',
+                url: './api/user/:userId/key/renew'
+            },
+            revokeKey: {
+                method: 'DELETE',
+                url: './api/user/:userId/key'
             }
         });
         /**
@@ -66,6 +78,17 @@ angular.module('theHiveServices')
                     defer.reject(data, status);
                 });
             }
+
+            return defer.promise;
+        };
+
+        res.getKey = function(userId) {
+            var defer = $q.defer();
+
+            $http.get('./api/user/'+userId+'/key')
+                .then(function(response) {
+                    defer.resolve(response.data);
+                });
 
             return defer.promise;
         };
