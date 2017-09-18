@@ -1,8 +1,14 @@
 # Change Log
 
-## [2.13](https://github.com/CERT-BDF/TheHive/tree/2.13) (2017-09-15)
+## [2.13.1](https://github.com/CERT-BDF/TheHive/tree/2.13.1) (2017-09-18)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.0...2.13.1)
 
-[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.12.1...2.13)
+**Fixed bugs:**
+
+- Tasks Tab Elasticsearch exception: Fielddata is disabled on text fields by default. Set fielddata=true on \[title\] [\#311](https://github.com/CERT-BDF/TheHive/issues/311)
+
+## [2.13.0](https://github.com/CERT-BDF/TheHive/tree/2.13.0) (2017-09-15)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.12.1...2.13.0)
 
 **Implemented enhancements:**
 
@@ -75,7 +81,6 @@
 - Alert can contain inconsistent data [\#234](https://github.com/CERT-BDF/TheHive/issues/234)
 - Search do not work with non-latin characters [\#223](https://github.com/CERT-BDF/TheHive/issues/223)
 - report status not updated after finish [\#212](https://github.com/CERT-BDF/TheHive/issues/212)
-- A locked user can use the API to create / delete / list cases \(and more\) [\#250](https://github.com/CERT-BDF/TheHive/issues/250)
 
 ## [2.11.3](https://github.com/CERT-BDF/TheHive/tree/2.11.3) (2017-06-14)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/debian/2.11.2...2.11.3)
