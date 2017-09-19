@@ -4,6 +4,7 @@ import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.ExecutionContext
 
+import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponents }
 
 import models.Roles
@@ -31,5 +32,18 @@ class DescribeCtrl @Inject() (
         renderer.toOutput(OK, attributeDefinitions)
       }
       .getOrElse(NotFound(s"Model $modelName not found"))
+  }
+
+  private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "alert")
+  def describeAll: Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
+    val entityDefinitions = modelSrv.list
+      .collect {
+        case model if allModels.contains(model.name) ⇒
+          val attributeDefinitions = model.attributes.flatMap {
+            case attribute: Attribute[t] ⇒ attribute.format.definition(dblists, attribute)
+          }
+          model.name → Json.toJson(attributeDefinitions)
+      }
+    renderer.toOutput(OK, JsObject(entityDefinitions))
   }
 }

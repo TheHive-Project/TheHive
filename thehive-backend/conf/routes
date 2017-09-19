@@ -100,6 +100,7 @@ POST     /api/stream                              controllers.StreamCtrl.create(
 GET      /api/stream/status                       controllers.StreamCtrl.status
 GET      /api/stream/:streamId                    controllers.StreamCtrl.get(streamId)
 
+GET      /api/describe/_all                       controllers.DescribeCtrl.describeAll
 GET      /api/describe/:modelName                 controllers.DescribeCtrl.describe(modelName)
 
 ->       /api/connector                           connectors.ConnectorRouter
