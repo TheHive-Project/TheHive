@@ -35,7 +35,7 @@ trait ArtifactAttributes { _: AttributeDef ⇒
   val message: A[Option[String]] = optionalAttribute("message", F.textFmt, "Description of the artifact in the context of the case")
   val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val attachment: A[Option[Attachment]] = optionalAttribute("attachment", F.attachmentFmt, "Artifact file content", O.readonly)
-  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc: A[Boolean] = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)
   val status: A[ArtifactStatus.Value] = attribute("status", F.enumFmt(ArtifactStatus), "Status of the artifact", ArtifactStatus.Ok)
