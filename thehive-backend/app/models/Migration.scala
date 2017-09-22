@@ -237,6 +237,12 @@ class Migration(
           val customFields = (caze \ "customFields").asOpt[JsObject].getOrElse(JsObject(Nil))
           caze + ("metrics" → metrics) + ("customFields" → customFields)
         })
+    case DatabaseState(10) ⇒
+      Seq(
+        mapEntity("case_task_log") { log ⇒
+          val owner = (log \ "createdBy").asOpt[JsString].getOrElse(JsString("init"))
+          log + ("owner" → owner)
+        })
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
