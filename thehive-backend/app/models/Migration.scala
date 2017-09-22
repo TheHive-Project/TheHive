@@ -242,7 +242,8 @@ class Migration(
         mapEntity("case_task_log") { log ⇒
           val owner = (log \ "createdBy").asOpt[JsString].getOrElse(JsString("init"))
           log + ("owner" → owner)
-        })
+        },
+        mapEntity(_ ⇒ true, entity ⇒ entity - "user"))
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
