@@ -1,0 +1,45 @@
+.dashboard-content {
+    margin-top: 20px;
+    padding-left: 0;
+    /*padding: 10px;*/
+}
+.dashboard-content > li {
+    list-style: none;
+}
+.dashboard-content > li.dndDraggingSource {
+    display: none;
+}
+.dashboard-content > .dndPlaceholder {
+    background-color: #eeeeee;
+    display: block;
+    margin-top: 10px;
+    min-height: 100px;
+}
+.chart-container {
+    min-height: 100px;
+    background-color: #e6edf4;
+    border: 1px dashed #aacbed;
+    margin-top: 10px;
+    padding: 10px;
+}
+.chart-container .chart-container-dropzone {
+    min-height: 50px;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+}
+
+.chart-container .chart-container-dropzone > .dndDraggingSource {
+    display: none;
+}
+
+.chart-container .chart-container-dropzone > * {
+    flex: 1;
+    margin: 0 5px;
+}
+
+.chart-container .chart-container-dropzone > .dndPlaceholder {
+    background-color: #eeeeee;
+    /*min-height: 100px;*/
+    display: block;
+}
