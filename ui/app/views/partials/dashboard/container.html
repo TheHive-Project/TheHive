@@ -1,0 +1,27 @@
+<div class="chart-container">
+    <div>Header</div>
+    <div class="chart-container-dropzone"
+        dnd-list="item.items"
+        dnd-allowed-types="$vm.options.containerAllowedTypes"
+        >
+        <!-- dnd-disable-if="item.items.length >= $vm.options.maxColumns" -->
+
+            <div ng-repeat="component in item.items"
+                dnd-draggable="component"
+                dnd-type="component.type"
+                dnd-effect-allowed="move"
+                dnd-moved="item.items.splice($index, 1)"
+                ng-switch="component.type">
+
+                <donut ng-switch-when="donut" component="component"></donut>
+
+                <div ng-switch-default>
+                    <ng-include  src="'views/partials/dashboard/components/' + component.type + '.html'"></ng-include>
+                </div>
+
+
+                <!-- ng-include -->
+
+            </div>
+    </div>
+</div>

@@ -1,0 +1,45 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header">
+                Dashboard
+            </div>
+            <div class="box-body">
+                <div class="dashboard-edit">
+                    <div class="dashboard-toolbox">
+                        <button type="button" class="btn btn-app" ng-repeat="item in $vm.toolbox"
+                            dnd-draggable="item"
+                            dnd-type="item.type"
+                            dnd-effect-allowed="copy"
+                            dnd-copied="item.id = item.id + 1">
+                            <i class="fa" ng-class="$vm.options.cls[item.type]" />
+                        </button>
+                        <button type="button" class="btn btn-app btn-primary pull-right"
+                            ng-click="$vm.saveDashboard()">
+                            <i class="fa fa-save" />
+                        </button>
+                    </div>
+
+                    <ul class="dashboard-content"
+                        dnd-list="$vm.dashboard.items"
+                        dnd-allowed-types="$vm.options.dashboardAllowedTypes">
+
+                        <li ng-repeat="item in $vm.dashboard.items"
+                            dnd-draggable="item"
+                            dnd-type="item.type"
+                            dnd-effect-allowed="move"
+                            dnd-moved="$vm.dashboard.items.splice($index, 1)"
+                            ng-include="'/views/partials/dashboard/' + item.type + '.html'">
+
+                        </li>
+                    </ul>
+                </div>
+                <div class="dashboard-view">
+                    <pre>{{$vm.dashboard | json}}</pre>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
