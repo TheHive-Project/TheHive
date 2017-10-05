@@ -7,7 +7,8 @@
                 type: '@',
                 autoload: '=',
                 options: '=',
-                refreshOn: '@'
+                refreshOn: '@',
+                mode: '@'
             },
             templateUrl: 'views/directives/charts/chart.html'
         };

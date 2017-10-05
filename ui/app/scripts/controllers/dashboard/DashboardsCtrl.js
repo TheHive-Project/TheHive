@@ -4,27 +4,37 @@
     angular
         .module('theHiveControllers')
         .controller('DashboardsCtrl', function($scope, $uibModal, PSearchSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
-            //this.dashboards = dashboards.data || [];
+            this.dashboards = [];
             var self = this;
 
-            this.dashboards = PSearchSrv('any', 'dashboard', {
-                scope: $scope,
-                baseFilter: {
-                    _and: [
-                        {
-                            _not: { status: 'Deleted' }
-                        },
-                        {
-                            _or: [
-                                { status: 'Shared' },
-                                { createdBy: AuthenticationSrv.currentUser.id }
-                            ]
-                        }
-                    ]
-                },
-                sort: ['-status'],
-                loadAll: true
-            });
+            // this.dashboards = PSearchSrv('any', 'dashboard', {
+            //     scope: $scope,
+            //     baseFilter: {
+            //         _and: [
+            //             {
+            //                 _not: { status: 'Deleted' }
+            //             },
+            //             {
+            //                 _or: [
+            //                     { status: 'Shared' },
+            //                     { createdBy: AuthenticationSrv.currentUser.id }
+            //                 ]
+            //             }
+            //         ]
+            //     },
+            //     sort: ['-status'],
+            //     loadAll: true
+            // });
+            //
+
+            this.load = function() {
+                DashboardSrv.list()
+                    .then(function(response) {
+                        self.dashboards = response.data;
+                    });
+            }
+
+            this.load();
 
             this.addDashboard = function() {
                 var modalInstance = $uibModal.open({
@@ -61,7 +71,7 @@
                 modalInstance.result.then(function(dashboard) {
                     return DashboardSrv.create(dashboard);
                 }).then(function(response) {
-                    self.dashboards.update();
+                    self.load();
 
                     NotificationSrv.log('The dashboard has been successfully created', 'success');
                 }).catch(function(err) {
@@ -74,8 +84,8 @@
             this.deleteDashboard = function(id) {
                 DashboardSrv.remove(id)
                     .then(function(response) {
-                        self.dashboards.update();
-                        
+                        self.load();
+
                         NotificationSrv.log('The dashboard has been successfully removed', 'success');
                     });
             }

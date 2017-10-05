@@ -1,8 +1,15 @@
 <div class="row">
     <div class="col-md-12">
         <div class="box">
-            <div class="box-header">
-                Dashboard
+            <div class="box-header with-border">
+                <h3 class="box-title">{{$vm.dashboard.title}}</h3>
+                <div class="box-tools pull-right">
+                    <span class="ml-xs" tooltip="Back to list">
+                        <a class="text-muted" ui-sref="app.dashboards()">
+                            <i class="fa fa-chevron-left"></i> Back to list
+                        </a>
+                    </span>
+                </div>
             </div>
             <div class="box-body">
                 <div class="dashboard-edit">
@@ -14,6 +21,9 @@
                             dnd-copied="item.id = item.id + 1">
                             <i class="fa" ng-class="$vm.options.cls[item.type]" />
                         </button>
+                        <a class="btn btn-app btn-primary pull-right" ui-sref="app.dashboards-view({id: $vm.dashboard.id})">
+                            <i class="fa fa-eye" />
+                        </a>
                         <button type="button" class="btn btn-app btn-primary pull-right"
                             ng-click="$vm.saveDashboard()">
                             <i class="fa fa-save" />
@@ -21,21 +31,21 @@
                     </div>
 
                     <ul class="dashboard-content"
-                        dnd-list="$vm.dashboard.items"
+                        dnd-list="$vm.definition.items"
                         dnd-allowed-types="$vm.options.dashboardAllowedTypes">
 
-                        <li ng-repeat="item in $vm.dashboard.items"
+                        <li ng-repeat="item in $vm.definition.items"
                             dnd-draggable="item"
                             dnd-type="item.type"
                             dnd-effect-allowed="move"
-                            dnd-moved="$vm.dashboard.items.splice($index, 1)"
+                            dnd-moved="$vm.definition.items.splice($index, 1)"
                             ng-include="'/views/partials/dashboard/' + item.type + '.html'">
 
                         </li>
                     </ul>
                 </div>
                 <div class="dashboard-view">
-                    <pre>{{$vm.dashboard | json}}</pre>
+                    <pre>{{$vm.definition | json}}</pre>
                 </div>
 
             </div>

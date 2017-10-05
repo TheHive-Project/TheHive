@@ -1,0 +1,28 @@
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">{{options.title}}</h3>
+        <!-- 
+        <div class="box-tools pull-right" ng-if="mode !== 'edit'">
+            <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                <i class="fa fa-minus"></i>
+            </button>
+        </div>
+        <div class="box-tools pull-right" ng-if="mode === 'edit'">
+            <button type="button" class="btn btn-box-tool" >
+                <i class="fa fa-save"></i> Save
+            </button>
+        </div> -->
+    </div>
+    <div class="box-body" ng-switch="type">
+        <!-- <pre>{{options | json}}</pre>
+        <pre>{{mode | json}}</pre> -->
+
+        <dashboard-donut ng-switch-when="donut"
+            options="options"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"
+            mode="mode"></dashboard-donut>
+
+        <div ng-switch-default>Unhandled chart type</div>
+    </div>
+</div>

@@ -1,1 +1,32 @@
-View Dashboard
+<div class="box">
+    <div class="box-header with-border">
+        <h3 class="box-title">{{$vm.dashboard.title}}</h3>
+        <div class="box-tools pull-right">
+            <span class="ml-xs" tooltip="Edit">
+                <a class="text-muted" ui-sref="app.dashboards-edit({id: $vm.dashboard.id})">
+                    <i class="fa fa-pencil"></i> Edit
+                </a>
+            </span>
+            <span class="ml-xs" tooltip="Back to list">
+                <a class="text-muted" ui-sref="app.dashboards()">
+                    <i class="fa fa-chevron-left"></i> Back to list
+                </a>
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-row" ng-repeat="row in $vm.definition.items">
+    <dashboard-item ng-repeat="component in row.items"
+        type="{{component.type}}"
+        autoload="true"
+        mode="view"
+        options="component.options">
+    </dashboard-item>
+
+    <!-- <div class="dashboard-row-item" ng-repeat="item in row.items">
+        {{item.options.title}}
+    </div> -->
+</div>
+
+<pre style="height: 300px;">{{$vm.definition | json}}</pre>

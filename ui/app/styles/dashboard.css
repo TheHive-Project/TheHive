@@ -1,3 +1,18 @@
+.dashboards-list .dashboard-item {
+    padding: 5px;
+    /*border-bottom: 1px dashed #ccc;*/
+}
+.dashboards-list .dashboard-item:nth-child(even) {
+    background: #f9f9f9;
+}
+.dashboards-list .dashboard-item:nth-child(odd) {
+    background: #FFF;
+}
+
+.dashboards-list .dashboard-item .media-right {
+    vertical-align: middle;
+}
+
 .dashboard-content {
     margin-top: 20px;
     padding-left: 0;
@@ -20,9 +35,10 @@
     background-color: #e6edf4;
     border: 1px dashed #aacbed;
     margin-top: 10px;
-    padding: 10px;
+    padding: 15px;
 }
-.chart-container .chart-container-dropzone {
+.chart-container .chart-container-dropzone,
+.dashboard-row {
     min-height: 50px;
     display: flex;
     justify-content: space-around;
@@ -33,9 +49,28 @@
     display: none;
 }
 
-.chart-container .chart-container-dropzone > * {
+.chart-container .chart-container-dropzone > *,
+.dashboard-row dashboard-item {
     flex: 1;
     margin: 0 5px;
+}
+
+.chart-container .chart-container-dropzone > *:first-child,
+.dashboard-row dashboard-item:first-child {
+    margin-left: 0;
+}
+
+.chart-container .chart-container-dropzone > *:last-child,
+.dashboard-row dashboard-item:last-child {
+    margin-right: 0px;
+}
+
+dashboard-item .box {
+    margin-bottom: 0;
+}
+
+.dashboard-row {
+    margin-bottom: 10px;
 }
 
 .chart-container .chart-container-dropzone > .dndPlaceholder {

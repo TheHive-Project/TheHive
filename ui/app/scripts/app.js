@@ -295,7 +295,21 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: 'dashboards/{id}',
                 templateUrl: 'views/partials/dashboard/view.html',
                 controller: 'DashboardViewCtrl',
-                controllerAs: '$vm'
+                controllerAs: '$vm',
+                resolve: {
+                    dashboard: function(DashboardSrv, $stateParams, $q) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.get($stateParams.id)
+                            .then(function(response) {
+                                defer.resolve(response.data);
+                            }, function(err) {
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             })
             .state('app.dashboards-edit', {
                 url: 'dashboards/edit/{id}',

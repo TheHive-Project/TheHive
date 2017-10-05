@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('DashboardSrv', function(localStorageService, $q, $http) {
+    angular.module('theHiveServices').service('DashboardSrv', function(localStorageService, $q, AuthenticationSrv, $http) {
         var baseUrl = './api/dashboard';
 
         this.defaultDashboard = {
@@ -11,6 +11,37 @@
                 }
             ]
         };
+
+        this.toolbox = [
+            {
+                id: 1,
+                type: 'container',
+                items: []
+            },
+            {
+                id: 2,
+                type: 'bar',
+                options: {
+
+                }
+            },
+            {
+                id: 3,
+                type: 'line',
+                options: {
+
+                }
+            },
+            {
+                id: 4,
+                type: 'donut',
+                options: {
+                    title: null,
+                    entity: null,
+                    field: null
+                }
+            }
+        ];
 
         this.create = function(dashboard) {
             return $http.post(baseUrl, dashboard);
@@ -23,7 +54,20 @@
         this.list = function() {
             return $http.post(baseUrl + '/_search', {
                 range: 'all',
-                query: {}
+                sort: ['-status', '-updatedAt', '-createdAt'],
+                query: {
+                    _and: [
+                        {
+                            _not: { status: 'Deleted' }
+                        },
+                        {
+                            _or: [
+                                { status: 'Shared' },
+                                { createdBy: AuthenticationSrv.currentUser.id }
+                            ]
+                        }
+                    ]
+                }
             });
         }
 

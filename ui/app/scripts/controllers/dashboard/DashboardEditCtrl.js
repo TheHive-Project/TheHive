@@ -3,7 +3,8 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardEditCtrl', function(dashboard) {
+        .controller('DashboardEditCtrl', function(DashboardSrv, NotificationSrv, dashboard) {
+            this.dashboard = dashboard;
             this.options = {
                 dashboardAllowedTypes: ['container'],
                 containerAllowedTypes: ['bar', 'line', 'donut'],
@@ -16,27 +17,9 @@
                 }
             };
 
-            this.toolbox = [
-                {
-                    id: 1,
-                    type: 'container',
-                    items: []
-                },
-                {
-                    id: 2,
-                    type: 'bar'
-                },
-                {
-                    id: 3,
-                    type: 'line'
-                },
-                {
-                    id: 4,
-                    type: 'donut'
-                }
-            ];
+            this.toolbox = DashboardSrv.toolbox;
 
-            this.dashboard = JSON.parse(dashboard.definition) || {
+            this.definition = JSON.parse(dashboard.definition) || {
                 items: [
                     {
                         type: 'container',
@@ -44,5 +27,18 @@
                     }
                 ]
             };
+
+            this.saveDashboard = function() {
+                var copy = _.pick(this.dashboard, 'title', 'description', 'status');
+                copy.definition = angular.toJson(this.definition);
+
+                DashboardSrv.update(this.dashboard.id, copy)
+                    .then(function(response) {
+                        NotificationSrv.log('The dashboard has been successfully updated', 'success');
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('DashboardEditCtrl', err.data, err.status);
+                    })
+            }
         });
 })();
