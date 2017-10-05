@@ -1,9 +1,25 @@
-<div class="panel panel-default">
-    <div class="panel-heading">
-        #{{component.id}} Donut Directive
-    </div>
+<div ng-switch="mode">
+    <form ng-switch-when="edit">
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" class="form-control" placeholder="Ex: cases per TLP" ng-model="options.title">
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Entity</label>
+                    <input type="text" class="form-control" placeholder="Case, Alert..." ng-model="options.entity">
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Aggregation Field</label>
+                    <input type="text" class="form-control" placeholder="Ex: tlp, severity, assignee" ng-model="options.field">
+                </div>
+            </div>
+        </div>
 
-    <div class="panel-body">
-        <pre>{{component | json}}</pre>
-    </div>
+
+    </form>
+    <c3 ng-switch-default chart="chart"></c3>
 </div>

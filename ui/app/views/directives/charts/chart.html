@@ -1,14 +1,29 @@
 <div ng-switch="type">
-    <div ng-switch-when="donut">
-        <donut-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></donut-chart>
-    </div>
-    <div ng-switch-when="over-time">
-        <histo-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></histo-chart>
-    </div>
-    <div ng-switch-when="duration-over-time">
-        <duration-over-time-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></duration-over-time-chart>
-    </div>
-    <div ng-switch-when="metrics-over-time">
-        <metric-histo-chart options="options" autoload="autoload" refresh-on="{{refreshOn}}"></metric-histo-chart>
-    </div>
+    <pre>{{options | json}}</pre>
+    <pre>{{mode | json}}</pre>
+    <donut-chart ng-switch-when="donut"
+        options="options"
+        autoload="autoload"
+        refresh-on="{{refreshOn}}"
+        mode="mode"></donut-chart>
+
+    <histo-chart ng-switch-when="over-time"
+        options="options"
+        autoload="autoload"
+        refresh-on="{{refreshOn}}"
+        mode="mode"></histo-chart>
+
+    <duration-over-time-chart ng-switch-when="duration-over-time"
+        options="options"
+        autoload="autoload"
+        refresh-on="{{refreshOn}}"
+        mode="mode"></duration-over-time-chart>
+
+    <metric-histo-chart ng-switch-when="metrics-over-time"
+        options="options"
+        autoload="autoload"
+        refresh-on="{{refreshOn}}"
+        mode="mode"></metric-histo-chart>
+
+    <div ng-switch-default>Unhandled chart type</div>
 </div>

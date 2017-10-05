@@ -6,6 +6,7 @@
             scope: {
                 'options': '=',
                 'autoload': '=',
+                'mode': '=',
                 'refreshOn': '@'
             },
             templateUrl: 'views/directives/charts/donut-chart.html',
