@@ -123,12 +123,12 @@ class CaseMergeSrv @Inject() (
       customFieldsObject ← caze.customFields().asOpt[JsObject]
     } yield customFieldsObject
 
-    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.map { key ⇒
+    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.flatMap { key ⇒
       val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
       if (customFieldsValues.size != 1)
-        key → JsNull
+        None
       else
-        key → customFieldsValues.head
+        Some(key → customFieldsValues.head)
     }
 
     JsObject(mergedCustomFieldsObject)
