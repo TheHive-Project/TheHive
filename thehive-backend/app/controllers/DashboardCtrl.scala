@@ -47,8 +47,8 @@ class DashboardCtrl @Inject() (
   @Timed
   def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     for {
-      dashboard <- dashboardSrv.get(id)
-      updatedDashboard <- if (dashboard.createdBy == request.authContext.userId)
+      dashboard ← dashboardSrv.get(id)
+      updatedDashboard ← if (dashboard.createdBy == request.authContext.userId)
         dashboardSrv.update(dashboard, request.body)
       else
         Future.failed(AuthorizationError("You can't update this dashboard, you are not the owner"))
@@ -63,7 +63,8 @@ class DashboardCtrl @Inject() (
 
   @Timed
   def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    import org.elastic4play.services.QueryDSL._
+    val query = request.body.getValue("query").fold[QueryDef]("status" ~!= "Deleted")(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
 
