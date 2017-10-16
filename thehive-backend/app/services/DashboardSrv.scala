@@ -36,8 +36,8 @@ class DashboardSrv @Inject() (
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
     updateSrv[DashboardModel, Dashboard](dashboardModel, id, fields)
 
-  def update(caze: Dashboard, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
-    updateSrv(caze, fields)
+  def update(dashboard: Dashboard, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
+    updateSrv(dashboard, fields)
 
   def delete(id: String)(implicit Context: AuthContext): Future[Dashboard] =
     deleteSrv[DashboardModel, Dashboard](dashboardModel, id)

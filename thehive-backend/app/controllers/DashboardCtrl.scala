@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.Logger
 import play.api.http.Status
@@ -16,7 +16,7 @@ import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, R
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
-import org.elastic4play.{ BadRequestError, Timed }
+import org.elastic4play.{ AuthorizationError, BadRequestError, Timed }
 
 @Singleton
 class DashboardCtrl @Inject() (
@@ -46,9 +46,13 @@ class DashboardCtrl @Inject() (
 
   @Timed
   def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    dashboardSrv.update(id, request.body).map { dashboard ⇒
-      renderer.toOutput(OK, dashboard)
-    }
+    for {
+      dashboard <- dashboardSrv.get(id)
+      updatedDashboard <- if (dashboard.createdBy == request.authContext.userId)
+        dashboardSrv.update(dashboard, request.body)
+      else
+        Future.failed(AuthorizationError("You can't update this dashboard, you are not the owner"))
+    } yield renderer.toOutput(OK, updatedDashboard)
   }
 
   @Timed
