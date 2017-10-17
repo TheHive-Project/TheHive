@@ -1,8 +1,12 @@
 <div class="chart-container">
+    <div class="chart-container-header mb-xxs clearfix">
+        <span class="pull-right">
+            <a href class="text-danger" ng-click="$vm.removeContainer($index)"><i class="fa fa-times"></i> Remove</a>
+        </span>
+    </div>
     <div class="chart-container-dropzone"
         dnd-list="item.items"
-        dnd-allowed-types="$vm.options.containerAllowedTypes"
-        >
+        dnd-allowed-types="$vm.options.containerAllowedTypes">
         <!-- dnd-disable-if="item.items.length >= $vm.options.maxColumns" -->
 
             <dashboard-item ng-repeat="component in item.items"
@@ -14,18 +18,7 @@
                 type="{{component.type}}"
                 autoload="false"
                 mode="edit"
-                options="component.options"
-                >
-
-                <!-- ng-switch="component.type" -->
-                <!-- <donut ng-switch-when="donut" component="component"></donut>
-
-                <div ng-switch-default>
-                    <ng-include  src="'views/partials/dashboard/components/' + component.type + '.html'"></ng-include>
-                </div> -->
-
-
-                <!-- ng-include -->
+                options="component.options">
 
             </dashboard-item>
     </div>

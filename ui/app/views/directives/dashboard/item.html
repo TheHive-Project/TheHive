@@ -1,24 +1,27 @@
 <div class="box box-primary">
     <div class="box-header with-border">
-        <h3 class="box-title">{{options.title}}</h3>
-        <!-- 
-        <div class="box-tools pull-right" ng-if="mode !== 'edit'">
-            <button type="button" class="btn btn-box-tool" data-widget="collapse">
-                <i class="fa fa-minus"></i>
-            </button>
+        <h3 class="box-title">
+            {{component.options.title}}
+        </h3>
+
+        <div class="box-tools pull-right" ng-if="showEdit">
+            <a href class="btn btn-box-tool" ng-click="editDashboard()">
+                <i class="fa fa-pencil"></i> Edit
+            </a>
+            <a href class="btn btn-box-tool" ng-click="onRemove({rowIndex: rowIndex, colIndex: colIndex})">
+                <i class="fa fa-times"></i> Remove
+            </a>
+
         </div>
         <div class="box-tools pull-right" ng-if="mode === 'edit'">
             <button type="button" class="btn btn-box-tool" >
                 <i class="fa fa-save"></i> Save
             </button>
-        </div> -->
+        </div>
     </div>
-    <div class="box-body" ng-switch="type">
-        <!-- <pre>{{options | json}}</pre>
-        <pre>{{mode | json}}</pre> -->
-
+    <div class="box-body" ng-switch="component.type">
         <dashboard-donut ng-switch-when="donut"
-            options="options"
+            options="component.options"
             autoload="autoload"
             refresh-on="{{refreshOn}}"
             mode="mode"></dashboard-donut>

@@ -308,6 +308,9 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                             });
 
                         return defer.promise;
+                    },
+                    metadata: function(DashboardSrv) {
+                        return DashboardSrv.getMetadata();
                     }
                 }
             })
