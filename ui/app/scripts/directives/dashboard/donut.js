@@ -7,10 +7,12 @@
                 options: '=',
                 autoload: '=',
                 mode: '=',
-                refreshOn: '@'
+                refreshOn: '@',
+                metadata: '='
             },
             templateUrl: 'views/directives/dashboard/donut.html',
             link: function(scope) {
+
                 scope.chart = {};
 
                 scope.buildQuery = function() {
@@ -81,7 +83,8 @@
 
                 if (!_.isEmpty(scope.refreshOn)) {
                     scope.$on(scope.refreshOn, function(event, queryFn) {
-                        scope.options.query = queryFn(scope.options);
+                        // TODO nadouani: double check when the queryFn is needed
+                        //scope.options.query = queryFn(scope.options);
                         scope.load();
                     });
                 }

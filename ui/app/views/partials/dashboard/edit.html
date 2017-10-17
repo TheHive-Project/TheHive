@@ -2,7 +2,9 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">{{$vm.dashboard.title}}</h3>
+                <h3 class="box-title">
+                    <input type="text" ng-model="$vm.dashboard.title" size="100">
+                </h3>
                 <div class="box-tools pull-right">
                     <span class="ml-xs" tooltip="Back to list">
                         <a class="text-muted" ui-sref="app.dashboards()">
@@ -33,6 +35,10 @@
                     <ul class="dashboard-content"
                         dnd-list="$vm.definition.items"
                         dnd-allowed-types="$vm.options.dashboardAllowedTypes">
+
+                        <li ng-if="$vm.definition.items.length === 0">
+                            Put items here
+                        </li>
 
                         <li ng-repeat="item in $vm.definition.items"
                             dnd-draggable="item"

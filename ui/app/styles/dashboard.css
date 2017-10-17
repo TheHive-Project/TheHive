@@ -1,3 +1,7 @@
+.dashboard-toolbox button:first-child {
+    margin-left: 0;
+}
+
 .dashboards-list .dashboard-item {
     padding: 5px;
     /*border-bottom: 1px dashed #ccc;*/
@@ -17,11 +21,13 @@
     margin-top: 20px;
     padding-left: 0;
     /*padding: 10px;*/
+    /*min-height: 10px;
+    background-color: red;*/
 }
 .dashboard-content > li {
     list-style: none;
 }
-.dashboard-content > li.dndDraggingSource {
+.dashboard-content > .dndDraggingSource {
     display: none;
 }
 .dashboard-content > .dndPlaceholder {
@@ -30,40 +36,49 @@
     margin-top: 10px;
     min-height: 100px;
 }
+
+.dashboard-row {
+    display: flex;
+    flex-direction: column;
+}
 .chart-container {
     min-height: 100px;
-    background-color: #e6edf4;
+    /*background-color: #e6edf4;*/
+    background-color: #f9f9f9;
     border: 1px dashed #aacbed;
     margin-top: 10px;
     padding: 15px;
 }
-.chart-container .chart-container-dropzone,
-.dashboard-row {
+
+.chart-container-dropzone {
     min-height: 50px;
     display: flex;
     justify-content: space-around;
     align-items: stretch;
 }
 
-.chart-container .chart-container-dropzone > .dndDraggingSource {
+.chart-container-dropzone > .dndDraggingSource {
     display: none;
 }
 
-.chart-container .chart-container-dropzone > *,
-.dashboard-row dashboard-item {
+.chart-container-dropzone > .dndPlaceholder {
+    background-color: #eeeeee;
+    /*min-height: 100px;*/
+    display: block;
+}
+
+.chart-container-dropzone > * {
     flex: 1;
     margin: 0 5px;
 }
 
-.chart-container .chart-container-dropzone > *:first-child,
-.dashboard-row dashboard-item:first-child {
+/*.chart-container-dropzone > dashboard-item:first-child {
     margin-left: 0;
 }
 
-.chart-container .chart-container-dropzone > *:last-child,
-.dashboard-row dashboard-item:last-child {
+.chart-container-dropzone > dashboard-item:last-child{
     margin-right: 0px;
-}
+}*/
 
 dashboard-item .box {
     margin-bottom: 0;
@@ -71,10 +86,4 @@ dashboard-item .box {
 
 .dashboard-row {
     margin-bottom: 10px;
-}
-
-.chart-container .chart-container-dropzone > .dndPlaceholder {
-    background-color: #eeeeee;
-    /*min-height: 100px;*/
-    display: block;
 }

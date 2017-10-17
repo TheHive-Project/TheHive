@@ -2,6 +2,9 @@
     'use strict';
     angular.module('theHiveServices').service('DashboardSrv', function(localStorageService, $q, AuthenticationSrv, $http) {
         var baseUrl = './api/dashboard';
+        var self = this;
+
+        this.metadata = null;
 
         this.defaultDashboard = {
             items: [
@@ -14,26 +17,22 @@
 
         this.toolbox = [
             {
-                id: 1,
                 type: 'container',
                 items: []
             },
             {
-                id: 2,
                 type: 'bar',
                 options: {
 
                 }
             },
             {
-                id: 3,
                 type: 'line',
                 options: {
 
                 }
             },
             {
-                id: 4,
                 type: 'donut',
                 options: {
                     title: null,
@@ -42,6 +41,12 @@
                 }
             }
         ];
+
+        this.renderers = {
+            severity: function() {
+
+            }
+        }
 
         this.create = function(dashboard) {
             return $http.post(baseUrl, dashboard);
@@ -77,6 +82,45 @@
 
         this.remove = function(id) {
             return $http.delete(baseUrl + '/' + id);
+        }
+
+        this._objectifyBy = function (collection, field) {
+            var obj = {};
+
+            _.each(collection, function(item) {
+                obj[item[field]] = item;
+            })
+
+            return obj;
+        }
+
+        this.getMetadata = function() {
+            var defer = $q.defer();
+
+            if(this.metadata !== null) {
+                defer.resolve(this.metadata);
+            } else {
+                $http.get('./api/describe/_all')
+                    .then(function(response) {
+                        var data = response.data;
+                        var metadata = {
+                            entities: _.keys(data).sort()
+                        };
+
+                        _.each(metadata.entities, function(entity) {
+                            metadata[entity] = self._objectifyBy(data[entity], 'name');
+                        });
+
+                        self.metadata = metadata;
+
+                        defer.resolve(metadata);
+                    })
+                    .catch(function(err) {
+                        defer.reject(err);
+                    });
+            }
+
+            return defer.promise;
         }
 
     });

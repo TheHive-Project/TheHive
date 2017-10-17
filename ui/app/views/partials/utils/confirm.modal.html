@@ -1,0 +1,10 @@
+<div class="modal-header bg-{{$modal.config.flavor || 'primary'}}">
+    <h3 class="modal-title">{{$modal.title}}</h3>
+</div>
+<div class="modal-body">
+    <p>{{$modal.message}}</p>
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="$modal.cancel()" type="button">Cancel</button>
+    <button class="btn btn-{{$modal.config.flavor || 'primary'}} pull-right" ng-click="$modal.confirm()">{{$modal.config.okText || 'Ok'}}</button>
+</div>

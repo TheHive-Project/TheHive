@@ -28,6 +28,12 @@
                 ]
             };
 
+            this.removeContainer = function(index) {
+                //this.dashboard.items.remove(item);
+
+                this.definition.items.splice(index, 1)
+            }
+
             this.saveDashboard = function() {
                 var copy = _.pick(this.dashboard, 'title', 'description', 'status');
                 copy.definition = angular.toJson(this.definition);
