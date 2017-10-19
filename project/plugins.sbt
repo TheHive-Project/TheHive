@@ -1,7 +1,7 @@
 // Comment to get more information during initialization
 logLevel := Level.Info
 
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.6.3")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.6.6")
 
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
 
