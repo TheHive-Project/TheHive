@@ -82,7 +82,10 @@
                             <li><a href ng-click="filter.value.operator = 'none'">None of</a></li>
                         </ul>
                     </div>
-                    <tags-input class="form-control form-control-wrapper" min-length="2" ng-model="filter.value.list" replace-spaces-with-dashes="false"></tags-input>
+                    <tags-input class="form-control form-control-wrapper" min-length="2"
+                        ng-model="filter.value.list"
+                        placeholder="Enter a {{filter.field}}"
+                        replace-spaces-with-dashes="false"></tags-input>
                 </div>
 
                 <div ng-switch-when="enumeration" class="input-group">
@@ -98,8 +101,12 @@
                     </div>
                     <tags-input class="form-control form-control-wrapper" min-length="2" ng-model="filter.value.list"
                         replace-spaces-with-dashes="false"
-                        add-from-autocomplete-only="true">
-                        <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1" source="promiseFor(filter, $query)"></auto-complete>
+                        add-from-autocomplete-only="true"
+                        placeholder="Enter a {{filter.field}}"
+                        display-property="label">
+                        <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1"
+                            source="promiseFor(filter, $query)"
+                            display-property="label"></auto-complete>
                   </tags-input>
                 </div>
 
@@ -123,7 +130,11 @@
             <a href ng-click="addFilter()">
                 <i class="fa fa-plus"></i> Add a filter
             </a>
+            <a href ng-click="showQuery()">
+                <i class="fa fa-plus"></i> Show query
+            </a>
         </div>
-        <pre>{{component.options.filters | json}}</pre>
+        <!-- <pre>{{query | json}}</pre> -->
+        <!-- <pre>{{component.options.filters | json}}</pre> -->
     </uib-tab>
 </uib-tabset>
