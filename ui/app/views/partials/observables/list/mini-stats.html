@@ -22,7 +22,6 @@
         <div class="panel panel-default">
             <div class="panel-heading">Observables as IOC</div>
             <div class="panel-body">
-                <pre>{{statsCtrl.byIoc.details | json}}</pre>
                 <table class="table table-condensed">
                     <tr ng-repeat="item in statsCtrl.byIoc.details">
                         <td class="active">{{(item.key === 'false') ? 'Not IOC' : 'IOC' }}</td>
