@@ -128,7 +128,8 @@
             type: 'case_artifact',
             field: 'dataType',
             dateField: 'startDate',
-            tagsField: 'tags'
+            tagsField: 'tags',
+            filter: {status: 'Ok'}
         };
 
         $scope.observableByIoc = {
@@ -140,7 +141,8 @@
             names: {
                 '0': 'NOT IOC',
                 '1': 'IOC'
-            }
+            },
+            filter: {status: 'Ok'}
         };
 
         $scope.observableOverTime = {
@@ -154,7 +156,8 @@
             },
             types: {
                 startDate: 'bar'
-            }
+            },
+            filter: {status: 'Ok'}
         };
 
         $scope.setTagsAggregator = function(aggregator) {
