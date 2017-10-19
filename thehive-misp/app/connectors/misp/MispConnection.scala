@@ -26,5 +26,4 @@ case class MispConnection(
       .withHttpHeaders(
         "Authorization" → key,
         "Accept" → "application/json")
-
 }
