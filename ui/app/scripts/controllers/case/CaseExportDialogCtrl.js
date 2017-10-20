@@ -8,7 +8,7 @@
 
             this.caze = caze;
             this.mode = '';
-            this.servers = config.servers;
+            this.servers = config.servers; // TODO Nabil
             this.failures = [];
 
             this.existingExports = {};

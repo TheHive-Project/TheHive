@@ -3,6 +3,7 @@ package connectors
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
+import scala.concurrent.Future
 
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
@@ -15,7 +16,7 @@ import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
 trait Connector {
   val name: String
   val router: Router
-  val status: JsObject = Json.obj("enabled" → true)
+  def status: Future[JsObject] = Future.successful(Json.obj("enabled" → true))
 }
 
 @Singleton
