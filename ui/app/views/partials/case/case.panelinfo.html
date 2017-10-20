@@ -37,7 +37,7 @@
         </span>
 
         <!-- Right side -->
-        <span class="ml-xs pull-right">
+        <span class="ml-xs pull-right" ng-if="appConfig.connectors.misp.enabled">
             <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
                 <i class="text-primary fa fa-share"></i>
                 Share ({{existingExports}})

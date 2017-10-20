@@ -206,6 +206,11 @@
             };
 
             $scope.shareCase = function() {
+                if($scope.appConfig.connectors.misp && $scope.appConfig.connectors.misp.servers.length === 0) {
+                    NotificationSrv.log('There are no MISP servers defined', 'error');
+                    return;
+                }
+
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/misp/case.export.confirm.html',
                     controller: 'CaseExportDialogCtrl',
