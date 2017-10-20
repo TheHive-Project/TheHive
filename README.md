@@ -4,7 +4,7 @@
 [![Join the chat at https://gitter.im/TheHive-Project/TheHive](https://badges.gitter.im/TheHive-Project/TheHive.svg)](https://gitter.im/TheHive-Project/TheHive?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
-[TheHive](https://thehive-project.org/) is a scalable 3-in-1 open source and free security incident response platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly.
+[TheHive](https://thehive-project.org/) is a scalable 3-in-1 open source and free Security Incident Response Platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly. It is the perfect companion to [MISP](http://www.misp-project.org/). You can synchronize it with one or multiple MISP instances to start investigations out of MISP events. You can also export an investigation's results as a MISP event to help your peers detect and react to attacks you've dealt with. Additionally, when TheHive is used in conjunction with [Cortex](https://github.com/CERT-BDF/Cortex/), security analysts and researchers can easily analyze tens if not hundred of observables.  
 
 ![Current Cases View](images/Current_cases.png)
 
@@ -21,15 +21,15 @@ Each task can be assigned to a given analyst. Team members can also take charge 
 Tasks may contain multiple work logs that contributing analysts can use to describe what they are up to, what was the outcome, attach pieces of evidence or noteworthy files and so on. Logs can be written using a rich text editor or Markdown.
 
 ## Analyze
-You can add one or hundreds if not thousands of observables to each case you create. You can also create a case out of a [MISP](http://www.misp-project.org/) event. TheHive can be very easily linked to one or several MISP instances and MISP events can be previewed to decide whether they warrant an investigation or not. If an investigation is in order, the analyst can then import the event into a case using a customizable template.
+You can add one or hundreds if not thousands of observables to each case you create. You can also create a case out of a [MISP](http://www.misp-project.org/) event. TheHive can be very easily linked to one or several MISP instances and MISP events can be previewed to decide whether they warrant an investigation or not. If an investigation is in order, the analyst can then import the event into either an existing or a new case using a customizable template.
 
 Thanks to [TheHive4py](https://thehive-project.org/#section_thehive4py), TheHive's Python API client, it is possible to send SIEM alerts, phishing and other suspicious emails and other security events to TheHive. They will appear in its `Alerts` panel along with new or updated MISP events, where they can be previewed, imported into cases or ignored.
 
-![The Alerts Panel](images/Alerts_Panel.png)
+![The Alerts Pane](images/Alerts_Panel.png)
 
 TheHive has the ability to automatically identify observables that have been already seen in previous cases. Observables can also be associated with a TLP and the source which provided or generated them using tags. The analyst can also easily mark observables as IOCs and isolate those using a search query then export them for searching in a SIEM or other data stores.
 
-Starting from Buckfast (TheHive version 2.10), analysts can analyze tens or hundreds of observables in a few clicks by leveraging the analyzers of one or several [Cortex](https://github.com/CERT-BDF/Cortex/) instances depending on your OPSEC needs: DomainTools, VirusTotal, PassiveTotal, Joe Sandbox, geolocation, threat feed lookups and so on. Before Buckfast, the analysis engine which gave birth to Cortex was embedded in TheHive's back-end code.
+Analysts can analyze tens or hundreds of observables in a few clicks by leveraging the analyzers of one or several [Cortex](https://github.com/CERT-BDF/Cortex/) instances depending on your OPSEC needs: DomainTools, VirusTotal, PassiveTotal, Joe Sandbox, geolocation, threat feed lookups and so on.
 
 Security analysts with a knack for scripting can easily add their own analyzers to Cortex in order to automate actions that must be performed on observables or IOCs. They can also decide how analyzers behave according to the TLP. For example, a file added as observable can be submitted to VirusTotal if the associated TLP is WHITE or GREEN. If it's AMBER, its hash is computed and submitted to VT but not the file. If it's RED, no VT lookup is done.
 
@@ -42,6 +42,7 @@ To use TheHive, you can:
 - Execute the [Ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by
 [@drewstinnett](https://github.com/drewstinnett)
 - [Build it from sources](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/build-guide.md) then run it
+- [Use the training VM](https://github.com/CERT-BDF/TheHiveDocs/blob/master/training-material.md)
 
 # Details
 
@@ -49,7 +50,7 @@ To use TheHive, you can:
 We have made several guides available in the [Documentation repository](https://github.com/CERT-BDF/TheHiveDocs).
 
 ## Architecture
-TheHive is written in Scala and uses ElasticSearch 2.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
+TheHive is written in Scala and uses ElasticSearch 5.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
 
 ![](images/Architecture.png)
 
@@ -60,22 +61,25 @@ The following image shows a typical workflow:
 
 ## Additional features
 ### Authentication
-TheHive supports 3 authentication methods:
+TheHive supports 4 authentication methods:
 + Active Directory
 + LDAP
++ API keys
 + local
 
 ### Statistics
 TheHive comes with a powerful statistics module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
 
 ### Case Merging
-Two cases can be easily merged together if you believe that they relate to the same threat or have a significant observable overlap.
+Two cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
 
 ### Case and Observable Filtering
 You can filter cases and observables very easily to show only the data that is of interest to you.
 
 ### MISP and Cortex
-TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. It can also analyze observables using one or several [Cortex](https://github.com/CERT-BDF/Cortex/) servers.
+TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP instances to one or several MISP servers. 
+
+[Cortex](https://github.com/CERT-BDF/Cortex/) is the perfect companion for TheHive. Use one or several to analyze observables at scale.
 
 # License
 TheHive is an open source and free software released under the [AGPL](https://github.com/CERT-BDF/TheHive/blob/master/LICENSE) (Affero General Public License). We, TheHive Project, are committed to ensure that TheHive will remain a free and open source project on the long-run.
