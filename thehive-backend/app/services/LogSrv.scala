@@ -28,8 +28,9 @@ class LogSrv @Inject() (
     getSrv[TaskModel, Task](taskModel, taskId)
       .flatMap { task ⇒ create(task, fields) }
 
-  def create(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Log] =
-    createSrv[LogModel, Log, Task](logModel, task, fields)
+  def create(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Log] = {
+    createSrv[LogModel, Log, Task](logModel, task, fields.addIfAbsent("owner", authContext.userId))
+  }
 
   def get(id: String): Future[Log] =
     getSrv[LogModel, Log](logModel, id)

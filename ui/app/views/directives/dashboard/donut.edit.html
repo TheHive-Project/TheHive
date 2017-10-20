@@ -1,0 +1,140 @@
+<!-- <pre>{{component.options | json}}</pre> -->
+
+<uib-tabset class="nav-tabs-custom">
+    <uib-tab index="0">
+        <uib-tab-heading>
+            <i class="fa fa-bars"></i> Basic
+        </uib-tab-heading>
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" class="form-control" placeholder="Ex: cases per TLP" ng-model="component.options.title">
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Entity</label>
+                    <select class="form-control" ng-model="component.options.entity"
+                        ng-options="item for item in metadata.entities"></select>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Aggregation Field</label>
+                    <select class="form-control" ng-model="component.options.field"
+                        ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity], ['date', 'text']) | orderBy:'name'"></select>
+                </div>
+            </div>
+        </div>
+    </uib-tab>
+    <uib-tab index="1">
+        <uib-tab-heading>
+            <i class="fa fa-sort"></i> Sort
+        </uib-tab-heading>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Sort by</label>
+                    <select class="form-control" ng-model="component.options.sort"
+                        ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity], ['text']) | orderBy:'name'"></select>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Limit</label>
+                    <input type="number" class="form-control" ng-model="component.options.limit">
+                </div>
+            </div>
+        </div>
+    </uib-tab>
+    <uib-tab index="2">
+        <uib-tab-heading>
+            <i class="fa fa-filter"></i> Filters
+        </uib-tab-heading>
+        <div ng-if="!component.options.filters || component.options.filters.length === 0" class="empty-message">
+            No filters defined. <a href ng-click="addFilter()">Add a filter</a>
+        </div>
+        <div class="row mb-xxxs" ng-repeat="filter in component.options.filters track by $index">
+            <div class="col-sm-4">
+                <div class="input-group">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" ng-click="removeFilter($index)">
+                        <i class="fa fa-times text-danger"></i>
+                    </button>
+                  </span>
+                  <select class="form-control" ng-model="filter.field"
+                      ng-options="item.name as item.name for (key, item) in metadata[component.options.entity]"
+                      ng-change="setFilterField(filter)"></select>
+                </div>
+            </div>
+            <div class="col-sm-8" ng-switch="editorFor(filter)">
+                <input ng-switch-when="number" type="number" class="form-control" ng-model="filter.value">
+                <input ng-switch-when="text" type="text" class="form-control" ng-model="filter.value">
+                <!-- <input ng-switch-when="string" type="text" class="form-control" ng-model="filter.value"> -->
+
+                <div ng-switch-when="string" class="input-group">
+                    <div class="input-group-btn" uib-dropdown>
+                        <button type="button" class="btn btn-default dropdown-toggle" uib-dropdown-toggle>
+                            {{filter.value.operator || 'Any'}} of <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" uib-dropdown-menu>
+                            <li><a href ng-click="filter.value.operator = 'any'">Any of</a></li>
+                            <li><a href ng-click="filter.value.operator = 'all'">All of</a></li>
+                            <li><a href ng-click="filter.value.operator = 'none'">None of</a></li>
+                        </ul>
+                    </div>
+                    <tags-input class="form-control form-control-wrapper" min-length="2"
+                        ng-model="filter.value.list"
+                        placeholder="Enter a {{filter.field}}"
+                        replace-spaces-with-dashes="false"></tags-input>
+                </div>
+
+                <div ng-switch-when="enumeration" class="input-group">
+                    <div class="input-group-btn" uib-dropdown>
+                        <button type="button" class="btn btn-default dropdown-toggle" uib-dropdown-toggle>
+                            {{filter.value.operator || 'Any'}} of <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" uib-dropdown-menu>
+                            <li><a href ng-click="filter.value.operator = 'any'">Any of</a></li>
+                            <li><a href ng-click="filter.value.operator = 'all'">All of</a></li>
+                            <li><a href ng-click="filter.value.operator = 'none'">None of</a></li>
+                        </ul>
+                    </div>
+                    <tags-input class="form-control form-control-wrapper" min-length="2" ng-model="filter.value.list"
+                        replace-spaces-with-dashes="false"
+                        add-from-autocomplete-only="true"
+                        placeholder="Enter a {{filter.field}}"
+                        display-property="label">
+                        <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1"
+                            source="promiseFor(filter, $query)"
+                            display-property="label"></auto-complete>
+                  </tags-input>
+                </div>
+
+                <div ng-switch-when="boolean" class="btn-group">
+                    <label uib-btn-radio="true" class="btn btn-default" name="{{filter.field}}" ng-model="filter.value">Yes</label>
+                    <label uib-btn-radio="false" class="btn btn-default" name="{{filter.field}}" ng-model="filter.value">No</label>
+                    <!-- <label uib-btn-radio="null" class="btn btn-default" name="{{filter.field}}" ng-model="filter.value">Any</label> -->
+                </div>
+
+                <div ng-switch-when="date" class="row">
+                    <div class="col-sm-6">
+                        <dt-picker date="filter.value.from" placeholder="from"></dt-picker>
+                    </div>
+                    <div class="col-sm-6">
+                        <dt-picker date="filter.value.to" placeholder="to"></dt-picker>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div ng-if="component.options.filters && component.options.filters.length > 0" class="mv-xs">
+            <a href ng-click="addFilter()">
+                <i class="fa fa-plus"></i> Add a filter
+            </a>
+            <a href ng-click="showQuery()">
+                <i class="fa fa-plus"></i> Show query
+            </a>
+        </div>
+        <!-- <pre>{{query | json}}</pre> -->
+        <!-- <pre>{{component.options.filters | json}}</pre> -->
+    </uib-tab>
+</uib-tabset>

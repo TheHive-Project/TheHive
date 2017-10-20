@@ -45,6 +45,7 @@
     <link rel="stylesheet" href="styles/flow.css"/>
     <link rel="stylesheet" href="styles/search.css"/>
     <link rel="stylesheet" href="styles/filters.css"/>
+    <link rel="stylesheet" href="styles/dashboard.css"/>
     <link rel="stylesheet" href="styles/case-item.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
@@ -108,6 +109,7 @@
     <script src="bower_components/js-base64/base64.js"></script>
     <script src="bower_components/angular-scroll/angular-scroll.js"></script>
     <script src="bower_components/underscore.string/dist/underscore.string.js"></script>
+    <script src="bower_components/angular-drag-and-drop-lists/angular-drag-and-drop-lists.js"></script>
     <!-- endbower -->
 
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
@@ -163,6 +165,9 @@
     <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardEditCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardsCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
     <script src="scripts/directives/charts/c3Chart.js"></script>
     <script src="scripts/directives/charts/chart.js"></script>
@@ -171,6 +176,8 @@
     <script src="scripts/directives/charts/histo-chart.js"></script>
     <script src="scripts/directives/charts/metric-histo-chart.js"></script>
     <script src="scripts/directives/compare-to.js"></script>
+    <script src="scripts/directives/dashboard/donut.js"></script>
+    <script src="scripts/directives/dashboard/item.js"></script>
     <script src="scripts/directives/dateTimePicker.js"></script>
     <script src="scripts/directives/dt-picker.js"></script>
     <script src="scripts/directives/entityLink.js"></script>
@@ -227,6 +234,7 @@
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
     <script src="scripts/services/CustomFieldsCacheSrv.js"></script>
+    <script src="scripts/services/DashboardSrv.js"></script>
     <script src="scripts/services/EntitySrv.js"></script>
     <script src="scripts/services/FileResource.js"></script>
     <script src="scripts/services/FilteringSrv.js"></script>
@@ -235,9 +243,11 @@
     <script src="scripts/services/ListSrv.js"></script>
     <script src="scripts/services/MetricsCacheSrv.js"></script>
     <script src="scripts/services/MispSrv.js"></script>
+    <script src="scripts/services/ModalUtilsSrv.js"></script>
     <script src="scripts/services/NotificationSrv.js"></script>
     <script src="scripts/services/ObservablesUISrv.js"></script>
     <script src="scripts/services/PSearchSrv.js"></script>
+    <script src="scripts/services/QueryBuilderSrv.js"></script>
     <script src="scripts/services/ReportTemplateSrv.js"></script>
     <script src="scripts/services/SearchSrv.js"></script>
     <script src="scripts/services/StatSrv.js"></script>

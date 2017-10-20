@@ -26,9 +26,7 @@
                         </li>
                         <li class="divider" ng-if="templates && templates.length > 0"></li>
                         <li ng-repeat="template in templates">
-                            <a href ng-click="createNewCase(template)">From
-                                {{template.name | uppercase}}
-                                template</a>
+                            <a href ng-click="createNewCase(template)">{{template.name | uppercase}}</a>
                         </li>
                     </ul>
                 </li>
@@ -52,6 +50,11 @@
                 <li ui-sref-active="active">
                     <a ui-sref="app.statistics">
                         <i class="fa fa-bar-chart"></i> Statistics
+                    </a>
+                </li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.dashboards">
+                        <i class="fa fa-bar-chart"></i> Dashboards
                     </a>
                 </li>
             </ul>

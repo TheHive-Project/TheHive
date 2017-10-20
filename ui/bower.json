@@ -49,7 +49,8 @@
     "angular-ui-sortable": "^0.17.0",
     "js-base64": "^2.1.9",
     "angular-scroll": "^1.0.1",
-    "underscore.string": "^3.3.4"
+    "underscore.string": "^3.3.4",
+    "angular-drag-and-drop-lists": "^2.1.0"
   },
   "devDependencies": {
     "angular-mocks": "1.5.8"

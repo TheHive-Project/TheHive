@@ -69,12 +69,22 @@ object JsonFormat {
       value,
       tags))
 
+  val tlpWrites: Writes[Long] = Writes[Long] {
+    case 0 ⇒ JsString("tlp:white")
+    case 1 ⇒ JsString("tlp:green")
+    case 2 ⇒ JsString("tlp:amber")
+    case 3 ⇒ JsString("tlp:red")
+    case _ ⇒ JsString("tlp:amber")
+  }
+
   implicit val exportedAttributeWrites: Writes[ExportedMispAttribute] = Writes[ExportedMispAttribute] { attribute ⇒
     Json.obj(
       "category" → attribute.category,
       "type" → attribute.tpe,
       "value" → attribute.value.fold[String](identity, _.name),
-      "comment" → attribute.comment)
+      "comment" → attribute.comment,
+      "Tag" → Json.arr(
+        Json.obj("name" → tlpWrites.writes(attribute.tlp))))
   }
 
   implicit val mispArtifactWrites: Writes[MispArtifact] = OWrites[MispArtifact] { artifact ⇒

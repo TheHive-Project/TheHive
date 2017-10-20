@@ -7,7 +7,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll'
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
+        'dndLists'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -283,6 +284,55 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/alert/list.html',
                 controller: 'AlertListCtrl',
                 controllerAs: '$vm'
+            })
+            .state('app.dashboards', {
+                url: 'dashboards',
+                templateUrl: 'views/partials/dashboard/list.html',
+                controller: 'DashboardsCtrl',
+                controllerAs: '$vm'
+            })
+            .state('app.dashboards-view', {
+                url: 'dashboards/{id}',
+                templateUrl: 'views/partials/dashboard/view.html',
+                controller: 'DashboardViewCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    dashboard: function(DashboardSrv, $stateParams, $q) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.get($stateParams.id)
+                            .then(function(response) {
+                                defer.resolve(response.data);
+                            }, function(err) {
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    },
+                    metadata: function(DashboardSrv) {
+                        return DashboardSrv.getMetadata();
+                    }
+                }
+            })
+            .state('app.dashboards-edit', {
+                url: 'dashboards/edit/{id}',
+                templateUrl: 'views/partials/dashboard/edit.html',
+                controller: 'DashboardEditCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    dashboard: function(DashboardSrv, $stateParams, $q) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.get($stateParams.id)
+                            .then(function(response) {
+                                defer.resolve(response.data);
+                            }, function(err) {
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             });
     })
     .config(function($httpProvider) {

@@ -1,0 +1,89 @@
+.dashboard-toolbox button:first-child {
+    margin-left: 0;
+}
+
+.dashboards-list .dashboard-item {
+    padding: 5px;
+    /*border-bottom: 1px dashed #ccc;*/
+}
+.dashboards-list .dashboard-item:nth-child(even) {
+    background: #f9f9f9;
+}
+.dashboards-list .dashboard-item:nth-child(odd) {
+    background: #FFF;
+}
+
+.dashboards-list .dashboard-item .media-right {
+    vertical-align: middle;
+}
+
+.dashboard-content {
+    margin-top: 20px;
+    padding-left: 0;
+    /*padding: 10px;*/
+    /*min-height: 10px;
+    background-color: red;*/
+}
+.dashboard-content > li {
+    list-style: none;
+}
+.dashboard-content > .dndDraggingSource {
+    display: none;
+}
+.dashboard-content > .dndPlaceholder {
+    background-color: #eeeeee;
+    display: block;
+    margin-top: 10px;
+    min-height: 100px;
+}
+
+.dashboard-row {
+    display: flex;
+    flex-direction: column;
+}
+.chart-container {
+    min-height: 100px;
+    /*background-color: #e6edf4;*/
+    background-color: #f9f9f9;
+    border: 1px dashed #aacbed;
+    margin-top: 10px;
+    padding: 15px;
+}
+
+.chart-container-dropzone {
+    min-height: 50px;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+}
+
+.chart-container-dropzone > .dndDraggingSource {
+    display: none;
+}
+
+.chart-container-dropzone > .dndPlaceholder {
+    background-color: #eeeeee;
+    /*min-height: 100px;*/
+    display: block;
+}
+
+.chart-container-dropzone > * {
+    flex: 1;
+    margin: 0 5px;
+}
+
+/*.chart-container-dropzone > dashboard-item:first-child {
+    margin-left: 0;
+}
+
+.chart-container-dropzone > dashboard-item:last-child{
+    margin-right: 0px;
+}*/
+
+dashboard-item .box {
+    margin-bottom: 0;
+}
+
+.dashboard-row {
+    margin-bottom: 10px;
+}

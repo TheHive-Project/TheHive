@@ -1,0 +1,112 @@
+<div class="box">
+    <div class="box-header with-border">
+        <h3 class="box-title">{{$vm.dashboard.title}}</h3>
+        <div class="box-tools pull-right">
+            <a href class="btn btn-box-tool" ng-click="$vm.options.editLayout = !$vm.options.editLayout"  ng-show="!$vm.options.editLayout">
+                <i class="fa fa-pencil"></i> Edit dashboard
+            </a>
+            <a class="btn btn-box-tool" ui-sref="app.dashboards()">
+                <i class="fa fa-chevron-left"></i> Back to list
+            </a>
+
+        </div>
+    </div>
+    <div class="box-body">
+        {{$vm.dashboard.description}}
+    </div>
+</div>
+
+<div class="box" ng-show="$vm.options.editLayout">
+    <div class="box-body">
+        <div class="dashboard-edit">
+            <div class="dashboard-toolbox">
+                <button type="button" class="btn btn-app" ng-repeat="item in $vm.toolbox"
+                    dnd-draggable="item"
+                    dnd-type="item.type"
+                    dnd-effect-allowed="copy">
+                    <i class="fa" ng-class="$vm.options.cls[item.type]" /> {{$vm.options.labels[item.type]}}
+                </button>
+                <button type="button" class="btn btn-app pull-right"
+                    ng-click="$vm.options.editLayout = false">
+                    <i class="text-danger fa fa-times" /> Cancel
+                </button>
+                <button type="button" class="btn btn-app pull-right"
+                    ng-click="$vm.saveDashboard()">
+                    <i class="fa fa-save" /> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--
+<ul class="dashboard-content"
+    dnd-list="$vm.definition.items"
+    dnd-allowed-types="$vm.options.dashboardAllowedTypes">
+
+    <li ng-if="$vm.definition.items.length === 0">
+        Put items here
+    </li>
+
+    <li ng-repeat="item in $vm.definition.items"
+        dnd-draggable="item"
+        dnd-type="item.type"
+        dnd-effect-allowed="move"
+        dnd-moved="$vm.definition.items.splice($index, 1)"
+        ng-include="'/views/partials/dashboard/' + item.type + '.html'">
+
+    </li>
+</ul>
+-->
+
+<div class="dashboard-content"
+    dnd-list="$vm.definition.items"
+    dnd-disable-if="!$vm.options.editLayout"
+    dnd-allowed-types="$vm.options.dashboardAllowedTypes">
+
+    <div class="dashboard-row" ng-repeat="(rowIndex, row) in $vm.definition.items"
+        dnd-draggable="row"
+        dnd-type="row.type"
+        dnd-effect-allowed="move"
+        dnd-disable-if="!$vm.options.editLayout"
+        dnd-moved="$vm.definition.items.splice($index, 1)"
+        ng-class="{'chart-container': $vm.options.editLayout}">
+
+        <div class="chart-container-header mb-xxs clearfix" ng-show="$vm.options.editLayout">
+            <span class="pull-right">
+                <a href class="text-danger" ng-click="$vm.removeContainer($index)">
+                    <i class="fa fa-times"></i> Remove
+                </a>
+            </span>
+        </div>
+
+        <div class="chart-container-dropzone"
+            dnd-list="row.items"
+            dnd-allowed-types="$vm.options.containerAllowedTypes">
+
+            <dashboard-item ng-repeat="(colIndex, component) in row.items"
+                row-index="rowIndex"
+                col-index="colIndex"
+                component="component"
+                metadata="$vm.metadata"
+                autoload="true"
+                mode="view"
+                refresh-on="refresh-chart"
+                show-edit="$vm.options.editLayout"
+                on-remove="$vm.removeItem(rowIndex, colIndex)"
+
+                dnd-disable-if="!$vm.options.editLayout"
+                dnd-draggable="component"
+                dnd-type="component.type"
+                dnd-effect-allowed="move"
+                dnd-moved="row.items.splice($index, 1)">
+            </dashboard-item>
+        </div>
+
+
+
+    </div>
+</div>
+
+
+<pre>{{$vm.definition | json}}</pre>
