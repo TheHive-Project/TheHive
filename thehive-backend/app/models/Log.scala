@@ -27,7 +27,7 @@ trait LogAttributes { _: AttributeDef ⇒
   // - contentType (string): the mimetype of the file (send by client)
   val attachment = optionalAttribute("attachment", F.attachmentFmt, "Attached file", O.readonly)
   val status = attribute("status", F.enumFmt(LogStatus), "Status of the log", LogStatus.Ok)
-  val owner = attribute("owner", F.stringFmt, "User who owns the log")
+  val owner = attribute("owner", F.userFmt, "User who owns the log")
 }
 
 @Singleton
