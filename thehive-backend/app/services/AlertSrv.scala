@@ -320,6 +320,24 @@ class AlertSrv(
       .runWith(Sink.seq)
   }
 
+  def getArtifactSeen(artifact: JsObject): Future[Long] = {
+    val maybeArtifactSeen = for {
+      dataType ← (artifact \ "dataType").asOpt[String]
+      data ← dataType match {
+        case "file" ⇒ (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
+        case _      ⇒ (artifact \ "data").asOpt[String].map(Left.apply)
+      }
+      numberOfSimilarArtifacts = artifactSrv.findSimilar(dataType, data, None, None, Nil)._2
+    } yield numberOfSimilarArtifacts
+    maybeArtifactSeen.getOrElse(Future.successful(0L))
+  }
+
+  def alertArtifactsWithSeen(alert: Alert): Future[Seq[JsObject]] = {
+    Future.traverse(alert.artifacts()) { artifact ⇒
+      getArtifactSeen(artifact).map(seen ⇒ artifact + ("seen" → JsNumber(seen)))
+    }
+  }
+
   def fixStatus()(implicit authContext: AuthContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
 

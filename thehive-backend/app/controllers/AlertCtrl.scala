@@ -75,8 +75,12 @@ class AlertCtrl @Inject() (
         alertSrv.similarCases(alert)
           .map(sc ⇒ Json.obj("similarCases" → Json.toJson(sc)))
       else Future.successful(JsObject(Nil))
+      similarArtifacts ← if (withSimilarity)
+        alertSrv.alertArtifactsWithSeen(alert)
+          .map(aws ⇒ Json.obj("artifacts" → aws))
+      else Future.successful(JsObject(Nil))
     } yield {
-      renderer.toOutput(OK, alertsWithStats ++ similarCases)
+      renderer.toOutput(OK, alertsWithStats ++ similarCases ++ similarArtifacts)
     }
   }
 
