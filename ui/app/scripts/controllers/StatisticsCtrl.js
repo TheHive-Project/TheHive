@@ -139,8 +139,8 @@
             dateField: 'startDate',
             tagsField: 'tags',
             names: {
-                '0': 'NOT IOC',
-                '1': 'IOC'
+                'false': 'NOT IOC',
+                'true': 'IOC'
             },
             filter: {status: 'Ok'}
         };
