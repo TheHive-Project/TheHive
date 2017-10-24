@@ -1,5 +1,17 @@
 # Change Log
 
+## [2.13.2](https://github.com/CERT-BDF/TheHive/tree/2.13.2) (2017-10-24)
+
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.1...2.13.2)
+
+**Fixed bugs:**
+
+- Security issue on Play 2.6.5 [\#356](https://github.com/CERT-BDF/TheHive/issues/356)
+- Incorrect stats: non-IOC observables counted as IOC and IOC word displayed twice [\#347](https://github.com/CERT-BDF/TheHive/issues/347)
+- Deleted Observables, Show up on the statistics tab under Observables by Type [\#343](https://github.com/CERT-BDF/TheHive/issues/343)
+- Statistics on metrics doesn't work [\#342](https://github.com/CERT-BDF/TheHive/issues/342)
+- Error on custom fields format when merging cases [\#331](https://github.com/CERT-BDF/TheHive/issues/331)
+
 ## [2.13.1](https://github.com/CERT-BDF/TheHive/tree/2.13.1) (2017-09-18)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.0...2.13.1)
 
