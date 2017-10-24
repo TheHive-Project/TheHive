@@ -24,9 +24,9 @@
             <div class="panel-body">
                 <table class="table table-condensed">
                     <tr ng-repeat="item in statsCtrl.byIoc.details">
-                        <td class="active">{{(item.key === '0') ? 'Not IOC' : 'IOC' }}</td>
+                        <td class="active">{{(item.key === 'false') ? 'Not IOC' : 'IOC' }}</td>
                         <td>
-                            <a href ng-click="addFilterValue('ioc', item.key === '0' ? false : true)">{{item.count}}</a>
+                            <a href ng-click="addFilterValue('ioc', item.key === 'false' ? false : true)">{{item.count}}</a>
                         </td>
                     </tr>
                 </table>

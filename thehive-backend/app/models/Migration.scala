@@ -237,6 +237,7 @@ class Migration(
           val customFields = (caze \ "customFields").asOpt[JsObject].getOrElse(JsObject(Nil))
           caze + ("metrics" → metrics) + ("customFields" → customFields)
         })
+    case DatabaseState(10) ⇒ Nil
   }
 
   private val requestCounter = new java.util.concurrent.atomic.AtomicInteger(0)
