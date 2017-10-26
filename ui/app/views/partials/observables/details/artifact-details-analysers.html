@@ -43,9 +43,33 @@
                     <td ng-if="analysisEnabled">
                         <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
                             ng-click="runAnalyzer(analyzerId)"
-                            ng-if="analyzer.active">
+                            ng-if="analyzer.cortexIds.length === 1 && analyzer.active">
                             <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
                         </span>
+
+                        <div class="btn-group" ng-if="analyzer.cortexIds.length > 1 && analyzer.active" uib-dropdown>
+                            <button type="button" class="btn btn-xs dropdown-toggle"
+                                ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
+                                uib-dropdown-toggle>
+                                <span class="mr-xxxs">
+                                    <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
+                                </span>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" uib-dropdown-menu>
+                                <li ng-repeat="srv in cortexServers">
+                                    <a href ng-click="runAnalyzer(analyzerId, srv.name)" ng-disabled="srv.status === 'ERROR'">
+                                        <div>
+                                            <strong>{{srv.name}}</strong>
+                                        </div>
+                                        <div>
+                                            <strong ng-class="{'OK': 'text-success', 'ERROR': 'text-danger'}[srv.status]">Status: {{srv.status}}</strong>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
                     </td>
                 </tr>
             </tbody>

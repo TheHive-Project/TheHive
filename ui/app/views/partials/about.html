@@ -6,6 +6,17 @@
       <div class="col-md-6"><strong class="pull-right">{{module}}</strong></div>
       <div class="col-md-6">{{ver}}</div>
     </div>
+
+    <div class="row mt-xs" ng-repeat="(key, connector) in connectors" ng-if="connector.enabled">
+      <div class="col-md-6"><strong class="pull-right">{{key | uppercase}}</strong></div>
+      <div class="col-md-6">
+          <div ng-repeat="server in connector.servers">
+              <span>{{server.version || 'Unknown version'}}</span> -
+              <strong>{{server.name}}</strong>
+              (<strong ng-class="{'OK': 'text-success', 'ERROR': 'text-danger'}[server.status]">{{server.status}}</strong>)
+          </div>
+      </div>
+    </div>
     <div class="row mt-s">
         <div class="col-md-12 text-center">
             Copyright (C) 2014-2017 Thomas Franco, Saâd Kadhi, Jérôme Leonard

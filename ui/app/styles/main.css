@@ -503,6 +503,20 @@ footer.main-footer {
 
 footer .footer-logo {
     height: 40px;
+    border-radius: 50%;
+}
+
+footer .footer-logo.logo-ok{
+    background-color: #00a65a;
+}
+footer .footer-logo.logo-error{
+    background-color: #dd4b39;
+}
+footer .footer-logo.logo-error{
+    background-color: #dd4b39;
+}
+footer .footer-logo.logo-warning{
+    background-color: #f39c12;
 }
 
 report:empty {
@@ -515,5 +529,9 @@ span.action-button {
 
 table tr td.task-actions span.action-button {
     width: 60px;
-    display: inline-block;    
+    display: inline-block;
+}
+
+.misp-export .status-label {
+    display: block;
 }

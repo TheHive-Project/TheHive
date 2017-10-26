@@ -20,6 +20,7 @@
             $scope.artifact = {};
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
+            $scope.cortexServers = $scope.analysisEnabled && appConfig.connectors.cortex.servers;
             $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;
 
             $scope.editorOptions = {
@@ -80,7 +81,7 @@
 
                 _.each(_.keys($scope.analyzers).sort(), function(analyzerId) {
                     $scope.analyzerJobs[analyzerId] = [];
-                });                
+                });
 
                 angular.forEach($scope.jobs.values, function (job) {
                     if (job.analyzerId in $scope.analyzerJobs) {
@@ -180,11 +181,12 @@
                 });
             };
 
-            $scope.runAnalyzer = function (analyzerId) {
+            $scope.runAnalyzer = function (analyzerId, serverId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
 
-                CortexSrv.getServers([analyzerId])
-                    .then(function (serverId) {
+                var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerId])
+
+                promise.then(function (serverId) {
                         return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
                     })
                     .then(function () {
