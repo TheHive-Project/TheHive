@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardBar', function(StatSrv, $state, DashboardSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -8,18 +8,13 @@
                 autoload: '=',
                 mode: '=',
                 refreshOn: '@',
-                resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
+            template: '<c3 chart="chart"></c3>',
             link: function(scope) {
                 scope.chart = {};
 
                 scope.load = function() {
-                    if(!scope.options.entity) {
-                        return;
-                    }
-
                     var query = DashboardSrv.buildChartQuery(scope.options.filter, scope.options.query);
 
                     var statConfig = {
@@ -37,10 +32,12 @@
                                 return [key, response.data[key].count];
                             });
 
+                            console.log(columns);
+
                             scope.chart = {
                                 data: {
                                     columns: columns,
-                                    type: 'donut',
+                                    type: 'bar',
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
                                     onclick: function(d) {
@@ -59,7 +56,7 @@
                                         });
                                     }
                                 },
-                                donut: {
+                                bar: {
                                     title: 'Total: ' + response.data.count,
                                     label: {
                                         format: function(value) {
@@ -70,7 +67,7 @@
                             };
                         },
                         function(err) {
-                            NotificationSrv.error('donutChart', err.data, err.status);
+                            NotificationSrv.error('barChart', err.data, err.status);
                         }
                     );
                 };
@@ -86,12 +83,6 @@
                         scope.load();
                     });
                 }
-                // if (!_.isEmpty(scope.resizeOn)) {
-                //     scope.$on(scope.resizeOn, function() {
-                //         console.log('Resizing ' + scope.resizeOn);
-                //         scope.chart.resize();
-                //     });
-                // }
             }
         };
     });

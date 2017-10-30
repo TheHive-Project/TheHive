@@ -75,15 +75,16 @@
         <div class="chart-container-header mb-xxs clearfix" ng-show="$vm.options.editLayout">
             <span class="pull-right">
                 <a href class="text-danger" ng-click="$vm.removeContainer($index)">
-                    <i class="fa fa-times"></i> Remove
+                    <i class="fa fa-times"></i> Remove ({{row.items.length}})
                 </a>
             </span>
         </div>
 
         <div class="chart-container-dropzone"
             dnd-list="row.items"
-            dnd-allowed-types="$vm.options.containerAllowedTypes">
-
+            dnd-allowed-types="$vm.options.containerAllowedTypes"
+            dnd-disable-if="row.items.length >= $vm.options.maxColumns"
+            dnd-drop="$vm.itemInserted(index, item, rowIndex, type)">
             <dashboard-item ng-repeat="(colIndex, component) in row.items"
                 row-index="rowIndex"
                 col-index="colIndex"
@@ -92,6 +93,7 @@
                 autoload="true"
                 mode="view"
                 refresh-on="refresh-chart"
+                resize-on="resize-chart-{{rowIndex}}"
                 show-edit="$vm.options.editLayout"
                 on-remove="$vm.removeItem(rowIndex, colIndex)"
 
@@ -99,7 +101,7 @@
                 dnd-draggable="component"
                 dnd-type="component.type"
                 dnd-effect-allowed="move"
-                dnd-moved="row.items.splice($index, 1)">
+                dnd-dragstart="row.items.splice(colIndex, 1)">
             </dashboard-item>
         </div>
 

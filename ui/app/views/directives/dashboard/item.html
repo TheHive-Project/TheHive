@@ -5,7 +5,7 @@
         </h3>
 
         <div class="box-tools pull-right" ng-if="showEdit">
-            <a href class="btn btn-box-tool" ng-click="editDashboard()">
+            <a href class="btn btn-box-tool" ng-click="editItem()">
                 <i class="fa fa-pencil"></i> Edit
             </a>
             <a href class="btn btn-box-tool" ng-click="onRemove({rowIndex: rowIndex, colIndex: colIndex})">
@@ -24,7 +24,22 @@
             options="component.options"
             autoload="autoload"
             refresh-on="{{refreshOn}}"
+            resize-on="{{resizeOn}}"
             mode="mode"></dashboard-donut>
+
+        <dashboard-bar ng-switch-when="bar"
+            options="component.options"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"
+            resize-on="{{resizeOn}}"
+            mode="mode"></dashboard-bar>
+
+        <dashboard-line ng-switch-when="line"
+            options="component.options"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"
+            resize-on="{{resizeOn}}"
+            mode="mode"></dashboard-line>
 
         <div ng-switch-default>Unhandled chart type</div>
     </div>

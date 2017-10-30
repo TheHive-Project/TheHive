@@ -3,7 +3,7 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($q, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, dashboard, metadata) {
             var self = this;
 
             this.dashboard = dashboard;
@@ -81,6 +81,11 @@
                     row.items.splice(colIndex, 1);
                 });
 
+            }
+
+            this.itemInserted = function(index, item, rowIndex, type) {
+                $scope.$broadcast('resize-chart-' + rowIndex);
+                return item;
             }
 
         });

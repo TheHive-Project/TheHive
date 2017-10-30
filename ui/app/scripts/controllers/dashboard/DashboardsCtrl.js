@@ -3,7 +3,7 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardsCtrl', function($scope, $uibModal, PSearchSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
+        .controller('DashboardsCtrl', function($scope, $uibModal, PSearchSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
             this.dashboards = [];
             var self = this;
 
@@ -82,12 +82,16 @@
             }
 
             this.deleteDashboard = function(id) {
-                DashboardSrv.remove(id)
-                    .then(function(response) {
-                        self.load();
+                ModalUtilsSrv.confirm('Remove dashboard', 'Are you sure you want to remove this dashboard', {
+                    okText: 'Yes, remove it',
+                    flavor: 'danger'
+                }).then(function(){
+                    return DashboardSrv.remove(id);
+                }).then(function(response) {
+                    self.load();
 
-                        NotificationSrv.log('The dashboard has been successfully removed', 'success');
-                    });
+                    NotificationSrv.log('The dashboard has been successfully removed', 'success');
+                });
             }
         });
 })();

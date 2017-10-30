@@ -2,14 +2,7 @@
     <div class="modal-header bg-primary">
         <h3 class="modal-title">Edit chart: {{component.options.title}}</h3>
     </div>
-    <div class="modal-body" ng-switch="component.type">
-
-        <div ng-switch-when="donut" >
-            <ng-include src="'views/directives/dashboard/donut.edit.html'"></ng-include>
-        </div>
-
-        <div ng-switch-default>Unhandled chart type</div>
-    </div>
+    <div class="modal-body" ng-include="'views/directives/dashboard/'+component.type+'/edit.html'"></div>
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
         <button class="btn btn-primary pull-right" ng-click="save()">Apply</button>

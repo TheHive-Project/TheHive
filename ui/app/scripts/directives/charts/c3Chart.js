@@ -4,7 +4,8 @@
         return {
             restrict: 'E',
             scope: {
-                chart: '='
+                chart: '=',
+                resizeOn: '@'
             },
             templateUrl: 'views/directives/charts/c3.html',
             link: function(scope, element) {
@@ -16,7 +17,8 @@
                         scope.chart.size = {
                             height: 300
                         };
-                        c3.generate(scope.chart);
+                        scope.c3 = c3.generate(scope.chart);
+                        // scope.c3.resize();
                     }
                 };
 
@@ -29,6 +31,15 @@
                 scope.$watch('chart', function(newValue) {
                     scope.initChart(newValue);
                 });
+
+                if(scope.resizeOn) {
+                    console.log(scope.resizeOn);
+                    scope.$on(scope.resizeOn, function() {
+                        if(scope.c3) {
+                            scope.c3.resize();
+                        }
+                    })
+                }
             }
         };
     });

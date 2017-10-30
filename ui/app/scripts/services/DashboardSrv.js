@@ -15,6 +15,39 @@
             ]
         };
 
+        this.timeIntervals = [{
+            code: '1d',
+            label: 'By day'
+        }, {
+            code: '1w',
+            label: 'By week'
+        }, {
+            code: '1M',
+            label: 'By month'
+        }, {
+            code: '1y',
+            label: 'By year'
+        }];
+
+        this.aggregations = [{
+            id: 'count',
+            label: 'count'
+        }, {
+            id: 'sum',
+            label: 'sum'
+        }, {
+            id: 'min',
+            label: 'min'
+        }, {
+            id: 'max',
+            label: 'max'
+        }, {
+            id: 'avg',
+            label: 'avg'
+        }];
+
+        this.serieTypes = ['line', 'area', 'spline', 'area-spline', 'bar'];
+
         this.toolbox = [
             {
                 type: 'container',
@@ -118,5 +151,11 @@
         this.buildFiltersQuery = function(fields, filters) {
             return QueryBuilderSrv.buildFiltersQuery(fields, filters);
         };
+
+        this.buildChartQuery = function(filter, query) {
+            var criteria = _.without([filter, query], null, undefined, '', '*');
+
+            return criteria.length === 1 ? criteria[0] : { _and: criteria };
+        }
     });
 })();

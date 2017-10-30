@@ -37,6 +37,17 @@
     min-height: 100px;
 }
 
+/*.dashboard-content .c3-chart {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}*/
+
+.dashboard-content .c3-chart svg {
+    width: 100%;
+}
+
 .dashboard-row {
     display: flex;
     flex-direction: column;

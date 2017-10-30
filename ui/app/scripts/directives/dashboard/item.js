@@ -11,12 +11,20 @@
                 metadata: '=',
                 autoload: '=',
                 refreshOn: '@',
+                resizeOn: '@',
                 mode: '@',
                 showEdit: '=',
                 onRemove: '&'
             },
             templateUrl: 'views/directives/dashboard/item.html',
             link: function(scope, element) {
+                scope.timeIntervals = DashboardSrv.timeIntervals;
+                scope.aggregations = DashboardSrv.aggregations;
+                scope.serieTypes = DashboardSrv.serieTypes;
+
+                scope.layout = {
+                    activeTab: 0
+                };
                 scope.query = null;
                 scope.skipFields = function(fields, types) {
                     return _.filter(fields, function(item) {
@@ -24,11 +32,13 @@
                     });
                 };
 
-                // scope.pickFields = function(fields, types) {
-                //     return _.filter()
-                // }
+                scope.pickFields = function(fields, types) {
+                    return _.filter(fields, function(item) {
+                        return types.indexOf(item.type) !== -1;
+                    });
+                }
 
-                scope.editDashboard = function() {
+                scope.editItem = function() {
                     var modalInstance = $uibModal.open({
                         scope: scope,
                         controller: function($scope, $uibModalInstance) {
@@ -128,6 +138,19 @@
                     } else {
                         filter.value = null;
                     }
+                };
+
+                scope.addSerie = function() {
+                    scope.component.options.series = scope.component.options.series || [];
+
+                    scope.component.options.series.push({
+                        agg: null,
+                        field: null
+                    });
+                };
+
+                scope.removeSerie = function(index) {
+                    scope.component.options.series.splice(index, 1);
                 };
 
                 scope.showQuery = function() {
