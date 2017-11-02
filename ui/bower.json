@@ -50,7 +50,8 @@
     "js-base64": "^2.1.9",
     "angular-scroll": "^1.0.1",
     "underscore.string": "^3.3.4",
-    "angular-drag-and-drop-lists": "^2.1.0"
+    "angular-drag-and-drop-lists": "^2.1.0",
+    "angular-bootstrap-colorpicker": "^3.0.31"
   },
   "devDependencies": {
     "angular-mocks": "1.5.8"

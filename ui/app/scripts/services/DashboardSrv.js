@@ -15,6 +15,25 @@
             ]
         };
 
+        this.dashboardPeriods = [
+            {
+                type: 'all',
+                label: 'All time'
+            },
+            {
+                type: 'last7Days',
+                label: 'Last 7 days'
+            },
+            {
+                type: 'last30Days',
+                label: 'Last 30 days'
+            },
+            {
+                type: 'last3Months',
+                label: 'Last 3 months'
+            }
+        ]
+
         this.timeIntervals = [{
             code: '1d',
             label: 'By day'
@@ -59,7 +78,11 @@
             },
             {
                 type: 'line',
-                options: {}
+                options: {
+                    title: null,
+                    entity: null,
+                    field: null
+                }
             },
             {
                 type: 'donut',
@@ -67,6 +90,12 @@
                     title: null,
                     entity: null,
                     field: null
+                }
+            },
+            {
+                type: 'counter',
+                options: {
+                    title: null
                 }
             }
         ];
@@ -156,6 +185,43 @@
             var criteria = _.without([filter, query], null, undefined, '', '*');
 
             return criteria.length === 1 ? criteria[0] : { _and: criteria };
+        }
+
+        this.buildPeriodQuery = function(period, field, start, end) {
+            var today = moment().hours(0).minutes(0).seconds(0).milliseconds(0),
+                from,
+                to = moment(today).hours(23).minutes(59).seconds(59).milliseconds(999);
+
+            if (period === 'last7Days') {
+                from = moment(today).subtract(7, 'days');
+            } else if (period === 'last30Days') {
+                from = moment(today).subtract(30, 'days');
+            } else if (period === 'last3Months') {
+                from = moment(today).subtract(3, 'months');
+            } else if(period === 'custom') {
+                from = start && start != null ? start.getTime() : null;
+                to = end && end != null ? end.setHours(23, 59, 59, 999) : null;
+
+                if (from !== null && to !== null) {
+                    return {
+                        _between: { _field: field, _from: from, _to: to }
+                    };
+                } else if (from !== null) {
+                    return {
+                        _gt: { _field: field, _value: from }
+                    };
+                } else {
+                    return {
+                        _lt: { _field: field, _value: to }
+                    };
+                }
+            }
+
+            return period === 'all' ? null : {
+                _between: { _field: field, _from: from.valueOf(), _to: to.valueOf() }
+            }
+
+            return null;
         }
     });
 })();

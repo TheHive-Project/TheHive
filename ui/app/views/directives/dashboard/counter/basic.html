@@ -1,0 +1,13 @@
+<div class="form-group">
+    <label>Title</label>
+    <input type="text" class="form-control" placeholder="Ex: cases per TLP" ng-model="component.options.title">
+</div>
+<div class="row">
+    <div class="col-sm-6">
+        <div class="form-group">
+            <label>Entity</label>
+            <select class="form-control" ng-model="component.options.entity"
+                ng-options="item for item in metadata.entities"></select>
+        </div>
+    </div>    
+</div>

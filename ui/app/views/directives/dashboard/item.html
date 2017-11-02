@@ -41,6 +41,12 @@
             resize-on="{{resizeOn}}"
             mode="mode"></dashboard-line>
 
+        <dashboard-counter ng-switch-when="counter"
+            options="component.options"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"            
+            mode="mode"></dashboard-counter>
+
         <div ng-switch-default>Unhandled chart type</div>
     </div>
 </div>

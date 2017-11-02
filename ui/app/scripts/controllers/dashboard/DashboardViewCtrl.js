@@ -8,6 +8,7 @@
 
             this.dashboard = dashboard;
             this.definition = JSON.parse(dashboard.definition) || {
+                period: 'all',
                 items: [
                     {
                         type: 'container',
@@ -18,25 +19,45 @@
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
-                containerAllowedTypes: ['bar', 'line', 'donut'],
+                containerAllowedTypes: ['bar', 'line', 'donut', 'counter'],
                 maxColumns: 3,
                 cls: {
                     container: 'fa-window-maximize',
                     bar: 'fa-bar-chart',
                     donut: 'fa-pie-chart',
-                    line: 'fa-line-chart'
+                    line: 'fa-line-chart',
+                    counter: 'fa-calculator'
                 },
                 labels: {
                     container: 'Row',
                     bar: 'Bar',
                     donut: 'Donut',
-                    line: 'Line'
+                    line: 'Line',
+                    counter: 'Counter'
                 },
                 editLayout: false
             };
             this.toolbox = DashboardSrv.toolbox;
+            this.dashboardPeriods = DashboardSrv.dashboardPeriods;
 
             this.metadata = metadata;
+
+            this.applyPeriod = function(period) {
+                this.definition.period = period;
+
+                var periodQuery = period === 'custom' ?
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt');
+
+                _.each(this.definition.items, function(row) {
+                    _.each(row.items, function(chart) {
+                        chart.options.filter = periodQuery;
+                    });
+                });
+
+                $scope.$broadcast('refresh-chart');
+                this.saveDashboard();
+            }
 
             this.removeContainer = function(index) {
                 var row = this.definition.items[index];
@@ -83,9 +104,16 @@
 
             }
 
-            this.itemInserted = function(index, item, rowIndex, type) {
-                $scope.$broadcast('resize-chart-' + rowIndex);
+            this.itemInserted = function(item, rows) {
+                for(var i=0; i < rows; i++) {
+                    $scope.$broadcast('resize-chart-' + i);
+                }
+
                 return item;
+            }
+
+            this.itemDragStarted = function(colIndex, row) {
+                row.items.splice(colIndex, 1);
             }
 
         });

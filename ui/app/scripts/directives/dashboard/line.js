@@ -13,15 +13,20 @@
             },
             template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
             link: function(scope) {
+
                 scope.chart = {};
 
                 scope.intervals = DashboardSrv.timeIntervals;
                 scope.interval = scope.intervals[2];
 
                 scope.load = function() {
+                    if(!scope.options.entity) {
+                        return;
+                    }
+
                     var query = DashboardSrv.buildChartQuery(scope.options.filter, scope.options.query);
 
-                    var statsPromise = $http.post('./api/' + scope.options.entity + '/_stats', {
+                    var statsPromise = $http.post('./api/' + scope.options.entity.replace('_', '/') + '/_stats', {
                         query: query,
                         stats: [{
                             _agg: 'time',
@@ -50,6 +55,7 @@
                         scope.types = {};
                         scope.names = {};
                         scope.axes = {};
+                        scope.colors = {};
                         _.each(scope.options.series, function(serie) {
                             var key = serie.field,
                                 agg = serie.agg,
@@ -59,9 +65,21 @@
                             columns.push([columnKey].concat(_.pluck(values, dataKey)));
 
                             scope.types[columnKey] = serie.type || 'line';
-                            scope.names[columnKey] = agg === 'count' ? 'count' : (agg + ' of ' + key);
+                            scope.names[columnKey] = serie.label || (agg === 'count' ? 'count' : (agg + ' of ' + key));
                             scope.axes[columnKey] = (scope.types[columnKey] === 'bar') ? 'y2' : 'y';
+                            scope.colors[columnKey] = serie.color;
                         });
+
+                        // Compute stack groups
+                        var groups = {};
+                        _.each(scope.types, function(value, key) {
+                            if (groups[value]) {
+                                groups[value].push(key);
+                            } else {
+                                groups[value] = [key];
+                            }
+                        });
+                        scope.groups = _.values(groups);
 
                         var chart = {
                             data: {
@@ -72,11 +90,13 @@
                                 names: scope.names || {},
                                 type: scope.type || 'bar',
                                 types: scope.types || {},
-                                axes: scope.axes || {}
+                                axes: scope.axes || {},
+                                colors: scope.colors || {},
+                                groups: scope.groups || []
                             },
                             bar: {
                                 width: {
-                                    ratio: 0.1
+                                    ratio: 0.5
                                 }
                             },
                             axis: {
@@ -97,7 +117,6 @@
                             }
                         };
 
-
                         scope.chart = chart;
                     }, function(err) {
                         NotificationSrv.error('dashboardLine', err.data, err.status);
@@ -115,11 +134,6 @@
                         scope.load();
                     });
                 }
-                // if (!_.isEmpty(scope.resizeOn)) {
-                //     scope.$on(scope.resizeOn, function() {
-                //         scope.chart.resize();
-                //     });
-                // }
             }
         };
     });

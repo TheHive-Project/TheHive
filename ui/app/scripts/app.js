@@ -8,7 +8,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
         'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
-        'dndLists'
+        'dndLists', 'colorpicker.module'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -383,7 +383,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
             verticalSpacing: 20,
             horizontalSpacing: 20,
             positionX: 'left',
-            positionY: 'top'
+            positionY: 'bottom'
         });
     })
     .config(['markedProvider', 'hljsServiceProvider', function(markedProvider, hljsServiceProvider) {

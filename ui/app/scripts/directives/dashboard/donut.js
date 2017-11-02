@@ -86,12 +86,6 @@
                         scope.load();
                     });
                 }
-                // if (!_.isEmpty(scope.resizeOn)) {
-                //     scope.$on(scope.resizeOn, function() {
-                //         console.log('Resizing ' + scope.resizeOn);
-                //         scope.chart.resize();
-                //     });
-                // }
             }
         };
     });

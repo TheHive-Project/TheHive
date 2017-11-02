@@ -1,3 +1,7 @@
+body,
+.c3 svg {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
 .dashboard-toolbox button:first-child {
     margin-left: 0;
 }
@@ -83,13 +87,13 @@
     margin: 0 5px;
 }
 
-/*.chart-container-dropzone > dashboard-item:first-child {
+.chart-container-dropzone > *:first-child {
     margin-left: 0;
 }
 
-.chart-container-dropzone > dashboard-item:last-child{
+.chart-container-dropzone > *:last-child{
     margin-right: 0px;
-}*/
+}
 
 dashboard-item .box {
     margin-bottom: 0;
@@ -97,4 +101,38 @@ dashboard-item .box {
 
 .dashboard-row {
     margin-bottom: 10px;
+}
+
+ .dashboard-serie {
+     background-color: #f9f9f9;
+     margin-bottom: 15px;
+     padding: 10px;
+
+}
+
+.dashboard-serie > .form-inline {
+    display: flex;
+    justify-content: start;
+    align-items: stretch;
+}
+
+.dashboard-serie > .form-inline > div {
+    margin: 0 4px;
+}
+
+.dashboard-serie > .form-inline input {
+    width: 100%
+}
+
+.dashboard-period > div{
+    height: 34px;
+    display:flex;
+    justify-content:start;
+    align-items:stretch;
+}
+
+.dashboard-period .label{
+    display:flex;
+    align-items:center;
+    justify-content: center;
 }

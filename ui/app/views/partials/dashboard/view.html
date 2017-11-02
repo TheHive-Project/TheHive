@@ -1,3 +1,4 @@
+
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">{{$vm.dashboard.title}}</h3>
@@ -12,7 +13,34 @@
         </div>
     </div>
     <div class="box-body">
-        {{$vm.dashboard.description}}
+        <!-- {{$vm.dashboard.description}} -->
+        <div class="box-tools">
+            <div class="dashboard-period pull-left">
+                <div class="mv-xxxs">
+                    <span class="label label-lg mr-xs text-black">Select period</span>
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-repeat="period in $vm.dashboardPeriods"
+                        ng-click="$vm.applyPeriod(period.type)"
+                        ng-class="{'label-primary': $vm.definition.period === period.type}">{{period.label}}</span>
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-click="$vm.definition.period = 'custom'"
+                        ng-class="{'label-primary': $vm.definition.period === 'custom'}">Custom period</span>
+                </div>
+            </div>
+            <div class="mv-xxxs form-inline pull-left" ng-show="$vm.definition.period === 'custom'">
+                <div class="form-group hpad10">
+                    <label>From</label>
+                    <dt-picker date="$vm.definition.customPeriod.fromDate"></dt-picker>
+                </div>
+                <div class="form-group hpad10">
+                    <label>To</label>
+                    <dt-picker date="$vm.definition.customPeriod.toDate"></dt-picker>
+                </div>
+                <button type="button" class="btn btn-primary" ng-click="$vm.applyPeriod('custom')">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -39,26 +67,6 @@
     </div>
 </div>
 
-<!--
-<ul class="dashboard-content"
-    dnd-list="$vm.definition.items"
-    dnd-allowed-types="$vm.options.dashboardAllowedTypes">
-
-    <li ng-if="$vm.definition.items.length === 0">
-        Put items here
-    </li>
-
-    <li ng-repeat="item in $vm.definition.items"
-        dnd-draggable="item"
-        dnd-type="item.type"
-        dnd-effect-allowed="move"
-        dnd-moved="$vm.definition.items.splice($index, 1)"
-        ng-include="'/views/partials/dashboard/' + item.type + '.html'">
-
-    </li>
-</ul>
--->
-
 <div class="dashboard-content"
     dnd-list="$vm.definition.items"
     dnd-disable-if="!$vm.options.editLayout"
@@ -84,7 +92,7 @@
             dnd-list="row.items"
             dnd-allowed-types="$vm.options.containerAllowedTypes"
             dnd-disable-if="row.items.length >= $vm.options.maxColumns"
-            dnd-drop="$vm.itemInserted(index, item, rowIndex, type)">
+            dnd-drop="$vm.itemInserted(item, $vm.definition.items.length)">
             <dashboard-item ng-repeat="(colIndex, component) in row.items"
                 row-index="rowIndex"
                 col-index="colIndex"
@@ -101,7 +109,7 @@
                 dnd-draggable="component"
                 dnd-type="component.type"
                 dnd-effect-allowed="move"
-                dnd-dragstart="row.items.splice(colIndex, 1)">
+                dnd-dragstart="$vm.itemDragStarted(colIndex, row)">
             </dashboard-item>
         </div>
 
@@ -109,6 +117,4 @@
 
     </div>
 </div>
-
-
 <pre>{{$vm.definition | json}}</pre>
