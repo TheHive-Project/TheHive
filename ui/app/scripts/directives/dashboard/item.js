@@ -42,16 +42,15 @@
                 scope.editItem = function() {
                     var modalInstance = $uibModal.open({
                         scope: scope,
-                        controller: function($scope, $uibModalInstance) {
+                        controller: ['$scope', '$uibModalInstance', function($scope, $uibModalInstance) {
                             $scope.cancel = function() {
                                 $uibModalInstance.dismiss();
                             };
 
                             $scope.save = function() {
-                                // TODO clear invalid filters
                                 $uibModalInstance.close($scope.component.options);
                             };
-                        },
+                        }],
                         templateUrl: 'views/directives/dashboard/edit.dialog.html',
                         size: 'lg'
                     });
@@ -59,6 +58,15 @@
                     modalInstance.result.then(function(definition) {
                         // Set the computed query
                         definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], scope.component.options.filters);
+
+                        debugger;
+
+                        // Set the computed querie of series if available
+                        _.each(definition.series, function(serie) {
+                            if(serie.filters) {
+                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], serie.filters);
+                            }
+                        })
 
                         scope.component.options = definition;
 
@@ -149,6 +157,16 @@
                         field: null
                     });
                 };
+
+                scope.addSerieFilter = function(serie) {
+                    serie.filters = serie.filters || [];
+
+                    serie.filters.push({
+                        field: null,
+                        type: null
+                    });
+                };
+
 
                 scope.removeSerie = function(index) {
                     scope.component.options.series.splice(index, 1);

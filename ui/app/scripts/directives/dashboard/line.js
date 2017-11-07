@@ -36,7 +36,8 @@
                             _select: _.map(scope.options.series || [], function(serie, index) {
                                 var s = {
                                     _agg: serie.agg,
-                                    _name: 'agg_' + (index + 1)
+                                    _name: 'agg_' + (index + 1),
+                                    _query: serie.query || {}
                                 };
 
                                 if(serie.agg !== 'count') {
@@ -61,13 +62,13 @@
                         scope.names = {};
                         scope.axes = {};
                         scope.colors = {};
-                        _.each(scope.options.series, function(serie) {
+                        _.each(scope.options.series, function(serie, index) {
                             var key = serie.field,
                                 agg = serie.agg,
                                 dataKey = agg === 'count' ? 'count' : (agg + '_' + key),
-                                columnKey = key + '.' + agg;
+                                columnKey = 'agg_' + (index + 1);
 
-                            columns.push([columnKey].concat(_.pluck(values, dataKey)));
+                            columns.push([columnKey].concat(_.pluck(values, columnKey)));
 
                             scope.types[columnKey] = serie.type || 'line';
                             scope.names[columnKey] = serie.label || (agg === 'count' ? 'count' : (agg + ' of ' + key));

@@ -24,8 +24,12 @@
 
                     var statsPromise = $http.post('./api/' + scope.options.entity.replace('_', '/') + '/_stats', {
                         query: query,
-                        stats: _.map(scope.options.series || [], function(serie) {
-                            var s = {_agg: serie.agg};
+                        stats: _.map(scope.options.series || [], function(serie, index) {
+                            var s = {
+                                _agg: serie.agg,
+                                _name: 'agg_' + (index + 1),
+                                _query: serie.query || {}
+                            };
 
                             if(serie.agg !== 'count') {
                                 s._field = serie.field;
@@ -38,32 +42,14 @@
                     statsPromise.then(function(response) {
                         var data = response.data;
 
-                        scope.data = _.map(scope.options.series || [], function(serie) {
-                            var name = serie.agg === 'count' ? 'count' : serie.agg + '_' + serie.field;
+                        scope.data = _.map(scope.options.series || [], function(serie, index) {
+                            var name = 'agg_' + (index + 1);
                             return {
                                 name: name,
                                 label: serie.label,
-                                value: data[name]
+                                value: data[name] || 0
                             }
                         });
-
-
-                        // var values = _.pluck(_.values(response.data), scope.options.field);
-                        //
-                        // _.each(scope.options.series, function(serie) {
-                        //     var key = serie.field,
-                        //         agg = serie.agg,
-                        //         dataKey = agg === 'count' ? 'count' : (agg + '_' + key),
-                        //         columnKey = key + '.' + agg;
-                        //
-                        //     columns.push([columnKey].concat(_.pluck(values, dataKey)));
-                        //
-                        //     scope.types[columnKey] = serie.type || 'line';
-                        //     scope.names[columnKey] = agg === 'count' ? 'count' : (agg + ' of ' + key);
-                        //     scope.axes[columnKey] = (scope.types[columnKey] === 'bar') ? 'y2' : 'y';
-                        // });
-
-
 
                     }, function(err) {
                         NotificationSrv.error('dashboardLine', err.data, err.status);

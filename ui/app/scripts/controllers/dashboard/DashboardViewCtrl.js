@@ -3,7 +3,7 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, dashboard, metadata) {
             var self = this;
 
             this.dashboard = dashboard;
@@ -48,13 +48,6 @@
                 var periodQuery = period === 'custom' ?
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
-
-                // _.each(this.definition.items, function(row) {
-                //     _.each(row.items, function(chart) {
-                //         //chart.options.filter = periodQuery;
-                //         delete chart.options.filter;
-                //     });
-                // });
 
                 this.definition.filter = periodQuery;
 
@@ -102,6 +95,10 @@
                 }).then(function() {
                     var row = self.definition.items[rowIndex];
                     row.items.splice(colIndex, 1);
+
+                    $timeout(function() {
+                        $scope.$broadcast('resize-chart-' + rowIndex);
+                    }, 0);
                 });
 
             }

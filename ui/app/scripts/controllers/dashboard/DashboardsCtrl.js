@@ -3,29 +3,21 @@
 
     angular
         .module('theHiveControllers')
+        .controller('DashboardModalCtrl', function($uibModalInstance, statuses, dashboard) {
+            this.dashboard = dashboard;
+            this.statuses = statuses;
+
+            this.cancel = function() {
+                $uibModalInstance.dismiss();
+            };
+
+            this.ok = function() {
+                return $uibModalInstance.close(dashboard);
+            };
+        })
         .controller('DashboardsCtrl', function($scope, $state, $uibModal, PSearchSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
             this.dashboards = [];
             var self = this;
-
-            // this.dashboards = PSearchSrv('any', 'dashboard', {
-            //     scope: $scope,
-            //     baseFilter: {
-            //         _and: [
-            //             {
-            //                 _not: { status: 'Deleted' }
-            //             },
-            //             {
-            //                 _or: [
-            //                     { status: 'Shared' },
-            //                     { createdBy: AuthenticationSrv.currentUser.id }
-            //                 ]
-            //             }
-            //         ]
-            //     },
-            //     sort: ['-status'],
-            //     loadAll: true
-            // });
-            //
 
             this.load = function() {
                 DashboardSrv.list().then(function(response) {
@@ -38,18 +30,7 @@
             this.openDashboardModal = function(dashboard) {
                 return $uibModal.open({
                     templateUrl: 'views/partials/dashboard/create.dialog.html',
-                    controller: function($uibModalInstance, statuses, dashboard) {
-                        this.dashboard = dashboard;
-                        this.statuses = statuses;
-
-                        this.cancel = function() {
-                            $uibModalInstance.dismiss();
-                        };
-
-                        this.ok = function() {
-                            return $uibModalInstance.close(dashboard);
-                        };
-                    },
+                    controller: 'DashboardModalCtrl',
                     controllerAs: '$vm',
                     size: 'lg',
                     resolve: {
