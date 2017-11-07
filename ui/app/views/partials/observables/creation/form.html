@@ -1,5 +1,5 @@
 <div class="form-group" ng-class="{ 'has-error' : observableForm.dataType.$invalid && !observableForm.dataType.$pristine }">
-    <label class="col-md-3 control-label">Data Type <i class="fa fa-asterisk text-danger"></i></label>
+    <label class="col-md-3 control-label">Type <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
         <input type="hidden" name="dataType" ng-model="params.dataType" required>
         <div class="btn-group" uib-dropdown>
@@ -16,7 +16,7 @@
 
 <!-- File observable -->
 <div class="form-group" ng-if="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
-    <label class="col-md-3 control-label">Data <i class="fa fa-asterisk text-danger"></i></label>
+    <label class="col-md-3 control-label">File <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
         <input type="hidden" name="attachment" ng-model="params.attachment.status" required>
         <div file-chooser="" filemodel="params.attachment"></div>
@@ -29,7 +29,7 @@
 
 <!-- Non file observable -->
 <div class="form-group" ng-if="!isFile()" ng-class="{ 'has-error' : observableForm.data.$invalid && !observableForm.data.$pristine }">
-    <label class="col-md-3 control-label">Data <i class="fa fa-asterisk text-danger"></i></label>
+    <label class="col-md-3 control-label">Value <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
         <textarea ng-if="params.bulk" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" required></textarea>
         <input ng-if="!params.bulk" type="text" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" required>

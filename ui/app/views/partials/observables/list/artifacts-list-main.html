@@ -1,7 +1,7 @@
 
 <div class="col-md-12 mb-s clearfix">
     <div class="pull-left">
-        <h4>List of observables ({{artifacts.total || 0}} of {{artifactStats.count}})</h4>
+        <h4>Observable List ({{artifacts.total || 0}} of {{artifactStats.count}})</h4>
     </div>
     <div class="active-filters">
         <ul class="" ng-if="uiSrv.countFilters() > 0">
@@ -42,8 +42,8 @@
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
                 <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th>Data/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th style="width: 120px">Date added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th>Value/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th style="width: 120px">Date Added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
             </tr>
         </thead>
         <tbody>

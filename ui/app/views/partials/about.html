@@ -11,8 +11,8 @@
       <div class="col-md-6"><strong class="pull-right">{{key | uppercase}}</strong></div>
       <div class="col-md-6">
           <div ng-repeat="server in connector.servers">
-              <span>{{server.version || 'Unknown version'}}</span> -
-              <strong>{{server.name}}</strong>
+              <strong>{{server.name}}</strong> - <span>{{server.version || 'Unknown version'}}</span>
+
               (<strong ng-class="{'OK': 'text-success', 'ERROR': 'text-danger'}[server.status]">{{server.status}}</strong>)
           </div>
       </div>
