@@ -50,20 +50,20 @@
     <div class="box-body">
         <div class="dashboard-edit">
             <div class="dashboard-toolbox">
-                <button type="button" class="btn btn-app" ng-repeat="item in $vm.toolbox"
+                <span class="btn btn-app" ng-repeat="item in $vm.toolbox"
                     dnd-draggable="item"
                     dnd-type="item.type"
                     dnd-effect-allowed="copy">
                     <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
-                </button>
-                <button type="button" class="btn btn-app pull-right"
+                </span>
+                <span class="btn btn-app pull-right"
                     ng-click="$vm.options.editLayout = false">
                     <i class="text-danger fa fa-times"></i> Cancel
-                </button>
-                <button type="button" class="btn btn-app pull-right"
+                </span>
+                <span class="btn btn-app pull-right"
                     ng-click="$vm.saveDashboard()">
                     <i class="fa fa-save"></i> Save
-                </button>
+                </span>
             </div>
         </div>
     </div>

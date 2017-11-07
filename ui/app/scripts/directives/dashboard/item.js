@@ -59,8 +59,6 @@
                         // Set the computed query
                         definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], scope.component.options.filters);
 
-                        debugger;
-
                         // Set the computed querie of series if available
                         _.each(definition.series, function(serie) {
                             if(serie.filters) {
