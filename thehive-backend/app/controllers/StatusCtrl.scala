@@ -4,6 +4,7 @@ import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 import play.api.Configuration
 import play.api.libs.json.{ JsObject, JsString, Json }
@@ -31,6 +32,7 @@ class StatusCtrl @Inject() (
 
   @Timed("controllers.StatusCtrl.get")
   def get: Action[AnyContent] = Action.async {
+    val clusterStatusName = Try(dBIndex.clusterStatusName).getOrElse("ERROR")
     Future.traverse(connectors)(c ⇒ c.status.map(c.name → _))
       .map { connectorStatus ⇒
         Ok(Json.obj(
@@ -41,7 +43,7 @@ class StatusCtrl @Inject() (
             "Elastic4s" → getVersion(classOf[ElasticDsl]),
             "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
           "connectors" → JsObject(connectorStatus.toSeq),
-          "health" → Json.obj("elasticsearch" → dBIndex.clusterStatusName),
+          "health" → Json.obj("elasticsearch" → clusterStatusName),
           "config" → Json.obj(
             "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
             "authType" → (authSrv match {
