@@ -4,6 +4,7 @@
         return {
             restrict: 'E',
             scope: {
+                filter: '=?',
                 options: '=',
                 autoload: '=',
                 mode: '=',
@@ -20,7 +21,7 @@
                         return;
                     }
 
-                    var query = DashboardSrv.buildChartQuery(scope.options.filter, scope.options.query);
+                    var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
 
                     var statConfig = {
                         query: query,
@@ -80,9 +81,8 @@
                 }
 
                 if (!_.isEmpty(scope.refreshOn)) {
-                    scope.$on(scope.refreshOn, function(event, queryFn) {
-                        // TODO nadouani: double check when the queryFn is needed
-                        //scope.options.query = queryFn(scope.options);
+                    scope.$on(scope.refreshOn, function(event, filter) {
+                        scope.filter = filter;
                         scope.load();
                     });
                 }

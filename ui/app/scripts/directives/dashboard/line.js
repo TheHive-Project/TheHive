@@ -4,6 +4,7 @@
         return {
             restrict: 'E',
             scope: {
+                filter: '=?',
                 options: '=',
                 autoload: '=',
                 mode: '=',
@@ -24,7 +25,7 @@
                         return;
                     }
 
-                    var query = DashboardSrv.buildChartQuery(scope.options.filter, scope.options.query);
+                    var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
 
                     var statsPromise = $http.post('./api/' + scope.options.entity.replace('_', '/') + '/_stats', {
                         query: query,
@@ -32,8 +33,11 @@
                             _agg: 'time',
                             _fields: [scope.options.field],
                             _interval: scope.options.interval || scope.interval.code,
-                            _select: _.map(scope.options.series || [], function(serie) {
-                                var s = {_agg: serie.agg};
+                            _select: _.map(scope.options.series || [], function(serie, index) {
+                                var s = {
+                                    _agg: serie.agg,
+                                    _name: 'agg_' + (index + 1)
+                                };
 
                                 if(serie.agg !== 'count') {
                                     s._field = serie.field;
@@ -48,6 +52,7 @@
                         var labels = _.keys(response.data).map(function(d) {
                             return moment(d, 'YYYYMMDDTHHmmZZ').format('YYYY-MM-DD');
                         });
+                        var len = labels.length;
 
                         var columns = [];
                         var values = _.pluck(_.values(response.data), scope.options.field);
@@ -79,7 +84,7 @@
                                 groups[value] = [key];
                             }
                         });
-                        scope.groups = _.values(groups);
+                        scope.groups = scope.options.stacked === true ? _.values(groups) : {};
 
                         var chart = {
                             data: {
@@ -96,7 +101,7 @@
                             },
                             bar: {
                                 width: {
-                                    ratio: 0.5
+                                    ratio: 1 - Math.exp(-len/20)
                                 }
                             },
                             axis: {
@@ -128,9 +133,8 @@
                 }
 
                 if (!_.isEmpty(scope.refreshOn)) {
-                    scope.$on(scope.refreshOn, function(event, queryFn) {
-                        // TODO nadouani: double check when the queryFn is needed
-                        //scope.options.query = queryFn(scope.options);
+                    scope.$on(scope.refreshOn, function(event, filter) {
+                        scope.filter = filter;
                         scope.load();
                     });
                 }

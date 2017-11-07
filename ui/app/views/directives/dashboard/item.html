@@ -22,6 +22,7 @@
     <div class="box-body" ng-switch="component.type">
         <dashboard-donut ng-switch-when="donut"
             options="component.options"
+            filter="filter"
             autoload="autoload"
             refresh-on="{{refreshOn}}"
             resize-on="{{resizeOn}}"
@@ -29,6 +30,7 @@
 
         <dashboard-bar ng-switch-when="bar"
             options="component.options"
+            filter="filter"
             autoload="autoload"
             refresh-on="{{refreshOn}}"
             resize-on="{{resizeOn}}"
@@ -36,6 +38,7 @@
 
         <dashboard-line ng-switch-when="line"
             options="component.options"
+            filter="filter"
             autoload="autoload"
             refresh-on="{{refreshOn}}"
             resize-on="{{resizeOn}}"
@@ -43,8 +46,9 @@
 
         <dashboard-counter ng-switch-when="counter"
             options="component.options"
+            filter="filter"            
             autoload="autoload"
-            refresh-on="{{refreshOn}}"            
+            refresh-on="{{refreshOn}}"
             mode="mode"></dashboard-counter>
 
         <div ng-switch-default>Unhandled chart type</div>

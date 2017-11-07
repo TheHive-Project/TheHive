@@ -1,75 +1,110 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardBar', function(StatSrv, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardBar', function($http, $state, DashboardSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
+                filter: '=?',
                 options: '=',
                 autoload: '=',
                 mode: '=',
                 refreshOn: '@',
+                resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
             link: function(scope) {
+
                 scope.chart = {};
 
+                scope.intervals = DashboardSrv.timeIntervals;
+                scope.interval = scope.intervals[2];
+
                 scope.load = function() {
-                    var query = DashboardSrv.buildChartQuery(scope.options.filter, scope.options.query);
+                    if(!scope.options.entity) {
+                        return;
+                    }
 
-                    var statConfig = {
+                    var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
+
+                    var statsPromise = $http.post('./api/' + scope.options.entity.replace('_', '/') + '/_stats', {
                         query: query,
-                        objectType: scope.options.entity,
-                        field: scope.options.field,
-                        sort: scope.options.sort,
-                        limit: scope.options.limit
-                    };
+                        stats: [{
+                            _agg: 'time',
+                            _fields: [scope.options.dateField],
+                            _interval: scope.options.interval || scope.interval.code,
+                            _select: [{
+                                _agg: 'field',
+                                _field: scope.options.field,
+                                _select: [{
+                                    _agg: 'count'
+                                }]
+                            }]
+                        }]
+                    });
 
-                    StatSrv.getPromise(statConfig).then(
-                        function(response) {
-                            var keys = _.without(_.keys(response.data), 'count');
-                            var columns = keys.map(function(key) {
-                                return [key, response.data[key].count];
+                    statsPromise.then(function(response) {
+                        var len = _.keys(response.data).length,
+                            data = {_date: (new Array(len)).fill(0)};
+
+                        var rawData = {};
+                        _.each(response.data, function(value, key) {
+                            rawData[key] = value[scope.options.dateField]
+                        });
+
+                        _.each(rawData, function(value) {
+                            _.each(_.keys(value), function(key){
+                                data[key] = (new Array(len)).fill(0);
+                            });
+                        });
+
+                        var i = 0;
+                        _.each(rawData, function(value, key) {
+                            data._date[i] = moment(key, 'YYYYMMDDTHHmmZZ').format('YYYY-MM-DD');
+
+                            _.each(_.keys(value), function(item) {
+                                data[item][i] = value[item].count;
                             });
 
-                            console.log(columns);
+                            i++;
+                        });
 
-                            scope.chart = {
-                                data: {
-                                    columns: columns,
-                                    type: 'bar',
-                                    names: scope.options.names || {},
-                                    colors: scope.options.colors || {},
-                                    onclick: function(d) {
-                                        var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
+                        scope.names = {};
+                        scope.colors = {};
 
-                                        if (scope.options.query && scope.options.query !== '*') {
-                                            criteria.push(scope.options.query);
-                                        }
-
-                                        var searchQuery = {
-                                            _and: criteria
-                                        };
-
-                                        $state.go('app.search', {
-                                            q: Base64.encode(angular.toJson(searchQuery))
-                                        });
-                                    }
-                                },
-                                bar: {
-                                    title: 'Total: ' + response.data.count,
-                                    label: {
-                                        format: function(value) {
-                                            return value;
-                                        }
+                        var chart = {
+                            data: {
+                                x: '_date',
+                                json: data,
+                                type: 'bar',
+                                //names: scope.names || {},
+                                //colors: scope.colors || {},
+                                groups: scope.options.stacked === true ? [_.without(_.keys(data), '_date')] : []
+                            },
+                            bar: {
+                                width: {
+                                    ratio: 1 - Math.exp(-len/20)
+                                }
+                            },
+                            axis: {
+                                x: {
+                                    type: 'timeseries',
+                                    tick: {
+                                        format: '%Y-%m-%d',
+                                        rotate: 90,
+                                        height: 50
                                     }
                                 }
-                            };
-                        },
-                        function(err) {
-                            NotificationSrv.error('barChart', err.data, err.status);
-                        }
-                    );
+                            },
+                            zoom: {
+                                enabled: scope.options.zoom || false
+                            }
+                        };
+
+                        scope.chart = chart;
+                    }, function(err) {
+                        NotificationSrv.error('dashboardLine', err.data, err.status);
+                    });
                 };
 
                 if (scope.autoload === true) {
@@ -77,9 +112,8 @@
                 }
 
                 if (!_.isEmpty(scope.refreshOn)) {
-                    scope.$on(scope.refreshOn, function(event, queryFn) {
-                        // TODO nadouani: double check when the queryFn is needed
-                        //scope.options.query = queryFn(scope.options);
+                    scope.$on(scope.refreshOn, function(event, filter) {
+                        scope.filter = filter;
                         scope.load();
                     });
                 }

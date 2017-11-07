@@ -1,0 +1,48 @@
+<div class="form-group">
+    <label>Title</label>
+    <input type="text" class="form-control" placeholder="Ex: cases per TLP" ng-model="component.options.title">
+</div>
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Entity</label>
+            <select class="form-control" ng-model="component.options.entity"
+                ng-options="item for item in metadata.entities"></select>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Date Field</label>
+            <select class="form-control" ng-model="component.options.dateField"
+                ng-options="item.name as item.name for item in pickFields(metadata[component.options.entity], ['date']) | orderBy:'name'"></select>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Interval</label>
+            <select class="form-control" ng-model="component.options.interval"
+                ng-options="item.code as item.label for item in timeIntervals"></select>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Category Field</label>
+            <select class="form-control" ng-model="component.options.field"
+                ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity], ['date', 'text']) | orderBy:'name'"></select>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Bar types</label>
+            <div class="checkbox">
+
+                <label>
+                    <input type="checkbox" ng-model="component.options.stacked"> Stack the categories
+                </label>
+            </div>
+        </div>        
+    </div>
+</div>

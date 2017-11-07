@@ -49,14 +49,16 @@
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
 
-                _.each(this.definition.items, function(row) {
-                    _.each(row.items, function(chart) {
-                        chart.options.filter = periodQuery;
-                    });
-                });
+                // _.each(this.definition.items, function(row) {
+                //     _.each(row.items, function(chart) {
+                //         //chart.options.filter = periodQuery;
+                //         delete chart.options.filter;
+                //     });
+                // });
 
-                $scope.$broadcast('refresh-chart');
-                this.saveDashboard();
+                this.definition.filter = periodQuery;
+
+                $scope.$broadcast('refresh-chart', periodQuery);
             }
 
             this.removeContainer = function(index) {

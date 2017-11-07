@@ -9,6 +9,7 @@
                 colIndex: '=',
                 component: '=',
                 metadata: '=',
+                filter: '=?',
                 autoload: '=',
                 refreshOn: '@',
                 resizeOn: '@',

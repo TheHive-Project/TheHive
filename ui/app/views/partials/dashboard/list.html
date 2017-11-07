@@ -14,18 +14,23 @@
         <div class="row mv-s" ng-if="$vm.dashboards.length > 0">
             <div class="col-sm-12 dashboards-list">
                 <div class="dashboard-item media" ng-repeat="db in $vm.dashboards track by db.id">
-                    <div class="media-body">
-                        <h4 class="media-heading"><a href ui-sref="app.dashboards-view({id: db.id})">{{db.title}}</a></h4>
-                        <span class="text-muted">{{db.description}}</span>
-                    </div>
-                    <div class="media-right pr-m">
+                    <div class="media-left">
                         <span class="label label-default">{{db.status}}</span>
                     </div>
-                    <div class="media-right">
-                        <a href ui-sref="app.dashboards-edit({id: db.id})">Edit</a>
+                    <div class="media-body">
+                        <h4 class="media-heading">
+                            <a href ui-sref="app.dashboards-view({id: db.id})">{{db.title}}</a>
+                        </h4>
+                        <span class="text-muted">{{db.description}}</span>
+                    </div>
+                    <div class="media-right" ng-if="db.createdBy === currentUser.id">
+                        <a href ng-click="$vm.editDashboard(db)">Edit</a>
+                    </div>
+                    <div class="media-right" ng-if="db.createdBy === currentUser.id">
+                        <a href class="text-danger" ng-click="$vm.deleteDashboard(db.id)">Delete</a>
                     </div>
                     <div class="media-right">
-                        <a href class="text-danger" ng-click="$vm.deleteDashboard(db.id)">Delete</a>
+                        <a href ng-click="$vm.duplicateDashboard(db)">Duplicate</a>
                     </div>
                 </div>
             </div>

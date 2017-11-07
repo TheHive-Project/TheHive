@@ -109,7 +109,9 @@
         };
 
         this.update = function(id, dashboard) {
-            return $http.patch(baseUrl + '/' + id, dashboard);
+            var db = _.pick(dashboard, 'id', 'title', 'description', 'status', 'definition');
+
+            return $http.patch(baseUrl + '/' + id, db);
         };
 
         this.list = function() {

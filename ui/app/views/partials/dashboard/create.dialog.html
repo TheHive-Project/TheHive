@@ -1,6 +1,6 @@
 <form class="form-horizontal" name="form" ng-submit="$vm.ok()" novalidate>
     <div class="modal-header bg-primary">
-        <h3 class="modal-title">New Dashboard</h3>
+        <h3 class="modal-title">{{ $vm.dashboard.id ? 'Update dashboard' : 'New Dashboard' }}</h3>
     </div>
     <div class="modal-body">
         <div class="form-group">
@@ -35,6 +35,6 @@
     </div>
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="$vm.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">Yes, select this server</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">{{ $vm.dashboard.id ? 'Update' : 'Create' }}</button>
     </div>
 </form>
