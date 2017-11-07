@@ -67,6 +67,14 @@
 
         this.serieTypes = ['line', 'area', 'spline', 'area-spline', 'bar'];
 
+        this.typeClasses = {
+            container: 'fa-window-maximize',
+            bar: 'fa-bar-chart',
+            donut: 'fa-pie-chart',
+            line: 'fa-line-chart',
+            counter: 'fa-calculator'
+        };
+
         this.toolbox = [
             {
                 type: 'container',

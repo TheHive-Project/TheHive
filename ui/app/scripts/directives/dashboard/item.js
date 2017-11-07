@@ -19,6 +19,7 @@
             },
             templateUrl: 'views/directives/dashboard/item.html',
             link: function(scope, element) {
+                scope.typeClasses = DashboardSrv.typeClasses;
                 scope.timeIntervals = DashboardSrv.timeIntervals;
                 scope.aggregations = DashboardSrv.aggregations;
                 scope.serieTypes = DashboardSrv.serieTypes;
@@ -163,6 +164,10 @@
                         field: null,
                         type: null
                     });
+                };
+
+                scope.removeSerieFilter = function(serie, index) {
+                    serie.filters.splice(index, 1);
                 };
 
 

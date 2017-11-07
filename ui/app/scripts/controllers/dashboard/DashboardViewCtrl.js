@@ -21,13 +21,7 @@
                 dashboardAllowedTypes: ['container'],
                 containerAllowedTypes: ['bar', 'line', 'donut', 'counter'],
                 maxColumns: 3,
-                cls: {
-                    container: 'fa-window-maximize',
-                    bar: 'fa-bar-chart',
-                    donut: 'fa-pie-chart',
-                    line: 'fa-line-chart',
-                    counter: 'fa-calculator'
-                },
+                cls: DashboardSrv.typeClasses,
                 labels: {
                     container: 'Row',
                     bar: 'Bar',
