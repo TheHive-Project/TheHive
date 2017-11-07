@@ -2,7 +2,7 @@
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">
-            {{$vm.dashboard.title}}            
+            {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
             <a href class="btn btn-box-tool" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
@@ -54,15 +54,15 @@
                     dnd-draggable="item"
                     dnd-type="item.type"
                     dnd-effect-allowed="copy">
-                    <i class="fa" ng-class="$vm.options.cls[item.type]" /> {{$vm.options.labels[item.type]}}
+                    <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
                 </button>
                 <button type="button" class="btn btn-app pull-right"
                     ng-click="$vm.options.editLayout = false">
-                    <i class="text-danger fa fa-times" /> Cancel
+                    <i class="text-danger fa fa-times"></i> Cancel
                 </button>
                 <button type="button" class="btn btn-app pull-right"
                     ng-click="$vm.saveDashboard()">
-                    <i class="fa fa-save" /> Save
+                    <i class="fa fa-save"></i> Save
                 </button>
             </div>
         </div>
