@@ -27,7 +27,7 @@ trait UserAttributes { _: AttributeDef ⇒
   val preferences = attribute("preferences", F.stringFmt, "User preferences", "{}", O.sensitive, O.unaudited)
 }
 
-class UserModel extends ModelDef[UserModel, User]("user") with UserAttributes with AuditedModel {
+class UserModel extends ModelDef[UserModel, User]("user", "User", "/user") with UserAttributes with AuditedModel {
 
   private def setUserId(attrs: JsObject) = (attrs \ "login").asOpt[JsString].fold(attrs) { login ⇒
     attrs - "login" + ("_id" → login)

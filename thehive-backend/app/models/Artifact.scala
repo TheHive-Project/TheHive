@@ -49,7 +49,7 @@ class ArtifactModel @Inject() (
     attachmentSrv: AttachmentSrv,
     artifactSrv: Provider[ArtifactSrv],
     implicit val mat: Materializer,
-    implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact") with ArtifactAttributes with AuditedModel {
+    implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact", "Observable", "/case/artifact") with ArtifactAttributes with AuditedModel {
   private[ArtifactModel] lazy val logger = Logger(getClass)
   override val removeAttribute: JsObject = Json.obj("status" → ArtifactStatus.Deleted)
 

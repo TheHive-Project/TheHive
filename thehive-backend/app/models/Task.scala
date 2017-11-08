@@ -32,7 +32,7 @@ trait TaskAttributes { _: AttributeDef ⇒
 
 }
 @Singleton
-class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel, Task, CaseModel, Case](caseModel, "case_task") with TaskAttributes with AuditedModel {
+class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel, Task, CaseModel, Case](caseModel, "case_task", "Task", "/case/task") with TaskAttributes with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
 
   override def updateHook(task: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {

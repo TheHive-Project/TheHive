@@ -10,7 +10,7 @@ import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponen
 import models.Roles
 
 import org.elastic4play.controllers.{ Authenticated, Renderer }
-import org.elastic4play.models.Attribute
+import org.elastic4play.models.{ Attribute, AttributeDefinition, BaseModelDef }
 import org.elastic4play.models.JsonFormat.attributeDefinitionWrites
 import org.elastic4play.services.{ DBLists, ModelSrv }
 
@@ -23,26 +23,28 @@ class DescribeCtrl @Inject() (
     components: ControllerComponents,
     implicit val ec: ExecutionContext) extends AbstractController(components) {
 
+  private def modelToJson(model: BaseModelDef): JsObject = {
+    val attributeDefinitions = model.attributes.flatMap {
+      case attribute: Attribute[t] ⇒ attribute.format.definition(dblists, attribute)
+    } ++ model.computedMetrics.keys.map { computedMetricName ⇒
+      AttributeDefinition(s"computed.$computedMetricName", "number", s"Computed metric $computedMetricName", Nil, Nil)
+    }
+    Json.obj(
+      "label" → model.label,
+      "path" → model.path,
+      "attributes" → attributeDefinitions)
+  }
   def describe(modelName: String): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     modelSrv(modelName)
-      .map { model ⇒
-        val attributeDefinitions = model.attributes.flatMap {
-          case attribute: Attribute[t] ⇒ attribute.format.definition(dblists, attribute)
-        }
-        renderer.toOutput(OK, attributeDefinitions)
-      }
+      .map { model ⇒ renderer.toOutput(OK, modelToJson(model)) }
       .getOrElse(NotFound(s"Model $modelName not found"))
   }
 
-  private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "alert")
+  private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "alert", "case_artifact_job")
   def describeAll: Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     val entityDefinitions = modelSrv.list
       .collect {
-        case model if allModels.contains(model.name) ⇒
-          val attributeDefinitions = model.attributes.flatMap {
-            case attribute: Attribute[t] ⇒ attribute.format.definition(dblists, attribute)
-          }
-          model.name → Json.toJson(attributeDefinitions)
+        case model if allModels.contains(model.name) ⇒ model.name → modelToJson(model)
       }
     renderer.toOutput(OK, JsObject(entityDefinitions))
   }

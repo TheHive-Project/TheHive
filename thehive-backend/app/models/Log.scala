@@ -31,7 +31,7 @@ trait LogAttributes { _: AttributeDef ⇒
 }
 
 @Singleton
-class LogModel @Inject() (taskModel: TaskModel) extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log") with LogAttributes with AuditedModel {
+class LogModel @Inject() (taskModel: TaskModel) extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log", "Log", "/case/task/log") with LogAttributes with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
   override val removeAttribute = Json.obj("status" → LogStatus.Deleted)
 }

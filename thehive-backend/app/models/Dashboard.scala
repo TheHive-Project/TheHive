@@ -23,7 +23,7 @@ trait DashboardAttributes { _: AttributeDef ⇒
 }
 
 @Singleton
-class DashboardModel @Inject() () extends ModelDef[DashboardModel, Dashboard]("dashboard") with DashboardAttributes { dashboardModel ⇒
+class DashboardModel @Inject() () extends ModelDef[DashboardModel, Dashboard]("dashboard", "Dashboard", "/dashboard") with DashboardAttributes { dashboardModel ⇒
 
   private[DashboardModel] lazy val logger = Logger(getClass)
   override val removeAttribute: JsObject = Json.obj("status" → DashboardStatus.Deleted)

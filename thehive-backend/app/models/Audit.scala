@@ -31,7 +31,7 @@ trait AuditAttributes { _: AttributeDef ⇒
 @Singleton
 class AuditModel(
     auditName: String,
-    auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName) with AuditAttributes {
+    auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
 
   @Inject() def this(
     configuration: Configuration,

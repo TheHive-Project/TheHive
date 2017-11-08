@@ -66,7 +66,7 @@ trait AlertAttributes {
 
 @Singleton
 class AlertModel @Inject() (dblists: DBLists)
-    extends ModelDef[AlertModel, Alert]("alert")
+    extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert")
     with AlertAttributes
     with AuditedModel {
 

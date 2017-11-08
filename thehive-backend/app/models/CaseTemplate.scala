@@ -30,7 +30,7 @@ trait CaseTemplateAttributes { _: AttributeDef ⇒
 }
 
 @Singleton
-class CaseTemplateModel @Inject() (taskModel: TaskModel) extends ModelDef[CaseTemplateModel, CaseTemplate]("caseTemplate") with CaseTemplateAttributes {
+class CaseTemplateModel @Inject() (taskModel: TaskModel) extends ModelDef[CaseTemplateModel, CaseTemplate]("caseTemplate", "Case template", "/caseTemplate") with CaseTemplateAttributes {
   def taskAttributes: Seq[Attribute[_]] = taskModel
     .attributes
     .filter(_.isForm)

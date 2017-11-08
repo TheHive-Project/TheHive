@@ -62,7 +62,7 @@ class CaseModel @Inject() (
     alertModel: Provider[AlertModel],
     sequenceSrv: SequenceSrv,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case") with CaseAttributes with AuditedModel { caseModel ⇒
+    implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case", "Case", "/case") with CaseAttributes with AuditedModel { caseModel ⇒
 
   private[CaseModel] lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")

@@ -25,7 +25,7 @@ trait ReportTemplateAttributes { _: AttributeDef ⇒
 }
 
 @Singleton
-class ReportTemplateModel @Inject() extends ModelDef[ReportTemplateModel, ReportTemplate]("reportTemplate") with ReportTemplateAttributes {
+class ReportTemplateModel @Inject() extends ModelDef[ReportTemplateModel, ReportTemplate]("reportTemplate", "Report template", "/connector/cortex/reportTemplate") with ReportTemplateAttributes {
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
     val maybeId = for {
       analyzerId ← (attrs \ "analyzerId").asOpt[String]
