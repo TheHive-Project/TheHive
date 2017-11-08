@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardItem', function(DashboardSrv, $uibModal, $timeout, $q) {
+    angular.module('theHiveDirectives').directive('dashboardItem', function(DashboardSrv, UserSrv, $uibModal, $timeout, $q) {
         return {
             restrict: 'E',
             replace: true,
@@ -94,7 +94,9 @@
 
                     var promise = null;
 
-                    if (field.values.length > 0) {
+                    if(field.type === 'user') {
+                        promise = UserSrv.autoComplete(query);
+                    } else if (field.values.length > 0) {
                         promise = $q.resolve(
                             _.map(field.values, function(item, index) {
                                 return {
@@ -135,7 +137,7 @@
                 scope.setFilterField = function(filter) {
                     var entity = scope.component.options.entity;
                     var field = scope.metadata[entity].attributes[filter.field];
-                    
+
                     filter.type = field.type;
 
                     if (field.type === 'date') {
