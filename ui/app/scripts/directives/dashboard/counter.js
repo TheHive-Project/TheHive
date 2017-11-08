@@ -6,6 +6,7 @@
             scope: {
                 filter: '=?',
                 options: '=',
+                entity: '=',
                 autoload: '=',
                 mode: '=',
                 refreshOn: '@',
@@ -16,13 +17,13 @@
                 scope.data = null;
 
                 scope.load = function() {
-                    if(!scope.options.entity) {
+                    if(!scope.entity) {
                         return;
                     }
 
                     var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
 
-                    var statsPromise = $http.post('./api/' + scope.options.entity.replace('_', '/') + '/_stats', {
+                    var statsPromise = $http.post('./api' + scope.entity.path + '/_stats', {
                         query: query,
                         stats: _.map(scope.options.series || [], function(serie, index) {
                             var s = {

@@ -3,7 +3,7 @@
         <div class="form-group">
             <label>Sort by</label>
             <select class="form-control" ng-model="component.options.sort"
-                ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity], ['text']) | orderBy:'name'"></select>
+                ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity].attributes, ['text']) | orderBy:'name'"></select>
         </div>
     </div>
     <div class="col-sm-6">

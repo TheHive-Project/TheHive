@@ -172,7 +172,8 @@
                         };
 
                         _.each(metadata.entities, function(entity) {
-                            metadata[entity] = self._objectifyBy(data[entity], 'name');
+                            metadata[entity] = _.omit(data[entity], 'attributes');
+                            metadata[entity].attributes = self._objectifyBy(data[entity].attributes, 'name');
                         });
 
                         self.metadata = metadata;

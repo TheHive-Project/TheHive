@@ -7,14 +7,14 @@
         <div class="form-group">
             <label>Entity</label>
             <select class="form-control" ng-model="component.options.entity"
-                ng-options="item for item in metadata.entities"></select>
+                ng-options="item as metadata[item].label for item in metadata.entities"></select>
         </div>
     </div>
     <div class="col-sm-6">
         <div class="form-group">
             <label>Aggregation Field</label>
             <select class="form-control" ng-model="component.options.field"
-                ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity], ['date', 'text']) | orderBy:'name'"></select>
+                ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity].attributes, ['date', 'text']) | orderBy:'name'"></select>
         </div>
     </div>
 </div>

@@ -21,6 +21,7 @@
     </div>
     <div class="box-body" ng-switch="component.type">
         <dashboard-donut ng-switch-when="donut"
+            entity="metadata[component.options.entity]"
             options="component.options"
             filter="filter"
             autoload="autoload"
@@ -29,6 +30,7 @@
             mode="mode"></dashboard-donut>
 
         <dashboard-bar ng-switch-when="bar"
+            entity="metadata[component.options.entity]"
             options="component.options"
             filter="filter"
             autoload="autoload"
@@ -37,6 +39,7 @@
             mode="mode"></dashboard-bar>
 
         <dashboard-line ng-switch-when="line"
+            entity="metadata[component.options.entity]"
             options="component.options"
             filter="filter"
             autoload="autoload"
@@ -45,6 +48,7 @@
             mode="mode"></dashboard-line>
 
         <dashboard-counter ng-switch-when="counter"
+            entity="metadata[component.options.entity]"        
             options="component.options"
             filter="filter"
             autoload="autoload"

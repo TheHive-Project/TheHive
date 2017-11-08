@@ -313,26 +313,6 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                         return DashboardSrv.getMetadata();
                     }
                 }
-            })
-            .state('app.dashboards-edit', {
-                url: 'dashboards/edit/{id}',
-                templateUrl: 'views/partials/dashboard/edit.html',
-                controller: 'DashboardEditCtrl',
-                controllerAs: '$vm',
-                resolve: {
-                    dashboard: function(DashboardSrv, $stateParams, $q) {
-                        var defer = $q.defer();
-
-                        DashboardSrv.get($stateParams.id)
-                            .then(function(response) {
-                                defer.resolve(response.data);
-                            }, function(err) {
-                                defer.reject(err);
-                            });
-
-                        return defer.promise;
-                    }
-                }
             });
     })
     .config(function($httpProvider) {

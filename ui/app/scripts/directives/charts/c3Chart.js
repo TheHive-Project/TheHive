@@ -18,7 +18,6 @@
                             height: 300
                         };
                         scope.c3 = c3.generate(scope.chart);
-                        // scope.c3.resize();
                     }
                 };
 
@@ -33,7 +32,6 @@
                 });
 
                 if(scope.resizeOn) {
-                    //console.log(scope.resizeOn);
                     scope.$on(scope.resizeOn, function() {
                         if(scope.c3) {
                             scope.c3.resize();

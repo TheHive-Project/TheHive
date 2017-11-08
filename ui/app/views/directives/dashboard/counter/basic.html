@@ -7,7 +7,7 @@
         <div class="form-group">
             <label>Entity</label>
             <select class="form-control" ng-model="component.options.entity"
-                ng-options="item for item in metadata.entities"></select>
+                ng-options="item as metadata[item].label for item in metadata.entities"></select>
         </div>
-    </div>    
+    </div>
 </div>

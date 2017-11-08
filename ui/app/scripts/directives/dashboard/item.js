@@ -58,12 +58,12 @@
 
                     modalInstance.result.then(function(definition) {
                         // Set the computed query
-                        definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], scope.component.options.filters);
+                        definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity].attributes, scope.component.options.filters);
 
                         // Set the computed querie of series if available
                         _.each(definition.series, function(serie) {
                             if(serie.filters) {
-                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], serie.filters);
+                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity].attributes, serie.filters);
                             }
                         })
 
@@ -79,7 +79,7 @@
                     if (filter.type === null) {
                         return;
                     }
-                    var field = scope.metadata[scope.component.options.entity][filter.field];
+                    var field = scope.metadata[scope.component.options.entity].attributes[filter.field];
                     var type = field.type;
 
                     if ((type === 'string' || type === 'number') && field.values.length > 0) {
@@ -90,7 +90,7 @@
                 };
 
                 scope.promiseFor = function(filter, query) {
-                    var field = scope.metadata[scope.component.options.entity][filter.field];
+                    var field = scope.metadata[scope.component.options.entity].attributes[filter.field];
 
                     var promise = null;
 
@@ -134,8 +134,8 @@
 
                 scope.setFilterField = function(filter) {
                     var entity = scope.component.options.entity;
-                    var field = scope.metadata[entity][filter.field];
-
+                    var field = scope.metadata[entity].attributes[filter.field];
+                    
                     filter.type = field.type;
 
                     if (field.type === 'date') {

@@ -6,6 +6,7 @@
             scope: {
                 filter: '=?',
                 options: '=',
+                entity: '=',
                 autoload: '=',
                 mode: '=',
                 refreshOn: '@',
@@ -17,7 +18,7 @@
                 scope.chart = {};
 
                 scope.load = function() {
-                    if(!scope.options.entity) {
+                    if(!scope.entity) {
                         return;
                     }
 
@@ -25,7 +26,8 @@
 
                     var statConfig = {
                         query: query,
-                        objectType: scope.options.entity,
+                        //objectType: scope.options.entity,
+                        objectType: scope.entity.path,
                         field: scope.options.field,
                         sort: scope.options.sort,
                         limit: scope.options.limit

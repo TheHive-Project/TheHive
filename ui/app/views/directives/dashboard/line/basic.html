@@ -7,14 +7,14 @@
         <div class="form-group">
             <label>Entity</label>
             <select class="form-control" ng-model="component.options.entity"
-                ng-options="item for item in metadata.entities"></select>
+                ng-options="item as metadata[item].label for item in metadata.entities"></select>
         </div>
     </div>
     <div class="col-sm-4">
         <div class="form-group">
             <label>Date Field</label>
             <select class="form-control" ng-model="component.options.field"
-                ng-options="item.name as item.name for item in pickFields(metadata[component.options.entity], ['date']) | orderBy:'name'"></select>
+                ng-options="item.name as item.name for item in pickFields(metadata[component.options.entity].attributes, ['date']) | orderBy:'name'"></select>
         </div>
     </div>
     <div class="col-sm-4">

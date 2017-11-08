@@ -3,12 +3,12 @@
     Please select entity and field in <a href ng-click="layout.activeTab = 0">Basic tab</a>
 </div>
 
-<div class="empty-message" ng-if="metadata[component.options.entity][component.options.field].values.length === 0">
+<div class="empty-message" ng-if="metadata[component.options.entity].attributes[component.options.field].values.length === 0">
     Customize colors
 </div>
 
 <form class="form-horizontal">
-    <div class="form-group mb-xxs" ng-repeat="val in metadata[component.options.entity][component.options.field].values track by $index">
+    <div class="form-group mb-xxs" ng-repeat="val in metadata[component.options.entity].attributes[component.options.field].values track by $index">
         <div class="col-sm-4">
             <strong>{{val}}</strong>
         </div>
@@ -20,7 +20,3 @@
         </div>
     </div>
 </form>
-
-<pre>{{component.options.field}}</pre>
-<pre>{{metadata[component.options.entity][component.options.field]}}</pre>
-<pre>{{component.options | json}}</pre>
