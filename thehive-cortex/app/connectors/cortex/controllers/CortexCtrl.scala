@@ -16,8 +16,8 @@ import akka.actor.ActorSystem
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ AuxSrv, QueryDSL, QueryDef }
-import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
+import org.elastic4play.services.JsonFormat.{ queryReads, aggReads }
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.analyzerFormats
 import connectors.cortex.services.{ CortexConfig, CortexSrv }
@@ -57,6 +57,7 @@ class CortexCtrl @Inject() (
     case POST(p"/job") ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)
     case POST(p"/job/_search") ⇒ findJob
+    case POST(p"/job/_stats") ⇒ statsJob
     case GET(p"/analyzer/$analyzerId<[^/]*>") ⇒ getAnalyzer(analyzerId)
     case GET(p"/analyzer/type/$dataType<[^/]*>") ⇒ getAnalyzerFor(dataType)
     case GET(p"/analyzer") ⇒ listAnalyzer
@@ -96,6 +97,15 @@ class CortexCtrl @Inject() (
     val (jobs, total) = cortexSrv.find(query, range, sort)
     val jobWithoutReport = auxSrv.apply(jobs, 0, withStats = false, removeUnaudited = true)
     renderer.toOutput(OK, jobWithoutReport, total)
+  }
+
+  @Timed
+  def statsJob: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+    val query = request.body.getValue("query")
+      .fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val aggs = request.body.getValue("stats")
+      .getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
+    cortexSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 
   @Timed

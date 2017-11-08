@@ -140,6 +140,8 @@ class CortexSrv @Inject() (
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
   }
 
+  def stats(query: QueryDef, aggs: Seq[Agg]) = findSrv(jobModel, query, aggs: _*)
+
   def getAnalyzer(analyzerId: String): Future[Analyzer] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
