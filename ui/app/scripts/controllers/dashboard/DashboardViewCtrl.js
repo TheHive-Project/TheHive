@@ -109,5 +109,9 @@
                 row.items.splice(colIndex, 1);
             }
 
+            this.exportDashboard = function() {
+                DashboardSrv.exportDashboard(this.dashboard);
+            }
+
         });
 })();

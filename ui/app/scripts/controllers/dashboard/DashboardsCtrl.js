@@ -3,6 +3,42 @@
 
     angular
         .module('theHiveControllers')
+        .controller('DashboardImportCtrl', function($scope, $uibModalInstance) {
+            var self = this;
+            this.formData = {
+                fileContent: {}
+            };
+
+            $scope.$watch('vm.formData.attachment', function(file) {
+                if(!file) {
+                    self.formData.fileContent = {};
+                    return;
+                }
+                var aReader = new FileReader();
+                aReader.readAsText(self.formData.attachment, 'UTF-8');
+                aReader.onload = function (evt) {
+                    $scope.$apply(function() {
+                        self.formData.fileContent = JSON.parse(aReader.result);
+                    });
+                }
+                aReader.onerror = function (evt) {
+                    $scope.$apply(function() {
+                        self.formData.fileContent = {};
+                    });
+                }
+            });
+
+            this.ok = function () {
+                var dashboard = _.pick(this.formData.fileContent, 'title', 'description', 'status');
+                dashboard.definition = JSON.stringify(this.formData.fileContent.definition || {});
+
+                $uibModalInstance.close(dashboard);
+            };
+
+            this.cancel = function () {
+                $uibModalInstance.dismiss('cancel');
+            };
+        })
         .controller('DashboardModalCtrl', function($uibModalInstance, statuses, dashboard) {
             this.dashboard = dashboard;
             this.statuses = statuses;
@@ -120,5 +156,33 @@
                         NotificationSrv.log('The dashboard has been successfully removed', 'success');
                     });
             };
+
+            this.exportDashboard = function(dashboard) {
+                DashboardSrv.exportDashboard(dashboard);
+            }
+
+            this.importDashboard = function() {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    templateUrl: 'views/partials/dashboard/import.dialog.html',
+                    controller: 'DashboardImportCtrl',
+                    controllerAs: 'vm',
+                    size: 'lg'
+                });
+
+                modalInstance.result.then(function(dashboard) {
+                    return DashboardSrv.create(dashboard);
+                })
+                .then(function(response) {
+                    self.load();
+
+                    NotificationSrv.log('The dashboard has been successfully imported', 'success');
+                })
+                .catch(function(err) {
+                    if (err && err.status) {
+                        NotificationSrv.error('DashboardsCtrl', err.data, err.status);
+                    }
+                });
+            }
         });
 })();

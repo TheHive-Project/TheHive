@@ -5,6 +5,9 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
+            <a href class="btn btn-box-tool" ng-click="$vm.exportDashboard()">
+                <i class="fa fa-download"></i> Export dashboard
+            </a>
             <a href class="btn btn-box-tool" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
                 <i class="fa fa-pencil"></i> Edit dashboard
             </a>
@@ -15,7 +18,6 @@
         </div>
     </div>
     <div class="box-body">
-        <!-- {{$vm.dashboard.description}} -->
         <div class="box-tools">
             <div class="dashboard-period pull-left">
                 <div class="mv-xxxs">

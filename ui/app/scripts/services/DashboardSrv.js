@@ -234,5 +234,27 @@
 
             return null;
         }
+
+        this.exportDashboard = function(dashboard) {
+            var fileName = dashboard.title.replace(/\s/gi, '_') + '.json';
+            var content = _.omit(dashboard,
+                '_type',
+                'id',
+                'createdAt',
+                'updatedAt',
+                'createdBy',
+                'updatedBy');
+
+            content.definition = JSON.parse(content.definition);
+
+            // Create a blob of the data
+            var fileToSave = new Blob([JSON.stringify(content)], {
+                type: 'application/json',
+                name: fileName
+            });
+
+            // Save the file
+            saveAs(fileToSave, fileName);
+        }
     });
 })();
