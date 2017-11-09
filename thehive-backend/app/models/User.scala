@@ -17,7 +17,7 @@ object UserStatus extends Enumeration with HiveEnumeration {
 
 trait UserAttributes { _: AttributeDef ⇒
   val login = attribute("login", F.userFmt, "Login of the user", O.form)
-  val userId = attribute("_id", F.userFmt, "User id (login)", O.model)
+  val userId = attribute("_id", F.stringFmt, "User id (login)", O.model)
   val key = optionalAttribute("key", F.stringFmt, "API key", O.sensitive, O.unaudited)
   val userName = attribute("name", F.stringFmt, "Full name (Firstname Lastname)")
   val roles = multiAttribute("roles", RoleAttributeFormat, "Comma separated role list (READ, WRITE and ADMIN)")
