@@ -63,7 +63,7 @@
 
                         var i = 0;
                         _.each(rawData, function(value, key) {
-                            data._date[i] = moment(key, 'YYYYMMDDTHHmmZZ').format('YYYY-MM-DD');
+                            data._date[i] = moment(key * 1).format('YYYY-MM-DD');
 
                             _.each(_.keys(value), function(item) {
                                 data[item][i] = value[item].count;

@@ -54,7 +54,7 @@
                     statsPromise.then(function(response) {
                         scope.error = false;
                         var labels = _.keys(response.data).map(function(d) {
-                            return moment(d, 'YYYYMMDDTHHmmZZ').format('YYYY-MM-DD');
+                            return moment(d * 1).format('YYYY-MM-DD');
                         });
                         var len = labels.length;
 
