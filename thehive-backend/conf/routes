@@ -8,6 +8,7 @@ GET      /api/logout                              controllers.AuthenticationCtrl
 POST     /api/login                               controllers.AuthenticationCtrl.login()
 
 POST     /api/_search                             controllers.SearchCtrl.find()
+POST     /api/_stats                              controllers.SearchCtrl.stats()
 
 GET      /api/case                                controllers.CaseCtrl.find()
 POST     /api/case/_search                        controllers.CaseCtrl.find()
