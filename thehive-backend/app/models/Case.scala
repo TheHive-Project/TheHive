@@ -177,7 +177,8 @@ class CaseModel @Inject() (
   }
 
   override val computedMetrics = Map(
-    "handlingDuration" → "doc['endDate'].value - doc['startDate'].value")
+    "handlingDurationInSeconds" → "(doc['endDate'].value - doc['startDate'].value) / 1000",
+    "handlingDurationInDays" → "(doc['endDate'].value - doc['startDate'].value) / 3600000")
 }
 
 class Case(model: CaseModel, attributes: JsObject) extends EntityDef[CaseModel, Case](model, attributes) with CaseAttributes

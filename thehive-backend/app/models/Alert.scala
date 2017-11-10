@@ -73,6 +73,8 @@ class AlertModel @Inject() (dblists: DBLists)
   private[AlertModel] lazy val logger = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
   override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
+  override val computedMetrics: Map[String, String] = Map(
+    "observableCount" → "_source['artifacts']?.size()")
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     // check if data attribute is present on all artifacts

@@ -70,7 +70,7 @@
         this._buildQueryFromFilter = function(fieldDef, filter) {
             if (filter.type === 'date') {
                 return this._buildQueryFromDateFilter(fieldDef, filter);
-            } else if(filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration' || fieldDef.values.length > 0) {
+            } else if(filter.value.list || filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration' || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
             } else if(filter.type === 'boolean' || filter.type === 'number') {
                 return this._buildQueryFromDefaultFilter(fieldDef, filter);
