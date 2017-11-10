@@ -5,13 +5,6 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
-            <a class="mr-xxs btn btn-primary btn-sm" ng-show="$vm.options.editLayout" ng-click="$vm.saveDashboard()">
-                <i class="fa fa-save"></i> Save changes
-            </a>
-            <a href class="mr-xxs btn btn-default btn-sm" ng-show="$vm.options.editLayout" ng-click="$vm.options.editLayout = false">
-                <i class="fa fa-times text-danger"></i> Cancel
-            </a>
-
             <a href class="mr-xxs btn btn-sm btn-primary" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
                 <i class="fa fa-pencil"></i> Edit
             </a>
@@ -56,25 +49,27 @@
     </div>
 </div>
 
-<div class="box" ng-show="$vm.options.editLayout">
-    <div class="box-body">
-        <div class="dashboard-edit">
-            <div class="dashboard-toolbox">
-                <span class="btn btn-app" ng-repeat="item in $vm.toolbox"
-                    dnd-draggable="item"
-                    dnd-type="item.type"
-                    dnd-effect-allowed="copy">
-                    <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
-                </span>
-            </div>
-        </div>
+<div class="dashboard-toolbox right-toolbox" affixer affixer-offset="70" ng-show="$vm.options.editLayout">
+    <div class="btn btn-app" ng-click="$vm.saveDashboard()">
+        <i class="fa fa-save"></i> Save
+    </div>
+    <div class="btn btn-app" ng-click="$vm.options.editLayout = false">
+        <i class="fa fa-times text-danger"></i> Cancel
+    </div>
+    <hr>
+    <div class="btn btn-app" ng-repeat="item in $vm.toolbox"
+        dnd-draggable="item"
+        dnd-type="item.type"
+        dnd-effect-allowed="copy">
+        <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
     </div>
 </div>
 
-<div class="dashboard-content"
+<div class="dashboard-content right-toolbox"
     dnd-list="$vm.definition.items"
     dnd-disable-if="!$vm.options.editLayout"
-    dnd-allowed-types="$vm.options.dashboardAllowedTypes">
+    dnd-allowed-types="$vm.options.dashboardAllowedTypes"
+    ng-class="{'dashboard-edit': $vm.options.editLayout}">
 
     <div class="dashboard-row" ng-repeat="(rowIndex, row) in $vm.definition.items"
         dnd-draggable="row"
@@ -121,5 +116,5 @@
 
 
     </div>
+    <pre>{{$vm.definition | json}}</pre>
 </div>
-<pre>{{$vm.definition | json}}</pre>

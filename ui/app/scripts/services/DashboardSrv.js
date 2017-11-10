@@ -7,6 +7,7 @@
         this.metadata = null;
 
         this.defaultDashboard = {
+            period: 'all',
             items: [
                 {
                     type: 'container',

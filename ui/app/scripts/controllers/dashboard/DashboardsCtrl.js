@@ -39,7 +39,7 @@
                 $uibModalInstance.dismiss('cancel');
             };
         })
-        .controller('DashboardModalCtrl', function($uibModalInstance, statuses, dashboard) {
+        .controller('DashboardModalCtrl', function($uibModalInstance, $state, statuses, dashboard) {
             this.dashboard = dashboard;
             this.statuses = statuses;
 
@@ -93,7 +93,7 @@
                         return DashboardSrv.create(dashboard);
                     })
                     .then(function(response) {
-                        self.load();
+                        $state.go('app.dashboards-view', {id: response.data.id});
 
                         NotificationSrv.log('The dashboard has been successfully created', 'success');
                     })
@@ -174,7 +174,7 @@
                     return DashboardSrv.create(dashboard);
                 })
                 .then(function(response) {
-                    self.load();
+                    $state.go('app.dashboards-view', {id: response.data.id});
 
                     NotificationSrv.log('The dashboard has been successfully imported', 'success');
                 })

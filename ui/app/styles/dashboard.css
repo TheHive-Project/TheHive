@@ -2,9 +2,6 @@ body,
 .c3 svg {
     font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-.dashboard-toolbox button:first-child {
-    margin-left: 0;
-}
 
 .dashboards-list .dashboard-item {
     padding: 5px;
@@ -135,4 +132,34 @@ dashboard-item .box {
     display:flex;
     align-items:center;
     justify-content: center;
+}
+
+.dashboard-edit.left-toolbox {
+    padding-left: 120px;
+}
+.dashboard-edit.right-toolbox {
+    padding-right: 120px;
+}
+
+.dashboard-toolbox {
+    background-color: #fff;
+    position: absolute;
+    width: 110px;
+    padding: 10px;
+    text-align: center;
+}
+
+.dashboard-toolbox.right-toolbox {
+    right: 15px;
+}
+.dashboard-toolbox.left-toolbox {
+    left: 15px;
+}
+
+.dashboard-toolbox > div {
+    margin: auto;
+    margin-bottom: 4px;
+}
+.dashboard-toolbox > div:last-child {
+    margin-bottom: 0;
 }
