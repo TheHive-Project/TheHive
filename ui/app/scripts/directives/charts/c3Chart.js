@@ -5,7 +5,8 @@
             restrict: 'E',
             scope: {
                 chart: '=',
-                resizeOn: '@'
+                resizeOn: '@',
+                error: '='
             },
             templateUrl: 'views/directives/charts/c3.html',
             link: function(scope, element) {

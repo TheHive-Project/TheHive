@@ -19,10 +19,8 @@
 
             if(values.length > 0) {
                 var criterions = _.map(values, function(val) {
-                    // var o = {};
-                    // o[filter.field] = val;
-                    // return o;
-                    return {_string: filter.field + ':' + val};
+                    //return {_string: filter.field + ':' + val};
+                    return {_field: filter.field, _value: val};
                 });
 
                 var criteria = {};

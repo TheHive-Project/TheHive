@@ -13,9 +13,9 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
             link: function(scope) {
-
+                scope.error = false;
                 scope.chart = {};
 
                 scope.intervals = DashboardSrv.timeIntervals;
@@ -23,6 +23,7 @@
 
                 scope.load = function() {
                     if(!scope.entity) {
+                        scope.error = true;
                         return;
                     }
 
@@ -51,6 +52,7 @@
                     });
 
                     statsPromise.then(function(response) {
+                        scope.error = false;
                         var labels = _.keys(response.data).map(function(d) {
                             return moment(d, 'YYYYMMDDTHHmmZZ').format('YYYY-MM-DD');
                         });
@@ -126,6 +128,7 @@
 
                         scope.chart = chart;
                     }, function(err) {
+                        scope.error = true;
                         NotificationSrv.error('dashboardLine', err.data, err.status);
                     });
                 };

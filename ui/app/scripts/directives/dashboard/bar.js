@@ -13,9 +13,9 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
             link: function(scope) {
-
+                scope.error = false;
                 scope.chart = {};
 
                 scope.intervals = DashboardSrv.timeIntervals;
@@ -23,6 +23,7 @@
 
                 scope.load = function() {
                     if(!scope.entity) {
+                        scope.error = true;
                         return;
                     }
 
@@ -45,6 +46,7 @@
                     });
 
                     statsPromise.then(function(response) {
+                        scope.error = false;
                         var len = _.keys(response.data).length,
                             data = {_date: (new Array(len)).fill(0)};
 
@@ -104,7 +106,8 @@
 
                         scope.chart = chart;
                     }, function(err) {
-                        NotificationSrv.error('dashboardLine', err.data, err.status);
+                        scope.error = true;
+                        NotificationSrv.error('dashboardBar', err.data, err.status);
                     });
                 };
 

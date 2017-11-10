@@ -13,12 +13,14 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
             link: function(scope) {
+                scope.error = false;
                 scope.chart = {};
 
                 scope.load = function() {
                     if(!scope.entity) {
+                        scope.error = true;
                         return;
                     }
 
@@ -35,6 +37,7 @@
 
                     StatSrv.getPromise(statConfig).then(
                         function(response) {
+                            scope.error = false;
                             var keys = _.without(_.keys(response.data), 'count');
                             var columns = keys.map(function(key) {
                                 return [key, response.data[key].count];
@@ -73,6 +76,7 @@
                             };
                         },
                         function(err) {
+                            scope.error = true;
                             NotificationSrv.error('donutChart', err.data, err.status);
                         }
                     );

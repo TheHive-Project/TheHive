@@ -14,10 +14,12 @@
             },
             templateUrl: 'views/directives/dashboard/counter/view.html',
             link: function(scope) {
+                scope.error = false;
                 scope.data = null;
 
                 scope.load = function() {
                     if(!scope.entity) {
+                        scope.error = true;
                         return;
                     }
 
@@ -41,6 +43,7 @@
                     });
 
                     statsPromise.then(function(response) {
+                        scope.error = false;
                         var data = response.data;
 
                         scope.data = _.map(scope.options.series || [], function(serie, index) {
@@ -53,6 +56,7 @@
                         });
 
                     }, function(err) {
+                        scope.error = true;
                         NotificationSrv.error('dashboardLine', err.data, err.status);
                     });
                 };

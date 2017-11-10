@@ -5,12 +5,20 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
-            <a href class="btn btn-box-tool" ng-click="$vm.exportDashboard()">
-                <i class="fa fa-download"></i> Export dashboard
+            <a class="mr-xxs btn btn-primary btn-sm" ng-show="$vm.options.editLayout" ng-click="$vm.saveDashboard()">
+                <i class="fa fa-save"></i> Save changes
             </a>
-            <a href class="btn btn-box-tool" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
-                <i class="fa fa-pencil"></i> Edit dashboard
+            <a href class="mr-xxs btn btn-default btn-sm" ng-show="$vm.options.editLayout" ng-click="$vm.options.editLayout = false">
+                <i class="fa fa-times text-danger"></i> Cancel
             </a>
+
+            <a href class="mr-xxs btn btn-sm btn-primary" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
+                <i class="fa fa-pencil"></i> Edit
+            </a>
+            <a href class="mr-xxs btn btn-default btn-sm" ng-click="$vm.exportDashboard()" ng-show="!$vm.options.editLayout">
+                <i class="fa fa-download"></i> Export
+            </a>
+
             <a class="btn btn-box-tool" ui-sref="app.dashboards()">
                 <i class="fa fa-chevron-left"></i> Back to list
             </a>
@@ -57,14 +65,6 @@
                     dnd-type="item.type"
                     dnd-effect-allowed="copy">
                     <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
-                </span>
-                <span class="btn btn-app pull-right"
-                    ng-click="$vm.options.editLayout = false">
-                    <i class="text-danger fa fa-times"></i> Cancel
-                </span>
-                <span class="btn btn-app pull-right"
-                    ng-click="$vm.saveDashboard()">
-                    <i class="fa fa-save"></i> Save
                 </span>
             </div>
         </div>
