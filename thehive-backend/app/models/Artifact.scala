@@ -38,6 +38,7 @@ trait ArtifactAttributes { _: AttributeDef ⇒
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc: A[Boolean] = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)
+  val sighted: A[Boolean] = attribute("sighted", F.booleanFmt, "Artifact has been sighted on the local network", false)
   val status: A[ArtifactStatus.Value] = attribute("status", F.enumFmt(ArtifactStatus), "Status of the artifact", ArtifactStatus.Ok)
   val reports: A[String] = attribute("reports", F.textFmt, "Json object that contains all short reports", "{}", O.unaudited)
 }
