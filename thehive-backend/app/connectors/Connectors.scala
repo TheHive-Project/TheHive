@@ -11,12 +11,14 @@ import play.api.routing.sird.UrlContext
 import play.api.routing.{ Router, SimpleRouter }
 
 import com.google.inject.AbstractModule
+import models.HealthStatus
 import net.codingwell.scalaguice.{ ScalaModule, ScalaMultibinder }
 
 trait Connector {
   val name: String
   val router: Router
   def status: Future[JsObject] = Future.successful(Json.obj("enabled" → true))
+  def health: Future[HealthStatus.Type] = Future.successful(HealthStatus.Ok)
 }
 
 @Singleton

@@ -13,7 +13,7 @@ import play.api.routing.sird.{ GET, POST, UrlContext }
 
 import akka.actor.ActorSystem
 import connectors.Connector
-import models.{ Alert, Case, Roles, UpdateMispAlertArtifact }
+import models._
 import services.{ AlertTransformer, CaseSrv }
 
 import org.elastic4play.JsonFormat.tryWrites
@@ -51,6 +51,18 @@ class MispCtrl @Inject() (
           "servers" → statusDetails,
           "status" → healthStatus)
       }
+
+  override def health: Future[HealthStatus.Type] = {
+    Future.traverse(mispConfig.connections)(_.healthStatus())
+      .map { healthStatus ⇒
+        val distinctStatus = healthStatus.toSet
+        if (distinctStatus.contains(HealthStatus.Ok)) {
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        }
+        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
+      }
+  }
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {

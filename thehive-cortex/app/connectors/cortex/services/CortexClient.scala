@@ -12,6 +12,7 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileArtifact }
+import models.HealthStatus
 import services.CustomWSAPI
 
 import org.elastic4play.utils.RichFuture
@@ -77,7 +78,7 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
     request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, _.json.as[JsObject])
   }
 
-  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
+  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
     request("api/status", _.get, identity)
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "versions" \ "Cortex").asOpt[String]
@@ -85,6 +86,10 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
       }
       .recover { case _ ⇒ None }
       .withTimeout(1.seconds, None)
+  }
+
+  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
+    getVersion()
       .map {
         case Some(version) ⇒ Json.obj(
           "name" → name,
@@ -95,4 +100,12 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
           "version" → "",
           "status" → "ERROR")
       }
+
+  def health()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+    getVersion()
+      .map {
+        case None ⇒ HealthStatus.Error
+        case _    ⇒ HealthStatus.Ok
+      }
+  }
 }

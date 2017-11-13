@@ -13,6 +13,7 @@ import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponen
 
 import com.sksamuel.elastic4s.ElasticDsl
 import connectors.Connector
+import models.HealthStatus
 
 import org.elastic4play.Timed
 import org.elastic4play.database.DBIndex
@@ -23,7 +24,7 @@ import org.elastic4play.services.auth.MultiAuthSrv
 class StatusCtrl @Inject() (
     connectors: immutable.Set[Connector],
     configuration: Configuration,
-    dBIndex: DBIndex,
+    dbIndex: DBIndex,
     authSrv: AuthSrv,
     components: ControllerComponents,
     implicit val ec: ExecutionContext) extends AbstractController(components) {
@@ -32,7 +33,7 @@ class StatusCtrl @Inject() (
 
   @Timed("controllers.StatusCtrl.get")
   def get: Action[AnyContent] = Action.async {
-    val clusterStatusName = Try(dBIndex.clusterStatusName).getOrElse("ERROR")
+    val clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
     Future.traverse(connectors)(c ⇒ c.status.map(c.name → _))
       .map { connectorStatus ⇒
         Ok(Json.obj(
@@ -52,5 +53,24 @@ class StatusCtrl @Inject() (
             }),
             "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)))))
       }
+  }
+
+  @Timed("controllers.StatusCtrl.health")
+  def health: Action[AnyContent] = Action.async {
+    for {
+      dbStatusInt ← dbIndex.getClusterStatus
+      dbStatus = dbStatusInt match {
+        case 0 ⇒ HealthStatus.Ok
+        case 1 ⇒ HealthStatus.Warning
+        case _ ⇒ HealthStatus.Error
+      }
+      connectorStatus ← Future.traverse(connectors)(c ⇒ c.health)
+      distinctStatus = connectorStatus + dbStatus
+      globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
+        if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+      }
+      else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+      else HealthStatus.Warning
+    } yield Ok(globalStatus.toString)
   }
 }

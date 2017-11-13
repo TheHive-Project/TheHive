@@ -17,11 +17,12 @@ import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
-import org.elastic4play.services.JsonFormat.{ queryReads, aggReads }
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.analyzerFormats
 import connectors.cortex.services.{ CortexConfig, CortexSrv }
-import models.Roles
+import models.HealthStatus.Type
+import models.{ HealthStatus, Roles }
 
 @Singleton
 class CortexCtrl @Inject() (
@@ -52,6 +53,18 @@ class CortexCtrl @Inject() (
           "servers" → statusDetails,
           "status" → healthStatus)
       }
+
+  override def health: Future[Type] = {
+    Future.traverse(cortexConfig.instances)(instance ⇒ instance.health())
+      .map { healthStatus ⇒
+        val distinctStatus = healthStatus.toSet
+        if (distinctStatus.contains(HealthStatus.Ok)) {
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        }
+        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
+      }
+  }
 
   val router = SimpleRouter {
     case POST(p"/job") ⇒ createJob
