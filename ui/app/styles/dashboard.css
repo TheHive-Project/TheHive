@@ -163,3 +163,12 @@ dashboard-item .box {
 .dashboard-toolbox > div:last-child {
     margin-bottom: 0;
 }
+.c3-container .c3-error {
+    height:300px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.c3-container .c3-error > div {
+    flex: 1;
+}

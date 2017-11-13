@@ -1,10 +1,9 @@
-
-<div style="height:300px;display:flex;justify-content:center; align-items:stretch;flex-direction:column;">
-    <div ng-if="error" style="height:300px;display:flex;justify-content:center;align-items:center;">
-        <div class="text-center" style="flex: 1;">
+<div class="c3-container">
+    <div class="c3-error" ng-if="error">
+        <div class="text-center">
             <h4 class="text-danger">
                 <div class="mb-xxs"><i class="fa fa-2x fa-exclamation-triangle"></i></div>
-                <div>Failed to fetch data, please check the widget properties</div>
+                <div>Failed to fetch data, please edit the widget definition</div>
             </h4>
         </div>
     </div>
