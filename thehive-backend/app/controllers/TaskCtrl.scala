@@ -54,7 +54,7 @@ class TaskCtrl @Inject() (
   def findInCase(caseId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     import org.elastic4play.services.QueryDSL._
     val childQuery = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
-    val query = and(childQuery, "_parent" ~= caseId)
+    val query = and(childQuery, withParent("case", caseId))
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
 
