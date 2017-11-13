@@ -70,7 +70,7 @@
                         scope.component.options = definition;
 
                         $timeout(function() {
-                            scope.$broadcast(scope.refreshOn);
+                            scope.$broadcast(scope.refreshOn, scope.filter);
                         }, 500);
                     });
                 };
