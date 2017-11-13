@@ -36,16 +36,19 @@
 
             this.metadata = metadata;
 
-            this.applyPeriod = function(period) {
-                this.definition.period = period;
-
-                var periodQuery = period === 'custom' ?
+            this.buildDashboardPeriodFilter = function(period) {
+                return period === 'custom' ?
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
+            }
 
-                this.definition.filter = periodQuery;
+            this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
 
-                $scope.$broadcast('refresh-chart', periodQuery);
+            this.applyPeriod = function(period) {
+                this.definition.period = period;
+                this.periodFilter = this.buildDashboardPeriodFilter(period);
+
+                $scope.$broadcast('refresh-chart', this.periodFilter);
             }
 
             this.removeContainer = function(index) {
