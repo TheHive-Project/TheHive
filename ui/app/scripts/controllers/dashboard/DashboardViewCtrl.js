@@ -29,7 +29,9 @@
                     line: 'Line',
                     counter: 'Counter'
                 },
-                editLayout: false
+                editLayout: !_.find(this.definition.items, function(row) {
+                    return row.items.length > 0;
+                })
             };
             this.toolbox = DashboardSrv.toolbox;
             this.dashboardPeriods = DashboardSrv.dashboardPeriods;
