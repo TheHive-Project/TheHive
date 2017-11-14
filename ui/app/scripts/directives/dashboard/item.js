@@ -142,8 +142,8 @@
 
                     if (field.type === 'date') {
                         filter.value = {
-                            from: undefined,
-                            to: undefined
+                            from: null,
+                            to: null
                         };
                     } else {
                         filter.value = null;

@@ -22,16 +22,16 @@
                 label: 'All time'
             },
             {
-                type: 'last7Days',
-                label: 'Last 7 days'
+                type: 'last3Months',
+                label: 'Last 3 months'
             },
             {
                 type: 'last30Days',
                 label: 'Last 30 days'
             },
             {
-                type: 'last3Months',
-                label: 'Last 3 months'
+                type: 'last7Days',
+                label: 'Last 7 days'
             }
         ]
 
@@ -211,8 +211,8 @@
             } else if (period === 'last3Months') {
                 from = moment(today).subtract(3, 'months');
             } else if(period === 'custom') {
-                from = start && start != null ? start.getTime() : null;
-                to = end && end != null ? end.setHours(23, 59, 59, 999) : null;
+                from = start && start != null ? moment(start).valueOf() : null;
+                to = end && end != null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
 
                 if (from !== null && to !== null) {
                     return {
