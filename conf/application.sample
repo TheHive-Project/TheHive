@@ -73,8 +73,9 @@ auth {
 }
 
 # Cortex
-# TheHive can connect to one or multiple Cortex instances. Give each Cortex instance a name
-# and specify the associated URL.
+# TheHive can connect to one or multiple  Cortex  instances.  Give  each
+# Cortex instance a name and specify the associated URL.
+
 cortex {
   #"CORTEX-SERVER-ID" {
     # URL of the Cortex server.
@@ -83,12 +84,15 @@ cortex {
 }
 
 # MISP
-# TheHive can connect to one or multiple MISP instances. Give each MISP instance a name and
-# specify the associated Authkey that must be used to poll events, the case template that should be
-# used by default when importing events as well as the tags that must be added to cases upon import.
+# TheHive can connect to one or multiple MISP instances. Give each  MISP
+# instance a name and specify the associated Authkey that must  be  used
+# to poll events, the case template that should be used by default  when
+# importing events as well as the tags that must be added to cases  upon
+# import.
 
-# Prior to configuring the integration with a MISP instance, you must enable the MISP connector.
-# This will allow you to import events to and/or export cases to the MISP instance(s).
+# Prior to configuring the integration with a MISP  instance,  you  must
+# enable the MISP connector. This will allow you  to  import  events  to
+# and/or export cases to the MISP instance(s).
 #play.modules.enabled += connectors.misp.MispConnector
 
 misp {
@@ -99,16 +103,18 @@ misp {
     # Authentication key.
     #key = ""
 
-    # Name of the case template in TheHive that shall be used to import MISP events as cases by
-    # default.
+    # Name of the case template in TheHive that shall be used to import
+    # MISP events as cases by default.
     # caseTemplate = "<Template_Name_goes_here>"
 
-    # Tags to add when importing events.
+    # Tags to add to each observable imported from an event available on
+    # this instance.
     #tags = ["misp-server-id"]
 
-    # Truststore to use to validate the X.509 certificate of the MISP instance if the default
-    # truststore is not sufficient.
-    #ws.ssl.trustManager.stores = [
+    # Truststore to use to validate the X.509 certificate  of  the  MISP
+    # instance if the default truststore is not sufficient.
+
+    #ws.ssl.trustManager.stores =  [
     #{
     #  type: "JKS"
     #  path: "/path/to/truststore.jks"
@@ -116,6 +122,7 @@ misp {
     #]
   #}
 
-  # Interval between consecutive MISP event synchronizations.
+  # Interval between consecutive MISP event  imports  in  hours  (h)  or
+  # minutes (m).
   interval = 1h
 }
