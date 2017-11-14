@@ -117,7 +117,7 @@ class ArtifactModel @Inject() (
         val (_, total) = artifactSrv.get.findSimilar(artifact, Some("0-0"), Nil)
         total.failed.foreach(t ⇒ logger.error("Artifact.getStats error", t))
         total.map { t ⇒ Json.obj("seen" → t) }
-      case _ ⇒ Future.successful(JsObject(Nil))
+      case _ ⇒ Future.successful(JsObject.empty)
     }
   }
 }

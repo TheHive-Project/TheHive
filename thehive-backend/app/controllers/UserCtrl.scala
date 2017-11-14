@@ -95,7 +95,7 @@ class UserCtrl @Inject() (
         .recover {
           case _ ⇒
             logger.warn(s"User ${authContext.userId} has invalid preference format: ${user.preferences()}")
-            JsObject(Nil)
+            JsObject.empty
         }
         .get
       json = user.toJson + ("preferences" → preferences)

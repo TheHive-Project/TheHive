@@ -207,7 +207,7 @@ class CortexSrv @Inject() (
         if (status == JobStatus.InProgress)
           updateJobWithCortex(jobId, cortexJobId, cortex)
         else {
-          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
+          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
           getSrv[JobModel, Job](jobModel, jobId)
             .flatMap { job ⇒
@@ -221,10 +221,10 @@ class CortexSrv @Inject() (
                     val jobSummary = Try(Json.parse(report))
                       .toOption
                       .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
-                      .getOrElse(JsObject(Nil))
+                      .getOrElse(JsObject.empty)
                     for {
                       artifact ← artifactSrv.get(job.artifactId())
-                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject(Nil))
+                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
                       newReports = reports + (job.analyzerId() → jobSummary)
                     } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
                       .recover {

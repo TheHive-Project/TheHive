@@ -18,7 +18,7 @@ trait AuditAttributes { _: AttributeDef ⇒
   def detailsAttributes: Seq[Attribute[_]]
 
   val operation: A[AuditableAction.Value] = attribute("operation", AttributeFormat.enumFmt(AuditableAction), "Operation", O.readonly)
-  val details: A[JsObject] = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject(Nil), O.readonly)
+  val details: A[JsObject] = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject.empty, O.readonly)
   val otherDetails: A[Option[String]] = optionalAttribute("otherDetails", AttributeFormat.textFmt, "Other details", O.readonly)
   val objectType: A[String] = attribute("objectType", AttributeFormat.stringFmt, "Table affected by the operation", O.readonly)
   val objectId: A[String] = attribute("objectId", AttributeFormat.stringFmt, "Object targeted by the operation", O.readonly)

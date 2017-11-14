@@ -77,7 +77,7 @@ class MispExport @Inject() (
           .getOrElse(throw InternalError(s"Unexpected MISP response: ${mispResponse.status} ${mispResponse.statusText}\n${mispResponse.body}"))
         val messages = (mispResponse.json \ "errors" \ "Attribute")
           .asOpt[JsObject]
-          .getOrElse(JsObject(Nil))
+          .getOrElse(JsObject.empty)
           .fields
           .toMap
           .mapValues { m ⇒

@@ -50,7 +50,7 @@ class WebHooks(
       objectType ← (obj \ "objectType").asOpt[String]
       objectId ← (obj \ "objectId").asOpt[String]
     } yield auxSrv(objectType, objectId, nparent = 0, withStats = false, removeUnaudited = false))
-      .getOrElse(Future.successful(JsObject(Nil)))
+      .getOrElse(Future.successful(JsObject.empty))
       .map(o ⇒ obj + ("object" → o))
       .fallbackTo(Future.successful(obj))
       .map(o ⇒ webhooks.foreach(_.send(o)))

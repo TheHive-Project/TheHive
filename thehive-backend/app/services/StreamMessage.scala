@@ -65,7 +65,7 @@ object AuditOperationGroup {
       .recover {
         case error ⇒
           logger.error("auxSrv fails", error)
-          JsObject(Nil)
+          JsObject.empty
       }
     new AuditOperationGroup(
       auxSrv,

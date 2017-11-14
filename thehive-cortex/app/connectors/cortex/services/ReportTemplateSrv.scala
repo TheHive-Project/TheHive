@@ -54,6 +54,6 @@ class ReportTemplateSrv @Inject() (
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(reportTemplateModel, queryDef, aggs: _*)
 
   def getStats(id: String): Future[JsObject] = {
-    Future.successful(JsObject(Nil))
+    Future.successful(JsObject.empty)
   }
 }
