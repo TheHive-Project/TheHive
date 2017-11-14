@@ -32,17 +32,17 @@ class CaseSrv(
     implicit val ec: ExecutionContext) {
 
   @Inject() def this(
-    configuration: Configuration,
-    caseModel: CaseModel,
-    artifactModel: ArtifactModel,
-    taskModel: TaskModel,
-    createSrv: CreateSrv,
-    artifactSrv: ArtifactSrv,
-    getSrv: GetSrv,
-    updateSrv: UpdateSrv,
-    deleteSrv: DeleteSrv,
-    findSrv: FindSrv,
-    ec: ExecutionContext) = this(
+      configuration: Configuration,
+      caseModel: CaseModel,
+      artifactModel: ArtifactModel,
+      taskModel: TaskModel,
+      createSrv: CreateSrv,
+      artifactSrv: ArtifactSrv,
+      getSrv: GetSrv,
+      updateSrv: UpdateSrv,
+      deleteSrv: DeleteSrv,
+      findSrv: FindSrv,
+      ec: ExecutionContext) = this(
     configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     caseModel,
     artifactModel,

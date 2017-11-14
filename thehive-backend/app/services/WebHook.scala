@@ -28,10 +28,10 @@ class WebHooks(
     auxSrv: AuxSrv,
     implicit val ec: ExecutionContext) {
   @Inject() def this(
-    configuration: Configuration,
-    globalWS: CustomWSAPI,
-    auxSrv: AuxSrv,
-    ec: ExecutionContext) = {
+      configuration: Configuration,
+      globalWS: CustomWSAPI,
+      auxSrv: AuxSrv,
+      ec: ExecutionContext) = {
     this(
       for {
         cfg ← configuration.getOptional[Configuration]("webhooks").toSeq

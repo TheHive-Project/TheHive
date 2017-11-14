@@ -24,22 +24,22 @@ class NoMetricsFilter @Inject() (implicit val mat: Materializer) extends Metrics
 class MetricsFilterImpl @Inject() (metricsModule: Metrics, implicit val mat: Materializer, implicit val ec: ExecutionContext) extends MetricsFilter {
 
   /**
-   * Specify a meaningful prefix for metrics
-   *
-   * Defaults to classOf[MetricsFilter].getName for backward compatibility as
-   * this was the original set value.
-   *
-   */
+    * Specify a meaningful prefix for metrics
+    *
+    * Defaults to classOf[MetricsFilter].getName for backward compatibility as
+    * this was the original set value.
+    *
+    */
   def labelPrefix: String = classOf[MetricsFilter].getName
 
   /**
-   * Specify which HTTP status codes have individual metrics
-   *
-   * Statuses not specified here are grouped together under otherStatuses
-   *
-   * Defaults to 200, 400, 401, 403, 404, 409, 201, 304, 307, 500, which is compatible
-   * with prior releases.
-   */
+    * Specify which HTTP status codes have individual metrics
+    *
+    * Statuses not specified here are grouped together under otherStatuses
+    *
+    * Defaults to 200, 400, 401, 403, 404, 409, 201, 304, 307, 500, which is compatible
+    * with prior releases.
+    */
   def knownStatuses = Seq(Status.OK, Status.BAD_REQUEST, Status.FORBIDDEN, Status.NOT_FOUND,
     Status.CREATED, Status.TEMPORARY_REDIRECT, Status.INTERNAL_SERVER_ERROR, Status.CONFLICT,
     Status.UNAUTHORIZED, Status.NOT_MODIFIED)

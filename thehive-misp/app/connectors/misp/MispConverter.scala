@@ -6,22 +6,22 @@ trait MispConverter {
     if (mispAttribute.tpe == "attachment" || mispAttribute.tpe == "malware-sample") {
       Seq(
         MispArtifact(
-          value     = RemoteAttachmentArtifact(mispAttribute.value.split("\\|").head, mispAttribute.id, mispAttribute.tpe),
-          dataType  = "file",
-          message   = mispAttribute.comment,
-          tlp       = 0,
-          tags      = tags ++ mispAttribute.tags,
+          value = RemoteAttachmentArtifact(mispAttribute.value.split("\\|").head, mispAttribute.id, mispAttribute.tpe),
+          dataType = "file",
+          message = mispAttribute.comment,
+          tlp = 0,
+          tags = tags ++ mispAttribute.tags,
           startDate = mispAttribute.date))
     }
     else {
       val dataType = toArtifact(mispAttribute.tpe)
       val artifact =
         MispArtifact(
-          value     = SimpleArtifactData(mispAttribute.value),
-          dataType  = dataType,
-          message   = mispAttribute.comment,
-          tlp       = 0,
-          tags      = tags ++ mispAttribute.tags,
+          value = SimpleArtifactData(mispAttribute.value),
+          dataType = dataType,
+          message = mispAttribute.comment,
+          tlp = 0,
+          tags = tags ++ mispAttribute.tags,
           startDate = mispAttribute.date)
 
       val types = mispAttribute.tpe.split('|').toSeq
@@ -37,8 +37,8 @@ trait MispConverter {
           case (tpe, value) ⇒
             artifact.copy(
               dataType = toArtifact(tpe),
-              value    = SimpleArtifactData(value),
-              message  = mispAttribute.comment + "\n" + additionnalMessage)
+              value = SimpleArtifactData(value),
+              message = mispAttribute.comment + "\n" + additionnalMessage)
         }
       }
       else {

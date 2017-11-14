@@ -34,8 +34,8 @@ class AuditModel(
     auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
 
   @Inject() def this(
-    configuration: Configuration,
-    auditedModels: immutable.Set[AuditedModel]) =
+      configuration: Configuration,
+      auditedModels: immutable.Set[AuditedModel]) =
     this(
       configuration.get[String]("audit.name"),
       auditedModels)

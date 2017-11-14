@@ -20,41 +20,41 @@ case class AttachmentArtifact(attachment: Attachment) extends ArtifactData {
 case class RemoteAttachmentArtifact(filename: String, reference: String, tpe: String) extends ArtifactData
 
 case class MispAlert(
-  source: String,
-  sourceRef: String,
-  date: Date,
-  lastSyncDate: Date,
-  isPublished: Boolean,
-  title: String,
-  description: String,
-  severity: Long,
-  tags: Seq[String],
-  tlp: Long,
-  caseTemplate: String)
+    source: String,
+    sourceRef: String,
+    date: Date,
+    lastSyncDate: Date,
+    isPublished: Boolean,
+    title: String,
+    description: String,
+    severity: Long,
+    tags: Seq[String],
+    tlp: Long,
+    caseTemplate: String)
 
 case class MispAttribute(
-  id: String,
-  category: String,
-  tpe: String,
-  date: Date,
-  comment: String,
-  value: String,
-  tags: Seq[String])
+    id: String,
+    category: String,
+    tpe: String,
+    date: Date,
+    comment: String,
+    value: String,
+    tags: Seq[String])
 
 case class ExportedMispAttribute(
-  artifact: Artifact,
-  tpe: String,
-  category: String,
-  tlp: Long,
-  value: Either[String, Attachment],
-  comment: Option[String])
+    artifact: Artifact,
+    tpe: String,
+    category: String,
+    tlp: Long,
+    value: Either[String, Attachment],
+    comment: Option[String])
 
 case class MispArtifact(
-  value: ArtifactData,
-  dataType: String,
-  message: String,
-  tlp: Long,
-  tags: Seq[String],
-  startDate: Date)
+    value: ArtifactData,
+    dataType: String,
+    message: String,
+    tlp: Long,
+    tags: Seq[String],
+    startDate: Date)
 
 case class MispExportError(message: String, artifact: Artifact) extends ErrorWithObject(message, artifact.attributes)
