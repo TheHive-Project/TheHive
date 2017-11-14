@@ -16,8 +16,8 @@ import org.elastic4play.services._
 import org.elastic4play.utils.Instance
 
 /**
- * This actor monitors dead messages and log them
- */
+  * This actor monitors dead messages and log them
+  */
 @Singleton
 class DeadLetterMonitoringActor @Inject() (system: ActorSystem) extends Actor {
   private[DeadLetterMonitoringActor] lazy val logger = Logger(getClass)
@@ -80,8 +80,8 @@ class StreamActor(
       false)
 
     /**
-     * Renew timers
-     */
+      * Renew timers
+      */
     def renew: WaitingRequest = {
       if (itemCancellable.cancel()) {
         if (!hasResult && globalCancellable.cancel()) {
@@ -103,8 +103,8 @@ class StreamActor(
     }
 
     /**
-     * Send message
-     */
+      * Send message
+      */
     def submit(messages: Seq[JsObject]): Unit = {
       itemCancellable.cancel()
       globalCancellable.cancel()
@@ -115,8 +115,8 @@ class StreamActor(
   var killCancel: Cancellable = FakeCancellable
 
   /**
-   * renew global timer and rearm it
-   */
+    * renew global timer and rearm it
+    */
   def renewExpiration(): Unit = {
     if (killCancel.cancel())
       killCancel = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)

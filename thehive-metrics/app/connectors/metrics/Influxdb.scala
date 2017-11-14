@@ -81,11 +81,11 @@ class InfluxDBReporter(
     tags: Map[String, String]) extends ScheduledReporter(registry, "influxdb-reporter", filter, rateUnit, durationUnit) {
 
   def report(
-    gauges: util.SortedMap[String, Gauge[_]],
-    counters: util.SortedMap[String, Counter],
-    histograms: util.SortedMap[String, Histogram],
-    meters: util.SortedMap[String, Meter],
-    timers: util.SortedMap[String, Timer]): Unit = {
+      gauges: util.SortedMap[String, Gauge[_]],
+      counters: util.SortedMap[String, Counter],
+      histograms: util.SortedMap[String, Histogram],
+      meters: util.SortedMap[String, Meter],
+      timers: util.SortedMap[String, Timer]): Unit = {
 
     val now = System.currentTimeMillis() * 1000000
 

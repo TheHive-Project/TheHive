@@ -66,9 +66,9 @@ trait AlertAttributes {
 
 @Singleton
 class AlertModel @Inject() (dblists: DBLists)
-    extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert")
-    with AlertAttributes
-    with AuditedModel {
+  extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert")
+  with AlertAttributes
+  with AuditedModel {
 
   private[AlertModel] lazy val logger = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
@@ -105,8 +105,8 @@ class AlertModel @Inject() (dblists: DBLists)
 }
 
 class Alert(model: AlertModel, attributes: JsObject)
-    extends EntityDef[AlertModel, Alert](model, attributes)
-    with AlertAttributes {
+  extends EntityDef[AlertModel, Alert](model, attributes)
+  with AlertAttributes {
 
   override def toJson: JsObject = super.toJson +
     ("artifacts" → JsArray(artifacts().map {

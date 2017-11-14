@@ -40,15 +40,15 @@ class StreamCtrl(
     implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
   @Inject() def this(
-    configuration: Configuration,
-    authenticated: Authenticated,
-    renderer: Renderer,
-    eventSrv: EventSrv,
-    auxSrv: AuxSrv,
-    migrationSrv: MigrationSrv,
-    components: ControllerComponents,
-    system: ActorSystem,
-    ec: ExecutionContext) =
+      configuration: Configuration,
+      authenticated: Authenticated,
+      renderer: Renderer,
+      eventSrv: EventSrv,
+      auxSrv: AuxSrv,
+      migrationSrv: MigrationSrv,
+      components: ControllerComponents,
+      system: ActorSystem,
+      ec: ExecutionContext) =
     this(
       configuration.getMillis("stream.longpolling.cache").millis,
       configuration.getMillis("stream.longpolling.refresh").millis,
@@ -65,8 +65,8 @@ class StreamCtrl(
   private[StreamCtrl] lazy val logger = Logger(getClass)
 
   /**
-   * Create a new stream entry with the event head
-   */
+    * Create a new stream entry with the event head
+    */
   @Timed("controllers.StreamCtrl.create")
   def create: Action[AnyContent] = authenticated(Roles.read) {
     val id = generateStreamId()
@@ -88,9 +88,9 @@ class StreamCtrl(
   }
 
   /**
-   * Get events linked to the identified stream entry
-   * This call waits up to "refresh", if there is no event, return empty response
-   */
+    * Get events linked to the identified stream entry
+    * This call waits up to "refresh", if there is no event, return empty response
+    */
   @Timed("controllers.StreamCtrl.get")
   def get(id: String): Action[AnyContent] = Action.async { implicit request ⇒
     implicit val timeout: Timeout = Timeout(refresh + globalMaxWait + 1.second)
