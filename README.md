@@ -21,7 +21,7 @@ Each task can be assigned to a given analyst. Team members can also take charge 
 Tasks may contain multiple work logs that contributing analysts can use to describe what they are up to, what was the outcome, attach pieces of evidence or noteworthy files and so on. Logs can be written using a rich text editor or Markdown.
 
 ## Analyze
-You can add one or hundreds if not thousands of observables to each case you create. You can also create a case out of a [MISP](http://www.misp-project.org/) event. TheHive can be very easily linked to one or several MISP instances and MISP events can be previewed to decide whether they warrant an investigation or not. If an investigation is in order, the analyst can then import the event into either an existing or a new case using a customizable template.
+You can add one or hundreds if not thousands of observables to each case you create. You can also create a case out of a [MISP](http://www.misp-project.org/) event. TheHive can be very easily linked to one or several MISP instances and MISP events can be previewed to decide whether they warrant an investigation or not. If an investigation is in order, the analyst can then add the event to an existing case or import it as a new case using a customizable template.
 
 Thanks to [TheHive4py](https://thehive-project.org/#section_thehive4py), TheHive's Python API client, it is possible to send SIEM alerts, phishing and other suspicious emails and other security events to TheHive. They will appear in its `Alerts` panel along with new or updated MISP events, where they can be previewed, imported into cases or ignored.
 
@@ -80,6 +80,12 @@ You can filter cases and observables very easily to show only the data that is o
 TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP instances to one or several MISP servers. 
 
 [Cortex](https://github.com/CERT-BDF/Cortex/) is the perfect companion for TheHive. Use one or several to analyze observables at scale.
+
+### Integration with Digital Shadows
+TheHive Project provides [DigitalShadows2TH](https://github.com/CERT-BDF/DigitalShadows2TH), a free, open source [Digital Shadows](https://www.digitalshadows.com/) alert feeder for TheHive. You can use it to import Digital Shadows *incidents* and *intel-incidents* as alerts in TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+### Integration with Zerofox
+[Zerofox2TH](https://github.com/CERT-BDF/Zerofox2TH) is a free, open source [ZeroFOX](https://www.zerofox.com/) alert feeder for TheHive, written by TheHive Project. You can use it to feed ZeroFOX alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
 
 # License
 TheHive is an open source and free software released under the [AGPL](https://github.com/CERT-BDF/TheHive/blob/master/LICENSE) (Affero General Public License). We, TheHive Project, are committed to ensure that TheHive will remain a free and open source project on the long-run.
