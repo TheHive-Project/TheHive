@@ -91,7 +91,7 @@
             dnd-list="row.items"
             dnd-allowed-types="$vm.options.containerAllowedTypes"
             dnd-disable-if="row.items.length >= $vm.options.maxColumns"
-            dnd-drop="$vm.itemInserted(item, $vm.definition.items.length)">
+            dnd-drop="$vm.itemInserted(item, $vm.definition.items, rowIndex, index)">
             <dashboard-item ng-repeat="(colIndex, component) in row.items"
                 row-index="rowIndex"
                 col-index="colIndex"

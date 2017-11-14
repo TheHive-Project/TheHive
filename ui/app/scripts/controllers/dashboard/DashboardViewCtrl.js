@@ -3,7 +3,7 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
             var self = this;
 
             this.dashboard = dashboard;
@@ -100,9 +100,20 @@
 
             }
 
-            this.itemInserted = function(item, rows) {
-                for(var i=0; i < rows; i++) {
+            this.itemInserted = function(item, rows, rowIndex, index) {
+                if(!item.id){
+                    item.id = UtilsSrv.guid();
+                }
+
+                for(var i=0; i < rows.length; i++) {
                     $scope.$broadcast('resize-chart-' + i);
+                }
+
+                if (this.options.containerAllowedTypes.indexOf(item.type) !== -1 && !item.options.entity) {
+                    // The item is a widget
+                    $timeout(function() {
+                        $scope.$broadcast('edit-chart-' + item.id);
+                    }, 0);
                 }
 
                 return item;

@@ -77,7 +77,7 @@
                         },
                         function(err) {
                             scope.error = true;
-                            NotificationSrv.error('donutChart', err.data, err.status);
+                            NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                         }
                     );
                 };

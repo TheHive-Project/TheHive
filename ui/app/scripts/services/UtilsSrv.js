@@ -5,6 +5,15 @@
             var sensitiveTypes = ['url', 'ip', 'mail', 'domain', 'filename'];
 
             var service =  {
+                guid: function () {
+                  function s4() {
+                    return Math.floor((1 + Math.random()) * 0x10000)
+                      .toString(16)
+                      .substring(1);
+                  }
+                  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                    s4() + '-' + s4() + s4() + s4();
+                },
                 objectify: function(arr, property) {
                     return _.map(arr, function(str){
                         var obj = {};

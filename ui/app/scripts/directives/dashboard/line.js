@@ -129,7 +129,7 @@
                         scope.chart = chart;
                     }, function(err) {
                         scope.error = true;
-                        NotificationSrv.error('dashboardLine', err.data, err.status);
+                        NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
                 };
 

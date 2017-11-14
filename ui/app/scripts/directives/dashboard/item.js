@@ -40,6 +40,12 @@
                     });
                 }
 
+                if(scope.component.id) {
+                    scope.$on('edit-chart-' + scope.component.id, function(data) {
+                        scope.editItem();
+                    });
+                }
+
                 scope.editItem = function() {
                     var modalInstance = $uibModal.open({
                         scope: scope,
@@ -57,13 +63,19 @@
                     });
 
                     modalInstance.result.then(function(definition) {
+                        var entity = scope.component.options.entity;
+
+                        if(!entity) {
+                            return;
+                        }
+
                         // Set the computed query
-                        definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity].attributes, scope.component.options.filters);
+                        definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity].attributes, scope.component.options.filters);
 
                         // Set the computed querie of series if available
                         _.each(definition.series, function(serie) {
                             if(serie.filters) {
-                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity].attributes, serie.filters);
+                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity].attributes, serie.filters);
                             }
                         })
 
