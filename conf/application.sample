@@ -1,52 +1,62 @@
 # Secret key
 # ~~~~~
-# The secret key is used to secure cryptographics functions.
-# If you deploy your application to several instances be sure to use the same key!
+# The secret key is used to secure cryptographic functions.
+# WARNING: If you deploy your application on several servers, make sure to use the same key.
 #play.crypto.secret="***changeme***"
 
 
 # ElasticSearch
 search {
-  # Name of the index
+  # Index name.
   index = the_hive
-  # Name of the ElasticSearch cluster
+  # ElasticSearch cluster name.
   cluster = hive
-  # Address of the ElasticSearch instance
+  # ElasticSearch instance address.
   host = ["127.0.0.1:9300"]
-  # Scroll keepalive
+  # Scroll keepalive.
   keepalive = 1m
-  # Size of the page for scroll
+  # Scroll page size.
   pagesize = 50
 }
 
 # Authentication
 auth {
-	# "type" parameter contains authentication provider. It can be multi-valued (useful for migration)
-	# available auth types are:
-	# services.LocalAuthSrv : passwords are stored in user entity (in ElasticSearch). No configuration are required.
-	# ad : use ActiveDirectory to authenticate users. Configuration is under "auth.ad" key
-	# ldap : use LDAP to authenticate users. Configuration is under "auth.ldap" key
+	# "type" parameter contains the authentication provider(s). It can be multi-valued, which is useful
+	# for migration.
+	# The available auth types are:
+	# - services.LocalAuthSrv : passwords are stored in the user entity within ElasticSearch). No
+	#   configuration are required.
+	# - ad : use ActiveDirectory to authenticate users. The associated configuration shall be done in
+	#   the "ad" section below.
+	# - ldap : use LDAP to authenticate users. The associated configuration shall be done in the
+	#   "ldap" section below.
 	type = [local]
 
 	ad {
-		# Domain Windows name using DNS format. This parameter is required.
+		# The Windows domain name in DNS format. This parameter is required if you do not use
+		# 'serverNames' below.
 		#domainFQDN = "mydomain.local"
 
-		# Domain Windows name using short format. This parameter is required.
+		# Optionally you can specify the host names of the domain controllers instead of using 'domainFQDN
+		# above. If this parameter is not set, TheHive uses 'domainFQDN'.
+        #serverNames = [ad1.mydomain.local, ad2.mydomain.local]
+
+		# The Windows domain name using short format. This parameter is required.
 		#domainName = "MYDOMAIN"
 
-		# Use SSL to connect to domain controller
+		# If 'true', use SSL to connect to the domain controller.
 		#useSSL = true
 	}
 
 	ldap {
-		# LDAP server name or address. Port can be specified (host:port). This parameter is required.
+		# The LDAP server name or address. The port can be specified using the 'host:port'
+		# syntax. This parameter is required if you don't use 'serverNames' below.
 		#serverName = "ldap.mydomain.local:389"
 
-		# Use SSL to connect to directory server
-		#useSSL = true
+		# If you have multiple LDAP servers, use the multi-valued setting 'serverNames' instead.
+        #serverNames = [ldap1.mydomain.local, ldap2.mydomain.local]
 
-		# Account to use to bind on LDAP server. This parameter is required.
+		# Account to use to bind to the LDAP server. This parameter is required.
 		#bindDN = "cn=thehive,ou=services,dc=mydomain,dc=local"
 
 		# Password of the binding account. This parameter is required.
@@ -55,33 +65,54 @@ auth {
 		# Base DN to search users. This parameter is required.
 		#baseDN = "ou=users,dc=mydomain,dc=local"
 
-		# Filter to search user {0} is replaced by user name. This parameter is required.
+		# Filter to search user in the directory server. Please note that {0} is replaced
+		# by the actual user name. This parameter is required.
 		#filter = "(cn={0})"
+
+		# If 'true', use SSL to connect to the LDAP directory server.
+		#useSSL = true
 	}
 }
 
 # Cortex
+# TheHive can connect to one or multiple Cortex instances. Give each Cortex instance a name
+# and specify the associated URL.
 cortex {
   #"CORTEX-SERVER-ID" {
-  #  # URL of MISP server
-  #  url = ""
+    # URL of the Cortex server.
+    #url = ""
   #}
 }
 
 # MISP
+# TheHive can connect to one or multiple MISP instances. Give each MISP instance a name and
+# specify the associated Authkey that must be used to poll events, the case template that should be
+# used by default when importing events as well as the tags that must be added to cases upon import.
 misp {
   #"MISP-SERVER-ID" {
-  #  # URL of MISP server
-  #  url = ""
-  #  # authentication key
-  #  key = ""
-  #  #tags to be added to imported artifact
-  #  tags = ["misp"]
+    # URL of the MISP instance.
+    #url = ""
+
+    # Authentication key.
+    #key = ""
+
+    # Name of the case template in TheHive that shall be used to import MISP events as cases by
+    # default.
+    # caseTemplate = "<Template_Name_goes_here>"
+
+    # Tags to add when importing events.
+    #tags = ["misp-server-id"]
+
+    # Truststore to use to validate the X.509 certificate of the MISP instance if the default
+    # truststore is not sufficient.
+    #ws.ssl.trustManager.stores = [
+    #{
+    #  type: "JKS"
+    #  path: "/path/to/truststore.jks"
+    #}
+    #]
   #}
 
-  # truststore to used to validate MISP certificate (if default truststore is not suffisient)
-  #cert = /path/to/truststore.jsk
-
-  # Interval between two MISP event import
+  # Interval between two MISP event synchronization.
   interval = 1h
 }
