@@ -42,7 +42,7 @@ class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[Jo
   }
 }
 class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, attributes) with JobAttributes {
-  override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject(Nil))(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
+  override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject.empty)(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
 }
 
 case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type, cortexIds: List[String] = Nil) {
