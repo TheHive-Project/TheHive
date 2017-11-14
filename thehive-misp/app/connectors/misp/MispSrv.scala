@@ -204,7 +204,7 @@ class MispSrv @Inject() (
   def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     for {
       _ ← importArtifacts(alert, caze)
-      description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}"
+      description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}\n\n${alert.description().trim}"
       updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
     } yield updatedCase
   }
