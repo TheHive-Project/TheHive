@@ -1,11 +1,9 @@
-# Secret key
-# ~~~~~
+# Secret Key
 # The secret key is used to secure cryptographic functions.
 # WARNING: If you deploy your application on several servers, make sure to use the same key.
 #play.crypto.secret="***changeme***"
 
-
-# ElasticSearch
+# Elasticsearch
 search {
   # Index name.
   index = the_hive
@@ -88,6 +86,11 @@ cortex {
 # TheHive can connect to one or multiple MISP instances. Give each MISP instance a name and
 # specify the associated Authkey that must be used to poll events, the case template that should be
 # used by default when importing events as well as the tags that must be added to cases upon import.
+
+# Prior to configuring the integration with a MISP instance, you must enable the MISP connector.
+# This will allow you to import events to and/or export cases to the MISP instance(s).
+#play.modules.enabled += connectors.misp.MispConnector
+
 misp {
   #"MISP-SERVER-ID" {
     # URL of the MISP instance.
@@ -113,6 +116,6 @@ misp {
     #]
   #}
 
-  # Interval between two MISP event synchronization.
+  # Interval between consecutive MISP event synchronizations.
   interval = 1h
 }
