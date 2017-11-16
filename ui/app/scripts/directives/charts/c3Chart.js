@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('c3', function() {
+    angular.module('theHiveDirectives').directive('c3', function(DashboardSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -15,6 +15,9 @@
                 scope.initChart = function(chart) {
                     if (!_.isEmpty(chart)) {
                         scope.chart.bindto = binto;
+                        scope.chart.color = {
+                            pattern: DashboardSrv.colorsPattern
+                        };
                         scope.chart.size = {
                             height: 300
                         };

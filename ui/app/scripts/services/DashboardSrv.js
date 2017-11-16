@@ -76,6 +76,10 @@
             counter: 'fa-calculator'
         };
 
+        this.colorsPattern = [
+            '#0675a4', '#f46c54', '#043444' ,'#305868', '#fbcd35', '#3cbcb4', '#a42414', '#25c4f1', '#ac7b1d', '#ecec24', '#8cc47c', '#a1a4ac', '#ad8d8d'
+        ];
+
         this.toolbox = [
             {
                 type: 'container',

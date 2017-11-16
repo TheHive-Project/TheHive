@@ -18,6 +18,26 @@
                 scope.error = false;
                 scope.chart = {};
 
+                scope.prepareSeriesNames = function() {
+                    console.log(scope.entity);
+                    console.log(scope.entity.attributes[scope.options.field]);
+                    var names = scope.options.names || {};
+
+                    if(scope.entity && scope.options.field) {
+                        var field = scope.entity.attributes[scope.options.field];
+
+                        _.each(field.values, function(val, index) {
+                            if(!names[val]) {
+                                names[val] = field.labels[index] || null;
+                            }
+                        });
+                    }
+
+                    console.log(names);
+
+                    return names;
+                };
+
                 scope.load = function() {
                     if(!scope.entity) {
                         scope.error = true;
@@ -31,9 +51,12 @@
                         //objectType: scope.options.entity,
                         objectType: scope.entity.path,
                         field: scope.options.field,
-                        sort: scope.options.sort,
+                        //sort: scope.options.sort || '-_count',
+                        sort: '+_count',
                         limit: scope.options.limit
                     };
+
+                    scope.options.names = scope.prepareSeriesNames();
 
                     StatSrv.getPromise(statConfig).then(
                         function(response) {
