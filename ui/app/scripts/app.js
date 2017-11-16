@@ -164,7 +164,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: '/case-templates',
                 templateUrl: 'views/partials/admin/case-templates.html',
                 controller: 'AdminCaseTemplatesCtrl',
-                title: 'Templates administration'
+                controllerAs: '$vm',
+                title: 'Templates administration',
+                resolve: {
+                    templates: function(CaseTemplateSrv) {
+                        return CaseTemplateSrv.list();
+                    }
+                }
             })
             .state('app.administration.report-templates', {
                 url: '/report-templates',

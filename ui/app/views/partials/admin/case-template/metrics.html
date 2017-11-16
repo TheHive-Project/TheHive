@@ -1,5 +1,5 @@
 <h4 class="vpad10 text-primary">
-    Metrics ({{template.metricNames.length || 0}})
+    Metrics ({{$vm.keys($vm.template.metrics).length}})
 
     <span uib-dropdown class="pull-right">
         <a href class="dropdown-toggle" uib-dropdown-toggle>
@@ -8,22 +8,22 @@
             <span class="caret"></span>
         </a>
         <ul class="dropdown-menu" uib-dropdown-menu>
-            <li ng-repeat="(key, value) in metrics">
-                <a ng-click="addMetric(value)">{{value.title}}</a>
+            <li ng-repeat="(key, value) in $vm.metrics">
+                <a ng-click="$vm.addMetric(value)">{{value.title}}</a>
             </li>
         </ul>
     </span>
 </h4>
 
-<div ng-if="template.metricNames.length !== 0" ng-init="isCollapsed=true">
-    <div class="panel panel-default" ng-repeat="m in template.metricNames" ng-init="description=metrics[m].description">
+<div ng-if="$vm.keys($vm.template.metrics).length !== 0" ng-init="isCollapsed=true">
+    <div class="panel panel-default" ng-repeat="m in $vm.keys($vm.template.metrics)" ng-init="description=$vm.metrics[m].description">
         <div class="panel-heading">
             <a href ng-click="isCollapsed=!isCollapsed">
                 <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
             </a>
-            <span class="hpad5">{{metrics[m].title}}</span>
+            <span class="hpad5">{{$vm.metrics[m].title}}</span>
             <span class="pull-right">
-                <a class="text-danger" href ng-click="removeMetric(m)">
+                <a class="text-danger" href ng-click="$vm.removeMetric(m)">
                     <i class="fa fa-times"></i>&nbsp;Delete</a>
             </span>
         </div>
@@ -35,6 +35,6 @@
         </div>
     </div>
 </div>
-<div class="empty-message" ng-if="!template.metricNames ||template.metricNames.length === 0">
+<div class="empty-message" ng-if="$vm.keys($vm.template.metrics).length === 0">
     No metrics have been added
 </div>

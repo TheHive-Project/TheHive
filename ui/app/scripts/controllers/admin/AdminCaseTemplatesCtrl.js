@@ -2,16 +2,17 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv, UserSrv, UserInfoSrv) {
-            $scope.task = '';
-            $scope.tags = [];
-            $scope.templates = [];
-            $scope.metrics = [];
-            $scope.fields = [];
-            $scope.templateCustomFields = [];
-            $scope.templateIndex = -1;
+        function($scope, $uibModal, CaseTemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv, UserSrv, UserInfoSrv, ModalUtilsSrv, templates) {
+            var self = this;
 
-            $scope.getUserInfo = UserInfoSrv;
+            self.templates = templates;
+            self.task = '';
+            self.tags = [];
+            self.metrics = [];
+            self.fields = [];
+            self.templateCustomFields = [];
+            self.templateIndex = -1;
+            self.getUserInfo = UserInfoSrv;
 
             /**
              * Convert the template custom fields definition to a list of ordered field names
@@ -32,109 +33,118 @@
                 return result;
             }
 
-            $scope.sortableOptions = {
+            self.sortableOptions = {
                 handle: '.drag-handle',
                 stop: function(/*e, ui*/) {
-                    $scope.reorderTasks();
+                    self.reorderTasks();
                 },
                 axis: 'y'
             };
 
-            $scope.sortableFields = {
+            self.sortableFields = {
                 handle: '.drag-handle',
                 axis: 'y'
             };
 
-            $scope.keys = function(obj) {
+            self.keys = function(obj) {
                 if(!obj) {
                     return [];
                 }
                 return _.keys(obj);
             };
 
-            $scope.loadCache = function() {
+            self.loadCache = function() {
                 MetricsCacheSrv.all().then(function(metrics){
-                    $scope.metrics = metrics;
+                    self.metrics = metrics;
                 });
 
                 CustomFieldsCacheSrv.all().then(function(fields){
-                    $scope.fields = fields;
+                    self.fields = fields;
                 });
             };
-            $scope.loadCache();
+            self.loadCache();
 
-            $scope.getList = function(index) {
-                TemplateSrv.query(function(templates) {
-                    $scope.templates = templates;
-                    $scope.templateIndex = index;
+            self.getList = function(id) {
+                CaseTemplateSrv.list().then(function(templates) {
+                    self.templates = templates;
 
-                    if(templates.length > 0) {
-                        $scope.loadTemplate(templates[index].id, $scope.templateIndex);
+                    if(templates.length === 0) {
+                        self.templateIndex = 0;
+                        self.newTemplate();
+                    } else if(id){
+                        self.loadTemplateById(id);
                     } else {
-                        $scope.newTemplate();
+                        self.loadTemplateById(templates[0].id, 0);
                     }
                 });
             };
-            $scope.getList(0);
 
-            $scope.loadTemplate = function(id, index) {
-                TemplateSrv.get({
-                    templateId: id
-                }, function(template) {
-                    delete template.createdAt;
-                    delete template.createdBy;
-                    delete template.updatedAt;
-                    delete template.updatedBy;
+            self.loadTemplate = function(template, index) {
+                if(!template) {
+                    return;
+                }
 
-                    $scope.template = template;
-                    $scope.tags = UtilsSrv.objectify($scope.template.tags, 'text');
+                self.template = _.omit(template,
+                    '_type',
+                    'createdAt',
+                    'updatedAt',
+                    'createdBy',
+                    'updatedBy');
+                self.tags = UtilsSrv.objectify(self.template.tags, 'text');
+                self.templateCustomFields = getTemplateCustomFields(template.customFields);
 
-                    $scope.templateCustomFields = getTemplateCustomFields(template.customFields);
-                });
+                self.templateIndex = index || _.indexOf(self.templates, _.findWhere(self.templates, {id: template.id}));
+            }
 
-                $scope.templateIndex = index;
+            self.loadTemplate(self.templates[0]);
+
+            self.loadTemplateById = function(id) {
+                CaseTemplateSrv.get(id)
+                    .then(function(template) {
+                        self.loadTemplate(template);
+                    });
             };
 
-            $scope.newTemplate = function() {
-                $scope.template = {
+            self.newTemplate = function() {
+                self.template = {
                     name: '',
                     titlePrefix: '',
                     severity: 2,
                     tlp: 2,
                     tags: [],
                     tasks: [],
-                    metricNames: [],
+                    metrics: {},
                     customFields: {},
                     description: ''
                 };
-                $scope.tags = [];
-                $scope.templateIndex = -1;
-                $scope.templateCustomFields = [];
+                self.tags = [];
+                self.templateIndex = -1;
+                self.templateCustomFields = [];
             };
 
-            $scope.reorderTasks = function() {
-                _.each($scope.template.tasks, function(task, index) {
+            self.reorderTasks = function() {
+                _.each(self.template.tasks, function(task, index) {
                     task.order = index;
                 });
             };
 
-            $scope.removeTask = function(task) {
-                $scope.template.tasks = _.without($scope.template.tasks, task);
-                $scope.reorderTasks();
+            self.removeTask = function(task) {
+                self.template.tasks = _.without(self.template.tasks, task);
+                self.reorderTasks();
             };
 
-            $scope.addTask = function() {
-                var order = $scope.template.tasks ? $scope.template.tasks.length : 0;
+            self.addTask = function() {
+                var order = self.template.tasks ? self.template.tasks.length : 0;
 
-                $scope.openTaskDialog({order: order}, 'Add');
+                self.openTaskDialog({order: order}, 'Add');
             };
 
-            $scope.editTask = function(task) {
-                $scope.openTaskDialog(task, 'Update');
+            self.editTask = function(task) {
+                self.openTaskDialog(task, 'Update');
             };
 
-            $scope.openTaskDialog = function(task, action) {
-                $uibModal.open({
+            self.openTaskDialog = function(task, action) {
+                var modal = $uibModal.open({
                     scope: $scope,
                     templateUrl: 'views/partials/admin/case-templates.task.html',
                     controller: 'AdminCaseTemplateTasksCtrl',
@@ -144,97 +154,146 @@
                             return action;
                         },
                         task: function() {
-                            return task;
+                            return _.extend({}, task);
                         },
                         users: function() {
                             return UserSrv.list({status: 'Ok'});
                         }
                     }
                 });
+
+                modal.result.then(function(data) {
+                    debugger;
+                    if(action === 'Add') {
+                        if(self.template.tasks) {
+                            self.template.tasks.push(data);
+                        } else {
+                            self.template.tasks = [data];
+                        }
+                    } else {
+                        self.template.tasks[data.order] = data;
+                    }
+                });
             };
 
-            $scope.addMetric = function(metric) {
-                var metrics = $scope.template.metricNames || [];
-
-                if(metrics.indexOf(metric.name) === -1) {
-                    metrics.push(metric.name);
-                    $scope.template.metricNames = metrics;
-                } else {
-                    NotificationSrv.log('The metric [' + metric.title + '] has already been added to the template', 'warning');
-                }
+            self.addMetric = function(metric) {
+                self.template.metrics = self.template.metrics || {};
+                self.template.metrics[metric.name] = null;
             };
 
-            $scope.removeMetric = function(metricName) {
-                $scope.template.metricNames = _.without($scope.template.metricNames, metricName);
+            self.removeMetric = function(metricName) {
+                delete self.template.metrics[metricName];
             };
 
-            $scope.addCustomField = function(field) {
-                if($scope.templateCustomFields.indexOf(field.reference) === -1) {
-                    $scope.templateCustomFields.push(field.reference);
+            self.addCustomField = function(field) {
+                if(self.templateCustomFields.indexOf(field.reference) === -1) {
+                    self.templateCustomFields.push(field.reference);
                 } else {
                     NotificationSrv.log('The custom field [' + field.name + '] has already been added to the template', 'warning');
                 }
             };
 
-            $scope.removeCustomField = function(fieldName) {
-                $scope.templateCustomFields = _.without($scope.templateCustomFields, fieldName);
+            self.removeCustomField = function(fieldName) {
+                self.templateCustomFields = _.without(self.templateCustomFields, fieldName);
             };
 
-            $scope.deleteTemplate = function() {
-                $uibModal.open({
-                    scope: $scope,
-                    templateUrl: 'views/partials/admin/case-templates.delete.html',
-                    controller: 'AdminCaseTemplateDeleteCtrl',
-                    size: ''
+            self.deleteTemplate = function() {
+                ModalUtilsSrv.confirm('Remove case template', 'Are you sure you want to delete this case template?', {
+                    okText: 'Yes, remove it',
+                    flavor: 'danger'
+                }).then(function() {
+                    return CaseTemplateSrv.delete(self.template.id);
+                }).then(function() {
+                    self.getList();
+
+                    $scope.$emit('templates:refresh');
                 });
             };
 
-            $scope.saveTemplate = function() {
+            self.saveTemplate = function() {
                 // Set tags
-                $scope.template.tags = _.pluck($scope.tags, 'text');
+                self.template.tags = _.pluck(self.tags, 'text');
 
                 // Set custom fields
-                $scope.template.customFields = {};
-                _.each($scope.templateCustomFields, function(value, index) {
-                    var fieldDef = $scope.fields[value];
+                self.template.customFields = {};
+                _.each(self.templateCustomFields, function(value, index) {
+                    var fieldDef = self.fields[value];
 
-                    $scope.template.customFields[value] = {};
-                    $scope.template.customFields[value][fieldDef.type] = null;
-                    $scope.template.customFields[value].order = index + 1;
+                    self.template.customFields[value] = {};
+                    self.template.customFields[value][fieldDef.type] = null;
+                    self.template.customFields[value].order = index + 1;
                 });
 
-                if (_.isEmpty($scope.template.id)) {
-                    $scope.createTemplate();
+                if (_.isEmpty(self.template.id)) {
+                    self.createTemplate(self.template);
                 } else {
-                    $scope.updateTemplate();
+                    self.updateTemplate(self.template);
                 }
             };
 
-            $scope.createTemplate = function() {
-                return TemplateSrv.save($scope.template, function() {
-                    $scope.getList(0);
+            self.createTemplate = function(template) {
+                return CaseTemplateSrv.create(template)
+                    .then(function(response) {
+                        debugger;
+                        self.getList(response.data.id);
 
-                    $scope.$emit('templates:refresh');
+                        $scope.$emit('templates:refresh');
 
-                    NotificationSrv.log('The template [' + $scope.template.name + '] has been successfully created', 'success');
-                }, function(response) {
-                    NotificationSrv.error('TemplateCtrl', response.data, response.status);
-                });
+                        NotificationSrv.log('The template [' + template.name + '] has been successfully created', 'success');
+                    }, function(response) {
+                        NotificationSrv.error('TemplateCtrl', response.data, response.status);
+                    });
             };
 
-            $scope.updateTemplate = function() {
-                return TemplateSrv.update({
-                    templateId: $scope.template.id
-                }, _.omit($scope.template, ['id', 'user', '_type']), function() {
-                    $scope.getList($scope.templateIndex);
+            self.updateTemplate = function(template) {
+                return CaseTemplateSrv.update(template.id, _.omit(template, ['id', 'user', '_type']))
+                    .then(function(response) {
+                        self.getList(template.id);
 
-                    $scope.$emit('templates:refresh');
+                        $scope.$emit('templates:refresh');
 
-                    NotificationSrv.log('The template [' + $scope.template.name + '] has been successfully updated', 'success');
-                }, function(response) {
-                    NotificationSrv.error('TemplateCtrl', response.data, response.status);
-                });
+                        NotificationSrv.log('The template [' + template.name + '] has been successfully updated', 'success');
+                    }, function(response) {
+                        NotificationSrv.error('TemplateCtrl', response.data, response.status);
+                    });
             };
+
+            self.exportTemplate = function() {
+                var fileName = 'Case-Template__' + self.template.name.replace(/\s/gi, '_') + '.json';
+
+                // Create a blob of the data
+                var fileToSave = new Blob([angular.toJson(_.omit(self.template, 'id'))], {
+                    type: 'application/json',
+                    name: fileName
+                });
+
+                // Save the file
+                saveAs(fileToSave, fileName);
+            }
+
+            self.importTemplate = function() {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    templateUrl: 'views/partials/admin/case-template/import.html',
+                    controller: 'AdminCaseTemplateImportCtrl',
+                    controllerAs: 'vm',
+                    size: 'lg'
+                });
+
+                modalInstance.result.then(function(template) {
+                    return self.createTemplate(template);
+                })
+                .then(function(response) {
+                    self.getList(response.data.id);
+
+                    NotificationSrv.log('The template has been successfully imported', 'success');
+                })
+                .catch(function(err) {
+                    if (err && err.status) {
+                        NotificationSrv.error('TemplateCtrl', err.data, err.status);
+                    }
+                });
+            }
 
         })
         .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
@@ -247,32 +306,42 @@
             };
 
             $scope.addTask = function() {
-                if(action === 'Add') {
-                    if($scope.template.tasks) {
-                        $scope.template.tasks.push(task);
-                    } else {
-                        $scope.template.tasks = [task];
-                    }
-                }
-
-                $uibModalInstance.dismiss();
+                $uibModalInstance.close(task);
             };
         })
-        .controller('AdminCaseTemplateDeleteCtrl', function($scope, $uibModalInstance, TemplateSrv) {
-            $scope.cancel = function() {
-                $uibModalInstance.dismiss();
+        .controller('AdminCaseTemplateImportCtrl', function($scope, $uibModalInstance) {
+            var self = this;
+            this.formData = {
+                fileContent: {}
             };
 
-            $scope.confirm = function() {
-                TemplateSrv.delete({
-                    templateId: $scope.template.id
-                }, function() {
-                    $scope.getList(0);
+            $scope.$watch('vm.formData.attachment', function(file) {
+                if(!file) {
+                    self.formData.fileContent = {};
+                    return;
+                }
+                var aReader = new FileReader();
+                aReader.readAsText(self.formData.attachment, 'UTF-8');
+                aReader.onload = function (evt) {
+                    $scope.$apply(function() {
+                        self.formData.fileContent = JSON.parse(aReader.result);
+                    });
+                }
+                aReader.onerror = function (evt) {
+                    $scope.$apply(function() {
+                        self.formData.fileContent = {};
+                    });
+                }
+            });
 
-                    $scope.$emit('templates:refresh');
+            this.ok = function () {
+                var template = _.pick(this.formData.fileContent, 'name', 'title', 'description', 'tlp', 'severity', 'tags', 'status', 'titlePrefix', 'tasks', 'metrics', 'customFields');
+                $uibModalInstance.close(template);
+            };
 
-                    $uibModalInstance.dismiss();
-                });
+            this.cancel = function () {
+                $uibModalInstance.dismiss('cancel');
             };
         });
+
 })();

@@ -1,32 +1,32 @@
 <h4 class="vpad10 text-primary">
-    Tasks ({{template.tasks.length || 0}})
-    <a class="pull-right" href ng-click="addTask()">
+    Tasks ({{$vm.template.tasks.length || 0}})
+    <a class="pull-right" href ng-click="$vm.addTask()">
         <i class="fa fa-plus"></i>
         Add task</a>
 </h4>
-<div ng-if="template.tasks.length !== 0" ui-sortable="sortableOptions" ng-model="template.tasks">
-    <div class="panel panel-default" ng-init="isCollapsed=true" ng-repeat="t in template.tasks">
+<div ng-if="$vm.template.tasks.length !== 0" ui-sortable="$vm.sortableOptions" ng-model="$vm.template.tasks">
+    <div class="panel panel-default" ng-init="$vm.isCollapsed=true" ng-repeat="t in $vm.template.tasks">
         <div class="panel-heading">
             <span class="drag-handle text-primary clickable mr-xxs">
                 <i class="fa fa-bars"></i>
             </span>
             <span>
-                <a href ng-click="isCollapsed=!isCollapsed">
-                    <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
+                <a href ng-click="$vm.isCollapsed=!$vm.isCollapsed">
+                    <i class="fa" ng-class="{'fa-caret-down': $vm.isCollapsed, 'fa-caret-up': !$vm.isCollapsed}"></i>
                 </a>
             </span>
             <span class="hpad5">{{t.title}}</span>
-            <span class="mr-xxs" ng-if="t.owner">(Assigned to <em>{{getUserInfo.get(t.owner) | getField:'name'}}</em>)</span>
+            <span class="mr-xxs" ng-if="t.owner">(Assigned to <em>{{$vm.getUserInfo.get(t.owner) | getField:'name'}}</em>)</span>
 
             <span class="pull-right">
-                <a class="text-default" href ng-click="editTask(t)">
+                <a class="text-default" href ng-click="$vm.editTask(t)">
                     <i class="fa fa-pencil"></i>&nbsp;Edit</a>
                 <span class="hpad5"></span>
-            <a class="text-danger" href ng-click="removeTask(t)">
+            <a class="text-danger" href ng-click="$vm.removeTask(t)">
                 <i class="fa fa-times"></i>&nbsp;Delete</a>
             </span>
         </div>
-        <div class="panel-body" ng-hide="isCollapsed">
+        <div class="panel-body" ng-hide="$vm.isCollapsed">
             <p btf-markdown="t.description" ng-show="t.description != ''"></p>
             <p class="text-warning" ng-show="!t.description || t.description===''">
                 <em>No description specified</em>
@@ -34,6 +34,6 @@
         </div>
     </div>
 </div>
-<div class="empty-message" ng-if="!template.tasks || template.tasks.length === 0">
+<div class="empty-message" ng-if="!$vm.template.tasks || $vm.template.tasks.length === 0">
     No tasks have been specified
 </div>
