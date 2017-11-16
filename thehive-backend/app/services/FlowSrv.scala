@@ -29,7 +29,7 @@ class FlowSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
 
     val streamableEntities = modelSrv.list.collect {
-      case m: AuditedModel if m.name != "user" ⇒ m.name
+      case m: AuditedModel if m.modelName != "user" ⇒ m.modelName
     }
 
     val filter = rootId match {

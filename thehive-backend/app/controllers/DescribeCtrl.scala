@@ -44,7 +44,7 @@ class DescribeCtrl @Inject() (
   def describeAll: Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     val entityDefinitions = modelSrv.list
       .collect {
-        case model if allModels.contains(model.name) ⇒ model.name → modelToJson(model)
+        case model if allModels.contains(model.modelName) ⇒ model.modelName → modelToJson(model)
       }
     renderer.toOutput(OK, JsObject(entityDefinitions))
   }

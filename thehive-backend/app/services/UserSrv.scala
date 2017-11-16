@@ -45,7 +45,7 @@ class UserSrv @Inject() (
   }
 
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
-    dbIndex.getSize(userModel.name).map {
+    dbIndex.getSize(userModel.modelName).map {
       case size if size > 0 ⇒ throw AuthenticationError(s"Use of initial user is forbidden because users exist in database")
       case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Roles.admin, Roles.read, Roles.alert))
     }

@@ -15,7 +15,7 @@ object SeverityAttributeFormat extends NumberAttributeFormat {
 
   override def definition(dblists: DBLists, attribute: Attribute[Long]): Seq[AttributeDefinition] =
     Seq(AttributeDefinition(
-      attribute.name,
+      attribute.attributeName,
       name,
       attribute.description,
       Seq(JsNumber(1), JsNumber(2), JsNumber(3)),
@@ -51,7 +51,7 @@ object TlpAttributeFormat extends NumberAttributeFormat {
 
   override def definition(dblists: DBLists, attribute: Attribute[Long]): Seq[AttributeDefinition] =
     Seq(AttributeDefinition(
-      attribute.name,
+      attribute.attributeName,
       name,
       attribute.description,
       Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)),

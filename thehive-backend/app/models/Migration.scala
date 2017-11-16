@@ -283,10 +283,10 @@ class Migration(
         (audit \ "objectType")
           .asOpt[String]
           // find related model
-          .flatMap(objectType ⇒ models.find(_.name == objectType))
+          .flatMap(objectType ⇒ models.find(_.modelName == objectType))
           // and get name of audited attributes
           .map(_.attributes.collect {
-            case attr if !attr.isUnaudited ⇒ attr.name
+            case attr if !attr.isUnaudited ⇒ attr.attributeName
           })
           .map { attributes ⇒
             // put audited attribute in details and unaudited in otherDetails

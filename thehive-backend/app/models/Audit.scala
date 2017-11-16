@@ -60,7 +60,7 @@ class AuditModel(
 
   def mergeAttributes(context: String, attributes: Seq[Attribute[_]]): Option[ObjectAttributeFormat] = {
     val mergeAttributes: Iterable[Option[Attribute[_]]] = attributes
-      .groupBy(_.name)
+      .groupBy(_.attributeName)
       .map {
         case (_name, _attributes) ⇒
           _attributes
@@ -76,7 +76,7 @@ class AuditModel(
             }
             .map(format ⇒ Attribute("audit", _name, format, Nil, None, ""))
             .orElse {
-              logger.error(s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.name + ": " + a.format.name).mkString("\n")}")
+              logger.error(s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.attributeName + ": " + a.format.name).mkString("\n")}")
               None
             }
       }
