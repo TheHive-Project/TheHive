@@ -9,7 +9,6 @@
             </label>
             <div class="col-md-9">
                 <input class="form-control" ng-model="task.title" placeholder="Task title" required type="text">
-                <p class="help-block small vpad5">This is the task name</p>
             </div>
         </div>
 
@@ -17,7 +16,15 @@
             <label class="col-md-3 control-label">Task description</label>
             <div class="col-md-9">
                 <markdown-editor content="task.description"></markdown-editor>
-                <p class="help-block small vpad5">This is the task description</p>
+                <p class="help-block small">Task's default description</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-md-3 control-label">Assignee</label>
+            <div class="col-md-9">
+                <select class="form-control" ng-model="task.owner"
+                    ng-options="item.id as item.name for item in users | orderBy:'id'"></select>                
             </div>
         </div>
     </div>

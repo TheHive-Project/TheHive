@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv) {
+        function($scope, $uibModal, TemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv, UserSrv, UserInfoSrv) {
             $scope.task = '';
             $scope.tags = [];
             $scope.templates = [];
@@ -10,6 +10,8 @@
             $scope.fields = [];
             $scope.templateCustomFields = [];
             $scope.templateIndex = -1;
+
+            $scope.getUserInfo = UserInfoSrv;
 
             /**
              * Convert the template custom fields definition to a list of ordered field names
@@ -143,6 +145,9 @@
                         },
                         task: function() {
                             return task;
+                        },
+                        users: function() {
+                            return UserSrv.list({status: 'Ok'});
                         }
                     }
                 });
@@ -232,9 +237,10 @@
             };
 
         })
-        .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task) {
+        .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
             $scope.task = task || {};
             $scope.action = action;
+            $scope.users = users;
 
             $scope.cancel = function() {
                 $uibModalInstance.dismiss();
