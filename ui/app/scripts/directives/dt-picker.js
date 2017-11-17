@@ -9,7 +9,8 @@
             },
             templateUrl: 'views/directives/dt-picker.html',
             compile: function(element) {
-                $(element).find('.input-datetime').datetimepicker({
+                var dtEl = $(element).find('.input-datetime');
+                dtEl.datetimepicker({
                     format: 'dd-mm-yyyy',
                     weekStart: 1,
                     startView: 2,

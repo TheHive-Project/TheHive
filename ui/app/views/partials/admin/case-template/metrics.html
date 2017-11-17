@@ -7,28 +7,25 @@
         No metrics have been added. <a href class="mr-xxxs" ng-click="$vm.addMetricRow()">Add a metric</a>
     </div>
 
+
     <div ng-if="$vm.templateMetrics.length !== 0">
         <div class="metric-item" ng-repeat="m in $vm.templateMetrics">
             <div class="row">
+                <div class="col-sm-12">
+                    <a href ng-click="$vm.removeMetric(m)"><span class="pull-right text-danger"><i class="fa fa-trash"></i> Delete</span></a>
+                </div>
                 <div class="col-sm-6">
                     <select class="form-control" ng-model="m.metric" ng-options="item.name as item.name for (m, item) in $vm.metrics" required></select>
                 </div>
                 <div class="col-sm-6">
-                    <div class="input-group">
-                        <input type="number" class="form-control" ng-model="m.value">
-                        <span class="input-group-btn">
-                            <button class="btn btn-default" type="button" ng-click="$vm.removeMetric(m)">
-                                <i class="fa fa-times text-danger"></i>
-                            </button>
-                        </span>
-                    </div>
+                    <input type="number" class="form-control" ng-model="m.value">
                 </div>
                 <div class="col-sm-12">
                     <i class="pl-xxss fa fa-question-circle" aria-hidden="true"></i> <small>{{$vm.metrics[m.metric].description || 'No description'}}</small>
                 </div>
             </div>
         </div>
-        <div ng-if="$vm.keys($vm.template.metrics).length > 0" class="mv-xs">
+        <div ng-if="$vm.templateMetrics.length > 0" class="mv-xs">
             <a href ng-click="$vm.addMetricRow()">
                 <i class="fa fa-plus"></i> Add a metric
             </a>

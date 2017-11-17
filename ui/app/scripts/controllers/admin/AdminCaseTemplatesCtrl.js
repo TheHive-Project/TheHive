@@ -2,14 +2,14 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCaseTemplatesCtrl',
-        function($scope, $uibModal, CaseTemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv, UserSrv, UserInfoSrv, ModalUtilsSrv, templates) {
+        function($scope, $uibModal, CaseTemplateSrv, NotificationSrv, UtilsSrv, ListSrv, MetricsCacheSrv, CustomFieldsCacheSrv, UserSrv, UserInfoSrv, ModalUtilsSrv, templates, fields) {
             var self = this;
 
             self.templates = templates;
             self.task = '';
             self.tags = [];
             self.metrics = [];
-            self.fields = [];
+            self.fields = fields || [];
             self.templateCustomFields = [];
             self.templateMetrics = [];
             self.templateIndex = -1;
@@ -22,14 +22,15 @@
             var getTemplateCustomFields = function(customFields) {
                 var result = [];
 
-                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                result = _.sortBy(_.map(customFields, function(definition, name){
                     return {
                         name: name,
-                        order: definition.order
+                        order: definition.order,
+                        value: definition[self.fields[name].type]
                     }
                 }), function(item){
                     return item.order;
-                }), 'name');
+                });
 
                 return result;
             }
@@ -46,6 +47,12 @@
 
                 return result;
             }
+
+            self.dateOptions = {
+                'closeOnDateSelection': true,
+                formatYear: 'yyyy',
+                startingDay: 1
+            };
 
             self.sortableOptions = {
                 handle: '.drag-handle',
@@ -70,10 +77,6 @@
             self.loadCache = function() {
                 MetricsCacheSrv.all().then(function(metrics){
                     self.metrics = metrics;
-                });
-
-                CustomFieldsCacheSrv.all().then(function(fields){
-                    self.fields = fields;
                 });
             };
             self.loadCache();
@@ -208,16 +211,20 @@
                 //delete self.template.metrics[metricName];
             };
 
-            self.addCustomField = function(field) {
-                if(self.templateCustomFields.indexOf(field.reference) === -1) {
-                    self.templateCustomFields.push(field.reference);
-                } else {
-                    NotificationSrv.log('The custom field [' + field.name + '] has already been added to the template', 'warning');
-                }
+            self.addCustomFieldRow = function() {
+                self.templateCustomFields.push({
+                    name: null,
+                    order: self.templateCustomFields.length + 1,
+                    value: null
+                });
             };
 
-            self.removeCustomField = function(fieldName) {
-                self.templateCustomFields = _.without(self.templateCustomFields, fieldName);
+            self.removeCustomField = function(field) {
+                self.templateCustomFields = _.without(self.templateCustomFields, field);
+            };
+
+            self.updateCustomField = function(field, value) {
+                field.value = value;
             };
 
             self.deleteTemplate = function() {
@@ -239,12 +246,13 @@
 
                 // Set custom fields
                 self.template.customFields = {};
-                _.each(self.templateCustomFields, function(value, index) {
-                    var fieldDef = self.fields[value];
+                _.each(self.templateCustomFields, function(cf, index) {
+                    var fieldDef = self.fields[cf.name];
+                    var value = (fieldDef.type === 'date' && cf.value) ? moment(cf.value).valueOf() : (cf.value || null)
 
-                    self.template.customFields[value] = {};
-                    self.template.customFields[value][fieldDef.type] = null;
-                    self.template.customFields[value].order = index + 1;
+                    self.template.customFields[cf.name] = {};
+                    self.template.customFields[cf.name][fieldDef.type] = value;
+                    self.template.customFields[cf.name].order = index + 1;
                 });
 
                 self.template.metrics = {};

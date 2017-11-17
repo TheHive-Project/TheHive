@@ -169,6 +169,9 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 resolve: {
                     templates: function(CaseTemplateSrv) {
                         return CaseTemplateSrv.list();
+                    },
+                    fields: function(CustomFieldsCacheSrv){
+                        return CustomFieldsCacheSrv.all()
                     }
                 }
             })

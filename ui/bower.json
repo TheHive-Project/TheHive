@@ -25,7 +25,7 @@
     "ng-csv": "~0.3.6",
     "ng-tags-input": "~3.1.1",
     "roboto-fontface": "~0.5.0",
-    "smalot-bootstrap-datetimepicker": "2.3.10",
+    "smalot-bootstrap-datetimepicker": "2.4.4",
     "underscore": "~1.8.3",
     "cryptojslib": "~3.1.2",
     "angular-ui-notification": "0.3.6",
