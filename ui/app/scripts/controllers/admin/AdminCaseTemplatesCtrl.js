@@ -11,6 +11,7 @@
             self.metrics = [];
             self.fields = [];
             self.templateCustomFields = [];
+            self.templateMetrics = [];
             self.templateIndex = -1;
             self.getUserInfo = UserInfoSrv;
 
@@ -29,6 +30,19 @@
                 }), function(item){
                     return item.order;
                 }), 'name');
+
+                return result;
+            }
+
+            var getTemplateMetrics = function(metrics) {
+                var result = [];
+
+                _.each(metrics, function(value, key) {
+                    result.push({
+                        metric: key,
+                        value: value
+                    });
+                });
 
                 return result;
             }
@@ -92,6 +106,7 @@
                     'updatedBy');
                 self.tags = UtilsSrv.objectify(self.template.tags, 'text');
                 self.templateCustomFields = getTemplateCustomFields(template.customFields);
+                self.templateMetrics = getTemplateMetrics(template.metrics);
 
                 self.templateIndex = index || _.indexOf(self.templates, _.findWhere(self.templates, {id: template.id}));
             }
@@ -120,6 +135,7 @@
                 self.tags = [];
                 self.templateIndex = -1;
                 self.templateCustomFields = [];
+                self.templateMetrics = [];
             };
 
             self.reorderTasks = function() {
@@ -163,7 +179,6 @@
                 });
 
                 modal.result.then(function(data) {
-                    debugger;
                     if(action === 'Add') {
                         if(self.template.tasks) {
                             self.template.tasks.push(data);
@@ -181,8 +196,16 @@
                 self.template.metrics[metric.name] = null;
             };
 
-            self.removeMetric = function(metricName) {
-                delete self.template.metrics[metricName];
+            self.addMetricRow = function() {
+                self.templateMetrics.push({
+                    metric: null,
+                    value: null
+                });
+            };
+
+            self.removeMetric = function(metric) {
+                self.templateMetrics = _.without(self.templateMetrics, metric);
+                //delete self.template.metrics[metricName];
             };
 
             self.addCustomField = function(field) {
@@ -224,6 +247,13 @@
                     self.template.customFields[value].order = index + 1;
                 });
 
+                self.template.metrics = {};
+                _.each(self.templateMetrics, function(value, index) {
+                    var fieldDef = self.fields[value];
+
+                    self.template.metrics[value.metric] = value.value;
+                });
+
                 if (_.isEmpty(self.template.id)) {
                     self.createTemplate(self.template);
                 } else {
@@ -234,7 +264,6 @@
             self.createTemplate = function(template) {
                 return CaseTemplateSrv.create(template)
                     .then(function(response) {
-                        debugger;
                         self.getList(response.data.id);
 
                         $scope.$emit('templates:refresh');
@@ -294,6 +323,26 @@
                     }
                 });
             }
+
+            // this.duplicateTemplate = function(template) {
+            //     var copy = _.pick(template, 'name', 'title', 'description', 'tlp', 'severity', 'tags', 'status', 'titlePrefix', 'tasks', 'metrics', 'customFields');
+            //     copy.name = 'Copy_of_' + copy.name;
+            //
+            //     this.openDashboardModal(copy)
+            //         .result.then(function(dashboard) {
+            //             return DashboardSrv.create(dashboard);
+            //         })
+            //         .then(function(response) {
+            //             $state.go('app.dashboards-view', {id: response.data.id});
+            //
+            //             NotificationSrv.log('The dashboard has been successfully created', 'success');
+            //         })
+            //         .catch(function(err) {
+            //             if (err && err.status) {
+            //                 NotificationSrv.error('DashboardsCtrl', err.data, err.status);
+            //             }
+            //         });
+            // };
 
         })
         .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
