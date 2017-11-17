@@ -1,12 +1,14 @@
 <div class="case-template-section">
     <h4 class="vpad10 text-primary">
         Metrics ({{$vm.keys($vm.template.metrics).length}})
+        <a class="pull-right" href ng-click="$vm.addMetricRow()">
+            <i class="fa fa-plus"></i>
+        </a>
     </h4>
 
     <div class="empty-message" ng-if="$vm.templateMetrics.length === 0">
         No metrics have been added. <a href class="mr-xxxs" ng-click="$vm.addMetricRow()">Add a metric</a>
     </div>
-
 
     <div ng-if="$vm.templateMetrics.length !== 0">
         <div class="metric-item" ng-repeat="m in $vm.templateMetrics">
@@ -24,11 +26,6 @@
                     <i class="pl-xxss fa fa-question-circle" aria-hidden="true"></i> <small>{{$vm.metrics[m.metric].description || 'No description'}}</small>
                 </div>
             </div>
-        </div>
-        <div ng-if="$vm.templateMetrics.length > 0" class="mv-xs">
-            <a href ng-click="$vm.addMetricRow()">
-                <i class="fa fa-plus"></i> Add a metric
-            </a>
         </div>
     </div>
 </div>

@@ -13,7 +13,7 @@
                 <h4 class="mt-m text-primary">Current templates</h4>
                 <ul class="nav nav-pills nav-stacked" ng-show="$vm.templates">
                     <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
-                        <a href ng-click="$vm.loadTemplate(template)">{{template.name}}</a>
+                        <a href ng-click="$vm.loadTemplate(template)">{{template.name}}</a>                        
                     </li>
                 </ul>
                 <div ng-hide="$vm.templates.length != 0">
@@ -24,7 +24,9 @@
 
                 <form class="form-horizontal" name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
                     <div class="row">
-                        <div class="col-md-6" ng-include="'views/partials/admin/case-template/details.html'"></div>
+                        <div class="col-md-6">
+                            <div class="mt-xs" ng-include="'views/partials/admin/case-template/details.html'"></div>
+                        </div>
                         <div class="col-md-6">
                             <div class="mt-xs" ng-include="'views/partials/admin/case-template/tasks.html'"></div>
                             <div class="mt-xs" ng-include="'views/partials/admin/case-template/metrics.html'"></div>

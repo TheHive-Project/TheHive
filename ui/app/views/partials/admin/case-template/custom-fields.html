@@ -1,6 +1,9 @@
 <div class="case-template-section">
     <h4 class="vpad10 text-primary">
         Custom fields ({{$vm.keys($vm.template.customFields).length}})
+        <a class="pull-right" href ng-click="$vm.addCustomFieldRow()">
+            <i class="fa fa-plus"></i>
+        </a>
     </h4>
 
     <div class="empty-message" ng-if="$vm.templateCustomFields.length === 0">
@@ -36,11 +39,6 @@
                     <i class="pl-xxss fa fa-question-circle" aria-hidden="true"></i> <small>{{$vm.fields[cf.name].description || 'No description'}}</small>
                 </div>
             </div>
-        </div>
-        <div ng-if="$vm.templateCustomFields.length > 0" class="mv-xs">
-            <a href ng-click="$vm.addCustomFieldRow()">
-                <i class="fa fa-plus"></i> Add a custom field
-            </a>
         </div>
     </div>
 </div>
