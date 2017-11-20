@@ -244,7 +244,8 @@ class Migration(
           val metricsName = (caseTemplate \ "metricNames").asOpt[Seq[String]].getOrElse(Nil)
           val metrics = JsObject(metricsName.map(_ -> JsNull))
           caseTemplate - "metricNames" + ("metrics" -> metrics)
-        })
+        },
+        addAttribute("case_artifact", "sighted" -> JsFalse))
   }
 
   private def convertDate(json: JsValue): JsValue = {
