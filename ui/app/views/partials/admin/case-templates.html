@@ -5,253 +5,46 @@
     <div class="box-body">
         <div class="row">
             <div class="col-md-2">
-                <button class="btn btn-primary btn-block" ng-click="newTemplate()">
-                    <i class="fa fa-plus"></i>&nbsp;New template</button>
-                <div class="vpad10"></div>
+                <button class="btn btn-primary btn-block" ng-click="$vm.newTemplate()">
+                    <i class="mr-xxs fa fa-plus"></i>New template</button>
+                <button class="btn btn-default btn-block" ng-click="$vm.importTemplate()">
+                    <i class="mr-xxs fa fa-upload"></i>Import template</button>
 
-                <h4 class="vpad10 text-primary">Current templates</h4>
-                <ul class="nav nav-pills nav-stacked" ng-show="templates">
-                    <li ng-class="{'active': $index === templateIndex}" ng-repeat="template in templates">
-                        <a href ng-click="loadTemplate(template.id, $index)">{{template.name}}</a>
+                <h4 class="mt-m text-primary">Current templates</h4>
+                <ul class="nav nav-pills nav-stacked" ng-show="$vm.templates">
+                    <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
+                        <a href ng-click="$vm.loadTemplate(template)">{{template.name}}</a>                        
                     </li>
                 </ul>
-                <div ng-hide="templates.length != 0">
+                <div ng-hide="$vm.templates.length != 0">
                     There are no templates
                 </div>
             </div>
             <div class="col-md-10 left-border">
 
-                <form class="form-horizontal" name="templateEditForm" ng-submit="saveTemplate()" novalidate>
-                    <h4 class="vpad10 text-primary">Case basic information</h4>
-
+                <form class="form-horizontal" name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-md-3 control-label">Template name
-                                    <i class="fa fa-asterisk text-danger"></i>
-                                </label>
-                                <div class="col-md-9">
-                                    <input autocomplete="off" class="form-control" name="name" ng-model="template.name" placeholder="Template name" required type="text" />
-                                    <p class="help-block small">This name should be unique</p>
-                                </div>
-                            </div>
+                            <div class="mt-xs" ng-include="'views/partials/admin/case-template/details.html'"></div>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-md-3 control-label">Title prefix</label>
-                                <div class="col-md-9">
-                                    <input class="form-control" name="titlePrefix" ng-model="template.titlePrefix" placeholder="Case title prefix" type="text" />
-                                    <p class="help-block small">This is used to prefix the case name</p>
-                                </div>
-                            </div>
+                            <div class="mt-xs" ng-include="'views/partials/admin/case-template/tasks.html'"></div>
+                            <div class="mt-xs" ng-include="'views/partials/admin/case-template/metrics.html'"></div>
+                            <div class="mt-xs" ng-include="'views/partials/admin/case-template/custom-fields.html'"></div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-md-3 control-label">Severity
-                                    <i class="fa fa10asterisk text-danger"></i>
-                                </label>
-                                <div class="col-md-9">
-                                    <a class="clearfix" href ng-click="activeSev = true" ng-init="activeSev = false">
-                                        <!-- <severity value="caze.severity" active="activeSev" on-update="updateField('severity', newValue)"></severity> -->
-                                        <severity active="activeSev" style="float:left; font-size:16px" value="template.severity"></severity>
-                                    </a>
-                                    <p class="help-block small vpad5">This will be the default case severity</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-md-3 control-label">TLP
-                                    <i class="fa fa10asterisk text-danger"></i>
-                                </label>
-                                <div class="col-md-9">
-                                    <a class="clearfix" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
-                                        <tlp format="activeTlp" on-update="updateTlp(newValue)" style="float:left; font-size:16px" value="template.tlp"></tlp>
-                                    </a>
-                                    <p class="help-block small vpad5">This will be the default case TLP</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-md-3 control-label">Tags</label>
-                                <div class="col-md-9">
-                                    <tags-input min-length="2" name="tags" ng-model="tags" placeholder="Tags" replace-spaces-with-dashes="false"></tags-input>
-                                    <p class="help-block small vpad5">These will be the default case tags</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group" ng-class="{ 'has-error' : templateEditForm.description.$invalid && !templateEditForm.description.$pristine }">
-                                <label class="col-md-3 control-label">Description
-                                    <i class="fa fa-asterisk text-danger"></i>
-                                </label>
-                                <div class="col-md-9">
-                                    <textarea class="form-control" name="description" ng-model="template.description" placeholder="Case description" required rows="3"></textarea>
-                                    <p class="help-block" ng-show="templateEditForm.description.$invalid && !templateEditForm.description.$pristine">The case description is required.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h4 class="vpad10 text-primary">
-                                Tasks ({{template.tasks.length || 0}})
-                                <a class="pull-right" href ng-click="addTask()">
-                                    <i class="fa fa-plus"></i>
-                                    Add task</a>
-                            </h4>
-                            <div ng-if="template.tasks.length !== 0" ui-sortable="sortableOptions" ng-model="template.tasks">
-                                <div class="panel panel-default" ng-init="isCollapsed=true" ng-repeat="t in template.tasks">
-                                    <div class="panel-heading">
-                                        <span class="drag-handle text-primary clickable mr-xxs">
-                                            <i class="fa fa-bars"></i>
-                                        </span>
-                                        <span>
-                                            <a href ng-click="isCollapsed=!isCollapsed">
-                                                <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
-                                            </a>
-                                        </span>
-                                        <span class=" hpad5">{{t.title}}</span>
-
-                                        <span class="pull-right">
-                                            <a class="text-default" href ng-click="editTask(t)">
-                                                <i class="fa fa-pencil"></i>&nbsp;Edit</a>
-                                            <span class="hpad5"></span>
-                                        <a class="text-danger" href ng-click="removeTask(t)">
-                                            <i class="fa fa-times"></i>&nbsp;Delete</a>
-                                        </span>
-                                    </div>
-                                    <div class="panel-body" ng-hide="isCollapsed">
-                                        <p btf-markdown="t.description" ng-show="t.description != ''"></p>
-                                        <p class="text-warning" ng-show="!t.description || t.description===''">
-                                            <em>No description specified</em>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-danger" ng-if="!template.tasks || template.tasks.length === 0">
-                                <table class="table table-striped">
-                                    <tr>
-                                        <td>No tasks have been specified</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h4 class="vpad10 text-primary">
-                                Metrics ({{template.metricNames.length || 0}})
-
-                                <span uib-dropdown class="pull-right">
-                                    <a href class="dropdown-toggle" uib-dropdown-toggle>
-                                        <i class="fa fa-plus"></i>
-                                        Add metric
-                                        <span class="caret"></span>
-                                    </a>
-                                    <ul class="dropdown-menu" uib-dropdown-menu>
-                                        <li ng-repeat="(key, value) in metrics">
-                                            <a ng-click="addMetric(value)">{{value.title}}</a>
-                                        </li>
-                                    </ul>
-                                </span>
-                            </h4>
-
-                            <div ng-if="template.metricNames.length !== 0" ng-init="isCollapsed=true">
-                                <div class="panel panel-default" ng-repeat="m in template.metricNames" ng-init="description=metrics[m].description">
-                                    <div class="panel-heading">
-                                        <a href ng-click="isCollapsed=!isCollapsed">
-                                            <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
-                                        </a>
-                                        <span class="hpad5">{{metrics[m].title}}</span>
-                                        <span class="pull-right">
-                                            <a class="text-danger" href ng-click="removeMetric(m)">
-                                                <i class="fa fa-times"></i>&nbsp;Delete</a>
-                                        </span>
-                                    </div>
-                                    <div class="panel-body" ng-hide="isCollapsed">
-                                        <p ng-show="description != ''">{{description}}</p>
-                                        <p class="text-warning" ng-show="!description || description===''">
-                                            <em>No description specified</em>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-danger" ng-if="!template.metricNames ||template.metricNames.length === 0">
-                                <table class="table table-striped">
-                                    <tr>
-                                        <td>No metrics have been added</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h4 class="vpad10 text-primary">
-                                Custom fields ({{keys(template.customFields).length}})
-                                <span uib-dropdown class="pull-right">
-                                    <a href class="dropdown-toggle" uib-dropdown-toggle>
-                                        <i class="fa fa-plus"></i>
-                                        Add custom field
-                                        <span class="caret"></span>
-                                    </a>
-                                    <ul class="dropdown-menu" uib-dropdown-menu>
-                                        <li ng-repeat="(key, value) in fields">
-                                            <a ng-click="addCustomField(value)">{{value.name}}</a>
-                                        </li>
-                                    </ul>
-                                </span>
-                            </h4>
-
-                            <div ng-if="templateCustomFields.length !== 0" ng-init="isCollapsed=true" ui-sortable="sortableFields" ng-model="templateCustomFields">
-                                <div class="panel panel-default" ng-repeat="m in templateCustomFields" ng-init="description=fields[m].description">
-                                    <div class="panel-heading">
-                                        <span class="drag-handle text-primary clickable mr-xxs">
-                                            <i class="fa fa-bars"></i>
-                                        </span>
-                                        <a href ng-click="isCollapsed=!isCollapsed">
-                                            <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
-                                        </a>
-                                        <span class="hpad5">{{fields[m].name}}</span>
-                                        <span class="pull-right">
-                                            <a class="text-danger" href ng-click="removeCustomField(m)">
-                                                <i class="fa fa-times"></i>&nbsp;Delete</a>
-                                        </span>
-                                    </div>
-                                    <div class="panel-body" ng-hide="isCollapsed">
-                                        <p ng-show="description != ''">{{description}}</p>
-                                        <p class="text-warning" ng-show="!description || description===''">
-                                            <em>No description specified</em>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-danger" ng-if="templateCustomFields.length === 0">
-                                <table class="table table-striped">
-                                    <tr>
-                                        <td>No custom fields have been added</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-
                     </div>
 
                     <div class="vpad10"></div>
                     <div class="vpad10"></div>
 
                     <div class="text-left">
-                        <button class="btn btn-danger" ng-click="deleteTemplate()" ng-disabled="!template.id" type="button">Delete case template</button>
+                        <button class="btn btn-danger" ng-click="$vm.deleteTemplate()" ng-disabled="!$vm.template.id" type="button">Delete case template</button>
                         <span class="hpad10">
                             <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
                         <button class="btn btn-primary pull-right" ng-disabled="templateEditForm.$invalid" type="submit">
                             <i class="fa fa-plus"></i>&nbsp;Save case template</button>
+                        <button class="btn btn-default pull-right mr-xxxs" ng-disabled="templateEditForm.$invalid" type="button" ng-click="$vm.exportTemplate()">
+                            <i class="fa fa-download"></i>&nbsp;Export case template</button>
                     </div>
                 </form>
             </div>
