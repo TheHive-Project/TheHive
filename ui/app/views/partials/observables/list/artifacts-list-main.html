@@ -41,6 +41,7 @@
                 </th>
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
+                <th style="width: 15px"></th>
                 <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
                 <th>Value/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
                 <th style="width: 120px">Date Added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
@@ -54,6 +55,9 @@
                 </td>
                 <td>
                     <span ng-click="addFilterValue('ioc', artifact.ioc)" ng-if="artifact.ioc" class="clickable fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                </td>
+                <td>
+                    <span ng-click="addFilterValue('sighted', artifact.sighted)" ng-if="artifact.sighted" class="clickable fa fa-thumbs-up" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
 					<span uib-tooltip="{{artifact.stats.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="artifact.stats.seen > 0" class="glyphicon glyphicon-eye-open"></span>

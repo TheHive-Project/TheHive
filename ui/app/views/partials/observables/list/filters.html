@@ -60,12 +60,18 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="col-sm-4 control-label">Is IOC</label>
+                        <label class="col-sm-4 control-label">Flags</label>
                         <div class="col-sm-8">
-                            <div class="btn-group">
-                                <label uib-btn-radio="true" class="btn btn-default btn-sm" name="ioc" ng-model="uiSrv.activeFilters.ioc.value">Yes</label>
-                                <label uib-btn-radio="false" class="btn btn-default btn-sm" name="ioc" ng-model="uiSrv.activeFilters.ioc.value">No</label>
+                            <div class="mr-xxs mb-xxxs btn-group">
+                                <label uib-btn-radio="true" class="btn btn-default btn-sm" name="ioc" ng-model="uiSrv.activeFilters.ioc.value">IOC</label>
+                                <label uib-btn-radio="false" class="btn btn-default btn-sm" name="ioc" ng-model="uiSrv.activeFilters.ioc.value">Not IOC</label>
                                 <label uib-btn-radio="null" class="btn btn-default btn-sm" name="ioc" ng-model="uiSrv.activeFilters.ioc.value">Any</label>
+                            </div>
+
+                            <div class="btn-group">
+                                <label uib-btn-radio="true" class="btn btn-default btn-sm" name="sighted" ng-model="uiSrv.activeFilters.sighted.value">Sighted</label>
+                                <label uib-btn-radio="false" class="btn btn-default btn-sm" name="sighted" ng-model="uiSrv.activeFilters.sighted.value">Not sighted</label>
+                                <label uib-btn-radio="null" class="btn btn-default btn-sm" name="sighted" ng-model="uiSrv.activeFilters.sighted.value">Any</label>
                             </div>
                         </div>
                     </div>

@@ -31,13 +31,17 @@
         <dl class="dl-horizontal clear">
 			<dt class="pull-left">Is IOC</dt>
 			<dd>
-				<span ng-init="iocActive = false" ng-mouseenter="iocActive = true" ng-mouseleave="iocActive = false" ng-click="updateField('ioc', !artifact.ioc)">
+				<span class="clickable" ng-click="updateField('ioc', !artifact.ioc)">
                     <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
-                    <small ng-show="iocActive">
-                        <a href class="clickable" uib-tooltip="edit">
-                            <i class="glyphicon glyphicon-pencil"></i>
-                        </a>
-                    </small>
+				</span>
+			</dd>
+		</dl>
+
+        <dl class="dl-horizontal clear">
+			<dt class="pull-left">Has been sighted</dt>
+			<dd>
+				<span class="clickable" ng-click="updateField('sighted', !artifact.sighted)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-thumbs-up', 'false': 'fa-thumbs-o-up'}[artifact.sighted]"></i>                    
 				</span>
 			</dd>
 		</dl>

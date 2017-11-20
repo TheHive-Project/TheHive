@@ -3,7 +3,7 @@
     <div class="col-md-9">
         <input type="hidden" name="dataType" ng-model="params.dataType" required>
         <div class="btn-group" uib-dropdown>
-            <button type="button" class="btn" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
+            <button type="button" class="btn btn-default" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li ng-repeat="type in types">
@@ -39,6 +39,7 @@
             <span ng-show="params.bulk" class="pull-right"><ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize></span>
         </div>
         <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
+        <div><input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted</div>
     </div>
 </div>
 

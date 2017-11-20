@@ -34,9 +34,9 @@ POST     /api/case/artifact/_stats                controllers.ArtifactCtrl.stats
 POST     /api/case/:caseId/artifact               controllers.ArtifactCtrl.create(caseId)
 GET      /api/case/artifact/:artifactId           controllers.ArtifactCtrl.get(artifactId)
 DELETE   /api/case/artifact/:artifactId           controllers.ArtifactCtrl.delete(artifactId)
+PATCH    /api/case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
 PATCH    /api/case/artifact/:artifactId           controllers.ArtifactCtrl.update(artifactId)
 GET      /api/case/artifact/:artifactId/similar   controllers.ArtifactCtrl.findSimilar(artifactId)
-PATCH    /api/case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
 
 POST     /api/case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
 POST     /api/case/task/_search                   controllers.TaskCtrl.find()
