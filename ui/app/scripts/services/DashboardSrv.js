@@ -76,6 +76,14 @@
             counter: 'fa-calculator'
         };
 
+        this.sortOptions = [{
+            name: '+_count',
+            label: 'Ascendant (Smaller first)'
+        }, {
+            name: '-_count',
+            label: 'Descendant (Bigger first)'
+        }];
+
         this.colorsPattern = [
             '#0675a4', '#f46c54', '#043444' ,'#305868', '#fbcd35', '#3cbcb4', '#a42414', '#25c4f1', '#ac7b1d', '#ecec24', '#8cc47c', '#a1a4ac', '#ad8d8d'
         ];

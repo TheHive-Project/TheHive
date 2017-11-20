@@ -51,9 +51,8 @@
                         //objectType: scope.options.entity,
                         objectType: scope.entity.path,
                         field: scope.options.field,
-                        //sort: scope.options.sort || '-_count',
-                        sort: '+_count',
-                        limit: scope.options.limit
+                        sort: scope.options.sort ? [scope.options.sort] : '-_count',
+                        limit: scope.options.limit || 10
                     };
 
                     scope.options.names = scope.prepareSeriesNames();

@@ -23,6 +23,7 @@
                 scope.timeIntervals = DashboardSrv.timeIntervals;
                 scope.aggregations = DashboardSrv.aggregations;
                 scope.serieTypes = DashboardSrv.serieTypes;
+                scope.sortOptions = DashboardSrv.sortOptions;
 
                 scope.layout = {
                     activeTab: 0
