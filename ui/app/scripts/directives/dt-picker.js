@@ -8,9 +8,9 @@
                 'placeholder': '@?'
             },
             templateUrl: 'views/directives/dt-picker.html',
-            compile: function(element) {
-                var dtEl = $(element).find('.input-datetime');
-                dtEl.datetimepicker({
+            link: function(scope, elem) {
+                var dtEl = $(elem).find('.input-datetime');
+                var dtPicker = dtEl.datetimepicker({
                     format: 'dd-mm-yyyy',
                     weekStart: 1,
                     startView: 2,
@@ -18,33 +18,35 @@
                     autoclose: true
                 });
 
-                return function(scope, elem) {
-                    if(scope.date){
+                if(scope.date){
+                    scope.dateValue = moment(scope.date).format('DD-MM-YYYY');
+                }
+
+                scope.$watch('date', function(date) {
+                    if(date) {
                         scope.dateValue = moment(scope.date).format('DD-MM-YYYY');
-                    }
-
-                    scope.$watch('date', function(date) {
-                        if(date) {
-                            scope.dateValue = moment(scope.date).format('DD-MM-YYYY');
-                        } else {
-                            scope.dateValue = null;
-                        }
-                    });
-
-                    scope.$watch('dateValue', function(dateValue) {
-                        var m = moment(dateValue, 'DD-MM-YYYY');
-                        if (m.isValid()) {
-                            scope.date = m.toDate();
-                        } else {
-                            scope.date = null;
-                            $(elem).find('input').val(null);
-                        }
-                    });
-
-                    scope.clear = function() {
+                    } else {
                         scope.dateValue = null;
-                    };
+                    }
+                });
+
+                scope.$watch('dateValue', function(dateValue) {
+                    var m = moment(dateValue, 'DD-MM-YYYY');
+                    if (m.isValid()) {
+                        scope.date = m.toDate();
+                    } else {
+                        scope.date = null;
+                        $(elem).find('input').val(null);
+                    }
+                });
+
+                scope.clear = function() {
+                    scope.dateValue = null;
                 };
+
+                elem.on('$destroy', function() {
+                    dtEl.datetimepicker('remove');
+                });
             }
         };
     });
