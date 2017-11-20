@@ -33,11 +33,11 @@ class Migration(
     implicit val ec: ExecutionContext,
     implicit val materializer: Materializer) extends MigrationOperations {
   @Inject() def this(
-    configuration: Configuration,
-    dblists: DBLists,
-    eventSrv: EventSrv,
-    ec: ExecutionContext,
-    materializer: Materializer) = {
+      configuration: Configuration,
+      dblists: DBLists,
+      eventSrv: EventSrv,
+      ec: ExecutionContext,
+      materializer: Materializer) = {
     this(
       configuration.getOptional[String]("misp.caseTemplate"),
       configuration.get[String]("datastore.hash.main"),

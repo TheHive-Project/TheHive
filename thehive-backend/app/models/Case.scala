@@ -79,7 +79,7 @@ class CaseModel @Inject() (
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
         updateAttrs +
           ("endDate" → Json.toJson(new Date)) +
-          ("flag" → JsBoolean(false))
+          ("flag" → JsFalse)
       case Some(CaseStatus.Open) ⇒
         updateAttrs + ("endDate" → JsArray(Nil))
       case _ ⇒

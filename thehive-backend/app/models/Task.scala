@@ -6,7 +6,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.Future
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{ JsBoolean, JsObject }
+import play.api.libs.json.{ JsFalse, JsObject }
 
 import models.JsonFormat.taskStatusFormat
 import services.AuditedModel
@@ -43,7 +43,7 @@ class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel
       case Some(TaskStatus.Completed) ⇒
         updateAttrs
           .setIfAbsent("endDate", new Date) +
-          ("flag" → JsBoolean(false))
+          ("flag" → JsFalse)
       case _ ⇒ updateAttrs
     }
   }
