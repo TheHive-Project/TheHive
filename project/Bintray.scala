@@ -1,6 +1,5 @@
 import java.io.File
 
-import PublishToBinTray.publishRpm
 import bintray.BintrayCredentials
 import bintray.BintrayKeys.{ bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository }
 import bintry.Client
@@ -16,15 +15,19 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object PublishToBinTray extends Plugin {
-  val publishRelease = taskKey[Unit]("Publish binary in Bintray")
-  val publishLatest = taskKey[Unit]("Publish latest binary in Bintray")
-  val publishDebian = taskKey[Unit]("publish debian package in Bintray")
-  val publishRpm = taskKey[Unit]("publish rpm package in Bintray")
-  val rpmReleaseFile = taskKey[File]("The rpm release package file")
-  val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
+object PublishToBinTray extends AutoPlugin {
+    object autoImport {
+      val publishRelease: TaskKey[Unit] = taskKey[Unit]("Publish binary in bintray")
+      val publishLatest: TaskKey[Unit] = taskKey[Unit]("Publish latest binary in bintray")
+      val publishDebian: TaskKey[Unit] = taskKey[Unit]("publish debian package in Bintray")
+      val publishRpm: TaskKey[Unit] = taskKey[Unit]("publish rpm package in Bintray")
+      val rpmReleaseFile = taskKey[File]("The rpm release package file")
+      val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
 
-  override def settings = Seq(
+    }
+    import autoImport._
+
+  override lazy val projectSettings = Seq(
     publishRelease in ThisBuild := {
       val file = (packageBin in Universal).value
       btPublish(file.getName,
@@ -36,12 +39,14 @@ object PublishToBinTray extends Plugin {
         version.value,
         sLog.value)
     },
-    publishLatest in ThisBuild := {
+    publishLatest in ThisBuild := Def.taskDyn {
       val file = (packageBin in Universal).value
       val latestName = file.getName.replace(version.value, "latest")
       if (latestName == file.getName)
-        sLog.value.warn(s"Latest package name can't be built using package name [$latestName], publish aborted")
-      else {
+        Def.task {
+          sLog.value.warn(s"Latest package name can't be built using package name [$latestName], publish aborted")
+        }
+      else Def.task {
         removeVersion(bintrayEnsureCredentials.value,
           bintrayOrganization.value,
           bintrayRepository.value,
@@ -56,7 +61,8 @@ object PublishToBinTray extends Plugin {
           "latest",
           sLog.value)
       }
-    },
+    }
+      .value,
     publishDebian in ThisBuild := {
       val file = (debianSign in Debian).value
       btPublish(file.getName,

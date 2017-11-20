@@ -21,13 +21,12 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
+  .enablePlugins(PublishToBinTray)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .settings(aggregate in Debian := false)
   .settings(aggregate in Rpm := false)
   .settings(aggregate in Docker := false)
-  .settings(PublishToBinTray.settings: _*)
-
 
 // Redirect logs from ElasticSearch (which uses log4j2) to slf4j
 libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.1"
@@ -140,11 +139,13 @@ linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
 rpmReleaseFile := {
+  import scala.sys.process._
   val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
   s"rpm --addsign $rpmFile".!!
   rpmFile
 }
 packageBin in Rpm := {
+  import scala.sys.process._
   val rpmFile = (packageBin in Rpm).value
   s"rpm --addsign $rpmFile".!!
   rpmFile
@@ -186,8 +187,8 @@ bintrayOrganization := Some("cert-bdf")
 bintrayRepository := "thehive"
 publish := {
   (publish in Docker).value
-  PublishToBinTray.publishRelease.value
-  PublishToBinTray.publishLatest.value
-  PublishToBinTray.publishRpm.value
-  PublishToBinTray.publishDebian.value
+  publishRelease.value
+  publishLatest.value
+  publishRpm.value
+  publishDebian.value
 }
