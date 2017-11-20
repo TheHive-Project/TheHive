@@ -62,7 +62,7 @@ class Migration(
     logger.info("Updating observable data type list")
     val dataTypes = dblists.apply("list_artifactDataType")
     Future.sequence(Seq("filename", "fqdn", "url", "user-agent", "domain", "ip", "mail_subject", "hash", "mail",
-      "registry", "uri_path", "regexp", "other", "file")
+      "registry", "uri_path", "regexp", "other", "file", "autonomous-system")
       .map(dt ⇒ dataTypes.addItem(dt).recover { case _ ⇒ () }))
       .map(_ ⇒ ())
       .recover { case _ ⇒ () }
