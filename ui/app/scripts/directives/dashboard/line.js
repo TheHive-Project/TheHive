@@ -160,10 +160,10 @@
                 scope.getCsv = function() {
                     var dates = scope.data._date;
                     var keys = _.keys(scope.data);
+                    var headers = _.extend({_date: 'Date'}, scope.names);
 
-                    // TODO update headers
                     var csv = [{data: _.map(keys, function(key){
-                        return scope.names[key] || key;
+                        return headers[key] || key;
                     }).join(';')}];
 
                     var row = [];

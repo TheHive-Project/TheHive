@@ -119,7 +119,11 @@
                 scope.getCsv = function() {
                     var dates = scope.data._date;
                     var keys = _.keys(scope.data);
-                    var csv = [{data: keys.join(';')}];
+                    var headers = _.extend({_date: 'Date'}, scope.names);
+
+                    var csv = [{data: _.map(keys, function(key){
+                        return headers[key] || key;
+                    }).join(';')}];
 
                     var row = [];
                     for(var i=0; i<dates.length; i++) {

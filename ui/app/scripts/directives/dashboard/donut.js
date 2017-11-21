@@ -28,7 +28,7 @@
 
                         _.each(field.values, function(val, index) {
                             if(!names[val]) {
-                                names[val] = field.labels[index] || null;
+                                names[val] = field.labels[index] || val;
                             }
                         });
                     }
