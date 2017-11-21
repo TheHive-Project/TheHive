@@ -84,11 +84,11 @@ body,
     margin: 0 5px;
 }
 
-.chart-container-dropzone > *:first-child {
+.dashboard-view .chart-container-dropzone > *:first-child {
     margin-left: 0;
 }
 
-.chart-container-dropzone > *:last-child{
+.dashboard-view .chart-container-dropzone > *:last-child{
     margin-right: 0px;
 }
 

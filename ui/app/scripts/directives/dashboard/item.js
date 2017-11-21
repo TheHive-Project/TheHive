@@ -15,6 +15,7 @@
                 resizeOn: '@',
                 mode: '@',
                 showEdit: '=',
+                showRemove: '=',
                 onRemove: '&'
             },
             templateUrl: 'views/directives/dashboard/item.html',

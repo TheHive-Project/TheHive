@@ -4,11 +4,11 @@
             <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>{{component.options.title}}
         </h3>
 
-        <div class="box-tools pull-right" ng-if="showEdit">
-            <a href class="btn btn-box-tool" ng-click="editItem()">
+        <div class="box-tools pull-right">
+            <a href class="btn btn-box-tool" ng-click="editItem()" ng-if="showEdit">
                 <i class="fa fa-pencil"></i> Edit
             </a>
-            <a href class="btn btn-box-tool" ng-click="onRemove({rowIndex: rowIndex, colIndex: colIndex})">
+            <a href class="btn btn-box-tool" ng-click="onRemove({rowIndex: rowIndex, colIndex: colIndex})" ng-if="showRemove">
                 <i class="fa fa-times"></i> Remove
             </a>
 
