@@ -56,22 +56,44 @@
                         var labels = _.keys(response.data).map(function(d) {
                             return moment(d * 1).format('YYYY-MM-DD');
                         });
-                        var len = labels.length;
+                        var len = labels.length,
+                            data = {_date: (new Array(len)).fill(0)},
+                            rawData = {};
 
-                        var columns = [];
-                        var values = _.pluck(_.values(response.data), scope.options.field);
+                        _.each(response.data, function(value, key) {
+                            rawData[key] = value[scope.options.field]
+                        });
+
+                        _.each(rawData, function(value) {
+                            _.each(_.keys(value), function(key){
+                                data[key] = (new Array(len)).fill(0);
+                            });
+                        });
+
+                        var i = 0;
+                        var orderedDates = _.sortBy(_.keys(rawData));
+
+                        _.each(orderedDates, function(key) {
+                            var value = rawData[key];
+                            data._date[i] = moment(key * 1).format('YYYY-MM-DD');
+
+                            _.each(_.keys(value), function(item) {
+                                data[item][i] = value[item];
+                            });
+
+                            i++;
+                        });
 
                         scope.types = {};
                         scope.names = {};
                         scope.axes = {};
                         scope.colors = {};
+
                         _.each(scope.options.series, function(serie, index) {
                             var key = serie.field,
                                 agg = serie.agg,
                                 dataKey = agg === 'count' ? 'count' : (agg + '_' + key),
                                 columnKey = 'agg_' + (index + 1);
-
-                            columns.push([columnKey].concat(_.pluck(values, columnKey)));
 
                             scope.types[columnKey] = serie.type || 'line';
                             scope.names[columnKey] = serie.label || (agg === 'count' ? 'count' : (agg + ' of ' + key));
@@ -90,16 +112,14 @@
                         });
                         scope.groups = scope.options.stacked === true ? _.values(groups) : {};
 
-                        scope.data = [
-                            ['date'].concat(labels)
-                        ].concat(columns);
+                        scope.data = data;
 
                         console.log('Line data:', scope.data);
 
                         var chart = {
                             data: {
-                                x: 'date',
-                                columns: scope.data,
+                                x: '_date',
+                                json: scope.data,
                                 names: scope.names || {},
                                 type: scope.type || 'bar',
                                 types: scope.types || {},
@@ -138,7 +158,24 @@
                 };
 
                 scope.getCsv = function() {
-                    
+                    var dates = scope.data._date;
+                    var keys = _.keys(scope.data);
+
+                    // TODO update headers
+                    var csv = [{data: _.map(keys, function(key){
+                        return scope.names[key] || key;
+                    }).join(';')}];
+
+                    var row = [];
+                    for(var i=0; i<dates.length; i++) {
+                        row = _.map(keys, function(key) {
+                            return scope.data[key][i];
+                        });
+
+                        csv.push({data: row.join(';')});
+                    }
+
+                    return csv;
                 };
 
                 if (scope.autoload === true) {

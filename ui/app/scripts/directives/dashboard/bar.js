@@ -79,7 +79,6 @@
                         scope.colors = {};
 
                         scope.data = data;
-                        console.log('Bar data:', scope.data);
 
                         var chart = {
                             data: {
