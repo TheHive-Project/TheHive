@@ -3,8 +3,15 @@
         <h3 class="box-title">User management</h3>
     </div>
     <div class="box-body">
+        <div class="row">
+            <div class="col-xs-12">
+                <button class="btn btn-sm btn-primary" type="button" ng-click="showUserDialog()">Add user</button>
 
-        <button class="btn btn-sm btn-primary" type="button" ng-click="showUserDialog()">Add user</button>
+                <div class="btn-group pull-right" role="group">
+                    <page-sizer collection="userlist" sizes="[10, 15, 30, 100]"></page-sizer>
+                </div>
+            </div>
+        </div>
 
         <div class="row mt-xs">
             <div class="col-md-12">
@@ -20,7 +27,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="user in userlist.values | orderBy:'id'">
+                        <tr ng-repeat="user in userlist.values">
                             <td ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]">
                                 <a href ng-click="showUserDialog(user)"><strong>{{user.id}}</strong></a>
                             </td>
