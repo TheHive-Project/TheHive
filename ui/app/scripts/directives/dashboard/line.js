@@ -13,7 +13,7 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error" on-save-csv="getCsv()"></c3>',
             link: function(scope) {
                 scope.error = false;
                 scope.chart = {};
@@ -90,12 +90,16 @@
                         });
                         scope.groups = scope.options.stacked === true ? _.values(groups) : {};
 
+                        scope.data = [
+                            ['date'].concat(labels)
+                        ].concat(columns);
+
+                        console.log('Line data:', scope.data);
+
                         var chart = {
                             data: {
                                 x: 'date',
-                                columns: [
-                                    ['date'].concat(labels)
-                                ].concat(columns),
+                                columns: scope.data,
                                 names: scope.names || {},
                                 type: scope.type || 'bar',
                                 types: scope.types || {},
@@ -131,6 +135,10 @@
                         scope.error = true;
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
+                };
+
+                scope.getCsv = function() {
+                    
                 };
 
                 if (scope.autoload === true) {

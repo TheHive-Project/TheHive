@@ -13,7 +13,7 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error" on-save-csv="getCsv()"></c3>',
             link: function(scope) {
                 scope.error = false;
                 scope.chart = {};
@@ -48,7 +48,7 @@
 
                     var statConfig = {
                         query: query,
-                        //objectType: scope.options.entity,
+
                         objectType: scope.entity.path,
                         field: scope.options.field,
                         sort: scope.options.sort ? [scope.options.sort] : '-_count',
@@ -60,35 +60,41 @@
                     StatSrv.getPromise(statConfig).then(
                         function(response) {
                             scope.error = false;
-                            var keys = _.without(_.keys(response.data), 'count');
-                            var columns = keys.map(function(key) {
-                                return [key, response.data[key].count];
+                            var data = {};
+                            var total = response.data.count;
+
+                            delete response.data.count;
+
+                            _.each(response.data, function(val, key) {
+                                data[key] = val.count;
                             });
+
+                            scope.data = data;
 
                             scope.chart = {
                                 data: {
-                                    columns: columns,
+                                    json: scope.data,
                                     type: 'donut',
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
-                                    onclick: function(d) {
-                                        var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
-
-                                        if (scope.options.query && scope.options.query !== '*') {
-                                            criteria.push(scope.options.query);
-                                        }
-
-                                        var searchQuery = {
-                                            _and: criteria
-                                        };
-
-                                        $state.go('app.search', {
-                                            q: Base64.encode(angular.toJson(searchQuery))
-                                        });
-                                    }
+                                    // onclick: function(d) {
+                                    //     var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
+                                    //
+                                    //     if (scope.options.query && scope.options.query !== '*') {
+                                    //         criteria.push(scope.options.query);
+                                    //     }
+                                    //
+                                    //     var searchQuery = {
+                                    //         _and: criteria
+                                    //     };
+                                    //
+                                    //     $state.go('app.search', {
+                                    //         q: Base64.encode(angular.toJson(searchQuery))
+                                    //     });
+                                    // }
                                 },
                                 donut: {
-                                    title: 'Total: ' + response.data.count,
+                                    title: 'Total: ' + total,
                                     label: {
                                         format: function(value) {
                                             return value;
@@ -102,6 +108,14 @@
                             NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                         }
                     );
+                };
+
+                scope.getCsv = function() {
+                    var csv = [];
+                    _.each(scope.data, function(val, key) {
+                        csv.push({data: key  + ';' + val});
+                    });
+                    return csv;
                 };
 
                 if (scope.autoload === true) {

@@ -6,7 +6,8 @@
             scope: {
                 chart: '=',
                 resizeOn: '@',
-                error: '='
+                error: '=',
+                onSaveCsv: '&?'
             },
             templateUrl: 'views/directives/charts/c3.html',
             link: function(scope, element) {

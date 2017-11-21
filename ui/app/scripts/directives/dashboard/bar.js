@@ -13,7 +13,7 @@
                 resizeOn: '@',
                 metadata: '='
             },
-            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error"></c3>',
+            template: '<c3 chart="chart" resize-on="{{resizeOn}}" error="error" on-save-csv="getCsv()"></c3>',
             link: function(scope) {
                 scope.error = false;
                 scope.chart = {};
@@ -62,7 +62,10 @@
                         });
 
                         var i = 0;
-                        _.each(rawData, function(value, key) {
+                        var orderedDates = _.sortBy(_.keys(rawData));
+
+                        _.each(orderedDates, function(key) {
+                            var value = rawData[key];
                             data._date[i] = moment(key * 1).format('YYYY-MM-DD');
 
                             _.each(_.keys(value), function(item) {
@@ -75,10 +78,13 @@
                         scope.names = {};
                         scope.colors = {};
 
+                        scope.data = data;
+                        console.log('Bar data:', scope.data);
+
                         var chart = {
                             data: {
                                 x: '_date',
-                                json: data,
+                                json: scope.data,
                                 type: 'bar',
                                 //names: scope.names || {},
                                 //colors: scope.colors || {},
@@ -110,6 +116,23 @@
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
                 };
+
+                scope.getCsv = function() {
+                    var dates = scope.data._date;
+                    var keys = _.keys(scope.data);
+                    var csv = [{data: keys.join(';')}];
+
+                    var row = [];
+                    for(var i=0; i<dates.length; i++) {
+                        row = _.map(keys, function(key) {
+                            return scope.data[key][i];
+                        });
+
+                        csv.push({data: row.join(';')});
+                    }
+
+                    return csv;
+                }
 
                 if (scope.autoload === true) {
                     scope.load();
