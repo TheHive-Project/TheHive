@@ -1,11 +1,11 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('AdminUserDialogCtrl', function($scope, $uibModalInstance, UserSrv, NotificationSrv, user) {
+    angular.module('theHiveControllers').controller('AdminUserDialogCtrl', function($scope, $uibModalInstance, UserSrv, NotificationSrv, user, isEdit) {
         var self = this;
 
         self.user = user;
-        self.isEdit = user.id;
+        self.isEdit = isEdit;
 
         var formData = _.defaults(_.pick(self.user, 'id', 'name', 'roles'), {
             id: null,

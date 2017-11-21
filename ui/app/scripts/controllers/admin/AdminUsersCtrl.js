@@ -113,7 +113,8 @@
                     controllerAs: '$vm',
                     size: 'lg',
                     resolve: {
-                        user: angular.copy(user) || {}
+                        user: angular.copy(user) || {},
+                        isEdit: !!user
                     }
                 });
 
