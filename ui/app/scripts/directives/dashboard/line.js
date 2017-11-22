@@ -89,6 +89,8 @@
                         scope.axes = {};
                         scope.colors = {};
 
+                        var serieTypes = _.uniq(_.pluck(scope.options.series, 'type')).length;
+
                         _.each(scope.options.series, function(serie, index) {
                             var key = serie.field,
                                 agg = serie.agg,
@@ -97,7 +99,7 @@
 
                             scope.types[columnKey] = serie.type || 'line';
                             scope.names[columnKey] = serie.label || (agg === 'count' ? 'count' : (agg + ' of ' + key));
-                            scope.axes[columnKey] = (scope.types[columnKey] === 'bar') ? 'y2' : 'y';
+                            scope.axes[columnKey] = serieTypes === 1 ? 'y' : ((scope.types[columnKey] === 'bar') ? 'y2' : 'y');
                             scope.colors[columnKey] = serie.color;
                         });
 

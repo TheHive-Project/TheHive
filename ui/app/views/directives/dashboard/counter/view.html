@@ -9,7 +9,7 @@
     </div>
     <div ng-if="!error" class="row" ng-repeat="item in data">
         <div class="col-md-4 text-right">
-            <h2>{{item.value}}</h2>
+            <h2>{{item.value | number}}</h2>
         </div>
         <div class="col-md-8">
             <h2><small>{{item.label}}</small></h2>

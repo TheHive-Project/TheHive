@@ -9,10 +9,11 @@
     </div>
     <div class="c3-content" ng-show="!error">
         <div ng-show="chart" class="clearfix">
-            <a class="pull-right ml-xs" href ng-csv="onSaveCsv"><i class="fa fa-file-text-o mr-xxxs"></i>Save as CSV</a>
-            <a class="pull-right" href ng-click="save()"><i class="fa fa-file-image-o mr-xxxs"></i>Save as image</a>
-        </div>
-        <div class="c3-chart" style="height:300px;">
+            <a class="pull-right ml-xxs" href ng-csv="onSaveCsv"><i class="fa fa-file-text-o mr-xxxs"></i>CSV</a>
+            <a class="pull-right ml-xxs" href ng-click="save()"><i class="fa fa-file-image-o mr-xxxs"></i>Image</a>
+            <strong class="text-primary pull-right">Save as</strong>
+        </div>        
+        <div class="c3-chart">
             <div styles="height:300px;" class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Loading...</div>
         </div>
     </div>
