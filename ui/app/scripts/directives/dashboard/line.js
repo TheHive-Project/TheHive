@@ -116,8 +116,6 @@
 
                         scope.data = data;
 
-                        console.log('Line data:', scope.data);
-
                         var chart = {
                             data: {
                                 x: '_date',

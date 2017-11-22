@@ -244,8 +244,6 @@
             return period === 'all' ? null : {
                 _between: { _field: field, _from: from.valueOf(), _to: to.valueOf() }
             }
-
-            return null;
         }
 
         this.exportDashboard = function(dashboard) {
