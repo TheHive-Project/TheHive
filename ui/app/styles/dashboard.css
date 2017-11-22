@@ -32,10 +32,19 @@ body,
     display: none;
 }
 .dashboard-content > .dndPlaceholder {
-    background-color: #eeeeee;
+    background-color: #f9f9f9;
+    border: 1px dashed #aacbed;
     display: block;
     margin-top: 10px;
-    min-height: 100px;
+    min-height: 110px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+}
+.dashboard-content > .dndPlaceholder:after {
+    color: #999999;
+    content: "Drop item here";
 }
 
 /*.dashboard-content .c3-chart {
@@ -75,8 +84,15 @@ body,
 
 .chart-container-dropzone > .dndPlaceholder {
     background-color: #eeeeee;
-    /*min-height: 100px;*/
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    line-height: 110px;
+    font-size: 20px;
+}
+.chart-container-dropzone > .dndPlaceholder:after {
+    color: #999999;
+    content: "Drop item here";
 }
 
 .chart-container-dropzone > * {
