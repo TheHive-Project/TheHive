@@ -18,12 +18,13 @@ body,
     vertical-align: middle;
 }
 
+.dashboard-content * {
+    min-width: 0;
+}
+
 .dashboard-content {
     margin-top: 20px;
     padding-left: 0;
-    /*padding: 10px;*/
-    /*min-height: 10px;
-    background-color: red;*/
 }
 .dashboard-content > li {
     list-style: none;
@@ -44,18 +45,15 @@ body,
 }
 .dashboard-content > .dndPlaceholder:after {
     color: #999999;
-    content: "Drop item here";
+    content: "Drop row here";
 }
 
-/*.dashboard-content .c3-chart {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}*/
-
+.dashboard-content .c3-chart {
+    width: 100% !important;
+    overflow: hidden;
+}
 .dashboard-content .c3-chart svg {
-    width: 100%;
+    width: 100% !important;
 }
 
 .dashboard-row {
@@ -64,7 +62,6 @@ body,
 }
 .chart-container {
     min-height: 100px;
-    /*background-color: #e6edf4;*/
     background-color: #f9f9f9;
     border: 1px dashed #aacbed;
     margin-top: 10px;
@@ -96,6 +93,11 @@ body,
 }
 
 .chart-container-dropzone > * {
+    -webkit-box-flex: 1;      /* OLD - iOS 6-, Safari 3.1-6 */
+    -moz-box-flex: 1;         /* OLD - Firefox 19- */
+    width: 20%;               /* For old syntax, otherwise collapses. */
+    -webkit-flex: 1;          /* Chrome */
+    -ms-flex: 1;              /* IE 10 */
     flex: 1;
     margin: 0 5px;
 }
@@ -116,11 +118,23 @@ dashboard-item .box {
     margin-bottom: 10px;
 }
 
+.dashboard-row .c3-container {
+    display: -webkit-flex;
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-row .c3-container .c3-chart {
+    flex: 1;
+}
+
  .dashboard-serie {
      background-color: #f9f9f9;
      margin-bottom: 15px;
      padding: 10px;
-
 }
 
 .dashboard-serie > .form-inline {

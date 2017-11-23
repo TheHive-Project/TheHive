@@ -3,6 +3,7 @@
     angular.module('theHiveDirectives').directive('c3', function(DashboardSrv) {
         return {
             restrict: 'E',
+            replace: true,
             scope: {
                 chart: '=',
                 resizeOn: '@',

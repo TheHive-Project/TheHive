@@ -78,7 +78,7 @@
 
                 DashboardSrv.update(this.dashboard.id, copy)
                     .then(function(response) {
-                        self.options.editLayout = false;
+                        self.enableViewMode();
                         NotificationSrv.log('The dashboard has been successfully updated', 'success');
                     })
                     .catch(function(err) {
@@ -128,6 +128,24 @@
             this.exportDashboard = function() {
                 DashboardSrv.exportDashboard(this.dashboard);
             }
+
+            this.resizeCharts = function() {
+                $timeout(function() {
+                    for(var i=0; i < self.definition.items.length; i++) {
+                        $scope.$broadcast('resize-chart-' + i);
+                    }
+                }, 100);
+            };
+
+            this.enableEditMode = function() {
+                this.options.editLayout = true;
+                this.resizeCharts();
+            };
+
+            this.enableViewMode = function() {
+                this.options.editLayout = false;
+                this.resizeCharts();
+            };
 
         });
 })();

@@ -5,7 +5,7 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
-            <a href class="mr-xxs btn btn-sm btn-primary" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.options.editLayout = !$vm.options.editLayout" ng-show="!$vm.options.editLayout">
+            <a href class="mr-xxs btn btn-sm btn-primary" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.enableEditMode()" ng-show="!$vm.options.editLayout">
                 <i class="fa fa-pencil"></i> Edit
             </a>
             <a href class="mr-xxs btn btn-default btn-sm" ng-click="$vm.exportDashboard()" ng-show="!$vm.options.editLayout">
@@ -53,7 +53,7 @@
     <div class="btn btn-app" ng-click="$vm.saveDashboard()">
         <i class="fa fa-save"></i> Save
     </div>
-    <div class="btn btn-app" ng-click="$vm.options.editLayout = false">
+    <div class="btn btn-app" ng-click="$vm.enableViewMode()">
         <i class="fa fa-times text-danger"></i> Cancel
     </div>
     <hr>
