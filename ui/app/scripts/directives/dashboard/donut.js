@@ -19,21 +19,25 @@
                 scope.chart = {};
 
                 scope.prepareSeriesNames = function() {
-                    console.log(scope.entity);
-                    console.log(scope.entity.attributes[scope.options.field]);
-                    var names = scope.options.names || {};
-
-                    if(scope.entity && scope.options.field) {
-                        var field = scope.entity.attributes[scope.options.field];
-
-                        _.each(field.values, function(val, index) {
-                            if(!names[val]) {
-                                names[val] = field.labels[index] || val;
-                            }
-                        });
+                    if(!scope.options.field) {
+                        return {};
                     }
 
-                    console.log(names);
+                    var field = scope.entity.attributes[scope.options.field];
+
+                    if(field.values.length === 0) {
+                        // This is not an enumerated field
+                        // Labels and colors customization is not available
+                        return {};
+                    }
+
+                    var names = scope.options.names || {};
+
+                    _.each(field.values, function(val, index) {
+                        if(!names[val]) {
+                            names[val] = field.labels[index] || val;
+                        }
+                    });
 
                     return names;
                 };

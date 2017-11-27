@@ -3,19 +3,20 @@
     Please select entity and field in <a href ng-click="layout.activeTab = 0">Basic tab</a>
 </div>
 
-<div class="empty-message" ng-if="metadata[component.options.entity].attributes[component.options.field].values.length === 0">
+<!-- <div class="empty-message" ng-if="metadata[component.options.entity].attributes[component.options.field].values.length === 0">
     You can customize the categories' labels and colors. <a href ng-click="addColor()">Add entry</a>
-</div>
+</div> -->
 
 <div class="row mb-xxs" ng-repeat="val in metadata[component.options.entity].attributes[component.options.field].values track by $index">
     <div class="col-sm-4">
-        <input type="text" class="form-control" ng-model="val">
+        <div class="form-control">
+            <label>{{val}}</label>
+        </div>
     </div>
     <div class="col-sm-4">
         <input type="text" class="form-control" ng-model="component.options.names[val]" placeholder="Label">
     </div>
     <div class="col-sm-4">
-        <!-- <input type="text" class="form-control" ng-model=""> -->
         <div class="input-group">
             <input type="text" class="form-control" ng-model="component.options.colors[val]" placeholder="Color" size="8">
             <span class="input-group-btn">
@@ -26,22 +27,3 @@
         </div>
     </div>
 </div>
-
-<!-- <div class="row mb-xxs" ng-repeat="val in metadata[component.options.entity].attributes[component.options.field].values track by $index">
-    <div class="col-sm-4">
-        <input type="text" class="form-control" ng-model="val">
-    </div>
-    <div class="col-sm-4">
-        <input type="text" class="form-control" ng-model="component.options.names[val]" placeholder="Label">
-    </div>
-    <div class="col-sm-4">
-        <div class="input-group">
-            <input type="text" class="form-control" ng-model="component.options.colors[val]" placeholder="Color" size="8">
-            <span class="input-group-btn">
-                <button colorpicker colorpicker-close-on-select class="btn bt-default" ng-model="component.options.colors[val]" type="button">
-                    <i class="fa fa-stop" style="color: {{component.options.colors[val]}};" ng-class="{'fa-stop': serie.color, 'fa-ellipsis-h': !component.options.colors[val]}"></i>
-                </button>
-            </span>
-        </div>
-    </div>
-</div> -->

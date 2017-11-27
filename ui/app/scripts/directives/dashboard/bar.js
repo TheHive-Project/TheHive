@@ -27,6 +27,30 @@
                         return;
                     }
 
+                    scope.prepareSeriesNames = function() {
+                        if(!scope.options.field) {
+                            return {};
+                        }
+
+                        var field = scope.entity.attributes[scope.options.field];
+
+                        if(field.values.length === 0) {
+                            // This is not an enumerated field
+                            // Labels and colors customization is not available
+                            return {};
+                        }
+
+                        var names = scope.options.names || {};
+
+                        _.each(field.values, function(val, index) {
+                            if(!names[val]) {
+                                names[val] = field.labels[index] || val;
+                            }
+                        });
+
+                        return names;
+                    };
+
                     var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
 
                     var statsPromise = $http.post('./api' + scope.entity.path + '/_stats', {
@@ -75,7 +99,8 @@
                             i++;
                         });
 
-                        scope.names = {};
+
+                        scope.options.names = scope.prepareSeriesNames();
                         scope.colors = {};
 
                         scope.data = data;
@@ -85,8 +110,8 @@
                                 x: '_date',
                                 json: scope.data,
                                 type: 'bar',
-                                //names: scope.names || {},
-                                //colors: scope.colors || {},
+                                names: scope.options.names || {},
+                                colors: scope.options.colors || {},
                                 groups: scope.options.stacked === true ? [_.without(_.keys(data), '_date')] : []
                             },
                             bar: {
