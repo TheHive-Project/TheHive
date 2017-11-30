@@ -29,8 +29,9 @@ trait TaskAttributes { _: AttributeDef ⇒
   val startDate = optionalAttribute("startDate", F.dateFmt, "Timestamp of the comment start")
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
   val order = attribute("order", F.numberFmt, "Order of the task", 0L)
-
+  val dueDate = optionalAttribute("dueDate", F.dateFmt, "When this date is passed, Thehive warns users")
 }
+
 @Singleton
 class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel, Task, CaseModel, Case](caseModel, "case_task", "Task", "/case/task") with TaskAttributes with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
