@@ -24,6 +24,7 @@ class DashboardCtrl @Inject() (
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
+    migration: MigrationOperations,
     components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext,
@@ -48,7 +49,7 @@ class DashboardCtrl @Inject() (
   def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     for {
       dashboard ← dashboardSrv.get(id)
-      updatedDashboard ← if (dashboard.createdBy == request.authContext.userId)
+      updatedDashboard ← if (dashboard.createdBy == request.userId || request.roles.contains(Roles.admin))
         dashboardSrv.update(dashboard, request.body)
       else
         Future.failed(AuthorizationError("You can't update this dashboard, you are not the owner"))
@@ -57,8 +58,13 @@ class DashboardCtrl @Inject() (
 
   @Timed
   def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    dashboardSrv.delete(id)
-      .map(_ ⇒ NoContent)
+    for {
+      dashboard ← dashboardSrv.get(id)
+      updatedDashboard ← if (dashboard.createdBy == request.userId || request.roles.contains(Roles.admin))
+        dashboardSrv.delete(id)
+      else
+        Future.failed(AuthorizationError("You can't update this dashboard, you are not the owner"))
+    } yield NoContent
   }
 
   @Timed
