@@ -1,7 +1,55 @@
 # Change Log
 
-## [2.13.2](https://github.com/CERT-BDF/TheHive/tree/2.13.2) (2017-10-24)
+## [3.0.0](https://github.com/CERT-BDF/TheHive/tree/3.0.0) (2017-12-05)
 
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.2...3.0.0)
+
+**Implemented enhancements:**
+
+- Assign default values to case templates' custom fields [\#375](https://github.com/CERT-BDF/TheHive/issues/375)
+- Add the Ability to Import and Export Case Templates [\#369](https://github.com/CERT-BDF/TheHive/issues/369)
+- Add a sighted flag for IOCs [\#365](https://github.com/CERT-BDF/TheHive/issues/365)
+- Alert id should not be used to build case title when using case templates [\#364](https://github.com/CERT-BDF/TheHive/issues/364)
+- Set task assignee in case template [\#362](https://github.com/CERT-BDF/TheHive/issues/362)
+- Add Autonomous Systems to the Default Datatype List [\#359](https://github.com/CERT-BDF/TheHive/issues/359)
+- Display more than 10 users per page and sort them by alphanumerical order [\#346](https://github.com/CERT-BDF/TheHive/issues/346)
+- \[Minor\] Add user dialog title issue [\#345](https://github.com/CERT-BDF/TheHive/issues/345)
+- Deleted cases showing in statistics [\#317](https://github.com/CERT-BDF/TheHive/issues/317)
+- Dynamic dashboard [\#312](https://github.com/CERT-BDF/TheHive/issues/312)
+- Add health check in status API [\#306](https://github.com/CERT-BDF/TheHive/issues/306)
+- Alerts in Statistics [\#274](https://github.com/CERT-BDF/TheHive/issues/274)
+- Statistics: Observables and IOC over time [\#215](https://github.com/CERT-BDF/TheHive/issues/215)
+- Export Statistics/Metrics [\#197](https://github.com/CERT-BDF/TheHive/issues/197)
+- Msg\_Parser analyser show for all files [\#184](https://github.com/CERT-BDF/TheHive/issues/184)
+- Assign default metric values [\#176](https://github.com/CERT-BDF/TheHive/issues/176)
+- Display Cortex Version, Instance Name, Status and Available Analyzers [\#130](https://github.com/CERT-BDF/TheHive/issues/130)
+- Feature Request: Webhooks [\#20](https://github.com/CERT-BDF/TheHive/issues/20)
+- Remove the From prefix and template suffix around a template name in the New Case menu [\#348](https://github.com/CERT-BDF/TheHive/issues/348)
+- Keep the alert date when creating a case from it [\#320](https://github.com/CERT-BDF/TheHive/issues/320)
+- Export to MISP: add TLP [\#314](https://github.com/CERT-BDF/TheHive/issues/314)
+- Show already known observables in Import MISP Events preview window [\#137](https://github.com/CERT-BDF/TheHive/issues/137)
+
+**Fixed bugs:**
+
+- The misp \> instance name \> tags parameter is not honored when importing MISP events [\#373](https://github.com/CERT-BDF/TheHive/issues/373)
+- \[Bug\] Merging an alert into case with duplicate artifacts does not merge descriptions [\#357](https://github.com/CERT-BDF/TheHive/issues/357)
+- Share a case if MISP is not enabled raise an error [\#349](https://github.com/CERT-BDF/TheHive/issues/349)
+- Validate alert's TLP and severity attributes values [\#326](https://github.com/CERT-BDF/TheHive/issues/326)
+- Merge of cases overrides task log owners [\#303](https://github.com/CERT-BDF/TheHive/issues/303)
+
+**Closed issues:**
+
+- MISP Connection Error with Cortex/HIVE [\#371](https://github.com/CERT-BDF/TheHive/issues/371)
+- Single Sign-On with X.509 certificates [\#297](https://github.com/CERT-BDF/TheHive/issues/297)
+- Remove the deprecated "user" property [\#316](https://github.com/CERT-BDF/TheHive/issues/316)
+- Run observable analyzers through API [\#308](https://github.com/CERT-BDF/TheHive/issues/308)
+
+**Merged pull requests:**
+
+- typos and improvements to text [\#355](https://github.com/CERT-BDF/TheHive/pull/355) ([steoleary](https://github.com/steoleary))
+- Correct typo [\#353](https://github.com/CERT-BDF/TheHive/pull/353) ([arnydo](https://github.com/arnydo))
+
+## [2.13.2](https://github.com/CERT-BDF/TheHive/tree/2.13.2) (2017-10-24)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.1...2.13.2)
 
 **Fixed bugs:**
