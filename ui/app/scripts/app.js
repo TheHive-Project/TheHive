@@ -123,12 +123,6 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     }
                 }
             })
-            // .state('app.statistics', {
-            //     url: 'statistics',
-            //     templateUrl: 'views/partials/statistics.html',
-            //     controller: 'StatisticsCtrl',
-            //     title: 'Statistics'
-            // })
             .state('app.administration', {
                 abstract: true,
                 url: 'administration',
