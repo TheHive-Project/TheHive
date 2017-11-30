@@ -74,8 +74,8 @@ mappings in Universal ~= {
     file("package/thehive.service") -> "package/thehive.service",
     file("package/thehive.conf") -> "package/thehive.conf",
     file("package/thehive") -> "package/thehive",
-    file("package/logback.xml") -> "conf/logback.xml"
-  )
+    file("package/logback.xml") -> "conf/logback.xml",
+  ) ++ (file("migration").**(AllPassFilter) pair Path.rebase(file("migration"), "migration"))
 }
 
 // Package //
@@ -115,7 +115,7 @@ packageBin := {
 }
 // DEB //
 linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
-version in Debian := version.value + "-1"
+version in Debian := version.value + "-0"
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "openjdk-8-jre-headless"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(

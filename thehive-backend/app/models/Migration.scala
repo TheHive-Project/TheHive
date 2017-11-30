@@ -1,8 +1,10 @@
 package models
 
+import java.nio.file.{ Files, Path, Paths }
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.math.BigDecimal.int2bigDecimal
 import scala.util.Try
@@ -14,8 +16,9 @@ import play.api.{ Configuration, Logger }
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import services.AlertSrv
+import services.{ AlertSrv, DashboardSrv }
 
+import org.elastic4play.controllers.Fields
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
 import org.elastic4play.utils.Hasher
@@ -30,12 +33,16 @@ class Migration(
     datastoreName: String,
     dblists: DBLists,
     eventSrv: EventSrv,
+    dashboardSrv: DashboardSrv,
+    userSrv: UserSrv,
     implicit val ec: ExecutionContext,
     implicit val materializer: Materializer) extends MigrationOperations {
   @Inject() def this(
       configuration: Configuration,
       dblists: DBLists,
       eventSrv: EventSrv,
+      dashboardSrv: DashboardSrv,
+      userSrv: UserSrv,
       ec: ExecutionContext,
       materializer: Materializer) = {
     this(
@@ -44,7 +51,10 @@ class Migration(
       configuration.get[Seq[String]]("datastore.hash.extra"),
       configuration.get[String]("datastore.name"),
       dblists,
-      eventSrv, ec, materializer)
+      eventSrv,
+      dashboardSrv,
+      userSrv,
+      ec, materializer)
   }
 
   import org.elastic4play.services.Operation._
@@ -54,18 +64,53 @@ class Migration(
 
   override def beginMigration(version: Int): Future[Unit] = Future.successful(())
 
+  private def readJsonFile(file: Path): JsValue = {
+    val source = scala.io.Source.fromFile(file.toFile)
+    try Json.parse(source.mkString)
+    finally source.close()
+  }
+
+  private def addDataTypes(dataTypes: Seq[String]): Future[Unit] = {
+    val dataTypeList = dblists.apply("list_artifactDataType")
+    Future
+      .traverse(dataTypes) { dt ⇒
+        dataTypeList.addItem(dt)
+          .map(_ ⇒ ())
+          .recover {
+            case error ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
+          }
+      }
+      .map(_ ⇒ ())
+  }
+
+  private def addDashboards(version: Int): Future[Unit] = {
+    userSrv.inInitAuthContext { implicit authContext ⇒
+      val dashboardsPath = Paths.get("migration").resolve(version.toString).resolve("dashboards")
+      val dashboards = for {
+        dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
+        if Files.isReadable(dashboardFile)
+        dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
+        dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
+        dash = dashboardSrv.create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
+          .map(_ ⇒ ())
+          .recover {
+            case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
+          }
+      } yield dash
+      Future.sequence(dashboards).map(_ ⇒ ())
+    }
+  }
+
   override def endMigration(version: Int): Future[Unit] = {
     if (requireUpdateMispAlertArtifact) {
       logger.info("Retrieve MISP attribute to update alerts")
       eventSrv.publish(UpdateMispAlertArtifact())
     }
     logger.info("Updating observable data type list")
-    val dataTypes = dblists.apply("list_artifactDataType")
-    Future.sequence(Seq("filename", "fqdn", "url", "user-agent", "domain", "ip", "mail_subject", "hash", "mail",
-      "registry", "uri_path", "regexp", "other", "file", "autonomous-system")
-      .map(dt ⇒ dataTypes.addItem(dt).recover { case _ ⇒ () }))
-      .map(_ ⇒ ())
-      .recover { case _ ⇒ () }
+    addDataTypes(Seq("filename", "fqdn", "url", "user-agent", "domain", "ip", "mail_subject", "hash", "mail",
+      "registry", "uri_path", "regexp", "other", "file", "autonomous-system"))
+      .andThen { case _ ⇒ addDashboards(version + 1) }
+
   }
 
   override val operations: PartialFunction[DatabaseState, Seq[Operation]] = {
