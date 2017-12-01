@@ -1,6 +1,24 @@
 <div ng-switch="editorFor(filter)">
-    <input ng-switch-when="number" type="number" class="form-control" ng-model="filter.value">
+    <!-- <input ng-switch-when="number" type="number" class="form-control" ng-model="filter.value"> -->
     <input ng-switch-when="text" type="text" class="form-control" ng-model="filter.value">
+
+    <div ng-switch-when="number" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || '='}} <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '='">=</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<'"><</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<='"><=</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">></a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">>=</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs">
+            <input type="number" class="form-control" ng-model="filter.value.value">
+        </div>
+    </div>
 
     <div ng-switch-when="user" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
