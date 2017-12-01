@@ -58,6 +58,8 @@
             this.load = function() {
                 DashboardSrv.list().then(function(response) {
                     self.dashboards = response.data;
+                }, function(err){
+                    NotificationSrv.error('DashboardsCtrl', err.data, err.status);
                 });
             };
 
