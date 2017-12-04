@@ -3,9 +3,12 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
             var self = this;
 
+            this.currentUser = AuthenticationSrv.currentUser;
+            this.createdBy = dashboard.createdBy;
+            this.dashboardStatus = dashboard.dashboardStatus;
             this.dashboard = dashboard;
             this.definition = JSON.parse(dashboard.definition) || {
                 period: 'all',
@@ -16,6 +19,11 @@
                     }
                 ]
             };
+
+            this.canEditDashboard = function() {
+                return (this.createdBy === this.currentUser.id) ||
+                    (this.dashboardStatus = 'Shared' && AuthenticationSrv.isAdmin(this.currentUser));
+            }
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
@@ -31,7 +39,7 @@
                 },
                 editLayout: !_.find(this.definition.items, function(row) {
                     return row.items.length > 0;
-                })
+                }) && this.canEditDashboard()
             };
             this.toolbox = DashboardSrv.toolbox;
             this.dashboardPeriods = DashboardSrv.dashboardPeriods;
@@ -146,6 +154,7 @@
                 this.options.editLayout = false;
                 this.resizeCharts();
             };
+
 
         });
 })();

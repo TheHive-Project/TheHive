@@ -56,14 +56,14 @@
             id: 'sum',
             label: 'sum'
         }, {
+            id: 'avg',
+            label: 'avg'
+        }, {
             id: 'min',
             label: 'min'
         }, {
             id: 'max',
             label: 'max'
-        }, {
-            id: 'avg',
-            label: 'avg'
         }];
 
         this.serieTypes = ['line', 'area', 'spline', 'area-spline', 'bar'];
