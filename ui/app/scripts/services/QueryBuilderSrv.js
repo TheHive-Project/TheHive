@@ -27,6 +27,8 @@
                     return {'_gt': criterion};
                 case '>=':
                     return {'_gte': criterion};
+                case '!=':
+                    return {'_not': criterion};
                 default:
                     return {'_field': filter.field, '_value': filter.value.value};
             }
