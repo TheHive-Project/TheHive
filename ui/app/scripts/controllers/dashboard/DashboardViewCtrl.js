@@ -9,16 +9,22 @@
             this.currentUser = AuthenticationSrv.currentUser;
             this.createdBy = dashboard.createdBy;
             this.dashboardStatus = dashboard.dashboardStatus;
-            this.dashboard = dashboard;
-            this.definition = JSON.parse(dashboard.definition) || {
-                period: 'all',
-                items: [
-                    {
-                        type: 'container',
-                        items: []
-                    }
-                ]
-            };
+
+
+            this.loadDashboard = function(dashboard) {
+                this.dashboard = dashboard;
+                this.definition = JSON.parse(dashboard.definition) || {
+                    period: 'all',
+                    items: [
+                        {
+                            type: 'container',
+                            items: []
+                        }
+                    ]
+                };
+            }
+
+            this.loadDashboard(dashboard);
 
             this.canEditDashboard = function() {
                 return (this.createdBy === this.currentUser.id) ||
@@ -86,7 +92,8 @@
 
                 DashboardSrv.update(this.dashboard.id, copy)
                     .then(function(response) {
-                        self.enableViewMode();
+                        self.options.editLayout = false;
+                        self.resizeCharts();
                         NotificationSrv.log('The dashboard has been successfully updated', 'success');
                     })
                     .catch(function(err) {
@@ -151,8 +158,14 @@
             };
 
             this.enableViewMode = function() {
-                this.options.editLayout = false;
-                this.resizeCharts();
+                DashboardSrv.get(this.dashboard.id)
+                    .then(function(response) {
+                        self.loadDashboard(response.data);
+                        self.options.editLayout = false;
+                        self.resizeCharts();
+                    }, function(err) {
+                        NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                    });
             };
 
 

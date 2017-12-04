@@ -212,6 +212,10 @@
         }
 
         this.buildPeriodQuery = function(period, field, start, end) {
+            if(!period && !start && !end) {
+                return null;
+            }
+
             var today = moment().hours(0).minutes(0).seconds(0).milliseconds(0),
                 from,
                 to = moment(today).hours(23).minutes(59).seconds(59).milliseconds(999);
