@@ -9,7 +9,15 @@
             this.currentUser = AuthenticationSrv.currentUser;
             this.createdBy = dashboard.createdBy;
             this.dashboardStatus = dashboard.dashboardStatus;
+            this.metadata = metadata;
+            this.toolbox = DashboardSrv.toolbox;
+            this.dashboardPeriods = DashboardSrv.dashboardPeriods;
 
+            this.buildDashboardPeriodFilter = function(period) {
+                return period === 'custom' ?
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt');
+            }
 
             this.loadDashboard = function(dashboard) {
                 this.dashboard = dashboard;
@@ -22,6 +30,7 @@
                         }
                     ]
                 };
+                this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
             }
 
             this.loadDashboard(dashboard);
@@ -47,18 +56,6 @@
                     return row.items.length > 0;
                 }) && this.canEditDashboard()
             };
-            this.toolbox = DashboardSrv.toolbox;
-            this.dashboardPeriods = DashboardSrv.dashboardPeriods;
-
-            this.metadata = metadata;
-
-            this.buildDashboardPeriodFilter = function(period) {
-                return period === 'custom' ?
-                    DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
-                    DashboardSrv.buildPeriodQuery(period, 'createdAt');
-            }
-
-            this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
 
             this.applyPeriod = function(period) {
                 this.definition.period = period;
