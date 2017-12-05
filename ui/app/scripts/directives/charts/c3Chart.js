@@ -1,10 +1,14 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('c3', function() {
+    angular.module('theHiveDirectives').directive('c3', function(DashboardSrv) {
         return {
             restrict: 'E',
+            replace: true,
             scope: {
-                chart: '='
+                chart: '=',
+                resizeOn: '@',
+                error: '=',
+                onSaveCsv: '&?'
             },
             templateUrl: 'views/directives/charts/c3.html',
             link: function(scope, element) {
@@ -13,10 +17,13 @@
                 scope.initChart = function(chart) {
                     if (!_.isEmpty(chart)) {
                         scope.chart.bindto = binto;
+                        scope.chart.color = {
+                            pattern: DashboardSrv.colorsPattern
+                        };
                         scope.chart.size = {
                             height: 300
                         };
-                        c3.generate(scope.chart);
+                        scope.c3 = c3.generate(scope.chart);
                     }
                 };
 
@@ -29,6 +36,14 @@
                 scope.$watch('chart', function(newValue) {
                     scope.initChart(newValue);
                 });
+
+                if(scope.resizeOn) {
+                    scope.$on(scope.resizeOn, function() {
+                        if(scope.c3) {
+                            scope.c3.resize();
+                        }
+                    })
+                }
             }
         };
     });

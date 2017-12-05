@@ -19,11 +19,11 @@
     <div class="box-body">
         <span>
             <i class="glyphicon glyphicon-user"></i>
-            Created by <span ng-bind="getUserInfo.get(caze.user) | getField: 'name'"></span>
+            Created by <span ng-bind="getUserInfo.get(caze.createdBy) | getField: 'name'"></span>
         </span>
         <span class="ml-xxs">
             <i class="glyphicon glyphicon-calendar"></i>
-            <span>{{caze.startDate | showDate}}</span>&nbsp;&nbsp;
+            <span class="mr-xxxs">{{caze.createdAt | showDate}}</span>
         <span ng-show="isCaseClosed()" class="text-success">(Closed at
                 {{caze.endDate | showDate}}
                 as
@@ -37,7 +37,7 @@
         </span>
 
         <!-- Right side -->
-        <span class="ml-xs pull-right">
+        <span class="ml-xs pull-right" ng-if="appConfig.connectors.misp.enabled">
             <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
                 <i class="text-primary fa fa-share"></i>
                 Share ({{existingExports}})

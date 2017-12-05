@@ -35,9 +35,10 @@ trait ArtifactAttributes { _: AttributeDef ⇒
   val message: A[Option[String]] = optionalAttribute("message", F.textFmt, "Description of the artifact in the context of the case")
   val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val attachment: A[Option[Attachment]] = optionalAttribute("attachment", F.attachmentFmt, "Artifact file content", O.readonly)
-  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc: A[Boolean] = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)
+  val sighted: A[Boolean] = attribute("sighted", F.booleanFmt, "Artifact has been sighted on the local network", false)
   val status: A[ArtifactStatus.Value] = attribute("status", F.enumFmt(ArtifactStatus), "Status of the artifact", ArtifactStatus.Ok)
   val reports: A[String] = attribute("reports", F.textFmt, "Json object that contains all short reports", "{}", O.unaudited)
 }
@@ -49,7 +50,7 @@ class ArtifactModel @Inject() (
     attachmentSrv: AttachmentSrv,
     artifactSrv: Provider[ArtifactSrv],
     implicit val mat: Materializer,
-    implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact") with ArtifactAttributes with AuditedModel {
+    implicit val ec: ExecutionContext) extends ChildModelDef[ArtifactModel, Artifact, CaseModel, Case](caseModel, "case_artifact", "Observable", "/case/artifact") with ArtifactAttributes with AuditedModel {
   private[ArtifactModel] lazy val logger = Logger(getClass)
   override val removeAttribute: JsObject = Json.obj("status" → ArtifactStatus.Deleted)
 
@@ -116,7 +117,7 @@ class ArtifactModel @Inject() (
         val (_, total) = artifactSrv.get.findSimilar(artifact, Some("0-0"), Nil)
         total.failed.foreach(t ⇒ logger.error("Artifact.getStats error", t))
         total.map { t ⇒ Json.obj("seen" → t) }
-      case _ ⇒ Future.successful(JsObject(Nil))
+      case _ ⇒ Future.successful(JsObject.empty)
     }
   }
 }

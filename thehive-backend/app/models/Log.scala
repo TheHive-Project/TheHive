@@ -27,10 +27,11 @@ trait LogAttributes { _: AttributeDef ⇒
   // - contentType (string): the mimetype of the file (send by client)
   val attachment = optionalAttribute("attachment", F.attachmentFmt, "Attached file", O.readonly)
   val status = attribute("status", F.enumFmt(LogStatus), "Status of the log", LogStatus.Ok)
+  val owner = attribute("owner", F.userFmt, "User who owns the log")
 }
 
 @Singleton
-class LogModel @Inject() (taskModel: TaskModel) extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log") with LogAttributes with AuditedModel {
+class LogModel @Inject() (taskModel: TaskModel) extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log", "Log", "/case/task/log") with LogAttributes with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
   override val removeAttribute = Json.obj("status" → LogStatus.Deleted)
 }

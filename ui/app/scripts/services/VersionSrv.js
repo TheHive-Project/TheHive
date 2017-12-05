@@ -25,8 +25,8 @@
                 hasCortex: function() {
                     try {
                         var service = cache.connectors.cortex;
-                        
-                        return service.enabled && service.servers.length;
+
+                        return service.enabled && _.pluck(service.servers, 'status').indexOf('OK') !== -1;
                     } catch (err) {
                         return false;
                     }

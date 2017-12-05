@@ -91,15 +91,15 @@ class MispSrv @Inject() (
             logger.error(s"Artifact $artifact has neither data nor attachment")
             sys.error("???")
         }
-        ExportedMispAttribute(artifact, tpe, category, value, artifact.message())
+        ExportedMispAttribute(artifact, tpe, category, artifact.tlp(), value, artifact.message())
       }
       .runWith(Sink.seq)
   }
 
   def getAttributesFromMisp(
-    mispConnection: MispConnection,
-    eventId: String,
-    fromDate: Option[Date]): Future[Seq[MispArtifact]] = {
+      mispConnection: MispConnection,
+      eventId: String,
+      fromDate: Option[Date]): Future[Seq[MispArtifact]] = {
 
     val date = fromDate.fold(0L)(_.getTime / 1000)
 
@@ -126,16 +126,16 @@ class MispSrv @Inject() (
           .map { mispArtifact ⇒
             mispArtifact.head.copy(
               tags = (mispArtifact.head.tags ++ artifactTags).distinct,
-              tlp  = 2L)
+              tlp = 2L)
           }
           .toSeq
       }
   }
 
   def attributeToArtifact(
-    mispConnection: MispConnection,
-    attr: JsObject,
-    defaultTlp: Long)(implicit authContext: AuthContext): Option[Future[Fields]] = {
+      mispConnection: MispConnection,
+      attr: JsObject,
+      defaultTlp: Long)(implicit authContext: AuthContext): Option[Future[Fields]] = {
     (for {
       dataType ← (attr \ "dataType").validate[String]
       data ← (attr \ "data").validateOpt[String]
@@ -204,7 +204,7 @@ class MispSrv @Inject() (
   def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     for {
       _ ← importArtifacts(alert, caze)
-      description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}"
+      description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}\n\n${alert.description().trim}"
       updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
     } yield updatedCase
   }
@@ -292,8 +292,8 @@ class MispSrv @Inject() (
 
   private[MispSrv] val fileNameExtractor = """attachment; filename="(.*)"""".r
   def downloadAttachment(
-    mispConnection: MispConnection,
-    attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
+      mispConnection: MispConnection,
+      attachmentId: String)(implicit authContext: AuthContext): Future[FileInputValue] = {
 
     mispConnection(s"attributes/download/$attachmentId")
       .withMethod("GET")

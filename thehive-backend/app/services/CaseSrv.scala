@@ -32,17 +32,17 @@ class CaseSrv(
     implicit val ec: ExecutionContext) {
 
   @Inject() def this(
-    configuration: Configuration,
-    caseModel: CaseModel,
-    artifactModel: ArtifactModel,
-    taskModel: TaskModel,
-    createSrv: CreateSrv,
-    artifactSrv: ArtifactSrv,
-    getSrv: GetSrv,
-    updateSrv: UpdateSrv,
-    deleteSrv: DeleteSrv,
-    findSrv: FindSrv,
-    ec: ExecutionContext) = this(
+      configuration: Configuration,
+      caseModel: CaseModel,
+      artifactModel: ArtifactModel,
+      taskModel: TaskModel,
+      createSrv: CreateSrv,
+      artifactSrv: ArtifactSrv,
+      getSrv: GetSrv,
+      updateSrv: UpdateSrv,
+      deleteSrv: DeleteSrv,
+      findSrv: FindSrv,
+      ec: ExecutionContext) = this(
     configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     caseModel,
     artifactModel,
@@ -58,13 +58,12 @@ class CaseSrv(
   private[CaseSrv] lazy val logger = Logger(getClass)
 
   def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
-    def getJsObjectOrEmpty(value: Option[JsValue]) = value.fold(JsObject(Nil)) {
+    def getJsObjectOrEmpty(value: Option[JsValue]) = value.fold(JsObject.empty) {
       case obj: JsObject ⇒ obj
-      case _             ⇒ JsObject(Nil)
+      case _             ⇒ JsObject.empty
     }
 
-    val metricNames = (originalFields.getStrings("metricNames").getOrElse(Nil) ++ template.metricNames()).distinct
-    val metrics = JsObject(metricNames.map(_ → JsNull))
+    val metrics = originalFields.getValue("metrics").fold(JsObject.empty)(_.as[JsObject]) deepMerge template.metrics().as[JsObject]
     val tags = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
     val customFields = getJsObjectOrEmpty(template.customFields()) ++ getJsObjectOrEmpty(originalFields.getValue("customFields"))
 
@@ -75,7 +74,7 @@ class CaseSrv(
       .set("tags", JsArray(tags.map(JsString)))
       .set("flag", originalFields.getBoolean("flag").orElse(template.flag()).map(JsBoolean))
       .set("tlp", originalFields.getLong("tlp").orElse(template.tlp()).map(JsNumber(_)))
-      .set("metrics", originalFields.getValue("metrics").flatMap(_.asOpt[JsObject]).getOrElse(JsObject(Nil)) ++ metrics)
+      .set("metrics", originalFields.getValue("metrics").flatMap(_.asOpt[JsObject]).getOrElse(JsObject.empty) ++ metrics)
       .set("customFields", customFields)
   }
 

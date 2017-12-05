@@ -27,14 +27,17 @@ import scala.util.{ Failure, Success, Try }
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
     val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
-    val key = "" // configuration.getString("key").getOrElse(sys.error("key is missing"))
-    val authentication = for {
-      basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
-      if basicEnabled
-      username ← configuration.getOptional[String]("username")
-      password ← configuration.getOptional[String]("password")
-    } yield username → password
-    Some(new CortexClient(name, url, key, authentication, ws))
+    val authentication =
+      configuration.getOptional[String]("key").map(CortexAuthentication.Key)
+        .orElse {
+          for {
+            basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
+            if basicEnabled
+            username ← configuration.getOptional[String]("username")
+            password ← configuration.getOptional[String]("password")
+          } yield CortexAuthentication.Basic(username, password)
+        }
+    Some(new CortexClient(name, url, authentication, ws))
   }
 
   def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {
@@ -140,6 +143,8 @@ class CortexSrv @Inject() (
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
   }
 
+  def stats(query: QueryDef, aggs: Seq[Agg]) = findSrv(jobModel, query, aggs: _*)
+
   def getAnalyzer(analyzerId: String): Future[Analyzer] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
@@ -205,7 +210,7 @@ class CortexSrv @Inject() (
         if (status == JobStatus.InProgress)
           updateJobWithCortex(jobId, cortexJobId, cortex)
         else {
-          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject(Nil)).toString
+          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
           getSrv[JobModel, Job](jobModel, jobId)
             .flatMap { job ⇒
@@ -219,10 +224,10 @@ class CortexSrv @Inject() (
                     val jobSummary = Try(Json.parse(report))
                       .toOption
                       .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
-                      .getOrElse(JsObject(Nil))
+                      .getOrElse(JsObject.empty)
                     for {
                       artifact ← artifactSrv.get(job.artifactId())
-                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject(Nil))
+                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
                       newReports = reports + (job.analyzerId() → jobSummary)
                     } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
                       .recover {

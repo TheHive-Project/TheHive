@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -26,7 +26,9 @@ angular.module('theHiveControllers').controller('RootCtrl',
         StreamSrv.init();
         $scope.currentUser = currentUser;
 
-        $scope.templates = TemplateSrv.query();
+        CaseTemplateSrv.list().then(function(templates) {
+            $scope.templates = templates;
+        });
 
         $scope.myCurrentTasks = StreamStatSrv({
             scope: $scope,
@@ -62,8 +64,10 @@ angular.module('theHiveControllers').controller('RootCtrl',
         // Get Alert counts
         $scope.alertEvents = AlertingSrv.stats($scope);
 
-        $scope.$on('templates:refresh', function(){
-            $scope.templates = TemplateSrv.query();
+        $scope.$on('templates:refresh', function(){            
+            CaseTemplateSrv.list().then(function(templates) {
+                $scope.templates = templates;
+            });
         });
 
         $scope.$on('metrics:refresh', function() {

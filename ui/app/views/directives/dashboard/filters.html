@@ -1,0 +1,23 @@
+<div ng-if="!component.options.filters || component.options.filters.length === 0" class="empty-message">
+    No filters defined. <a href ng-click="addFilter()">Add a filter</a>
+</div>
+<div class="row mb-xxxs" ng-repeat="filter in component.options.filters track by $index">
+    <div class="col-sm-4">
+        <div class="input-group">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="removeFilter($index)">
+                    <i class="fa fa-times text-danger"></i>
+                </button>
+            </span>
+            <select class="form-control" ng-model="filter.field"
+                ng-options="item.name as item.name for (key, item) in metadata[component.options.entity].attributes"
+                ng-change="setFilterField(filter)"></select>
+        </div>
+    </div>
+    <div class="col-sm-8" ng-include="'views/directives/dashboard/filter-editor.html'"></div>
+</div>
+<div ng-if="component.options.filters && component.options.filters.length > 0" class="mv-xs">
+    <a href ng-click="addFilter()">
+        <i class="fa fa-plus"></i> Add a filter
+    </a>
+</div>

@@ -1,8 +1,17 @@
 package connectors.misp
 
-import play.api.Logger
+import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 
+import play.api.Logger
+import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.ws.WSRequest
+
+import akka.actor.ActorSystem
+import models.HealthStatus
 import services.CustomWSAPI
+
+import org.elastic4play.utils.RichFuture
 
 case class MispConnection(
     name: String,
@@ -21,10 +30,41 @@ case class MispConnection(
        |\tcase template: ${caseTemplate.getOrElse("<not set>")}
        |\tartifact tags: ${artifactTags.mkString}""".stripMargin)
 
-  private[misp] def apply(url: String) =
+  private[misp] def apply(url: String): WSRequest =
     ws.url(s"$baseUrl/$url")
       .withHttpHeaders(
         "Authorization" → key,
         "Accept" → "application/json")
 
+  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+    apply("servers/getVersion").get
+      .map {
+        case resp if resp.status / 100 == 2 ⇒ (resp.json \ "version").asOpt[String]
+        case _                              ⇒ None
+      }
+      .recover { case _ ⇒ None }
+      .withTimeout(1.seconds, None)
+  }
+
+  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] = {
+    getVersion()
+      .map {
+        case Some(version) ⇒ Json.obj(
+          "name" → name,
+          "version" → version,
+          "status" → "OK")
+        case None ⇒ Json.obj(
+          "name" → name,
+          "version" → "",
+          "status" → "ERROR")
+      }
+  }
+
+  def healthStatus()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+    getVersion()
+      .map {
+        case None ⇒ HealthStatus.Error
+        case _    ⇒ HealthStatus.Ok
+      }
+  }
 }

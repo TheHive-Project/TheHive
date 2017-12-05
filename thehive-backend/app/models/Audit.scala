@@ -18,7 +18,7 @@ trait AuditAttributes { _: AttributeDef ⇒
   def detailsAttributes: Seq[Attribute[_]]
 
   val operation: A[AuditableAction.Value] = attribute("operation", AttributeFormat.enumFmt(AuditableAction), "Operation", O.readonly)
-  val details: A[JsObject] = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject(Nil), O.readonly)
+  val details: A[JsObject] = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject.empty, O.readonly)
   val otherDetails: A[Option[String]] = optionalAttribute("otherDetails", AttributeFormat.textFmt, "Other details", O.readonly)
   val objectType: A[String] = attribute("objectType", AttributeFormat.stringFmt, "Table affected by the operation", O.readonly)
   val objectId: A[String] = attribute("objectId", AttributeFormat.stringFmt, "Object targeted by the operation", O.readonly)
@@ -31,11 +31,11 @@ trait AuditAttributes { _: AttributeDef ⇒
 @Singleton
 class AuditModel(
     auditName: String,
-    auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName) with AuditAttributes {
+    auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
 
   @Inject() def this(
-    configuration: Configuration,
-    auditedModels: immutable.Set[AuditedModel]) =
+      configuration: Configuration,
+      auditedModels: immutable.Set[AuditedModel]) =
     this(
       configuration.get[String]("audit.name"),
       auditedModels)
@@ -60,7 +60,7 @@ class AuditModel(
 
   def mergeAttributes(context: String, attributes: Seq[Attribute[_]]): Option[ObjectAttributeFormat] = {
     val mergeAttributes: Iterable[Option[Attribute[_]]] = attributes
-      .groupBy(_.name)
+      .groupBy(_.attributeName)
       .map {
         case (_name, _attributes) ⇒
           _attributes
@@ -76,7 +76,7 @@ class AuditModel(
             }
             .map(format ⇒ Attribute("audit", _name, format, Nil, None, ""))
             .orElse {
-              logger.error(s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.name + ": " + a.format.name).mkString("\n")}")
+              logger.error(s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.attributeName + ": " + a.format.name).mkString("\n")}")
               None
             }
       }

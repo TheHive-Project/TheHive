@@ -10,6 +10,7 @@ import scala.util.{ Success, Try }
 import play.api.libs.json.{ JsObject, Json }
 
 import akka.stream.scaladsl.Sink
+import connectors.misp.JsonFormat.tlpWrites
 import models.{ Artifact, Case }
 import services.{ AlertSrv, ArtifactSrv }
 import JsonFormat.exportedAttributeWrites
@@ -48,15 +49,15 @@ class MispExport @Inject() (
 
     attrIndex
       .filter {
-        case (ExportedMispAttribute(_, category, tpe, value, _), index) ⇒ attrIndex.exists {
-          case (ExportedMispAttribute(_, `category`, `tpe`, `value`, _), otherIndex) ⇒ otherIndex >= index
+        case (ExportedMispAttribute(_, category, tpe, _, value, _), index) ⇒ attrIndex.exists {
+          case (ExportedMispAttribute(_, `category`, `tpe`, _, `value`, _), otherIndex) ⇒ otherIndex >= index
           case _ ⇒ true
         }
       }
       .map(_._1)
   }
 
-  def createEvent(mispConnection: MispConnection, title: String, severity: Long, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
+  def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution" → 0,
@@ -65,7 +66,9 @@ class MispExport @Inject() (
         "info" → title,
         "date" → dateFormat.format(date),
         "published" → false,
-        "Attribute" → attributes))
+        "Attribute" → attributes,
+        "Tag" → Json.arr(
+          Json.obj("name" → tlpWrites.writes(tlp)))))
     mispConnection("events")
       .post(mispEvent)
       .map { mispResponse ⇒
@@ -74,7 +77,7 @@ class MispExport @Inject() (
           .getOrElse(throw InternalError(s"Unexpected MISP response: ${mispResponse.status} ${mispResponse.statusText}\n${mispResponse.body}"))
         val messages = (mispResponse.json \ "errors" \ "Attribute")
           .asOpt[JsObject]
-          .getOrElse(JsObject(Nil))
+          .getOrElse(JsObject.empty)
           .fields
           .toMap
           .mapValues { m ⇒
@@ -92,7 +95,7 @@ class MispExport @Inject() (
 
   def exportAttribute(mispConnection: MispConnection, eventId: String, attribute: ExportedMispAttribute): Future[Artifact] = {
     val mispResponse = attribute match {
-      case ExportedMispAttribute(_, _, _, Right(attachment), comment) ⇒
+      case ExportedMispAttribute(_, _, _, _, Right(attachment), comment) ⇒
         attachmentSrv
           .source(attachment.id)
           .runReduce(_ ++ _)
@@ -111,11 +114,18 @@ class MispExport @Inject() (
             mispConnection("events/upload_sample").post(body)
           }
       case attr ⇒ mispConnection(s"attributes/add/$eventId").post(Json.toJson(attr))
-
     }
 
     mispResponse.map {
-      case response if response.status / 100 == 2 ⇒ attribute.artifact
+      case response if response.status / 100 == 2 ⇒
+        // then add tlp tag
+        // doesn't work with file artifact (malware sample attribute)
+        (response.json \ "Attribute" \ "id").asOpt[String]
+          .foreach { attributeId ⇒
+            mispConnection("/attributes/addTag")
+              .post(Json.obj("attribute" → attributeId, "tag" → tlpWrites.writes(attribute.tlp)))
+          }
+        attribute.artifact
       case response ⇒
         val json = response.json
         val message = (json \ "message").asOpt[String]
@@ -135,7 +145,7 @@ class MispExport @Inject() (
       (eventId, initialExportesArtifacts, existingAttributes) ← maybeEventId.fold {
         val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
         // if no event is associated to this case, create a new one
-        createEvent(mispConnection, caze.title(), caze.severity(), caze.startDate(), simpleAttributes).map {
+        createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes).map {
           case (eventId, exportedAttributes) ⇒ (eventId, exportedAttributes.map(a ⇒ Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
         }
       } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one

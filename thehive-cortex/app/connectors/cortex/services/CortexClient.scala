@@ -1,30 +1,52 @@
 package connectors.cortex.services
 
+import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
+
+import play.api.Logger
+import play.api.http.HeaderNames
+import play.api.libs.json.{ JsObject, JsValue, Json }
+import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
+import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
+
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileArtifact }
-import play.api.Logger
-import play.api.libs.json.{ JsObject, JsValue, Json }
-import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
-import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
-import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
+import models.HealthStatus
 import services.CustomWSAPI
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Future }
+import org.elastic4play.utils.RichFuture
+
+object CortexAuthentication {
+
+  abstract class Type {
+    def apply(request: WSRequest): WSRequest
+  }
+
+  case class Basic(username: String, password: String) extends Type {
+    def apply(request: WSRequest): WSRequest = {
+      request.withAuth(username, password, WSAuthScheme.BASIC)
+    }
+  }
+
+  case class Key(key: String) extends Type {
+    def apply(request: WSRequest): WSRequest = {
+      request.withHttpHeaders(HeaderNames.AUTHORIZATION → s"Bearer $key")
+    }
+  }
+}
 
 case class CortexError(status: Int, requestUrl: String, message: String) extends Exception(s"Cortex error on $requestUrl ($status) \n$message")
-class CortexClient(val name: String, baseUrl: String, key: String, authentication: Option[(String, String)], ws: CustomWSAPI) {
+class CortexClient(val name: String, baseUrl: String, authentication: Option[CortexAuthentication.Type], ws: CustomWSAPI) {
 
   private[CortexClient] lazy val logger = Logger(getClass)
 
-  logger.info(s"new Cortex($name, $baseUrl, $key) Basic Auth enabled: ${authentication.isDefined}")
-  def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ec: ExecutionContext): Future[A] = {
-    val requestBuilder = ws.url(s"$baseUrl/$uri").withHttpHeaders("auth" → key)
-    val authenticatedRequestBuilder = authentication.fold(requestBuilder) {
-      case (username, password) ⇒ requestBuilder.withAuth(username, password, WSAuthScheme.BASIC)
-    }
-    f(authenticatedRequestBuilder).map {
+  logger.info(s"new Cortex($name, $baseUrl) authentication: ${authentication.fold("no")(_.getClass.getName)}")
+  private def request[A](uri: String, f: WSRequest ⇒ Future[WSResponse], t: WSResponse ⇒ A)(implicit ec: ExecutionContext): Future[A] = {
+    val request = ws.url(s"$baseUrl/$uri")
+    val authenticatedRequest = authentication.fold(request)(_.apply(request))
+    f(authenticatedRequest).map {
       case response if response.status / 100 == 2 ⇒ t(response)
       case error                                  ⇒ throw CortexError(error.status, s"$baseUrl/$uri", error.body)
     }
@@ -54,23 +76,54 @@ class CortexClient(val name: String, baseUrl: String, key: String, authenticatio
     request(s"api/analyzer/type/$dataType", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
-  def listJob(implicit ec: ExecutionContext): Future[Seq[JsObject]] = {
-    request(s"api/job", _.get, _.json.as[Seq[JsObject]])
-  }
+  //  def listJob(implicit ec: ExecutionContext): Future[Seq[JsObject]] = {
+  //    request(s"api/job", _.get, _.json.as[Seq[JsObject]])
+  //  }
 
-  def getJob(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
-    request(s"api/job/$jobId", _.get, _.json.as[JsObject])
-  }
+  //  def getJob(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
+  //    request(s"api/job/$jobId", _.get, _.json.as[JsObject])
+  //  }
 
-  def removeJob(jobId: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    request(s"api/job/$jobId", _.delete, _ ⇒ ())
-  }
+  //  def removeJob(jobId: String)(implicit ec: ExecutionContext): Future[Unit] = {
+  //    request(s"api/job/$jobId", _.delete, _ ⇒ ())
+  //  }
 
-  def report(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
-    request(s"api/job/$jobId/report", _.get, r ⇒ r.json.as[JsObject])
-  }
+  //  def report(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
+  //    request(s"api/job/$jobId/report", _.get, _.json.as[JsObject])
+  //  }
 
   def waitReport(jobId: String, atMost: Duration)(implicit ec: ExecutionContext): Future[JsObject] = {
-    request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, r ⇒ r.json.as[JsObject])
+    request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, _.json.as[JsObject])
+  }
+
+  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+    request("api/status", _.get, identity)
+      .map {
+        case resp if resp.status / 100 == 2 ⇒ (resp.json \ "versions" \ "Cortex").asOpt[String]
+        case _                              ⇒ None
+      }
+      .recover { case _ ⇒ None }
+      .withTimeout(1.seconds, None)
+  }
+
+  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
+    getVersion()
+      .map {
+        case Some(version) ⇒ Json.obj(
+          "name" → name,
+          "version" → version,
+          "status" → "OK")
+        case None ⇒ Json.obj(
+          "name" → name,
+          "version" → "",
+          "status" → "ERROR")
+      }
+
+  def health()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+    getVersion()
+      .map {
+        case None ⇒ HealthStatus.Error
+        case _    ⇒ HealthStatus.Ok
+      }
   }
 }

@@ -41,7 +41,7 @@ trait AlertAttributes {
       Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
       Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
       Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
-      Attribute("alert", "tlp", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
+      Attribute("alert", "tlp", OptionalAttributeFormat(TlpAttributeFormat), Nil, None, ""),
       Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
       Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, ""))
   }
@@ -55,9 +55,9 @@ trait AlertAttributes {
   val caze: A[Option[String]] = optionalAttribute("case", F.stringFmt, "Id of the case, if created")
   val title: A[String] = attribute("title", F.textFmt, "Title of the alert")
   val description: A[String] = attribute("description", F.textFmt, "Description of the alert")
-  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the alert (0-3)", 2L)
+  val severity: A[Long] = attribute("severity", SeverityAttributeFormat, "Severity if the alert (0-3)", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
-  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
   val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
   val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
@@ -66,13 +66,15 @@ trait AlertAttributes {
 
 @Singleton
 class AlertModel @Inject() (dblists: DBLists)
-    extends ModelDef[AlertModel, Alert]("alert")
-    with AlertAttributes
-    with AuditedModel {
+  extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert")
+  with AlertAttributes
+  with AuditedModel {
 
   private[AlertModel] lazy val logger = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
   override val removeAttribute: JsObject = Json.obj("status" → AlertStatus.Ignored)
+  override val computedMetrics: Map[String, String] = Map(
+    "observableCount" → "_source['artifacts']?.size()")
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     // check if data attribute is present on all artifacts
@@ -103,8 +105,8 @@ class AlertModel @Inject() (dblists: DBLists)
 }
 
 class Alert(model: AlertModel, attributes: JsObject)
-    extends EntityDef[AlertModel, Alert](model, attributes)
-    with AlertAttributes {
+  extends EntityDef[AlertModel, Alert](model, attributes)
+  with AlertAttributes {
 
   override def toJson: JsObject = super.toJson +
     ("artifacts" → JsArray(artifacts().map {

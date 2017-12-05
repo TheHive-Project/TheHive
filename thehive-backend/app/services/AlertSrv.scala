@@ -55,20 +55,20 @@ class AlertSrv(
     implicit val mat: Materializer) extends AlertTransformer {
 
   @Inject() def this(
-    configuration: Configuration,
-    alertModel: AlertModel,
-    createSrv: CreateSrv,
-    getSrv: GetSrv,
-    updateSrv: UpdateSrv,
-    deleteSrv: DeleteSrv,
-    findSrv: FindSrv,
-    caseSrv: CaseSrv,
-    artifactSrv: ArtifactSrv,
-    caseTemplateSrv: CaseTemplateSrv,
-    attachmentSrv: AttachmentSrv,
-    connectors: ConnectorRouter,
-    ec: ExecutionContext,
-    mat: Materializer) = this(
+      configuration: Configuration,
+      alertModel: AlertModel,
+      createSrv: CreateSrv,
+      getSrv: GetSrv,
+      updateSrv: UpdateSrv,
+      deleteSrv: DeleteSrv,
+      findSrv: FindSrv,
+      caseSrv: CaseSrv,
+      artifactSrv: ArtifactSrv,
+      caseTemplateSrv: CaseTemplateSrv,
+      attachmentSrv: AttachmentSrv,
+      connectors: ConnectorRouter,
+      ec: ExecutionContext,
+      mat: Materializer) = this(
     configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     Map.empty[String, String],
     alertModel: AlertModel,
@@ -181,7 +181,8 @@ class AlertSrv(
                   .set("severity", JsNumber(alert.severity()))
                   .set("tags", JsArray(alert.tags().map(JsString)))
                   .set("tlp", JsNumber(alert.tlp()))
-                  .set("status", CaseStatus.Open.toString),
+                  .set("status", CaseStatus.Open.toString)
+                  .set("startDate", Json.toJson(alert.date())),
                 caseTemplate)
               _ ← importArtifacts(alert, caze)
               _ ← setCase(alert, caze)
@@ -317,6 +318,24 @@ class AlertSrv(
         case _ ⇒ Future.failed(InternalError("Case not found"))
       }
       .runWith(Sink.seq)
+  }
+
+  def getArtifactSeen(artifact: JsObject): Future[Long] = {
+    val maybeArtifactSeen = for {
+      dataType ← (artifact \ "dataType").asOpt[String]
+      data ← dataType match {
+        case "file" ⇒ (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
+        case _      ⇒ (artifact \ "data").asOpt[String].map(Left.apply)
+      }
+      numberOfSimilarArtifacts = artifactSrv.findSimilar(dataType, data, None, None, Nil)._2
+    } yield numberOfSimilarArtifacts
+    maybeArtifactSeen.getOrElse(Future.successful(0L))
+  }
+
+  def alertArtifactsWithSeen(alert: Alert): Future[Seq[JsObject]] = {
+    Future.traverse(alert.artifacts()) { artifact ⇒
+      getArtifactSeen(artifact).map(seen ⇒ artifact + ("seen" → JsNumber(seen)))
+    }
   }
 
   def fixStatus()(implicit authContext: AuthContext): Future[Unit] = {

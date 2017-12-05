@@ -423,18 +423,27 @@
             $scope.chTLP = '-1';
             $scope.updateTLP = function (value) {
                 $scope.chTLP = value;
-                angular.forEach($scope.selection.artifacts, function (te) {
-                    $scope.updateField(te.id, 'tlp', $scope.chTLP);
-                });
-                $scope.chTLP = '-1';
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {'tlp': $scope.chTLP})
+                    .then(function(){
+                        $scope.chTLP = '-1';
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
             };
 
-            $scope.setIOC = function (action) {
-                var ioc = action === 'setIocFlog';
-
-                angular.forEach($scope.selection.artifacts, function (te) {
-                    $scope.updateField(te.id, 'ioc', ioc);
-                });
+            $scope.setIOC = function (ioc) {
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {ioc: ioc})
+                    .then(function(){
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
+            };
+            $scope.setSightedFlag = function (sighted) {
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {sighted: sighted})
+                    .then(function(){
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
             };
 
             $scope.updateField = function (id, fieldName, newValue) {

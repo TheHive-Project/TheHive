@@ -29,7 +29,12 @@
                     _agg: 'count'
                 });
 
-                return $http.post('./api/' + config.objectType.replace(/_/g, '/') + '/_stats', {
+                var entity = config.objectType.replace(/_/g, '/');
+                if(entity[0] === '/') {
+                    entity = entity.substr(1);
+                }
+
+                return $http.post('./api/' + entity + '/_stats', {
                         query: config.query,
                         stats: stats
                     })

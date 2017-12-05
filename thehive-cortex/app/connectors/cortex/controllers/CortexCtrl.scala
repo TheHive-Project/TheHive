@@ -2,7 +2,7 @@ package connectors.cortex.controllers
 
 import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.Logger
 import play.api.http.Status
@@ -11,15 +11,18 @@ import play.api.mvc._
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
 
+import akka.actor.ActorSystem
+
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ AuxSrv, QueryDSL, QueryDef }
-import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.analyzerFormats
 import connectors.cortex.services.{ CortexConfig, CortexSrv }
-import models.Roles
+import models.HealthStatus.Type
+import models.{ HealthStatus, Roles }
 
 @Singleton
 class CortexCtrl @Inject() (
@@ -31,17 +34,43 @@ class CortexCtrl @Inject() (
     fieldsBodyParser: FieldsBodyParser,
     renderer: Renderer,
     components: ControllerComponents,
-    implicit val ec: ExecutionContext) extends AbstractController(components) with Connector with Status {
+    implicit val ec: ExecutionContext,
+    implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status {
 
   val name = "cortex"
   private[CortexCtrl] lazy val logger = Logger(getClass)
 
-  override val status: JsObject = Json.obj("enabled" → true, "servers" → cortexConfig.instances.map(_.name))
+  override def status: Future[JsObject] =
+    Future.traverse(cortexConfig.instances)(instance ⇒ instance.status())
+      .map { statusDetails ⇒
+        val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
+        val healthStatus = if (distinctStatus.contains("OK")) {
+          if (distinctStatus.size > 1) "WARNING" else "OK"
+        }
+        else "ERROR"
+        Json.obj(
+          "enabled" → true,
+          "servers" → statusDetails,
+          "status" → healthStatus)
+      }
+
+  override def health: Future[Type] = {
+    Future.traverse(cortexConfig.instances)(instance ⇒ instance.health())
+      .map { healthStatus ⇒
+        val distinctStatus = healthStatus.toSet
+        if (distinctStatus.contains(HealthStatus.Ok)) {
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        }
+        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
+      }
+  }
 
   val router = SimpleRouter {
     case POST(p"/job") ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)
     case POST(p"/job/_search") ⇒ findJob
+    case POST(p"/job/_stats") ⇒ statsJob
     case GET(p"/analyzer/$analyzerId<[^/]*>") ⇒ getAnalyzer(analyzerId)
     case GET(p"/analyzer/type/$dataType<[^/]*>") ⇒ getAnalyzerFor(dataType)
     case GET(p"/analyzer") ⇒ listAnalyzer
@@ -81,6 +110,15 @@ class CortexCtrl @Inject() (
     val (jobs, total) = cortexSrv.find(query, range, sort)
     val jobWithoutReport = auxSrv.apply(jobs, 0, withStats = false, removeUnaudited = true)
     renderer.toOutput(OK, jobWithoutReport, total)
+  }
+
+  @Timed
+  def statsJob: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+    val query = request.body.getValue("query")
+      .fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val aggs = request.body.getValue("stats")
+      .getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
+    cortexSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 
   @Timed

@@ -7,7 +7,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
         'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll'
+        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
+        'dndLists', 'colorpicker.module'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -122,12 +123,6 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     }
                 }
             })
-            .state('app.statistics', {
-                url: 'statistics',
-                templateUrl: 'views/partials/statistics.html',
-                controller: 'StatisticsCtrl',
-                title: 'Statistics'
-            })
             .state('app.administration', {
                 abstract: true,
                 url: 'administration',
@@ -163,7 +158,16 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: '/case-templates',
                 templateUrl: 'views/partials/admin/case-templates.html',
                 controller: 'AdminCaseTemplatesCtrl',
-                title: 'Templates administration'
+                controllerAs: '$vm',
+                title: 'Templates administration',
+                resolve: {
+                    templates: function(CaseTemplateSrv) {
+                        return CaseTemplateSrv.list();
+                    },
+                    fields: function(CustomFieldsCacheSrv){
+                        return CustomFieldsCacheSrv.all()
+                    }
+                }
             })
             .state('app.administration.report-templates', {
                 url: '/report-templates',
@@ -283,6 +287,46 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/alert/list.html',
                 controller: 'AlertListCtrl',
                 controllerAs: '$vm'
+            })
+            .state('app.dashboards', {
+                url: 'dashboards',
+                templateUrl: 'views/partials/dashboard/list.html',
+                controller: 'DashboardsCtrl',
+                controllerAs: '$vm'
+            })
+            .state('app.dashboards-view', {
+                url: 'dashboards/{id}',
+                templateUrl: 'views/partials/dashboard/view.html',
+                controller: 'DashboardViewCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    dashboard: function(NotificationSrv, DashboardSrv, $stateParams, $q) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.get($stateParams.id)
+                            .then(function(response) {
+                                defer.resolve(response.data);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    },
+                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.getMetadata()
+                            .then(function(response) {
+                                defer.resolve(response);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             });
     })
     .config(function($httpProvider) {
@@ -333,7 +377,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
             verticalSpacing: 20,
             horizontalSpacing: 20,
             positionX: 'left',
-            positionY: 'top'
+            positionY: 'bottom'
         });
     })
     .config(['markedProvider', 'hljsServiceProvider', function(markedProvider, hljsServiceProvider) {

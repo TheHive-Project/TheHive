@@ -20,7 +20,7 @@ trait AuditedModel { self: BaseModelDef ⇒
 
   lazy val auditedAttributes: Map[String, Attribute[_]] =
     attributes
-      .collect { case a if !a.isUnaudited ⇒ a.name → a }
+      .collect { case a if !a.isUnaudited ⇒ a.attributeName → a }
       .toMap
   def selectAuditedAttributes(attrs: JsObject) = JsObject {
     attrs.fields.flatMap {
@@ -66,7 +66,7 @@ class AuditActor @Inject() (
       val audit = Json.obj(
         "operation" → action,
         "details" → model.selectAuditedAttributes(details),
-        "objectType" → model.name,
+        "objectType" → model.modelName,
         "objectId" → id,
         "base" → !currentRequestIds.contains(requestId),
         "startDate" → date,

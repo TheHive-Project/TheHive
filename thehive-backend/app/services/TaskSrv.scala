@@ -5,7 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-import play.api.libs.json.{ JsBoolean, JsObject }
+import play.api.libs.json.{ JsFalse, JsObject }
 
 import akka.NotUsed
 import akka.stream.Materializer
@@ -64,8 +64,8 @@ class TaskSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
     val filter = and(parent("case", withId(caseIds: _*)), "status" in (TaskStatus.Waiting.toString, TaskStatus.InProgress.toString))
     val range = Some("all")
-    val completeTask = Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsBoolean(false))
-    val cancelTask = Fields.empty.set("status", TaskStatus.Cancel.toString).set("flag", JsBoolean(false))
+    val completeTask = Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsFalse)
+    val cancelTask = Fields.empty.set("status", TaskStatus.Cancel.toString).set("flag", JsFalse)
 
     find(filter, range, Nil)
       ._1

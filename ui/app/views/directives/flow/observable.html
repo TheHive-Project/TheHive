@@ -9,7 +9,7 @@
             <tlp value="base.object.tlp"></tlp>
         </span>
         <div class="flow-item-bulk" ng-if="isBulkOperation()">
-            <em>{{summary.case_artifact.Creation}} other observables have also been added</em>
+            <em>{{summary.case_artifact.Creation}} other observables have also been {{base.operation === 'Creation' ? 'added' : 'updated'}}</em>
             <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.case.id})">See all</a>
         </div>
     </div>

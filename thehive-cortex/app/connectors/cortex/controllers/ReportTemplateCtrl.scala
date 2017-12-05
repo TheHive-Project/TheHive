@@ -11,7 +11,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{ JsBoolean, JsObject }
+import play.api.libs.json.{ JsBoolean, JsFalse, JsObject, JsTrue }
 import play.api.mvc._
 
 import org.elastic4play.{ BadRequestError, Timed }
@@ -115,12 +115,12 @@ class ReportTemplateCtrl @Inject() (
               val reportTemplateId = analyzerId + "_" + reportType
               reportTemplateSrv.update(reportTemplateId, Fields.empty.set("content", content))
           }
-          .map(_.id → JsBoolean(true))
+          .map(_.id → JsTrue)
           .recoverWith {
             case NonFatal(e) ⇒
               logger.error(s"The import of the report template $analyzerId ($reportType) has failed", e)
               val reportTemplateId = analyzerId + "_" + reportType
-              Future.successful(reportTemplateId → JsBoolean(false))
+              Future.successful(reportTemplateId → JsFalse)
           }
     }
 

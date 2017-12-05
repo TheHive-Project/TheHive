@@ -1,0 +1,11 @@
+.metric-item,
+.customfield-item {
+    background-color: #f9f9f9;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+
+.task-item {
+    background-color: #f9f9f9;    
+    margin-bottom: 5px;
+}

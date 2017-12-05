@@ -1,0 +1,13 @@
+<form>
+    <div class="chart-edit-dialog modal-header bg-primary">
+        <h3 class="modal-title">
+            <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>
+            {{component.options.title || 'No title'}}
+        </h3>
+    </div>
+    <div class="modal-body" ng-include="'views/directives/dashboard/'+component.type+'/edit.html'"></div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+        <button class="btn btn-primary pull-right" ng-click="save()">Apply</button>
+    </div>
+</form>

@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="bower_components/bootstrap-markdown/css/bootstrap-markdown.min.css" />
     <link rel="stylesheet" href="bower_components/angular-markdown-editor-ghiscoding/styles/angular-markdown-editor.css" />
     <link rel="stylesheet" href="bower_components/angular-page-loader/dist/angular-page-loader.css" />
+    <link rel="stylesheet" href="bower_components/angular-bootstrap-colorpicker/css/colorpicker.css" />
     <!-- endbower -->
     <link rel="stylesheet" href="bower_components/smalot-bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.bootstrap.min.css"/>
@@ -45,7 +46,9 @@
     <link rel="stylesheet" href="styles/flow.css"/>
     <link rel="stylesheet" href="styles/search.css"/>
     <link rel="stylesheet" href="styles/filters.css"/>
+    <link rel="stylesheet" href="styles/dashboard.css"/>
     <link rel="stylesheet" href="styles/case-item.css"/>
+    <link rel="stylesheet" href="styles/case-template.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
     <!-- endbuild -->
@@ -108,6 +111,9 @@
     <script src="bower_components/js-base64/base64.js"></script>
     <script src="bower_components/angular-scroll/angular-scroll.js"></script>
     <script src="bower_components/underscore.string/dist/underscore.string.js"></script>
+    <script src="bower_components/angular-drag-and-drop-lists/angular-drag-and-drop-lists.js"></script>
+    <script src="bower_components/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.js"></script>
+    <script src="bower_components/file-saver/FileSaver.js"></script>
     <!-- endbower -->
 
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
@@ -133,7 +139,6 @@
     <script src="scripts/controllers/RootCtrl.js"></script>
     <script src="scripts/controllers/SearchCtrl.js"></script>
     <script src="scripts/controllers/SettingsCtrl.js"></script>
-    <script src="scripts/controllers/StatisticsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldDialogCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
@@ -163,14 +168,17 @@
     <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardsCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
+    <script src="scripts/directives/affixer.js"></script>
     <script src="scripts/directives/charts/c3Chart.js"></script>
-    <script src="scripts/directives/charts/chart.js"></script>
-    <script src="scripts/directives/charts/donut-chart.js"></script>
-    <script src="scripts/directives/charts/duration-over-time-chart.js"></script>
-    <script src="scripts/directives/charts/histo-chart.js"></script>
-    <script src="scripts/directives/charts/metric-histo-chart.js"></script>
     <script src="scripts/directives/compare-to.js"></script>
+    <script src="scripts/directives/dashboard/bar.js"></script>
+    <script src="scripts/directives/dashboard/counter.js"></script>
+    <script src="scripts/directives/dashboard/donut.js"></script>
+    <script src="scripts/directives/dashboard/item.js"></script>
+    <script src="scripts/directives/dashboard/line.js"></script>
     <script src="scripts/directives/dateTimePicker.js"></script>
     <script src="scripts/directives/dt-picker.js"></script>
     <script src="scripts/directives/entityLink.js"></script>
@@ -222,11 +230,13 @@
     <script src="scripts/services/CaseSrv.js"></script>
     <script src="scripts/services/CaseTabsSrv.js"></script>
     <script src="scripts/services/CaseTaskSrv.js"></script>
+    <script src="scripts/services/CaseTemplate.js"></script>
     <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/ChartSrv.js"></script>
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
     <script src="scripts/services/CustomFieldsCacheSrv.js"></script>
+    <script src="scripts/services/DashboardSrv.js"></script>
     <script src="scripts/services/EntitySrv.js"></script>
     <script src="scripts/services/FileResource.js"></script>
     <script src="scripts/services/FilteringSrv.js"></script>
@@ -235,9 +245,11 @@
     <script src="scripts/services/ListSrv.js"></script>
     <script src="scripts/services/MetricsCacheSrv.js"></script>
     <script src="scripts/services/MispSrv.js"></script>
+    <script src="scripts/services/ModalUtilsSrv.js"></script>
     <script src="scripts/services/NotificationSrv.js"></script>
     <script src="scripts/services/ObservablesUISrv.js"></script>
     <script src="scripts/services/PSearchSrv.js"></script>
+    <script src="scripts/services/QueryBuilderSrv.js"></script>
     <script src="scripts/services/ReportTemplateSrv.js"></script>
     <script src="scripts/services/SearchSrv.js"></script>
     <script src="scripts/services/StatSrv.js"></script>
@@ -246,7 +258,6 @@
     <script src="scripts/services/StreamStatSrv.js"></script>
     <script src="scripts/services/TagSrv.js"></script>
     <script src="scripts/services/TaskLogSrv.js"></script>
-    <script src="scripts/services/TemplateSrv.js"></script>
     <script src="scripts/services/UserInfoSrv.js"></script>
     <script src="scripts/services/UserSrv.js"></script>
     <script src="scripts/services/UtilsSrv.js"></script>

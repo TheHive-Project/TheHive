@@ -1,21 +1,30 @@
 <div class="modal-header bg-primary">
     <h3 class="modal-title">MISP Export</h3>
 </div>
-<div class="modal-body">
+<div class="modal-body misp-export">
     <div ng-if="dialog.mode !== 'error'">
         <p>
-            You are about to export the case <strong>{{dialog.caze.title}}</strong> to on of the following MISP servers:
+            You are about to export the case <strong>{{dialog.caze.title}}</strong> to one of the following MISP servers:
         </p>
 
         <table class="mt-m table table-striped valigned">
             <tbody class="pv-xs" ng-repeat="server in dialog.servers">
                 <tr>
-                    <td><h4>{{server}}</h4></td>
+                    <td width="100">
+                        <h4>
+                            <span class="mr-xs status-label label" ng-class="{
+                                'OK': 'label-success',
+                                'ERROR': 'label-danger'}[server.status]">{{server.status}}</span>
+                        </h4>
+                    </td>
+                    <td>
+                        <h4>{{server.name}}</h4>
+                    </td>
                     <td width="150">
                         <button class="btn btn-block pull-right"
                             ng-class="{'btn-primary': dialog.existingExports[server], 'btn-warning': !dialog.existingExports[server]}"
                             ng-click="dialog.export(server)"
-                            ng-disabled="dialog.loading">{{dialog.existingExports[server] ? 'Update' : 'Export'}}</button>
+                            ng-disabled="dialog.loading || server.status === 'ERROR'">{{dialog.existingExports[server] ? 'Update' : 'Export'}}</button>
                     </td>
                 </tr>
             </tbody>

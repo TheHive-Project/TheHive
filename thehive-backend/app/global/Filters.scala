@@ -34,14 +34,14 @@ object CSRFFilter {
 
 @Singleton
 class CSRFFilter @Inject() (
-  config: Provider[CSRFConfig],
-  tokenSignerProvider: Provider[CSRFTokenSigner],
-  sessionConfiguration: SessionConfiguration,
-  tokenProvider: TokenProvider,
-  errorHandler: ErrorHandler)(mat: Materializer)
-    extends play.filters.csrf.CSRFFilter(
-      config.get.copy(shouldProtect = CSRFFilter.shouldProtect),
-      tokenSignerProvider.get,
-      sessionConfiguration,
-      tokenProvider,
-      errorHandler)(mat)
+    config: Provider[CSRFConfig],
+    tokenSignerProvider: Provider[CSRFTokenSigner],
+    sessionConfiguration: SessionConfiguration,
+    tokenProvider: TokenProvider,
+    errorHandler: ErrorHandler)(mat: Materializer)
+  extends play.filters.csrf.CSRFFilter(
+    config.get.copy(shouldProtect = CSRFFilter.shouldProtect),
+    tokenSignerProvider.get,
+    sessionConfiguration,
+    tokenProvider,
+    errorHandler)(mat)

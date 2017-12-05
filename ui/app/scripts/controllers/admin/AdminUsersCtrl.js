@@ -13,7 +13,8 @@
              * users management page
              */
             $scope.userlist = PSearchSrv(undefined, 'user', {
-                scope: $scope
+                scope: $scope,
+                sort: '+name',
             });
             $scope.initNewUser = function() {
                 $scope.apiKey = false;
@@ -113,7 +114,8 @@
                     controllerAs: '$vm',
                     size: 'lg',
                     resolve: {
-                        user: angular.copy(user) || {}
+                        user: angular.copy(user) || {},
+                        isEdit: !!user
                     }
                 });
 

@@ -22,9 +22,9 @@ case class AuditOperationGroup(
     obj: Future[JsObject],
     summary: Map[String, Map[String, Int]], isReady: Boolean) extends StreamMessageGroup[AuditOperation] {
   def :+(operation: AuditOperation): AuditOperationGroup = {
-    val modelSummary = summary.getOrElse(operation.entity.model.name, Map.empty[String, Int])
+    val modelSummary = summary.getOrElse(operation.entity.model.modelName, Map.empty[String, Int])
     val actionCount = modelSummary.getOrElse(operation.action.toString, 0)
-    copy(summary = summary + (operation.entity.model.name → (modelSummary +
+    copy(summary = summary + (operation.entity.model.modelName → (modelSummary +
       (operation.action.toString → (actionCount + 1)))))
   }
 
@@ -34,7 +34,7 @@ case class AuditOperationGroup(
     Json.obj(
       "base" → Json.obj(
         "objectId" → operation.entity.id,
-        "objectType" → operation.entity.model.name,
+        "objectType" → operation.entity.model.modelName,
         "operation" → operation.action,
         "startDate" → operation.date,
         "rootId" → operation.entity.routing,
@@ -57,7 +57,7 @@ object AuditOperationGroup {
         .map {
           case (name, value) ⇒
             val baseName = name.split("\\.").head
-            (name, value, operation.entity.model.attributes.find(_.name == baseName))
+            (name, value, operation.entity.model.attributes.find(_.attributeName == baseName))
         }
         .collect { case (name, value, Some(attr)) if !attr.isUnaudited ⇒ (name, value) }
     }
@@ -65,14 +65,14 @@ object AuditOperationGroup {
       .recover {
         case error ⇒
           logger.error("auxSrv fails", error)
-          JsObject(Nil)
+          JsObject.empty
       }
     new AuditOperationGroup(
       auxSrv,
       operation,
       auditedAttributes,
       obj,
-      Map(operation.entity.model.name → Map(operation.action.toString → 1)),
+      Map(operation.entity.model.modelName → Map(operation.action.toString → 1)),
       false)
   }
 }

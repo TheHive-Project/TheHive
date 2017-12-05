@@ -13,6 +13,7 @@
             $scope.params = {
                 bulk: false,
                 ioc: false,
+                sighted: false,
                 data: '',
                 tlp: 2,
                 message: '',
@@ -71,6 +72,7 @@
                     postData = {
                         dataType: params.dataType,
                         ioc: params.ioc,
+                        sighted: params.sighted,
                         tlp: params.tlp,
                         message: params.message,
                         tags: _.unique(_.pluck($scope.tags, 'text'))

@@ -18,21 +18,18 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
-  .settings(SbtScalariform.scalariformSettings: _*)
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
+  .enablePlugins(PublishToBinTray)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .settings(aggregate in Debian := false)
   .settings(aggregate in Rpm := false)
   .settings(aggregate in Docker := false)
-  .settings(PublishToBinTray.settings: _*)
-  .settings(Release.settings: _*)
-
 
 // Redirect logs from ElasticSearch (which uses log4j2) to slf4j
-libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.0"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.1"
 excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))
@@ -58,10 +55,6 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     ))
   )
 
-
-Release.releaseVersionUIFile := baseDirectory.value / "ui" / "package.json"
-Release.changelogFile := baseDirectory.value / "CHANGELOG.md"
-
 // Front-end //
 run := {
   (run in Compile).evaluated
@@ -81,8 +74,8 @@ mappings in Universal ~= {
     file("package/thehive.service") -> "package/thehive.service",
     file("package/thehive.conf") -> "package/thehive.conf",
     file("package/thehive") -> "package/thehive",
-    file("package/logback.xml") -> "conf/logback.xml"
-  )
+    file("package/logback.xml") -> "conf/logback.xml",
+  ) ++ (file("migration").**(AllPassFilter) pair Path.rebase(file("migration"), "migration"))
 }
 
 // Package //
@@ -122,7 +115,7 @@ packageBin := {
 }
 // DEB //
 linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
-version in Debian := version.value + "-1"
+version in Debian := version.value + "-0"
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "openjdk-8-jre-headless"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
@@ -146,11 +139,13 @@ linuxPackageSymlinks in Rpm := Nil
 rpmPrefix := Some(defaultLinuxInstallLocation.value)
 linuxEtcDefaultTemplate in Rpm := (baseDirectory.value / "package" / "etc_default_thehive").asURL
 rpmReleaseFile := {
+  import scala.sys.process._
   val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
   s"rpm --addsign $rpmFile".!!
   rpmFile
 }
 packageBin in Rpm := {
+  import scala.sys.process._
   val rpmFile = (packageBin in Rpm).value
   s"rpm --addsign $rpmFile".!!
   rpmFile
@@ -192,42 +187,8 @@ bintrayOrganization := Some("cert-bdf")
 bintrayRepository := "thehive"
 publish := {
   (publish in Docker).value
-  PublishToBinTray.publishRelease.value
-  PublishToBinTray.publishLatest.value
-  PublishToBinTray.publishRpm.value
-  PublishToBinTray.publishDebian.value
+  publishRelease.value
+  publishLatest.value
+  publishRpm.value
+  publishDebian.value
 }
-
-// Scalariform //
-import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-
-ScalariformKeys.preferences in ThisBuild := ScalariformKeys.preferences.value
-  .setPreference(AlignParameters, false)
-  //  .setPreference(FirstParameterOnNewline, Force)
-  .setPreference(AlignArguments, true)
-  //  .setPreference(FirstArgumentOnNewline, true)
-  .setPreference(AlignSingleLineCaseStatements, true)
-  .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 60)
-  .setPreference(CompactControlReadability, true)
-  .setPreference(CompactStringConcatenation, false)
-  .setPreference(DoubleIndentClassDeclaration, true)
-  //  .setPreference(DoubleIndentMethodDeclaration, true)
-  .setPreference(FormatXml, true)
-  .setPreference(IndentLocalDefs, false)
-  .setPreference(IndentPackageBlocks, false)
-  .setPreference(IndentSpaces, 2)
-  .setPreference(IndentWithTabs, false)
-  .setPreference(MultilineScaladocCommentsStartOnFirstLine, false)
-  //  .setPreference(NewlineAtEndOfFile, true)
-  .setPreference(PlaceScaladocAsterisksBeneathSecondAsterisk, false)
-  .setPreference(PreserveSpaceBeforeArguments, false)
-  //  .setPreference(PreserveDanglingCloseParenthesis, false)
-  .setPreference(DanglingCloseParenthesis, Prevent)
-  .setPreference(RewriteArrowSymbols, true)
-  .setPreference(SpaceBeforeColon, false)
-  //  .setPreference(SpaceBeforeContextColon, false)
-  .setPreference(SpaceInsideBrackets, false)
-  .setPreference(SpaceInsideParentheses, false)
-  .setPreference(SpacesWithinPatternBinders, true)
-  .setPreference(SpacesAroundMultiImports, true)

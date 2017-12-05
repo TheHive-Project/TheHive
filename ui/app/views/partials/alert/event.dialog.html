@@ -66,12 +66,16 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
+                            <th style="width:20px;"></th>
                             <th style="width:100px;">Type</th>
                             <th>Data</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr ng-repeat="attribute in dialog.pagination.data">
+                            <td>
+                                <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
+                            </td>
                             <td>{{attribute.dataType}}</td>
                             <td class="wrap" ng-if="attribute.dataType !== 'file'">
                                 {{attribute.data | fang | ellipsis:250}}

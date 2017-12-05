@@ -1,7 +1,7 @@
 <div class="row">
     <!-- Observable details information-->
     <div class="col-md-7">
-		<h3 class="vpad10 text-primary">Observable Information</h3>
+		<h3 class="vpad10 text-primary">Metadata</h3>
 		<dl class="dl-horizontal clear">
 			<dt class="pull-left">TLP</dt>
 			<dd>
@@ -31,13 +31,17 @@
         <dl class="dl-horizontal clear">
 			<dt class="pull-left">Is IOC</dt>
 			<dd>
-				<span ng-init="iocActive = false" ng-mouseenter="iocActive = true" ng-mouseleave="iocActive = false" ng-click="updateField('ioc', !artifact.ioc)">
+				<span class="clickable" ng-click="updateField('ioc', !artifact.ioc)">
                     <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
-                    <small ng-show="iocActive">
-                        <a href class="clickable" uib-tooltip="edit">
-                            <i class="glyphicon glyphicon-pencil"></i>
-                        </a>
-                    </small>
+				</span>
+			</dd>
+		</dl>
+
+        <dl class="dl-horizontal clear">
+			<dt class="pull-left">Has been sighted</dt>
+			<dd>
+				<span class="clickable" ng-click="updateField('sighted', !artifact.sighted)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-toggle-on', 'false': 'fa-toggle-off'}[artifact.sighted]"></i>                    
 				</span>
 			</dd>
 		</dl>
@@ -56,7 +60,7 @@
     </div>
     <!-- Observable links -->
     <div class="col-md-5">
-		<h3 class="vpad10 text-primary">Observable Links</h3>
+		<h3 class="vpad10 text-primary">Links</h3>
 		<strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
 		<table  ng-if="similarArtifacts.length > 0" class="table table-hover">
 			<thead>

@@ -37,21 +37,21 @@ trait CaseAttributes { _: AttributeDef ⇒
   val caseId: A[Long] = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
   val title: A[String] = attribute("title", F.textFmt, "Title of the case")
   val description: A[String] = attribute("description", F.textFmt, "Description of the case")
-  val severity: A[Long] = attribute("severity", F.numberFmt, "Severity if the case is an incident (0-3)", 2L)
-  val owner: A[String] = attribute("owner", F.stringFmt, "Owner of the case")
+  val severity: A[Long] = attribute("severity", SeverityAttributeFormat, "Severity if the case is an incident (0-3)", 2L)
+  val owner: A[String] = attribute("owner", F.userFmt, "Owner of the case")
   val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val endDate: A[Option[Date]] = optionalAttribute("endDate", F.dateFmt, "Resolution date")
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag: A[Boolean] = attribute("flag", F.booleanFmt, "Flag of the case", false)
-  val tlp: A[Long] = attribute("tlp", F.numberFmt, "TLP level", 2L)
+  val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val status: A[CaseStatus.Value] = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
-  val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics", JsObject(Nil))
+  val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics", JsObject.empty)
   val resolutionStatus: A[Option[CaseResolutionStatus.Value]] = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
   val impactStatus: A[Option[CaseImpactStatus.Value]] = optionalAttribute("impactStatus", F.enumFmt(CaseImpactStatus), "Impact status of the case")
   val summary: A[Option[String]] = optionalAttribute("summary", F.textFmt, "Summary of the case, to be provided when closing a case")
   val mergeInto: A[Option[String]] = optionalAttribute("mergeInto", F.stringFmt, "Id of the case created by the merge")
   val mergeFrom: A[Seq[String]] = multiAttribute("mergeFrom", F.stringFmt, "Id of the cases merged")
-  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields", JsObject(Nil))
+  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields", JsObject.empty)
 }
 
 @Singleton
@@ -62,7 +62,7 @@ class CaseModel @Inject() (
     alertModel: Provider[AlertModel],
     sequenceSrv: SequenceSrv,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case") with CaseAttributes with AuditedModel { caseModel ⇒
+    implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case", "Case", "/case") with CaseAttributes with AuditedModel { caseModel ⇒
 
   private[CaseModel] lazy val logger = Logger(getClass)
   override val defaultSortBy = Seq("-startDate")
@@ -79,7 +79,7 @@ class CaseModel @Inject() (
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
         updateAttrs +
           ("endDate" → Json.toJson(new Date)) +
-          ("flag" → JsBoolean(false))
+          ("flag" → JsFalse)
       case Some(CaseStatus.Open) ⇒
         updateAttrs + ("endDate" → JsArray(Nil))
       case _ ⇒
@@ -109,7 +109,7 @@ class CaseModel @Inject() (
         "status" in ("Waiting", "InProgress", "Completed")),
       groupByField("status", selectCount))
       .map { taskStatsJson ⇒
-        val (taskCount, taskStats) = taskStatsJson.value.foldLeft((0L, JsObject(Nil))) {
+        val (taskCount, taskStats) = taskStatsJson.value.foldLeft((0L, JsObject.empty)) {
           case ((total, s), (key, value)) ⇒
             val count = (value \ "count").as[Long]
             (total + count, s + (key → JsNumber(count)))
@@ -177,7 +177,9 @@ class CaseModel @Inject() (
   }
 
   override val computedMetrics = Map(
-    "handlingDuration" → "doc['endDate'].value - doc['startDate'].value")
+    "handlingDurationInSeconds" → "(doc['endDate'].value - doc['startDate'].value) / 1000",
+    "handlingDurationInHours" → "(doc['endDate'].value - doc['startDate'].value) / 3600000",
+    "handlingDurationInDays" → "(doc['endDate'].value - doc['startDate'].value) / (3600000 * 24)")
 }
 
 class Case(model: CaseModel, attributes: JsObject) extends EntityDef[CaseModel, Case](model, attributes) with CaseAttributes

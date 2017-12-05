@@ -1,0 +1,105 @@
+<div ng-switch="editorFor(filter)">
+    <!-- <input ng-switch-when="number" type="number" class="form-control" ng-model="filter.value"> -->
+    <input ng-switch-when="text" type="text" class="form-control" ng-model="filter.value">
+
+    <div ng-switch-when="number" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || '='}} <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '='">=</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '!='">!=</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<'">&lt;</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<='">&lt;=</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">&gt;</a></li>
+                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">&gt;=</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs">
+            <input type="number" class="form-control" ng-model="filter.value.value">
+        </div>
+    </div>
+
+    <div ng-switch-when="user" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
+                <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
+                <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs">
+            <tags-input class="form-control-wrapper" min-length="2" ng-model="filter.value.list"
+                placeholder="ex: Firstname Lastname"
+                replace-spaces-with-dashes="false"
+                add-from-autocomplete-only="true"
+                display-property="label">
+                    <auto-complete load-on-down-arrow="true" source="promiseFor(filter, $query)" display-property="label"></auto-complete>
+                </tags-input>
+        </div>
+    </div>
+
+    <div ng-switch-when="string" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
+                <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
+                <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs">
+            <tags-input class="form-control-wrapper" min-length="2"
+                ng-model="filter.value.list"
+                placeholder="Enter a {{filter.field}}"
+                replace-spaces-with-dashes="false"></tags-input>
+        </div>
+    </div>
+
+    <div ng-switch-when="enumeration" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
+                <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
+                <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs">
+            <tags-input class="form-control-wrapper" min-length="2" ng-model="filter.value.list"
+                replace-spaces-with-dashes="false"
+                add-from-autocomplete-only="true"
+                placeholder="Enter a {{filter.field}}"
+                display-property="label">
+                <auto-complete load-on-focus="true" load-on-down-arrow="true" min-length="1"
+                    source="promiseFor(filter, $query)"
+                    display-property="label"></auto-complete>
+            </tags-input>
+        </div>
+
+    </div>
+
+    <div ng-switch-when="boolean" class="row">
+        <div class="col-xs-12 pl-0 btn-group">
+            <label uib-btn-radio="true" class="btn btn-default" name="{{filter.field}}" ng-model="filter.value">Yes</label>
+            <label uib-btn-radio="false" class="btn btn-default" name="{{filter.field}}" ng-model="filter.value">No</label>
+        </div>
+    </div>
+
+    <div ng-switch-when="date" class="row">
+        <div class="col-xs-6 pl-0">
+            <dt-picker date="filter.value.from" placeholder="from"></dt-picker>
+        </div>
+        <div class="col-xs-6 pl-0">
+            <dt-picker date="filter.value.to" placeholder="to"></dt-picker>
+        </div>
+    </div>
+</div>

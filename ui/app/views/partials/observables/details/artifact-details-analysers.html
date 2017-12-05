@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-md-12">
         <h3 class="pv-xxs pr-xxs text-primary">
-            Observable Analyzers
+            Analysis
             <span class="pull-right" ng-if="analysisEnabled">
                 <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
             </span>
@@ -9,8 +9,7 @@
         <table class="table table-striped">
             <thead>
                 <th>Analyzer</th>
-                <th width="200">Cortex Server</th>
-                <th width="280">Last analysis</th>
+                <th width="450">Last analysis</th>
                 <th width="60" ng-if="analysisEnabled">Action</th>
             </thead>
             <tbody>
@@ -20,14 +19,14 @@
                         <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
                             <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
                         </a>
-                        <span>{{::analyzerId}}</span>
-                        <div class="text-muted">{{::analyzer.description}}</div>
+                        <span uib-tooltip="{{analyzer.description}}">{{::analyzerId}}</span>
+                        <!-- <div class="text-muted">{{}}</div> -->
                     </td>
-                    <td>
+                    <!-- <td>
                         <ul class="list-unstyled">
                             <li ng-repeat="cortexId in analyzer.cortexIds">{{cortexId}}</li>
                         </ul>
-                    </td>
+                    </td> -->
                     <td>
                         <ul class="list-unstyled">
                             <li ng-if="jobs.length === 0"><em>None</em></li>
@@ -36,16 +35,40 @@
                                     <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin'}[job.status]"></i>
                                 </span>
 
-                                <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a>
+                                <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a> ({{job.cortexId}})
                             </li>
                         </ul>
                     </td>
                     <td ng-if="analysisEnabled">
                         <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
                             ng-click="runAnalyzer(analyzerId)"
-                            ng-if="analyzer.active">
+                            ng-if="analyzer.cortexIds.length === 1 && analyzer.active">
                             <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
                         </span>
+
+                        <div class="btn-group" ng-if="analyzer.cortexIds.length > 1 && analyzer.active" uib-dropdown>
+                            <button type="button" class="btn btn-xs dropdown-toggle"
+                                ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
+                                uib-dropdown-toggle>
+                                <span class="mr-xxxs">
+                                    <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
+                                </span>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" uib-dropdown-menu>
+                                <li ng-repeat="srv in cortexServers">
+                                    <a href ng-click="runAnalyzer(analyzerId, srv.name)" ng-disabled="srv.status === 'ERROR'">
+                                        <div>
+                                            <strong>{{srv.name}}</strong>
+                                        </div>
+                                        <div>
+                                            <strong ng-class="{'OK': 'text-success', 'ERROR': 'text-danger'}[srv.status]">Status: {{srv.status}}</strong>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
                     </td>
                 </tr>
             </tbody>

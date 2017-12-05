@@ -14,14 +14,14 @@ import services.UserSrv
 import org.elastic4play.services.EventSrv
 
 /**
- * This actor listens message from migration (message UpdateMispAlertArtifact) which indicates that artifacts in
- * MISP event must be retrieved in inserted in alerts.
- *
- * @param eventSrv event bus used to receive migration message
- * @param userSrv user service used to do operations on database without real user request
- * @param mispSrv misp service to invoke artifact update action
- * @param ec execution context
- */
+  * This actor listens message from migration (message UpdateMispAlertArtifact) which indicates that artifacts in
+  * MISP event must be retrieved in inserted in alerts.
+  *
+  * @param eventSrv event bus used to receive migration message
+  * @param userSrv user service used to do operations on database without real user request
+  * @param mispSrv misp service to invoke artifact update action
+  * @param ec execution context
+  */
 @Singleton
 class UpdateMispAlertArtifactActor @Inject() (
     eventSrv: EventSrv,

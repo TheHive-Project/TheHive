@@ -1,0 +1,117 @@
+
+<div class="box">
+    <div class="box-header with-border">
+        <h3 class="box-title">
+            {{$vm.dashboard.title}}
+        </h3>
+        <div class="box-tools pull-right">
+            <a href class="mr-xxs btn btn-sm btn-primary" ng-click="$vm.enableEditMode()" ng-show="$vm.canEditDashboard() && !$vm.options.editLayout">
+                <i class="fa fa-pencil"></i> Edit
+            </a>
+            <a href class="mr-xxs btn btn-default btn-sm" ng-click="$vm.exportDashboard()" ng-show="!$vm.options.editLayout">
+                <i class="fa fa-download"></i> Export
+            </a>
+
+            <a class="btn btn-box-tool" ui-sref="app.dashboards()">
+                <i class="fa fa-chevron-left"></i> Back to list
+            </a>
+
+        </div>
+    </div>
+    <div class="box-body">
+        <div class="box-tools">
+            <div class="dashboard-period pull-left">
+                <div class="mv-xxxs">
+                    <span class="label label-lg mr-xs text-black">Select period</span>
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-repeat="period in $vm.dashboardPeriods"
+                        ng-click="$vm.applyPeriod(period.type)"
+                        ng-class="{'label-primary': $vm.definition.period === period.type}">{{period.label}}</span>
+                    <span class="label label-lg label-default mr-xxs clickable"
+                        ng-click="$vm.definition.period = 'custom'"
+                        ng-class="{'label-primary': $vm.definition.period === 'custom'}">Custom period</span>
+                </div>
+            </div>
+            <div class="mv-xxxs form-inline pull-left" ng-show="$vm.definition.period === 'custom'">
+                <div class="form-group hpad10">
+                    <label>From</label>
+                    <dt-picker date="$vm.definition.customPeriod.fromDate"></dt-picker>
+                </div>
+                <div class="form-group hpad10">
+                    <label>To</label>
+                    <dt-picker date="$vm.definition.customPeriod.toDate"></dt-picker>
+                </div>
+                <button type="button" class="btn btn-primary" ng-click="$vm.applyPeriod('custom')">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-toolbox right-toolbox" affixer affixer-offset="70" ng-show="$vm.options.editLayout">
+    <div class="btn btn-app" ng-click="$vm.saveDashboard()">
+        <i class="fa fa-save"></i> Save
+    </div>
+    <div class="btn btn-app" ng-click="$vm.enableViewMode()">
+        <i class="fa fa-times text-danger"></i> Cancel
+    </div>
+    <hr>
+    <div class="btn btn-app" ng-repeat="item in $vm.toolbox"
+        dnd-draggable="item"
+        dnd-type="item.type"
+        dnd-effect-allowed="copy">
+        <i class="fa" ng-class="$vm.options.cls[item.type]"></i> {{$vm.options.labels[item.type]}}
+    </div>
+</div>
+
+<div class="dashboard-content right-toolbox"
+    dnd-list="$vm.definition.items"
+    dnd-disable-if="!$vm.options.editLayout"
+    dnd-allowed-types="$vm.options.dashboardAllowedTypes"
+    ng-class="{'dashboard-edit': $vm.options.editLayout, 'dashboard-view': !$vm.options.editLayout}">
+
+    <div class="dashboard-row" ng-repeat="(rowIndex, row) in $vm.definition.items"
+        dnd-draggable="row"
+        dnd-type="row.type"
+        dnd-effect-allowed="move"
+        dnd-disable-if="!$vm.options.editLayout"
+        dnd-moved="$vm.definition.items.splice($index, 1)"
+        ng-class="{'chart-container': $vm.options.editLayout}">
+
+        <div class="chart-container-header mb-xxs clearfix" ng-show="$vm.options.editLayout">
+            <span class="pull-right">
+                <a href class="text-danger" ng-click="$vm.removeContainer($index)">
+                    <i class="fa fa-times"></i> Remove ({{row.items.length}})
+                </a>
+            </span>
+        </div>
+
+        <div class="chart-container-dropzone"
+            dnd-list="row.items"
+            dnd-allowed-types="$vm.options.containerAllowedTypes"
+            dnd-disable-if="row.items.length >= $vm.options.maxColumns"
+            dnd-drop="$vm.itemInserted(item, $vm.definition.items, rowIndex, index)">
+            <dashboard-item ng-repeat="(colIndex, component) in row.items"
+                autoload="true"
+                mode="view"
+                row-index="rowIndex"
+                col-index="colIndex"
+                component="component"
+                metadata="$vm.metadata"
+                filter="$vm.periodFilter"
+                refresh-on="refresh-chart"
+                resize-on="resize-chart-{{rowIndex}}"
+                show-edit="$vm.options.editLayout"
+                show-remove="$vm.options.editLayout"
+                on-remove="$vm.removeItem(rowIndex, colIndex)"
+
+                dnd-disable-if="!$vm.options.editLayout"
+                dnd-draggable="component"
+                dnd-type="component.type"
+                dnd-effect-allowed="move"
+                dnd-dragstart="$vm.itemDragStarted(colIndex, row)">
+            </dashboard-item>
+        </div>
+    </div>
+</div>

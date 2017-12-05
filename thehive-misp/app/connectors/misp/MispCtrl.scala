@@ -11,8 +11,9 @@ import play.api.mvc._
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, POST, UrlContext }
 
+import akka.actor.ActorSystem
 import connectors.Connector
-import models.{ Alert, Case, Roles, UpdateMispAlertArtifact }
+import models._
 import services.{ AlertTransformer, CaseSrv }
 
 import org.elastic4play.JsonFormat.tryWrites
@@ -32,11 +33,36 @@ class MispCtrl @Inject() (
     renderer: Renderer,
     eventSrv: EventSrv,
     components: ControllerComponents,
-    implicit val ec: ExecutionContext) extends AbstractController(components) with Connector with Status with AlertTransformer {
+    implicit val ec: ExecutionContext,
+    implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status with AlertTransformer {
 
   override val name: String = "misp"
 
-  override val status: JsObject = Json.obj("enabled" → true, "servers" → mispConfig.connections.map(_.name))
+  override def status: Future[JsObject] =
+    Future.traverse(mispConfig.connections)(_.status())
+      .map { statusDetails ⇒
+        val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
+        val healthStatus = if (distinctStatus.contains("OK")) {
+          if (distinctStatus.size > 1) "WARNING" else "OK"
+        }
+        else "ERROR"
+        Json.obj(
+          "enabled" → true,
+          "servers" → statusDetails,
+          "status" → healthStatus)
+      }
+
+  override def health: Future[HealthStatus.Type] = {
+    Future.traverse(mispConfig.connections)(_.healthStatus())
+      .map { healthStatus ⇒
+        val distinctStatus = healthStatus.toSet
+        if (distinctStatus.contains(HealthStatus.Ok)) {
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        }
+        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
+      }
+  }
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {

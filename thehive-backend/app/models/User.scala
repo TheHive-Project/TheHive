@@ -16,7 +16,7 @@ object UserStatus extends Enumeration with HiveEnumeration {
 }
 
 trait UserAttributes { _: AttributeDef ⇒
-  val login = attribute("login", F.stringFmt, "Login of the user", O.form)
+  val login = attribute("login", F.userFmt, "Login of the user", O.form)
   val userId = attribute("_id", F.stringFmt, "User id (login)", O.model)
   val key = optionalAttribute("key", F.stringFmt, "API key", O.sensitive, O.unaudited)
   val userName = attribute("name", F.stringFmt, "Full name (Firstname Lastname)")
@@ -27,7 +27,7 @@ trait UserAttributes { _: AttributeDef ⇒
   val preferences = attribute("preferences", F.stringFmt, "User preferences", "{}", O.sensitive, O.unaudited)
 }
 
-class UserModel extends ModelDef[UserModel, User]("user") with UserAttributes with AuditedModel {
+class UserModel extends ModelDef[UserModel, User]("user", "User", "/user") with UserAttributes with AuditedModel {
 
   private def setUserId(attrs: JsObject) = (attrs \ "login").asOpt[JsString].fold(attrs) { login ⇒
     attrs - "login" + ("_id" → login)
