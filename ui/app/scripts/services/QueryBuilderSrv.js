@@ -10,6 +10,30 @@
             };
         }
 
+        this._buildQueryFromNumberFilter = function(fieldDef, filter) {
+            if (!filter || !filter.value) {
+                return null;
+            }
+            var operator = filter.value.operator || 'eq';
+            var criterion = {};
+            criterion[filter.field] = filter.value.value;
+
+            switch(operator) {
+                case '<':
+                    return {'_lt': criterion};
+                case '<=':
+                    return {'_lte': criterion};
+                case '>':
+                    return {'_gt': criterion};
+                case '>=':
+                    return {'_gte': criterion};
+                case '!=':
+                    return {'_not': criterion};
+                default:
+                    return {'_field': filter.field, '_value': filter.value.value};
+            }
+        }
+
         this._buildQueryFromListFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
@@ -72,7 +96,9 @@
                 return this._buildQueryFromDateFilter(fieldDef, filter);
             } else if(filter.value.list || filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration' || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
-            } else if(filter.type === 'boolean' || filter.type === 'number') {
+            } else if(filter.type === 'number') {
+                return this._buildQueryFromNumberFilter(fieldDef, filter);
+            } else if(filter.type === 'boolean') {
                 return this._buildQueryFromDefaultFilter(fieldDef, filter);
             }
             return {

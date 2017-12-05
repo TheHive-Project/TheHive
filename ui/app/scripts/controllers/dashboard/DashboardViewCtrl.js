@@ -3,19 +3,42 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
             var self = this;
 
-            this.dashboard = dashboard;
-            this.definition = JSON.parse(dashboard.definition) || {
-                period: 'all',
-                items: [
-                    {
-                        type: 'container',
-                        items: []
-                    }
-                ]
-            };
+            this.currentUser = AuthenticationSrv.currentUser;
+            this.createdBy = dashboard.createdBy;
+            this.dashboardStatus = dashboard.dashboardStatus;
+            this.metadata = metadata;
+            this.toolbox = DashboardSrv.toolbox;
+            this.dashboardPeriods = DashboardSrv.dashboardPeriods;
+
+            this.buildDashboardPeriodFilter = function(period) {
+                return period === 'custom' ?
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
+                    DashboardSrv.buildPeriodQuery(period, 'createdAt');
+            }
+
+            this.loadDashboard = function(dashboard) {
+                this.dashboard = dashboard;
+                this.definition = JSON.parse(dashboard.definition) || {
+                    period: 'all',
+                    items: [
+                        {
+                            type: 'container',
+                            items: []
+                        }
+                    ]
+                };
+                this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
+            }
+
+            this.loadDashboard(dashboard);
+
+            this.canEditDashboard = function() {
+                return (this.createdBy === this.currentUser.id) ||
+                    (this.dashboardStatus = 'Shared' && AuthenticationSrv.isAdmin(this.currentUser));
+            }
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
@@ -31,20 +54,8 @@
                 },
                 editLayout: !_.find(this.definition.items, function(row) {
                     return row.items.length > 0;
-                })
+                }) && this.canEditDashboard()
             };
-            this.toolbox = DashboardSrv.toolbox;
-            this.dashboardPeriods = DashboardSrv.dashboardPeriods;
-
-            this.metadata = metadata;
-
-            this.buildDashboardPeriodFilter = function(period) {
-                return period === 'custom' ?
-                    DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
-                    DashboardSrv.buildPeriodQuery(period, 'createdAt');
-            }
-
-            this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
 
             this.applyPeriod = function(period) {
                 this.definition.period = period;
@@ -78,7 +89,8 @@
 
                 DashboardSrv.update(this.dashboard.id, copy)
                     .then(function(response) {
-                        self.enableViewMode();
+                        self.options.editLayout = false;
+                        self.resizeCharts();
                         NotificationSrv.log('The dashboard has been successfully updated', 'success');
                     })
                     .catch(function(err) {
@@ -143,9 +155,16 @@
             };
 
             this.enableViewMode = function() {
-                this.options.editLayout = false;
-                this.resizeCharts();
+                DashboardSrv.get(this.dashboard.id)
+                    .then(function(response) {
+                        self.loadDashboard(response.data);
+                        self.options.editLayout = false;
+                        self.resizeCharts();
+                    }, function(err) {
+                        NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                    });
             };
+
 
         });
 })();

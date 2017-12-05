@@ -151,6 +151,10 @@ dashboard-item .box {
     width: 100%
 }
 
+.dashboard-serie > .form-inline select {
+    max-width: 200px;
+}
+
 .dashboard-period > div{
     height: 34px;
     display:flex;

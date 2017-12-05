@@ -300,20 +300,31 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 controller: 'DashboardViewCtrl',
                 controllerAs: '$vm',
                 resolve: {
-                    dashboard: function(DashboardSrv, $stateParams, $q) {
+                    dashboard: function(NotificationSrv, DashboardSrv, $stateParams, $q) {
                         var defer = $q.defer();
 
                         DashboardSrv.get($stateParams.id)
                             .then(function(response) {
                                 defer.resolve(response.data);
                             }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
                                 defer.reject(err);
                             });
 
                         return defer.promise;
                     },
-                    metadata: function(DashboardSrv) {
-                        return DashboardSrv.getMetadata();
+                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.getMetadata()
+                            .then(function(response) {
+                                defer.resolve(response);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
                     }
                 }
             });

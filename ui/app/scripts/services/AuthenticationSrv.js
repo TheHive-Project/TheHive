@@ -46,6 +46,11 @@
                     }
                 });
                 return result;
+            },
+            isAdmin: function(user) {
+                var u = user;
+                var re = /admin/i;
+                return re.test(u.roles);
             }
         };
 

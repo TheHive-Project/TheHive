@@ -5,7 +5,7 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
-            <a href class="mr-xxs btn btn-sm btn-primary" ng-if="$vm.dashboard.createdBy === currentUser.id" ng-click="$vm.enableEditMode()" ng-show="!$vm.options.editLayout">
+            <a href class="mr-xxs btn btn-sm btn-primary" ng-click="$vm.enableEditMode()" ng-show="$vm.canEditDashboard() && !$vm.options.editLayout">
                 <i class="fa fa-pencil"></i> Edit
             </a>
             <a href class="mr-xxs btn btn-default btn-sm" ng-click="$vm.exportDashboard()" ng-show="!$vm.options.editLayout">
@@ -93,13 +93,13 @@
             dnd-disable-if="row.items.length >= $vm.options.maxColumns"
             dnd-drop="$vm.itemInserted(item, $vm.definition.items, rowIndex, index)">
             <dashboard-item ng-repeat="(colIndex, component) in row.items"
+                autoload="true"
+                mode="view"
                 row-index="rowIndex"
                 col-index="colIndex"
                 component="component"
                 metadata="$vm.metadata"
                 filter="$vm.periodFilter"
-                autoload="true"
-                mode="view"
                 refresh-on="refresh-chart"
                 resize-on="resize-chart-{{rowIndex}}"
                 show-edit="$vm.options.editLayout"
