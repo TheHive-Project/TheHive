@@ -42,6 +42,16 @@
                     });
                 }
 
+                scope.fieldsForAggregation = function(fields, agg) {                    
+                    if(agg === 'count') {
+                        return [];
+                    } else if(agg === 'sum' || agg === 'avg') {
+                        return scope.pickFields(fields, ['number']);
+                    } else {
+                        return fields;
+                    }
+                }
+
                 if(scope.component.id) {
                     scope.$on('edit-chart-' + scope.component.id, function(data) {
                         scope.editItem();
