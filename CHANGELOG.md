@@ -1,7 +1,15 @@
 # Change Log
 
-## [3.0.0](https://github.com/CERT-BDF/TheHive/tree/3.0.0) (2017-12-05)
+## [3.0.1](https://github.com/CERT-BDF/TheHive/tree/3.0.1) (2017-12-07)
+[Full Changelog](https://github.com/CERT-BDF/TheHive/compare/3.0.0...3.0.1)
 
+**Fixed bugs:**
+
+- MISP Event Export Error [\#387](https://github.com/CERT-BDF/TheHive/issues/387)
+- During migration, dashboards are not created [\#386](https://github.com/CERT-BDF/TheHive/issues/386)
+- Error when configuring multiple ElasticSearch nodes [\#383](https://github.com/CERT-BDF/TheHive/issues/383)
+
+## [3.0.0](https://github.com/CERT-BDF/TheHive/tree/3.0.0) (2017-12-05)
 [Full Changelog](https://github.com/CERT-BDF/TheHive/compare/2.13.2...3.0.0)
 
 **Implemented enhancements:**
