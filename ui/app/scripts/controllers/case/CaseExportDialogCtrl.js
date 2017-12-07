@@ -8,7 +8,7 @@
 
             this.caze = caze;
             this.mode = '';
-            this.servers = config.servers; // TODO Nabil
+            this.servers = config.servers;
             this.failures = [];
 
             this.existingExports = {};
@@ -49,8 +49,8 @@
             this.export = function(server) {
                 self.loading = true;
                 self.failures = [];
-
-                MispSrv.export(self.caze.id, server)
+                
+                MispSrv.export(self.caze.id, server.name)
                 .then(function(response){
                     var success = 0,
                         failure = 0;
