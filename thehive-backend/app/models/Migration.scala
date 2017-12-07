@@ -1,6 +1,6 @@
 package models
 
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file.{ Files, Path }
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
@@ -11,7 +11,7 @@ import scala.util.Try
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
-import play.api.{ Configuration, Logger }
+import play.api.{ Configuration, Environment, Logger }
 
 import akka.NotUsed
 import akka.stream.Materializer
@@ -35,6 +35,7 @@ class Migration(
     eventSrv: EventSrv,
     dashboardSrv: DashboardSrv,
     userSrv: UserSrv,
+    environment: Environment,
     implicit val ec: ExecutionContext,
     implicit val materializer: Materializer) extends MigrationOperations {
   @Inject() def this(
@@ -43,6 +44,7 @@ class Migration(
       eventSrv: EventSrv,
       dashboardSrv: DashboardSrv,
       userSrv: UserSrv,
+      environment: Environment,
       ec: ExecutionContext,
       materializer: Materializer) = {
     this(
@@ -54,6 +56,7 @@ class Migration(
       eventSrv,
       dashboardSrv,
       userSrv,
+      environment,
       ec, materializer)
   }
 
@@ -85,7 +88,7 @@ class Migration(
 
   private def addDashboards(version: Int): Future[Unit] = {
     userSrv.inInitAuthContext { implicit authContext ⇒
-      val dashboardsPath = Paths.get("migration").resolve(version.toString).resolve("dashboards")
+      val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
       val dashboards = for {
         dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
         if Files.isReadable(dashboardFile)
