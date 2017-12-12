@@ -65,11 +65,6 @@ class TheHive(
         authBindings.addBinding.to(authSrvClass)
       }
 
-    val filterBindings = ScalaMultibinder.newSetBinder[EssentialFilter](binder)
-    filterBindings.addBinding.to[StreamFilter]
-    filterBindings.addBinding.to[TempFilter]
-    filterBindings.addBinding.to[CSRFFilter]
-
     bind[MigrationOperations].to[Migration]
     bind[AuthSrv].to[TheHiveAuthSrv]
 
