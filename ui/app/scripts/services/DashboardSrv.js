@@ -73,6 +73,7 @@
             bar: 'fa-bar-chart',
             donut: 'fa-pie-chart',
             line: 'fa-line-chart',
+            multiline: 'fa-area-chart',
             counter: 'fa-calculator'
         };
 
@@ -103,6 +104,13 @@
                     title: null,
                     entity: null,
                     field: null
+                }
+            },
+            {
+                type: 'multiline',
+                options: {
+                    title: null,
+                    entity: null
                 }
             },
             {
@@ -201,6 +209,15 @@
             return defer.promise;
         };
 
+        this.hasMinimalConfiguration = function(component) {
+            switch (component.type) {
+                case 'multiline':
+                    return component.options.series.length === _.without(_.pluck(component.options.series, 'entity'), undefined).length;
+                default:
+                    return !!component.options.entity;
+            }
+        };
+
         this.buildFiltersQuery = function(fields, filters) {
             return QueryBuilderSrv.buildFiltersQuery(fields, filters);
         };
@@ -208,7 +225,11 @@
         this.buildChartQuery = function(filter, query) {
             var criteria = _.without([filter, query], null, undefined, '', '*');
 
-            return criteria.length === 1 ? criteria[0] : { _and: criteria };
+            if(criteria.length === 0) {
+                return {};
+            } else {
+                return criteria.length === 1 ? criteria[0] : { _and: criteria };
+            }
         }
 
         this.buildPeriodQuery = function(period, field, start, end) {

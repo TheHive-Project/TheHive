@@ -47,6 +47,15 @@
             resize-on="{{resizeOn}}"
             mode="mode"></dashboard-line>
 
+        <dashboard-multiline ng-switch-when="multiline"
+            entity="metadata[component.options.entity]"
+            options="component.options"
+            filter="filter"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"
+            resize-on="{{resizeOn}}"
+            mode="mode"></dashboard-multiline>
+
         <dashboard-counter ng-switch-when="counter"
             entity="metadata[component.options.entity]"
             options="component.options"
