@@ -30,7 +30,7 @@
         </div>
         <div class="form-group">
             <select class="form-control" ng-model="serie.field" ng-disabled="serie.agg === 'count'"
-                ng-options="item.name as item.name for (key, item) in fieldsForAggregation(metadata[component.options.entity].attributes, serie.agg)">
+                ng-options="item.name as item.name for (key, item) in fieldsForAggregation(metadata[serie.entity].attributes, serie.agg)">
                     <option value="" disabled selected>-- Select field --</option>
             </select>
         </div>
@@ -51,7 +51,7 @@
             </span>
         </div>
     </div>
-    <div class="ml-m mt-xs">        
+    <div class="ml-m mt-xs">
         <ng-include src="'views/directives/dashboard/multiline/serie.filters.html'"></ng-include>
     </div>
 </div>
