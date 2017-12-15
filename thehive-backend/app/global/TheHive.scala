@@ -3,7 +3,6 @@ package global
 import scala.collection.JavaConverters._
 
 import play.api.libs.concurrent.AkkaGuiceSupport
-import play.api.mvc.EssentialFilter
 import play.api.{ Configuration, Environment, Logger, Mode }
 
 import com.google.inject.AbstractModule
@@ -19,7 +18,7 @@ import services._
 
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services.auth.MultiAuthSrv
-import org.elastic4play.services.{ AuthSrv, MigrationOperations, TempFilter }
+import org.elastic4play.services.{ AuthSrv, MigrationOperations }
 
 class TheHive(
     environment: Environment,
