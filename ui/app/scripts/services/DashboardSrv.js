@@ -129,6 +129,28 @@
             }
         ];
 
+        this.skipFields = function(fields, types) {
+            return _.filter(fields, function(item) {
+                return types.indexOf(item.type) === -1;
+            });
+        };
+
+        this.pickFields = function(fields, types) {
+            return _.filter(fields, function(item) {
+                return types.indexOf(item.type) !== -1;
+            });
+        }
+
+        this.fieldsForAggregation = function(fields, agg) {
+            if(agg === 'count') {
+                return [];
+            } else if(agg === 'sum' || agg === 'avg') {
+                return self.pickFields(fields, ['number']);
+            } else {
+                return fields;
+            }
+        }
+
         this.renderers = {
             severity: function() {}
         };

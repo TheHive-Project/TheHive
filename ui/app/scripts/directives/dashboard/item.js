@@ -25,32 +25,14 @@
                 scope.aggregations = DashboardSrv.aggregations;
                 scope.serieTypes = DashboardSrv.serieTypes;
                 scope.sortOptions = DashboardSrv.sortOptions;
+                scope.skipFields = DashboardSrv.skipFields;
+                scope.pickFields = DashboardSrv.pickFields;
+                scope.fieldsForAggregation = DashboardSrv.fieldsForAggregation;
 
                 scope.layout = {
                     activeTab: 0
                 };
                 scope.query = null;
-                scope.skipFields = function(fields, types) {
-                    return _.filter(fields, function(item) {
-                        return types.indexOf(item.type) === -1;
-                    });
-                };
-
-                scope.pickFields = function(fields, types) {
-                    return _.filter(fields, function(item) {
-                        return types.indexOf(item.type) !== -1;
-                    });
-                }
-
-                scope.fieldsForAggregation = function(fields, agg) {
-                    if(agg === 'count') {
-                        return [];
-                    } else if(agg === 'sum' || agg === 'avg') {
-                        return scope.pickFields(fields, ['number']);
-                    } else {
-                        return fields;
-                    }
-                }
 
                 if(scope.component.id) {
                     scope.$on('edit-chart-' + scope.component.id, function(data) {
@@ -115,6 +97,10 @@
 
                 scope.setFilterField = function(filter, entity) {
                     var field = scope.metadata[entity].attributes[filter.field];
+
+                    if(!field) {
+                        return;
+                    }
 
                     filter.type = field.type;
 
