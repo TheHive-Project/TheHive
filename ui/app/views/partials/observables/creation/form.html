@@ -22,8 +22,9 @@
         <div file-chooser="" filemodel="params.attachment"></div>
         <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
             WARNING: This file seems to be empty
-        </div>
+        </div>        
         <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
+        <div><input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted</div>
     </div>
 </div>
 

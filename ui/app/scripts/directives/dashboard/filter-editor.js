@@ -15,6 +15,10 @@
                         return;
                     }
                     var field = scope.metadata[scope.entity].attributes[filter.field];
+
+                    if(!field) {
+                        return;
+                    }
                     var type = field.type;
 
                     if ((type === 'string' || type === 'number') && field.values.length > 0) {

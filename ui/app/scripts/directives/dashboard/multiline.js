@@ -54,7 +54,7 @@
                         return;
                     }
 
-                    var query = DashboardSrv.buildChartQuery(null, scope.options.query);
+                    var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
                     var postData = {
                         stats: _.map(scope.options.series, function(serie, index) {
                             return scope.buildSerie(serie, query, index);
