@@ -25,32 +25,14 @@
                 scope.aggregations = DashboardSrv.aggregations;
                 scope.serieTypes = DashboardSrv.serieTypes;
                 scope.sortOptions = DashboardSrv.sortOptions;
+                scope.skipFields = DashboardSrv.skipFields;
+                scope.pickFields = DashboardSrv.pickFields;
+                scope.fieldsForAggregation = DashboardSrv.fieldsForAggregation;
 
                 scope.layout = {
                     activeTab: 0
                 };
                 scope.query = null;
-                scope.skipFields = function(fields, types) {
-                    return _.filter(fields, function(item) {
-                        return types.indexOf(item.type) === -1;
-                    });
-                };
-
-                scope.pickFields = function(fields, types) {
-                    return _.filter(fields, function(item) {
-                        return types.indexOf(item.type) !== -1;
-                    });
-                }
-
-                scope.fieldsForAggregation = function(fields, agg) {                    
-                    if(agg === 'count') {
-                        return [];
-                    } else if(agg === 'sum' || agg === 'avg') {
-                        return scope.pickFields(fields, ['number']);
-                    } else {
-                        return fields;
-                    }
-                }
 
                 if(scope.component.id) {
                     scope.$on('edit-chart-' + scope.component.id, function(data) {
@@ -77,17 +59,18 @@
                     modalInstance.result.then(function(definition) {
                         var entity = scope.component.options.entity;
 
-                        if(!entity) {
+                        //if(!entity) {
+                        if(!DashboardSrv.hasMinimalConfiguration(scope.component)) {
                             return;
                         }
 
                         // Set the computed query
-                        definition.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity].attributes, scope.component.options.filters);
+                        definition.query = DashboardSrv.buildFiltersQuery(entity ? scope.metadata[entity].attributes : null, scope.component.options.filters);
 
                         // Set the computed querie of series if available
                         _.each(definition.series, function(serie) {
                             if(serie.filters) {
-                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity].attributes, serie.filters);
+                                serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity || serie.entity].attributes, serie.filters);
                             }
                         })
 
@@ -96,52 +79,6 @@
                         $timeout(function() {
                             scope.$broadcast(scope.refreshOn, scope.filter);
                         }, 500);
-                    });
-                };
-
-                scope.editorFor = function(filter) {
-                    if (filter.type === null) {
-                        return;
-                    }
-                    var field = scope.metadata[scope.component.options.entity].attributes[filter.field];
-                    var type = field.type;
-
-                    if ((type === 'string' || type === 'number') && field.values.length > 0) {
-                        return 'enumeration';
-                    }
-
-                    return filter.type;
-                };
-
-                scope.promiseFor = function(filter, query) {
-                    var field = scope.metadata[scope.component.options.entity].attributes[filter.field];
-
-                    var promise = null;
-
-                    if(field.type === 'user') {
-                        promise = UserSrv.autoComplete(query);
-                    } else if (field.values.length > 0) {
-                        promise = $q.resolve(
-                            _.map(field.values, function(item, index) {
-                                return {
-                                    text: item,
-                                    label: field.labels[index] || item
-                                };
-                            })
-                        );
-                    } else {
-                        promise = $q.resolve([]);
-                    }
-
-                    return promise.then(function(response) {
-                        var list = [];
-
-                        list = _.filter(response, function(item) {
-                            var regex = new RegExp(query, 'gi');
-                            return regex.test(item.label);
-                        });
-
-                        return $q.resolve(list);
                     });
                 };
 
@@ -158,9 +95,12 @@
                     scope.component.options.filters.splice(index, 1);
                 };
 
-                scope.setFilterField = function(filter) {
-                    var entity = scope.component.options.entity;
+                scope.setFilterField = function(filter, entity) {
                     var field = scope.metadata[entity].attributes[filter.field];
+
+                    if(!field) {
+                        return;
+                    }
 
                     filter.type = field.type;
 

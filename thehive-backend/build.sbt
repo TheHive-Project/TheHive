@@ -1,5 +1,7 @@
 import Dependencies._
 
+resolvers += "elastic" at "https://artifacts.elastic.co/maven"
+
 libraryDependencies ++= Seq(
   Library.Play.cache,
   Library.Play.ws,

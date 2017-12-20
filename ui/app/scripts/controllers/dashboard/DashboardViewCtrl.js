@@ -42,7 +42,7 @@
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
-                containerAllowedTypes: ['bar', 'line', 'donut', 'counter'],
+                containerAllowedTypes: ['bar', 'line', 'donut', 'counter', 'multiline'],
                 maxColumns: 3,
                 cls: DashboardSrv.typeClasses,
                 labels: {
@@ -50,7 +50,8 @@
                     bar: 'Bar',
                     donut: 'Donut',
                     line: 'Line',
-                    counter: 'Counter'
+                    counter: 'Counter',
+                    multiline: 'Multi Lines'
                 },
                 editLayout: !_.find(this.definition.items, function(row) {
                     return row.items.length > 0;

@@ -10,13 +10,13 @@
                 </button>
             </span>
             <select class="form-control" ng-model="filter.field"
-                ng-options="item.name as item.name for (key, item) in metadata[component.options.entity].attributes"
-                ng-change="setFilterField(filter, component.options.entity)"></select>
+                ng-options="item.name as item.name for (key, item) in metadata[serie.entity].attributes"
+                ng-change="setFilterField(filter, serie.entity)"></select>
         </div>
     </div>
     <!-- <div class="col-sm-8" ng-include="'views/directives/dashboard/filter-editor.html'"></div> -->
     <div class="col-sm-8">
-        <filter-editor metadata="metadata" filter="filter" entity="component.options.entity"></filter-editor>
+        <filter-editor metadata="metadata" filter="filter" entity="serie.entity"></filter-editor>
     </div>
 </div>
 <div class="mt-xxs">

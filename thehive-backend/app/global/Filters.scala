@@ -2,21 +2,14 @@ package global
 
 import javax.inject.{ Inject, Provider, Singleton }
 
-import scala.collection.immutable
-
 import play.api.Logger
-import play.api.http.{ HttpFilters, SessionConfiguration }
+import play.api.http.SessionConfiguration
 import play.api.libs.crypto.CSRFTokenSigner
-import play.api.mvc.{ EssentialFilter, RequestHeader }
+import play.api.mvc.RequestHeader
 import play.filters.csrf.CSRF.{ ErrorHandler, TokenProvider }
 import play.filters.csrf.CSRFConfig
 
 import akka.stream.Materializer
-
-@Singleton
-class TheHiveFilters @Inject() (injectedFilters: immutable.Set[EssentialFilter]) extends HttpFilters {
-  override val filters: Seq[EssentialFilter] = injectedFilters.toSeq
-}
 
 object CSRFFilter {
   private[CSRFFilter] lazy val logger = Logger(getClass)
