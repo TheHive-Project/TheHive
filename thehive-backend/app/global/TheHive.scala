@@ -19,6 +19,7 @@ import services._
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services.auth.MultiAuthSrv
 import org.elastic4play.services.{ AuthSrv, MigrationOperations }
+import services.mappers.{ MultiUserMapperSrv, UserMapper }
 
 class TheHive(
     environment: Environment,
@@ -32,6 +33,7 @@ class TheHive(
     val modelBindings = ScalaMultibinder.newSetBinder[BaseModelDef](binder)
     val auditedModelBindings = ScalaMultibinder.newSetBinder[AuditedModel](binder)
     val authBindings = ScalaMultibinder.newSetBinder[AuthSrv](binder)
+    val ssoMapperBindings = ScalaMultibinder.newSetBinder[UserMapper](binder)
 
     val reflectionClasses = new Reflections(new ConfigurationBuilder()
       .forPackages("org.elastic4play")
@@ -64,8 +66,16 @@ class TheHive(
         authBindings.addBinding.to(authSrvClass)
       }
 
+    reflectionClasses
+      .getSubTypesOf(classOf[UserMapper])
+      .asScala
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
+      .filterNot(c ⇒ c == classOf[MultiUserMapperSrv])
+      .foreach(mapperCls ⇒ ssoMapperBindings.addBinding.to(mapperCls))
+
     bind[MigrationOperations].to[Migration]
     bind[AuthSrv].to[TheHiveAuthSrv]
+    bind[UserMapper].to[MultiUserMapperSrv]
 
     bindActor[AuditActor]("AuditActor")
     bindActor[DeadLetterMonitoringActor]("DeadLetterMonitoringActor")
