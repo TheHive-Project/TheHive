@@ -1,221 +1,200 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.Inject
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.Future
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 
 import play.api.Logger
 import play.api.libs.json.JsObject
-import play.api.mvc.{ Filter, RequestHeader, Result }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, DeadLetter, PoisonPill, actorRef2Scala }
-import akka.stream.Materializer
+import akka.actor.{ Actor, ActorRef, Cancellable, PoisonPill, actorRef2Scala }
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{ Publish, Subscribe, Unsubscribe }
+import services.StreamActor.{ StreamMessages, Submit }
 
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
 
-/**
-  * This actor monitors dead messages and log them
-  */
-@Singleton
-class DeadLetterMonitoringActor @Inject() (system: ActorSystem) extends Actor {
-  private[DeadLetterMonitoringActor] lazy val logger = Logger(getClass)
+trait StreamActorMessage extends Serializable
+object StreamActor {
+  /* Ask messages, wait if there is no ready messages */
+  case object GetOperations extends StreamActorMessage
 
-  override def preStart(): Unit = {
-    system.eventStream.subscribe(self, classOf[DeadLetter])
-    super.preStart()
-  }
+  /* Pending messages must be sent to sender */
+  case object Submit extends StreamActorMessage
 
-  override def postStop(): Unit = {
-    system.eventStream.unsubscribe(self)
-    super.postStop()
-  }
+  /* List of ready messages */
+  case class StreamMessages(messages: Seq[JsObject]) extends StreamActorMessage
 
-  override def receive: Receive = {
-    case DeadLetter(StreamActor.GetOperations, sender, recipient) ⇒
-      logger.warn(s"receive dead GetOperations message, $sender -> $recipient")
-      sender ! StreamActor.StreamNotFound
-    case other ⇒
-      logger.error(s"receive dead message : $other")
+  object StreamMessages {
+    val empty = StreamMessages(Nil)
   }
 }
 
-object StreamActor {
-  /* Start of a new request identified by its id */
-  case class Initialize(requestId: String) extends EventMessage
-  /* Request process has finished, prepare to send associated messages */
-  case class Commit(requestId: String) extends EventMessage
-  /* Ask messages, wait if there is no ready messages*/
-  case object GetOperations
-  /* Pending messages must be sent to sender */
-  case object Submit
-  /* List of ready messages */
-  case class StreamMessages(messages: Seq[JsObject])
-  case object StreamNotFound
+/**
+  * This actor receive message generated locally and when aggregation is finished (http request is over) send the message
+  * to global stream actor.
+  */
+class LocalStreamActor @Inject() (
+    eventSrv: EventSrv,
+    auxSrv: AuxSrv) extends Actor {
+
+  import context.dispatcher
+
+  private lazy val logger = Logger(s"${getClass.getName}($self)")
+  private val mediator = DistributedPubSub(context.system).mediator
+
+  override def preStart(): Unit = {
+    eventSrv.subscribe(self, classOf[EventMessage])
+    super.preStart()
+  }
+
+  object NormalizedOperation {
+    def unapply(msg: Any): Option[AuditOperation] =
+      msg match {
+        case ao: AuditOperation ⇒ ao.entity.model match {
+          case am: AuditedModel ⇒ Some(ao.copy(details = am.selectAuditedAttributes(ao.details)))
+          case _                ⇒ None
+        }
+        case _ ⇒ None
+      }
+  }
+
+  object RequestStart {
+    def unapply(msg: Any): Option[String] = msg match {
+      case RequestProcessStart(request)           ⇒ Some(Instance.getRequestId(request))
+      case InternalRequestProcessStart(requestId) ⇒ Some(requestId)
+      case _                                      ⇒ None
+    }
+  }
+
+  object RequestEnd {
+    def unapply(msg: Any): Option[String] = msg match {
+      case RequestProcessEnd(request, _)        ⇒ Some(Instance.getRequestId(request))
+      case InternalRequestProcessEnd(requestId) ⇒ Some(requestId)
+      case _                                    ⇒ None
+    }
+  }
+
+  override def receive: Receive = receive(Map.empty, None)
+
+  def receive(messages: Map[String, Option[AggregatedMessage[_]]], flushScheduler: Option[Cancellable]): Receive = {
+    case RequestStart(requestId) ⇒
+      context.become(receive(messages + (requestId -> None), None))
+
+    case RequestEnd(requestId) ⇒
+      messages.get(requestId).collect {
+        case Some(message) ⇒ message.toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
+      }
+      context.become(receive(messages - requestId, None))
+
+    case NormalizedOperation(operation) ⇒
+      val requestId = operation.authContext.requestId
+      logger.debug(s"Receiving audit operation : $operation")
+      messages.get(requestId) match {
+        case None ⇒
+          logger.debug("Operation that comes after the end of request, send it to stream actor")
+          AggregatedAuditMessage(auxSrv, operation).toJson.map(msg ⇒ mediator ! Publish("stream", msg))
+        case Some(None) ⇒
+          logger.debug("First operation of the request, creating operation group")
+          context.become(receive(messages + (requestId -> Some(AggregatedAuditMessage(auxSrv, operation))), None))
+        case Some(Some(aam: AggregatedAuditMessage)) ⇒
+          logger.debug("Operation included in existing group")
+          context.become(receive(messages + (requestId -> Some(aam.add(operation))), None))
+        case _ ⇒
+          logger.debug("Impossible")
+          sys.error("")
+      }
+
+    /* Migration process event */
+    case event: MigrationEvent ⇒
+      val newMessage = messages.get(event.modelName).flatten match {
+        case Some(m: AggregatedMigrationMessage) ⇒ m.add(event)
+        case None                                ⇒ AggregatedMigrationMessage(event)
+        case _                                   ⇒ sys.error("impossible")
+      }
+      // automatically flush messages after 1s
+      val newFlushScheduler = flushScheduler.getOrElse(context.system.scheduler.scheduleOnce(1.second, self, Submit))
+      context.become(receive(messages + (event.modelName → Some(newMessage)), Some(newFlushScheduler)))
+
+    /* Database migration has just finished */
+    case EndOfMigrationEvent ⇒
+      flushScheduler.foreach(_.cancel())
+      self ! Submit
+      context.become(receive(messages + ("end" → Some(AggregatedMigrationMessage.endOfMigration)), None))
+
+    case Submit ⇒
+      Future
+        .traverse(messages.values.flatten)(_.toJson)
+        .foreach(message ⇒ mediator ! Publish("stream", StreamMessages(message.toSeq)))
+      context.become(receive(Map.empty, None))
+  }
 }
 
 class StreamActor(
     cacheExpiration: FiniteDuration,
-    refresh: FiniteDuration,
-    nextItemMaxWait: FiniteDuration,
-    globalMaxWait: FiniteDuration,
-    eventSrv: EventSrv,
-    auxSrv: AuxSrv) extends Actor with ActorLogging {
+    refresh: FiniteDuration) extends Actor {
+
   import context.dispatcher
   import services.StreamActor._
 
-  private[StreamActor] lazy val logger = Logger(getClass)
-
-  private object FakeCancellable extends Cancellable {
-    def cancel() = true
-    def isCancelled = true
-  }
-
-  private class WaitingRequest(senderRef: ActorRef, itemCancellable: Cancellable, globalCancellable: Cancellable, hasResult: Boolean) {
-    def this(senderRef: ActorRef) = this(
-      senderRef,
-      FakeCancellable,
-      context.system.scheduler.scheduleOnce(refresh, self, Submit),
-      false)
-
-    /**
-      * Renew timers
-      */
-    def renew: WaitingRequest = {
-      if (itemCancellable.cancel()) {
-        if (!hasResult && globalCancellable.cancel()) {
-          new WaitingRequest(
-            senderRef,
-            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit),
-            context.system.scheduler.scheduleOnce(globalMaxWait, self, Submit),
-            true)
-        }
-        else
-          new WaitingRequest(
-            senderRef,
-            context.system.scheduler.scheduleOnce(nextItemMaxWait, self, Submit),
-            globalCancellable,
-            true)
-      }
-      else
-        this
-    }
-
-    /**
-      * Send message
-      */
-    def submit(messages: Seq[JsObject]): Unit = {
-      itemCancellable.cancel()
-      globalCancellable.cancel()
-      senderRef ! StreamMessages(messages)
-    }
-  }
-
-  var killCancel: Cancellable = FakeCancellable
+  private lazy val logger = Logger(s"${getClass.getName}($self)")
+  private var killCancel: Cancellable = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
+  private val mediator = DistributedPubSub(context.system).mediator
 
   /**
     * renew global timer and rearm it
     */
   def renewExpiration(): Unit = {
-    if (killCancel.cancel())
-      killCancel = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
+    killCancel.cancel()
+    killCancel = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
   }
 
   override def preStart(): Unit = {
     renewExpiration()
-    eventSrv.subscribe(self, classOf[EventMessage])
+    mediator ! Subscribe("stream", self)
+    super.preStart()
   }
 
   override def postStop(): Unit = {
     killCancel.cancel()
-    eventSrv.unsubscribe(self)
+    mediator ! Unsubscribe("stream", self)
+    super.postStop()
   }
 
-  private def normalizeOperation(operation: AuditOperation) = {
-    operation.entity.model match {
-      case am: AuditedModel ⇒ operation.copy(details = am.selectAuditedAttributes(operation.details))
+  private def receive(waitingRequest: ActorRef): Receive = {
+    logger.debug(s"Waiting messages to send to $waitingRequest")
+    renewExpiration()
+    val timeout = context.system.scheduler.scheduleOnce(refresh, self, Submit)
+
+    {
+      case sm: StreamMessages ⇒
+        waitingRequest ! sm
+        timeout.cancel()
+        context.become(receive)
+      case Submit ⇒
+        waitingRequest ! StreamMessages.empty
+        timeout.cancel()
+        context.become(receive)
+      case GetOperations ⇒
+        waitingRequest ! StreamMessages.empty
+        timeout.cancel()
+        context.become(receive(sender))
     }
   }
-  private def receiveWithState(waitingRequest: Option[WaitingRequest], currentMessages: Map[String, Option[StreamMessageGroup[_]]]): Receive = {
-    /* End of HTTP request, mark received messages to ready*/
-    case Commit(requestId) ⇒
-      currentMessages.get(requestId).foreach {
-        case Some(message) ⇒
-          context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId → Some(message.makeReady))))
-        case None ⇒
-      }
 
-    /* Migration process event */
-    case event: MigrationEvent ⇒
-      val newMessages = currentMessages.get(event.modelName).flatten.fold(MigrationEventGroup(event)) {
-        case e: MigrationEventGroup ⇒ e :+ event
-      }
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (event.modelName → Some(newMessages))))
-
-    /* Database migration has just finished */
-    case EndOfMigrationEvent ⇒
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + ("end" → Some(MigrationEventGroup.endOfMigration))))
-
-    /* */
-    case operation: AuditOperation if operation.entity.model.isInstanceOf[AuditedModel] ⇒
-      val requestId = operation.authContext.requestId
-      val normalizedOperation = normalizeOperation(operation)
-      logger.debug(s"Receiving audit operation : $operation => $normalizedOperation")
-      val updatedOperationGroup = currentMessages.get(requestId) match {
-        case None ⇒
-          logger.debug("Operation that comes after the end of request, make operation ready to send")
-          AuditOperationGroup(auxSrv, normalizedOperation).makeReady // Operation that comes after the end of request
-        case Some(None) ⇒
-          logger.debug("First operation of the request, creating operation group")
-          AuditOperationGroup(auxSrv, normalizedOperation) // First operation related to the given request
-        case Some(Some(aog: AuditOperationGroup)) ⇒
-          logger.debug("Operation included in existing group")
-          aog :+ normalizedOperation
-        case _ ⇒
-          logger.debug("Impossible")
-          sys.error("")
-      }
-      context.become(receiveWithState(waitingRequest.map(_.renew), currentMessages + (requestId → Some(updatedOperationGroup))))
-
+  private def receive(waitingMessages: Seq[JsObject]): Receive = {
     case GetOperations ⇒
+      sender ! StreamMessages(waitingMessages)
       renewExpiration()
-      waitingRequest.foreach { wr ⇒
-        wr.submit(Nil)
-        logger.error("Multiple requests !")
-      }
-      context.become(receiveWithState(Some(new WaitingRequest(sender)), currentMessages))
-
-    case Submit ⇒
-      waitingRequest match {
-        case Some(wr) ⇒
-          val (readyMessages, pendingMessages) = currentMessages.partition(_._2.fold(false)(_.isReady))
-          Future.sequence(readyMessages.values.map(_.get.toJson)).foreach(messages ⇒ wr.submit(messages.toSeq))
-          context.become(receiveWithState(None, pendingMessages))
-        case None ⇒
-          logger.error("No request to submit !")
-      }
-
-    case Initialize(requestId) ⇒ context.become(receiveWithState(waitingRequest, currentMessages + (requestId → None)))
-    case _: AuditOperation     ⇒
-    case message               ⇒ logger.warn(s"Unexpected message $message (${message.getClass})")
+      context.become(receive)
+    case StreamMessages(msg) ⇒
+      context.become(receive(waitingMessages ++ msg))
   }
 
-  def receive: Receive = receiveWithState(None, Map.empty[String, Option[StreamMessageGroup[_]]])
-}
-
-@Singleton
-class StreamFilter @Inject() (
-    eventSrv: EventSrv,
-    implicit val mat: Materializer,
-    implicit val ec: ExecutionContext) extends Filter {
-
-  private[StreamFilter] lazy val logger = Logger(getClass)
-  def apply(nextFilter: RequestHeader ⇒ Future[Result])(requestHeader: RequestHeader): Future[Result] = {
-    val requestId = Instance.getRequestId(requestHeader)
-    eventSrv.publish(StreamActor.Initialize(requestId))
-    nextFilter(requestHeader).andThen {
-      case _ ⇒ eventSrv.publish(StreamActor.Commit(requestId))
-    }
+  def receive: Receive = {
+    case StreamMessages(msg) ⇒ context.become(receive(msg))
+    case GetOperations       ⇒ context.become(receive(sender))
   }
 }

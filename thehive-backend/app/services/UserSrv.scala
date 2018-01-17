@@ -52,9 +52,9 @@ class UserSrv @Inject() (
 
   override def inInitAuthContext[A](block: AuthContext ⇒ Future[A]): Future[A] = {
     val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Roles.admin, Roles.read, Roles.alert))
-    eventSrv.publish(StreamActor.Initialize(authContext.requestId))
+    eventSrv.publish(InternalRequestProcessStart(authContext.requestId))
     block(authContext).andThen {
-      case _ ⇒ eventSrv.publish(StreamActor.Commit(authContext.requestId))
+      case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(authContext.requestId))
     }
   }
 

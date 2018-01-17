@@ -68,7 +68,7 @@ class TheHive(
     bind[AuthSrv].to[TheHiveAuthSrv]
 
     bindActor[AuditActor]("AuditActor")
-    bindActor[DeadLetterMonitoringActor]("DeadLetterMonitoringActor")
+    bindActor[LocalStreamActor]("localStreamActor")
 
     if (environment.mode == Mode.Prod)
       bind[AssetCtrl].to[AssetCtrlProd]

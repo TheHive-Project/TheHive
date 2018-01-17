@@ -11,7 +11,9 @@ libraryDependencies ++= Seq(
   Library.scalaGuice,
   Library.elastic4play,
   Library.zip4j,
-  Library.reflections
+  Library.reflections,
+  Library.akkaCluster,
+  Library.akkaClusterTools
 )
 
 play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
