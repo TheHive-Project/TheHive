@@ -3,7 +3,7 @@ package services
 import javax.inject.{ Inject, Singleton }
 
 import akka.stream.Materializer
-import org.elastic4play.services.{ AuthContext, AuthSrv, Role }
+import org.elastic4play.services.{ AuthContext, AuthSrv }
 import org.elastic4play.{ AuthenticationError, AuthorizationError, OAuth2Redirect }
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, JsValue }
@@ -125,15 +125,11 @@ class OAuth2Srv(
         }).recoverWith {
           case authErr: AuthorizationError ⇒ Future.failed(authErr)
           case err if oauth2Config.autocreate ⇒
-            implicit val fakeAuthContext: AuthContext = new AuthContext {
-              override def roles: Seq[Role] = Seq()
-              override def userName: String = ""
-              override def userId: String = ""
-              override def requestId: String = ""
+            userSrv.inInitAuthContext { implicit authContext ⇒
+              userSrv.create(userFields).flatMap(user ⇒ {
+                userSrv.getFromUser(request, user)
+              })
             }
-            userSrv.create(userFields).flatMap(user ⇒ {
-              userSrv.getFromUser(request, user)
-            })
           case err ⇒ Future.failed(err)
         }
     }
