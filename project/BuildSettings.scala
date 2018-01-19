@@ -5,7 +5,7 @@ object BasicSettings extends AutoPlugin {
   override def trigger = allRequirements
 
   override def projectSettings = Seq(
-    organization := "org.cert-bdf",
+    organization := "org.thehive-project",
     licenses += "AGPL-V3" -> url("https://www.gnu.org/licenses/agpl-3.0.html"),
     resolvers += Resolver.bintrayRepo("cert-bdf", "elastic4play"),
     scalaVersion := Dependencies.scalaVersion,
