@@ -69,7 +69,7 @@ class OAuth2Srv(
     mat)
 
   override val name: String = "oauth2"
-  private val logger = Logger(classOf[OAuth2Srv]).logger
+  private val logger = Logger(getClass)
 
   val Oauth2TokenQueryString = "code"
 
@@ -77,12 +77,12 @@ class OAuth2Srv(
     oauth2Config.clientId
       .fold[Future[AuthContext]](Future.failed(AuthenticationError("OAuth2 not configured properly"))) {
         clientId ⇒
-          request.queryString.get(Oauth2TokenQueryString).flatMap(_.headOption) match {
-            case Some(code) ⇒
+          request.queryString
+            .get(Oauth2TokenQueryString)
+            .flatMap(_.headOption)
+            .fold(createOauth2Redirect(clientId)) { code ⇒
               getAuthTokenAndAuthenticate(clientId, code)
-            case None ⇒
-              createOauth2Redirect(clientId)
-          }
+            }
       }
   }
 
@@ -95,23 +95,30 @@ class OAuth2Srv(
         "client_secret" -> oauth2Config.clientSecret,
         "redirect_uri" -> oauth2Config.redirectUri,
         "client_id" -> clientId))
+      .recoverWith {
+        case error ⇒
+          logger.error(s"Token verification failure", error)
+          Future.failed(AuthenticationError("Token verification failure"))
+      }
       .flatMap { r ⇒
         r.status match {
           case Status.OK ⇒
             val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
-            val authHeader = "Authorization" -> s"Bearer $accessToken"
+            val authHeader = "Authorization" -> s"bearer $accessToken"
             ws.url(oauth2Config.userUrl)
               .addHttpHeaders(authHeader)
               .get().flatMap { userResponse ⇒
                 if (userResponse.status != Status.OK) {
-                  Future.failed(AuthenticationError("unexpected response from server"))
+                  Future.failed(AuthenticationError(s"unexpected response from server: ${userResponse.status} ${userResponse.body}"))
                 }
                 else {
                   val response = userResponse.json.asInstanceOf[JsObject]
                   getOrCreateUser(response, authHeader)
                 }
               }
-          case _ ⇒ Future.failed(AuthenticationError("unexpected response from server"))
+          case _ ⇒
+            logger.error(s"unexpected response from server: ${r.status} ${r.body}")
+            Future.failed(AuthenticationError("unexpected response from server"))
         }
       }
   }
@@ -124,18 +131,17 @@ class OAuth2Srv(
           userSrv.getFromUser(request, user)
         }).recoverWith {
           case authErr: AuthorizationError ⇒ Future.failed(authErr)
-          case err if oauth2Config.autocreate ⇒
+          case _ if oauth2Config.autocreate ⇒
             userSrv.inInitAuthContext { implicit authContext ⇒
               userSrv.create(userFields).flatMap(user ⇒ {
                 userSrv.getFromUser(request, user)
               })
             }
-          case err ⇒ Future.failed(err)
         }
     }
   }
 
-  private def createOauth2Redirect(clientId: String) = {
+  private def createOauth2Redirect(clientId: String): Future[AuthContext] = {
     val queryStringParams = Map[String, Seq[String]](
       "scope" -> Seq(oauth2Config.scope),
       "response_type" -> Seq(oauth2Config.responseType),

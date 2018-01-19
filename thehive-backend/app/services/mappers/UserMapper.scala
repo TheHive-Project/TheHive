@@ -10,8 +10,6 @@ import scala.concurrent.Future
   * the SSO process to create new users if the option is selected.
   */
 trait UserMapper {
-
   val name: String
-  val defaultRoles: Seq[String]
   def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)] = None): Future[Fields]
 }

@@ -22,7 +22,6 @@ class MultiUserMapperSrv @Inject() (
     ssoMapperModules: immutable.Set[UserMapper]) extends UserMapper {
 
   override val name: String = "usermapper"
-  override val defaultRoles: Seq[String] = Seq()
   private lazy val mapper: UserMapper = MultiUserMapperSrv.getMapper(configuration, ssoMapperModules)
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] = {
