@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, appConfig) {
+        .controller('AuthenticationCtrl', function($scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
             $scope.params = {};
 
             $uibModalStack.dismissAll();
@@ -45,8 +45,8 @@
                 });
             };
 
-            if(angular.isDefined($location.search().code) || $stateParams.autoLogin) {
-                var code = angular.isDefined($location.search().code) ? $location.search().code : undefined;
+            var code = UtilsSrv.extractQueryParam('code', UrlParser('query', $location.absUrl()));
+            if(angular.isDefined(code) || $stateParams.autoLogin) {
                 $scope.ssoLogin(code);
             }
         });

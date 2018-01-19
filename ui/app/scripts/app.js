@@ -422,4 +422,5 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 $rootScope.title = toState.title;
             }
         });
-    });
+    })
+    .constant('UrlParser', url);
