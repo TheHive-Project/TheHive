@@ -24,6 +24,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
+import org.elastic4play.database.ModifyConfig
+
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
     val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
@@ -131,13 +133,17 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
-    getJob(jobId).flatMap(job ⇒ update(job, fields))
-  }
+  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+    update(jobId, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] = {
-    updateSrv[Job](job, fields)
-  }
+  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+    getJob(jobId).flatMap(job ⇒ update(job, fields, modifyConfig))
+
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+    update(job, fields, ModifyConfig.default)
+
+  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+    updateSrv[Job](job, fields, modifyConfig)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Job, NotUsed], Future[Long]) = {
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
@@ -202,6 +208,12 @@ class CortexSrv @Inject() (
     getSrv[JobModel, Job](jobModel, jobId)
   }
 
+  def retryIf[A](f: Throwable ⇒ Boolean, maxRetry: Int)(body: ⇒ Future[A]): Future[A] = {
+    body.recoverWith {
+      case e if maxRetry > 0 && f(e) ⇒ retryIf(f, maxRetry - 1)(body)
+    }
+  }
+
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
@@ -225,14 +237,17 @@ class CortexSrv @Inject() (
                       .toOption
                       .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
                       .getOrElse(JsObject.empty)
-                    for {
-                      artifact ← artifactSrv.get(job.artifactId())
-                      reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
-                      newReports = reports + (job.analyzerId() → jobSummary)
-                    } artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString))
+                    retryIf(_ ⇒ true, 5) {
+                      for {
+                        artifact ← artifactSrv.get(job.artifactId())
+                        reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
+                        newReports = reports + (job.analyzerId() → jobSummary)
+                      } yield artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
+                    }
                       .recover {
                         case t ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
                       }
+
                 }
             }
             .onComplete {
@@ -256,7 +271,7 @@ class CortexSrv @Inject() (
   def submitJob(cortexId: Option[String], analyzerId: String, artifactId: String)(implicit authContext: AuthContext): Future[Job] = {
     val cortexClient = cortexId match {
       case Some(id) ⇒ Future.successful(cortexConfig.instances.find(_.name == id))
-      case None ⇒ if (cortexConfig.instances.size <= 1) Future.successful(cortexConfig.instances.headOption)
+      case None ⇒ if (cortexConfig.instances.lengthCompare(1) <= 0) Future.successful(cortexConfig.instances.headOption)
       else {
         Future // If there are several cortex, select the first which has the analyzer
           .traverse(cortexConfig.instances)(c ⇒ c.getAnalyzer(analyzerId).map(_ ⇒ Some(c)).recover { case _ ⇒ None })
