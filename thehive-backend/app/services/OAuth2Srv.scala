@@ -15,7 +15,7 @@ import services.mappers.UserMapper
 import scala.concurrent.{ ExecutionContext, Future }
 
 case class OAuth2Config(
-    clientId: Option[String] = None,
+    clientId: String,
     clientSecret: String,
     redirectUri: String,
     responseType: String,
@@ -27,8 +27,8 @@ case class OAuth2Config(
     autocreate: Boolean)
 
 object OAuth2Config {
-  def apply(configuration: Configuration): OAuth2Config = {
-    (for {
+  def apply(configuration: Configuration): Option[OAuth2Config] = {
+    for {
       clientId ← configuration.getOptional[String]("auth.oauth2.clientId")
       clientSecret ← configuration.getOptional[String]("auth.oauth2.clientSecret")
       redirectUri ← configuration.getOptional[String]("auth.oauth2.redirectUri")
@@ -38,9 +38,8 @@ object OAuth2Config {
       userUrl ← configuration.getOptional[String]("auth.oauth2.userUrl")
       tokenUrl ← configuration.getOptional[String]("auth.oauth2.tokenUrl")
       scope ← configuration.getOptional[String]("auth.oauth2.scope")
-      autocreate ← configuration.getOptional[Boolean]("auth.sso.autocreate").orElse(Some(false))
-    } yield OAuth2Config(Some(clientId), clientSecret, redirectUri, responseType, grantType, authorizationUrl, tokenUrl, userUrl, scope, autocreate))
-      .getOrElse(OAuth2Config(tokenUrl = "", clientSecret = "", redirectUri = "", responseType = "", grantType = "", authorizationUrl = "", userUrl = "", scope = "", autocreate = false))
+      autocreate = configuration.getOptional[Boolean]("auth.sso.autocreate").getOrElse(false)
+    } yield OAuth2Config(clientId, clientSecret, redirectUri, responseType, grantType, authorizationUrl, tokenUrl, userUrl, scope, autocreate)
   }
 }
 
@@ -49,7 +48,7 @@ class OAuth2Srv(
     ws: WSClient,
     userSrv: UserSrv,
     ssoMapper: UserMapper,
-    oauth2Config: OAuth2Config,
+    oauth2Config: Option[OAuth2Config],
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer)
   extends AuthSrv {
@@ -73,81 +72,89 @@ class OAuth2Srv(
 
   val Oauth2TokenQueryString = "code"
 
+  private def withOAuth2Config[A](body: OAuth2Config ⇒ Future[A]): Future[A] = {
+    oauth2Config.fold[Future[A]](Future.failed(AuthenticationError("OAuth2 not configured properly")))(body)
+  }
+
   override def authenticate()(implicit request: RequestHeader): Future[AuthContext] = {
-    oauth2Config.clientId
-      .fold[Future[AuthContext]](Future.failed(AuthenticationError("OAuth2 not configured properly"))) {
-        clientId ⇒
-          request.queryString
-            .get(Oauth2TokenQueryString)
-            .flatMap(_.headOption)
-            .fold(createOauth2Redirect(clientId)) { code ⇒
-              getAuthTokenAndAuthenticate(clientId, code)
-            }
-      }
-  }
-
-  private def getAuthTokenAndAuthenticate(clientId: String, code: String)(implicit request: RequestHeader): Future[AuthContext] = {
-    logger.debug("Getting user token with the code from the response!")
-    ws.url(oauth2Config.tokenUrl)
-      .post(Map(
-        "code" -> code,
-        "grant_type" -> oauth2Config.grantType,
-        "client_secret" -> oauth2Config.clientSecret,
-        "redirect_uri" -> oauth2Config.redirectUri,
-        "client_id" -> clientId))
-      .recoverWith {
-        case error ⇒
-          logger.error(s"Token verification failure", error)
-          Future.failed(AuthenticationError("Token verification failure"))
-      }
-      .flatMap { r ⇒
-        r.status match {
-          case Status.OK ⇒
-            val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
-            val authHeader = "Authorization" -> s"bearer $accessToken"
-            ws.url(oauth2Config.userUrl)
-              .addHttpHeaders(authHeader)
-              .get().flatMap { userResponse ⇒
-                if (userResponse.status != Status.OK) {
-                  Future.failed(AuthenticationError(s"unexpected response from server: ${userResponse.status} ${userResponse.body}"))
-                }
-                else {
-                  val response = userResponse.json.asInstanceOf[JsObject]
-                  getOrCreateUser(response, authHeader)
-                }
-              }
-          case _ ⇒
-            logger.error(s"unexpected response from server: ${r.status} ${r.body}")
-            Future.failed(AuthenticationError("unexpected response from server"))
-        }
-      }
-  }
-
-  private def getOrCreateUser(response: JsValue, authHeader: (String, String))(implicit request: RequestHeader): Future[AuthContext] = {
-    ssoMapper.getUserFields(response, Some(authHeader)).flatMap {
-      userFields ⇒
-        val userId = userFields.getString("login").getOrElse("")
-        userSrv.get(userId).flatMap(user ⇒ {
-          userSrv.getFromUser(request, user)
-        }).recoverWith {
-          case authErr: AuthorizationError ⇒ Future.failed(authErr)
-          case _ if oauth2Config.autocreate ⇒
-            userSrv.inInitAuthContext { implicit authContext ⇒
-              userSrv.create(userFields).flatMap(user ⇒ {
-                userSrv.getFromUser(request, user)
-              })
-            }
+    withOAuth2Config { cfg ⇒
+      request.queryString
+        .get(Oauth2TokenQueryString)
+        .flatMap(_.headOption)
+        .fold(createOauth2Redirect(cfg.clientId)) { code ⇒
+          getAuthTokenAndAuthenticate(cfg.clientId, code)
         }
     }
   }
 
+  private def getAuthTokenAndAuthenticate(clientId: String, code: String)(implicit request: RequestHeader): Future[AuthContext] = {
+    logger.debug("Getting user token with the code from the response!")
+    withOAuth2Config { cfg ⇒
+      ws.url(cfg.tokenUrl)
+        .post(Map(
+          "code" -> code,
+          "grant_type" -> cfg.grantType,
+          "client_secret" -> cfg.clientSecret,
+          "redirect_uri" -> cfg.redirectUri,
+          "client_id" -> clientId))
+        .recoverWith {
+          case error ⇒
+            logger.error(s"Token verification failure", error)
+            Future.failed(AuthenticationError("Token verification failure"))
+        }
+        .flatMap { r ⇒
+          r.status match {
+            case Status.OK ⇒
+              val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
+              val authHeader = "Authorization" -> s"bearer $accessToken"
+              ws.url(cfg.userUrl)
+                .addHttpHeaders(authHeader)
+                .get().flatMap { userResponse ⇒
+                  if (userResponse.status != Status.OK) {
+                    Future.failed(AuthenticationError(s"unexpected response from server: ${userResponse.status} ${userResponse.body}"))
+                  }
+                  else {
+                    val response = userResponse.json.asInstanceOf[JsObject]
+                    getOrCreateUser(response, authHeader)
+                  }
+                }
+            case _ ⇒
+              logger.error(s"unexpected response from server: ${r.status} ${r.body}")
+              Future.failed(AuthenticationError("unexpected response from server"))
+          }
+        }
+    }
+  }
+
+  private def getOrCreateUser(response: JsValue, authHeader: (String, String))(implicit request: RequestHeader): Future[AuthContext] = {
+    withOAuth2Config { cfg ⇒
+      ssoMapper.getUserFields(response, Some(authHeader)).flatMap {
+        userFields ⇒
+          val userId = userFields.getString("login").getOrElse("")
+          userSrv.get(userId).flatMap(user ⇒ {
+            userSrv.getFromUser(request, user)
+          }).recoverWith {
+            case authErr: AuthorizationError ⇒ Future.failed(authErr)
+            case _ if cfg.autocreate ⇒
+              userSrv.inInitAuthContext { implicit authContext ⇒
+                userSrv.create(userFields).flatMap(user ⇒ {
+                  userSrv.getFromUser(request, user)
+                })
+              }
+          }
+      }
+    }
+  }
+
   private def createOauth2Redirect(clientId: String): Future[AuthContext] = {
-    val queryStringParams = Map[String, Seq[String]](
-      "scope" -> Seq(oauth2Config.scope),
-      "response_type" -> Seq(oauth2Config.responseType),
-      "redirect_uri" -> Seq(oauth2Config.redirectUri),
-      "client_id" -> Seq(clientId))
-    Future.failed(OAuth2Redirect(oauth2Config.authorizationUrl, queryStringParams))
+    withOAuth2Config { cfg ⇒
+      val queryStringParams = Map[String, Seq[String]](
+        "scope" -> Seq(cfg.scope),
+        "response_type" -> Seq(cfg.responseType),
+        "redirect_uri" -> Seq(cfg.redirectUri),
+        "client_id" -> Seq(clientId))
+      Future.failed(OAuth2Redirect(cfg.authorizationUrl, queryStringParams))
+    }
   }
 }
 
