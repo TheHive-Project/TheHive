@@ -236,7 +236,7 @@ class CaseMergeSrv @Inject() (
           .set("dataType", firstArtifact.dataType())
           .set("message", concatOpt[Artifact](sameArtifacts, "\n  \n", a ⇒ caseMap(a.parentId.get).caseId(), _.message()))
           .set("startDate", firstDate(sameArtifacts.map(_.startDate())))
-          .set("tlp", JsNumber(sameArtifacts.map(_.tlp()).min))
+          .set("tlp", JsNumber(sameArtifacts.map(_.tlp()).max))
           .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).distinct.map(JsString)))
           .set("ioc", JsBoolean(sameArtifacts.map(_.ioc()).reduce(_ || _)))
           .set("status", mergeArtifactStatus(sameArtifacts))
