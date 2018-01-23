@@ -12,6 +12,7 @@ import akka.stream.scaladsl.Source
 import models._
 
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
@@ -34,10 +35,16 @@ class DashboardSrv @Inject() (
     getSrv[DashboardModel, Dashboard](dashboardModel, id)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
-    updateSrv[DashboardModel, Dashboard](dashboardModel, id, fields)
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Dashboard] =
+    updateSrv[DashboardModel, Dashboard](dashboardModel, id, fields, modifyConfig)
 
   def update(dashboard: Dashboard, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
-    updateSrv(dashboard, fields)
+    update(dashboard, fields, ModifyConfig.default)
+
+  def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Dashboard] =
+    updateSrv(dashboard, fields, modifyConfig)
 
   def delete(id: String)(implicit Context: AuthContext): Future[Dashboard] =
     deleteSrv[DashboardModel, Dashboard](dashboardModel, id)

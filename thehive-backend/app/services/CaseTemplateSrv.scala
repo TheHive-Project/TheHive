@@ -11,6 +11,7 @@ import models.{ CaseTemplate, CaseTemplateModel }
 
 import org.elastic4play.NotFoundError
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
@@ -39,7 +40,10 @@ class CaseTemplateSrv @Inject() (
   }
 
   def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[CaseTemplate] =
-    updateSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id, fields)
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[CaseTemplate] =
+    updateSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id, fields, modifyConfig)
 
   def delete(id: String)(implicit Context: AuthContext): Future[Unit] =
     deleteSrv.realDelete[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
