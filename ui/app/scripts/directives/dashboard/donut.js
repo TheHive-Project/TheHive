@@ -52,7 +52,6 @@
 
                     var statConfig = {
                         query: query,
-
                         objectType: scope.entity.path,
                         field: scope.options.field,
                         sort: scope.options.sort ? [scope.options.sort] : '-_count',
@@ -81,21 +80,21 @@
                                     type: 'donut',
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
-                                    // onclick: function(d) {
-                                    //     var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
-                                    //
-                                    //     if (scope.options.query && scope.options.query !== '*') {
-                                    //         criteria.push(scope.options.query);
-                                    //     }
-                                    //
-                                    //     var searchQuery = {
-                                    //         _and: criteria
-                                    //     };
-                                    //
-                                    //     $state.go('app.search', {
-                                    //         q: Base64.encode(angular.toJson(searchQuery))
-                                    //     });
-                                    // }
+                                    onclick: function(d) {
+                                        var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
+
+                                        if (query && query !== '*') {
+                                            criteria.push(query);
+                                        }
+
+                                        var searchQuery = {
+                                            _and: criteria
+                                        };
+
+                                        $state.go('app.search', {
+                                            q: Base64.encode(angular.toJson(searchQuery))
+                                        });
+                                    }
                                 },
                                 donut: {
                                     title: 'Total: ' + total,
