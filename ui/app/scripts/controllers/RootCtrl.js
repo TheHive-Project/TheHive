@@ -64,7 +64,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         // Get Alert counts
         $scope.alertEvents = AlertingSrv.stats($scope);
 
-        $scope.$on('templates:refresh', function(){            
+        $scope.$on('templates:refresh', function(){
             CaseTemplateSrv.list().then(function(templates) {
                 $scope.templates = templates;
             });

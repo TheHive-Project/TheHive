@@ -109,7 +109,7 @@
                 }
 
                 fn(self.event.id).then(function() {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }).catch(function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
@@ -128,7 +128,7 @@
                 }
 
                 fn(this.event.id).then(function( /*data*/ ) {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }, function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });

@@ -27,7 +27,8 @@
     flex: auto;
 }
 
-.search-item-title a{
+.search-item-title a,
+.search-item-title span.title{
     font-size: 18px;
     font-weight: bold;
     text-decoration: none;
