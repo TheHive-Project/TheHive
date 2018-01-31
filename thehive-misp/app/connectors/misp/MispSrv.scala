@@ -46,6 +46,7 @@ class MispSrv @Inject() (
     }
 
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
+    logger.debug(s"Get MISP events from $fromDate")
     val date = fromDate.getTime / 1000
     Source
       .fromFuture {
@@ -62,11 +63,12 @@ class MispSrv @Inject() (
         val events = eventJson
           .flatMap { j ⇒
             j.asOpt[MispAlert]
-              .map(_.copy(source = mispConnection.name))
               .orElse {
                 logger.warn(s"MISP event can't be parsed\n$j")
                 None
               }
+              .filterNot(mispConnection.isExcluded)
+              .map(_.copy(source = mispConnection.name))
           }
 
         val eventJsonSize = eventJson.size
@@ -110,10 +112,17 @@ class MispSrv @Inject() (
           "eventid" → eventId)))
       // add ("deleted" → 1) to see also deleted attributes
       // add ("deleted" → "only") to see only deleted attributes
-      .map { response ⇒
+      .map(_.body)
+      .map {
+        case body if mispConnection.maxSize.fold(false)(body.length > _) ⇒
+          logger.debug(s"Size of event exceeds (${body.length}) the configured limit")
+          JsObject.empty
+        case body ⇒ Json.parse(body)
+      }
+      .map { jsBody ⇒
         val refDate = fromDate.getOrElse(new Date(0))
         val artifactTags = s"src:${mispConnection.name}" +: mispConnection.artifactTags
-        (Json.parse(response.body) \ "response" \\ "Attribute")
+        (jsBody \ "response" \\ "Attribute")
           .flatMap(_.as[Seq[MispAttribute]])
           .filter(_.date after refDate)
           .flatMap(convertAttribute)
