@@ -94,7 +94,7 @@ class AlertModel @Inject() (dblists: DBLists)
           attrs
         else {
           val hasher = Hasher("MD5")
-          val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
+          val tpe = (attrs \ "type").asOpt[String].getOrElse("<null>")
           val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
