@@ -294,6 +294,16 @@ class Migration(
           caseTemplate - "metricNames" + ("metrics" -> metrics)
         },
         addAttribute("case_artifact", "sighted" -> JsFalse))
+    case DatabaseState(12) ⇒
+      Seq(
+        // Remove alert artifacts in audit trail
+        mapEntity("audit") {
+          case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
+            (audit \ "details").asOpt[JsObject].fold(audit) { details ⇒
+              audit + ("details" -> (details - "artifacts"))
+            }
+          case audit ⇒ audit
+        })
   }
 
   private def convertDate(json: JsValue): JsValue = {
