@@ -131,6 +131,10 @@
         };
 
         $scope.updateCustomFieldsList();
+
+        $scope.$on('case:refresh-custom-fields', function() {            
+            $scope.updateCustomFieldsList();
+        });
     });
 
     angular.module('theHiveControllers').controller('CaseAddMetadataConfirmCtrl', function($scope, $uibModalInstance, data) {
