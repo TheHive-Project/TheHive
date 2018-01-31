@@ -37,13 +37,13 @@
         </div>
         <table class="table table-striped">
             <thead>
-                <th>Observable</th>
+                <th width="200">Observable</th>
                 <th>Reason</th>
             </thead>
             <tbody>
                 <tr ng-repeat="o in dialog.failures">
                     <td class="wrap">{{o.data | fang}}</td>
-                    <td class="nowrap">{{o.message}}</td>
+                    <td class="wrap">{{o.message}}</td>
                 </tr>
             </tbody>
         </table>
