@@ -294,7 +294,7 @@ class Migration(
           caseTemplate - "metricNames" + ("metrics" -> metrics)
         },
         addAttribute("case_artifact", "sighted" -> JsFalse))
-    case DatabaseState(12) ⇒
+    case ds @ DatabaseState(12) ⇒
       Seq(
         // Remove alert artifacts in audit trail
         mapEntity("audit") {
@@ -303,7 +303,33 @@ class Migration(
               audit + ("details" -> (details - "artifacts"))
             }
           case audit ⇒ audit
-        })
+        },
+        // Regenerate all alert ID
+        mapEntity("alert") { alert ⇒
+          alert + ("_id" → JsString(generateAlertId(alert)))
+        },
+        // and overwrite alert id in audit trail
+        Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
+          case "audit" ⇒ f("audit").flatMapConcat {
+            case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
+              val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId ⇒
+                ds.getEntity("alert", alertId)
+                  .map { alert ⇒ audit + ("objectId" -> JsString(generateAlertId(alert))) }
+                  .recover { case _ ⇒ audit }
+              }
+              Source.fromFuture(updatedAudit)
+            case audit ⇒ Source.single(audit)
+          }
+          case other ⇒ f(other)
+        }))
+  }
+
+  private def generateAlertId(alert: JsObject): String = {
+    val hasher = Hasher("MD5")
+    val tpe = (alert \ "type").asOpt[String].getOrElse("<null>")
+    val source = (alert \ "source").asOpt[String].getOrElse("<null>")
+    val sourceRef = (alert \ "sourceRef").asOpt[String].getOrElse("<null>")
+    hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
   }
 
   private def convertDate(json: JsValue): JsValue = {
