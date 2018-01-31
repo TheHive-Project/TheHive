@@ -535,3 +535,8 @@ table tr td.task-actions span.action-button {
 .misp-export .status-label {
     display: block;
 }
+
+.scroll-dropdown {
+   max-height: 200px;
+   overflow-y: auto;
+}
