@@ -37,7 +37,7 @@ case class MispConnection(
        |  case template:    ${caseTemplate.getOrElse("<not set>")}
        |  artifact tags:    ${artifactTags.mkString}
        |  filters:
-       |    max age:        ${maxAge.getOrElse("<not set>")}
+       |    max age:        ${maxAge.fold("<not set>")(_.toCoarsest.toString)}
        |    max attributes: ${maxAttributes.getOrElse("<not set>")}
        |    max size:       ${maxSize.getOrElse("<not set>")}
        |    excluded orgs:  ${excludedOrganisations.mkString}
