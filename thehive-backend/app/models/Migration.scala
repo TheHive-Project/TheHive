@@ -18,6 +18,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import services.{ AlertSrv, DashboardSrv }
 
+import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
@@ -80,7 +81,8 @@ class Migration(
         dataTypeList.addItem(dt)
           .map(_ ⇒ ())
           .recover {
-            case error ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
+            case _: ConflictError ⇒
+            case error            ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
           }
       }
       .map(_ ⇒ ())
@@ -306,7 +308,8 @@ class Migration(
         },
         // Regenerate all alert ID
         mapEntity("alert") { alert ⇒
-          alert + ("_id" → JsString(generateAlertId(alert)))
+          val alertId = JsString(generateAlertId(alert))
+          alert + ("_id" → alertId) + ("_routing" -> alertId)
         },
         // and overwrite alert id in audit trail
         Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
@@ -314,8 +317,14 @@ class Migration(
             case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
               val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId ⇒
                 ds.getEntity("alert", alertId)
-                  .map { alert ⇒ audit + ("objectId" -> JsString(generateAlertId(alert))) }
-                  .recover { case _ ⇒ audit }
+                  .map { alert ⇒
+                    audit + ("objectId" -> JsString(generateAlertId(alert)))
+                  }
+                  .recover {
+                    case e ⇒
+                      logger.error(s"Get alert $alertId", e)
+                      audit
+                  }
               }
               Source.fromFuture(updatedAudit)
             case audit ⇒ Source.single(audit)
