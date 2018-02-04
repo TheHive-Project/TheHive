@@ -89,20 +89,24 @@ class Migration(
   }
 
   private def addDashboards(version: Int): Future[Unit] = {
-    userSrv.inInitAuthContext { implicit authContext ⇒
-      val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
-      val dashboards = for {
-        dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
-        if Files.isReadable(dashboardFile)
-        dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
-        dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
-        dash = dashboardSrv.create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
-          .map(_ ⇒ ())
-          .recover {
-            case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
-          }
-      } yield dash
-      Future.sequence(dashboards).map(_ ⇒ ())
+    dashboardSrv.find(QueryDSL.any, Some("0-0"), Nil)._2.flatMap {
+      case 0 ⇒
+        userSrv.inInitAuthContext { implicit authContext ⇒
+          val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
+          val dashboards = for {
+            dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
+            if Files.isReadable(dashboardFile)
+            dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
+            dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
+            dash = dashboardSrv.create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
+              .map(_ ⇒ ())
+              .recover {
+                case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
+              }
+          } yield dash
+          Future.sequence(dashboards).map(_ ⇒ ())
+        }
+      case _ ⇒ Future.successful(())
     }
   }
 
