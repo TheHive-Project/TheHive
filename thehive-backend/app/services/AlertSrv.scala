@@ -304,7 +304,7 @@ class AlertSrv(
         similarArtifacts(artifact)
           .getOrElse(Source.empty)
       }
-      .groupBy(100, _.parentId)
+      .groupBy(maxSimilarCases, _.parentId)
       .map {
         case a if a.ioc() ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 1, 1)
         case a            ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 0, 1)
