@@ -114,6 +114,10 @@
             $scope.getTags = function(query) {
                 return TagSrv.fromCases(query);
             };
+
+            $scope.keys = function(o) {
+                return _.keys(o).length;
+            }
         }
     );
 })();
