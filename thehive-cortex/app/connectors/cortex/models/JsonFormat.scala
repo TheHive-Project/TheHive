@@ -1,9 +1,7 @@
 package connectors.cortex.models
 
 import akka.stream.scaladsl.Source
-
-import play.api.libs.json.{ Format, JsObject, Json }
-import play.api.libs.json.{ OFormat, OWrites, Reads, Writes }
+import play.api.libs.json._
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 
 import org.elastic4play.models.JsonFormat.enumFormat
@@ -21,9 +19,10 @@ object JsonFormat {
     for {
       name ← (json \ "name").validate[String]
       version ← (json \ "version").validate[String]
+      id = (json \ "id").asOpt[String].getOrElse((name + "_" + version).replaceAll("\\.", "_"))
       description ← (json \ "description").validate[String]
       dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
-    } yield Analyzer(name, version, description, dataTypeList))
+    } yield Analyzer(id, name, version, description, dataTypeList))
   implicit val analyzerFormats: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
 
   private val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
@@ -47,14 +46,25 @@ object JsonFormat {
 
   implicit val artifactFormat: OFormat[CortexArtifact] = OFormat(artifactReads, artifactWrites)
   implicit val jobStatusFormat: Format[JobStatus.Type] = enumFormat(JobStatus)
+
+  private def filterObject(json: JsObject, attributes: String*): JsObject = {
+    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a -> _)))
+  }
+
   private val cortexJobReads = Reads[CortexJob](json ⇒
     for {
       id ← (json \ "id").validate[String]
       analyzerId ← (json \ "analyzerId").validate[String]
-      artifact ← (json \ "artifact").validate[CortexArtifact]
+      attributes = filterObject(json.as[JsObject], "tlp", "message", "parameters")
+      artifact = (json \ "artifact").validate[CortexArtifact]
+        .getOrElse {
+          (json \ "data").asOpt[String].map(DataArtifact(_, attributes))
+            .getOrElse(FileArtifact(Source.empty, attributes))
+        }
       date ← (json \ "date").validate[Date]
       status ← (json \ "status").validate[JobStatus.Type]
     } yield CortexJob(id, analyzerId, artifact, date, status, Nil))
+
   private val cortexJobWrites = Json.writes[CortexJob]
   implicit val cortexJobFormat: Format[CortexJob] = Format(cortexJobReads, cortexJobWrites)
   implicit val reportTypeFormat: Format[ReportType.Type] = enumFormat(ReportType)
