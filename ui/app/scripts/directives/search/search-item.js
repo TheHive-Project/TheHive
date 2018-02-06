@@ -9,7 +9,8 @@
                 scope: {
                     'value': '=',
                     'type': '@',
-                    'icon': '@'
+                    'icon': '@',
+                    onTitleClicked: '&'
                 },
                 link: function(scope /*, element, attrs*/ ) {
                     scope.getContentUrl = function() {

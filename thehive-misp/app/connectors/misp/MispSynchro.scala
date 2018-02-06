@@ -124,7 +124,7 @@ class MispSynchro @Inject() (
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
     // get events that have been published after the last synchronization
-    mispSrv.getEventsFromDate(mispConnection, lastSyncDate.getOrElse(new Date(0)))
+    mispSrv.getEventsFromDate(mispConnection, mispConnection.syncFrom(lastSyncDate.getOrElse(new Date(0))))
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
@@ -134,14 +134,22 @@ class MispSynchro @Inject() (
       .mapAsyncUnordered(1) {
         case (event, alert) ⇒
           logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
-          logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
+          logger.debug(s"getting MISP event ${event.source}:${event.sourceRef}")
           mispSrv.getAttributesFromMisp(mispConnection, event.sourceRef, lastSyncDate.flatMap(_ ⇒ alert.map(_.lastSyncDate())))
             .map((event, alert, _))
+      }
+      .filter {
+        // attrs is empty if the size of the http response exceed the configured limit (max-size)
+        case (_, _, attrs) if attrs.isEmpty ⇒ false
+        case (event, _, attrs) if mispConnection.maxAttributes.fold(false)(attrs.lengthCompare(_) > 0) ⇒
+          logger.debug(s"Event ${event.sourceRef} ignore because it has too many attributes (${attrs.length}>${mispConnection.maxAttributes.get})")
+          false
+        case _ ⇒ true
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
         case (event, None, attrs) ⇒
-          logger.info(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
+          logger.debug(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
@@ -151,7 +159,7 @@ class MispSynchro @Inject() (
             .recover { case t ⇒ Failure(t) }
 
         case (event, Some(alert), attrs) ⇒
-          logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
+          logger.debug(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
 
           alert.caze().fold[Future[Boolean]](Future.successful(lastSyncDate.isDefined && attrs.nonEmpty && alert.follow())) {
             case caze if alert.follow() ⇒

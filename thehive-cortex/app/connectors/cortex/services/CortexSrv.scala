@@ -219,7 +219,7 @@ class CortexSrv @Inject() (
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
-        if (status == JobStatus.InProgress)
+        if (status == JobStatus.InProgress || status == JobStatus.Waiting)
           updateJobWithCortex(jobId, cortexJobId, cortex)
         else {
           val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString

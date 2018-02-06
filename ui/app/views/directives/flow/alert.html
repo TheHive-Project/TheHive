@@ -10,7 +10,7 @@
             <ng-pluralize count="summary.alert.Creation" when="{'one': '{} new alert has been added', 'other': '{} new alerts have been added'}"></ng-pluralize>
         </div>
         <div class="flow-item-bulk" ng-show="summary.alert.Update">
-            <ng-pluralize count="summary.alert.Update" when="{'one': '{} existing alert has been updated', 'other': '{} existing alerts have been added'}"></ng-pluralize>
+            <ng-pluralize count="summary.alert.Update" when="{'one': '{} existing alert has been updated', 'other': '{} existing alerts have been updated'}"></ng-pluralize>
         </div>
         <div>
             <a class="small" href ng-click="openState('app.alert-list')">See all</a>
@@ -19,7 +19,7 @@
 
     <div class="flow-item-updates wrap" ng-hide="bulk" ng-switch-default>
         <span ng-repeat="(k,v) in base.details"
-            ng-switch="k" 
+            ng-switch="k"
             ng-if="['description', 'caseTemplate', 'title', 'follow', 'lastSyncDate'].indexOf(k) === -1">
             <div ng-switch-when="artifacts">
                 {{k}}:

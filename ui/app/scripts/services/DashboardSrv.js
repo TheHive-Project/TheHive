@@ -245,7 +245,7 @@
         };
 
         this.buildChartQuery = function(filter, query) {
-            var criteria = _.without([filter, query], null, undefined, '', '*');
+            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function(c){return !_.isEmpty(c)});
 
             if(criteria.length === 0) {
                 return {};

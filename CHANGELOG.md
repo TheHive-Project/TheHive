@@ -1,6 +1,43 @@
 # Change Log
 
-## [3.0.3](https://github.com/TheHive-Project/TheHive/tree/3.0.3) (2017-12-22)
+## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-05)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.3...3.0.4)
+
+**Implemented enhancements:**
+
+- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
+- Make alerts searchable through the global search field [\#456](https://github.com/TheHive-Project/TheHive/issues/456)
+- Make counts on Counter dashboard's widget clickable [\#455](https://github.com/TheHive-Project/TheHive/issues/455)
+- MISP feeds cause the growing of ES audit docs [\#450](https://github.com/TheHive-Project/TheHive/issues/450)
+- Case metrics sort  [\#418](https://github.com/TheHive-Project/TheHive/issues/418)
+- StreamSrv: Unexpected message : StreamNotFound [\#414](https://github.com/TheHive-Project/TheHive/issues/414)
+- Filter MISP Events Using MISP Tags & More Before Creating Alerts [\#370](https://github.com/TheHive-Project/TheHive/issues/370)
+- Single-Sign On support [\#354](https://github.com/TheHive-Project/TheHive/issues/354)
+- OAuth2 single sign-on implementation \(BE + FE\) [\#430](https://github.com/TheHive-Project/TheHive/pull/430) ([saibot94](https://github.com/saibot94))
+
+**Fixed bugs:**
+
+- Remove uppercase filter on template name [\#464](https://github.com/TheHive-Project/TheHive/issues/464)
+- Fix the alert bulk update timeline message [\#463](https://github.com/TheHive-Project/TheHive/issues/463)
+- "too many substreams open" on alerts [\#462](https://github.com/TheHive-Project/TheHive/issues/462)
+- Fix MISP export error dialog column's wrap [\#460](https://github.com/TheHive-Project/TheHive/issues/460)
+- More than 20 users prevents assignment in tasks [\#459](https://github.com/TheHive-Project/TheHive/issues/459)
+- Type is not used when generating alert id [\#457](https://github.com/TheHive-Project/TheHive/issues/457)
+- Fix link to default report templates [\#454](https://github.com/TheHive-Project/TheHive/issues/454)
+- Make dashboard donuts clickable [\#453](https://github.com/TheHive-Project/TheHive/issues/453)
+- Refresh custom fields on open cases by background changes [\#440](https://github.com/TheHive-Project/TheHive/issues/440)
+- Bug: Case metrics not shown when creating case from template [\#417](https://github.com/TheHive-Project/TheHive/issues/417)
+- Observable report taxonomies bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
+- File upload when /tmp is full [\#321](https://github.com/TheHive-Project/TheHive/issues/321)
+
+**Closed issues:**
+
+- GET request with Content-Type ends up in HTTP 400 [\#438](https://github.com/TheHive-Project/TheHive/issues/438)
+- Feature Request: Ability to bulk upload files as observables. [\#435](https://github.com/TheHive-Project/TheHive/issues/435)
+- Add metadata to MISP event when exporting case from TheHive [\#433](https://github.com/TheHive-Project/TheHive/issues/433)
+- How to limit by date amount of events pulled from MISP initially? [\#432](https://github.com/TheHive-Project/TheHive/issues/432)
+
+## [3.0.3](https://github.com/TheHive-Project/TheHive/tree/3.0.3) (2018-01-10)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.2...3.0.3)
 
 **Fixed bugs:**

@@ -19,7 +19,7 @@
                         <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
                             <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
                         </a>
-                        <span uib-tooltip="{{analyzer.description}}">{{::analyzerId}}</span>
+                        <span uib-tooltip="{{analyzer.description}}">{{analyzer.name}} {{analyzer.version}}</span>
                         <!-- <div class="text-muted">{{}}</div> -->
                     </td>
                     <!-- <td>

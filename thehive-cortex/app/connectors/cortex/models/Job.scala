@@ -18,7 +18,7 @@ import services.AuditedModel
 
 object JobStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val InProgress, Success, Failure = Value
+  val InProgress, Success, Failure, Waiting = Value
 }
 
 trait JobAttributes { _: AttributeDef ⇒
