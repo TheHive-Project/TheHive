@@ -5,9 +5,11 @@
 
 **Implemented enhancements:**
 
+- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
 - Make alerts searchable through the global search field [\#456](https://github.com/TheHive-Project/TheHive/issues/456)
 - Make counts on Counter dashboard's widget clickable [\#455](https://github.com/TheHive-Project/TheHive/issues/455)
 - MISP feeds cause the growing of ES audit docs [\#450](https://github.com/TheHive-Project/TheHive/issues/450)
+- Case metrics sort  [\#418](https://github.com/TheHive-Project/TheHive/issues/418)
 - StreamSrv: Unexpected message : StreamNotFound [\#414](https://github.com/TheHive-Project/TheHive/issues/414)
 - Filter MISP Events Using MISP Tags & More Before Creating Alerts [\#370](https://github.com/TheHive-Project/TheHive/issues/370)
 - Single-Sign On support [\#354](https://github.com/TheHive-Project/TheHive/issues/354)
@@ -15,12 +17,16 @@
 
 **Fixed bugs:**
 
+- Remove uppercase filter on template name [\#464](https://github.com/TheHive-Project/TheHive/issues/464)
+- Fix the alert bulk update timeline message [\#463](https://github.com/TheHive-Project/TheHive/issues/463)
+- "too many substreams open" on alerts [\#462](https://github.com/TheHive-Project/TheHive/issues/462)
 - Fix MISP export error dialog column's wrap [\#460](https://github.com/TheHive-Project/TheHive/issues/460)
 - More than 20 users prevents assignment in tasks [\#459](https://github.com/TheHive-Project/TheHive/issues/459)
 - Type is not used when generating alert id [\#457](https://github.com/TheHive-Project/TheHive/issues/457)
 - Fix link to default report templates [\#454](https://github.com/TheHive-Project/TheHive/issues/454)
 - Make dashboard donuts clickable [\#453](https://github.com/TheHive-Project/TheHive/issues/453)
 - Refresh custom fields on open cases by background changes [\#440](https://github.com/TheHive-Project/TheHive/issues/440)
+- Bug: Case metrics not shown when creating case from template [\#417](https://github.com/TheHive-Project/TheHive/issues/417)
 - Observable report taxonomies bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
 - File upload when /tmp is full [\#321](https://github.com/TheHive-Project/TheHive/issues/321)
 
