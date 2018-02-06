@@ -15,6 +15,7 @@ import models._
 
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
@@ -101,13 +102,19 @@ class CaseSrv(
     getSrv[CaseModel, Case](caseModel, id)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
-    updateSrv[CaseModel, Case](caseModel, id, fields)
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Case] =
+    updateSrv[CaseModel, Case](caseModel, id, fields, modifyConfig)
 
   def update(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
-    updateSrv(caze, fields)
+    update(caze, fields, ModifyConfig.default)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Case]]] = {
-    updateSrv[CaseModel, Case](caseModel, ids, fields)
+  def update(caze: Case, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Case] =
+    updateSrv(caze, fields, modifyConfig)
+
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Seq[Try[Case]]] = {
+    updateSrv[CaseModel, Case](caseModel, ids, fields, modifyConfig)
   }
 
   def delete(id: String)(implicit Context: AuthContext): Future[Case] =

@@ -27,23 +27,23 @@ trait AlertAttributes {
   _: AttributeDef ⇒
   val artifactAttributes: Seq[Attribute[_]] = {
     val remoteAttachmentAttributes = Seq(
-      Attribute("alert", "reference", F.stringFmt, Nil, None, ""),
-      Attribute("alert", "filename", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "contentType", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "size", OptionalAttributeFormat(F.numberFmt), Nil, None, ""),
-      Attribute("alert", "hash", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "type", OptionalAttributeFormat(F.stringFmt), Nil, None, ""))
+      Attribute("alert", "reference", F.stringFmt, Seq(O.readonly), None, ""),
+      Attribute("alert", "filename", OptionalAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "contentType", OptionalAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "size", OptionalAttributeFormat(F.numberFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "hash", MultiAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "type", OptionalAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""))
 
     Seq(
-      Attribute("alert", "data", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "dataType", F.stringFmt, Nil, None, ""),
-      Attribute("alert", "message", OptionalAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
-      Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
-      Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
-      Attribute("alert", "tlp", OptionalAttributeFormat(TlpAttributeFormat), Nil, None, ""),
-      Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
-      Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, ""))
+      Attribute("alert", "data", OptionalAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "dataType", F.stringFmt, Seq(O.readonly), None, ""),
+      Attribute("alert", "message", OptionalAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Seq(O.readonly), None, ""),
+      Attribute("alert", "tlp", OptionalAttributeFormat(TlpAttributeFormat), Seq(O.readonly), None, ""),
+      Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Seq(O.readonly), None, ""),
+      Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Seq(O.readonly), None, ""))
   }
 
   val alertId: A[String] = attribute("_id", F.stringFmt, "Alert id", O.readonly)
@@ -58,7 +58,7 @@ trait AlertAttributes {
   val severity: A[Long] = attribute("severity", SeverityAttributeFormat, "Severity if the alert (0-3)", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
-  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
+  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert", O.unaudited)
   val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
   val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
   val follow: A[Boolean] = attribute("follow", F.booleanFmt, "", true)
@@ -94,7 +94,7 @@ class AlertModel @Inject() (dblists: DBLists)
           attrs
         else {
           val hasher = Hasher("MD5")
-          val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
+          val tpe = (attrs \ "type").asOpt[String].getOrElse("<null>")
           val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()

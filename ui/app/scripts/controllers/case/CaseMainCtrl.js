@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -61,6 +61,27 @@
                 if (data.length > 1) {
                     $scope.oldestLink = data[data.length - 1];
                     $scope.oldestLink.iocCount = $scope.countIoc($scope.oldestLink);
+                }
+            });
+
+            StreamSrv.addListener({
+                scope: $scope,
+                rootId: $scope.caseId,
+                objectType: 'case',
+                callback: function(updates) {
+                  CaseSrv.get({
+                      'caseId': $stateParams.caseId,
+                      'nstats': true
+                  }, function(data) {
+                      $scope.caze = data;
+
+                      if(updates.length === 1 && updates[0] && updates[0].base.details.customFields){
+                          $scope.$broadcast('case:refresh-custom-fields');
+                      }
+
+                  }, function(response) {
+                      NotificationSrv.error('CaseMainCtrl', response.data, response.status);
+                  });
                 }
             });
 

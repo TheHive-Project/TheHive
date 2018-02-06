@@ -14,16 +14,16 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th width="80">Type</th>
-                            <th width="250">Name</th>
-                            <th width="250">Internal Reference</th>
+                            <th width="80">Type <a ng-click="$vm.sortBy('type')"><i class="fa fa-sort" ng-class="{'fa-sort-up': $vm.state.sort==='type' && !$vm.state.asc, 'fa-sort-down': $vm.state.sort==='type' && $vm.state.asc}"></i></a></th>
+                            <th width="250">Name <a ng-click="$vm.sortBy('name')"><i class="fa fa-sort" ng-class="{'fa-sort-up': $vm.state.sort==='name' && !$vm.state.asc, 'fa-sort-down': $vm.state.sort==='name' && $vm.state.asc}"></i></a></th>
+                            <th width="250">Internal Reference <a ng-click="$vm.sortBy('reference')"><i class="fa fa-sort" ng-class="{'fa-sort-up': $vm.state.sort==='reference' && !$vm.state.asc, 'fa-sort-down': $vm.state.sort==='reference' && $vm.state.asc}"></i></a></th>
                             <th>Description</th>
                             <th width="200">Options</th>
                             <th width="80" class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="field in $vm.customFields | orderBy:'name'">
+                        <tr ng-repeat="field in $vm.customFields | orderBy:$vm.state.sort:!$vm.state.asc">
                             <td align="center">
                                 <span class="label label-default">{{field.type | uppercase}}</span>
                             </td>

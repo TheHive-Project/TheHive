@@ -5,7 +5,7 @@
             <a href class="dropdown-toggle" uib-dropdown-toggle>
                 <i class="fa fa-plus"></i>
             </a>
-            <ul class="dropdown-menu" uib-dropdown-menu>
+            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
                 <li ng-repeat="(key, value) in allCustomFields">
                     <a ng-click="addCustomField(value)">{{value.name}}</a>
                 </li>
@@ -19,34 +19,34 @@
 
     <dl class="dl-horizontal clear"
         ng-repeat="k in orderedFields"
-        ng-init="fieldDef = customFieldsCache[k]; customFieldValue=caze.customFields[fieldDef.reference][fieldDef.type];">
+        ng-init="fieldDef = customFieldsCache[k];">
         <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}</dt>
         <dd ng-if="fieldDef.options.length > 0">
             <updatable-select
                 options="fieldDef.options"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="customFieldValue"></updatable-select>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-select>
         </dd>
 
         <dd ng-if="fieldDef.options.length === 0" ng-switch="fieldDef.type">
             <updatable-simple-text ng-switch-when="string"
                 input-type="text"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="customFieldValue"></updatable-simple-text>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
 
             <updatable-date ng-switch-when="date"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="customFieldValue"></updatable-date>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-date>
 
             <updatable-simple-text ng-switch-when="number"
                 input-type="number"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="customFieldValue"></updatable-simple-text>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
 
             <updatable-boolean ng-switch-when="boolean"
                 input-type="number"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="customFieldValue"></updatable-boolean>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-boolean>
 
             <span ng-switch-default>Not Editable</span>
         </dd>

@@ -102,7 +102,7 @@ linuxPackageMappings ++= Seq(
   packageMapping(
     file("package/thehive.conf") -> "/etc/init/thehive.conf",
     file("conf/application.sample") -> "/etc/thehive/application.conf",
-    file("conf/logback.xml") -> "/etc/thehive/logback.xml"
+    file("package/logback.xml") -> "/etc/thehive/logback.xml"
   ).withPerms("644").withConfig(),
   packageMapping(
     file("package/thehive") -> "/etc/init.d/thehive"
@@ -161,7 +161,7 @@ dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
 mappings in Docker ++= Seq(
   file("package/docker/entrypoint") -> "/opt/thehive/entrypoint",
-  file("conf/logback.xml") -> "/etc/thehive/logback.xml",
+  file("package/logback.xml") -> "/etc/thehive/logback.xml",
   file("package/empty") -> "/var/log/thehive/application.log")
 mappings in Docker ~= (_.filterNot {
   case (_, filepath) => filepath == "/opt/thehive/conf/application.conf"

@@ -11,6 +11,7 @@ import akka.stream.scaladsl.Source
 import models.{ Log, LogModel, Task, TaskModel }
 
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
@@ -36,7 +37,10 @@ class LogSrv @Inject() (
     getSrv[LogModel, Log](logModel, id)
 
   def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[Log] =
-    updateSrv[LogModel, Log](logModel, id, fields)
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Log] =
+    updateSrv[LogModel, Log](logModel, id, fields, modifyConfig)
 
   def delete(id: String)(implicit Context: AuthContext): Future[Log] =
     deleteSrv[LogModel, Log](logModel, id)

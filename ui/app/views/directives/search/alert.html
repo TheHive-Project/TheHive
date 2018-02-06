@@ -1,0 +1,50 @@
+<div class="search-item-title">
+    <!-- <a href ui-sref="app.case.details({caseId: value.id})">
+        {{value.title}}
+    </a> -->
+    <span ng-if="!value.case" ng-click="onTitleClicked({value: value})">
+      <a href>{{value.title}}</a>
+    </span>
+    <span ng-if="value.case" ui-sref="app.case.details({caseId: value.case})">
+        <a href>{{::value.title}}</a>
+    </span>
+</div>
+<div>
+    <span>
+        <i class="fa fa-calendar"></i> Date:
+        <strong class="text-muted">{{value.date | showDate}}</strong>
+    </span>
+    <span class="ml-xxs">
+        <i class="fa fa-certificate"></i> Type:
+        <strong class="text-muted">{{value.type}}</strong>
+    </span>
+    <span class="ml-xxs">
+        <i class="fa fa-barcode"></i> Reference:
+        <strong class="text-muted">{{value.sourceRef}}</strong>
+    </span>
+    <span class="ml-xxs">
+        <i class="fa fa-bullseye"></i> Source:
+        <strong class="text-muted">{{value.source}}</strong>
+    </span>
+    <span class="ml-xxs">
+        <i class="glyphicon glyphicon-pushpin"></i> Attributes:
+        <strong class="text-muted">{{value.artifacts.length}}</strong>
+    </span>
+    <!-- <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo.get(value.owner) | getField: 'name'}}</span> -->
+</div>
+<div class="mt-xs wrap" ng-if="value.tags.length>0">
+    <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
+</div>
+<div class="mt-xs wrap" ng-if="value.tags.length>0">
+    <strong>Status:</strong>
+    <div>
+      <span class="label label-default" ng-class="{'label-danger': value.status==='New', 'label-warning': value.status === 'Update'}">{{value.status}}</span>
+    </div>
+</div>
+<div class="mt-xs wrap">
+    <strong>Description:</strong>
+    <div>
+        <span ng-bind="value.description| limitTo: 250"></span>
+    </div>
+</div>
