@@ -23,10 +23,22 @@
                 var result = [];
 
                 result = _.sortBy(_.map(customFields, function(definition, name){
+                    var fieldDef = self.fields[name];
+                    var type = fieldDef ? fieldDef.type : null;
+
+                    // The field doesn't exist, trying to find the field type from it's template value
+                    if(type === null) {
+                        var keys = _.without(_.keys(definition), 'order');
+                        if(keys.length > 0) {
+                            type = keys[0];
+                        }
+                    }
+
                     return {
                         name: name,
                         order: definition.order,
-                        value: definition[self.fields[name].type]
+                        value: fieldDef ? definition[type] : null,
+                        type: type
                     }
                 }), function(item){
                     return item.order;
@@ -248,10 +260,13 @@
                 self.template.customFields = {};
                 _.each(self.templateCustomFields, function(cf, index) {
                     var fieldDef = self.fields[cf.name];
-                    var value = (fieldDef.type === 'date' && cf.value) ? moment(cf.value).valueOf() : (cf.value || null)
+                    var value = null;
+                    if(fieldDef) {
+                        value = (fieldDef.type === 'date' && cf.value) ? moment(cf.value).valueOf() : (cf.value || null)
+                    }
 
                     self.template.customFields[cf.name] = {};
-                    self.template.customFields[cf.name][fieldDef.type] = value;
+                    self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
                     self.template.customFields[cf.name].order = index + 1;
                 });
 
