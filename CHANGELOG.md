@@ -1,5 +1,13 @@
 # Change Log
 
+## [3.0.5](https://github.com/TheHive-Project/TheHive/tree/3.0.5) (2018-02-08)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.4...3.0.5)
+
+**Fixed bugs:**
+
+ - Importing Template Button Non-Functional bug [\#404](https://github.com/TheHive-Project/TheHive/issues/404)
+ - No reports available for "domain" type bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
+
 ## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-05)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.3...3.0.4)
 
@@ -10,9 +18,7 @@
 - Make counts on Counter dashboard's widget clickable [\#455](https://github.com/TheHive-Project/TheHive/issues/455)
 - MISP feeds cause the growing of ES audit docs [\#450](https://github.com/TheHive-Project/TheHive/issues/450)
 - Case metrics sort  [\#418](https://github.com/TheHive-Project/TheHive/issues/418)
-- StreamSrv: Unexpected message : StreamNotFound [\#414](https://github.com/TheHive-Project/TheHive/issues/414)
 - Filter MISP Events Using MISP Tags & More Before Creating Alerts [\#370](https://github.com/TheHive-Project/TheHive/issues/370)
-- Single-Sign On support [\#354](https://github.com/TheHive-Project/TheHive/issues/354)
 - OAuth2 single sign-on implementation \(BE + FE\) [\#430](https://github.com/TheHive-Project/TheHive/pull/430) ([saibot94](https://github.com/saibot94))
 
 **Fixed bugs:**
@@ -28,7 +34,6 @@
 - Refresh custom fields on open cases by background changes [\#440](https://github.com/TheHive-Project/TheHive/issues/440)
 - Bug: Case metrics not shown when creating case from template [\#417](https://github.com/TheHive-Project/TheHive/issues/417)
 - Observable report taxonomies bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
-- File upload when /tmp is full [\#321](https://github.com/TheHive-Project/TheHive/issues/321)
 
 **Closed issues:**
 
