@@ -335,11 +335,6 @@
                 modalInstance.result.then(function(template) {
                     return self.createTemplate(template);
                 })
-                .then(function(response) {
-                    self.getList(response.data.id);
-
-                    NotificationSrv.log('The template has been successfully imported', 'success');
-                })
                 .catch(function(err) {
                     if (err && err.status) {
                         NotificationSrv.error('TemplateCtrl', err.data, err.status);
