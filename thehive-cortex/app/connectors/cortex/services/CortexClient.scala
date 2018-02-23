@@ -16,6 +16,7 @@ import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileAr
 import models.HealthStatus
 import services.CustomWSAPI
 
+import org.elastic4play.NotFoundError
 import org.elastic4play.utils.RichFuture
 
 object CortexAuthentication {
@@ -54,6 +55,23 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
 
   def getAnalyzer(analyzerId: String)(implicit ec: ExecutionContext): Future[Analyzer] = {
     request(s"api/analyzer/$analyzerId", _.get, _.json.as[Analyzer]).map(_.copy(cortexIds = List(name)))
+      .recoverWith { case _ ⇒ getAnalyzerByName(analyzerId) } // if get analyzer using cortex2 API fails, try using legacy API
+  }
+
+  def getAnalyzerByName(analyzerName: String)(implicit ec: ExecutionContext): Future[Analyzer] = {
+    val searchRequest = Json.obj(
+      "query" -> Json.obj(
+        "_field" -> "name",
+        "_value" -> analyzerName),
+      "range" -> "0-1")
+    request(s"api/analyzer/_search", _.post(searchRequest),
+      _.json.as[Seq[Analyzer]])
+      .flatMap { analyzers ⇒
+        analyzers.headOption
+          .fold[Future[Analyzer]](Future.failed(NotFoundError(s"analyzer $analyzerName not found"))) { analyzer ⇒
+            Future.successful(analyzer.copy(cortexIds = List(name)))
+          }
+      }
   }
 
   def listAnalyzer(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {

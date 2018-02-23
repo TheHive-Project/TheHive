@@ -198,7 +198,6 @@ class StreamActor(
 
     case Initialize(requestId) ⇒ context.become(receiveWithState(waitingRequest, currentMessages + (requestId → None)))
     case _: AuditOperation     ⇒
-    case message               ⇒ logger.warn(s"Unexpected message $message (${message.getClass})")
   }
 
   def receive: Receive = receiveWithState(None, Map.empty[String, Option[StreamMessageGroup[_]]])
