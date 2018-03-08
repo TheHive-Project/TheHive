@@ -19,10 +19,12 @@ object JsonFormat {
     for {
       name ← (json \ "name").validate[String]
       version ← (json \ "version").validate[String]
-      id = (json \ "id").asOpt[String].getOrElse((name + "_" + version).replaceAll("\\.", "_"))
+      definition = (name + "_" + version).replaceAll("\\.", "_")
+      id = (json \ "id").asOpt[String].getOrElse(definition)
+      renamed = if (id == definition) definition else name
       description ← (json \ "description").validate[String]
       dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
-    } yield Analyzer(id, name, version, description, dataTypeList))
+    } yield Analyzer(id, renamed, version, description, dataTypeList))
   implicit val analyzerFormats: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
 
   private val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
@@ -51,10 +53,12 @@ object JsonFormat {
     JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a -> _)))
   }
 
-  private val cortexJobReads = Reads[CortexJob](json ⇒
+  implicit val cortexJobReads = Reads[CortexJob](json ⇒
     for {
       id ← (json \ "id").validate[String]
       analyzerId ← (json \ "analyzerId").validate[String]
+      analyzerName = (json \ "analyzerName").validate[String].getOrElse(analyzerId)
+      analyzerDefinition = (json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
       attributes = filterObject(json.as[JsObject], "tlp", "message", "parameters")
       artifact = (json \ "artifact").validate[CortexArtifact]
         .getOrElse {
@@ -63,9 +67,7 @@ object JsonFormat {
         }
       date ← (json \ "date").validate[Date]
       status ← (json \ "status").validate[JobStatus.Type]
-    } yield CortexJob(id, analyzerId, artifact, date, status, Nil))
+    } yield CortexJob(id, analyzerId, analyzerName, analyzerDefinition, artifact, date, status, Nil))
 
-  private val cortexJobWrites = Json.writes[CortexJob]
-  implicit val cortexJobFormat: Format[CortexJob] = Format(cortexJobReads, cortexJobWrites)
   implicit val reportTypeFormat: Format[ReportType.Type] = enumFormat(ReportType)
 }

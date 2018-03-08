@@ -13,13 +13,18 @@
                 <th width="60" ng-if="analysisEnabled">Action</th>
             </thead>
             <tbody>
-                <tr ng-repeat="(analyzerId, jobs) in analyzerJobs"
-                    ng-init="analyzer=analyzers[analyzerId]; analyzers[analyzerId].showRows=false;">
+                <tr ng-repeat="(analyzerName, jobs) in analyzerJobs"
+                    ng-init="analyzer=analyzers[analyzerName]; analyzers[analyzerName].showRows=false;">
                     <td>
-                        <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerId].showRows = !analyzers[analyzerId].showRows">
-                            <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerId].showRows]"></i>
+                        <a ng-if="jobs.length > 1" class="noline mr-xxs" href ng-click="analyzers[analyzerName].showRows = !analyzers[analyzerName].showRows">
+                            <i class="fa" ng-class="{ true:'fa-minus-square-o', false:'fa-plus-square-o' }[analyzers[analyzerName].showRows]"></i>
                         </a>
-                        <span uib-tooltip="{{analyzer.description}}">{{analyzer.name ? (analyzer.name + ' ' + analyzer.version) : analyzerId}}</span>
+                        <span uib-tooltip="{{analyzer.description}}">{{analyzer.name || jobs[0].analyzerName}}</span>
+                        <!--pre>
+                          analyzer = {{analyzer}}
+                          analyzers = {{analyzers}}
+                          jobs = {{jobs}}
+                        </pre-->
                         <!-- <div class="text-muted">{{}}</div> -->
                     </td>
                     <!-- <td>
@@ -41,7 +46,7 @@
                     </td>
                     <td ng-if="analysisEnabled">
                         <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
-                            ng-click="runAnalyzer(analyzerId)"
+                            ng-click="runAnalyzer(analyzerName)"
                             ng-if="analyzer.cortexIds.length === 1 && analyzer.active">
                             <i class="glyphicon" ng-class="{true: 'glyphicon-repeat', false: 'glyphicon-fire'}[jobs.length > 0]"></i>
                         </span>
@@ -57,7 +62,7 @@
                             </button>
                             <ul class="dropdown-menu" uib-dropdown-menu>
                                 <li ng-repeat="srv in cortexServers">
-                                    <a href ng-click="runAnalyzer(analyzerId, srv.name)" ng-disabled="srv.status === 'ERROR'">
+                                    <a href ng-click="runAnalyzer(analyzerName, srv.name)" ng-disabled="srv.status === 'ERROR'">
                                         <div>
                                             <strong>{{srv.name}}</strong>
                                         </div>
