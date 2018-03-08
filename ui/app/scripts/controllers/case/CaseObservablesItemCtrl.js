@@ -79,15 +79,15 @@
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
-                _.each(_.keys($scope.analyzers).sort(), function(analyzerId) {
-                    $scope.analyzerJobs[analyzerId] = [];
+                _.each(_.keys($scope.analyzers).sort(), function(analyzerName) {
+                    $scope.analyzerJobs[analyzerName] = [];
                 });
 
                 angular.forEach($scope.jobs.values, function (job) {
-                    if (job.analyzerId in $scope.analyzerJobs) {
-                        $scope.analyzerJobs[job.analyzerId].push(job);
+                    if (job.analyzerName in $scope.analyzerJobs) {
+                        $scope.analyzerJobs[job.analyzerName].push(job);
                     } else {
-                        $scope.analyzerJobs[job.analyzerId] = [job];
+                        $scope.analyzerJobs[job.analyzerName] = [job];
                     }
                 });
 
@@ -117,7 +117,7 @@
                 CortexSrv.getJob(jobId).then(function(response) {
                     var job = response.data;
                     $scope.report = {
-                        template: job.analyzerId,
+                        template: job.analyzerDefinition,
                         content: job.report,
                         status: job.status,
                         startDate: job.startDate,
@@ -181,19 +181,19 @@
                 });
             };
 
-            $scope.runAnalyzer = function (analyzerId, serverId) {
+            $scope.runAnalyzer = function (analyzerName, serverId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
 
-                var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerId])
+                var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerName])
 
                 promise.then(function (serverId) {
-                        return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
+                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact.id);
                     })
                     .then(function () {
-                        NotificationSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
+                        NotificationSrv.log('Analyzer ' + analyzerName + ' has been successfully started for observable: ' + artifactName, 'success');
                     }, function (response) {
                         if (response && response.status) {
-                            NotificationSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                            NotificationSrv.log('Unable to run analyzer ' + analyzerName + ' for observable: ' + artifactName, 'error');
                         }
                     });
             };

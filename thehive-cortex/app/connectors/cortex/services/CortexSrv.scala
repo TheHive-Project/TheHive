@@ -268,19 +268,25 @@ class CortexSrv @Inject() (
     ()
   }
 
-  def submitJob(cortexId: Option[String], analyzerId: String, artifactId: String)(implicit authContext: AuthContext): Future[Job] = {
-    val cortexClient = cortexId match {
-      case Some(id) ⇒ Future.successful(cortexConfig.instances.find(_.name == id))
-      case None ⇒ if (cortexConfig.instances.lengthCompare(1) <= 0) Future.successful(cortexConfig.instances.headOption)
-      else {
-        Future // If there are several cortex, select the first which has the analyzer
-          .traverse(cortexConfig.instances)(c ⇒ c.getAnalyzer(analyzerId).map(_ ⇒ Some(c)).recover { case _ ⇒ None })
-          .map(_.flatten.headOption)
-      }
+  def submitJob(cortexId: Option[String], analyzerName: String, artifactId: String)(implicit authContext: AuthContext): Future[Job] = {
+    val cortexClientAnalyzer = cortexId match {
+      case Some(id) ⇒
+        cortexConfig
+          .instances
+          .find(_.name == id)
+          .fold[Future[(CortexClient, Analyzer)]](Future.failed(NotFoundError(s"cortex $id not found"))) { c ⇒
+            c.getAnalyzer(analyzerName)
+              .map(c -> _)
+          }
+
+      case None ⇒
+        Future.firstCompletedOf {
+          cortexConfig.instances.map(c ⇒ c.getAnalyzer(analyzerName).map(c -> _))
+        }
     }
 
-    cortexClient.flatMap {
-      case Some(cortex) ⇒
+    cortexClientAnalyzer.flatMap {
+      case (cortex, analyzer) ⇒
         for {
           artifact ← artifactSrv.get(artifactId)
           artifactAttributes = Json.obj(
@@ -291,16 +297,17 @@ class CortexSrv @Inject() (
             case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))
             case _                        ⇒ throw InternalError(s"Artifact has invalid data : ${artifact.attributes}")
           }
-          cortexJobJson ← cortex.analyze(analyzerId, cortexArtifact)
+          cortexJobJson ← cortex.analyze(analyzer.id, cortexArtifact)
           cortexJob = cortexJobJson.as[CortexJob]
           job ← create(artifact, Fields.empty
             .set("analyzerId", cortexJob.analyzerId)
+            .set("analyzerName", cortexJob.analyzerName)
+            .set("analyzerDefinition", cortexJob.analyzerDefinition)
             .set("artifactId", artifactId)
             .set("cortexId", cortex.name)
             .set("cortexJobId", cortexJob.id))
           _ = updateJobWithCortex(job.id, cortexJob.id, cortex)
         } yield job
-      case None ⇒ Future.failed(NotFoundError(s"Cortex $cortexId not found"))
     }
   }
 }

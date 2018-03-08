@@ -1,5 +1,14 @@
 # Change Log
 
+## [3.0.6](https://github.com/TheHive-Project/TheHive/tree/3.0.6)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.5...3.0.6)
+
+**Fixed bugs:**
+
+- Tasks are stripped when merging cases [\#489](https://github.com/TheHive-Project/TheHive/issues/489)
+- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
+
 ## [3.0.5](https://github.com/TheHive-Project/TheHive/tree/3.0.5) (2018-02-08)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.4...3.0.5)
 
@@ -13,7 +22,6 @@
 
 **Implemented enhancements:**
 
-- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
 - Make alerts searchable through the global search field [\#456](https://github.com/TheHive-Project/TheHive/issues/456)
 - Make counts on Counter dashboard's widget clickable [\#455](https://github.com/TheHive-Project/TheHive/issues/455)
 - MISP feeds cause the growing of ES audit docs [\#450](https://github.com/TheHive-Project/TheHive/issues/450)

@@ -108,7 +108,7 @@ class CaseMergeSrv @Inject() (
 
     val mergedMetrics: Seq[(String, JsValue)] = metrics.flatMap(_.keys).distinct.map { key ⇒
       val metricValues = metrics.flatMap(m ⇒ (m \ key).asOpt[BigDecimal])
-      if (metricValues.size != 1)
+      if (metricValues.lengthCompare(1) != 0)
         key → JsNull
       else
         key → JsNumber(metricValues.head)
@@ -125,7 +125,7 @@ class CaseMergeSrv @Inject() (
 
     val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.flatMap { key ⇒
       val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
-      if (customFieldsValues.size != 1)
+      if (customFieldsValues.lengthCompare(1) != 0)
         None
       else
         Some(key → customFieldsValues.head)
@@ -134,7 +134,7 @@ class CaseMergeSrv @Inject() (
     JsObject(mergedCustomFieldsObject)
   }
 
-  private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+  private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
 
   private[services] def mergeLogs(oldTask: Task, newTask: Task)(implicit authContext: AuthContext): Future[Done] = {
     logSrv.find("_parent" ~= oldTask.id, Some("all"), Nil)._1
