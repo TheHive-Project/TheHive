@@ -11,6 +11,10 @@ services:
       - thread_pool.index.queue_size=100000
       - thread_pool.search.queue_size=100000
       - thread_pool.bulk.queue_size=100000
+    ulimits:
+      nofile:
+      soft: 65536
+      hard: 65536
   cortex:
     image: certbdf/cortex:latest
     ports:
