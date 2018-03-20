@@ -33,7 +33,7 @@
                     <tbody>
                         <tr ng-repeat="analyzerId in vm.analyzerIds | orderBy:'toString()'" ng-init="analyzer=vm.analyzers[analyzerId]">
                             <td>
-                                {{::analyzer.id}}<br>
+                                {{::analyzer.name || analyzer.id}}<br>
                                 <small class="text-muted">{{::analyzer.description}}</small>
                             </td>
                             <td class="vmiddle">
