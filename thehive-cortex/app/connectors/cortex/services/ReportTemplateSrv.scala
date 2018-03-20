@@ -48,7 +48,7 @@ class ReportTemplateSrv @Inject() (
   def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Seq[Try[ReportTemplate]]] =
     updateSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, ids, fields, modifyConfig)
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Unit] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Unit] =
     deleteSrv.realDelete[ReportTemplateModel, ReportTemplate](reportTemplateModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[ReportTemplate, NotUsed], Future[Long]) =

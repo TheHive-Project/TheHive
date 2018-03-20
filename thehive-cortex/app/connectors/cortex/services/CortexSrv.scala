@@ -133,16 +133,16 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(jobId, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     getJob(jobId).flatMap(job ⇒ update(job, fields, modifyConfig))
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(job, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     updateSrv[Job](job, fields, modifyConfig)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Job, NotUsed], Future[Long]) = {
@@ -169,7 +169,7 @@ class CortexSrv @Inject() (
   def askAnalyzersOnAllCortex(f: CortexClient ⇒ Future[Seq[Analyzer]]): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        f(cortex)
+        f(cortex).recover { case _ ⇒ Nil }
       }
       .map(_.flatten)
   }
@@ -177,7 +177,7 @@ class CortexSrv @Inject() (
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzerForType(dataType)
+        cortex.listAnalyzerForType(dataType).recover { case _ ⇒ Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -192,7 +192,7 @@ class CortexSrv @Inject() (
   def listAnalyzer: Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzer
+        cortex.listAnalyzer.recover { case _ ⇒ Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
