@@ -1,6 +1,6 @@
 <div class="flow-case" ng-switch="base.operation">
     <div class="flow-item-title wrap">
-        <i class="glyphicon glyphicon-folder-open"></i>{{base.object.title}}
+        <i class="glyphicon glyphicon-folder-open"></i>{{base.object.title || base.details.title}}
         <div class="flow-item-bulk" ng-if="summary.case_task">
             <em ng-if="summary.case.Creation">This case contains <ng-pluralize count="summary.case_task.Creation"
              when="{'one': '1 task', 'other': '{} tasks'}"></ng-pluralize></em>
@@ -20,6 +20,9 @@
     <div class="flow-item-updates wrap" ng-switch-when="Creation">
         <div>description: {{base.object.description | limitTo: 250}}</div>
     </div>
+    <!-- <div class="flow-item-updates wrap" ng-switch-when="Delete">
+        <div>description: {{base.object.description | limitTo: 250}}</div>
+    </div> -->
     <div class="flow-item-updates wrap" ng-switch-default>
         <span ng-repeat="(k, v) in base.details" ng-switch="k">
             <div ng-switch-when="severity">
