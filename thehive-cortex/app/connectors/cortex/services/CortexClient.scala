@@ -22,16 +22,19 @@ import org.elastic4play.utils.RichFuture
 object CortexAuthentication {
 
   abstract class Type {
+    val name: String
     def apply(request: WSRequest): WSRequest
   }
 
   case class Basic(username: String, password: String) extends Type {
+    val name = "basic"
     def apply(request: WSRequest): WSRequest = {
       request.withAuth(username, password, WSAuthScheme.BASIC)
     }
   }
 
   case class Key(key: String) extends Type {
+    val name = "key"
     def apply(request: WSRequest): WSRequest = {
       request.withHttpHeaders(HeaderNames.AUTHORIZATION → s"Bearer $key")
     }

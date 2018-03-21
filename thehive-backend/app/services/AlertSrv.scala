@@ -275,7 +275,18 @@ class AlertSrv(
     updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)), modifyConfig)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Alert] =
+  def unsetCase(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
+    val status = alert.status match {
+      case AlertStatus.New      ⇒ AlertStatus.New
+      case AlertStatus.Updated  ⇒ AlertStatus.New
+      case AlertStatus.Ignored  ⇒ AlertStatus.Ignored
+      case AlertStatus.Imported ⇒ AlertStatus.Ignored
+    }
+    logger.debug(s"Remove case association in alert ${alert.id} (${alert.title}")
+    updateSrv(alert, Fields(Json.obj("case" -> JsNull, "status" -> status)), modifyConfig)
+  }
+
+  def delete(id: String)(implicit authContext: AuthContext): Future[Alert] =
     deleteSrv[AlertModel, Alert](alertModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Alert, NotUsed], Future[Long]) = {

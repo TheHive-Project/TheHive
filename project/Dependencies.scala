@@ -20,6 +20,6 @@ object Dependencies {
 
     val reflections = "org.reflections" % "reflections" % "0.9.11"
     val zip4j = "net.lingala.zip4j" % "zip4j" % "1.3.2"
-    val elastic4play = "org.cert-bdf" %% "elastic4play" % "1.4.5"
+    val elastic4play = "org.cert-bdf" %% "elastic4play" % "1.4.6-SNAPSHOT"
   }
 }
