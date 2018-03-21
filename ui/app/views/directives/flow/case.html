@@ -20,9 +20,6 @@
     <div class="flow-item-updates wrap" ng-switch-when="Creation">
         <div>description: {{base.object.description | limitTo: 250}}</div>
     </div>
-    <!-- <div class="flow-item-updates wrap" ng-switch-when="Delete">
-        <div>description: {{base.object.description | limitTo: 250}}</div>
-    </div> -->
     <div class="flow-item-updates wrap" ng-switch-default>
         <span ng-repeat="(k, v) in base.details" ng-switch="k">
             <div ng-switch-when="severity">

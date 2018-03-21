@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, ModalUtilsSrv, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -255,25 +255,28 @@
                 }).then(function(data) {
                     $scope.caze = data.toJSON();
                     $scope.initExports();
-                })
+                });
             };
 
             $scope.removeCase = function() {
-              ModalUtilsSrv.confirm('Permanently remove case', 'Are you sure you want to permanently delete this case? This action cannot be undone.', {
-                  okText: 'Yes, remove it',
-                  flavor: 'danger'
-              })
-                  .then(function() {
-                      return CaseSrv.forceRemove({caseId: $scope.caze.id}).$promise;
-                  })
-                  .then(function() {
-                      $state.go('app.cases');
-                  })
-                  .catch(function(err) {
-                      if(err && !_.isString(err)) {
-                          NotificationSrv.error('caseDetails', response.data, response.status);
+              var modalInstance = $uibModal.open({
+                  templateUrl: 'views/partials/case/case.delete.confirm.html',
+                  controller: 'CaseDeleteModalCtrl',
+                  resolve: {
+                      caze: function() {
+                          return $scope.caze;
                       }
-                  });
+                  }
+              });
+
+              modalInstance.result.then(function() {
+                  $state.go('app.cases');
+              })
+              .catch(function(err) {
+                  if(err && !_.isString(err)) {
+                      NotificationSrv.error('caseDetails', response.data, response.status);
+                  }
+              });
             }
 
             /**
