@@ -78,7 +78,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   }
 
   def listAnalyzer(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {
-    request(s"api/analyzer", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
+    request(s"api/analyzer?range=all", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ec: ExecutionContext): Future[JsValue] = {
