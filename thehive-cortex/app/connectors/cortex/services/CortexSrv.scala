@@ -251,7 +251,7 @@ class CortexSrv @Inject() (
                       for {
                         artifact ← artifactSrv.get(job.artifactId())
                         reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
-                        newReports = reports + (job.analyzerId() → jobSummary)
+                        newReports = reports + (job.analyzerDefinition().getOrElse(job.analyzerId()) → jobSummary)
                       } yield artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
                     }
                       .recover {
