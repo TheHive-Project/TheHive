@@ -33,11 +33,7 @@
                     <tbody>
                         <tr ng-repeat="analyzerId in vm.analyzerIds | orderBy:'toString()'" ng-init="analyzer=vm.analyzers[analyzerId]">
                             <td>
-<<<<<<< HEAD
                                 {{::analyzer.name || analyzer.id}}<br>
-=======
-                                {{::analyzer.name}}<br>
->>>>>>> #523 Fix the report template admin page to display the right analyzer name
                                 <small class="text-muted">{{::analyzer.description}}</small>
                             </td>
                             <td class="vmiddle">
