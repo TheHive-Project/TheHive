@@ -255,8 +255,29 @@
                 }).then(function(data) {
                     $scope.caze = data.toJSON();
                     $scope.initExports();
-                })
+                });
             };
+
+            $scope.removeCase = function() {
+              var modalInstance = $uibModal.open({
+                  templateUrl: 'views/partials/case/case.delete.confirm.html',
+                  controller: 'CaseDeleteModalCtrl',
+                  resolve: {
+                      caze: function() {
+                          return $scope.caze;
+                      }
+                  }
+              });
+
+              modalInstance.result.then(function() {
+                  $state.go('app.cases');
+              })
+              .catch(function(err) {
+                  if(err && !_.isString(err)) {
+                      NotificationSrv.error('caseDetails', response.data, response.status);
+                  }
+              });
+            }
 
             /**
              * A workaround filter to make sure the ngRepeat doesn't order the

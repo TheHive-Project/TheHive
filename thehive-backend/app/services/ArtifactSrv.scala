@@ -10,26 +10,33 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue.jsValueToJsLookup
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{ Sink, Source }
 import models.{ CaseResolutionStatus, CaseStatus, _ }
 
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.database.ModifyConfig
+import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services._
 import org.elastic4play.utils.{ RichFuture, RichOr }
+
+case class RemoveJobsOf(artifactId: String) extends EventMessage
 
 @Singleton
 class ArtifactSrv @Inject() (
     artifactModel: ArtifactModel,
     caseModel: CaseModel,
+    auditSrv: AuditSrv,
+    eventSrv: EventSrv,
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     fieldsSrv: FieldsSrv,
-    implicit val ec: ExecutionContext) {
+    dbRemove: DBRemove,
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) {
 
   private[ArtifactSrv] lazy val logger = Logger(getClass)
 
@@ -93,8 +100,18 @@ class ArtifactSrv @Inject() (
     updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields, modifyConfig)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Artifact] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Artifact] =
     deleteSrv[ArtifactModel, Artifact](artifactModel, id)
+
+  def realDelete(artifact: Artifact): Future[Unit] = {
+    for {
+      _ ← auditSrv.findFor(artifact, Some("all"), Nil)._1
+        .mapAsync(1)(auditSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ = eventSrv.publish(RemoveJobsOf(artifact.id))
+      _ ← dbRemove(artifact)
+    } yield ()
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
     findSrv[ArtifactModel, Artifact](artifactModel, queryDef, range, sortBy)

@@ -1,13 +1,26 @@
 # Change Log
 
-## [3.0.6](https://github.com/TheHive-Project/TheHive/tree/3.0.6)
+## [3.0.7](https://github.com/TheHive-Project/TheHive/tree/3.0.7) (2018-03-29)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.6...3.0.7)
 
+**Implemented enhancements:**
+- Delete Case [\#100](https://github.com/TheHive-Project/TheHive/issues/100)
+
+**Fixed bugs:**
+
+- Display only cortex servers available for each analyzer, in observable details page [\#513](https://github.com/TheHive-Project/TheHive/issues/513)
+- Can't save case template in 3.0.6 [\#502](https://github.com/TheHive-Project/TheHive/issues/502)
+
+## [3.0.6](https://github.com/TheHive-Project/TheHive/tree/3.0.6) (2018-03-08)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.5...3.0.6)
+
+**Implemented enhancements:**
+
+- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
 
 **Fixed bugs:**
 
 - Tasks are stripped when merging cases [\#489](https://github.com/TheHive-Project/TheHive/issues/489)
-- Add compatibility with Cortex 2 [\#466](https://github.com/TheHive-Project/TheHive/issues/466)
 
 ## [3.0.5](https://github.com/TheHive-Project/TheHive/tree/3.0.5) (2018-02-08)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.4...3.0.5)
@@ -17,7 +30,7 @@
  - Importing Template Button Non-Functional bug [\#404](https://github.com/TheHive-Project/TheHive/issues/404)
  - No reports available for "domain" type bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
 
-## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-05)
+## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-06)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.3...3.0.4)
 
 **Implemented enhancements:**

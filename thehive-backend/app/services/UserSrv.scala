@@ -69,19 +69,19 @@ class UserSrv @Inject() (
 
   override def get(id: String): Future[User] = getSrv[UserModel, User](userModel, id)
 
-  def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[User] =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[User] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[User] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[User] =
     updateSrv[UserModel, User](userModel, id, fields, modifyConfig)
 
-  def update(user: User, fields: Fields)(implicit Context: AuthContext): Future[User] =
+  def update(user: User, fields: Fields)(implicit authContext: AuthContext): Future[User] =
     update(user, fields, ModifyConfig.default)
 
-  def update(user: User, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[User] =
+  def update(user: User, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[User] =
     updateSrv(user, fields, modifyConfig)
 
-  def delete(id: String)(implicit Context: AuthContext): Future[User] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[User] =
     deleteSrv[UserModel, User](userModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[User, NotUsed], Future[Long]) = {

@@ -8,7 +8,7 @@ import play.api.http.Status
 import play.api.mvc._
 
 import models.Roles
-import services.FlowSrv
+import services.AuditSrv
 
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Renderer }
@@ -16,7 +16,7 @@ import org.elastic4play.services.AuxSrv
 
 @Singleton
 class FlowCtrl @Inject() (
-    flowSrv: FlowSrv,
+    flowSrv: AuditSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,

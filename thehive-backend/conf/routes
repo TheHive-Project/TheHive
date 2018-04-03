@@ -20,6 +20,7 @@ POST     /api/case                                controllers.CaseCtrl.create()
 GET      /api/case/:caseId                        controllers.CaseCtrl.get(caseId)
 PATCH    /api/case/:caseId                        controllers.CaseCtrl.update(caseId)
 DELETE   /api/case/:caseId                        controllers.CaseCtrl.delete(caseId)
+DELETE   /api/case/:caseId/force                  controllers.CaseCtrl.realDelete(caseId)
 GET      /api/case/:caseId/links                  controllers.CaseCtrl.linkedCases(caseId)
 POST     /api/case/:caseId1/_merge/:caseId2       controllers.CaseCtrl.merge(caseId1, caseId2)
 

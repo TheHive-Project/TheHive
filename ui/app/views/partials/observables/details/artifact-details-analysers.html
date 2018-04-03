@@ -45,6 +45,7 @@
                         </ul>
                     </td>
                     <td ng-if="analysisEnabled">
+                        <!-- <pre>{{cortexServers | json}}</pre> -->
                         <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
                             ng-click="runAnalyzer(analyzerName)"
                             ng-if="analyzer.cortexIds.length === 1 && analyzer.active">
@@ -60,8 +61,8 @@
                                 </span>
                                 <span class="caret"></span>
                             </button>
-                            <ul class="dropdown-menu" uib-dropdown-menu>
-                                <li ng-repeat="srv in cortexServers">
+                            <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                                <li ng-repeat="srv in cortexServers" ng-if="analyzer.cortexIds.indexOf(srv.name) !== -1">
                                     <a href ng-click="runAnalyzer(analyzerName, srv.name)" ng-disabled="srv.status === 'ERROR'">
                                         <div>
                                             <strong>{{srv.name}}</strong>
