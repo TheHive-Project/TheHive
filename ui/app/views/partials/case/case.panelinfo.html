@@ -37,6 +37,13 @@
         </span>
 
         <!-- Right side -->
+        <span class="ml-xs pull-right" ng-if="isAdmin(currentUser)">
+            <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
+                <i class="text-danger fa fa-times"></i>
+                Remove
+            </a>
+        </span>
+
         <span class="ml-xs pull-right" ng-if="appConfig.connectors.misp.enabled">
             <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
                 <i class="text-primary fa fa-share"></i>

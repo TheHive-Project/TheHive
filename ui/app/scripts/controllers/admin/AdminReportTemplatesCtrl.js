@@ -126,7 +126,7 @@
         };
 
         this.formData = _.pick(reportTemplate, 'id', 'reportType', 'content');
-        this.formData.analyzerId = this.analyzer.id;
+        this.formData.analyzerId = this.analyzer.name || this.analyzer.id;
 
         this.cancel = function () {
             $uibModalInstance.dismiss();

@@ -13,18 +13,21 @@ import akka.stream.scaladsl.{ Sink, Source }
 import models._
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.database.ModifyConfig
+import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services._
 
 @Singleton
 class TaskSrv @Inject() (
     taskModel: TaskModel,
     caseModel: CaseModel,
+    auditSrv: AuditSrv,
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
+    dbRemove: DBRemove,
     findSrv: FindSrv,
+    logSrv: LogSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
@@ -86,6 +89,19 @@ class TaskSrv @Inject() (
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Task] =
     deleteSrv[TaskModel, Task](taskModel, id)
+
+  def realDelete(task: Task): Future[Unit] = {
+    import org.elastic4play.services.QueryDSL._
+    for {
+      _ ← auditSrv.findFor(task, Some("all"), Nil)._1
+        .mapAsync(1)(auditSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← logSrv.find(withParent(task), Some("all"), Nil)._1
+        .mapAsync(1)(logSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← dbRemove(task)
+    } yield ()
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Task, NotUsed], Future[Long]) = {
     findSrv[TaskModel, Task](taskModel, queryDef, range, sortBy)

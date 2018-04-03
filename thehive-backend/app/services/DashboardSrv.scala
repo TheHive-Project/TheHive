@@ -46,7 +46,7 @@ class DashboardSrv @Inject() (
   def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Dashboard] =
     updateSrv(dashboard, fields, modifyConfig)
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Dashboard] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Dashboard] =
     deleteSrv[DashboardModel, Dashboard](dashboardModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Dashboard, NotUsed], Future[Long]) = {

@@ -19,12 +19,12 @@ import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
 import play.api.{ Configuration, Logger }
 
-import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact }
+import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
-import org.elastic4play.database.ModifyConfig
+import org.elastic4play.database.{ DBRemove, ModifyConfig }
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
@@ -88,6 +88,11 @@ class JobReplicateActor @Inject() (
           cortexSrv.create(newArtifact, baseFields)(authContext)
         }
         .runWith(Sink.ignore)
+    case RemoveJobsOf(artifactId) ⇒
+      import org.elastic4play.services.QueryDSL._
+      cortexSrv.find(withParent("case_artifact", artifactId), Some("all"), Nil)._1
+        .mapAsyncUnordered(5)(cortexSrv.realDeleteJob)
+        .runWith(Sink.ignore)
   }
 }
 
@@ -101,6 +106,7 @@ class CortexSrv @Inject() (
     createSrv: CreateSrv,
     updateSrv: UpdateSrv,
     findSrv: FindSrv,
+    dbRemove: DBRemove,
     userSrv: UserSrv,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
@@ -133,20 +139,24 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(jobId, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     getJob(jobId).flatMap(job ⇒ update(job, fields, modifyConfig))
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(job: Job, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(job, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[Job] =
+  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     updateSrv[Job](job, fields, modifyConfig)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Job, NotUsed], Future[Long]) = {
     findSrv[JobModel, Job](jobModel, queryDef, range, sortBy)
+  }
+
+  def realDeleteJob(job: Job): Future[Unit] = {
+    dbRemove(job).map(_ ⇒ ())
   }
 
   def stats(query: QueryDef, aggs: Seq[Agg]) = findSrv(jobModel, query, aggs: _*)
@@ -169,7 +179,7 @@ class CortexSrv @Inject() (
   def askAnalyzersOnAllCortex(f: CortexClient ⇒ Future[Seq[Analyzer]]): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        f(cortex)
+        f(cortex).recover { case _ ⇒ Nil }
       }
       .map(_.flatten)
   }
@@ -177,7 +187,7 @@ class CortexSrv @Inject() (
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzerForType(dataType)
+        cortex.listAnalyzerForType(dataType).recover { case _ ⇒ Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -192,7 +202,7 @@ class CortexSrv @Inject() (
   def listAnalyzer: Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzer
+        cortex.listAnalyzer.recover { case _ ⇒ Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten

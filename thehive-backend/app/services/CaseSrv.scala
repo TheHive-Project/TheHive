@@ -1,6 +1,6 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{ Inject, Provider, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -10,7 +10,8 @@ import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{ Sink, Source }
 import models._
 
 import org.elastic4play.InternalError
@@ -23,39 +24,49 @@ class CaseSrv(
     maxSimilarCases: Int,
     caseModel: CaseModel,
     artifactModel: ArtifactModel,
-    taskModel: TaskModel,
+    taskSrv: TaskSrv,
+    auditSrv: AuditSrv,
+    alertSrvProvider: Provider[AlertSrv],
     createSrv: CreateSrv,
     artifactSrv: ArtifactSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext) {
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) {
 
   @Inject() def this(
       configuration: Configuration,
       caseModel: CaseModel,
       artifactModel: ArtifactModel,
-      taskModel: TaskModel,
+      taskSrv: TaskSrv,
+      auditSrv: AuditSrv,
+      alertSrvProvider: Provider[AlertSrv],
       createSrv: CreateSrv,
       artifactSrv: ArtifactSrv,
       getSrv: GetSrv,
       updateSrv: UpdateSrv,
       deleteSrv: DeleteSrv,
       findSrv: FindSrv,
-      ec: ExecutionContext) = this(
+      ec: ExecutionContext,
+      mat: Materializer) = this(
     configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     caseModel,
     artifactModel,
-    taskModel,
+    taskSrv,
+    auditSrv,
+    alertSrvProvider,
     createSrv,
     artifactSrv,
     getSrv,
     updateSrv,
     deleteSrv,
     findSrv,
-    ec)
+    ec,
+    mat)
 
+  private lazy val alertSrv = alertSrvProvider.get
   private[CaseSrv] lazy val logger = Logger(getClass)
 
   def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
@@ -93,7 +104,7 @@ class CaseSrv(
         val taskFields = fields.getValues("tasks").collect {
           case task: JsObject ⇒ Fields(task)
         } ++ template.map(_.tasks().map(Fields(_))).getOrElse(Nil)
-        createSrv[TaskModel, Task, Case](taskModel, taskFields.map(caze → _))
+        taskSrv.create(caze, taskFields)
           .map(_ ⇒ caze)
       }
   }
@@ -117,8 +128,30 @@ class CaseSrv(
     updateSrv[CaseModel, Case](caseModel, ids, fields, modifyConfig)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Case] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Case] =
     deleteSrv[CaseModel, Case](caseModel, id)
+
+  def realDelete(id: String)(implicit authContext: AuthContext): Future[Unit] = {
+    get(id).flatMap(realDelete)
+  }
+
+  def realDelete(caze: Case)(implicit authContext: AuthContext): Future[Unit] = {
+    import org.elastic4play.services.QueryDSL._
+    for {
+      _ ← taskSrv.find(withParent(caze), Some("all"), Nil)._1
+        .mapAsync(1)(taskSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← artifactSrv.find(withParent(caze), Some("all"), Nil)._1
+        .mapAsync(1)(artifactSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← auditSrv.findFor(caze, Some("all"), Nil)._1
+        .mapAsync(1)(auditSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ = alertSrv.find("case" ~= caze.id, Some("all"), Nil)._1
+        .mapAsync(1)(alertSrv.unsetCase(_))
+      _ ← deleteSrv.realDelete(caze)
+    } yield ()
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Case, NotUsed], Future[Long]) = {
     findSrv[CaseModel, Case](caseModel, queryDef, range, sortBy)
@@ -129,9 +162,9 @@ class CaseSrv(
   def getStats(id: String): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     for {
-      taskStats ← findSrv(taskModel, and(
+      taskStats ← taskSrv.stats(and(
         "_parent" ~= id,
-        "status" in ("Waiting", "InProgress", "Completed")), groupByField("status", selectCount))
+        "status" in ("Waiting", "InProgress", "Completed")), Seq(groupByField("status", selectCount)))
       artifactStats ← findSrv(
         artifactModel,
         and("_parent" ~= id, "status" ~= "Ok"),

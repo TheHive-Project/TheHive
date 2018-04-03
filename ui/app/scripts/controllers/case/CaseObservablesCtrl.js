@@ -197,11 +197,11 @@
                         $scope.analyzersList.active = {};
                         $scope.analyzersList.datatypes = {};
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.active[analyzer.id] = false;
+                            $scope.analyzersList.active[analyzer.name] = false;
                         });
                         $scope.analyzersList.selected = {};
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.selected[analyzer.id] = false;
+                            $scope.analyzersList.selected[analyzer.name] = false;
                         });
                     });
             };
@@ -332,7 +332,6 @@
             };
 
             $scope.dropArtifact = function (observable) {
-                // TODO check result !
                 CaseArtifactSrv.api().delete({
                     artifactId: observable.id
                 }, function () {
@@ -504,7 +503,7 @@
 
             $scope.activeAnalyzers = function () {
                 angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                    $scope.analyzersList.active[analyzer.id] = false;
+                    $scope.analyzersList.active[analyzer.name] = false;
                 });
 
                 $scope.analyzersList.countDataTypes = 0;
@@ -521,7 +520,7 @@
 
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
                             if ($scope.checkDataTypeList(analyzer, key)) {
-                                $scope.analyzersList.active[analyzer.id] = true;
+                                $scope.analyzersList.active[analyzer.name] = true;
                                 $scope.analyzersList.countActiveAnalyzers.total++;
                                 $scope.analyzersList.countActiveAnalyzers[key]++;
 
@@ -567,9 +566,9 @@
 
                 angular.forEach($scope.selection.artifacts, function (element) {
                     angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                        if (($scope.analyzersList.selected[analyzer.id]) && ($scope.checkDataTypeList(analyzer, element.dataType))) {
+                        if (($scope.analyzersList.selected[analyzer.name]) && ($scope.checkDataTypeList(analyzer, element.dataType))) {
                             toRun.push({
-                                analyzerId: analyzer.id,
+                                analyzerId: analyzer.name,
                                 artifact: element
                             });
                         }
@@ -607,7 +606,7 @@
                 var analyzerIds = [];
                 AnalyzerSrv.forDataType(artifact.dataType)
                     .then(function(analyzers) {
-                        analyzerIds = _.pluck(analyzers, 'id');
+                        analyzerIds = _.pluck(analyzers, 'name');
                         return CortexSrv.getServers(analyzerIds);
                     })
                     .then(function (serverId) {

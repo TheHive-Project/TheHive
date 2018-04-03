@@ -39,13 +39,13 @@ class CaseTemplateSrv @Inject() (
       .map(_.getOrElse(throw NotFoundError(s"Case template $name not found")))
   }
 
-  def update(id: String, fields: Fields)(implicit Context: AuthContext): Future[CaseTemplate] =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[CaseTemplate] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit Context: AuthContext): Future[CaseTemplate] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[CaseTemplate] =
     updateSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, id, fields, modifyConfig)
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Unit] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Unit] =
     deleteSrv.realDelete[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[CaseTemplate, NotUsed], Future[Long]) = {
