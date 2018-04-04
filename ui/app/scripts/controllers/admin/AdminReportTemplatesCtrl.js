@@ -120,9 +120,9 @@
         this.reportTypes = ['short', 'long'];
         this.editorOptions = {
             useWrapMode: true,
-            showGutter: true,
-            theme: 'default',
-            mode: 'xml'
+            showGutter: true
+            //theme: 'chrome',
+            //mode: 'xml'
         };
 
         this.formData = _.pick(reportTemplate, 'id', 'reportType', 'content');

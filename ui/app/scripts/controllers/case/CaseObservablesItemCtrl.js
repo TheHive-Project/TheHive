@@ -203,7 +203,7 @@
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
                     return a.active === true;
-                }), 'id');
+                }), 'name');
 
                 CortexSrv.getServers(analyzerIds)
                     .then(function (serverId) {
