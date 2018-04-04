@@ -1,6 +1,6 @@
 {
   "name": "thehive",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "license": "AGPL-3.0",
   "dependencies": {
     "angular": "1.5.8",

@@ -1,9 +1,25 @@
 # Change Log
 
+## [3.0.8](https://github.com/TheHive-Project/TheHive/tree/3.0.8) (2018-04-03)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.7...3.0.8)
+
+**Fixed bugs:**
+
+- Mini reports is not shown when Cortex 2 is used [\#526](https://github.com/TheHive-Project/TheHive/issues/526)
+- Session collision when TheHive & Cortex 2 share the same URL [\#525](https://github.com/TheHive-Project/TheHive/issues/525)
+- "Run all" in single observable context does not work [\#524](https://github.com/TheHive-Project/TheHive/issues/524)
+- Error on displaying analyzers name in report template admin page [\#523](https://github.com/TheHive-Project/TheHive/issues/523)
+- Job Analyzer is no longer named in 3.0.7 with Cortex2 [\#521](https://github.com/TheHive-Project/TheHive/issues/521)
+
+**Merged pull requests:**
+
+- Add ElasticSearch file descriptor limit to docker-compose.yml [\#505](https://github.com/TheHive-Project/TheHive/pull/505) ([flmsc](https://github.com/flmsc))
+
 ## [3.0.7](https://github.com/TheHive-Project/TheHive/tree/3.0.7) (2018-03-29)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.6...3.0.7)
 
 **Implemented enhancements:**
+
 - Delete Case [\#100](https://github.com/TheHive-Project/TheHive/issues/100)
 
 **Fixed bugs:**
