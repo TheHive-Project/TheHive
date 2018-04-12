@@ -38,7 +38,15 @@
                                     }
                                 }
                             }, {
-                                analyzerId: analyzerId
+                                _or: [
+                                  {analyzerId: analyzerId},
+                                  {
+                                    _like: {
+                                      _field: 'analyzerDefinition',
+                                      _value: analyzerId
+                                    }
+                                  }
+                                ]
                             }
                         ]
                     }
