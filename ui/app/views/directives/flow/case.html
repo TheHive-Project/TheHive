@@ -43,6 +43,10 @@
             <div ng-switch-when="tlp">
                 {{k}}: <tlp format="'static'" value="v"></tlp>
             </div>
+            <div ng-switch-when="owner">
+                {{k}}:
+                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
+            </div>
             <div ng-switch-default>
                 {{k}}: <em>{{v | limitTo: 250}}</em>
             </div>
