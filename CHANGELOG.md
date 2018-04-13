@@ -1,6 +1,28 @@
 # Change Log
 
-## [3.0.8](https://github.com/TheHive-Project/TheHive/tree/3.0.8) (2018-04-03)
+## [3.0.9](https://github.com/TheHive-Project/TheHive/tree/3.0.9)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.8...3.0.9)
+
+**Fixed bugs:**
+
+- Cortex connection can fail without any error log [\#543](https://github.com/TheHive-Project/TheHive/issues/543)
+- PhishTank Cortex Tag is transparent [\#535](https://github.com/TheHive-Project/TheHive/issues/535)
+- Naming inconsistencies in Live-Channel [\#531](https://github.com/TheHive-Project/TheHive/issues/531)
+- Error when trying to analyze a filename with the Hybrid Analysis analyzer [\#530](https://github.com/TheHive-Project/TheHive/issues/530)
+- Long Report isn't shown [\#527](https://github.com/TheHive-Project/TheHive/issues/527)
+- Artifacts' sighted flags are not merged when merging cases [\#518](https://github.com/TheHive-Project/TheHive/issues/518)
+- TheHive MISP cert validation, the trustAnchors parameter must be non-empty [\#452](https://github.com/TheHive-Project/TheHive/issues/452)
+
+**Closed issues:**
+
+- The Hive - MISP SSL configuration: General SSLEngine problem [\#544](https://github.com/TheHive-Project/TheHive/issues/544)
+- Dropdown menu for case templates doesnt have scroll [\#541](https://github.com/TheHive-Project/TheHive/issues/541)
+
+**Merged pull requests:**
+
+- Update spacing for elasticsearch section in docker-compose yml file [\#539](https://github.com/TheHive-Project/TheHive/pull/539) ([jbarlow-mcafee](https://github.com/jbarlow-mcafee))
+
+## [3.0.8](https://github.com/TheHive-Project/TheHive/tree/3.0.8) (2018-04-04)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.7...3.0.8)
 
 **Fixed bugs:**

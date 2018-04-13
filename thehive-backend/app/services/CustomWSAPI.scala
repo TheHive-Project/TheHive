@@ -1,7 +1,8 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import scala.util.control.NonFatal
 
+import javax.inject.{ Inject, Singleton }
 import play.api.inject.ApplicationLifecycle
 import play.api.libs.ws._
 import play.api.libs.ws.ahc.{ AhcWSClient, AhcWSClientConfig, AhcWSClientConfigParser }
@@ -92,8 +93,15 @@ class CustomWSAPI(
 
   def withConfig(subConfig: Configuration): CustomWSAPI = {
     logger.debug(s"Override WS configuration using $subConfig")
-    new CustomWSAPI(
-      Configuration(subConfig.underlying.atKey("play").withFallback(config.underlying)),
-      environment, lifecycle, mat)
+    try {
+      new CustomWSAPI(
+        Configuration(subConfig.underlying.atKey("play").withFallback(config.underlying)),
+        environment, lifecycle, mat)
+    }
+    catch {
+      case NonFatal(e) ⇒
+        logger.error(s"WSAPI configuration error, use default values", e)
+        this
+    }
   }
 }

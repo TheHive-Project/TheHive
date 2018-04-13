@@ -641,7 +641,7 @@
                         var job = response.data;
                         var report = {
                             job: job,
-                            template: job.analyzerId,
+                            template: job.analyzerName || job.analyzerId,
                             content: job.report,
                             status: job.status,
                             startDate: job.startDate,

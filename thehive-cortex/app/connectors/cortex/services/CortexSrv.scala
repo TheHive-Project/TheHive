@@ -1,8 +1,8 @@
 package connectors.cortex.services
 
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
 
+import javax.inject.{ Inject, Singleton }
 import akka.NotUsed
 import akka.actor.Actor
 import akka.stream.Materializer
@@ -22,6 +22,7 @@ import play.api.{ Configuration, Logger }
 import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
@@ -179,7 +180,7 @@ class CortexSrv @Inject() (
   def askAnalyzersOnAllCortex(f: CortexClient ⇒ Future[Seq[Analyzer]]): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        f(cortex).recover { case _ ⇒ Nil }
+        f(cortex).recover { case NonFatal(t) ⇒ logger.error("Request to Cortex fails", t); Nil }
       }
       .map(_.flatten)
   }
@@ -187,7 +188,7 @@ class CortexSrv @Inject() (
   def getAnalyzersFor(dataType: String): Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzerForType(dataType).recover { case _ ⇒ Nil }
+        cortex.listAnalyzerForType(dataType).recover { case NonFatal(t) ⇒ logger.error("Request to Cortex fails", t); Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -202,7 +203,7 @@ class CortexSrv @Inject() (
   def listAnalyzer: Future[Seq[Analyzer]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
-        cortex.listAnalyzer.recover { case _ ⇒ Nil }
+        cortex.listAnalyzer.recover { case NonFatal(t) ⇒ logger.error("Request to Cortex fails", t); Nil }
       }
       .map { listOfListOfAnalyzers ⇒
         val analysers = listOfListOfAnalyzers.flatten
@@ -255,7 +256,7 @@ class CortexSrv @Inject() (
                       } yield artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
                     }
                       .recover {
-                        case t ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
+                        case NonFatal(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
                       }
 
                 }
