@@ -68,7 +68,10 @@ case class CortexConfig(instances: Seq[CortexClient]) {
 class JobReplicateActor @Inject() (
     cortexSrv: CortexSrv,
     eventSrv: EventSrv,
+    implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends Actor {
+
+  private lazy val logger = Logger(getClass)
 
   override def preStart(): Unit = {
     eventSrv.subscribe(self, classOf[MergeArtifact])
@@ -82,11 +85,14 @@ class JobReplicateActor @Inject() (
 
   override def receive: Receive = {
     case MergeArtifact(newArtifact, artifacts, authContext) ⇒
+      logger.info(s"Merging jobs from artifacts ${artifacts.map(_.id)} into artifact ${newArtifact.id}")
       import org.elastic4play.services.QueryDSL._
       cortexSrv.find(and(parent("case_artifact", withId(artifacts.map(_.id): _*)), "status" ~= JobStatus.Success), Some("all"), Nil)._1
         .mapAsyncUnordered(5) { job ⇒
-          val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
-          cortexSrv.create(newArtifact, baseFields)(authContext)
+          val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+          val createdJob = cortexSrv.create(newArtifact, baseFields)(authContext)
+          createdJob.failed.foreach(error => logger.error(s"Fail to create job under artifact ${newArtifact.id}\n\tjob attributes: $baseFields", error))
+          createdJob
         }
         .runWith(Sink.ignore)
     case RemoveJobsOf(artifactId) ⇒
