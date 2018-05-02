@@ -5,7 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.http.Status
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.JsObject
 import play.api.mvc.{ AbstractController, Action, ControllerComponents }
 
 import models.Roles
@@ -56,7 +56,7 @@ class SearchCtrl @Inject() (
         findSrv.apply(model, and(globalQuery ::: query), agg: _*)
       }
       .map { statsResults ⇒
-        renderer.toOutput(OK, statsResults.reduceOption(_ deepMerge _).getOrElse(Json.obj()))
+        renderer.toOutput(OK, statsResults.reduceOption(_ deepMerge _).getOrElse(JsObject.empty))
       }
   }
 }
