@@ -64,7 +64,17 @@
                         <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                         <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                     </td>
-                    <td ng-click="startTask(task)" class="pointer">{{task.title}}</td>
+                    <td ng-click="startTask(task)" class="pointer">
+                      <div>
+                          {{task.title}}
+                      </div>
+                      <div ng-show="task.status === 'Completed'" class="text-success">
+                          Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
+                      </div>
+                      <div ng-show="task.status === 'InProgress'" class="text-warning">
+                          Started <em am-time-ago="task.startDate"></em>
+                      </div>
+                    </td>
                     <td>{{task.startDate | showDate}}</td>
                     <td>
                         <span ng-show="task.owner">
