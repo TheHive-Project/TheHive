@@ -91,7 +91,7 @@ class JobReplicateActor @Inject() (
         .mapAsyncUnordered(5) { job ⇒
           val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
           val createdJob = cortexSrv.create(newArtifact, baseFields)(authContext)
-          createdJob.failed.foreach(error => logger.error(s"Fail to create job under artifact ${newArtifact.id}\n\tjob attributes: $baseFields", error))
+          createdJob.failed.foreach(error ⇒ logger.error(s"Fail to create job under artifact ${newArtifact.id}\n\tjob attributes: $baseFields", error))
           createdJob
         }
         .runWith(Sink.ignore)
