@@ -22,6 +22,9 @@
 					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
 					<span ng-bind="value.title"></span>
 				</div>
+				<div ng-show="value.status === 'InProgress'" class="text-warning">
+						Started <em am-time-ago="value.startDate"></em>
+				</div>
 				<div>
 					<small><entity-link value="value.case"></entity-link></small>
 				</div>

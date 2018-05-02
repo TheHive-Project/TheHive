@@ -50,6 +50,16 @@
             </dd>
         </dl>
 
+        <dl class="dl-horizontal" ng-class="{'Completed': 'text-success', 'InProgress': 'text-warning'}[task.status]">
+            <dt class="pull-left">Duration</dt>
+            <dd ng-show="task.status === 'Completed'">
+                Closed after <em ng-bind="(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'"></em>
+            </dd>
+            <dd ng-show="task.status === 'InProgress'">
+                Started <em am-time-ago="task.startDate"></em>
+            </dd>
+        </dl>
+
         <dl class="dl-horizontal" ng-show="task.status !== 'Completed'">
             <dt class="pull-left">Status
             </dt>
@@ -98,7 +108,7 @@
             </div>
         </div>
         <div class="row" ng-show="adding">
-            <div class="col-md-12">                
+            <div class="col-md-12">
                 <div class="clearfix">
                     <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
                 </div>
