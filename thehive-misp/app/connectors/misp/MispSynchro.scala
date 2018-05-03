@@ -1,8 +1,8 @@
 package connectors.misp
 
 import java.util.Date
-import javax.inject.{ Inject, Provider, Singleton }
 
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
@@ -23,6 +23,7 @@ import JsonFormat.mispAlertWrites
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Attachment, AuthContext, MigrationSrv, TempSrv }
+import org.elastic4play.utils.Collection
 
 @Singleton
 class MispSynchro @Inject() (
@@ -171,14 +172,19 @@ class MispSynchro @Inject() (
             case _ ⇒ Future.successful(false)
           }
             .flatMap { updateStatus ⇒
-              val artifacts = JsArray(alert.artifacts() ++ attrs.map(Json.toJson(_)))
+              val artifacts = Collection.distinctBy(alert.artifacts() ++ attrs.map(Json.toJson(_))) { a ⇒
+                (a \ "data").getOrElse(JsNull).toString +
+                  (a \ "dataType").getOrElse(JsNull).toString +
+                  (a \ "attachment").getOrElse(JsNull).toString +
+                  (a \ "remoteAttachment").getOrElse(JsNull).toString
+              }
               val alertJson = Json.toJson(event).as[JsObject] -
                 "type" -
                 "source" -
                 "sourceRef" -
                 "caseTemplate" -
                 "date" +
-                ("artifacts" → artifacts) +
+                ("artifacts" → JsArray(artifacts)) +
                 ("status" → (if (!updateStatus) Json.toJson(alert.status())
                 else alert.status() match {
                   case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)
