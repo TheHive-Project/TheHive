@@ -81,6 +81,10 @@ body {
     padding-top: 50px
 }
 
+.text-default {
+    color: #333;
+}
+
 .text-20 {
     font-size: 20px;
 }

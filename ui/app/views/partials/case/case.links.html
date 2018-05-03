@@ -24,7 +24,7 @@
 
     <div class="case-item" ng-show="filteredLinks.length !== 0">
         <div class="case-details text-bold">
-          <a href class="text-black" ng-click="sortBy('title')">
+          <a href class="text-default" ng-click="sortBy('title')">
             Title
             <i ng-show="sorting.field !== '+title' && sorting.field !== '-title'" class="fa fa-sort"></i>
             <i ng-show="sorting.field === '+title'" class="fa fa-caret-up"></i>
@@ -32,7 +32,7 @@
           </a>
         </div>
         <div class="case-date text-bold">
-          <a href class="text-black" ng-click="sortBy('startDate')">
+          <a href class="text-default" ng-click="sortBy('startDate')">
             Date
             <i ng-show="sorting.field !== '+startDate' && sorting.field !== '-startDate'" class="fa fa-sort"></i>
             <i ng-show="sorting.field === '+startDate'" class="fa fa-caret-up"></i>
@@ -40,7 +40,7 @@
           </a>
         </div>
         <div class="case-observables-list text-bold">
-          <a href class="text-black" ng-click="sortBy('linksCount')">
+          <a href class="text-default" ng-click="sortBy('linksCount')">
             Linked observables
             <i ng-show="sorting.field !== '+linksCount' && sorting.field !== '-linksCount'" class="fa fa-sort"></i>
             <i ng-show="sorting.field === '+linksCount'" class="fa fa-caret-up"></i>
