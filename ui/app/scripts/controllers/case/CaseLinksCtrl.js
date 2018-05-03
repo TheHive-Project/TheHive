@@ -5,7 +5,10 @@
             $scope.caseId = $stateParams.caseId;
             $scope.linkStats = [];
             $scope.currentFilter = '';
-            $scope.filtering = {}
+            $scope.filtering = {};
+            $scope.sorting = {
+              field: '-startDate'
+            }
             var tabName = 'links-' + $scope.caseId;
 
             // Add tab
@@ -63,6 +66,14 @@
                     $scope.filtering = {
                         resolutionStatus: filter
                     };
+                }
+            };
+
+            $scope.sortBy = function(field) {
+                if($scope.sorting.field.substr(1) !== field) {
+                    $scope.sorting.field = '+' + field;
+                } else {
+                    $scope.sorting.field = ($scope.sorting.field === '+' + field) ? '-'+field : '+'+field;
                 }
             };
 
