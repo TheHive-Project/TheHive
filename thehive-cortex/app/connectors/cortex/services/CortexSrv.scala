@@ -19,7 +19,7 @@ import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
 import javax.inject.{ Inject, Singleton }
 import models.Artifact
-import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
+import services.{ ArtifactSrv, CaseSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
@@ -107,6 +107,7 @@ class JobReplicateActor @Inject() (
 class CortexSrv @Inject() (
     cortexConfig: CortexConfig,
     jobModel: JobModel,
+    caseSrv: CaseSrv,
     artifactSrv: ArtifactSrv,
     attachmentSrv: AttachmentSrv,
     getSrv: GetSrv,
@@ -313,9 +314,11 @@ class CortexSrv @Inject() (
       case (cortex, analyzer) ⇒
         for {
           artifact ← artifactSrv.get(artifactId)
+          caze ← caseSrv.get(artifact.parentId.get)
           artifactAttributes = Json.obj(
             "tlp" → artifact.tlp(),
-            "dataType" → artifact.dataType())
+            "dataType" → artifact.dataType(),
+            "message" → caze.caseId().toString)
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
             case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
             case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))
