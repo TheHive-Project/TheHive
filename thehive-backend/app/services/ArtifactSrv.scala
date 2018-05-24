@@ -47,7 +47,7 @@ class ArtifactSrv @Inject() (
   def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] = {
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
-        case _ ⇒ updateIfDeleted(caze, fields) // maybe the artifact already exists. If so, search it and update it
+        case _: ConflictError ⇒ updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
       }
   }
 
