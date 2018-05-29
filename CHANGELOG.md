@@ -1,6 +1,37 @@
 # Change Log
 
-## [3.0.9](https://github.com/TheHive-Project/TheHive/tree/3.0.9)
+## [3.0.10](https://github.com/TheHive-Project/TheHive/tree/3.0.10) (2018-05-29)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.9...3.0.10)
+
+**Implemented enhancements:**
+
+- Rotate logs [\#579](https://github.com/TheHive-Project/TheHive/issues/579)
+- Send caseId to Cortex analyzer [\#564](https://github.com/TheHive-Project/TheHive/issues/564)
+- Poll for connectors status and display  [\#563](https://github.com/TheHive-Project/TheHive/issues/563)
+- Sort related cases by related artifacts amount [\#548](https://github.com/TheHive-Project/TheHive/issues/548)
+- Time Calculation for individual tasks [\#546](https://github.com/TheHive-Project/TheHive/issues/546)
+
+**Fixed bugs:**
+
+- Wrong error message when creating a observable with invalid data [\#592](https://github.com/TheHive-Project/TheHive/issues/592)
+- Analyzer name not reflected in modal view of mini-reports [\#586](https://github.com/TheHive-Project/TheHive/issues/586)
+- Invalid searches lead to read error messages [\#584](https://github.com/TheHive-Project/TheHive/issues/584)
+- Merge case by ID brings red error message if not a number in textfield [\#583](https://github.com/TheHive-Project/TheHive/issues/583)
+- Open cases not listed after deletion of merged case in UI [\#557](https://github.com/TheHive-Project/TheHive/issues/557)
+- Making dashboards private makes them "invisible" [\#555](https://github.com/TheHive-Project/TheHive/issues/555)
+- MISP Synchronisation error [\#522](https://github.com/TheHive-Project/TheHive/issues/522)
+- Short Report is not shown on observables \(3.0.8\) [\#512](https://github.com/TheHive-Project/TheHive/issues/512)
+- Artifacts reports are not merged when merging cases [\#446](https://github.com/TheHive-Project/TheHive/issues/446)
+
+**Closed issues:**
+
+- Max Age Filter Not Working? [\#577](https://github.com/TheHive-Project/TheHive/issues/577)
+- Support X-Pack authentication/encryption for elastic [\#570](https://github.com/TheHive-Project/TheHive/issues/570)
+- Order the cases list by custom field \[Feature Request\] [\#567](https://github.com/TheHive-Project/TheHive/issues/567)
+- Using Postman to test the API, getting "No CSRF token found in headers" [\#549](https://github.com/TheHive-Project/TheHive/issues/549)
+
+## [3.0.9](https://github.com/TheHive-Project/TheHive/tree/3.0.9) (2018-04-13)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.8...3.0.9)
 
 **Fixed bugs:**
@@ -37,7 +68,7 @@
 
 - Add ElasticSearch file descriptor limit to docker-compose.yml [\#505](https://github.com/TheHive-Project/TheHive/pull/505) ([flmsc](https://github.com/flmsc))
 
-## [3.0.7](https://github.com/TheHive-Project/TheHive/tree/3.0.7) (2018-03-29)
+## [3.0.7](https://github.com/TheHive-Project/TheHive/tree/3.0.7) (2018-04-03)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.6...3.0.7)
 
 **Implemented enhancements:**
@@ -65,8 +96,8 @@
 
 **Fixed bugs:**
 
- - Importing Template Button Non-Functional bug [\#404](https://github.com/TheHive-Project/TheHive/issues/404)
- - No reports available for "domain" type bug [\#409](https://github.com/TheHive-Project/TheHive/issues/409)
+- No reports available for "domain" type [\#469](https://github.com/TheHive-Project/TheHive/issues/469)
+- Importing Template Button Non-Functional [\#404](https://github.com/TheHive-Project/TheHive/issues/404)
 
 ## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-06)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.3...3.0.4)

@@ -42,9 +42,30 @@
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
-                <th style="width: 100px">Type <a href ng-click="artifacts.sort='-dataType'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+dataType'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th>Value/Filename <a href ng-click="artifacts.sort='-data'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+data'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
-                <th style="width: 120px">Date Added <a href ng-click="artifacts.sort='-startDate'; artifacts.update()"><i class="fa fa-caret-up"></i></a><a href ng-click="artifacts.sort='+startDate'; artifacts.update()"><i class="fa fa-caret-down"></i></a></th>
+                <th style="width: 100px">
+                  <a href class="text-default" ng-click="sortBy('dataType')">
+                    Type
+                    <i ng-show="artifacts.sort !== '+dataType' && artifacts.sort !== '-dataType'" class="fa fa-sort"></i>
+                    <i ng-show="artifacts.sort === '+dataType'" class="fa fa-caret-up"></i>
+                    <i ng-show="artifacts.sort === '-dataType'" class="fa fa-caret-down"></i>
+                  </a>
+                </th>
+                <th>
+                  <a href class="text-default" ng-click="sortBy('data')">
+                    Value/Filename
+                    <i ng-show="artifacts.sort !== '+data' && artifacts.sort !== '-data'" class="fa fa-sort"></i>
+                    <i ng-show="artifacts.sort === '+data'" class="fa fa-caret-up"></i>
+                    <i ng-show="artifacts.sort === '-data'" class="fa fa-caret-down"></i>
+                  </a>
+                </th>
+                <th style="width: 120px">
+                  <a href class="text-default" ng-click="sortBy('startDate')">
+                    Date Added
+                    <i ng-show="artifacts.sort !== '+startDate' && artifacts.sort !== '-startDate'" class="fa fa-sort"></i>
+                    <i ng-show="artifacts.sort === '+startDate'" class="fa fa-caret-up"></i>
+                    <i ng-show="artifacts.sort === '-startDate'" class="fa fa-caret-down"></i>
+                  </a>                  
+                </th>
             </tr>
         </thead>
         <tbody>

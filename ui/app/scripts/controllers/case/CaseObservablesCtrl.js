@@ -69,6 +69,16 @@
                 $scope.uiSrv.setPageSize(newValue);
             });
 
+            $scope.sortBy = function(field) {
+                if($scope.artifacts.sort.substr(1) !== field) {
+                    $scope.artifacts.sort = '+' + field;
+                } else {
+                    $scope.artifacts.sort = ($scope.artifacts.sort === '+' + field) ? '-'+field : '+'+field;
+                }
+
+                $scope.artifacts.update();
+            }
+
             $scope.keys = function(obj) {
                 return _.keys(obj || {});
             };

@@ -43,7 +43,7 @@
             $scope.getUserInfo = UserInfoSrv;
             $scope.searchResults = PSearchSrv(undefined, 'any', {
                 'filter': angular.fromJson(Base64.decode($stateParams.q)),
-                'baseFilter': {_string: '!_type:audit AND !_type:data AND !_type:user AND !_type:analyzer AND !_type:case_artifact_job_log AND !status:Deleted'},
+                'baseFilter': {_string: '!_type:dashboard AND !_type:audit AND !_type:data AND !_type:user AND !_type:analyzer AND !_type:case_artifact_job_log AND !status:Deleted'},
                 'nparent': 10,
                 skipStream: true
             });

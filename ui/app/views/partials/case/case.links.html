@@ -4,7 +4,7 @@
     </div>
 </div>
 
-<div class="case-links" ng-show="links.length > 0" ng-init="filteredLinks = (links | filter:filtering)">
+<div class="case-links" ng-show="links.length > 0" ng-init="filteredLinks = (links | filter:filtering | orderBy:sorting.field)">
     <div class="mv-s" ng-if="linkStats">
         <span class="label label-lg label-default mr-xxs clickable"
             ng-click="filterLinks('');"
@@ -23,12 +23,32 @@
     </div>
 
     <div class="case-item" ng-show="filteredLinks.length !== 0">
-        <div class="case-details text-bold">Title</div>
-        <div class="case-date text-bold">Date</div>
-        <div class="case-observables-list text-bold">Linked observables</div>
+        <div class="case-details text-bold">
+          <a href class="text-default" ng-click="sortBy('title')">
+            Title
+            <i ng-show="sorting.field !== '+title' && sorting.field !== '-title'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+title'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-title'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
+        <div class="case-date text-bold">
+          <a href class="text-default" ng-click="sortBy('startDate')">
+            Date
+            <i ng-show="sorting.field !== '+startDate' && sorting.field !== '-startDate'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+startDate'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-startDate'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
+        <div class="case-observables-list text-bold">
+          <a href class="text-default" ng-click="sortBy('linksCount')">
+            Linked observables
+            <i ng-show="sorting.field !== '+linksCount' && sorting.field !== '-linksCount'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+linksCount'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-linksCount'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
     </div>
-
-    <div class="case-collection" ng-repeat="item in filteredLinks = (links | filter:filtering)">
+    <div class="case-collection" ng-repeat="item in filteredLinks = (links | filter:filtering | orderBy:sorting.field)">
         <div class="case-item" >
             <!-- case severity -->
             <div class="case-tlp bg-tlp-{{item.tlp}}"></div>
@@ -67,7 +87,7 @@
             </div>
 
             <div class="case-observables-count">
-                <span class="badge">{{item.linkedWith.length}}</span>
+                <span class="badge">{{item.linksCount}}</span>
             </div>
 
             <div class="case-observables-list">

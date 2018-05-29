@@ -34,7 +34,7 @@
                 }).success(function(data, status, headers) {
                     cb(data, parseInt(headers('X-Total')));
                 }).error(function(data, status) {
-                    NotificationSrv.error('SearchSrv', data, status);
+                    NotificationSrv.error('SearchSrv', data.type || data.message, status);
                 });
             };
         });
