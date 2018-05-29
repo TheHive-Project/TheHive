@@ -2,30 +2,30 @@ package connectors.cortex.services
 
 import java.util.Date
 
-import javax.inject.{ Inject, Singleton }
-import akka.NotUsed
-import akka.actor.Actor
-import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
-import connectors.cortex.models.JsonFormat._
-import connectors.cortex.models._
-import models.Artifact
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services._
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.{ InternalError, NotFoundError }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSClient
 import play.api.{ Configuration, Logger }
 
-import services.{ ArtifactSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import akka.NotUsed
+import akka.actor.{ Actor, ActorSystem }
+import akka.stream.Materializer
+import akka.stream.scaladsl.{ Sink, Source }
+import connectors.cortex.models.JsonFormat._
+import connectors.cortex.models._
+import javax.inject.{ Inject, Singleton }
+import models.Artifact
+import services.{ ArtifactSrv, CaseSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
 
+import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
+import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services._
+import org.elastic4play.{ InternalError, NotFoundError }
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
@@ -68,7 +68,10 @@ case class CortexConfig(instances: Seq[CortexClient]) {
 class JobReplicateActor @Inject() (
     cortexSrv: CortexSrv,
     eventSrv: EventSrv,
+    implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends Actor {
+
+  private lazy val logger = Logger(getClass)
 
   override def preStart(): Unit = {
     eventSrv.subscribe(self, classOf[MergeArtifact])
@@ -82,11 +85,14 @@ class JobReplicateActor @Inject() (
 
   override def receive: Receive = {
     case MergeArtifact(newArtifact, artifacts, authContext) ⇒
+      logger.info(s"Merging jobs from artifacts ${artifacts.map(_.id)} into artifact ${newArtifact.id}")
       import org.elastic4play.services.QueryDSL._
       cortexSrv.find(and(parent("case_artifact", withId(artifacts.map(_.id): _*)), "status" ~= JobStatus.Success), Some("all"), Nil)._1
         .mapAsyncUnordered(5) { job ⇒
-          val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
-          cortexSrv.create(newArtifact, baseFields)(authContext)
+          val baseFields = Fields(job.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+          val createdJob = cortexSrv.create(newArtifact, baseFields)(authContext)
+          createdJob.failed.foreach(error ⇒ logger.error(s"Fail to create job under artifact ${newArtifact.id}\n\tjob attributes: $baseFields", error))
+          createdJob
         }
         .runWith(Sink.ignore)
     case RemoveJobsOf(artifactId) ⇒
@@ -101,6 +107,7 @@ class JobReplicateActor @Inject() (
 class CortexSrv @Inject() (
     cortexConfig: CortexConfig,
     jobModel: JobModel,
+    caseSrv: CaseSrv,
     artifactSrv: ArtifactSrv,
     attachmentSrv: AttachmentSrv,
     getSrv: GetSrv,
@@ -109,6 +116,7 @@ class CortexSrv @Inject() (
     findSrv: FindSrv,
     dbRemove: DBRemove,
     userSrv: UserSrv,
+    system: ActorSystem,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
@@ -219,9 +227,14 @@ class CortexSrv @Inject() (
     getSrv[JobModel, Job](jobModel, jobId)
   }
 
-  def retryIf[A](f: Throwable ⇒ Boolean, maxRetry: Int)(body: ⇒ Future[A]): Future[A] = {
+  def retryOnError[A](cond: Throwable ⇒ Boolean = _ ⇒ true, maxRetry: Int = 5, initialDelay: FiniteDuration = 1.second)(body: ⇒ Future[A]): Future[A] = {
     body.recoverWith {
-      case e if maxRetry > 0 && f(e) ⇒ retryIf(f, maxRetry - 1)(body)
+      case e if maxRetry > 0 && cond(e) ⇒
+        val resultPromise = Promise[A]
+        system.scheduler.scheduleOnce(initialDelay) {
+          resultPromise.completeWith(retryOnError(cond, maxRetry - 1, initialDelay * 2)(body))
+        }
+        resultPromise.future
     }
   }
 
@@ -248,12 +261,13 @@ class CortexSrv @Inject() (
                       .toOption
                       .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
                       .getOrElse(JsObject.empty)
-                    retryIf(_ ⇒ true, 5) {
+                    retryOnError() {
                       for {
                         artifact ← artifactSrv.get(job.artifactId())
                         reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
                         newReports = reports + (job.analyzerDefinition().getOrElse(job.analyzerId()) → jobSummary)
-                      } yield artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
+                        updatedArtifact ← artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
+                      } yield updatedArtifact
                     }
                       .recover {
                         case NonFatal(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
@@ -300,9 +314,11 @@ class CortexSrv @Inject() (
       case (cortex, analyzer) ⇒
         for {
           artifact ← artifactSrv.get(artifactId)
+          caze ← caseSrv.get(artifact.parentId.get)
           artifactAttributes = Json.obj(
             "tlp" → artifact.tlp(),
-            "dataType" → artifact.dataType())
+            "dataType" → artifact.dataType(),
+            "message" → caze.caseId().toString)
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
             case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
             case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))

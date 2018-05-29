@@ -1,14 +1,24 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('VersionSrv', function($http, $q) {
+        .factory('VersionSrv', function($http, $q, $interval) {
             var cache = null;
 
             var factory =  {
-                get: function() {
+                startMonitoring: function(callback) {
+                    $interval(function() {
+                        factory.get(true)
+                          .then(function(appConfig) {
+                              if(callback) {
+                                  callback(appConfig);
+                              }
+                          });
+                    }, 60000);                    
+                },
+                get: function(force) {
                     var deferred = $q.defer();
 
-                    if(cache !== null) {
+                    if(!force && cache !== null) {
                         deferred.resolve(cache);
                     } else {
                         $http.get('./api/status').then(function(response) {

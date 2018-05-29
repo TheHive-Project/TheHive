@@ -51,7 +51,11 @@
             CaseSrv.links({
                 caseId: $scope.caseId
             }, function(data) {
-                $scope.links = data;
+                $scope.links = _.map(data, function(item){
+                  item.linksCount = item.linkedWith.length || 0;
+
+                  return item;
+                });
 
                 if (data.length > 0) {
                     $scope.newestLink = data[0];
