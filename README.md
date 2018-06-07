@@ -35,13 +35,13 @@ Security analysts with a knack for scripting can easily add their own analyzers 
 
 # Try it
 To use TheHive, you can:
-- Install the [RPM package](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/rpm-guide.md)
-- Install the [DEB package](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/deb-guide.md)
-- Use [docker](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/docker-guide.md)
-- Use the [binary](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/binary-guide.md)
+- Install the [RPM package](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md#rpm)
+- Install the [DEB package](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md#deb)
+- Use [docker](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md#docker)
+- Use the [binary](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md#binary)
 - Execute the [Ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by
 [@drewstinnett](https://github.com/drewstinnett)
-- [Build it from sources](https://github.com/CERT-BDF/TheHiveDocs/blob/master/installation/build-guide.md) then run it
+- [Build it from sources](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md#build-it-yourself) then run it
 - [Use the training VM](https://github.com/CERT-BDF/TheHiveDocs/blob/master/training-material.md)
 
 # Details
