@@ -49,7 +49,7 @@ TheHive is written in Scala and uses ElasticSearch 5.x for storage. Its REST API
 ## Workflow
 The following image shows a typical workflow:
 
-![](images/Workflow.png)
+![](images/thehive-workflow.png)
 
 ## Additional features
 ### Authentication
