@@ -44,12 +44,12 @@ We have made several guides available in the [Documentation repository](https://
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 5.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
 
-![](images/Architecture.png)
+![architecture](images/thehive-architecture.png)
 
 ## Workflow
 The following image shows a typical workflow:
 
-![](images/thehive-workflow.png)
+![workflow](images/thehive-workflow.png)
 
 ## Additional features
 ### Authentication
