@@ -100,15 +100,16 @@ misp {
     # URL of the MISP instance.
     #url = ""
 
-    # Authentication key.
+    # Authentication key corresponding to a sync account on MISP.
     #key = ""
 
     # Name of the case template in TheHive that shall be used to import
     # MISP events as cases by default.
     # caseTemplate = "<Template_Name_goes_here>"
 
-    # Tags to add to each observable imported from an event available on
-    # this instance.
+    # Optional tags to add to each observable  imported  from  an  event
+    # available on this instance.
+
     #tags = ["misp-server-id"]
 
     # Truststore to use to validate the X.509 certificate  of  the  MISP
@@ -120,7 +121,8 @@ misp {
     #  path: "/path/to/truststore.jks"
     #}
     #]
-  #}
+
+  #} ## <-- Uncomment to complete the configuration
 
   # Interval between consecutive MISP event  imports  in  hours  (h)  or
   # minutes (m).
