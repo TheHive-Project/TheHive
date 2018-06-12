@@ -7,9 +7,9 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
+import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.{ Configuration, Logger }
 
 import akka.NotUsed
 import akka.actor.{ Actor, ActorSystem }
@@ -27,46 +27,9 @@ import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
 import org.elastic4play.{ InternalError, NotFoundError }
 
-object CortexConfig {
-  def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
-    val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
-    val authentication =
-      configuration.getOptional[String]("key").map(CortexAuthentication.Key)
-        .orElse {
-          for {
-            basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
-            if basicEnabled
-            username ← configuration.getOptional[String]("username")
-            password ← configuration.getOptional[String]("password")
-          } yield CortexAuthentication.Basic(username, password)
-        }
-    Some(new CortexClient(name, url, authentication, ws))
-  }
-
-  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {
-    for {
-      cfg ← configuration.getOptional[Configuration]("cortex").toSeq
-      cortexWS = globalWS.withConfig(cfg)
-      key ← cfg.subKeys
-      if key != "ws"
-      c ← cfg.getOptional[Configuration](key)
-      instanceWS = cortexWS.withConfig(c)
-      cic ← getCortexClient(key, c, instanceWS)
-    } yield cic
-  }
-}
-
-@Singleton
-case class CortexConfig(instances: Seq[CortexClient]) {
-
-  @Inject
-  def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
-    CortexConfig.getInstances(configuration, globalWS))
-}
-
 @Singleton
 class JobReplicateActor @Inject() (
-    cortexSrv: CortexSrv,
+    cortexSrv: CortexAnalyzerSrv,
     eventSrv: EventSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) extends Actor {
@@ -104,7 +67,7 @@ class JobReplicateActor @Inject() (
 }
 
 @Singleton
-class CortexSrv @Inject() (
+class CortexAnalyzerSrv @Inject() (
     cortexConfig: CortexConfig,
     jobModel: JobModel,
     caseSrv: CaseSrv,
@@ -121,7 +84,7 @@ class CortexSrv @Inject() (
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
-  private[CortexSrv] lazy val logger = Logger(getClass)
+  private[CortexAnalyzerSrv] lazy val logger = Logger(getClass)
 
   userSrv.inInitAuthContext { implicit authContext ⇒
     import org.elastic4play.services.QueryDSL._
@@ -148,16 +111,16 @@ class CortexSrv @Inject() (
     createSrv[JobModel, Job, Artifact](jobModel, artifact, fields.set("artifactId", artifact.id))
   }
 
-  private[CortexSrv] def update(jobId: String, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
+  private[CortexAnalyzerSrv] def update(jobId: String, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(jobId, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
+  private[CortexAnalyzerSrv] def update(jobId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     getJob(jobId).flatMap(job ⇒ update(job, fields, modifyConfig))
 
-  private[CortexSrv] def update(job: Job, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
+  private[CortexAnalyzerSrv] def update(job: Job, fields: Fields)(implicit authContext: AuthContext): Future[Job] =
     update(job, fields, ModifyConfig.default)
 
-  private[CortexSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
+  private[CortexAnalyzerSrv] def update(job: Job, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Job] =
     updateSrv[Job](job, fields, modifyConfig)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Job, NotUsed], Future[Long]) = {
@@ -342,7 +305,7 @@ class CortexSrv @Inject() (
           artifactAttributes = Json.obj(
             "tlp" → artifact.tlp(),
             "dataType" → artifact.dataType(),
-            "message" → caze.caseId().toString)
+            "message" -> caze.caseId().toString)
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
             case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
             case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))

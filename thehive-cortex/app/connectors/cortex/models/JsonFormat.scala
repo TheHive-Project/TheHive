@@ -25,7 +25,7 @@ object JsonFormat {
       description ← (json \ "description").validate[String]
       dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
     } yield Analyzer(id, renamed, version, description, dataTypeList))
-  implicit val analyzerFormats: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
+  implicit val analyzerFormat: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
 
   private val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
     "attributes" → fileArtifact.attributes))
@@ -53,7 +53,7 @@ object JsonFormat {
     JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a -> _)))
   }
 
-  implicit val cortexJobReads = Reads[CortexJob](json ⇒
+  implicit val cortexJobReads: Reads[CortexJob] = Reads[CortexJob](json ⇒
     for {
       id ← (json \ "id").validate[String]
       analyzerId ← (json \ "analyzerId").validate[String]
@@ -67,7 +67,30 @@ object JsonFormat {
         }
       date ← (json \ "date").validate[Date]
       status ← (json \ "status").validate[JobStatus.Type]
-    } yield CortexJob(id, analyzerId, analyzerName, analyzerDefinition, artifact, date, status, Nil))
+    } yield CortexJob(id, analyzerId, analyzerName, analyzerDefinition, artifact, date, status))
 
   implicit val reportTypeFormat: Format[ReportType.Type] = enumFormat(ReportType)
+
+  private val workerWrites = Writes[Worker](worker ⇒ Json.obj(
+    "id" → worker.id,
+    "name" → worker.name,
+    "version" → worker.version,
+    "description" → worker.description,
+    "dataTypeList" → worker.dataTypeList,
+    "maxTlp" -> worker.maxTlp,
+    "maxPap" -> worker.maxPap,
+    "cortexIds" → worker.cortexIds))
+  private val workerReads = Reads[Worker](json ⇒
+    for {
+      name ← (json \ "name").validate[String]
+      version ← (json \ "version").validate[String]
+      definition = (name + "_" + version).replaceAll("\\.", "_")
+      id = (json \ "id").asOpt[String].getOrElse(definition)
+      renamed = if (id == definition) definition else name
+      description ← (json \ "description").validate[String]
+      dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
+      maxTlp ← (json \ "maxTlp").validateOpt[Long]
+      maxPap ← (json \ "maxPap").validateOpt[Long]
+    } yield Worker(id, renamed, version, description, dataTypeList, maxTlp, maxPap))
+  implicit val workerFormat: Format[Worker] = Format(workerReads, workerWrites)
 }

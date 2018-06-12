@@ -63,7 +63,4 @@ case class CortexJob(
     analyzerDefinition: String,
     artifact: CortexArtifact,
     date: Date,
-    status: JobStatus.Type,
-    cortexIds: List[String] = Nil) {
-  def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
-}
+    status: JobStatus.Type)

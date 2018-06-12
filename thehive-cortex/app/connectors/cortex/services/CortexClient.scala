@@ -3,7 +3,7 @@ package connectors.cortex.services
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
-import play.api.Logger
+import play.api.{ Configuration, Logger }
 import play.api.http.HeaderNames
 import play.api.libs.json.{ JsObject, JsValue, Json }
 import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
@@ -12,12 +12,50 @@ import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import connectors.cortex.models.JsonFormat._
-import connectors.cortex.models.{ Analyzer, CortexArtifact, DataArtifact, FileArtifact }
+import connectors.cortex.models._
+import javax.inject.{ Inject, Singleton }
 import models.HealthStatus
 import services.CustomWSAPI
 
 import org.elastic4play.NotFoundError
 import org.elastic4play.utils.RichFuture
+
+object CortexConfig {
+  def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
+    val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
+    val authentication =
+      configuration.getOptional[String]("key").map(CortexAuthentication.Key)
+        .orElse {
+          for {
+            basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
+            if basicEnabled
+            username ← configuration.getOptional[String]("username")
+            password ← configuration.getOptional[String]("password")
+          } yield CortexAuthentication.Basic(username, password)
+        }
+    Some(new CortexClient(name, url, authentication, ws))
+  }
+
+  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] = {
+    for {
+      cfg ← configuration.getOptional[Configuration]("cortex").toSeq
+      cortexWS = globalWS.withConfig(cfg)
+      key ← cfg.subKeys
+      if key != "ws"
+      c ← cfg.getOptional[Configuration](key)
+      instanceWS = cortexWS.withConfig(c)
+      cic ← getCortexClient(key, c, instanceWS)
+    } yield cic
+  }
+}
+
+@Singleton
+case class CortexConfig(instances: Seq[CortexClient]) {
+
+  @Inject
+  def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
+    CortexConfig.getInstances(configuration, globalWS))
+}
 
 object CortexAuthentication {
 
@@ -42,6 +80,7 @@ object CortexAuthentication {
 }
 
 case class CortexError(status: Int, requestUrl: String, message: String) extends Exception(s"Cortex error on $requestUrl ($status) \n$message")
+
 class CortexClient(val name: String, baseUrl: String, authentication: Option[CortexAuthentication.Type], ws: CustomWSAPI) {
 
   private[CortexClient] lazy val logger = Logger(getClass)
@@ -59,6 +98,26 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   def getAnalyzer(analyzerId: String)(implicit ec: ExecutionContext): Future[Analyzer] = {
     request(s"api/analyzer/$analyzerId", _.get, _.json.as[Analyzer]).map(_.copy(cortexIds = List(name)))
       .recoverWith { case _ ⇒ getAnalyzerByName(analyzerId) } // if get analyzer using cortex2 API fails, try using legacy API
+  }
+
+  def getWorkerById(workerId: String)(implicit ec: ExecutionContext): Future[Worker] = {
+    request(s"api/analyzer/$workerId", _.get, _.json.as[Worker]).map(_.addCortexId(name))
+  }
+
+  def getWorkerByName(workerName: String)(implicit ec: ExecutionContext): Future[Worker] = {
+    val searchRequest = Json.obj(
+      "query" -> Json.obj(
+        "_field" -> "name",
+        "_value" -> workerName),
+      "range" -> "0-1")
+    request(s"api/analyzer/_search", _.post(searchRequest),
+      _.json.as[Seq[Worker]])
+      .flatMap { analyzers ⇒
+        analyzers.headOption
+          .fold[Future[Worker]](Future.failed(NotFoundError(s"worker $workerName not found"))) { worker ⇒
+            Future.successful(worker.addCortexId(name))
+          }
+      }
   }
 
   def getAnalyzerByName(analyzerName: String)(implicit ec: ExecutionContext): Future[Analyzer] = {
@@ -81,6 +140,10 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
     request(s"api/analyzer?range=all", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
+  def findWorkers(query: JsObject)(implicit ec: ExecutionContext): Future[Seq[Worker]] = {
+    request(s"api/analyzer/_search?range=all", _.post(Json.obj("query" -> query)), _.json.as[Seq[Worker]]).map(_.map(_.addCortexId(name)))
+  }
+
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ec: ExecutionContext): Future[JsValue] = {
     artifact match {
       case FileArtifact(data, attributes) ⇒
@@ -91,6 +154,22 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       case a: DataArtifact ⇒
         request(s"api/analyzer/$analyzerId/run", _.post(Json.toJson(a)), _.json.as[JsObject])
     }
+  }
+
+  def execute(
+      workerId: String,
+      dataType: String,
+      data: JsValue,
+      tlp: Long,
+      message: String,
+      parameters: JsObject)(implicit ec: ExecutionContext): Future[JsValue] = {
+    val body = Json.obj(
+      "data" -> data.toString,
+      "dataType" -> dataType,
+      "tlp" -> tlp,
+      "message" -> message,
+      "parameters" -> parameters)
+    request(s"api/analyzer/$workerId/run", _.post(body), _.json.as[JsObject])
   }
 
   def listAnalyzerForType(dataType: String)(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {
