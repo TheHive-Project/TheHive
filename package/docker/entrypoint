@@ -126,4 +126,4 @@ exec bin/thehive \
 	-Dconfig.file=$CONFIG_FILE \
 	-Dlogger.file=/etc/thehive/logback.xml \
 	-Dpidfile.path=/dev/null \
-$@
+	$@
