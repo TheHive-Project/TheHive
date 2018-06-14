@@ -38,7 +38,6 @@ object AlertSrv {
 
 @Singleton
 class AlertSrv(
-    maxSimilarCases: Int,
     templates: Map[String, String],
     alertModel: AlertModel,
     createSrv: CreateSrv,
@@ -70,7 +69,6 @@ class AlertSrv(
       connectors: ConnectorRouter,
       ec: ExecutionContext,
       mat: Materializer) = this(
-    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     Map.empty[String, String],
     alertModel: AlertModel,
     createSrv,
@@ -315,17 +313,17 @@ class AlertSrv(
         similarArtifacts(artifact)
           .getOrElse(Source.empty)
       }
-      .groupBy(maxSimilarCases, _.parentId)
-      .map {
-        case a if a.ioc() ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 1, 1)
-        case a            ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 0, 1)
+      .fold(Map.empty[String, (Int, Int)]) { (similarCases, artifact) ⇒
+        val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
+        val (iocCount, artifactCount) = similarCases.getOrElse(caseId, (0, 0))
+        if (artifact.ioc())
+          similarCases + (caseId -> ((iocCount + 1, artifactCount)))
+        else
+          similarCases + (caseId -> ((iocCount, artifactCount + 1)))
       }
-      .reduce[(String, Int, Int)] {
-        case ((caseId, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caseId, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
-      }
-      .mergeSubstreams
+      .mapConcat(identity)
       .mapAsyncUnordered(5) {
-        case (caseId, similarIOCCount, similarArtifactCount) ⇒
+        case (caseId, (similarIOCCount, similarArtifactCount)) ⇒
           caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
       }
       .filter {

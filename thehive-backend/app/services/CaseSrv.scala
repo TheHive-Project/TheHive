@@ -5,7 +5,7 @@ import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-import play.api.{ Configuration, Logger }
+import play.api.Logger
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 
@@ -14,14 +14,12 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import models._
 
-import org.elastic4play.InternalError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
-class CaseSrv(
-    maxSimilarCases: Int,
+class CaseSrv @Inject() (
     caseModel: CaseModel,
     artifactModel: ArtifactModel,
     taskSrv: TaskSrv,
@@ -35,36 +33,6 @@ class CaseSrv(
     findSrv: FindSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
-
-  @Inject() def this(
-      configuration: Configuration,
-      caseModel: CaseModel,
-      artifactModel: ArtifactModel,
-      taskSrv: TaskSrv,
-      auditSrv: AuditSrv,
-      alertSrvProvider: Provider[AlertSrv],
-      createSrv: CreateSrv,
-      artifactSrv: ArtifactSrv,
-      getSrv: GetSrv,
-      updateSrv: UpdateSrv,
-      deleteSrv: DeleteSrv,
-      findSrv: FindSrv,
-      ec: ExecutionContext,
-      mat: Materializer) = this(
-    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
-    caseModel,
-    artifactModel,
-    taskSrv,
-    auditSrv,
-    alertSrvProvider,
-    createSrv,
-    artifactSrv,
-    getSrv,
-    updateSrv,
-    deleteSrv,
-    findSrv,
-    ec,
-    mat)
 
   private lazy val alertSrv = alertSrvProvider.get
   private[CaseSrv] lazy val logger = Logger(getClass)
@@ -184,13 +152,14 @@ class CaseSrv(
         "status" ~= "Ok"), Some("all"), Nil)
       ._1
       .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
-      .groupBy(maxSimilarCases, _.parentId)
-      .map { a ⇒ (a.parentId, Seq(a)) }
-      .reduce((l, r) ⇒ (l._1, r._2 ++ l._2))
-      .mergeSubstreams
+      .fold(Map.empty[String, List[Artifact]]) { (similarCases, artifact) ⇒
+        val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
+        val artifactList = artifact :: similarCases.getOrElse(caseId, Nil)
+        similarCases + (caseId -> artifactList)
+      }
+      .mapConcat(identity)
       .mapAsyncUnordered(5) {
-        case (Some(caseId), artifacts) ⇒ getSrv[CaseModel, Case](caseModel, caseId) map (_ → artifacts)
-        case _                         ⇒ Future.failed(InternalError("Case not found"))
+        case (caseId, artifacts) ⇒ getSrv[CaseModel, Case](caseModel, caseId) map (_ → artifacts)
       }
       .mapMaterializedValue(_ ⇒ NotUsed)
   }
