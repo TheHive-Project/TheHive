@@ -1,13 +1,85 @@
 <div class="box search-list">
-    <div class="box-header">
+    <!-- <div class="box-header">
         <h3 class="box-title">Search result ({{searchResults.total}} records(s) found)</h3>
-        <!-- <small>
-            <em>{{searchResults.filter}}</em>
-        </small> -->
+    </div> -->
+    <div class="m-xs text-primary">
+        <h3>Search scope</h3>
+    </div>
+    <div class="m-xs entity-bar">
+        <div class="entity-item" ng-repeat="item in toolbar" ng-click="setEntity(item.name)" ng-class="{'active': config.entity===item.name}">
+          <div class="entity-item-icon">
+              <i ng-class="item.icon"></i>
+          </div>
+          <div class="entity-item-text">
+              {{item.label}}
+          </div>
+        </div>
+    </div>
+    <div class="m-xs text-primary">
+        <h3>Search filters <small>{{config[config.entity].filters.length || 0 }} filter(s) applied</small></h3>
+    </div>
+    <div class="m-xs">
+        <!-- <div ng-if="!config[config.entity].search && !config[config.entity].filters.length > 0" class="empty-message">
+            No filters defined. <a href ng-click="addFilter()">Add a filter</a>
+        </div> -->
+        <form ng-submit="search()">
+            <div class="row">
+                <div class="col-sm-12 col-md-12 col-lg-8">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" ng-click="config[config.entity].search = null">
+                                <i class="fa fa-times text-danger"></i>
+                            </button>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Free text search" ng-model="config[config.entity].search">
+                    </div>
+
+                    <hr class="filter-separator" ng-if="config[config.entity].filters.length > 0">
+                </div>
+            </div>
+            <div class="row mb-xxxs" ng-repeat="filter in config[config.entity].filters track by $index">
+                <div class="col-sm-4 col-md-4 col-lg-2">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" ng-click="removeFilter($index)">
+                                <i class="fa fa-times text-danger"></i>
+                            </button>
+                        </span>
+                        <select class="form-control" ng-model="filter.field"
+                            ng-options="item.name as item.name for (key, item) in metadata[config.entity].attributes"
+                            ng-change="setFilterField(filter, config.entity)"></select>
+                    </div>
+                </div>
+                <div class="col-sm-8 col-md-8 col-lg-6">
+                    <filter-editor metadata="metadata" filter="filter" entity="config.entity"></filter-editor>
+                </div>
+            </div>
+            <div class="mv-xs row">
+                <div class="col-sm-12 col-md-12 col-lg-8">
+                    <a href class="btn btn-link btn-clear" ng-click="addFilter()">
+                        <i class="fa fa-plus"></i> Add a filter
+                    </a>
+                    <a href class="btn btn-danger" ng-click="clearFilters()">
+                        <i class="fa fa-times"></i> Clear
+                    </a>
+                    <button href class="btn btn-primary pull-right" type="submit">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="m-xs text-primary" ng-if="searchResults">
+        <h3>Search Result <small>{{searchResults.total}} records(s) found</small></h3>
     </div>
     <div class="box-body">
         <div class="row">
             <psearch control="searchResults"></psearch>
+            <div class="col-md-12" ng-if="searchResults && (!searchResults.values || searchResults.values.length === 0)">
+                <div class="empty-message">
+                    No result found.
+                </div>
+            </div>
             <div class="col-md-12" ng-repeat="value in searchResults.values" ng-switch="value._type">
                 <search-item type="case" value="value" ng-switch-when="case" icon="glyphicon glyphicon-folder-open"></search-item>
                 <search-item type="task" value="value" ng-switch-when="case_task" icon="glyphicon glyphicon-tasks"></search-item>

@@ -47,14 +47,15 @@
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>
-                <!-- <li ui-sref-active="active">
-                    <a ui-sref="app.statistics">
-                        <i class="fa fa-bar-chart"></i> Statistics
-                    </a>
-                </li> -->
                 <li ui-sref-active="active">
                     <a ui-sref="app.dashboards">
                         <i class="fa fa-bar-chart"></i> Dashboards
+                    </a>
+                </li>
+                <li class="hdivider hidden-xs"></li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.search">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
             </ul>
@@ -65,7 +66,7 @@
                     </a>
                 </li>
 
-                <li>
+                <!-- <li>
                     <form ng-submit="search(querystring)" style="margin-top : 10px">
                         <div class="input-group" style="width: 220px">
                             <span class="input-group-addon">
@@ -97,7 +98,7 @@
                             </div>
                         </div>
                     </form>
-                </li>
+                </li> -->
                 <li class="dropdown" uib-dropdown ng-if="isAdmin(currentUser)">
                     <a class="dropdown-toggle" uib-dropdown-toggle href>
                         <i class="fa fa-cog"></i>

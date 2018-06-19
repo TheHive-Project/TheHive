@@ -564,6 +564,17 @@ table tr.tr-warning>td {
 
 tags-input .tags {
     border-radius: 0;
+    box-shadow: none;
+}
+
+tags-input .tags:focus,
+tags-input .host:focus {
+    outline: none;
+}
+tags-input .tags.focuced {
+    border-color: #3c8dbc;
+    box-shadow: none;
+    outline: none;
 }
 
 tags-input.input-sm .tags {
