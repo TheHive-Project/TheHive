@@ -2,8 +2,8 @@ package connectors.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.duration.{ DurationInt, FiniteDuration }
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
@@ -79,7 +79,7 @@ class CortexAnalyzerSrv @Inject() (
     findSrv: FindSrv,
     dbRemove: DBRemove,
     userSrv: UserSrv,
-    system: ActorSystem,
+    implicit val system: ActorSystem,
     implicit val ws: WSClient,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
@@ -214,17 +214,6 @@ class CortexAnalyzerSrv @Inject() (
     } yield job + ("report" -> updatedReport)
   }
 
-  def retryOnError[A](cond: Throwable ⇒ Boolean = _ ⇒ true, maxRetry: Int = 5, initialDelay: FiniteDuration = 1.second)(body: ⇒ Future[A]): Future[A] = {
-    body.recoverWith {
-      case e if maxRetry > 0 && cond(e) ⇒
-        val resultPromise = Promise[A]
-        system.scheduler.scheduleOnce(initialDelay) {
-          resultPromise.completeWith(retryOnError(cond, maxRetry - 1, initialDelay * 2)(body))
-        }
-        resultPromise.future
-    }
-  }
-
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
@@ -248,7 +237,7 @@ class CortexAnalyzerSrv @Inject() (
                       .toOption
                       .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
                       .getOrElse(JsObject.empty)
-                    retryOnError() {
+                    RetryOnError() {
                       for {
                         artifact ← artifactSrv.get(job.artifactId())
                         reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)

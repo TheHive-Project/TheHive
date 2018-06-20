@@ -24,7 +24,7 @@ trait ActionAttributes { _: AttributeDef ⇒
   val report = optionalAttribute("report", F.textFmt, "Action output", O.unaudited)
   val cortexId = optionalAttribute("cortexId", F.stringFmt, "Id of cortex where the job is run", O.readonly)
   val cortexJobId = optionalAttribute("cortexJobId", F.stringFmt, "Id of job in cortex", O.readonly)
-  val operations = multiAttribute("operations", F.textFmt, "Update operations applied at the end of the job", O.readonly)
+  val operations = attribute("operations", F.textFmt, "Update operations applied at the end of the job", "[]", O.unaudited)
 }
 @Singleton
 class ActionModel @Inject() extends ModelDef[ActionModel, Action]("action", "Action", "/connector/cortex/action") with ActionAttributes with AuditedModel {

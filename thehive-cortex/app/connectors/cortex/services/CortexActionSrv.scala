@@ -28,6 +28,7 @@ import org.elastic4play.services._
 class CortexActionSrv @Inject() (
     cortexConfig: CortexConfig,
     actionModel: ActionModel,
+    actionOperationSrv: ActionOperationSrv,
     getSrv: GetSrv,
     createSrv: CreateSrv,
     findSrv: FindSrv,
@@ -85,28 +86,31 @@ class CortexActionSrv @Inject() (
   private def update(action: Action, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
     updateSrv[Action](action, fields, modifyConfig)
 
-  def updateActionWithCortex(actionId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
+  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
         if (status == JobStatus.InProgress || status == JobStatus.Waiting)
-          updateActionWithCortex(actionId, cortexJobId, cortex)
+          updateActionWithCortex(actionId, cortexJobId, entity, cortex)
         else {
-          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString
+          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty)
+          val operations = (report \ "operations").asOpt[Seq[ActionOperation]].getOrElse(Nil)
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating action $actionId")
-          getSrv[ActionModel, Action](actionModel, actionId)
-            .flatMap { action ⇒
-              val actionFields = Fields.empty
-                .set("status", status.toString)
-                .set("report", report)
-                .set("endDate", Json.toJson(new Date))
-              update(action, actionFields)
-            }
-            .onComplete {
-              case Failure(e) ⇒ logger.error(s"Update action fails", e)
-              case _          ⇒
-            }
+          val updatedAction = for {
+            action ← getSrv[ActionModel, Action](actionModel, actionId)
+            updatedOperations ← Future.traverse(operations)(actionOperationSrv.execute(entity, _))
+            actionFields = Fields.empty
+              .set("status", status.toString)
+              .set("report", (report - "operations").toString)
+              .set("endDate", Json.toJson(new Date))
+              .set("operations", Json.toJson(updatedOperations).toString)
+            updatedAction ← update(action, actionFields)
+          } yield updatedAction
+          updatedAction.onComplete {
+            case Failure(e) ⇒ logger.error(s"Update action fails", e)
+            case _          ⇒
+          }
         }
       case Failure(CortexError(404, _, _)) ⇒
         logger.debug(s"The job $cortexJobId not found")
@@ -116,7 +120,7 @@ class CortexActionSrv @Inject() (
         update(actionId, actionFields)
       case _ ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-        updateActionWithCortex(actionId, cortexJobId, cortex)
+        updateActionWithCortex(actionId, cortexJobId, entity, cortex)
     }
     ()
   }
@@ -188,7 +192,7 @@ class CortexActionSrv @Inject() (
         //        .set("startDate", Json.toJson(new Date()))
         .set("cortexId", cortexClient.name)
         .set("cortexJobId", job.id))
-      _ = updateActionWithCortex(action.id, job.id, cortexClient)
+      _ = updateActionWithCortex(action.id, job.id, entity, cortexClient)
     } yield action
   }
 }
