@@ -112,9 +112,20 @@ packageBin := {
   (packageBin in Debian).value
   (packageBin in Rpm).value
 }
+
+def getVersion(version: String): String = version.takeWhile(_ != '-')
+
+def getRelease(version: String): String = {
+  version.dropWhile(_ != '-').dropWhile(_ == '-') match {
+    case "" => "1"
+    case r if r.contains('-') => sys.error("Version can't have more than one dash")
+    case r => s"0.1$r"
+  }
+}
+
 // DEB //
 linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
-version in Debian := version.value + "-1"
+version in Debian := getVersion(version.value) + '-' + getRelease(version.value)
 debianPackageRecommends := Seq("elasticsearch")
 debianPackageDependencies += "openjdk-8-jre-headless"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
@@ -125,7 +136,8 @@ linuxEtcDefaultTemplate in Debian := (baseDirectory.value / "package" / "etc_def
 linuxMakeStartScript in Debian := None
 
 // RPM //
-rpmRelease := "1"
+version in Rpm := getVersion(version.value)
+rpmRelease := getRelease(version.value)
 rpmVendor := "TheHive Project"
 rpmUrl := Some("http://thehive-project.org/")
 rpmLicense := Some("AGPL")

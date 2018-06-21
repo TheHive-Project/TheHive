@@ -24,10 +24,13 @@ object PublishToBinTray extends AutoPlugin {
     val publishRpm: TaskKey[Unit] = taskKey[Unit]("publish rpm package in Bintray")
     val rpmReleaseFile = taskKey[File]("The rpm release package file")
     val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
-
   }
 
   import autoImport._
+
+  def checkVersion(version: String): String =
+    if (version.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
+    else version
 
   override lazy val projectSettings = Seq(
     publishRelease in ThisBuild := {
@@ -38,7 +41,7 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         "binary",
         bintrayPackage.value,
-        version.value,
+        checkVersion(version.value),
         sLog.value)
     },
     publishLatest in ThisBuild := Def.taskDyn {
@@ -49,19 +52,20 @@ object PublishToBinTray extends AutoPlugin {
           sLog.value.warn(s"Latest package name can't be built using package name [$latestName], publish aborted")
         }
       else Def.task {
-        val repositoryName = if (version.value.contains('-')) "binary-beta" else "binary-stable"
+        val latestVersion = if (version.value.contains('-')) "latest-beta" else "latest"
         removeVersion(bintrayEnsureCredentials.value,
           bintrayOrganization.value,
-          repositoryName,
+          "binary",
           bintrayPackage.value,
-          "latest", sLog.value)
+          latestVersion,
+          sLog.value)
         btPublish(latestName,
           file,
           bintrayEnsureCredentials.value,
           bintrayOrganization.value,
-          repositoryName,
+          "binary",
           bintrayPackage.value,
-          "latest",
+          latestVersion,
           sLog.value)
       }
     }
@@ -76,7 +80,7 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         repositoryName,
         bintrayPackage.value,
-        version.value,
+        checkVersion(version.value),
         sLog.value,
         "deb_distribution" -> "any",
         "deb_component" -> "main",
@@ -92,7 +96,7 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         repositoryName,
         bintrayPackage.value,
-        version.value,
+        (version in Rpm).value + '-' + (rpmRelease in Rpm).value,
         sLog.value)
     },
     publishRpmRelease in ThisBuild := {
