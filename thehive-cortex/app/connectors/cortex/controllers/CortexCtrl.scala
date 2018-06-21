@@ -167,9 +167,7 @@ class CortexCtrl @Inject() (
   }
 
   def getWorkers(entityType: String, entityId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
-    val query = Json.obj(
-      "dataTypeList" -> s"thehive:$entityType")
-    cortexActionSrv.findWorkers(query).map { workers ⇒
+    cortexActionSrv.findWorkerFor(entityType, entityId).map { workers ⇒
       renderer.toOutput(OK, workers)
     }
   }

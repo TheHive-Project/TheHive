@@ -66,6 +66,19 @@ class CortexActionSrv @Inject() (
       }
   }
 
+  def findWorkerFor(entityType: String, entityId: String): Future[Seq[Worker]] = {
+    for {
+      (tlp, pap) ← getEntity(entityType, entityId)
+        .flatMap(actionOperationSrv.findCaseEntity)
+        .map { caze ⇒ (caze.tlp(), caze.pap()) }
+        .recover { case _ ⇒ (0L, 0L) }
+      query = Json.obj(
+        "dataTypeList" -> s"thehive:$entityType")
+      workers ← findWorkers(query)
+      applicableWorkers = workers.filter(w ⇒ w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
+    } yield applicableWorkers
+  }
+
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Action, NotUsed], Future[Long]) = {
     findSrv[ActionModel, Action](actionModel, queryDef, range, sortBy)
   }
@@ -125,6 +138,17 @@ class CortexActionSrv @Inject() (
     ()
   }
 
+  def getEntity(objectType: String, objectId: String): Future[BaseEntity] = {
+    import org.elastic4play.services.QueryDSL._
+
+    findSrv.apply(Some(objectType), withId(objectId), Some("0-1"), Nil)._1
+      .runWith(Sink.headOption)
+      .flatMap {
+        case Some(entity) ⇒ Future.successful(entity)
+        case None         ⇒ Future.failed(NotFoundError(s"$objectType $objectId not found"))
+      }
+  }
+
   def executeAction(fields: Fields)(implicit authContext: AuthContext): Future[Action] = {
     def getWorker(cortexClient: CortexClient): Future[Worker] = {
       fields.getString("workerId").map(cortexClient.getWorkerById) orElse
@@ -146,17 +170,6 @@ class CortexActionSrv @Inject() (
           Future.firstCompletedOf {
             cortexConfig.instances.map(c ⇒ getWorker(c).map(c -> _))
           }
-        }
-    }
-
-    def getEntity(objectType: String, objectId: String): Future[BaseEntity] = {
-      import org.elastic4play.services.QueryDSL._
-
-      findSrv.apply(Some(objectType), withId(objectId), Some("0-1"), Nil)._1
-        .runWith(Sink.headOption)
-        .flatMap {
-          case Some(entity) ⇒ Future.successful(entity)
-          case None         ⇒ Future.failed(NotFoundError(s"$objectType $objectId not found"))
         }
     }
 
