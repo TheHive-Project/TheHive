@@ -1,7 +1,15 @@
-[thehive-project]
-name=TheHive Project Repository
-baseurl=https://dl.bintray.com/cert-bdf/rpm
+[thehive-project-stable]
+name=TheHive Project Repository (stable)
+baseurl=https://dl.bintray.com/thehive-project/rpm-stable
 gpgcheck=1
 repo_gpgcheck=0
 enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/GPG-TheHive-Project
+
+[thehive-project-beta]
+name=TheHive Project Repository (beta)
+baseurl=https://dl.bintray.com/thehive-project/rpm-beta
+gpgcheck=1
+repo_gpgcheck=0
+enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/GPG-TheHive-Project

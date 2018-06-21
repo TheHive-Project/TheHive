@@ -16,16 +16,18 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object PublishToBinTray extends AutoPlugin {
-    object autoImport {
-      val publishRelease: TaskKey[Unit] = taskKey[Unit]("Publish binary in bintray")
-      val publishLatest: TaskKey[Unit] = taskKey[Unit]("Publish latest binary in bintray")
-      val publishDebian: TaskKey[Unit] = taskKey[Unit]("publish debian package in Bintray")
-      val publishRpm: TaskKey[Unit] = taskKey[Unit]("publish rpm package in Bintray")
-      val rpmReleaseFile = taskKey[File]("The rpm release package file")
-      val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
 
-    }
-    import autoImport._
+  object autoImport {
+    val publishRelease: TaskKey[Unit] = taskKey[Unit]("Publish binary in bintray")
+    val publishLatest: TaskKey[Unit] = taskKey[Unit]("Publish latest binary in bintray")
+    val publishDebian: TaskKey[Unit] = taskKey[Unit]("publish debian package in Bintray")
+    val publishRpm: TaskKey[Unit] = taskKey[Unit]("publish rpm package in Bintray")
+    val rpmReleaseFile = taskKey[File]("The rpm release package file")
+    val publishRpmRelease = taskKey[Unit]("publish rpm release package in Bintray")
+
+  }
+
+  import autoImport._
 
   override lazy val projectSettings = Seq(
     publishRelease in ThisBuild := {
@@ -34,7 +36,7 @@ object PublishToBinTray extends AutoPlugin {
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        bintrayRepository.value,
+        "binary",
         bintrayPackage.value,
         version.value,
         sLog.value)
@@ -47,29 +49,32 @@ object PublishToBinTray extends AutoPlugin {
           sLog.value.warn(s"Latest package name can't be built using package name [$latestName], publish aborted")
         }
       else Def.task {
+        val repositoryName = if (version.value.contains('-')) "binary-beta" else "binary-stable"
         removeVersion(bintrayEnsureCredentials.value,
           bintrayOrganization.value,
-          bintrayRepository.value,
+          repositoryName,
           bintrayPackage.value,
           "latest", sLog.value)
         btPublish(latestName,
           file,
           bintrayEnsureCredentials.value,
           bintrayOrganization.value,
-          bintrayRepository.value,
+          repositoryName,
           bintrayPackage.value,
           "latest",
           sLog.value)
       }
     }
       .value,
+
     publishDebian in ThisBuild := {
+      val repositoryName = if (version.value.contains('-')) "debian-beta" else "debian-stable"
       val file = (debianSign in Debian).value
       btPublish(file.getName,
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        "debian",
+        repositoryName,
         bintrayPackage.value,
         version.value,
         sLog.value,
@@ -79,25 +84,26 @@ object PublishToBinTray extends AutoPlugin {
       )
     },
     publishRpm in ThisBuild := {
+      val repositoryName = if (version.value.contains('-')) "rpm-beta" else "rpm-stable"
       val file = (packageBin in Rpm).value
       btPublish(file.getName,
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        "rpm",
+        repositoryName,
         bintrayPackage.value,
         version.value,
         sLog.value)
     },
-      publishRpmRelease in ThisBuild := {
-      val file = (rpmReleaseFile).value
+    publishRpmRelease in ThisBuild := {
+      val file = rpmReleaseFile.value
       btPublish(file.getName,
         file,
         bintrayEnsureCredentials.value,
         bintrayOrganization.value,
-        "rpm",
+        "rpm-stable",
         "thehive-project-release",
-        "1.0.0",
+        "1.1.0",
         sLog.value)
     }
   )
@@ -126,7 +132,6 @@ object PublishToBinTray extends AutoPlugin {
     val owner: String = org.getOrElse(user)
     val client: Client = Client(user, key, new Http())
     val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
-
 
 
     val params = additionalParams

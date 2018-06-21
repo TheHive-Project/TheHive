@@ -37,8 +37,8 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .settings(
     name := "thehive-project-release",
     maintainer := "TheHive Project <support@thehive-project.org>",
-    version := "1.0.0",
-    rpmRelease := "3",
+    version := "1.1.0",
+    rpmRelease := "1",
     rpmVendor := "TheHive Project",
     rpmUrl := Some("http://thehive-project.org/"),
     rpmLicense := Some("AGPL"),
@@ -47,7 +47,6 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     packageSummary := "TheHive-Project RPM repository",
     packageDescription := """This package contains the TheHive-Project packages repository
       |GPG key as well as configuration for yum.""".stripMargin,
-    logLevel in packageBin in Rpm := Level.Debug,
     linuxPackageMappings in Rpm := Seq(packageMapping(
       file("PGP-PUBLIC-KEY") -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
       file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
@@ -183,8 +182,7 @@ dockerCommands ~= { dc =>
 }
 
 // Bintray //
-bintrayOrganization := Some("cert-bdf")
-bintrayRepository := "thehive"
+bintrayOrganization := Some("thehive-project")
 publish := {
   (publish in Docker).value
   publishRelease.value
