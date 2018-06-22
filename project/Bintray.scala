@@ -37,7 +37,7 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         "binary",
         bintrayPackage.value,
-        version.value,
+        (version in ThisBuild).value,
         sLog.value)
     },
     publishLatest in ThisBuild := Def.taskDyn {
@@ -85,6 +85,7 @@ object PublishToBinTray extends AutoPlugin {
         "deb_architecture" -> "all"
       )
     },
+
     publishRpm in ThisBuild := {
       if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
       val repositoryName = if (version.value.contains('-')) "rpm-beta" else "rpm-stable"
@@ -98,6 +99,7 @@ object PublishToBinTray extends AutoPlugin {
         (version in Rpm).value + '-' + (rpmRelease in Rpm).value,
         sLog.value)
     },
+
     publishRpmRelease in ThisBuild := {
       val file = rpmReleaseFile.value
       btPublish(file.getName,
