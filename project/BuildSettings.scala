@@ -7,7 +7,7 @@ object BasicSettings extends AutoPlugin {
   override def projectSettings = Seq(
     organization := "org.thehive-project",
     licenses += "AGPL-V3" -> url("https://www.gnu.org/licenses/agpl-3.0.html"),
-    resolvers += Resolver.bintrayRepo("cert-bdf", "elastic4play"),
+    resolvers += Resolver.bintrayRepo("thehive-project", "maven"),
     scalaVersion := Dependencies.scalaVersion,
     scalacOptions ++= Seq(
       "-deprecation", // Emit warning and location for usages of deprecated APIs.

@@ -5,17 +5,14 @@ lazy val thehiveBackend = (project in file("thehive-backend"))
   .settings(publish := {})
 
 lazy val thehiveMetrics = (project in file("thehive-metrics"))
-  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
 lazy val thehiveMisp = (project in file("thehive-misp"))
-  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
 lazy val thehiveCortex = (project in file("thehive-cortex"))
-  .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(publish := {})
 
@@ -27,10 +24,6 @@ lazy val thehive = (project in file("."))
   .settings(aggregate in Debian := false)
   .settings(aggregate in Rpm := false)
   .settings(aggregate in Docker := false)
-
-// Redirect logs from ElasticSearch (which uses log4j2) to slf4j
-libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.1"
-excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .enablePlugins(RpmPlugin)
@@ -53,6 +46,10 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
       file("LICENSE") -> "/usr/share/doc/thehive-project-release/LICENSE"
     ))
   )
+
+// Redirect logs from ElasticSearch (which uses log4j2) to slf4j
+libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.1"
+excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
 
 // Front-end //
 run := {
@@ -166,7 +163,7 @@ packageBin in Rpm := {
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
 version in Docker := getVersion(version.value) + '-' + getRelease(version.value)
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
-dockerRepository := Some("certbdf")
+dockerRepository := Some("thehiveproject")
 dockerUpdateLatest := !version.value.contains('-')
 dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
