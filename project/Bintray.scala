@@ -1,7 +1,9 @@
-import java.io.File
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 import bintray.BintrayCredentials
-import bintray.BintrayKeys.{ bintrayEnsureCredentials, bintrayOrganization, bintrayPackage, bintrayRepository }
+import bintray.BintrayKeys.{ bintrayEnsureCredentials, bintrayOrganization, bintrayPackage }
 import bintry.Client
 import com.typesafe.sbt.packager.Keys._
 import com.typesafe.sbt.packager.debian.DebianPlugin.autoImport.Debian
@@ -9,13 +11,9 @@ import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport.Rpm
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
 import dispatch.{ FunctionHandler, Http }
 import sbt.Keys._
-import sbt.{ File, _ }
+import sbt._
 
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-
-object PublishToBinTray extends AutoPlugin {
+object Bintray extends AutoPlugin {
 
   object autoImport {
     val publishRelease: TaskKey[Unit] = taskKey[Unit]("Publish binary in bintray")
@@ -29,6 +27,7 @@ object PublishToBinTray extends AutoPlugin {
   import autoImport._
 
   override lazy val projectSettings = Seq(
+
     publishRelease in ThisBuild := {
       val file = (packageBin in Universal).value
       btPublish(file.getName,
@@ -40,16 +39,17 @@ object PublishToBinTray extends AutoPlugin {
         (version in ThisBuild).value,
         sLog.value)
     },
+
     publishLatest in ThisBuild := Def.taskDyn {
       if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
       val file = (packageBin in Universal).value
-      val latestName = file.getName.replace(version.value, "latest")
+      val latestVersion = if (version.value.contains('-')) "latest-beta" else "latest"
+      val latestName = file.getName.replace(version.value, latestVersion)
       if (latestName == file.getName)
         Def.task {
           sLog.value.warn(s"Latest package name can't be built using package name [$latestName], publish aborted")
         }
       else Def.task {
-        val latestVersion = if (version.value.contains('-')) "latest-beta" else "latest"
         removeVersion(bintrayEnsureCredentials.value,
           bintrayOrganization.value,
           "binary",
@@ -115,7 +115,12 @@ object PublishToBinTray extends AutoPlugin {
 
   private def asStatusAndBody = new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })
 
-  def removeVersion(credential: BintrayCredentials, org: Option[String], repoName: String, packageName: String, version: String, log: Logger) = {
+  def removeVersion(credential: BintrayCredentials,
+                    org: Option[String],
+                    repoName: String,
+                    packageName: String,
+                    version: String,
+                    log: Logger): Unit = {
     val BintrayCredentials(user, key) = credential
     val client: Client = Client(user, key, new Http())
     val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
@@ -132,7 +137,7 @@ object PublishToBinTray extends AutoPlugin {
                         packageName: String,
                         version: String,
                         log: Logger,
-                        additionalParams: (String, String)*) = {
+                        additionalParams: (String, String)*): Unit = {
     val BintrayCredentials(user, key) = credential
     val owner: String = org.getOrElse(user)
     val client: Client = Client(user, key, new Http())
