@@ -28,10 +28,6 @@ object PublishToBinTray extends AutoPlugin {
 
   import autoImport._
 
-  def checkVersion(version: String): String =
-    if (version.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
-    else version
-
   override lazy val projectSettings = Seq(
     publishRelease in ThisBuild := {
       val file = (packageBin in Universal).value
@@ -41,10 +37,11 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         "binary",
         bintrayPackage.value,
-        checkVersion(version.value),
+        version.value,
         sLog.value)
     },
     publishLatest in ThisBuild := Def.taskDyn {
+      if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
       val file = (packageBin in Universal).value
       val latestName = file.getName.replace(version.value, "latest")
       if (latestName == file.getName)
@@ -72,6 +69,7 @@ object PublishToBinTray extends AutoPlugin {
       .value,
 
     publishDebian in ThisBuild := {
+      if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
       val repositoryName = if (version.value.contains('-')) "debian-beta" else "debian-stable"
       val file = (debianSign in Debian).value
       btPublish(file.getName,
@@ -80,7 +78,7 @@ object PublishToBinTray extends AutoPlugin {
         bintrayOrganization.value,
         repositoryName,
         bintrayPackage.value,
-        checkVersion(version.value),
+        version.value,
         sLog.value,
         "deb_distribution" -> "any",
         "deb_component" -> "main",
@@ -88,6 +86,7 @@ object PublishToBinTray extends AutoPlugin {
       )
     },
     publishRpm in ThisBuild := {
+      if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
       val repositoryName = if (version.value.contains('-')) "rpm-beta" else "rpm-stable"
       val file = (packageBin in Rpm).value
       btPublish(file.getName,

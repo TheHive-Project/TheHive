@@ -164,10 +164,10 @@ packageBin in Rpm := {
 
 // DOCKER //
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
-version in Docker := version.value + "-1"
+version in Docker := getVersion(version.value) + '-' + getRelease(version.value)
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("certbdf")
-dockerUpdateLatest := true
+dockerUpdateLatest := !version.value.contains('-')
 dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
 mappings in Docker ++= Seq(
