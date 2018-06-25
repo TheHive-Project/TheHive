@@ -495,6 +495,14 @@ td.vmiddle {
     vertical-align: middle !important;
 }
 
+.search-list pre {
+    /* max-height: 120px; */
+    /* overflow-y: scroll; */
+    font-size: 10px !important;
+    margin: 0 !important;
+}
+
+.search-list pre,
 .observable-report pre {
     display: block;
     padding: 9.5px;

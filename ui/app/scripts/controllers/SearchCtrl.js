@@ -150,12 +150,13 @@
                             filter: query,
                             baseFilter: $scope.baseFilter,
                             nparent: 10,
+                            nstats: entity === 'audit',
                             skipStream: true
                         });
                     } else {
                         $scope.searchResults = null;
                     }
-                } catch {
+                } catch(err) {
                     NotificationSrv.log('Invalid filters error', 'error');
                 }
             };
