@@ -1,17 +1,18 @@
 package models
 
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
 
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.libs.json.JsObject
 import play.api.{ Configuration, Logger }
 
 import services.AuditedModel
 
-import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
-import org.elastic4play.services.AuditableAction
+import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat, BaseEntity, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
+import org.elastic4play.services.{ AuditableAction, AuxSrv }
 import org.elastic4play.services.JsonFormat.auditableActionFormat
 
 trait AuditAttributes { _: AttributeDef ⇒
@@ -31,14 +32,22 @@ trait AuditAttributes { _: AttributeDef ⇒
 @Singleton
 class AuditModel(
     auditName: String,
-    auditedModels: immutable.Set[AuditedModel]) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
+    auditedModels: immutable.Set[AuditedModel],
+    auxSrvProvider: Provider[AuxSrv],
+    implicit val ec: ExecutionContext) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
+
+  lazy val auxSrv = auxSrvProvider.get()
 
   @Inject() def this(
       configuration: Configuration,
-      auditedModels: immutable.Set[AuditedModel]) =
+      auditedModels: immutable.Set[AuditedModel],
+      auxSrvProvider: Provider[AuxSrv],
+      ec: ExecutionContext) =
     this(
       configuration.get[String]("audit.name"),
-      auditedModels)
+      auditedModels,
+      auxSrvProvider,
+      ec)
 
   private[AuditModel] lazy val logger = Logger(getClass)
 
@@ -93,6 +102,21 @@ class AuditModel(
       .toSeq)
       .map(_.subAttributes)
       .getOrElse(Nil)
+  }
+
+  override def getStats(entity: BaseEntity): Future[JsObject] = {
+    entity match {
+      case audit: Audit ⇒
+        auxSrv(audit.objectType(), audit.objectId(), 10, withStats = false, removeUnaudited = true)
+          .recover {
+            case t ⇒
+              logger.error("Audit stats failure", t)
+              JsObject.empty
+          }
+      case other ⇒
+        logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
+        Future.successful(JsObject.empty)
+    }
   }
 
   override def apply(attributes: JsObject): Audit = new Audit(this, attributes)
