@@ -102,7 +102,22 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: 'search?q',
                 templateUrl: 'views/partials/search/list.html',
                 controller: 'SearchCtrl',
-                title: 'Search'
+                title: 'Search',
+                resolve: {
+                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.getMetadata()
+                            .then(function(response) {
+                                defer.resolve(response);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             })
             .state('app.settings', {
                 url: 'settings',

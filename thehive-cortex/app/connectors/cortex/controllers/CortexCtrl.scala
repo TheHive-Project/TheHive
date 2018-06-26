@@ -106,9 +106,11 @@ class CortexCtrl @Inject() (
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
+    val nparent = request.body.getLong("nparent").getOrElse(0L).toInt
+    val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (jobs, total) = cortexSrv.find(query, range, sort)
-    val jobWithoutReport = auxSrv.apply(jobs, 0, withStats = false, removeUnaudited = true)
+    val jobWithoutReport = auxSrv.apply(jobs, nparent, withStats, removeUnaudited = true)
     renderer.toOutput(OK, jobWithoutReport, total)
   }
 
