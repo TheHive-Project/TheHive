@@ -116,7 +116,7 @@
                     }
 
                     if(search) {
-                        search_query = { _string: search};
+                        search_query = _.isString(search) ? { _string: search } : (search || {});
                     }
 
                     var criterias = _.without([search_query, filters_query], null, undefined);
