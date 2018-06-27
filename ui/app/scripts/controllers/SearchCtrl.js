@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserInfoSrv, QueryBuilderSrv, localStorageService, metadata) {
+        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserInfoSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
                 {name: 'case', label: 'Cases', icon: 'glyphicon glyphicon-folder-open'},
@@ -23,7 +23,6 @@
                     _not: {
                         '_in': {
                             '_field': '_type',
-                            //'_values': ['dashboard', 'audit', 'data', 'user', 'analyzer', 'case_artifact_job_log']
                             '_values': ['dashboard', 'data', 'user', 'analyzer', 'caseTemplate']
                         }
                     }
@@ -32,27 +31,7 @@
             };
 
             $scope.getUserInfo = UserInfoSrv;
-            $scope.config = localStorageService.get('search-section') || {
-                entity: 'case',
-                case: {
-                    filters: []
-                },
-                case_task: {
-                    filters: []
-                },
-                case_artifact: {
-                    filters: []
-                },
-                alert: {
-                    filters: []
-                },
-                case_artifact_job: {
-                    filters: []
-                },
-                audit: {
-                    filters: []
-                }
-            }
+            $scope.config = GlobalSearchSrv.restore()
 
             $scope.openEntity = EntitySrv.open;
             $scope.isImage = function(contentType) {
@@ -97,7 +76,7 @@
                 $scope.config[$scope.config.entity].search = null;
                 $scope.searchResults = null;
 
-                localStorageService.set('search-section', $scope.config);
+                GlobalSearchSrv.save($scope.config);
             }
 
             $scope.setFilterField = function(filter, entity) {
@@ -144,7 +123,7 @@
                     var query = criterias.length === 0 ? undefined : criterias.length === 1 ? criterias[0] : { _and: criterias };
 
                     if(query) {
-                        localStorageService.set('search-section', $scope.config);
+                        GlobalSearchSrv.save($scope.config);
 
                         $scope.searchResults = PSearchSrv(undefined, $scope.metadata[entity].path, {
                             filter: query,
