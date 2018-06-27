@@ -112,6 +112,8 @@ class ArtifactCtrl @Inject() (
             .set("attachment", FileInputValue(filePath.getFileName.toString, filePath, contentType))
         })
 
+        multiFields.append(fields)
+
         artifactSrv.create(caseId, multiFields)
           .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
 
