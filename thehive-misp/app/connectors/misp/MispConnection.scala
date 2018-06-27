@@ -15,6 +15,9 @@ import services.CustomWSAPI
 
 import org.elastic4play.utils.RichFuture
 
+object MispPurpose extends Enumeration {
+  val ImportOnly, ExportOnly, ImportAndExport = Value
+}
 case class MispConnection(
     name: String,
     baseUrl: String,
@@ -26,7 +29,8 @@ case class MispConnection(
     maxAttributes: Option[Int],
     maxSize: Option[Long],
     excludedOrganisations: Seq[String],
-    excludedTags: Set[String]) {
+    excludedTags: Set[String],
+    purpose: MispPurpose.Value) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
 
@@ -49,6 +53,12 @@ case class MispConnection(
       .withHttpHeaders(
         "Authorization" → key,
         "Accept" → "application/json")
+
+  val (canImport, canExport) = purpose match {
+    case MispPurpose.ImportAndExport ⇒ (true, true)
+    case MispPurpose.ImportOnly      ⇒ (true, false)
+    case MispPurpose.ExportOnly      ⇒ (false, true)
+  }
 
   def syncFrom(date: Date): Date = {
     maxAge.fold(date) { age ⇒
@@ -91,7 +101,8 @@ case class MispConnection(
         case Some(version) ⇒ Json.obj(
           "name" → name,
           "version" → version,
-          "status" → "OK")
+          "status" → "OK",
+          "purpose" -> purpose.toString)
         case None ⇒ Json.obj(
           "name" → name,
           "version" → "",

@@ -138,56 +138,60 @@ class MispExport @Inject() (
 
   def export(mispName: String, caze: Case)(implicit authContext: AuthContext): Future[(String, Seq[Try[Artifact]])] = {
     val mispConnection = mispConfig.getConnection(mispName).getOrElse(sys.error("MISP instance not found"))
-    for {
-      (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
-      attributes ← mispSrv.getAttributesFromCase(caze)
-      uniqueAttributes = removeDuplicateAttributes(attributes)
-      simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // exclude attributes containing file
-      (eventId, exportedAttributes) ← createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId)
-      initialExportesArtifacts = exportedAttributes.map(a ⇒ Success(a.artifact))
-      exportedAttributeValues = exportedAttributes.map(_.value.map(_.name))
-      newAttributes = uniqueAttributes.filterNot(attr ⇒ exportedAttributeValues.contains(attr.value.map(_.name)))
-      // exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
-      // ** workaround **
-      // Wait the end of the MISP request to start the next one, unless, MISP generate an internal error:
-      // Error: [PDOException] SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction
-      exportedArtifact ← newAttributes.foldLeft(Future.successful(Seq.empty[Try[Artifact]])) {
-        case (fAcc, attr) ⇒
-          for (acc ← fAcc; a ← exportAttribute(mispConnection, eventId, attr).toTry) yield acc :+ a
-      }
-      // ** end of workaround **
-      artifacts = uniqueAttributes.map { a ⇒
-        Json.obj(
-          "data" → a.artifact.data(),
-          "dataType" → a.artifact.dataType(),
-          "message" → a.artifact.message(),
-          "startDate" → a.artifact.startDate(),
-          "attachment" → a.artifact.attachment(),
-          "tlp" → a.artifact.tlp(),
-          "tags" → a.artifact.tags(),
-          "ioc" → a.artifact.ioc())
-      }
-      alert ← maybeAlertId.fold {
-        alertSrv.create(Fields(Json.obj(
-          "type" → "misp",
-          "source" → mispName,
-          "sourceRef" → eventId,
-          "date" → caze.startDate(),
-          "lastSyncDate" → new Date(0),
-          "case" → caze.id,
-          "title" → caze.title(),
-          "description" → "Case have been exported to MISP",
-          "severity" → caze.severity(),
-          "tags" → caze.tags(),
-          "tlp" → caze.tlp(),
-          "artifacts" → artifacts,
-          "status" → "Imported",
-          "follow" → true)))
-      } { alertId ⇒
-        alertSrv.update(alertId, Fields(Json.obj(
-          "artifacts" → artifacts,
-          "status" → "Imported")))
-      }
-    } yield alert.id → (initialExportesArtifacts ++ exportedArtifact)
+    if (!mispConnection.canExport)
+      Future.failed(BadRequestError(s"Export on MISP connection $mispName is denied by configuration"))
+    else {
+      for {
+        (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
+        attributes ← mispSrv.getAttributesFromCase(caze)
+        uniqueAttributes = removeDuplicateAttributes(attributes)
+        simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // exclude attributes containing file
+        (eventId, exportedAttributes) ← createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId)
+        initialExportesArtifacts = exportedAttributes.map(a ⇒ Success(a.artifact))
+        exportedAttributeValues = exportedAttributes.map(_.value.map(_.name))
+        newAttributes = uniqueAttributes.filterNot(attr ⇒ exportedAttributeValues.contains(attr.value.map(_.name)))
+        // exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
+        // ** workaround **
+        // Wait the end of the MISP request to start the next one, unless, MISP generate an internal error:
+        // Error: [PDOException] SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction
+        exportedArtifact ← newAttributes.foldLeft(Future.successful(Seq.empty[Try[Artifact]])) {
+          case (fAcc, attr) ⇒
+            for (acc ← fAcc; a ← exportAttribute(mispConnection, eventId, attr).toTry) yield acc :+ a
+        }
+        // ** end of workaround **
+        artifacts = uniqueAttributes.map { a ⇒
+          Json.obj(
+            "data" → a.artifact.data(),
+            "dataType" → a.artifact.dataType(),
+            "message" → a.artifact.message(),
+            "startDate" → a.artifact.startDate(),
+            "attachment" → a.artifact.attachment(),
+            "tlp" → a.artifact.tlp(),
+            "tags" → a.artifact.tags(),
+            "ioc" → a.artifact.ioc())
+        }
+        alert ← maybeAlertId.fold {
+          alertSrv.create(Fields(Json.obj(
+            "type" → "misp",
+            "source" → mispName,
+            "sourceRef" → eventId,
+            "date" → caze.startDate(),
+            "lastSyncDate" → new Date(0),
+            "case" → caze.id,
+            "title" → caze.title(),
+            "description" → "Case have been exported to MISP",
+            "severity" → caze.severity(),
+            "tags" → caze.tags(),
+            "tlp" → caze.tlp(),
+            "artifacts" → artifacts,
+            "status" → "Imported",
+            "follow" → true)))
+        } { alertId ⇒
+          alertSrv.update(alertId, Fields(Json.obj(
+            "artifacts" → artifacts,
+            "status" → "Imported")))
+        }
+      } yield alert.id → (initialExportesArtifacts ++ exportedArtifact)
+    }
   }
 }

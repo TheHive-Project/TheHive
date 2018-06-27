@@ -77,7 +77,7 @@ class MispSynchro @Inject() (
     import org.elastic4play.services.QueryDSL._
 
     // for each MISP server
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       // get last synchronization
       .mapAsyncUnordered(1) { mispConnection ⇒
         alertSrv.stats(and("type" ~= "misp", "source" ~= mispConnection.name), Seq(selectMax("lastSyncDate")))
@@ -92,7 +92,7 @@ class MispSynchro @Inject() (
   }
 
   def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, None))
       .runWith(Sink.seq)
   }
