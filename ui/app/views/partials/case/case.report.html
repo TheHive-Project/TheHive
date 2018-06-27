@@ -1,0 +1,24 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Report for Case #{{dialog.caze.caseId}}</h3>
+</div>
+<div class="modal-body case-report-dialog">
+    <div class="case-report-title">
+        <h4>{{dialog.caze.title}}</h4>
+    </div>
+    <div class="case-report-body">
+        <span>{{dialog.myvar}}</span>
+        <div>
+            <div class="case-report-content">
+                <severity active="activeSev" style="float:left; font-size:16px" value="dialog.caze.severity"></severity>
+                <tlp format="activeTlp" style="float:left;" value="dialog.caze.tlp"></tlp>
+                <ul ng-repeat="artifact in artifacts">
+                    <dt ng-repeat-start="(key, value) in artifact.metadata">{{key}}</dt>
+                    <dd ng-repeat-end>&nbsp;{{value}}</dd>
+                </ul>
+            </div>
+        </div>
+        <div class="modal-footer text-left">
+            <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+        </div>
+    </div>
+</div>
