@@ -4,18 +4,29 @@ import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+import scala.collection.JavaConverters._
+
 import play.api.http.Status
-import play.api.libs.json.JsArray
+import play.api.libs.json.{ JsArray, JsString }
 import play.api.mvc._
+import play.api.Logger
+import play.api.Configuration
+
+import net.lingala.zip4j.core.ZipFile
+import net.lingala.zip4j.model.FileHeader
+import net.lingala.zip4j.exception.ZipException
 
 import models.Roles
 import services.ArtifactSrv
 
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer, FileInputValue, JsonInputValue }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import org.elastic4play.services._
-import org.elastic4play.{ BadRequestError, Timed }
+import org.elastic4play.{ BadRequestError, Timed, InternalError }
+
+import java.io.FileOutputStream
+import java.nio.file.{ Files, Paths, Path }
 
 @Singleton
 class ArtifactCtrl @Inject() (
@@ -25,7 +36,12 @@ class ArtifactCtrl @Inject() (
     renderer: Renderer,
     components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
+    configuration: Configuration,
     implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
+
+  private[ArtifactCtrl] lazy val logger = Logger(getClass)
+
+  private final val BUFF_SIZE = 4096;
 
   @Timed
   def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
@@ -36,8 +52,74 @@ class ArtifactCtrl @Inject() (
       .filterNot(_.isEmpty)
     // if data is not multivalued, use simple API (not bulk API)
     if (data.isEmpty) {
-      artifactSrv.create(caseId, fields)
-        .map(artifact ⇒ renderer.toOutput(CREATED, artifact))
+
+      if (fields.getString("dataType").getOrElse("") == "zipfile") {
+
+        val contentType = fields.get("attachment").get.jsonValue("contentType").as[String]
+        if (contentType != "application/x-zip-compressed")
+          throw new InternalError("contentType is not application/x-zip-compressed")
+
+        val filepath = Paths.get(fields.get("attachment").get.jsonValue("filepath").as[String])
+        val zipFile = new ZipFile(filepath.toString)
+        val destPath = filepath.getParent
+        val files = zipFile.getFileHeaders.asScala
+
+        if (zipFile.isEncrypted()) {
+          val tags = fields.get("tags").get.jsonValue.as[List[String]]
+          val pw = tags.filter(_.startsWith("password:")).map(_.split(":")(1)).lift(0)
+            .getOrElse(configuration.get[String]("datastore.attachment.password"))
+          zipFile.setPassword(pw)
+        }
+
+        // extract a file from the archive and make sure its size matches the header (to protect against zip bombs)
+        def extractAndCheckSize(header: FileHeader, dest: Path) {
+          val file = Paths.get(destPath.toString(), header.getFileName())
+          if (file.toFile.exists)
+            throw new InternalError("Error extracting file: already exists")
+          else if (!header.isDirectory()) {
+            val parent = file.getParent.toFile
+            if (!parent.exists)
+              parent.mkdirs
+
+            val is = zipFile.getInputStream(header)
+            val os = new FileOutputStream(file.toFile)
+            val buff = new Array[Byte](4096)
+            val size = header.getUncompressedSize
+
+            var bytesRead = 0
+            var b = 0
+            while ({ b = is.read(buff); b } != -1 && bytesRead <= size) {
+              os.write(buff, 0, b)
+              bytesRead += b
+            }
+
+            if (bytesRead != size) {
+              file.toFile.delete()
+              throw new InternalError("Error extracting file: output size doesn't match header")
+            }
+
+            os.close()
+            is.close()
+          }
+        }
+
+        files.foreach(header ⇒ extractAndCheckSize(header.asInstanceOf[FileHeader], destPath))
+
+        val multiFields = files.filter(!_.asInstanceOf[FileHeader].isDirectory()).map(file ⇒ {
+          val filePath = Paths.get(destPath.toString, file.asInstanceOf[FileHeader].getFileName())
+          val contentType = Files.probeContentType(filePath)
+          fields
+            .set("dataType", JsonInputValue(JsString("file")))
+            .set("attachment", FileInputValue(filePath.getFileName.toString, filePath, contentType))
+        })
+
+        artifactSrv.create(caseId, multiFields)
+          .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
+
+      }
+      else
+        artifactSrv.create(caseId, fields)
+          .map(artifact ⇒ renderer.toOutput(CREATED, artifact))
     }
     else if (data.length == 1) {
       artifactSrv.create(caseId, fields.set("data", data.head))

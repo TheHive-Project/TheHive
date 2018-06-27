@@ -117,7 +117,7 @@ class Migration(
     }
     logger.info("Updating observable data type list")
     addDataTypes(Seq("filename", "fqdn", "url", "user-agent", "domain", "ip", "mail_subject", "hash", "mail",
-      "registry", "uri_path", "regexp", "other", "file", "autonomous-system"))
+      "registry", "uri_path", "regexp", "other", "file", "autonomous-system", "zipfile"))
       .andThen { case _ ⇒ addDashboards(version + 1) }
 
   }
