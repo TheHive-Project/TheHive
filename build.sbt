@@ -25,7 +25,7 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .enablePlugins(PublishToBinTray)
+  .enablePlugins(Bintray)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .settings(projectSettings)
