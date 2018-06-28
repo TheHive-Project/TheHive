@@ -94,8 +94,21 @@
             Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | showDate}}</small>
             <span class="pull-right">
                 <small><a href class="text-primary" ng-click="showRaw = !showRaw">{{showRaw ? 'Hide': 'Show'}} Raw Report</a></small>
+                <small class="mh-xxxs">|</small>
+                <small><a href class="text-primary" ng-click="showArtifacts = !showArtifacts">{{showArtifacts ? 'Hide': 'Show'}} observables ({{report.content.artifacts.length}})</a></small>
             </span>
         </h3>
+        <div ng-if="showArtifacts" class="">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <strong>Observables</strong> <small>Extracted from analysis report</small>
+
+                </div>
+                <div class="panel-body">
+                    <report-observables observables="report.content.artifacts"></report-observables>
+                </div>
+            </div>
+        </div>
         <div ng-if="showRaw">
             <div class="panel" ng-class="{'panel-info': report.content.success, 'panel-danger': !report.content.success}">
                 <div class="panel-heading">
