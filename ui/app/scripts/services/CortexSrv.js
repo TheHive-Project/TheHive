@@ -53,8 +53,12 @@
                 })
             },
 
-            getJob: function(jobId) {
+            getJob: function(jobId, nstats) {
+                if(nstats) {
+                    return $http.get(baseUrl + '/job/' + jobId, {params: {nstats: true}});
+                }
                 return $http.get(baseUrl + '/job/' + jobId);
+
             },
 
             createJob: function(job) {

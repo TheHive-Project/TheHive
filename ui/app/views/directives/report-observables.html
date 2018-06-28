@@ -13,37 +13,39 @@
                 ng-click="filterArtifacts(type)"
                 ng-class="{'label-primary': pagination.filter===type}">{{type}} ({{list.length}})</span>
         </div>
+        <div class="mv-xxs">
+            <strong class="text-muted">{{selected}} items selected</strong>
+            <a class="ml-xs" href ng-click="selectAll()"><i class="fa fa-check"></i> Select all</a>
+            <a class="ml-xs" href ng-click="clearSelection()"><i class="fa fa-times"></i> Clear Selection</a>
+            <span class="mh-xs">|</span>
+            <a href ng-click="import()"><i class="fa fa-plus"></i> Import Selection</a>
+        </div>
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th style="width:20px;"><input type="checkbox"></th>
-                    <th style="width:100px;">Type</th>
+                    <th style="width:20px;"></th>
+                    <th style="width:20px;"></th>
+                    <th style="width:150px;">Type</th>
                     <th>Data</th>
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="observable in pagination.data |
+                <tr ng-repeat="observable in pagination.data | orderBy:'imported':false |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
-                        limitTo: pagination.pageSize">
-                    <!-- <td>
-                        <span uib-tooltip="Seen on {{observable.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
-                    </td> -->
-                    <td><input type="checkbox" ng-model="observable.selected"></td>
+                        limitTo: pagination.pageSize ">
+                    <td><input type="checkbox" ng-model="observable.selected" ng-click="selectObservable(observable)" ng-disabled="observable.imported"></td>
+                    <td>
+                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.imported" class="glyphicon glyphicon-eye-open"></span>
+                    </td>
                     <td>{{observable.dataType}}</td>
-                    <td class="wrap" ng-if="observable.dataType !== 'file'">
+                    <td class="wrap">
                         {{observable.data | fang | ellipsis:250}}
-                    </td>
-                    <td class="wrap" ng-if="observable.dataType === 'file' && observable.attachment">
-                        {{observable.attachment.name}} ({{observable.attachment.size}} bytes)
-                    </td>
-                    <td class="wrap" ng-if="observable.dataType === 'file' && observable.remoteAttachment">
-                        {{observable.remoteAttachment.filename}}
                     </td>
                 </tr>
             </tbody>
         </table>
 
-        <pre>{{selectedObservables() | json}}</pre>
+        <!-- <pre>{{selected | json}}</pre> -->
 
         <div class="text-center" ng-show="pagination.data.length > pagination.pageSize">
             <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"

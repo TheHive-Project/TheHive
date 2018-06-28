@@ -114,7 +114,7 @@
             $scope.showReport = function (jobId) {
                 $scope.report = {};
 
-                CortexSrv.getJob(jobId).then(function(response) {
+                CortexSrv.getJob(jobId, true).then(function(response) {
                     var job = response.data;
                     $scope.report = {
                         template: job.analyzerDefinition,

@@ -336,7 +336,15 @@
                     animation: 'true',
                     templateUrl: 'views/partials/observables/observable.creation.html',
                     controller: 'ObservableCreationCtrl',
-                    size: 'lg'
+                    size: 'lg',
+                    resolve: {
+                        params: function() {
+                            return null;
+                        },
+                        tags: function() {
+                            return [];
+                        }
+                    }
                 });
 
             };
