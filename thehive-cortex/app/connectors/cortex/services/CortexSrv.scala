@@ -7,7 +7,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{ JsArray, JsBoolean, JsObject, Json }
 import play.api.libs.ws.WSClient
 import play.api.{ Configuration, Logger }
 
@@ -225,6 +225,30 @@ class CortexSrv @Inject() (
 
   def getJob(jobId: String): Future[Job] = {
     getSrv[JobModel, Job](jobModel, jobId)
+  }
+
+  def addImportFieldInArtifacts(job: JsObject): Future[JsObject] = {
+    import org.elastic4play.services.QueryDSL._
+    for {
+      caze ← caseSrv.find(child("case_artifact", withId((job \ "_parent").as[String])), Some("0-1"), Nil)._1.runWith(Sink.headOption)
+      updatedReport ← (job \ "report").asOpt[JsObject]
+        .map { report ⇒
+          val artifacts = for {
+            artifact ← (report \ "artifacts").asOpt[Seq[JsObject]].getOrElse(Nil)
+            dataType ← (artifact \ "dataType").asOpt[String]
+            data ← (artifact \ "data").asOpt[String]
+            artifactFound = artifactSrv.find(and(
+              "data" ~= data,
+              "dataType" ~= dataType,
+              withParent(caze.get)), Some("0-1"), Nil)._1
+              .runWith(Sink.headOption)
+              .map(_.isDefined)
+              .recover { case _ ⇒ false }
+          } yield artifactFound.map(af ⇒ artifact + ("imported" -> JsBoolean(af)))
+          Future.sequence(artifacts).map(a ⇒ report + ("artifacts" -> JsArray(a)))
+        }
+        .getOrElse(Future.successful(JsObject.empty))
+    } yield job + ("report" -> updatedReport)
   }
 
   def retryOnError[A](cond: Throwable ⇒ Boolean = _ ⇒ true, maxRetry: Int = 5, initialDelay: FiniteDuration = 1.second)(body: ⇒ Future[A]): Future[A] = {
