@@ -1,18 +1,22 @@
 package connectors.cortex.models
 
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
 
-import scala.concurrent.Future
+import javax.inject.{ Inject, Provider, Singleton }
+import scala.concurrent.{ ExecutionContext, Future }
 
-import play.api.libs.json.{ JsObject, JsString, JsValue, Json }
+import play.api.Logger
+import play.api.libs.json._
+
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
 
 import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.utils.RichJson
 import connectors.cortex.models.JsonFormat.jobStatusFormat
 import models.{ Artifact, ArtifactModel }
-import services.AuditedModel
+import services.{ ArtifactSrv, AuditedModel, CaseSrv }
 
 object JobStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -33,12 +37,52 @@ trait JobAttributes { _: AttributeDef ⇒
 
 }
 @Singleton
-class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
+class JobModel @Inject() (
+    artifactModel: ArtifactModel,
+    caseSrvProvider: Provider[CaseSrv],
+    artifactSrvProvider: Provider[ArtifactSrv],
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
+
+  private lazy val logger = Logger(getClass)
+  private lazy val caseSrv = caseSrvProvider.get
+  private lazy val artifactSrv = artifactSrvProvider.get
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful {
     attrs
       .setIfAbsent("status", JobStatus.InProgress)
       .setIfAbsent("startDate", new Date)
+  }
+
+  override def getStats(entity: BaseEntity): Future[JsObject] = {
+    entity match {
+      case job: Job ⇒
+        import org.elastic4play.services.QueryDSL._
+        for {
+          caze ← caseSrv.find(child("case_artifact", withId(job.parentId.get)), Some("0-1"), Nil)._1.runWith(Sink.headOption)
+          updatedReport ← job.report()
+            .flatMap(Json.parse(_).asOpt[JsObject])
+            .map { report ⇒
+              val artifacts = for {
+                artifact ← (report \ "artifacts").asOpt[Seq[JsObject]].getOrElse(Nil)
+                dataType ← (artifact \ "dataType").asOpt[String]
+                data ← (artifact \ "data").asOpt[String]
+                artifactFound = artifactSrv.find(and(
+                  "data" ~= data,
+                  "dataType" ~= dataType,
+                  withParent(caze.get)), Some("0-1"), Nil)._1
+                  .runWith(Sink.headOption)
+                  .map(_.isDefined)
+                  .recover { case _ ⇒ false }
+              } yield artifactFound.map(af ⇒ artifact + ("imported" -> JsBoolean(af)))
+              Future.sequence(artifacts).map(a ⇒ report + ("artifacts" -> JsArray(a)))
+            }
+            .getOrElse(Future.successful(JsObject.empty))
+        } yield job.toJson + ("report" -> updatedReport)
+      case other ⇒
+        logger.warn(s"Request jobStats from a non-job entity ?! ${other.getClass}:$other")
+        Future.successful(JsObject.empty)
+    }
   }
 }
 
