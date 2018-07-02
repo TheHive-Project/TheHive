@@ -157,7 +157,7 @@
             };
 
             $scope.cancel = function() {
-                $uibModalInstance.dismiss();
+                $uibModalInstance.dismiss('cancel');
             };
 
             $scope.isFile = function() {

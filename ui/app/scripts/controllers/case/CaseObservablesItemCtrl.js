@@ -124,6 +124,8 @@
                         endDate: job.endDate
                     };
 
+                    $scope.currentJob = jobId;
+
                     $timeout(function() {
                         var reportEl = angular.element(document.getElementById('analysis-report'))[0];
 

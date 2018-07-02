@@ -16,9 +16,12 @@
         <div class="mv-xxs">
             <strong class="text-muted">{{selected}} items selected</strong>
             <a class="ml-xs" href ng-click="selectAll()"><i class="fa fa-check"></i> Select all</a>
-            <a class="ml-xs" href ng-click="clearSelection()"><i class="fa fa-times"></i> Clear Selection</a>
-            <span class="mh-xs">|</span>
-            <a href ng-click="import()"><i class="fa fa-plus"></i> Import Selection</a>
+            <span ng-if="selected > 0">
+                <a class="ml-xs" href ng-click="clearSelection()"><i class="fa fa-times"></i> Clear Selection</a>
+                <span class="ml-xs">|</span>
+                <a class="ml-xs" href ng-click="import()"><i class="fa fa-plus"></i> Import Selection</a>
+            </span>
+
         </div>
         <table class="table table-striped">
             <thead>
@@ -27,25 +30,27 @@
                     <th style="width:20px;"></th>
                     <th style="width:150px;">Type</th>
                     <th>Data</th>
+                    <th style="width:80px;"></th>
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="observable in pagination.data | orderBy:'imported':false |
+                <tr ng-repeat="observable in pagination.data | orderBy:'id':true |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
-                    <td><input type="checkbox" ng-model="observable.selected" ng-click="selectObservable(observable)" ng-disabled="observable.imported"></td>
+                    <td><input type="checkbox" ng-model="observable.selected" ng-click="selectObservable(observable)" ng-disabled="observable.id"></td>
                     <td>
-                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.imported" class="glyphicon glyphicon-eye-open"></span>
+                        <span uib-tooltip="Observable already id" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.id" class="glyphicon glyphicon-eye-open"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">
                         {{observable.data | fang | ellipsis:250}}
                     </td>
+                    <td class="wrap">
+                        <a ng-if="observable.id" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.id})"><i class="fa fa-search"></i> View</a>
+                    </td>
                 </tr>
             </tbody>
         </table>
-
-        <!-- <pre>{{selected | json}}</pre> -->
 
         <div class="text-center" ng-show="pagination.data.length > pagination.pageSize">
             <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"

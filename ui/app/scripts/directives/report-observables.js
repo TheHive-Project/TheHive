@@ -1,11 +1,13 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('reportObservables', function($uibModal, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('reportObservables', function($q, $filter, $uibModal, UtilsSrv) {
         return {
             restrict: 'E',
             scope: {
+                origin: '=',
                 observables: '=',
-                analyzer: '='
+                analyzer: '=',
+                caseId: '='
             },
             templateUrl: 'views/directives/report-observables.html',
             link: function(scope) {
@@ -33,7 +35,7 @@
                 };
 
                 $scope.selectObservable = function(observable) {
-                    if(observable.imported) {
+                    if(observable.id) {
                         return;
                     }
                     if(observable.selected === true) {
@@ -46,7 +48,7 @@
                 $scope.selectAll = function() {
                     var type = $scope.pagination.filter;
                     _.each(type === '' ? $scope.observables : $scope.groups[type], function(item) {
-                        if(!item.imported) {
+                        if(!item.id && !item.selected) {
                             item.selected = true;
                             $scope.selected++;
                         }
@@ -63,14 +65,19 @@
                 $scope.import = function() {
                     var toImport = _.groupBy(_.filter($scope.observables, function(item) {
                         return item.selected === true;
-                    }), 'dataType');                  
+                    }), 'dataType');
 
                     var keys = _.keys(toImport);
                     var promises = [];
+                    var message = [
+                        '### Discovered from:',
+                        '- Observable: **['+ $scope.origin.dataType + '] - ' + $filter('fang')($scope.origin.data) + '**',
+                        '- Analyzer: **'+ $scope.analyzer + '**'
+                    ].join('\n')
 
                     _.each(toImport, function(list, key) {
 
-                        var promise = $uibModal.open({
+                        var modal = $uibModal.open({
                             animation: 'true',
                             templateUrl: 'views/partials/observables/observable.creation.html',
                             controller: 'ObservableCreationCtrl',
@@ -84,7 +91,7 @@
                                         sighted: false,
                                         data: _.pluck(list, 'data').join('\n'),
                                         tlp: 2,
-                                        message: '',
+                                        message: message,
                                         tags: [],
                                         tagNames: ''
                                     }
@@ -95,7 +102,13 @@
                             }
                         });
 
-                        promises.push(promise);
+                        modal.result
+                          .then(function(response) {
+                              _.each(list, function(item) {
+                                  item.id = true;
+                                  item.selected = false;
+                              });
+                          });
                     });
 
 
