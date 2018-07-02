@@ -95,10 +95,13 @@ class CortexCtrl @Inject() (
   }
 
   @Timed
-  def getJob(jobId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
-    cortexSrv.getJob(jobId).map { job ⇒
-      renderer.toOutput(OK, job)
-    }
+  def getJob(jobId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+    val withStats = request.body.getBoolean("nstats").getOrElse(false)
+    for {
+      job ← cortexSrv.getJob(jobId)
+      jobJson = job.toJson
+      jobWithStats ← if (withStats) cortexSrv.addImportFieldInArtifacts(jobJson) else Future.successful(Json.toJson(job))
+    } yield Ok(jobWithStats)
   }
 
   @Timed

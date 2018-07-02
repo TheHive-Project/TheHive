@@ -7,7 +7,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.{ Configuration, Logger }
 
@@ -19,7 +19,7 @@ import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
 import javax.inject.{ Inject, Singleton }
 import models.Artifact
-import services.{ ArtifactSrv, CaseSrv, CustomWSAPI, MergeArtifact, RemoveJobsOf }
+import services.{ UserSrv ⇒ _, _ }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
@@ -225,6 +225,30 @@ class CortexSrv @Inject() (
 
   def getJob(jobId: String): Future[Job] = {
     getSrv[JobModel, Job](jobModel, jobId)
+  }
+
+  def addImportFieldInArtifacts(job: JsObject): Future[JsObject] = {
+    import org.elastic4play.services.QueryDSL._
+    for {
+      caze ← caseSrv.find(child("case_artifact", withId((job \ "_parent").as[String])), Some("0-1"), Nil)._1.runWith(Sink.headOption)
+      updatedReport ← (job \ "report").asOpt[JsObject]
+        .map { report ⇒
+          val artifacts = for {
+            artifact ← (report \ "artifacts").asOpt[Seq[JsObject]].getOrElse(Nil)
+            dataType ← (artifact \ "dataType").asOpt[String]
+            data ← (artifact \ "data").asOpt[String]
+            foundArtifactId = artifactSrv.find(and(
+              "data" ~= data,
+              "dataType" ~= dataType,
+              withParent(caze.get)), Some("0-1"), Nil)._1
+              .runWith(Sink.headOption)
+              .map(_.fold[JsValue](JsNull)(a ⇒ JsString(a.id)))
+              .recover { case _ ⇒ JsNull }
+          } yield foundArtifactId.map(faid ⇒ artifact + ("id" -> faid))
+          Future.sequence(artifacts).map(a ⇒ report + ("artifacts" -> JsArray(a)))
+        }
+        .getOrElse(Future.successful(JsObject.empty))
+    } yield job + ("report" -> updatedReport)
   }
 
   def retryOnError[A](cond: Throwable ⇒ Boolean = _ ⇒ true, maxRetry: Int = 5, initialDelay: FiniteDuration = 1.second)(body: ⇒ Future[A]): Future[A] = {

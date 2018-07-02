@@ -5,12 +5,12 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, params, tags) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
             $scope.step = 'form';
-            $scope.params = {
+            $scope.params = params || {
                 bulk: false,
                 ioc: false,
                 sighted: false,
@@ -20,7 +20,7 @@
                 tags: [],
                 tagNames: ''
             };
-            $scope.tags = [];
+            $scope.tags = tags || [];
 
             $scope.$watchCollection('tags', function(value) {
                 $scope.params.tagNames = _.pluck(value, 'text').join(',');
@@ -157,7 +157,7 @@
             };
 
             $scope.cancel = function() {
-                $uibModalInstance.dismiss();
+                $uibModalInstance.dismiss('cancel');
             };
 
             $scope.isFile = function() {

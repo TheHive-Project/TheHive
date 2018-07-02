@@ -114,7 +114,7 @@
             $scope.showReport = function (jobId) {
                 $scope.report = {};
 
-                CortexSrv.getJob(jobId).then(function(response) {
+                CortexSrv.getJob(jobId, true).then(function(response) {
                     var job = response.data;
                     $scope.report = {
                         template: job.analyzerDefinition,
@@ -123,6 +123,8 @@
                         startDate: job.startDate,
                         endDate: job.endDate
                     };
+
+                    $scope.currentJob = jobId;
 
                     $timeout(function() {
                         var reportEl = angular.element(document.getElementById('analysis-report'))[0];
