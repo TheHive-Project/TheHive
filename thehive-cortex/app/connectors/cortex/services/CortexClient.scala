@@ -127,18 +127,30 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       .withTimeout(1.seconds, None)
   }
 
-  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
-    getVersion()
+  def getCurrentUser()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+    request("/api/user/current", _.get, identity)
       .map {
-        case Some(version) ⇒ Json.obj(
-          "name" → name,
-          "version" → version,
-          "status" → "OK")
-        case None ⇒ Json.obj(
-          "name" → name,
-          "version" → "",
-          "status" → "ERROR")
+        case resp if resp.status / 100 == 2 ⇒ (resp.json \ "id").asOpt[String]
+        case _                              ⇒ None
       }
+      .recover { case _ ⇒ None }
+      .withTimeout(1.seconds, None)
+  }
+
+  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
+    for {
+      version ← getVersion()
+      versionValue = version.getOrElse("")
+      currentUser ← getCurrentUser()
+      status = if (version.isDefined && currentUser.isDefined) "OK"
+      else if (version.isDefined) "AUTH_ERROR"
+      else "ERROR"
+    } yield {
+      Json.obj(
+        "name" → name,
+        "version" → versionValue,
+        "status" → status)
+    }
 
   def health()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
     getVersion()
