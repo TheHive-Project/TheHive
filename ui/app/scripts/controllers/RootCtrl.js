@@ -31,7 +31,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
           _.each(connectors, function(connector) {
               var currentStatus = $scope.appConfig.connectors[connector];
               var newStatus = conf.connectors[connector];
-              if(currentStatus.enabled === newStatus.enabled &&
+              if(currentStatus && currentStatus.enabled === newStatus.enabled &&
                   newStatus.enabled === true &&
                   currentStatus.status !== newStatus.status) {
 
