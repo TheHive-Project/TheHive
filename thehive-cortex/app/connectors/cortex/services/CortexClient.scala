@@ -128,7 +128,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   }
 
   def getCurrentUser()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
-    request("/api/user/current", _.get, identity)
+    request("api/user/current", _.get, identity)
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "id").asOpt[String]
         case _                              ⇒ None
