@@ -23,6 +23,7 @@ object TaskStatus extends Enumeration with HiveEnumeration {
 trait TaskAttributes { _: AttributeDef ⇒
   val title = attribute("title", F.textFmt, "Title of the task")
   val description = optionalAttribute("description", F.textFmt, "Task details")
+  val template = optionalAttribute("template", F.textFmt, "Task Log Template")
   val owner = optionalAttribute("owner", F.userFmt, "User who owns the task")
   val status = attribute("status", F.enumFmt(TaskStatus), "Status of the task", TaskStatus.Waiting)
   val flag = attribute("flag", F.booleanFmt, "Flag of the task", false)

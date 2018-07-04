@@ -11,7 +11,7 @@
 
             $scope.loading = false;
             $scope.newLog = {
-                message: ''
+                message: (task.template != undefined) ? task.template : ''
             };
             $scope.sortOptions = {
                 '+startDate': 'Oldest first',
@@ -113,7 +113,7 @@
                 }, $scope.newLog, function () {
                     delete $scope.newLog.attachment;
                     $scope.state.attachmentCollapsed = true;
-                    $scope.newLog.message = '';
+                    $scope.newLog.message = ($scope.task.template != undefined) ? $scope.task.template : '';
 
                     $rootScope.markdownEditorObjects.newLog.hidePreview();
                     $scope.adding = false;
