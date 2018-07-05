@@ -42,6 +42,16 @@
             });
         };
 
+        $scope.updateField = function (fieldName, newValue, task) {
+            var field = {};
+            field[fieldName] = newValue;
+            return CaseTaskSrv.update({
+                taskId: task.id
+            }, field, function () {}, function (response) {
+                NotificationSrv.error('taskList', response.data, response.status);
+            });
+        };
+
         $scope.addTask = function() {
             CaseTaskSrv.save({
                 'caseId': $scope.caseId,

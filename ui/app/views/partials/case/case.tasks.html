@@ -78,9 +78,11 @@
                     <td>{{task.startDate | showDate}}</td>
                     <td>
                         <span ng-show="task.owner">
-                            <user user-id="task.owner"></user>
+                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
                         </span>
-                        <em ng-show="!task.owner">Not assigned</em>
+                        <span ng-show="!task.owner">
+                            <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                        </span>
                     </td>
                     <!--  class="task-delete" -->
                     <td align="right" class="task-actions">
