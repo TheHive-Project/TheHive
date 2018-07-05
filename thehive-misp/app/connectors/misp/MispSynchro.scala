@@ -122,6 +122,17 @@ class MispSynchro @Inject() (
     } yield createdArtifacts
   }
 
+  def getOriginalEvent(mispConnection: MispConnection, event: MispAlert): Future[MispAlert] = {
+    event.extendsUuid match {
+      case None                 ⇒ Future.successful(event)
+      case Some(e) if e.isEmpty ⇒ Future.successful(event)
+      case Some(originalEvent) ⇒
+        mispSrv
+          .getEvent(mispConnection, originalEvent)
+          .flatMap(getOriginalEvent(mispConnection, _))
+    }
+  }
+
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
     // get events that have been published after the last synchronization
@@ -129,7 +140,7 @@ class MispSynchro @Inject() (
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
-        alertSrv.get("misp", event.source, event.sourceRef)
+        getOriginalEvent(mispConnection, event).flatMap(originalEvent ⇒ alertSrv.get("misp", originalEvent.source, originalEvent.sourceRef))
           .map((event, _))
       }
       .mapAsyncUnordered(1) {
