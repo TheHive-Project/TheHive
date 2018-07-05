@@ -90,6 +90,20 @@
                 $scope.updateField('status', 'InProgress');
             };
 
+            $scope.startTask = function() {
+                var taskId = $scope.task.id;
+
+                CaseTaskSrv.update({
+                    'taskId': taskId
+                }, {
+                    'status': 'InProgress'
+                }, function(data) {
+                    $scope.task = data;
+                }, function(response) {
+                    NotificationSrv.error('taskDetails', response.data, response.status);
+                });
+            };
+
             $scope.showLogEditor = function () {
                 $scope.adding = true;
                 $rootScope.$broadcast('beforeNewLogShow');
