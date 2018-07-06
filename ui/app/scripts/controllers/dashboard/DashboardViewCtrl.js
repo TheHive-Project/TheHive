@@ -38,7 +38,7 @@
             this.loadDashboard(dashboard);
 
             $scope.$watch('$vm.autoRefresh', function(value) {
-                if(value === self.authRefreshRunner) {
+                if(value === self.authRefreshRunner || self.options.editLayout === true) {
                     return;
                 }
 

@@ -11,7 +11,7 @@
                 <i class="fa fa-download"></i> Export
             </a>
 
-            <div class="btn-group">
+            <div class="btn-group" ng-show="!$vm.options.editLayout">
                 <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="null">Auto Refresh - Off</label>
                 <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="60">1m</label>
                 <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="300">5m</label>
