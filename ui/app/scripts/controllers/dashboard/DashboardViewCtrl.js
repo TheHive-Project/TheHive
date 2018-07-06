@@ -3,7 +3,7 @@
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function($scope, $q, $interval, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
             var self = this;
 
             this.currentUser = AuthenticationSrv.currentUser;
@@ -12,6 +12,8 @@
             this.metadata = metadata;
             this.toolbox = DashboardSrv.toolbox;
             this.dashboardPeriods = DashboardSrv.dashboardPeriods;
+            this.autoRefresh = null;
+            this.authRefreshRunner = null;
 
             this.buildDashboardPeriodFilter = function(period) {
                 return period === 'custom' ?
@@ -34,6 +36,23 @@
             }
 
             this.loadDashboard(dashboard);
+
+            $scope.$watch('$vm.autoRefresh', function(value) {
+                if(value === self.authRefreshRunner) {
+                    return;
+                }
+
+                if(value === null) {
+                    $interval.cancel(self.authRefreshRunner);
+                } else {
+                    $interval.cancel(self.authRefreshRunner);
+                    self.authRefreshRunner = $interval(function() {
+                        $scope.$broadcast('refresh-chart', self.periodFilter);
+                    }, value * 1000);
+                }
+            });
+
+
 
             this.canEditDashboard = function() {
                 return (this.createdBy === this.currentUser.id) ||
