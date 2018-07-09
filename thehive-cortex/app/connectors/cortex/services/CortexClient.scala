@@ -100,22 +100,22 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       .recoverWith { case _ ⇒ getAnalyzerByName(analyzerId) } // if get analyzer using cortex2 API fails, try using legacy API
   }
 
-  def getWorkerById(workerId: String)(implicit ec: ExecutionContext): Future[Worker] = {
-    request(s"api/analyzer/$workerId", _.get, _.json.as[Worker]).map(_.addCortexId(name))
+  def getResponderById(responderId: String)(implicit ec: ExecutionContext): Future[Responder] = {
+    request(s"api/responder/$responderId", _.get, _.json.as[Responder]).map(_.addCortexId(name))
   }
 
-  def getWorkerByName(workerName: String)(implicit ec: ExecutionContext): Future[Worker] = {
+  def getResponderByName(responderName: String)(implicit ec: ExecutionContext): Future[Responder] = {
     val searchRequest = Json.obj(
       "query" -> Json.obj(
         "_field" -> "name",
-        "_value" -> workerName),
+        "_value" -> responderName),
       "range" -> "0-1")
-    request(s"api/analyzer/_search", _.post(searchRequest),
-      _.json.as[Seq[Worker]])
+    request(s"api/responder/_search", _.post(searchRequest),
+      _.json.as[Seq[Responder]])
       .flatMap { analyzers ⇒
         analyzers.headOption
-          .fold[Future[Worker]](Future.failed(NotFoundError(s"worker $workerName not found"))) { worker ⇒
-            Future.successful(worker.addCortexId(name))
+          .fold[Future[Responder]](Future.failed(NotFoundError(s"responder $responderName not found"))) { responder ⇒
+            Future.successful(responder.addCortexId(name))
           }
       }
   }
@@ -140,8 +140,8 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
     request(s"api/analyzer?range=all", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
 
-  def findWorkers(query: JsObject)(implicit ec: ExecutionContext): Future[Seq[Worker]] = {
-    request(s"api/analyzer/_search?range=all", _.post(Json.obj("query" -> query)), _.json.as[Seq[Worker]]).map(_.map(_.addCortexId(name)))
+  def findResponders(query: JsObject)(implicit ec: ExecutionContext): Future[Seq[Responder]] = {
+    request(s"api/responder/_search?range=all", _.post(Json.obj("query" -> query)), _.json.as[Seq[Responder]]).map(_.map(_.addCortexId(name)))
   }
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ec: ExecutionContext): Future[JsValue] = {
@@ -157,7 +157,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   }
 
   def execute(
-      workerId: String,
+      responderId: String,
       dataType: String,
       data: JsValue,
       tlp: Long,
@@ -169,7 +169,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       "tlp" -> tlp,
       "message" -> message,
       "parameters" -> parameters)
-    request(s"api/analyzer/$workerId/run", _.post(body), _.json.as[JsObject])
+    request(s"api/analyzer/$responderId/run", _.post(body), _.json.as[JsObject])
   }
 
   def listAnalyzerForType(dataType: String)(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {

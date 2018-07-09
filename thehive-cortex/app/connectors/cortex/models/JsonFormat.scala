@@ -71,16 +71,16 @@ object JsonFormat {
 
   implicit val reportTypeFormat: Format[ReportType.Type] = enumFormat(ReportType)
 
-  private val workerWrites = Writes[Worker](worker ⇒ Json.obj(
-    "id" → worker.id,
-    "name" → worker.name,
-    "version" → worker.version,
-    "description" → worker.description,
-    "dataTypeList" → worker.dataTypeList,
-    "maxTlp" -> worker.maxTlp,
-    "maxPap" -> worker.maxPap,
-    "cortexIds" → worker.cortexIds))
-  private val workerReads = Reads[Worker](json ⇒
+  private val responderWrites = Writes[Responder](responder ⇒ Json.obj(
+    "id" → responder.id,
+    "name" → responder.name,
+    "version" → responder.version,
+    "description" → responder.description,
+    "dataTypeList" → responder.dataTypeList,
+    "maxTlp" -> responder.maxTlp,
+    "maxPap" -> responder.maxPap,
+    "cortexIds" → responder.cortexIds))
+  private val responderReads = Reads[Responder](json ⇒
     for {
       name ← (json \ "name").validate[String]
       version ← (json \ "version").validate[String]
@@ -91,6 +91,6 @@ object JsonFormat {
       dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
       maxTlp ← (json \ "maxTlp").validateOpt[Long]
       maxPap ← (json \ "maxPap").validateOpt[Long]
-    } yield Worker(id, renamed, version, description, dataTypeList, maxTlp, maxPap))
-  implicit val workerFormat: Format[Worker] = Format(workerReads, workerWrites)
+    } yield Responder(id, renamed, version, description, dataTypeList, maxTlp, maxPap))
+  implicit val responderFormat: Format[Responder] = Format(responderReads, responderWrites)
 }

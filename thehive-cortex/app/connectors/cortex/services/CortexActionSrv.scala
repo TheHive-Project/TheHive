@@ -38,16 +38,16 @@ class CortexActionSrv @Inject() (
     implicit val mat: Materializer) {
 
   lazy val logger = Logger(getClass)
-  lazy val workerIdRegex: Regex = "(.*)-(.*)".r
+  lazy val responderIdRegex: Regex = "(.*)-(.*)".r
 
-  def getWorkerById(id: String): Future[Worker] = {
+  def getResponderById(id: String): Future[Responder] = {
     id match {
-      case workerIdRegex(instanceId, workerId) ⇒ cortexConfig.instances.find(_.name == instanceId).map(_.getWorkerById(workerId)).getOrElse(Future.failed(NotFoundError(s"Worker $id not found")))
-      case _                                   ⇒ Future.firstCompletedOf(cortexConfig.instances.map(_.getWorkerById(id)))
+      case responderIdRegex(instanceId, responderId) ⇒ cortexConfig.instances.find(_.name == instanceId).map(_.getResponderById(responderId)).getOrElse(Future.failed(NotFoundError(s"Responder $id not found")))
+      case _                                         ⇒ Future.firstCompletedOf(cortexConfig.instances.map(_.getResponderById(id)))
     }
   }
 
-  def askWorkersOnAllCortex(f: CortexClient ⇒ Future[Seq[Worker]]): Future[Seq[Worker]] = {
+  def askRespondersOnAllCortex(f: CortexClient ⇒ Future[Seq[Responder]]): Future[Seq[Responder]] = {
     Future
       .traverse(cortexConfig.instances) { cortex ⇒
         f(cortex).recover { case NonFatal(t) ⇒ logger.error("Request to Cortex fails", t); Nil }
@@ -55,10 +55,10 @@ class CortexActionSrv @Inject() (
       .map(_.flatten)
   }
 
-  def findWorkers(query: JsObject): Future[Seq[Worker]] = {
-    askWorkersOnAllCortex(_.findWorkers(query))
-      .map { workers ⇒
-        workers
+  def findResponders(query: JsObject): Future[Seq[Responder]] = {
+    askRespondersOnAllCortex(_.findResponders(query))
+      .map { responders ⇒
+        responders
           .groupBy(_.name)
           .values
           .map(_.reduce(_ join _))
@@ -66,7 +66,7 @@ class CortexActionSrv @Inject() (
       }
   }
 
-  def findWorkerFor(entityType: String, entityId: String): Future[Seq[Worker]] = {
+  def findResponderFor(entityType: String, entityId: String): Future[Seq[Responder]] = {
     for {
       (tlp, pap) ← getEntity(entityType, entityId)
         .flatMap(actionOperationSrv.findCaseEntity)
@@ -74,9 +74,9 @@ class CortexActionSrv @Inject() (
         .recover { case _ ⇒ (0L, 0L) }
       query = Json.obj(
         "dataTypeList" -> s"thehive:$entityType")
-      workers ← findWorkers(query)
-      applicableWorkers = workers.filter(w ⇒ w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
-    } yield applicableWorkers
+      responders ← findResponders(query)
+      applicableResponders = responders.filter(w ⇒ w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
+    } yield applicableResponders
   }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Action, NotUsed], Future[Long]) = {
@@ -150,25 +150,25 @@ class CortexActionSrv @Inject() (
   }
 
   def executeAction(fields: Fields)(implicit authContext: AuthContext): Future[Action] = {
-    def getWorker(cortexClient: CortexClient): Future[Worker] = {
-      fields.getString("workerId").map(cortexClient.getWorkerById) orElse
-        fields.getString("workerName").map(cortexClient.getWorkerByName) getOrElse
-        Future.failed(BadRequestError("worker is missing"))
+    def getResponder(cortexClient: CortexClient): Future[Responder] = {
+      fields.getString("responderId").map(cortexClient.getResponderById) orElse
+        fields.getString("responderName").map(cortexClient.getResponderByName) getOrElse
+        Future.failed(BadRequestError("responder is missing"))
     }
 
-    def getCortexClient: Future[(CortexClient, Worker)] = {
+    def getCortexClient: Future[(CortexClient, Responder)] = {
       fields.getString("cortexId")
         .map { cortexId ⇒
           cortexConfig
             .instances
             .find(_.name == cortexId)
-            .fold[Future[(CortexClient, Worker)]](Future.failed(NotFoundError(s"cortex $cortexId not found"))) { c ⇒
-              getWorker(c).map(c -> _)
+            .fold[Future[(CortexClient, Responder)]](Future.failed(NotFoundError(s"cortex $cortexId not found"))) { c ⇒
+              getResponder(c).map(c -> _)
             }
         }
         .getOrElse {
           Future.firstCompletedOf {
-            cortexConfig.instances.map(c ⇒ getWorker(c).map(c -> _))
+            cortexConfig.instances.map(c ⇒ getResponder(c).map(c -> _))
           }
         }
     }
@@ -176,7 +176,7 @@ class CortexActionSrv @Inject() (
     for {
       objectType ← fields.getString("objectType").fold[Future[String]](Future.failed(MissingAttributeError("action.objectType")))(Future.successful)
       objectId ← fields.getString("objectId").fold[Future[String]](Future.failed(MissingAttributeError("action.objectId")))(Future.successful)
-      (cortexClient, worker) ← getCortexClient
+      (cortexClient, responder) ← getCortexClient
       tlp = fields.getLong("tlp").getOrElse(2L)
       message = fields.getString("message").getOrElse("")
       parameters = fields.getValue("parameters") match {
@@ -186,7 +186,7 @@ class CortexActionSrv @Inject() (
       entity ← getEntity(objectType, objectId)
       entityJson ← auxSrv(entity, 10, withStats = false, removeUnaudited = true)
       jobJson ← cortexClient.execute(
-        worker.id,
+        responder.id,
         s"thehive:$objectType",
         entityJson,
         tlp,
@@ -196,9 +196,9 @@ class CortexActionSrv @Inject() (
       action ← createSrv[ActionModel, Action](actionModel, Fields.empty
         .set("objectType", entity.model.modelName)
         .set("objectId", entity.id)
-        .set("workerId", job.analyzerId)
-        .set("workerName", job.analyzerName)
-        .set("workerDefinition", job.analyzerDefinition)
+        .set("responderId", job.analyzerId)
+        .set("responderName", job.analyzerName)
+        .set("responderDefinition", job.analyzerDefinition)
         //.set("status", JobStatus.InProgress)
         .set("objectType", objectType)
         .set("objectId", objectId)

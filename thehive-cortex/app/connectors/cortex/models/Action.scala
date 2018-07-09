@@ -13,9 +13,9 @@ import connectors.cortex.models.JsonFormat.jobStatusFormat
 import services.AuditedModel
 
 trait ActionAttributes { _: AttributeDef ⇒
-  val workerId = attribute("workerId", F.stringFmt, "Analyzer", O.readonly)
-  val workerName = optionalAttribute("workerName", F.stringFmt, "Name of the worker", O.readonly)
-  val workerDefinition = optionalAttribute("workerDefinition", F.stringFmt, "Name of the worker definition", O.readonly)
+  val responderId = attribute("responderId", F.stringFmt, "Analyzer", O.readonly)
+  val responderName = optionalAttribute("responderName", F.stringFmt, "Name of the responder", O.readonly)
+  val responderDefinition = optionalAttribute("responderDefinition", F.stringFmt, "Name of the responder definition", O.readonly)
   val status = attribute("status", F.enumFmt(JobStatus), "Status of the action job", JobStatus.InProgress)
   val objectType = attribute("objectType", F.stringFmt, "Type of the object on which this job was executed")
   val objectId = attribute("objectId", F.stringFmt, "Object ID on which this job was executed", O.readonly)

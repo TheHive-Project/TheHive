@@ -18,7 +18,7 @@ import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
 import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import connectors.Connector
-import connectors.cortex.models.JsonFormat.{ analyzerFormat, workerFormat }
+import connectors.cortex.models.JsonFormat.{ analyzerFormat, responderFormat }
 import connectors.cortex.services.{ CortexActionSrv, CortexAnalyzerSrv, CortexConfig }
 import models.HealthStatus.Type
 import models.{ HealthStatus, Roles }
@@ -76,10 +76,10 @@ class CortexCtrl @Inject() (
     case GET(p"/analyzer/type/$dataType<[^/]*>") ⇒ getAnalyzerFor(dataType)
     case GET(p"/analyzer") ⇒ listAnalyzer
 
-    case GET(p"/worker/$workerId<[^/]*>") ⇒ getWorker(workerId)
-    case GET(p"/worker") ⇒ findWorker
-    case POST(p"/worker/_search") ⇒ findWorker
-    case GET(p"/worker/$entityType<[^/]*>/$entityId<[^/]*>") ⇒ getWorkers(entityType, entityId)
+    case GET(p"/responder/$responderId<[^/]*>") ⇒ getResponder(responderId)
+    case GET(p"/responder") ⇒ findResponder
+    case POST(p"/responder/_search") ⇒ findResponder
+    case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") ⇒ getResponders(entityType, entityId)
 
     case POST(p"/action") ⇒ createAction
     case GET(p"/action") ⇒ findAction
@@ -160,25 +160,25 @@ class CortexCtrl @Inject() (
     }
   }
 
-  def getWorker(workerId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
-    cortexActionSrv.getWorkerById(workerId).map { worker ⇒
-      renderer.toOutput(OK, worker)
+  def getResponder(responderId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+    cortexActionSrv.getResponderById(responderId).map { responder ⇒
+      renderer.toOutput(OK, responder)
     }
   }
 
-  def getWorkers(entityType: String, entityId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
-    cortexActionSrv.findWorkerFor(entityType, entityId).map { workers ⇒
-      renderer.toOutput(OK, workers)
+  def getResponders(entityType: String, entityId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+    cortexActionSrv.findResponderFor(entityType, entityId).map { responders ⇒
+      renderer.toOutput(OK, responders)
     }
   }
 
-  def findWorker: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def findResponder: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query") match {
       case Some(o: JsObject) ⇒ o
       case _                 ⇒ JsObject.empty
     }
-    cortexActionSrv.findWorkers(query).map { workers ⇒
-      renderer.toOutput(OK, workers)
+    cortexActionSrv.findResponders(query).map { responders ⇒
+      renderer.toOutput(OK, responders)
     }
   }
 
