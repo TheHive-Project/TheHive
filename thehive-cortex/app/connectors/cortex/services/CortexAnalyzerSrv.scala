@@ -207,11 +207,11 @@ class CortexAnalyzerSrv @Inject() (
               .runWith(Sink.headOption)
               .map(_.fold[JsValue](JsNull)(a ⇒ JsString(a.id)))
               .recover { case _ ⇒ JsNull }
-          } yield foundArtifactId.map(faid ⇒ artifact + ("id" -> faid))
-          Future.sequence(artifacts).map(a ⇒ report + ("artifacts" -> JsArray(a)))
+          } yield foundArtifactId.map(faid ⇒ artifact + ("id" → faid))
+          Future.sequence(artifacts).map(a ⇒ report + ("artifacts" → JsArray(a)))
         }
         .getOrElse(Future.successful(JsObject.empty))
-    } yield job + ("report" -> updatedReport)
+    } yield job + ("report" → updatedReport)
   }
 
   def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
@@ -277,12 +277,12 @@ class CortexAnalyzerSrv @Inject() (
           .find(_.name == id)
           .fold[Future[(CortexClient, Analyzer)]](Future.failed(NotFoundError(s"cortex $id not found"))) { c ⇒
             c.getAnalyzer(analyzerName)
-              .map(c -> _)
+              .map(c → _)
           }
 
       case None ⇒
         Future.firstCompletedOf {
-          cortexConfig.instances.map(c ⇒ c.getAnalyzer(analyzerName).map(c -> _))
+          cortexConfig.instances.map(c ⇒ c.getAnalyzer(analyzerName).map(c → _))
         }
     }
 
@@ -295,7 +295,7 @@ class CortexAnalyzerSrv @Inject() (
             "tlp" → artifact.tlp(),
             "pap" → caze.pap(),
             "dataType" → artifact.dataType(),
-            "message" -> caze.caseId().toString)
+            "message" → caze.caseId().toString)
           cortexArtifact = (artifact.data(), artifact.attachment()) match {
             case (Some(data), None)       ⇒ DataArtifact(data, artifactAttributes)
             case (None, Some(attachment)) ⇒ FileArtifact(attachmentSrv.source(attachment.id), artifactAttributes + ("attachment" → Json.toJson(attachment)))

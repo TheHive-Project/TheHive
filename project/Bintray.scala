@@ -80,9 +80,9 @@ object Bintray extends AutoPlugin {
         bintrayPackage.value,
         version.value,
         sLog.value,
-        "deb_distribution" -> "any",
-        "deb_component" -> "main",
-        "deb_architecture" -> "all"
+        "deb_distribution" → "any",
+        "deb_component" → "main",
+        "deb_architecture" → "all"
       )
     },
 
@@ -113,7 +113,7 @@ object Bintray extends AutoPlugin {
     }
   )
 
-  private def asStatusAndBody = new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })
+  private def asStatusAndBody = new FunctionHandler({ r ⇒ (r.getStatusCode, r.getResponseBody) })
 
   def removeVersion(credential: BintrayCredentials,
                     org: Option[String],
@@ -125,7 +125,7 @@ object Bintray extends AutoPlugin {
     val client: Client = Client(user, key, new Http())
     val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
     Await.result(repo.get(packageName).version(version).delete(asStatusAndBody), Duration.Inf) match {
-      case (status, body) => log.info(s"Delete version $packageName $version: $status ($body)")
+      case (status, body) ⇒ log.info(s"Delete version $packageName $version: $status ($body)")
     }
   }
 
@@ -145,14 +145,14 @@ object Bintray extends AutoPlugin {
 
 
     val params = additionalParams
-      .map { case (k, v) => s"$k=$v" }
+      .map { case (k, v) ⇒ s"$k=$v" }
       .mkString(";", ";", "")
     val upload = repo.get(packageName).version(version).upload(filename + params, file)
 
     log.info(s"Uploading $file ... (${org.getOrElse(user)}/$repoName/$packageName/$version/$filename$params)")
     Await.result(upload(asStatusAndBody), Duration.Inf) match {
-      case (201, _) => log.info(s"$file was uploaded to $owner/$packageName@$version")
-      case (_, fail) => sys.error(s"failed to upload $file to $owner/$packageName@$version: $fail")
+      case (201, _) ⇒ log.info(s"$file was uploaded to $owner/$packageName@$version")
+      case (_, fail) ⇒ sys.error(s"failed to upload $file to $owner/$packageName@$version: $fail")
     }
   }
 }

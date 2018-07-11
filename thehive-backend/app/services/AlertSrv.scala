@@ -281,7 +281,7 @@ class AlertSrv(
       case AlertStatus.Imported ⇒ AlertStatus.Ignored
     }
     logger.debug(s"Remove case association in alert ${alert.id} (${alert.title}")
-    updateSrv(alert, Fields(Json.obj("case" -> JsNull, "status" -> status)), modifyConfig)
+    updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
   }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Alert] =
@@ -317,9 +317,9 @@ class AlertSrv(
         val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
         val (iocCount, artifactCount) = similarCases.getOrElse(caseId, (0, 0))
         if (artifact.ioc())
-          similarCases + (caseId -> ((iocCount + 1, artifactCount)))
+          similarCases + (caseId → ((iocCount + 1, artifactCount)))
         else
-          similarCases + (caseId -> ((iocCount, artifactCount + 1)))
+          similarCases + (caseId → ((iocCount, artifactCount + 1)))
       }
       .mapConcat(identity)
       .mapAsyncUnordered(5) {
@@ -367,7 +367,7 @@ class AlertSrv(
     updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
     val updateAlertProcess = updateAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated)")
+        logger.debug(s"Updating alert ${alert.id} (status: Update → Updated)")
         update(alert, updatedStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
@@ -379,7 +379,7 @@ class AlertSrv(
     ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
     val ignoreAlertProcess = ignoreAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored)")
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore → Ignored)")
         update(alert, ignoredStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)

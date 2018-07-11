@@ -106,10 +106,10 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
 
   def getResponderByName(responderName: String)(implicit ec: ExecutionContext): Future[Responder] = {
     val searchRequest = Json.obj(
-      "query" -> Json.obj(
-        "_field" -> "name",
-        "_value" -> responderName),
-      "range" -> "0-1")
+      "query" → Json.obj(
+        "_field" → "name",
+        "_value" → responderName),
+      "range" → "0-1")
     request(s"api/responder/_search", _.post(searchRequest),
       _.json.as[Seq[Responder]])
       .flatMap { analyzers ⇒
@@ -122,10 +122,10 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
 
   def getAnalyzerByName(analyzerName: String)(implicit ec: ExecutionContext): Future[Analyzer] = {
     val searchRequest = Json.obj(
-      "query" -> Json.obj(
-        "_field" -> "name",
-        "_value" -> analyzerName),
-      "range" -> "0-1")
+      "query" → Json.obj(
+        "_field" → "name",
+        "_value" → analyzerName),
+      "range" → "0-1")
     request(s"api/analyzer/_search", _.post(searchRequest),
       _.json.as[Seq[Analyzer]])
       .flatMap { analyzers ⇒
@@ -141,7 +141,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   }
 
   def findResponders(query: JsObject)(implicit ec: ExecutionContext): Future[Seq[Responder]] = {
-    request(s"api/responder/_search?range=all", _.post(Json.obj("query" -> query)), _.json.as[Seq[Responder]]).map(_.map(_.addCortexId(name)))
+    request(s"api/responder/_search?range=all", _.post(Json.obj("query" → query)), _.json.as[Seq[Responder]]).map(_.map(_.addCortexId(name)))
   }
 
   def analyze(analyzerId: String, artifact: CortexArtifact)(implicit ec: ExecutionContext): Future[JsValue] = {

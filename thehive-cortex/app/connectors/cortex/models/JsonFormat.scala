@@ -50,7 +50,7 @@ object JsonFormat {
   implicit val jobStatusFormat: Format[JobStatus.Type] = enumFormat(JobStatus)
 
   private def filterObject(json: JsObject, attributes: String*): JsObject = {
-    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a -> _)))
+    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a → _)))
   }
 
   implicit val cortexJobReads: Reads[CortexJob] = Reads[CortexJob](json ⇒
@@ -77,8 +77,8 @@ object JsonFormat {
     "version" → responder.version,
     "description" → responder.description,
     "dataTypeList" → responder.dataTypeList,
-    "maxTlp" -> responder.maxTlp,
-    "maxPap" -> responder.maxPap,
+    "maxTlp" → responder.maxTlp,
+    "maxPap" → responder.maxPap,
     "cortexIds" → responder.cortexIds))
   private val responderReads = Reads[Responder](json ⇒
     for {

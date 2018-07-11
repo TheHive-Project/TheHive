@@ -47,8 +47,8 @@ class JobModel @Inject() (
 object Job {
   def fixJobAttr(attr: JsObject): JsObject = {
     val analyzerId = (attr \ "analyzerId").as[String]
-    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" -> JsString(analyzerId)))(_ ⇒ attr)
-    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" -> JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
+    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
+    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
   }
 }
 

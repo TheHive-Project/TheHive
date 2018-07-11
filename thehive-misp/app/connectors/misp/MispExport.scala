@@ -72,7 +72,7 @@ class MispExport @Inject() (
         "Attribute" → attributes,
         "Tag" → Json.arr(
           Json.obj("name" → tlpWrites.writes(tlp))),
-        "extends_uuid" -> extendsEvent.fold[JsValue](JsNull)(JsString)))
+        "extends_uuid" → extendsEvent.fold[JsValue](JsNull)(JsString)))
     mispConnection("events")
       .post(mispEvent)
       .map { mispResponse ⇒

@@ -81,7 +81,7 @@ class LocalStreamActor @Inject() (
 
   def receive(messages: Map[String, Option[AggregatedMessage[_]]], flushScheduler: Option[Cancellable]): Receive = {
     case RequestStart(requestId) ⇒
-      context.become(receive(messages + (requestId -> None), None))
+      context.become(receive(messages + (requestId → None), None))
 
     case RequestEnd(requestId) ⇒
       messages.get(requestId).collect {
@@ -98,10 +98,10 @@ class LocalStreamActor @Inject() (
           AggregatedAuditMessage(auxSrv, operation).toJson.map(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
         case Some(None) ⇒
           logger.debug("First operation of the request, creating operation group")
-          context.become(receive(messages + (requestId -> Some(AggregatedAuditMessage(auxSrv, operation))), None))
+          context.become(receive(messages + (requestId → Some(AggregatedAuditMessage(auxSrv, operation))), None))
         case Some(Some(aam: AggregatedAuditMessage)) ⇒
           logger.debug("Operation included in existing group")
-          context.become(receive(messages + (requestId -> Some(aam.add(operation))), None))
+          context.become(receive(messages + (requestId → Some(aam.add(operation))), None))
         case _ ⇒
           logger.debug("Impossible")
           sys.error("")

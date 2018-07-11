@@ -73,7 +73,7 @@ class CortexActionSrv @Inject() (
         .map { caze ⇒ (caze.tlp(), caze.pap()) }
         .recover { case _ ⇒ (0L, 0L) }
       query = Json.obj(
-        "dataTypeList" -> s"thehive:$entityType")
+        "dataTypeList" → s"thehive:$entityType")
       responders ← findResponders(query)
       applicableResponders = responders.filter(w ⇒ w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
     } yield applicableResponders
@@ -163,12 +163,12 @@ class CortexActionSrv @Inject() (
             .instances
             .find(_.name == cortexId)
             .fold[Future[(CortexClient, Responder)]](Future.failed(NotFoundError(s"cortex $cortexId not found"))) { c ⇒
-              getResponder(c).map(c -> _)
+              getResponder(c).map(c → _)
             }
         }
         .getOrElse {
           Future.firstCompletedOf {
-            cortexConfig.instances.map(c ⇒ getResponder(c).map(c -> _))
+            cortexConfig.instances.map(c ⇒ getResponder(c).map(c → _))
           }
         }
     }

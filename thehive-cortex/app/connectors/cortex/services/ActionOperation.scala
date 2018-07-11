@@ -49,7 +49,7 @@ object ActionOperation {
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase ⇒ addTagToCaseWrites.writes(a)
     case a: CreateTask   ⇒ createTaskWrites.writes(a)
-    case a               ⇒ Json.obj("unsupported operation" -> a.toString)
+    case a               ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
 
