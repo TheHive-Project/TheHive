@@ -55,7 +55,7 @@
                     <th>Task</th>
                     <th style="width: 240px">Date</th>
                     <th style="width: 200px">Assignee</th>
-                    <th style="width: 200px" class="text-right">Actions</th>
+                    <th style="width: 250px" class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -102,10 +102,32 @@
                             <i class="fa fa-play"></i>
                             Start
                         </span>
+
+                        <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                            <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id)" uib-dropdown-toggle>
+                                <i class="text-primary fa fa-cog"></i>
+                                <!-- Responders
+                                <i class="text-primary fa fa-angle-down"></i> -->
+                            </a>
+                            <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                              <li ng-if="taskResponders && taskResponders.length === 0">
+                                <a href ng-click="getTaskResponders(task.id, true)">
+                                  <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                                </a>
+                              </li>
+                              <li ng-repeat="responder in taskResponders">
+                                <a href ng-click="runResponder(responder.id)">
+                                  <strong>{{responder.name}}</strong>
+                                  <br>
+                                  <small>{{responder.description}}</small></a>
+                              </li>
+                            </ul>
+                        </span>
                     </td>
                 </tr>
             </tbody>
         </table>
         <psearch control="tasks"></psearch>
+        <pre>{{taskResponders | json}}</pre>
     </div>
 </div>

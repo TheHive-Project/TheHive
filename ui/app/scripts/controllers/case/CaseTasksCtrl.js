@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv, CortexSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -15,6 +15,7 @@
         $scope.newTask = {
             status: 'Waiting'
         };
+        $scope.taskResponders = null;
 
         $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
             scope: $scope,
@@ -132,6 +133,29 @@
             return defer.promise;
         };
 
+        $scope.getTaskResponders = function(taskId, force) {
+            if(!force && $scope.taskResponders !== null) {
+               return;
+            }
+
+            CortexSrv.getResponders('case_task', taskId)
+              .then(function(responders) {
+                  $scope.taskResponders = responders;
+              })
+              .catch(function(err) {
+                  NotificationSrv.error('taskList', response.data, response.status);
+              })
+        };
+
+        $scope.runResponder = function(responderId, task) {
+            CortexSrv.runResponder(responderId, 'case_task', _.pick(task, 'id'))
+              .then(function(response) {
+                  console.log(response);
+              })
+              .catch(function(err) {
+                  console.log(err);
+              });
+        };
     }
 
     function CaseTaskDeleteCtrl($uibModalInstance, title) {

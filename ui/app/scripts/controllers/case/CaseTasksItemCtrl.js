@@ -155,7 +155,7 @@
                    return;
                 }
 
-                CortexSrv.getResponders('case_task', $scope.caseId)
+                CortexSrv.getResponders('case_task', $scope.task.id)
                   .then(function(responders) {
                       $scope.taskResponders = responders;
                   })
