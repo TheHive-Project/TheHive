@@ -56,9 +56,9 @@ object JsonFormat {
   implicit val cortexJobReads: Reads[CortexJob] = Reads[CortexJob](json ⇒
     for {
       id ← (json \ "id").validate[String]
-      analyzerId ← (json \ "analyzerId").validate[String]
-      analyzerName = (json \ "analyzerName").validate[String].getOrElse(analyzerId)
-      analyzerDefinition = (json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
+      analyzerId ← (json \ "workerId").validate[String]
+      analyzerName = (json \ "workerName").validate[String].getOrElse(analyzerId)
+      analyzerDefinition = (json \ "workerDefinitionId").validate[String].getOrElse(analyzerId)
       attributes = filterObject(json.as[JsObject], "tlp", "message", "parameters")
       artifact = (json \ "artifact").validate[CortexArtifact]
         .getOrElse {

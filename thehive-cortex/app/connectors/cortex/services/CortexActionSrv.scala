@@ -177,7 +177,6 @@ class CortexActionSrv @Inject() (
       objectType ← fields.getString("objectType").fold[Future[String]](Future.failed(MissingAttributeError("action.objectType")))(Future.successful)
       objectId ← fields.getString("objectId").fold[Future[String]](Future.failed(MissingAttributeError("action.objectId")))(Future.successful)
       (cortexClient, responder) ← getCortexClient
-      tlp = fields.getLong("tlp").getOrElse(2L)
       message = fields.getString("message").getOrElse("")
       parameters = fields.getValue("parameters") match {
         case Some(o: JsObject) ⇒ o
@@ -185,20 +184,24 @@ class CortexActionSrv @Inject() (
       }
       entity ← getEntity(objectType, objectId)
       entityJson ← auxSrv(entity, 10, withStats = false, removeUnaudited = true)
+      caze ← actionOperationSrv.findCaseEntity(entity).map(Some(_)).recover { case _ ⇒ None }
+      tlp = fields.getLong("tlp").orElse(caze.map(_.tlp())).getOrElse(2L)
+      pap = caze.map(_.pap()).getOrElse(2L)
       jobJson ← cortexClient.execute(
         responder.id,
         s"thehive:$objectType",
         entityJson,
         tlp,
+        pap,
         message,
         parameters)
       job = jobJson.as[CortexJob] //(cortexActionJobReads(cortexClient.name))
       action ← createSrv[ActionModel, Action](actionModel, Fields.empty
         .set("objectType", entity.model.modelName)
         .set("objectId", entity.id)
-        .set("responderId", job.analyzerId)
-        .set("responderName", job.analyzerName)
-        .set("responderDefinition", job.analyzerDefinition)
+        .set("responderId", job.workerId)
+        .set("responderName", job.workerName)
+        .set("responderDefinition", job.workerDefinition)
         //.set("status", JobStatus.InProgress)
         .set("objectType", objectType)
         .set("objectId", objectId)

@@ -58,9 +58,9 @@ class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job
 
 case class CortexJob(
     id: String,
-    analyzerId: String,
-    analyzerName: String,
-    analyzerDefinition: String,
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
     artifact: CortexArtifact,
     date: Date,
     status: JobStatus.Type)

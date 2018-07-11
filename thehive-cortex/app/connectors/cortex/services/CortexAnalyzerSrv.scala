@@ -303,9 +303,9 @@ class CortexAnalyzerSrv @Inject() (
           cortexJobJson ← cortex.analyze(analyzer.id, cortexArtifact)
           cortexJob = cortexJobJson.as[CortexJob]
           job ← create(artifact, Fields.empty
-            .set("analyzerId", cortexJob.analyzerId)
-            .set("analyzerName", cortexJob.analyzerName)
-            .set("analyzerDefinition", cortexJob.analyzerDefinition)
+            .set("analyzerId", cortexJob.workerId)
+            .set("analyzerName", cortexJob.workerName)
+            .set("analyzerDefinition", cortexJob.workerDefinition)
             .set("artifactId", artifactId)
             .set("cortexId", cortex.name)
             .set("cortexJobId", cortexJob.id))
