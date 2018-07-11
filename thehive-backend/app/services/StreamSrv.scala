@@ -95,7 +95,7 @@ class LocalStreamActor @Inject() (
       messages.get(requestId) match {
         case None ⇒
           logger.debug("Operation that comes after the end of request, send it to stream actor")
-          AggregatedAuditMessage(auxSrv, operation).toJson.map(msg ⇒ mediator ! Publish("stream", msg))
+          AggregatedAuditMessage(auxSrv, operation).toJson.map(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
         case Some(None) ⇒
           logger.debug("First operation of the request, creating operation group")
           context.become(receive(messages + (requestId -> Some(AggregatedAuditMessage(auxSrv, operation))), None))
