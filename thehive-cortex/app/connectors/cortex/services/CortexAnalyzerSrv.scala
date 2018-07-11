@@ -214,7 +214,7 @@ class CortexAnalyzerSrv @Inject() (
     } yield job + ("report" → updatedReport)
   }
 
-  def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
+  def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Unit = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
@@ -262,9 +262,14 @@ class CortexAnalyzerSrv @Inject() (
           .set("status", JobStatus.Failure.toString)
           .set("endDate", Json.toJson(new Date))
         update(jobId, jobFields)
-      case _ ⇒
+      case _ if maxError > 0 ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-        updateJobWithCortex(jobId, cortexJobId, cortex)
+        updateJobWithCortex(jobId, cortexJobId, cortex, maxError - 1)
+      case _ ⇒
+        logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
+        update(jobId, Fields.empty
+          .set("status", JobStatus.Failure.toString)
+          .set("endDate", Json.toJson(new Date)))
     }
     ()
   }

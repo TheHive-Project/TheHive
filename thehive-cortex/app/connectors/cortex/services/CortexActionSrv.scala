@@ -99,7 +99,7 @@ class CortexActionSrv @Inject() (
   private def update(action: Action, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
     updateSrv[Action](action, fields, modifyConfig)
 
-  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient)(implicit authContext: AuthContext): Unit = {
+  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Unit = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
     cortex.waitReport(cortexJobId, 1.minute) andThen {
       case Success(j) ⇒
@@ -131,9 +131,14 @@ class CortexActionSrv @Inject() (
           .set("status", JobStatus.Failure.toString)
           .set("endDate", Json.toJson(new Date))
         update(actionId, actionFields)
-      case _ ⇒
+      case _ if maxError > 0 ⇒
         logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-        updateActionWithCortex(actionId, cortexJobId, entity, cortex)
+        updateActionWithCortex(actionId, cortexJobId, entity, cortex, maxError - 1)
+      case _ ⇒
+        logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
+        update(actionId, Fields.empty
+          .set("status", JobStatus.Failure.toString)
+          .set("endDate", Json.toJson(new Date)))
     }
     ()
   }
