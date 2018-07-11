@@ -92,11 +92,11 @@ class OAuth2Srv(
     withOAuth2Config { cfg ⇒
       ws.url(cfg.tokenUrl)
         .post(Map(
-          "code" -> code,
-          "grant_type" -> cfg.grantType,
-          "client_secret" -> cfg.clientSecret,
-          "redirect_uri" -> cfg.redirectUri,
-          "client_id" -> clientId))
+          "code" → code,
+          "grant_type" → cfg.grantType,
+          "client_secret" → cfg.clientSecret,
+          "redirect_uri" → cfg.redirectUri,
+          "client_id" → clientId))
         .recoverWith {
           case error ⇒
             logger.error(s"Token verification failure", error)
@@ -106,7 +106,7 @@ class OAuth2Srv(
           r.status match {
             case Status.OK ⇒
               val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
-              val authHeader = "Authorization" -> s"bearer $accessToken"
+              val authHeader = "Authorization" → s"bearer $accessToken"
               ws.url(cfg.userUrl)
                 .addHttpHeaders(authHeader)
                 .get().flatMap { userResponse ⇒
@@ -149,10 +149,10 @@ class OAuth2Srv(
   private def createOauth2Redirect(clientId: String): Future[AuthContext] = {
     withOAuth2Config { cfg ⇒
       val queryStringParams = Map[String, Seq[String]](
-        "scope" -> Seq(cfg.scope),
-        "response_type" -> Seq(cfg.responseType),
-        "redirect_uri" -> Seq(cfg.redirectUri),
-        "client_id" -> Seq(clientId))
+        "scope" → Seq(cfg.scope),
+        "response_type" → Seq(cfg.responseType),
+        "redirect_uri" → Seq(cfg.redirectUri),
+        "client_id" → Seq(clientId))
       Future.failed(OAuth2Redirect(cfg.authorizationUrl, queryStringParams))
     }
   }

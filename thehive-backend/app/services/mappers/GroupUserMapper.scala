@@ -51,9 +51,9 @@ class GroupUserMapper(
         login ← (jsValue \ loginAttrName).validate[String]
         name ← (jsValue \ nameAttrName).validate[String]
       } yield Fields(Json.obj(
-        "login" -> login,
-        "name" -> name,
-        "roles" -> roles))
+        "login" → login,
+        "name" → name,
+        "roles" → roles))
       fields match {
         case JsSuccess(f, _) ⇒ Future.successful(f)
         case JsError(errors) ⇒ Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._1).mkString}"))

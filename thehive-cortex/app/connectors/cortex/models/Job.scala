@@ -47,8 +47,8 @@ class JobModel @Inject() (
 object Job {
   def fixJobAttr(attr: JsObject): JsObject = {
     val analyzerId = (attr \ "analyzerId").as[String]
-    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" -> JsString(analyzerId)))(_ ⇒ attr)
-    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" -> JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
+    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
+    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
   }
 }
 
@@ -58,12 +58,9 @@ class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job
 
 case class CortexJob(
     id: String,
-    analyzerId: String,
-    analyzerName: String,
-    analyzerDefinition: String,
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
     artifact: CortexArtifact,
     date: Date,
-    status: JobStatus.Type,
-    cortexIds: List[String] = Nil) {
-  def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
-}
+    status: JobStatus.Type)

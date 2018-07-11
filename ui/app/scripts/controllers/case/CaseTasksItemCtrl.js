@@ -1,13 +1,14 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
             // Initialize controller
             $scope.task = task;
             $scope.tabName = 'task-' + task.id;
+            $scope.taskResponders = null;
 
             $scope.loading = false;
             $scope.newLog = {
@@ -147,6 +148,30 @@
                 $scope.state.sort = sort;
                 $scope.logs.sort = sort;
                 $scope.logs.update();
+            };
+
+            $scope.getTaskResponders = function(force) {
+                if(!force && $scope.taskResponders !== null) {
+                   return;
+                }
+
+                CortexSrv.getResponders('case_task', $scope.caseId)
+                  .then(function(responders) {
+                      $scope.taskResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('taskDetails', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId) {
+                CortexSrv.runResponder(responderId, 'case_task', _.pick($scope.task, 'id'))
+                  .then(function(response) {
+                      console.log(response);
+                  })
+                  .catch(function(err) {
+                      console.log(err);
+                  });
             };
 
             // Add tabs

@@ -156,7 +156,7 @@ class CaseMergeSrv @Inject() (
       .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task → _) }
       .flatMapConcat {
         case (oldTask, newTask) ⇒
-          logger.info(s"\ttask : ${oldTask.id} -> ${newTask.id} : ${newTask.title()}")
+          logger.info(s"\ttask : ${oldTask.id} → ${newTask.id} : ${newTask.title()}")
           val (logs, futureLogCount) = logSrv.find(and(parent("case_task", withId(oldTask.id)), "status" ~!= LogStatus.Deleted), Some("all"), Nil)
           futureLogCount.foreach { count ⇒ logger.info(s"Creating $count log(s) in task ${newTask.id}") }
           logs.map(_ → newTask)

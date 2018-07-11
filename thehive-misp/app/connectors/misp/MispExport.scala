@@ -7,6 +7,7 @@ import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Success, Try }
 
+import play.api.Logger
 import play.api.libs.json._
 
 import akka.stream.scaladsl.Sink
@@ -18,7 +19,7 @@ import akka.stream.Materializer
 
 import org.elastic4play.{ BadRequestError, InternalError }
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ AttachmentSrv, AuthContext }
+import org.elastic4play.services.{ Attachment, AttachmentSrv, AuthContext }
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.utils.RichFuture
 
@@ -34,6 +35,7 @@ class MispExport @Inject() (
 
   lazy val dateFormat = new SimpleDateFormat("yy-MM-dd")
   private[misp] lazy val alertSrv = alertSrvProvider.get
+  lazy val logger = Logger(getClass)
 
   def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
     import org.elastic4play.services.QueryDSL._
@@ -58,6 +60,7 @@ class MispExport @Inject() (
   }
 
   def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute], extendsEvent: Option[String]): Future[(String, Seq[ExportedMispAttribute])] = {
+    logger.debug(s"Create MISP event $title, with ${attributes.size} attributes")
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution" → 0,
@@ -69,7 +72,7 @@ class MispExport @Inject() (
         "Attribute" → attributes,
         "Tag" → Json.arr(
           Json.obj("name" → tlpWrites.writes(tlp))),
-        "extends_uuid" -> extendsEvent.fold[JsValue](JsNull)(JsString)))
+        "extends_uuid" → extendsEvent.fold[JsValue](JsNull)(JsString)))
     mispConnection("events")
       .post(mispEvent)
       .map { mispResponse ⇒
@@ -136,29 +139,50 @@ class MispExport @Inject() (
     }
   }
 
+  def getUpdatableEvent(mispConnection: MispConnection, eventId: String): Future[Option[String]] = {
+    mispConnection(s"/events/getEditStrategy/$eventId")
+      .get().map {
+        case resp if resp.status / 100 == 2 ⇒
+          val body = resp.json
+          val isEditStrategy = (body \ "strategy").asOpt[String].contains("edit")
+          if (!isEditStrategy) (body \ "extensions" \ 0 \ "id").asOpt[String]
+          else Some(eventId)
+        case _ ⇒ None
+      }
+  }
+
   def export(mispName: String, caze: Case)(implicit authContext: AuthContext): Future[(String, Seq[Try[Artifact]])] = {
+    logger.info(s"Exporting case ${caze.caseId()} to MISP $mispName")
     val mispConnection = mispConfig.getConnection(mispName).getOrElse(sys.error("MISP instance not found"))
     if (!mispConnection.canExport)
       Future.failed(BadRequestError(s"Export on MISP connection $mispName is denied by configuration"))
     else {
       for {
         (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
+        _ = logger.debug(maybeEventId.fold(s"Related MISP event doesn't exist")(e ⇒ s"Related MISP event found : $e"))
         attributes ← mispSrv.getAttributesFromCase(caze)
         uniqueAttributes = removeDuplicateAttributes(attributes)
-        simpleAttributes = uniqueAttributes.filter(_.value.isLeft) // exclude attributes containing file
-        (eventId, exportedAttributes) ← createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId)
-        initialExportesArtifacts = exportedAttributes.map(a ⇒ Success(a.artifact))
-        exportedAttributeValues = exportedAttributes.map(_.value.map(_.name))
-        newAttributes = uniqueAttributes.filterNot(attr ⇒ exportedAttributeValues.contains(attr.value.map(_.name)))
-        // exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
-        // ** workaround **
-        // Wait the end of the MISP request to start the next one, unless, MISP generate an internal error:
-        // Error: [PDOException] SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction
-        exportedArtifact ← newAttributes.foldLeft(Future.successful(Seq.empty[Try[Artifact]])) {
-          case (fAcc, attr) ⇒
-            for (acc ← fAcc; a ← exportAttribute(mispConnection, eventId, attr).toTry) yield acc :+ a
+        eventToUpdate ← maybeEventId.fold(Future.successful[Option[String]](None))(getUpdatableEvent(mispConnection, _))
+        (eventId, initialExportesArtifacts, existingAttributes) ← eventToUpdate.fold {
+          logger.debug(s"Creating a new MISP event that extends $maybeEventId")
+          val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
+          // if no event is associated to this case, create a new one
+          createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId).map {
+            case (eventId, exportedAttributes) ⇒ (eventId, exportedAttributes.map(a ⇒ Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
+          }
+        } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
+          logger.debug(s"Updating MISP event $eventId")
+          mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes ⇒
+            (eventId, Nil, attributes.map {
+              case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             ⇒ Left(data)
+              case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             ⇒ Right(filename)
+              case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) ⇒ Right(filename)
+            })
+          }
         }
-        // ** end of workaround **
+
+        newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
+        exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
         artifacts = uniqueAttributes.map { a ⇒
           Json.obj(
             "data" → a.artifact.data(),

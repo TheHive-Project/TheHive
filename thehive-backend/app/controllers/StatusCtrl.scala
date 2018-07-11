@@ -49,7 +49,7 @@ class StatusCtrl @Inject() (
               case _                          ⇒ JsString(authSrv.name)
             }),
             "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
-            "ssoAutoLogin" -> JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false)))))
+            "ssoAutoLogin" → JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false)))))
       }
   }
 

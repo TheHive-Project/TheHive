@@ -155,7 +155,7 @@ class CaseSrv @Inject() (
       .fold(Map.empty[String, List[Artifact]]) { (similarCases, artifact) ⇒
         val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
         val artifactList = artifact :: similarCases.getOrElse(caseId, Nil)
-        similarCases + (caseId -> artifactList)
+        similarCases + (caseId → artifactList)
       }
       .mapConcat(identity)
       .mapAsyncUnordered(5) {

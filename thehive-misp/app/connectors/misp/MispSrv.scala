@@ -45,6 +45,13 @@ class MispSrv @Inject() (
       Future.successful(instanceConfig)
     }
 
+  def getEvent(mispConnection: MispConnection, eventId: String): Future[MispAlert] = {
+    logger.debug(s"Get MISP event $eventId")
+    require(!eventId.isEmpty)
+    mispConnection(s"events/$eventId")
+      .get().map(e ⇒ (e.json \ "Event").as[MispAlert])
+  }
+
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
     logger.debug(s"Get MISP events from $fromDate")
     val date = fromDate.getTime / 1000

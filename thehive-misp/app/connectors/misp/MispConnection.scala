@@ -102,12 +102,12 @@ case class MispConnection(
           "name" → name,
           "version" → version,
           "status" → "OK",
-          "purpose" -> purpose.toString)
+          "purpose" → purpose.toString)
         case None ⇒ Json.obj(
           "name" → name,
           "version" → "",
           "status" → "ERROR",
-          "purpose" -> purpose.toString)
+          "purpose" → purpose.toString)
       }
   }
 

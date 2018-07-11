@@ -6,7 +6,7 @@ object Common {
   val projectSettings = Seq(
     organizationName := "TheHive-Project",
     organization := "org.thehive-project",
-    licenses += "AGPL-V3" -> url("https://www.gnu.org/licenses/agpl-3.0.html"),
+    licenses += "AGPL-V3" → url("https://www.gnu.org/licenses/agpl-3.0.html"),
     organizationHomepage := Some(url("http://thehive-project.org/")),
     resolvers += Resolver.bintrayRepo("thehive-project", "maven"),
     scalaVersion := Dependencies.scalaVersion,
@@ -22,7 +22,7 @@ object Common {
       "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
       "-Ywarn-numeric-widen" // Warn when numerics are widened.
     ),
-    scalacOptions in Test ~= { options =>
+    scalacOptions in Test ~= { options ⇒
       options filterNot (_ == "-Ywarn-dead-code") // Allow dead code in tests (to support using mockito).
     },
     parallelExecution in Test := false,
@@ -38,9 +38,9 @@ object Common {
 
   def getRelease(version: String): String = {
     version.dropWhile(_ != '-').dropWhile(_ == '-') match {
-      case "" => "1"
-      case r if r.contains('-') => sys.error("Version can't have more than one dash")
-      case r => s"0.1$r"
+      case "" ⇒ "1"
+      case r if r.contains('-') ⇒ sys.error("Version can't have more than one dash")
+      case r ⇒ s"0.1$r"
     }
   }
 }

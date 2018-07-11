@@ -118,11 +118,11 @@ class Alert(model: AlertModel, attributes: JsObject)
     }))
 
   def toCaseJson: JsObject = Json.obj(
-    //"caseId" -> caseId,
+    //"caseId" → caseId,
     "title" → title(),
     "description" → description(),
     "severity" → severity(),
-    //"owner" -> owner,
+    //"owner" → owner,
     "startDate" → date(),
     "tags" → tags(),
     "tlp" → tlp(),
