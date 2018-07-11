@@ -335,6 +335,11 @@ class Migration(
           }
           case other ⇒ f(other)
         }))
+
+    case DatabaseState(13) ⇒
+      Seq(
+        addAttribute("alert", "customFields" → JsString("{}")))
+
   }
 
   private def generateAlertId(alert: JsObject): String = {

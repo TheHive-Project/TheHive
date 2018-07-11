@@ -62,6 +62,7 @@ trait AlertAttributes {
   val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
   val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
   val follow: A[Boolean] = attribute("follow", F.booleanFmt, "", true)
+  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields", JsObject.empty)
 }
 
 @Singleton
