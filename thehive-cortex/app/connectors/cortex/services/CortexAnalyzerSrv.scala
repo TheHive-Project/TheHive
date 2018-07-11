@@ -293,6 +293,7 @@ class CortexAnalyzerSrv @Inject() (
           caze ← caseSrv.get(artifact.parentId.get)
           artifactAttributes = Json.obj(
             "tlp" → artifact.tlp(),
+            "pap" → caze.pap(),
             "dataType" → artifact.dataType(),
             "message" -> caze.caseId().toString)
           cortexArtifact = (artifact.data(), artifact.attachment()) match {

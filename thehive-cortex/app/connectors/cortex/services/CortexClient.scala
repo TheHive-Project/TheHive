@@ -161,15 +161,17 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       dataType: String,
       data: JsValue,
       tlp: Long,
+      pap: Long,
       message: String,
       parameters: JsObject)(implicit ec: ExecutionContext): Future[JsValue] = {
     val body = Json.obj(
-      "data" -> data.toString,
-      "dataType" -> dataType,
-      "tlp" -> tlp,
-      "message" -> message,
-      "parameters" -> parameters)
-    request(s"api/analyzer/$responderId/run", _.post(body), _.json.as[JsObject])
+      "data" → data.toString,
+      "dataType" → dataType,
+      "tlp" → tlp,
+      "pap" → pap,
+      "message" → message,
+      "parameters" → parameters)
+    request(s"api/responder/$responderId/run", _.post(body), _.json.as[JsObject])
   }
 
   def listAnalyzerForType(dataType: String)(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {
