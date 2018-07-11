@@ -335,6 +335,9 @@ class Migration(
           }
           case other ⇒ f(other)
         }))
+    case DatabaseState(13) ⇒
+      Seq(
+        addAttribute("case", "pap" → JsNumber(2)))
   }
 
   private def generateAlertId(alert: JsObject): String = {
