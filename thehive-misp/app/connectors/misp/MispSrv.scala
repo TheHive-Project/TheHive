@@ -49,7 +49,11 @@ class MispSrv @Inject() (
     logger.debug(s"Get MISP event $eventId")
     require(!eventId.isEmpty)
     mispConnection(s"events/$eventId")
-      .get().map(e ⇒ (e.json \ "Event").as[MispAlert])
+      .get().map { e ⇒
+        (e.json \ "Event")
+          .as[MispAlert]
+          .copy(source = mispConnection.name)
+      }
   }
 
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {

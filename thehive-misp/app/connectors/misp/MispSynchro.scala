@@ -140,7 +140,11 @@ class MispSynchro @Inject() (
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
-        getOriginalEvent(mispConnection, event).flatMap(originalEvent ⇒ alertSrv.get("misp", originalEvent.source, originalEvent.sourceRef))
+        getOriginalEvent(mispConnection, event)
+          .flatMap { originalEvent ⇒
+            logger.trace(s"Event misp:${event.source}:${event.sourceRef} is originated from misp:${originalEvent.source}:${originalEvent.sourceRef}")
+            alertSrv.get("misp", mispConnection.name, originalEvent.sourceRef)
+          }
           .map((event, _))
       }
       .mapAsyncUnordered(1) {
