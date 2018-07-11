@@ -338,7 +338,8 @@ class Migration(
 
     case DatabaseState(13) ⇒
       Seq(
-        addAttribute("alert", "customFields" → JsString("{}")))
+        addAttribute("alert", "customFields" → JsString("{}")),
+        addAttribute("case_task", "group" → JsString("default")))
 
   }
 

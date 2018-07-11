@@ -30,6 +30,7 @@ trait TaskAttributes { _: AttributeDef ⇒
   val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
   val order = attribute("order", F.numberFmt, "Order of the task", 0L)
   val dueDate = optionalAttribute("dueDate", F.dateFmt, "When this date is passed, Thehive warns users")
+  val group = attribute("group", F.stringFmt, "Name used to group tasks", "default")
 }
 
 @Singleton
