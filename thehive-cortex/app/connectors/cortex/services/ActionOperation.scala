@@ -81,7 +81,7 @@ class ActionOperationSrv @Inject() (
           RetryOnError() { // FIXME find the right exception
             for {
               caze ← findCaseEntity(entity)
-              _ ← caseSrv.update(caze, Fields.empty.set("tags", Json.toJson(caze.tags() :+ tag)), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+              _ ← caseSrv.update(caze, Fields.empty.set("tags", Json.toJson((caze.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
         case _ ⇒ Future.successful(operation)
