@@ -283,6 +283,20 @@
               });
             }
 
+            $scope.caseReport = function() {
+                $uibModal.open({
+                    scope: $scope,
+                    templateUrl: 'views/partials/case/case.report.html',
+                    controller: 'CaseReportModalCtrl',
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return $scope.caze;
+                        }
+                    }
+                });
+            };
+
             /**
              * A workaround filter to make sure the ngRepeat doesn't order the
              * object keys

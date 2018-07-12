@@ -44,6 +44,13 @@
             </a>
         </span>
 
+        <span class="ml-xs pull-right">
+            <a href ng-click="caseReport()" class="text-muted noline" uib-tooltip="Generate case report">
+                <i class="text-muted fa fa-archive"></i>
+                Report
+            </a>
+        </span>
+
         <span class="ml-xs pull-right" ng-if="appConfig.connectors.misp.enabled">
             <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
                 <i class="text-primary fa fa-share"></i>
@@ -82,7 +89,6 @@
                 Reopen
             </a>
         </span>
-
     </div>
 </div>
 

@@ -5,16 +5,16 @@
         .controller('CaseReportModalCtrl', CaseReportModalCtrl);
 
     function CaseReportModalCtrl($scope, $state, $uibModalInstance, $q, PSearchSrv,SearchSrv, CaseSrv, UserInfoSrv, NotificationSrv, caze, $http) {
-        var me = this;
-        this.caze = caze;
-        $scope.artifacts = PSearchSrv(caze.caseId, 'case_artifact', {
+        $scope.caze = caze;
+        console.log($scope)
+        $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
                         scope: $scope,
                         baseFilter: {
                             '_and': [{
                                 '_parent': {
                                     "_type": "case",
                                     "_query": {
-                                        "_id": caze.caseId
+                                        "_id": $scope.caseId
                                     }
                                 }
                             },   {
