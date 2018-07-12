@@ -29,14 +29,6 @@ class CaseReportSrv @Inject() (
   def get(id: String): Future[CaseReport] =
     getSrv[CaseReportModel, CaseReport](caseReportModel, id)
 
-  def getByName(name: String): Future[CaseReport] = {
-    import org.elastic4play.services.QueryDSL._
-    findSrv[CaseReportModel, CaseReport](caseReportModel, "name" ~= name, Some("0-1"), Nil)
-      ._1
-      .runWith(Sink.headOption)
-      .map(_.getOrElse(throw NotFoundError(s"Case template $name not found")))
-  }
-
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[CaseReport] =
     update(id, fields, ModifyConfig.default)
 
