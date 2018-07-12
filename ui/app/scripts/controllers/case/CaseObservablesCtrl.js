@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
+        function ($scope, $q, $state, $stateParams, $filter, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -9,6 +9,7 @@
             $scope.uiSrv = ObservablesUISrv;
             $scope.caseId = $stateParams.caseId;
             $scope.showText = false;
+            $scope.obsResponders = null;
 
             $scope.uiSrv.initContext($scope.caseId);
             $scope.searchForm = {
@@ -685,6 +686,32 @@
                         NotificationSrv.error('Unable to fetch the analysis report');
                     })
             }
+
+            $scope.getObsResponders = function(observableId, force) {
+                if(!force && $scope.obsResponders !== null) {
+                   return;
+                }
+
+                $scope.obsResponders = null;
+                CortexSrv.getResponders('case_artifact', observableId)
+                  .then(function(responders) {
+                      $scope.obsResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, artifact) {
+                CortexSrv.runResponder(responderId, 'case_artifact', _.pick(artifact, 'id'))
+                  .then(function(response) {
+                      var data = '['+$filter('fang')(artifact.name || artifact.attachment.name)+']';
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  });
+            };
         }
     )
     .controller('JobReportModalCtrl', function($uibModalInstance, report, observable) {

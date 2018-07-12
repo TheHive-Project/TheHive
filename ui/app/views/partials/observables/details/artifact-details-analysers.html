@@ -1,11 +1,11 @@
 <div class="row">
     <div class="col-md-12">
-        <h3 class="pv-xxs pr-xxs text-primary">
+        <h4 class="pv-xxs pr-xxs text-primary">
             Analysis
             <span class="pull-right" ng-if="analysisEnabled">
                 <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
             </span>
-        </h3>
+        </h4>
         <table class="table table-striped">
             <thead>
                 <th>Analyzer</th>
@@ -90,14 +90,14 @@
 
 <div class="row observable-report" ng-if="report">
     <div class="col-md-12">
-        <h3 class="pad10 text-primary">
+        <h4 class="pad10 text-primary">
             Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | showDate}}</small>
             <span class="pull-right">
                 <small><a href class="text-primary" ng-click="showRaw = !showRaw">{{showRaw ? 'Hide': 'Show'}} Raw Report</a></small>
                 <small class="mh-xxxs">|</small>
                 <small><a href class="text-primary" ng-click="showArtifacts = !showArtifacts">{{showArtifacts ? 'Hide': 'Show'}} observables ({{report.content.artifacts.length}})</a></small>
             </span>
-        </h3>
+        </h4>
         <div ng-if="showArtifacts" class="">
             <div class="panel panel-info">
                 <div class="panel-heading">

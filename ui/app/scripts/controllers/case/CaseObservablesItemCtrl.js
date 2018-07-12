@@ -1,12 +1,13 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
             $scope.caseId = $stateParams.caseId;
             $scope.report = null;
+            $scope.obsResponders = null;
             $scope.analyzers = {};
             $scope.analyzerJobs = {};
             $scope.jobs = {};
@@ -216,6 +217,32 @@
                     .then(function () {
                         NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
+            };
+
+            $scope.getObsResponders = function(observableId, force) {
+                if(!force && $scope.obsResponders !== null) {
+                   return;
+                }
+
+                $scope.obsResponders = null;
+                CortexSrv.getResponders('case_artifact', observableId)
+                  .then(function(responders) {
+                      $scope.obsResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, artifact) {
+                CortexSrv.runResponder(responderId, 'case_artifact', _.pick(artifact, 'id'))
+                  .then(function(response) {
+                      var data = '['+$filter('fang')(artifact.name || artifact.attachment.name)+']';
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  });
             };
 
         }

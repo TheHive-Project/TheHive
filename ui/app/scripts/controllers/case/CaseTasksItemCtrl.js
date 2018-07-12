@@ -168,10 +168,10 @@
             $scope.runResponder = function(responderId) {
                 CortexSrv.runResponder(responderId, 'case_task', _.pick($scope.task, 'id'))
                   .then(function(response) {
-                      console.log(response);
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', $scope.task.title].join(' '), 'success');
                   })
-                  .catch(function(err) {
-                      console.log(err);
+                  .catch(function(response) {
+                      NotificationSrv.error('taskDetails', response.data, response.status);
                   });
             };
 
