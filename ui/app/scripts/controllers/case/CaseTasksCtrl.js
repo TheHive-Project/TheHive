@@ -138,6 +138,7 @@
                return;
             }
 
+            $scope.taskResponders = null;
             CortexSrv.getResponders('case_task', taskId)
               .then(function(responders) {
                   $scope.taskResponders = responders;

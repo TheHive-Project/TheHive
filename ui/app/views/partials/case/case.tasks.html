@@ -104,7 +104,7 @@
                         </span>
 
                         <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
-                            <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id)" uib-dropdown-toggle>
+                            <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id, true)" uib-dropdown-toggle>
                                 <i class="text-primary fa fa-cog"></i>
                                 <!-- Responders
                                 <i class="text-primary fa fa-angle-down"></i> -->
@@ -116,7 +116,7 @@
                                 </a>
                               </li>
                               <li ng-repeat="responder in taskResponders">
-                                <a href ng-click="runResponder(responder.id)">
+                                <a href ng-click="runResponder(responder.id, task)">
                                   <strong>{{responder.name}}</strong>
                                   <br>
                                   <small>{{responder.description}}</small></a>
@@ -128,6 +128,5 @@
             </tbody>
         </table>
         <psearch control="tasks"></psearch>
-        <pre>{{taskResponders | json}}</pre>
     </div>
 </div>

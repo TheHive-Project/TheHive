@@ -289,6 +289,7 @@
                    return;
                 }
 
+                $scope.caseResponders = null;
                 CortexSrv.getResponders('case', $scope.caseId)
                   .then(function(responders) {
                       $scope.caseResponders = responders;
@@ -298,7 +299,7 @@
                   })
             };
 
-            $scope.runResponder = function(responderId) {                
+            $scope.runResponder = function(responderId) {
                 CortexSrv.runResponder(responderId, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
                   .then(function(response) {
                       console.log(response);
