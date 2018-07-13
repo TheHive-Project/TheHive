@@ -24,12 +24,6 @@ class CaseReportCtrl @Inject() (
     caseReportSrv: CaseReportSrv,
     implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
-  @Timed // TODO: Add authenticated(Roles.read).async somehow
-  def report(caseId: String): Action[AnyContent] = Action { implicit request ⇒
-
-    Ok(new PdfGenerator().toBytes("Your PDF is generated", "http://localhost:9000")).as("application/pdf")
-  }
-
   def create: Action[AnyContent] = Action { implicit request ⇒
     Ok
   }

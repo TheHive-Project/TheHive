@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CaseReportSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
 
@@ -284,17 +284,17 @@
             }
 
             $scope.caseReport = function() {
-                $uibModal.open({
-                    scope: $scope,
-                    templateUrl: 'views/partials/case/case.report.html',
-                    controller: 'CaseReportModalCtrl',
-                    size: 'lg',
-                    resolve: {
-                        caze: function() {
-                            return $scope.caze;
-                        }
-                    }
-                });
+              $uibModal.open({
+                  scope: $scope,
+                  controller: 'CaseReportModalCtrl',
+                  templateUrl: 'views/partials/case/case.report.html',
+                  size: 'lg',
+                  resolve: {
+                      caze: function() {
+                          return $scope.caze;
+                      },
+                  }
+              });
             };
 
             /**

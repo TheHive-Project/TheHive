@@ -23,7 +23,6 @@ DELETE   /api/case/:caseId/force                  controllers.CaseCtrl.realDelet
 GET      /api/case/:caseId/links                  controllers.CaseCtrl.linkedCases(caseId)
 POST     /api/case/:caseId1/_merge/:caseId2       controllers.CaseCtrl.merge(caseId1, caseId2)
 
-GET      /api/case_report/:caseId                 controllers.CaseReportCtrl.report(caseId)
 GET      /api/case_report                         controllers.CaseReportCtrl.find()
 
 POST     /api/case/template/_search               controllers.CaseTemplateCtrl.find()
