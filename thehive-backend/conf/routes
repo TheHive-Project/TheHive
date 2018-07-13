@@ -24,6 +24,7 @@ GET      /api/case/:caseId/links                  controllers.CaseCtrl.linkedCas
 POST     /api/case/:caseId1/_merge/:caseId2       controllers.CaseCtrl.merge(caseId1, caseId2)
 
 GET      /api/case_report                         controllers.CaseReportCtrl.find()
+PATCH    /api/case_report/:templateId             controllers.CaseReportCtrl.update(templateId)
 
 POST     /api/case/template/_search               controllers.CaseTemplateCtrl.find()
 POST     /api/case/template                       controllers.CaseTemplateCtrl.create()

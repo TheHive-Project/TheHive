@@ -16,8 +16,8 @@
             return $http.post('./api/case_report/create', template);
         }
 
-        this.update = function(template) {
-            return $http.patch('./api/case_report/update', template);
+        this.update = function(id, template) {
+            return $http.patch('./api/case_report/' + id, template);
         }
     });
 })();

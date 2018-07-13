@@ -3,16 +3,13 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.services.{ AuxSrv, QueryDSL, QueryDef }
+import org.elastic4play.services.{ AuxSrv, QueryDSL }
 import play.api.http.Status
 import play.api.mvc._
 import models.Roles
 import services.CaseReportSrv
 
 import scala.concurrent.ExecutionContext
-import it.innove.play.pdf.PdfGenerator
-
-import play.api.libs.json.JsObject
 
 @Singleton
 class CaseReportCtrl @Inject() (
@@ -28,8 +25,9 @@ class CaseReportCtrl @Inject() (
     Ok
   }
 
-  def update: Action[AnyContent] = Action { implicit request ⇒
-    Ok
+  @Timed
+  def update(caseId: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+    caseReportSrv.update(caseId, request.body).map(template ⇒ renderer.toOutput(OK, template.toJson))
   }
 
   @Timed

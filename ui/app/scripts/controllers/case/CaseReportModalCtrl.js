@@ -22,29 +22,27 @@
 
 
         $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
-                        scope: $scope,
-                        baseFilter: {
-                            '_and': [{
-                                '_parent': {
-                                    "_type": "case",
-                                    "_query": {
-                                        "_id": $scope.caseId
-                                    }
-                                }
-                            },   {
-                                'status': 'Ok'
-                            }]
-                        },
-                        loadAll: true,
-                        sort: '-startDate',
-                        nstats: true
+            scope: $scope,
+            baseFilter: {
+                '_and': [{
+                    '_parent': {
+                        "_type": "case",
+                        "_query": {
+                            "_id": $scope.caseId
+                        }
+                    }
+                },   {
+                    'status': 'Ok'
+                }]
+            },
+            loadAll: true,
+            sort: '-startDate',
+            nstats: true
         });
 
         $scope.createPDF = function(){
-            console.log('Creating PDF');
             var doc = new jsPDF();
 
-            // We'll make our own renderer to skip this editor
             var specialElementHandlers = {
             	'#editor': function(element, renderer){
             		return true;
@@ -54,13 +52,11 @@
             	}
             };
 
-            // All units are in the set measurement for the document
-            // This can be changed to "pt" (points), "mm" (Default), "cm", "in"
             doc.fromHTML($('#case-report-content').get(0), 10, 10, {
-            	'width': 170,
+            	'width': 200,
             	'elementHandlers': specialElementHandlers
             });
-            doc.save('test.pdf');
+            doc.save(caze.title + '.pdf');
         }
 
         $scope.cancel = function () {
