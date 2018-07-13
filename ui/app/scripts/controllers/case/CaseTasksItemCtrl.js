@@ -54,6 +54,25 @@
                     'sort': $scope.state.sort,
                     'pageSize': 10
                 });
+
+                $scope.actions = PSearchSrv(caseId, 'connector/cortex/action', {
+                    scope: $scope,
+                    streamObjectType: 'case',
+                    filter: {
+                        _and: [
+                            {
+                                _not: {
+                                    status: 'Deleted'
+                                }
+                            }, {
+                                objectType: 'case_task'
+                            }, {
+                                objectId: taskId
+                            }
+                        ]
+                    },
+                    pageSize: 100
+                });
             };
 
             $scope.switchFlag = function () {

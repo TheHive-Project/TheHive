@@ -40,6 +40,25 @@
             nparent: 1
         });
 
+        $scope.actions = PSearchSrv($scope.caseId, 'connector/cortex/action', {
+            scope: $scope,
+            streamObjectType: 'case',
+            filter: {
+                _and: [
+                    {
+                        _not: {
+                            status: 'Deleted'
+                        }
+                    }, {
+                        objectType: 'case'
+                    }, {
+                        objectId: $scope.caseId
+                    }
+                ]
+            },
+            pageSize: 100
+        });
+
         $scope.hasNoMetrics = function(caze) {
             return !caze.metrics || _.keys(caze.metrics).length === 0 || caze.metrics.length === 0;
         };
@@ -132,7 +151,7 @@
 
         $scope.updateCustomFieldsList();
 
-        $scope.$on('case:refresh-custom-fields', function() {            
+        $scope.$on('case:refresh-custom-fields', function() {
             $scope.updateCustomFieldsList();
         });
     });

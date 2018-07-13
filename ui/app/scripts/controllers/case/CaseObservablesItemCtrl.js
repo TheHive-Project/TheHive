@@ -75,6 +75,24 @@
                         $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
+                  $scope.actions = PSearchSrv($scope.caseId, 'connector/cortex/action', {
+                      scope: $scope,
+                      streamObjectType: 'case_artifact',
+                      filter: {
+                          _and: [
+                              {
+                                  _not: {
+                                      status: 'Deleted'
+                                  }
+                              }, {
+                                  objectType: 'case_artifact'
+                              }, {
+                                  objectId: artifact.id
+                              }
+                          ]
+                      },
+                      pageSize: 100
+                  });
             };
 
             $scope.onJobsChange = function (updates) {
