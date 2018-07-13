@@ -10,7 +10,27 @@
             },
             templateUrl: 'views/directives/responder-actions.html',
             link: function(scope, el) {
-              console.log(scope);
+
+            },
+            controller: function($scope, $uibModal) {
+                $scope.showResponderJob = function(action) {
+                    $uibModal.open({
+                        scope: $scope,
+                        templateUrl: 'views/partials/cortex/responder-action-dialog.html',
+                        controller: 'ResponderActionDialogCtrl',
+                        controllerAs: '$dialog',
+                        size: 'max',
+                        resolve: {
+                            action: function() {
+                                return action;
+                            }
+                        }
+                    });
+                };
+
+                $scope.close = function() {
+                    $uibModalInstance.dismiss();
+                }
             }
         };
     });

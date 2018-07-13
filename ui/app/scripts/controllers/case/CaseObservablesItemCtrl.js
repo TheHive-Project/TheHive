@@ -91,6 +91,7 @@
                               }
                           ]
                       },
+                      sort: ['-startDate'],
                       pageSize: 100
                   });
             };
