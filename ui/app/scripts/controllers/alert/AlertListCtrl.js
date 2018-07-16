@@ -222,11 +222,11 @@
                   })
                   .catch(function(err) {
                       NotificationSrv.error('AlertList', response.data, response.status);
-                  })
+                  });
             };
 
             this.runResponder = function(responderId, event) {
-                CortexSrv.runResponder(responderId, 'alert', _.pick(event, 'id', 'tlp', ))
+                CortexSrv.runResponder(responderId, 'alert', _.pick(event, 'id', 'tlp'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
                   })
