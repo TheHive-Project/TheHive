@@ -7,60 +7,47 @@
     function CaseReportModalCtrl($scope, $state, $uibModalInstance, $q, $compile, PSearchSrv,SearchSrv, CaseSrv, UserInfoSrv, NotificationSrv, caze, $http, CaseReportSrv) {
         var self = this;
         self.templates = [];
-        $scope.caze = caze;
+        self.artifacts = [];
 
         $q.all([
           CaseReportSrv.list(),
+          PSearchSrv($scope.caseId, 'case_artifact', {
+                    scope: $scope,
+                    baseFilter: {
+                        '_and': [{
+                            '_parent': {
+                                "_type": "case",
+                                "_query": {
+                                    "_id": $scope.caseId
+                                }
+                            }
+                        },   {
+                            'status': 'Ok'
+                        }]
+                    },
+                    loadAll: true,
+                    sort: '-startDate',
+                    nstats: true
+                  }),
         ]).then(function (response) {
           self.templates = response[0];
-          self.template = self.templates[0].content;
-          $('#case-report-content').html($compile(self.template)($scope));
+          caze.artifacts = response[1];
+          console.log(caze.artifacts);
+          var template = self.templates[0].content;
+          $('#case-report-content').html($compile(template)($scope));
           return $q.resolve(self.template);
         }, function(rejection) {
           NotificationSrv.error('CaseReport', rejection.data, rejection.status);
         });
 
-
-        $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
-            scope: $scope,
-            baseFilter: {
-                '_and': [{
-                    '_parent': {
-                        "_type": "case",
-                        "_query": {
-                            "_id": $scope.caseId
-                        }
-                    }
-                },   {
-                    'status': 'Ok'
-                }]
-            },
-            loadAll: true,
-            sort: '-startDate',
-            nstats: true
-        });
-
         $scope.createPDF = function(){
-            var doc = new jsPDF();
-
-            var specialElementHandlers = {
-            	'#editor': function(element, renderer){
-            		return true;
-            	},
-            	'.controls': function(element, renderer){
-            		return true;
-            	}
-            };
-
-            doc.fromHTML($('#case-report-content').get(0), 10, 10, {
-            	'width': 200,
-            	'elementHandlers': specialElementHandlers
-            });
-            doc.save(caze.title + '.pdf');
+          var pdf = new jsPDF('p', 'pt', 'letter');
+          pdf.fromHTML($('#case-report-content').get(0), 5, 5);
+          pdf.save(caze.title + '.pdf');
         }
 
         $scope.cancel = function () {
-            $uibModalInstance.dismiss();
+          $uibModalInstance.dismiss();
         };
     }
 })();

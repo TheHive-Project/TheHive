@@ -2,14 +2,9 @@
     <h3 class="modal-title">Report for Case #{{caze.caseId}}</h3>
 </div>
 <div class="modal-body case-report-dialog">
-    <div class="case-report-title">
-        <h4>{{caze.title}}</h4>
-    </div>
     <div id="case-report-body">
-        <div>
-            <div id="case-report-content">
-                {{template}}
-            </div>
+        <div id="case-report-content">
+            {{template}}
         </div>
         <div class="modal-footer text-left">
             <button class="btn btn-default" ng-click="createPDF()" type="button">PDF</button>
