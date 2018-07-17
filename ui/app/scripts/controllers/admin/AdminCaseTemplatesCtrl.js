@@ -202,7 +202,7 @@
                             return action;
                         },
                         task: function() {
-                            return _.extend({}, task);
+                            return _.extend({}, {group: 'default'}, task);
                         },
                         users: function() {
                             return UserSrv.list({ status: 'Ok' });

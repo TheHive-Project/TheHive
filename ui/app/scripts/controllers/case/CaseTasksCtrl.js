@@ -10,7 +10,8 @@
 
         $scope.caseId = $stateParams.caseId;
         $scope.state = {
-            'isNewTask': false
+            isNewTask: false,
+            showGrouped: false
         };
         $scope.newTask = {
             status: 'Waiting'
@@ -19,23 +20,56 @@
 
         $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
             scope: $scope,
+            loadAll: true,
             baseFilter: {
-                '_and': [{
-                    '_parent': {
-                        '_type': 'case',
-                        '_query': {
+                _and: [{
+                    _parent: {
+                        _type: 'case',
+                        _query: {
                             '_id': $scope.caseId
                         }
                     }
                 }, {
-                    '_not': {
+                    _not: {
                         'status': 'Cancel'
                     }
                 }]
             },
             sort: ['-flag', '+order', '+startDate', '+title'],
-            pageSize: 30
+            onUpdate: function() {
+                console.log($scope.tasks.values);
+
+                $scope.buildTaskGroups($scope.tasks.values);
+            }
+            //pageSize: 30
         });
+
+        $scope.buildTaskGroups = function(tasks) {
+            // Sort tasks by order
+            var orderedTasks = _.sortBy(_.map(tasks, function(t) {
+                return _.pick(t, 'group', 'order');
+            }), 'order');
+            var groups = [];
+
+            // Get group names by keeping the group orders
+            _.each(orderedTasks, function(task) {
+                if(groups.indexOf(task.group) === -1) {
+                    groups.push(task.group);
+                }
+            });
+
+            var groupedTasks = [];
+            _.each(groups, function(group) {
+                groupedTasks.push({
+                    group: group,
+                    tasks: _.filter(tasks, function(t) {
+                        return t.group === group;
+                    })
+                })
+            });
+
+            $scope.groupedTasks = groupedTasks;
+        };
 
         $scope.showTask = function(task) {
             $state.go('app.case.tasks-item', {

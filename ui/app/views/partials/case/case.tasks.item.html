@@ -58,6 +58,13 @@
         </dl>
 
         <dl class="dl-horizontal">
+            <dt class="pull-left">Group</dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('group', newValue)" value="task.group"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
             <dt class="pull-left">Owner</dt>
             <dd>
                 <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
