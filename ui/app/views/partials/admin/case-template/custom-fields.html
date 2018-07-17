@@ -23,14 +23,18 @@
                     <select class="form-control" ng-model="cf.name" ng-options="item.reference as item.name for (key, item) in $vm.fields" required></select>
                 </div>
                 <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length > 0">
-                    <select class="form-control" ng-model="cf.value" ng-options="v for v in $vm.fields[cf.name].options">
-                        <option value=""></option>
+                    <select class="form-control" ng-model="cf.value" ng-options="v for v in $vm.fields[cf.name].options" multiple size="{{$vm.setInputSize(cf)}}">
+                        <!-- <option value=""></option> -->
                     </select>
                 </div>
                 <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length === 0" ng-switch="$vm.fields[cf.name].type">
-                    <input ng-switch-when="string" type="text" class="form-control" ng-model="cf.value">
-                    <input ng-switch-when="number" type="number" class="form-control" ng-model="cf.value">
-                    <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in [true, false]">
+                    <!-- <input ng-switch-when="string" type="text" class="form-control" ng-model="cf.value"> -->
+                    <textarea ng-switch-when="string" class="form-control" ng-model="cf.value" rows="5" placeholder="Possible values, one per line" type="text"></textarea>
+
+                    <!-- <input ng-switch-when="number" type="number" class="form-control" ng-model="cf.value"> -->
+                    <textarea ng-switch-when="number" class="form-control" ng-model="cf.value" rows="5" placeholder="Possible values, one per line" type="text"></textarea>
+
+                    <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in ['True', 'False']">
                         <option value=""></option>
                     </select>
                     <dt-picker ng-switch-when="date" date="cf.value"></dt-picker>

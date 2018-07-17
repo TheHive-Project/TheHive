@@ -29,19 +29,17 @@
         </dd>
 
         <dd ng-if="fieldDef.options.length === 0" ng-switch="fieldDef.type">
-            <updatable-simple-text ng-switch-when="string"
-                input-type="text"
+            <updatable-string ng-switch-when="string"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-string>
 
-            <updatable-date ng-switch-when="date"
+            <updatable-date-multi ng-switch-when="date"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-date>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-date-multi>
 
-            <updatable-simple-text ng-switch-when="number"
-                input-type="number"
+            <updatable-number ng-switch-when="number"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
+                value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-number>
 
             <updatable-boolean ng-switch-when="boolean"
                 input-type="number"

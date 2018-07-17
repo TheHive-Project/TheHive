@@ -123,12 +123,28 @@ class CaseMergeSrv @Inject() (
       customFieldsObject ← caze.customFields().asOpt[JsObject]
     } yield customFieldsObject
 
-    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.flatMap { key ⇒
-      val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
-      if (customFieldsValues.lengthCompare(1) != 0)
-        None
-      else
-        Some(key → customFieldsValues.head)
+    val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.zip(Stream from 1).flatMap {
+      case (key, index) ⇒
+        val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
+
+        val newCustomFieldsValues: Seq[(String, JsValue)] = customFieldsValues.flatMap(_.keys).distinct.flatMap { typeKey ⇒
+          val attribValues = customFieldsValues.flatMap(field ⇒ (field \ typeKey).asOpt[JsValue]).flatMap(f ⇒ f match {
+            case f: JsArray ⇒ f.value
+            case _          ⇒ IndexedSeq(f)
+          }).distinct
+
+          typeKey match {
+            case "order" ⇒ Some(typeKey -> JsNumber(index))
+            case "boolean" ⇒
+              if (attribValues.lengthCompare(1) == 0) Some(typeKey -> attribValues.head)
+              else if (attribValues.lengthCompare(2) == 0 && attribValues(0) == JsNull) Some(typeKey -> attribValues(1))
+              else if (attribValues.lengthCompare(2) == 0 && attribValues(1) == JsNull) Some(typeKey -> attribValues(0))
+              else Some(typeKey -> JsNull)
+            case _ ⇒ Some(typeKey -> JsArray(attribValues))
+          }
+        }
+
+        Some(key → JsObject(newCustomFieldsValues))
     }
 
     JsObject(mergedCustomFieldsObject)

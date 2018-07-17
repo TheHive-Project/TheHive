@@ -60,6 +60,8 @@
                 },
 
                 updatableLink: function(scope, element, attrs) {
+                    scope.MAX_INPUT_SIZE = 5;
+
                     scope.updatable = {
                         'updating': false
                     };
@@ -100,6 +102,12 @@
                     scope.cancel = function() {
                         scope.value = scope.oldValue;
                         scope.updatable.updating = false;
+                    };
+                    scope.setFieldSize = function(options) {
+                        if(options.length <= scope.MAX_INPUT_SIZE)
+                            return options.length;
+                        else
+                            return scope.MAX_INPUT_SIZE;
                     };
                 },
 

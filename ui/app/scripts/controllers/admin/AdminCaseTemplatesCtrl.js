@@ -29,6 +29,7 @@
             self.templateMetrics = [];
             self.templateIndex = -1;
             self.getUserInfo = UserInfoSrv;
+            self.MAX_INPUT_SIZE = 5;    //custom size of maxium input area size
 
             /**
              * Convert the template custom fields definition to a list of ordered field names
@@ -50,12 +51,43 @@
                             }
                         }
 
-                        return {
-                            name: name,
-                            order: definition.order,
-                            value: fieldDef ? definition[type] : null,
-                            type: type
-                        };
+                        if(type === "boolean") {
+                            var valueName = null;
+                            if(definition[type] === true)
+                                valueName = 'True';
+                            else if(definition[type] === false)
+                                valueName = 'False';
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? valueName : null,
+                                type: type
+                            };
+                        }
+                        else if(fieldDef.options.length === 0 && type === "string") {
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? (definition[type] ? definition[type].join('\n') : null) : null,
+                                type: type
+                            };
+                        }
+                        else if(fieldDef.options.length === 0 && type === "number") {
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? (definition[type] ? definition[type].map(String).join('\n') : null) : null,
+                                type: type
+                            };
+                        }
+                        else {
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? definition[type] : null,
+                                type: type
+                            };
+                        }
                     }),
                     function(item) {
                         return item.order;
@@ -285,7 +317,23 @@
                     }
 
                     self.template.customFields[cf.name] = {};
-                    self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
+                    if(self.fields[cf.name].options.length === 0 && self.fields[cf.name].type === "string") {
+                        self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value ? value.split("\n") : null;
+                    }
+                    else if(self.fields[cf.name].options.length === 0 && self.fields[cf.name].type === "number") {    
+                        self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value ? value.split("\n").map(Number) : null;
+                    }
+                    else if(self.fields[cf.name].type === "boolean") { 
+                        if(value === 'True')  
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = true;
+                        else if(value === 'False')
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = false;
+                        else if(value === null)
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = null;
+                    }
+                    else {
+                        self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
+                    }
                     self.template.customFields[cf.name].order = index + 1;
                 });
 
@@ -365,6 +413,14 @@
                         }
                     });
             };
+
+            self.setInputSize = function(cf) {
+                if(self.fields[cf.name].options.length <= self.MAX_INPUT_SIZE)
+                    return self.fields[cf.name].options.length;
+                else
+                    return self.MAX_INPUT_SIZE;
+            };
+
         })
         .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
             $scope.task = task || {};
