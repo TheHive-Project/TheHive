@@ -68,6 +68,7 @@
                 })
             });
 
+            $scope.groups = groups;
             $scope.groupedTasks = groupedTasks;
         };
 
@@ -94,6 +95,7 @@
             }, $scope.newTask, function() {
                 $scope.isNewTask = false;
                 $scope.newTask.title = '';
+                $scope.newTask.group = '';
             }, function(response) {
                 NotificationSrv.error('taskList', response.data, response.status);
             });

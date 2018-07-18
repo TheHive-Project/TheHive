@@ -39,7 +39,8 @@
             <div class="row">
                 <div class="col-sm-3">
                   <div class="form-group">
-                      <input name="group"class="form-control" ng-model="newTask.group" type="text" placeholder="Enter task group" required>
+                      <input name="group"class="form-control" ng-model="newTask.group" type="text" placeholder="Enter task group" required
+                        uib-typeahead="g for g in groups | filter:$viewValue">
                   </div>
                 </div>
                 <div class="col-sm-9">
@@ -66,9 +67,10 @@
             <thead>
                 <tr>
                     <th style="width: 40px"></th>
+                    <th style="width: 250px">Group</th>
                     <th>Task</th>
-                    <th style="width: 240px">Date</th>
-                    <th style="width: 200px">Assignee</th>
+                    <th style="width: 150px">Date</th>
+                    <th style="width: 150px">Assignee</th>
                     <th style="width: 250px" class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -79,8 +81,11 @@
                         <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                     </td>
                     <td>
+                        <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
+                    </td>
+                    <td>
                       <div>
-                          <strong class="text-primary">[{{task.group}}] - </strong><a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}}</a>
+                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}} - {{task.order}}</a>
                       </div>
                       <div ng-show="task.status === 'Completed'" class="text-success">
                           Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
@@ -146,89 +151,96 @@
 
 <div class="row mt-l" ng-show="state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
-        <table class="table table-striped table-hover valigned">
-            <thead>
-                <tr>
-                    <th style="width: 40px"></th>
-                    <th>Task</th>
-                    <th style="width: 240px">Date</th>
-                    <th style="width: 200px">Assignee</th>
-                    <th style="width: 250px" class="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody ng-repeat="group in groupedTasks">
-                <tr>
-                  <td colspan="5">
-                    <h4 style="margin-left: 40px" class="text-muted">{{group.group}} <small>({{group.tasks.length}} task(s))</small></h4>
-                  </td>
-                </tr>
-                <tr ng-repeat="task in group.tasks" class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
-                    <td class="task-status" align="center" ng-switch="task.status">
-                        <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
-                        <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
-                    </td>
-                    <td>
-                      <div>
-                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}}</a>
-                      </div>
-                      <div ng-show="task.status === 'Completed'" class="text-success">
-                          Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
-                      </div>
-                      <div ng-show="task.status === 'InProgress'" class="text-warning">
-                          Started <em am-time-ago="task.startDate"></em>
-                      </div>
-                    </td>
-                    <td>{{task.startDate | showDate}}</td>
-                    <td>
-                        <span ng-show="task.owner">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
-                        </span>
-                        <span ng-show="!task.owner">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
-                        </span>
-                    </td>
-                    <!--  class="task-delete" -->
-                    <td align="right" class="task-actions">
-                        <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
-                            <i class="fa fa-times"></i>
-                            Delete
-                        </span>
-                        <span class="ml-xs clickable text-success action-button" ng-show="task.status == 'Completed'" ng-click="openTask(task)">
-                            <i class="fa fa-check-circle"></i>
-                            Reopen
-                        </span>
-                        <span class="ml-xs clickable text-muted action-button" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)">
-                            <i class="fa fa-check-circle-o"></i>
-                            Close
-                        </span>
-                        <span class="ml-xs clickable text-primary action-button" ng-show="task.status == 'Waiting'" ng-click="startTask(task)">
-                            <i class="fa fa-play"></i>
-                            Start
-                        </span>
+        <div class="panel panel-info" ng-repeat="group in groupedTasks">
+            <div class="panel-heading">
+                <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.tasks.length}} task(s))</small>
+            </div>
+            <div class="panel-body p-0">
+                <table class="table table-striped table-hover valigned">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px"></th>
+                            <th style="width: 250px">Group</th>
+                            <th>Task</th>
+                            <th style="width: 150px">Date</th>
+                            <th style="width: 150px">Assignee</th>
+                            <th style="width: 250px" class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="task in group.tasks" class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+                            <td class="task-status" align="center" ng-switch="task.status">
+                                <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
+                                <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
+                            </td>
+                            <td>
+                                <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
+                            </td>
+                            <td>
+                              <div>
+                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}}</a>
+                              </div>
+                              <div ng-show="task.status === 'Completed'" class="text-success">
+                                  Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
+                              </div>
+                              <div ng-show="task.status === 'InProgress'" class="text-warning">
+                                  Started <em am-time-ago="task.startDate"></em>
+                              </div>
+                            </td>
+                            <td>{{task.startDate | showDate}}</td>
+                            <td>
+                                <span ng-show="task.owner">
+                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
+                                </span>
+                                <span ng-show="!task.owner">
+                                    <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                                </span>
+                            </td>
+                            <!--  class="task-delete" -->
+                            <td align="right" class="task-actions">
+                                <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
+                                    <i class="fa fa-times"></i>
+                                    Delete
+                                </span>
+                                <span class="ml-xs clickable text-success action-button" ng-show="task.status == 'Completed'" ng-click="openTask(task)">
+                                    <i class="fa fa-check-circle"></i>
+                                    Reopen
+                                </span>
+                                <span class="ml-xs clickable text-muted action-button" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)">
+                                    <i class="fa fa-check-circle-o"></i>
+                                    Close
+                                </span>
+                                <span class="ml-xs clickable text-primary action-button" ng-show="task.status == 'Waiting'" ng-click="startTask(task)">
+                                    <i class="fa fa-play"></i>
+                                    Start
+                                </span>
 
-                        <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
-                            <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id, true)" uib-dropdown-toggle>
-                                <i class="text-primary fa fa-cog"></i>
-                                <!-- Responders
-                                <i class="text-primary fa fa-angle-down"></i> -->
-                            </a>
-                            <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                              <li ng-if="taskResponders && taskResponders.length === 0">
-                                <a href ng-click="getTaskResponders(task.id, true)">
-                                  <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                                </a>
-                              </li>
-                              <li ng-repeat="responder in taskResponders">
-                                <a href ng-click="runResponder(responder.id, task)">
-                                  <strong>{{responder.name}}</strong>
-                                  <br>
-                                  <small>{{responder.description}}</small></a>
-                              </li>
-                            </ul>
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                                <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                                    <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id, true)" uib-dropdown-toggle>
+                                        <i class="text-primary fa fa-cog"></i>
+                                        <!-- Responders
+                                        <i class="text-primary fa fa-angle-down"></i> -->
+                                    </a>
+                                    <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                                      <li ng-if="taskResponders && taskResponders.length === 0">
+                                        <a href ng-click="getTaskResponders(task.id, true)">
+                                          <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                                        </a>
+                                      </li>
+                                      <li ng-repeat="responder in taskResponders">
+                                        <a href ng-click="runResponder(responder.id, task)">
+                                          <strong>{{responder.name}}</strong>
+                                          <br>
+                                          <small>{{responder.description}}</small></a>
+                                      </li>
+                                    </ul>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
