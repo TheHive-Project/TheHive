@@ -44,7 +44,7 @@
             </a>
         </span>
 
-        <span class="ml-xs pull-right">
+        <span class="ml-xs pull-right" ng-if="isCaseClosed()">
             <a href ng-click="caseReport()" class="text-muted noline" uib-tooltip="Generate case report">
                 <i class="text-muted fa fa-archive"></i>
                 Report

@@ -2,10 +2,9 @@ package services
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
 import javax.inject.{ Inject, Singleton }
 import models.{ CaseReportModel, CaseReport }
-import org.elastic4play.NotFoundError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
