@@ -10,7 +10,7 @@
             <div class="btn-group">
                 <button class="btn btn-sm btn-primary" ng-click="state.showGrouped = !state.showGrouped">
                     <i class="glyphicon glyphicon-th-list"></i>
-                    {{state.showGrouped ? 'Group' : 'List'}} Tasks
+                    Show {{state.showGrouped ? 'as a List' : 'Groups'}}
                 </button>
             </div>
 
@@ -151,12 +151,12 @@
 
 <div class="row mt-l" ng-show="state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
-        <div class="panel panel-info" ng-repeat="group in groupedTasks">
+        <div class="panel panel-default" ng-repeat="group in groupedTasks">
             <div class="panel-heading">
                 <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.tasks.length}} task(s))</small>
             </div>
             <div class="panel-body p-0">
-                <table class="table table-striped table-hover valigned">
+                <table class="table table-hover valigned">
                     <thead>
                         <tr>
                             <th style="width: 40px"></th>
