@@ -85,7 +85,7 @@
                     </td>
                     <td>
                       <div>
-                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}} - {{task.order}}</a>
+                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task.id})">{{task.title}}</a>
                       </div>
                       <div ng-show="task.status === 'Completed'" class="text-success">
                           Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
