@@ -4,8 +4,8 @@ import java.util.Date
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
 
 import play.api.Logger
 import play.api.libs.json._
@@ -214,64 +214,64 @@ class CortexAnalyzerSrv @Inject() (
     } yield job + ("report" → updatedReport)
   }
 
-  def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Unit = {
-    logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
-    cortex.waitReport(cortexJobId, 1.minute) andThen {
-      case Success(j) ⇒
-        val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
-        if (status == JobStatus.InProgress || status == JobStatus.Waiting)
-          updateJobWithCortex(jobId, cortexJobId, cortex)
-        else {
-          val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString
-          logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
-          getSrv[JobModel, Job](jobModel, jobId)
-            .flatMap { job ⇒
-              val jobFields = Fields.empty
-                .set("status", status.toString)
-                .set("report", report)
-                .set("endDate", Json.toJson(new Date))
-              update(job, jobFields)
-                .andThen {
-                  case _ if status == JobStatus.Success ⇒
-                    val jobSummary = Try(Json.parse(report))
-                      .toOption
-                      .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
-                      .getOrElse(JsObject.empty)
-                    RetryOnError() {
-                      for {
-                        artifact ← artifactSrv.get(job.artifactId())
-                        reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
-                        newReports = reports + (job.analyzerDefinition().getOrElse(job.analyzerId()) → jobSummary)
-                        updatedArtifact ← artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
-                      } yield updatedArtifact
-                    }
-                      .recover {
-                        case NonFatal(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
-                      }
-
-                }
-            }
-            .onComplete {
-              case Failure(e) ⇒ logger.error(s"Update job fails", e)
-              case _          ⇒
+  def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Future[Job] = {
+    def updateArtifactSummary(job: Job, report: String) = {
+      Try(Json.parse(report))
+        .toOption
+        .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
+        .map { jobSummary ⇒
+          RetryOnError() {
+            for {
+              artifact ← artifactSrv.get(job.artifactId())
+              reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)
+              newReports = reports + (job.analyzerDefinition().getOrElse(job.analyzerId()) → jobSummary)
+              _ ← artifactSrv.update(job.artifactId(), Fields.empty.set("reports", newReports.toString), ModifyConfig(retryOnConflict = 0, version = Some(artifact.version)))
+            } yield ()
+          }
+            .recover {
+              case NonFatal(t) ⇒ logger.warn(s"Unable to insert summary report in artifact", t)
             }
         }
-      case Failure(CortexError(404, _, _)) ⇒
-        logger.debug(s"The job $cortexJobId not found")
-        val jobFields = Fields.empty
-          .set("status", JobStatus.Failure.toString)
-          .set("endDate", Json.toJson(new Date))
-        update(jobId, jobFields)
-      case _ if maxError > 0 ⇒
-        logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-        updateJobWithCortex(jobId, cortexJobId, cortex, maxError - 1)
-      case _ ⇒
-        logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
-        update(jobId, Fields.empty
-          .set("status", JobStatus.Failure.toString)
-          .set("endDate", Json.toJson(new Date)))
+        .getOrElse(Future.successful(()))
     }
-    ()
+
+    logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
+    cortex.waitReport(cortexJobId, 1.minute).flatMap { j ⇒
+      val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
+      if (status == JobStatus.InProgress || status == JobStatus.Waiting)
+        updateJobWithCortex(jobId, cortexJobId, cortex)
+      else {
+        val report = (j \ "report").asOpt[JsObject].getOrElse(JsObject.empty).toString
+        logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating job $jobId")
+        val updatedJob = for {
+          job ← getSrv[JobModel, Job](jobModel, jobId)
+          jobFields = Fields.empty
+            .set("status", status.toString)
+            .set("report", report)
+            .set("endDate", Json.toJson(new Date))
+          updatedJob ← update(job, jobFields)
+          _ ← if (status == JobStatus.Success) updateArtifactSummary(job, report) else Future.successful(())
+        } yield updatedJob
+        updatedJob.failed.foreach(logger.error(s"Update job fails", _))
+        updatedJob
+      }
+    }
+      .recoverWith {
+        case CortexError(404, _, _) ⇒
+          logger.debug(s"The job $cortexJobId not found")
+          val jobFields = Fields.empty
+            .set("status", JobStatus.Failure.toString)
+            .set("endDate", Json.toJson(new Date))
+          update(jobId, jobFields)
+        case _ if maxError > 0 ⇒
+          logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
+          updateJobWithCortex(jobId, cortexJobId, cortex, maxError - 1)
+        case _ ⇒
+          logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
+          update(jobId, Fields.empty
+            .set("status", JobStatus.Failure.toString)
+            .set("endDate", Json.toJson(new Date)))
+      }
   }
 
   def submitJob(cortexId: Option[String], analyzerName: String, artifactId: String)(implicit authContext: AuthContext): Future[Job] = {

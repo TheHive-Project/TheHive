@@ -58,6 +58,14 @@ class UserSrv @Inject() (
     }
   }
 
+  def extraAuthContext[A](block: AuthContext ⇒ Future[A])(implicit authContext: AuthContext): Future[A] = {
+    val ac = AuthContextImpl(authContext.userId, authContext.userName, Instance.getInternalId, authContext.roles)
+    eventSrv.publish(InternalRequestProcessStart(authContext.requestId))
+    block(ac).andThen {
+      case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(authContext.requestId))
+    }
+  }
+
   def create(fields: Fields)(implicit authContext: AuthContext): Future[User] = {
     fields.getString("password") match {
       case None ⇒ createSrv[UserModel, User](userModel, fields)
