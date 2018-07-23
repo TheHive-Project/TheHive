@@ -256,7 +256,7 @@
             $scope.runResponder = function(responderId, artifact) {
                 CortexSrv.runResponder(responderId, 'case_artifact', _.pick(artifact, 'id'))
                   .then(function(response) {
-                      var data = '['+$filter('fang')(artifact.name || artifact.attachment.name)+']';
+                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
                   })
                   .catch(function(response) {
