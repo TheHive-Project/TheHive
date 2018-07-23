@@ -75,9 +75,9 @@
                         $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
-                  $scope.actions = PSearchSrv($scope.caseId, 'connector/cortex/action', {
+                  $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
                       scope: $scope,
-                      streamObjectType: 'case_artifact',
+                      streamObjectType: 'action',
                       filter: {
                           _and: [
                               {
@@ -92,7 +92,12 @@
                           ]
                       },
                       sort: ['-startDate'],
-                      pageSize: 100
+                      pageSize: 100,
+                      guard: function(updates) {
+                          return _.find(updates, function(item) {
+                              return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
+                          }) !== undefined;
+                      }
                   });
             };
 

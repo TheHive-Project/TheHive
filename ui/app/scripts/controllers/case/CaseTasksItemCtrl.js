@@ -55,9 +55,9 @@
                     'pageSize': 10
                 });
 
-                $scope.actions = PSearchSrv(caseId, 'connector/cortex/action', {
+                $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
                     scope: $scope,
-                    streamObjectType: 'case',
+                    streamObjectType: 'action',
                     filter: {
                         _and: [
                             {
@@ -72,7 +72,12 @@
                         ]
                     },
                     sort: ['-startDate'],
-                    pageSize: 100
+                    pageSize: 100,
+                    guard: function(updates) {
+                        return _.find(updates, function(item) {
+                            return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
+                        }) !== undefined;
+                    }
                 });
             };
 
