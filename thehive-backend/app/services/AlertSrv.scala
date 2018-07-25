@@ -192,7 +192,8 @@ class AlertSrv(
                   .set("tags", JsArray(alert.tags().map(JsString)))
                   .set("tlp", JsNumber(alert.tlp()))
                   .set("status", CaseStatus.Open.toString)
-                  .set("startDate", Json.toJson(alert.date())),
+                  .set("startDate", Json.toJson(alert.date()))
+                  .set("customFields", alert.customFields()),
                 caseTemplate)
               _ ← importArtifacts(alert, caze)
               _ ← setCase(alert, caze)
