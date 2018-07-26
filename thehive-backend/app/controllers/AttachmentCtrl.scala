@@ -63,7 +63,7 @@ class AttachmentCtrl(
         header = ResponseHeader(
           200,
           Map(
-            "Content-Disposition" → s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}"""",
+            "Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}"""",
             "Content-Transfer-Encoding" → "binary")),
         body = HttpEntity.Streamed(attachmentSrv.source(hash), None, None))
   }
@@ -94,7 +94,7 @@ class AttachmentCtrl(
         header = ResponseHeader(
           200,
           Map(
-            "Content-Disposition" → s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}.zip"""",
+            "Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
             "Content-Type" → "application/zip",
             "Content-Transfer-Encoding" → "binary",
             "Content-Length" → Files.size(f).toString)),
