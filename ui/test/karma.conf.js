@@ -72,7 +72,6 @@ module.exports = function(config) {
       'bower_components/underscore.string/dist/underscore.string.js',
       'bower_components/angular-drag-and-drop-lists/angular-drag-and-drop-lists.js',
       'bower_components/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.js',
-      'bower_components/file-saver/FileSaver.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       "bower_components/cryptojslib/components/core-min.js",

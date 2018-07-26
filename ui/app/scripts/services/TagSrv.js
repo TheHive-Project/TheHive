@@ -13,8 +13,7 @@
 
             var mapTags = function(collection, term) {
                 return _.map(_.filter(_.keys(collection), function(tag) {
-                    var regex = new RegExp(term, 'gi');
-                    return regex.test(tag);
+                    return tag.toLowerCase().startsWith(term.toLowerCase());
                 }), function(tag) {
                     return {text: tag};
                 });
@@ -28,7 +27,7 @@
                 });
 
                 return defer.promise;
-            }
+            };
 
 
             this.fromCases = function(term) {

@@ -1,0 +1,72 @@
+﻿div.auto-complete-container {
+    border: 1px solid lightsteelblue;
+    background-color: #cccccc;
+    white-space: nowrap;
+}
+
+    div.auto-complete-container.unselectable {
+        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }
+
+div.auto-complete-absolute-container {
+    position: absolute;
+    z-index: 10000;
+}
+
+div.auto-complete-container ul.auto-complete-results {
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0px;
+    padding: 0px;
+}
+
+    div.auto-complete-container ul.auto-complete-results li.auto-complete-item {
+        list-style-type: none;
+        padding: 8px 5px;
+        background-color: #efefef;
+        color: Black;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    div.auto-complete-container ul.auto-complete-results li:not(:first-child) {
+        margin-top: 1px;
+    }
+
+    div.auto-complete-container ul.auto-complete-results li.auto-complete-item:hover {
+        background-color: #6699FF;
+        color: White;
+    }
+
+    div.auto-complete-container ul.auto-complete-results li.auto-complete-item-selected {
+        background-color: #6699FF;
+        color: White;
+    }
+
+    div.auto-complete-container ul.auto-complete-results li.auto-complete-item.auto-complete-no-match {
+        background-color: #efefef;
+        color: Black;
+        white-space: initial;
+    }
+
+div.auto-complete-container table.auto-complete {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0px;
+    border-width: 0px;
+    border-style: none;
+}
+
+    div.auto-complete-container table.auto-complete tr {
+        white-space: nowrap;
+        text-align: left;
+    }
+
+    div.auto-complete-container table.auto-complete tbody tr > td {
+        padding: 0px;
+        background-color: transparent;
+        border-width: 0px;
+	}
