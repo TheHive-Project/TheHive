@@ -143,7 +143,12 @@
                     $scope.step = 'error';
 
                 } else {
-                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
+										if(response.data.type === "java.io.IOException")
+                    	NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+										else if(response.data.type === "InternalError")
+											NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+										else
+	                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
 
                     $uibModalInstance.close(response);
                 }
@@ -167,6 +172,7 @@
                     return false;
                 }
             };
+
         }
     );
 
