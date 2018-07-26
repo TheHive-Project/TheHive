@@ -165,7 +165,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       message: String,
       parameters: JsObject)(implicit ec: ExecutionContext): Future[JsValue] = {
     val body = Json.obj(
-      "data" → data.toString,
+      "data" → data,
       "dataType" → dataType,
       "tlp" → tlp,
       "pap" → pap,
