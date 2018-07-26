@@ -60,9 +60,9 @@ class UserSrv @Inject() (
 
   def extraAuthContext[A](block: AuthContext ⇒ Future[A])(implicit authContext: AuthContext): Future[A] = {
     val ac = AuthContextImpl(authContext.userId, authContext.userName, Instance.getInternalId, authContext.roles)
-    eventSrv.publish(InternalRequestProcessStart(authContext.requestId))
+    eventSrv.publish(InternalRequestProcessStart(ac.requestId))
     block(ac).andThen {
-      case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(authContext.requestId))
+      case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(ac.requestId))
     }
   }
 
