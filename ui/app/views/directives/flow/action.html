@@ -9,8 +9,16 @@
         </span>
     </div>
     <div class="flow-item-updates wrap">
-        <div>status: <em>{{base.object.status}}</em></div>
-        <div>startDate: <em>{{base.object.startDate | showDate}}</em></div>
-        <div ng-if="base.object.endDate">endDate: <em>{{base.object.endDate | showDate}}</em></div>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <div ng-switch-when="startDate">
+                {{k}}: <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-when="endDate">
+                {{k}}: <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-default>
+                {{k}}: <em>{{v | limitTo: 250}}</em>
+            </div>
+        </span>
     </div>
 </div>
