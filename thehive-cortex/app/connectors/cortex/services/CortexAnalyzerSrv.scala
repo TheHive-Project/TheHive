@@ -25,6 +25,7 @@ import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
+import org.elastic4play.utils.RetryOnError
 import org.elastic4play.{ InternalError, NotFoundError }
 
 @Singleton

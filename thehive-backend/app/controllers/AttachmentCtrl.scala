@@ -1,6 +1,5 @@
 package controllers
 
-import java.net.URLEncoder
 import java.nio.file.Files
 import javax.inject.{ Inject, Singleton }
 

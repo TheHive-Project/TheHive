@@ -15,6 +15,7 @@ import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.models.{ BaseEntity, ChildModelDef, HiveEnumeration }
 import org.elastic4play.services.{ AuthContext, FindSrv }
+import org.elastic4play.utils.RetryOnError
 import org.elastic4play.{ BadRequestError, InternalError }
 
 object ActionOperationStatus extends Enumeration with HiveEnumeration {
