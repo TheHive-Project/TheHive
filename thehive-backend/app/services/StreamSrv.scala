@@ -42,7 +42,7 @@ class LocalStreamActor @Inject() (
 
   import context.dispatcher
 
-  private lazy val logger = Logger(s"${getClass.getName}($self)")
+  private lazy val logger = Logger(s"${getClass.getName}.$self")
   private val mediator = DistributedPubSub(context.system).mediator
 
   override def preStart(): Unit = {
@@ -81,17 +81,21 @@ class LocalStreamActor @Inject() (
 
   def receive(messages: Map[String, Option[AggregatedMessage[_]]], flushScheduler: Option[Cancellable]): Receive = {
     case RequestStart(requestId) ⇒
+      logger.trace(s"Start of request $requestId")
       context.become(receive(messages + (requestId → None), None))
 
     case RequestEnd(requestId) ⇒
+      logger.trace(s"End of request $requestId")
       messages.get(requestId).collect {
-        case Some(message) ⇒ message.toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
+        case Some(message) ⇒
+          logger.trace(s"Sending $message to mediator")
+          message.toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
       }
       context.become(receive(messages - requestId, None))
 
     case NormalizedOperation(operation) ⇒
       val requestId = operation.authContext.requestId
-      logger.debug(s"Receiving audit operation : $operation")
+      logger.trace(s"Receiving audit operation from request $requestId: $operation")
       messages.get(requestId) match {
         case None ⇒
           logger.debug("Operation that comes after the end of request, send it to stream actor")
@@ -139,7 +143,7 @@ class StreamActor(
   import context.dispatcher
   import services.StreamActor._
 
-  private lazy val logger = Logger(s"${getClass.getName}($self)")
+  private lazy val logger = Logger(s"${getClass.getName}.$self")
   private var killCancel: Cancellable = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
   private val mediator = DistributedPubSub(context.system).mediator
 
@@ -170,6 +174,7 @@ class StreamActor(
 
     {
       case sm: StreamMessages ⇒
+        logger.debug(s"receive stream message $sm")
         waitingRequest ! sm
         timeout.cancel()
         context.become(receive)
