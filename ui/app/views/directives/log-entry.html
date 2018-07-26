@@ -29,7 +29,7 @@
                         <img class="btn img-responsive" ng-src="./api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
                     </div>
 
-                    <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name}}" target="_blank">
+                    <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name | escape}}" target="_blank">
                         <div class="icon" ng-hide="isImage(log.attachment.contentType)">
                             <i class="glyphicon glyphicon-file"></i>
                         </div>

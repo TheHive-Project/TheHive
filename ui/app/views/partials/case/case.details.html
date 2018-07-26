@@ -114,7 +114,7 @@
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
                 <td style="text-align:center">
-                    <a href="./api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name}}" target="_blank">
+                    <a href="./api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name | escape}}" target="_blank">
                         <i class="glyphicon glyphicon-download"></i>
                     </a>
                 </td>
