@@ -281,7 +281,7 @@
                     var fieldDef = self.fields[cf.name];
                     var value = null;
                     if (fieldDef) {
-                        value = fieldDef.type === 'date' && cf.value ? moment(cf.value).valueOf() : cf.value || null;
+                        value = fieldDef.type === 'date' && cf.value ? moment(cf.value).valueOf() : cf.value;
                     }
 
                     self.template.customFields[cf.name] = {};
