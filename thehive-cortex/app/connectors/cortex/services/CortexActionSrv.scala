@@ -16,12 +16,13 @@ import akka.stream.scaladsl.{ Sink, Source }
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
 import javax.inject.{ Inject, Singleton }
+import models._
 import services.UserSrv
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.models.BaseEntity
-import org.elastic4play.services._
+import org.elastic4play.services.{ User ⇒ _, _ }
 import org.elastic4play.{ BadRequestError, MissingAttributeError, NotFoundError }
 
 @Singleton
@@ -155,6 +156,23 @@ class CortexActionSrv @Inject() (
       }
   }
 
+  def getEntityLabel(entity: BaseEntity): String = {
+    entity match {
+      case c: Case            ⇒ s"Case: #${c.caseId()} ${c.title()}"
+      case a: Artifact        ⇒ s"Artifact: ${a.dataType()}] ${a.data().getOrElse(a.attachment().get.name)}"
+      case a: Alert           ⇒ s"Alert: [${a.source()}:${a.sourceRef()}] ${a.title()}"
+      case l: Log             ⇒ s"Log: ${l.message()} from ${l.createdBy}"
+      case t: Task            ⇒ s"Task: ${t.title()} (${t.status()})"
+      case j: Job             ⇒ s"Job: ${j.analyzerName()} (${j.status()})"
+      case a: Action          ⇒ s"Action: ${a.responderName()} on ${a.objectType()}:${a.objectId()}"
+      case u: User            ⇒ s"User: ${u.userName()} (${u.userId()})"
+      case a: Audit           ⇒ s"Audit: ${a.operation()} on ${a.objectType()}:${a.objectId()}"
+      case ct: CaseTemplate   ⇒ s"CaseTemplate: ${ct.templateName()}"
+      case d: Dashboard       ⇒ s"Dashboard: ${d.title()}"
+      case rt: ReportTemplate ⇒ s"ReportTemplate: ${rt.analyzerId()}/${rt.reportType()}"
+    }
+  }
+
   def executeAction(fields: Fields)(implicit authContext: AuthContext): Future[Action] = {
     def getResponder(cortexClient: CortexClient): Future[Responder] = {
       fields.getString("responderId").map(cortexClient.getResponderById) orElse
@@ -195,6 +213,7 @@ class CortexActionSrv @Inject() (
       pap = caze.map(_.pap()).getOrElse(2L)
       jobJson ← cortexClient.execute(
         responder.id,
+        getEntityLabel(entity),
         s"thehive:$objectType",
         entityJson,
         tlp,

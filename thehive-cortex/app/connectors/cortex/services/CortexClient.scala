@@ -158,6 +158,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
 
   def execute(
       responderId: String,
+      label: String,
       dataType: String,
       data: JsValue,
       tlp: Long,
@@ -165,6 +166,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
       message: String,
       parameters: JsObject)(implicit ec: ExecutionContext): Future[JsValue] = {
     val body = Json.obj(
+      "label" → label,
       "data" → data,
       "dataType" → dataType,
       "tlp" → tlp,
@@ -177,22 +179,6 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
   def listAnalyzerForType(dataType: String)(implicit ec: ExecutionContext): Future[Seq[Analyzer]] = {
     request(s"api/analyzer/type/$dataType", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
   }
-
-  //  def listJob(implicit ec: ExecutionContext): Future[Seq[JsObject]] = {
-  //    request(s"api/job", _.get, _.json.as[Seq[JsObject]])
-  //  }
-
-  //  def getJob(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
-  //    request(s"api/job/$jobId", _.get, _.json.as[JsObject])
-  //  }
-
-  //  def removeJob(jobId: String)(implicit ec: ExecutionContext): Future[Unit] = {
-  //    request(s"api/job/$jobId", _.delete, _ ⇒ ())
-  //  }
-
-  //  def report(jobId: String)(implicit ec: ExecutionContext): Future[JsObject] = {
-  //    request(s"api/job/$jobId/report", _.get, _.json.as[JsObject])
-  //  }
 
   def waitReport(jobId: String, atMost: Duration)(implicit ec: ExecutionContext): Future[JsObject] = {
     request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, _.json.as[JsObject])
