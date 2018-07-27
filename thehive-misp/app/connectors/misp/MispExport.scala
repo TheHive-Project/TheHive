@@ -147,7 +147,7 @@ class MispExport @Inject() (
           val isEditStrategy = (body \ "strategy").asOpt[String].contains("edit")
           if (!isEditStrategy) (body \ "extensions" \ 0 \ "id").asOpt[String]
           else Some(eventId)
-        case _ ⇒ None
+        case _ ⇒ Some(eventId)
       }
   }
 
