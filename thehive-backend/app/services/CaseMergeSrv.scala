@@ -241,6 +241,7 @@ class CaseMergeSrv @Inject() (
           .set("ioc", JsBoolean(sameArtifacts.map(_.ioc()).reduce(_ || _)))
           .set("status", mergeArtifactStatus(sameArtifacts))
           .set("sighted", JsBoolean(sameArtifacts.map(_.sighted()).reduce(_ || _)))
+          .set("reports", sameArtifacts.map(a ⇒ Json.parse(a.reports()).as[JsObject]).reduce(_ deepMerge _).toString)
         // Merged artifact is created under new case
         artifactSrv
           .create(newCase, fields)
