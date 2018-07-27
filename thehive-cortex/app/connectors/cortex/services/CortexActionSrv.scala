@@ -158,18 +158,18 @@ class CortexActionSrv @Inject() (
 
   def getEntityLabel(entity: BaseEntity): String = {
     entity match {
-      case c: Case            ⇒ s"Case: #${c.caseId()} ${c.title()}"
-      case a: Artifact        ⇒ s"Artifact: ${a.dataType()}] ${a.data().getOrElse(a.attachment().get.name)}"
-      case a: Alert           ⇒ s"Alert: [${a.source()}:${a.sourceRef()}] ${a.title()}"
-      case l: Log             ⇒ s"Log: ${l.message()} from ${l.createdBy}"
-      case t: Task            ⇒ s"Task: ${t.title()} (${t.status()})"
-      case j: Job             ⇒ s"Job: ${j.analyzerName()} (${j.status()})"
-      case a: Action          ⇒ s"Action: ${a.responderName()} on ${a.objectType()}:${a.objectId()}"
-      case u: User            ⇒ s"User: ${u.userName()} (${u.userId()})"
-      case a: Audit           ⇒ s"Audit: ${a.operation()} on ${a.objectType()}:${a.objectId()}"
-      case ct: CaseTemplate   ⇒ s"CaseTemplate: ${ct.templateName()}"
-      case d: Dashboard       ⇒ s"Dashboard: ${d.title()}"
-      case rt: ReportTemplate ⇒ s"ReportTemplate: ${rt.analyzerId()}/${rt.reportType()}"
+      case c: Case            ⇒ s"#${c.caseId()} ${c.title()}"
+      case a: Artifact        ⇒ s"[${a.dataType()}] ${a.data().getOrElse(a.attachment().get.name)}"
+      case a: Alert           ⇒ s"[${a.source()}:${a.sourceRef()}] ${a.title()}"
+      case l: Log             ⇒ s"${l.message()} from ${l.createdBy}"
+      case t: Task            ⇒ s"${t.title()} (${t.status()})"
+      case j: Job             ⇒ s"${j.analyzerName()} (${j.status()})"
+      case a: Action          ⇒ s"${a.responderName()} on ${a.objectType()}:${a.objectId()}"
+      case u: User            ⇒ s"${u.userName()} (${u.userId()})"
+      case a: Audit           ⇒ s"${a.operation()} on ${a.objectType()}:${a.objectId()}"
+      case ct: CaseTemplate   ⇒ s"${ct.templateName()}"
+      case d: Dashboard       ⇒ s"${d.title()}"
+      case rt: ReportTemplate ⇒ s"${rt.analyzerId()}/${rt.reportType()}"
     }
   }
 
