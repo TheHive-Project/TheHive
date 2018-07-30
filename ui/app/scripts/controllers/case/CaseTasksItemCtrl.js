@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -37,22 +37,49 @@
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
                     scope: $scope,
-                    'filter': {
-                        '_and': [{
-                            '_parent': {
-                                '_type': 'case_task',
-                                '_query': {
-                                    '_id': taskId
+                    filter: {
+                        _and: [{
+                            _parent: {
+                                _type: 'case_task',
+                                _query: {
+                                    _id: taskId
                                 }
                             }
                         }, {
-                            '_not': {
+                            _not: {
                                 'status': 'Deleted'
                             }
                         }]
                     },
                     'sort': $scope.state.sort,
-                    'pageSize': 10
+                    'pageSize': 10,
+                    onUpdate: function() {
+                        var ids = _.pluck($scope.logs.values, 'id');
+
+                        StatSrv.getPromise({
+                            objectType: 'connector/cortex/action',
+                            field: 'objectId',
+                            limit: 1000,
+                            skipTotal: true,
+                            query: {
+                              _and: [{
+                                  _field: 'objectType',
+                                  _value: 'case_task_log'
+                              },
+                              {
+                                  _in: {
+                                      _field: 'objectId',
+                                      _values: ids
+                                  }
+                              }]
+                            }
+                        }).then(function(response) {
+                            var counts = response.data;
+                            _.each($scope.logs.values, function(log) {
+                                log.nbActions = counts[log.id] ? counts[log.id].count : 0;
+                            });
+                        });
+                    }
                 });
 
                 $scope.actions = PSearchSrv(null, 'connector/cortex/action', {

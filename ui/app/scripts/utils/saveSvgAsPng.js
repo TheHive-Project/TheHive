@@ -38,7 +38,6 @@
           }
         }
         img.onerror = function() {
-          console.log("Could not load "+href);
           left--;
           if (left == 0) {
             callback();

@@ -115,7 +115,7 @@
             };
 
             return $http.post(baseUrl + '/action', post);
-        }
+        }        
     });
 
 })();

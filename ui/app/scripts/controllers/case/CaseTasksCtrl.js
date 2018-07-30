@@ -37,8 +37,6 @@
             },
             sort: ['-flag', '+order', '+startDate', '+title'],
             onUpdate: function() {
-                console.log($scope.tasks.values);
-
                 $scope.buildTaskGroups($scope.tasks.values);
             }
             //pageSize: 30
