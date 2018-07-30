@@ -85,6 +85,8 @@ class CortexActionSrv @Inject() (
     findSrv[ActionModel, Action](actionModel, queryDef, range, sortBy)
   }
 
+  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(actionModel, queryDef, aggs: _*)
+
   def getAction(actionId: String): Future[Action] = {
     getSrv[ActionModel, Action](actionModel, actionId)
   }

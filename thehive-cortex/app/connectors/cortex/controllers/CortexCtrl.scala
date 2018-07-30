@@ -84,6 +84,7 @@ class CortexCtrl @Inject() (
     case POST(p"/action") ⇒ createAction
     case GET(p"/action") ⇒ findAction
     case POST(p"/action/_search") ⇒ findAction
+    case POST(p"/action/_stats") ⇒ statsAction
     case GET(p"/action/$entityType<[^/]*>/$entityId<[^/]*>") ⇒ getActions(entityType, entityId)
     case GET(p"/action/$actionId<[^/]*>") ⇒ getAction(actionId)
 
@@ -195,6 +196,12 @@ class CortexCtrl @Inject() (
 
     val (actions, total) = cortexActionSrv.find(query, range, sort)
     renderer.toOutput(OK, actions, total)
+  }
+
+  def statsAction: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+    val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val aggs = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
+    cortexActionSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 
   def getActions(entityType: String, entityId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
