@@ -54,6 +54,7 @@ class ArtifactCtrl @Inject() (
         else throw BadRequestError("Error extracting file: output size doesn't match header")
       }
     }
+    Files.delete(file)
     val fileSize = Files.copy(sizedInput, file)
     if (fileSize != size) {
       file.toFile.delete()
@@ -76,7 +77,7 @@ class ArtifactCtrl @Inject() (
 
         fields.get("attachment")
           .collect {
-            case FileInputValue(_, filepath, "application/x-zip-compressed") if fields.getBoolean("isZip").getOrElse(false) ⇒
+            case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
 
               val zipFile = new ZipFile(filepath.toFile)
               val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
@@ -87,7 +88,7 @@ class ArtifactCtrl @Inject() (
                 zipFile.setPassword(pw)
               }
 
-              val multiFields = files.filterNot(_.isDataDescriptorExists)
+              val multiFields = files.filterNot(_.isDirectory)
                 .map(extractAndCheckSize(zipFile, _))
                 .map { fiv ⇒
                   fields
