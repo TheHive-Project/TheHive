@@ -84,6 +84,7 @@ class ArtifactCtrl @Inject() (
 
               if (zipFile.isEncrypted) {
                 val pw = fields.getString("zipPassword")
+                  .filterNot(_.isEmpty)
                   .getOrElse(configuration.get[String]("datastore.attachment.password"))
                 zipFile.setPassword(pw)
               }
