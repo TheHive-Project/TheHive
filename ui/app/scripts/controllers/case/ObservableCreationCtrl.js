@@ -14,6 +14,8 @@
                 bulk: false,
                 ioc: false,
                 sighted: false,
+                isZip: false,
+                zipPassword: '',
                 data: '',
                 tlp: 2,
                 message: '',
@@ -89,6 +91,11 @@
 
                 } else if (params.attachment) {
                     postData.attachment = params.attachment;
+
+                    if(params.isZip) {
+                        postData.isZip = params.isZip;
+                        postData.zipPassword = params.zipPassword;
+                    }
                 }
 
                 $scope.pendingAsync = true;
