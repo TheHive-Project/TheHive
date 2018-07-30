@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
+        function(TagSrv, $scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -166,6 +166,10 @@
                 } else {
                     return false;
                 }
+            };
+
+            $scope.getTags = function(query) {
+                return TagSrv.fromObservables(query);
             };
         }
     );

@@ -38,5 +38,10 @@
                 return getTags('alert', term);
             };
 
+            this.fromObservables = function(term) {
+                return getTags('artifact', term);
+            };
+
         });
 })();
+
