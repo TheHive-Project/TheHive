@@ -6,8 +6,8 @@
                 <i class="fa fa-plus"></i>
             </a>
             <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
-                <li ng-repeat="(key, value) in allMetrics">
-                    <a ng-click="addMetric(value)">{{value.title}}</a>
+                <li ng-repeat="key in keys(allMetrics) | orderBy">
+                    <a ng-click="addMetric(allMetrics[key])">{{allMetrics[key].title}}</a>
                 </li>
             </ul>
         </span>

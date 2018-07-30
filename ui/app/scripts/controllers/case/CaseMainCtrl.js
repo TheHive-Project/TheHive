@@ -320,6 +320,10 @@
                 return Object.keys(obj);
             };
 
+            $scope.keys = function(obj) {
+                return _.keys(obj);
+            };
+
             $scope.getTags = function(selection) {
                 var tags = [];
 

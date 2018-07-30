@@ -61,7 +61,7 @@
             guard: function(updates) {
                 return _.find(updates, function(item) {
                     return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
-                }) !== undefined;                
+                }) !== undefined;
             }
         });
 
@@ -153,6 +153,10 @@
                 $scope.allCustomFields = _.omit(fields, _.keys($scope.caze.customFields));
                 $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;
             });
+        };
+
+        $scope.keys = function(obj) {
+            return _.keys(obj);
         };
 
         $scope.updateCustomFieldsList();
