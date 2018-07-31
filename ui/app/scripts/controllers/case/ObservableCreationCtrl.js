@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function(TagSrv, $scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, TagSrv) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($q, $scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv, StatSrv, TagSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -9,34 +9,6 @@
         $scope.state = {
             'editing': false,
             'isCollapsed': true
-        };
-
-        var getPromiseFor = function(objectType) {
-            return StatSrv.getPromise({
-                objectType: objectType,
-                field: 'tags',
-                limit: 1000
-            });
-        };
-
-        $scope.autoComplete = function(term) {
-            var defer = $q.defer();
-
-            getPromiseFor('case').then(function(response) {
-                defer.resolve(mapTags(response.data, term) || []);
-            });
-
-            return defer.promise;
-        };
-
-        var mapTags = function(collection, term) {
-            return _.map(_.filter(_.keys(collection), function(tag) {
-                console.log(term);
-                var regex = new RegExp(term, 'gi');
-                return regex.test(tag);
-            }), function(tag) {
-                return {text: tag};
-            });
         };
 
         $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
