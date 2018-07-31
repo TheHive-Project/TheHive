@@ -135,9 +135,7 @@
                     return k.startsWith('_');
                 }).concat(['createdAt', 'updatedAt', 'createdBy', 'updatedBy']);
 
-                console.log(filteredKeys);
-
-                self.template = _.omit(template, filteredKeys);
+                self.template = _.defaults(_.omit(template, filteredKeys), {pap: 2, tlp: 2});
                 self.tags = UtilsSrv.objectify(self.template.tags, 'text');
                 self.templateCustomFields = getTemplateCustomFields(template.customFields);
                 self.templateMetrics = getTemplateMetrics(template.metrics);
@@ -159,6 +157,7 @@
                     titlePrefix: '',
                     severity: 2,
                     tlp: 2,
+                    pap: 2,
                     tags: [],
                     tasks: [],
                     metrics: {},
@@ -203,7 +202,7 @@
                             return action;
                         },
                         task: function() {
-                            return _.extend({}, task);
+                            return _.extend({}, {group: 'default'}, task);
                         },
                         users: function() {
                             return UserSrv.list({ status: 'Ok' });
@@ -282,7 +281,7 @@
                     var fieldDef = self.fields[cf.name];
                     var value = null;
                     if (fieldDef) {
-                        value = fieldDef.type === 'date' && cf.value ? moment(cf.value).valueOf() : cf.value || null;
+                        value = fieldDef.type === 'date' && cf.value ? moment(cf.value).valueOf() : cf.value;
                     }
 
                     self.template.customFields[cf.name] = {};
@@ -366,26 +365,6 @@
                         }
                     });
             };
-
-            // this.duplicateTemplate = function(template) {
-            //     var copy = _.pick(template, 'name', 'title', 'description', 'tlp', 'severity', 'tags', 'status', 'titlePrefix', 'tasks', 'metrics', 'customFields');
-            //     copy.name = 'Copy_of_' + copy.name;
-            //
-            //     this.openDashboardModal(copy)
-            //         .result.then(function(dashboard) {
-            //             return DashboardSrv.create(dashboard);
-            //         })
-            //         .then(function(response) {
-            //             $state.go('app.dashboards-view', {id: response.data.id});
-            //
-            //             NotificationSrv.log('The dashboard has been successfully created', 'success');
-            //         })
-            //         .catch(function(err) {
-            //             if (err && err.status) {
-            //                 NotificationSrv.error('DashboardsCtrl', err.data, err.status);
-            //             }
-            //         });
-            // };
         })
         .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
             $scope.task = task || {};
@@ -432,6 +411,7 @@
                     'title',
                     'description',
                     'tlp',
+                    'pap',
                     'severity',
                     'tags',
                     'status',

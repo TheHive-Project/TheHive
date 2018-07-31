@@ -16,13 +16,13 @@ services:
         soft: 65536
         hard: 65536
   cortex:
-    image: certbdf/cortex:latest
+    image: thehiveproject/cortex:latest
     depends_on:
       - elasticsearch
     ports:
       - "0.0.0.0:9001:9001"
   thehive:
-    image: certbdf/thehive:latest
+    image: thehiveproject/thehive:latest
     depends_on:
       - elasticsearch
       - cortex

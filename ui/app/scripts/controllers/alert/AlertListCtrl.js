@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, Severity) {
+        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity) {
             var self = this;
 
             self.list = [];
@@ -94,6 +94,7 @@
                 searchQuery: self.filtering.buildQuery() || ''
             };
             self.lastSearch = null;
+            self.responders = null;
 
             $scope.$watch('$vm.list.pageSize', function (newValue) {
                 self.filtering.setPageSize(newValue);
@@ -207,6 +208,31 @@
                     self.menu.selectAll = false;
                     self.updateMenu();
                 }
+            };
+
+            this.getResponders = function(eventId, force) {
+                if(!force && this.responders !== null) {
+                   return;
+                }
+
+                this.responders = null;
+                CortexSrv.getResponders('alert', eventId)
+                  .then(function(responders) {
+                      self.responders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('AlertList', response.data, response.status);
+                  });
+            };
+
+            this.runResponder = function(responderId, event) {
+                CortexSrv.runResponder(responderId, 'alert', _.pick(event, 'id', 'tlp'))
+                  .then(function(response) {
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      NotificationSrv.error('CaseList', response.data, response.status);
+                  });
             };
 
             self.load = function() {

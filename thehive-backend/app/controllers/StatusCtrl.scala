@@ -5,16 +5,13 @@ import javax.inject.{ Inject, Singleton }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
-
 import play.api.Configuration
-import play.api.libs.json.{ JsObject, JsString, Json }
+import play.api.libs.json.{ JsBoolean, JsObject, JsString, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponents }
-
 import com.sksamuel.elastic4s.ElasticDsl
 import connectors.Connector
 import models.HealthStatus
-
 import org.elastic4play.Timed
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
@@ -51,7 +48,8 @@ class StatusCtrl @Inject() (
               case multiAuthSrv: MultiAuthSrv ⇒ multiAuthSrv.authProviders.map { a ⇒ JsString(a.name) }
               case _                          ⇒ JsString(authSrv.name)
             }),
-            "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)))))
+            "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
+            "ssoAutoLogin" → JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false)))))
       }
   }
 

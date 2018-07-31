@@ -22,9 +22,25 @@
         <div file-chooser="" filemodel="params.attachment"></div>
         <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
             WARNING: This file seems to be empty
-        </div>        
-        <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
-        <div><input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted</div>
+        </div>
+        <div class="checkbox">
+          <label>
+              <input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+              <input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+              <input type="checkbox" ng-model="params.isZip">&nbsp;The file is a zipped archive
+          </label>
+        </div>
+        <div ng-show="params.isZip">
+            <input type="text" class="form-control" ng-model="params.zipPassword" placeholder="Type archive's password if available"> {{params.izZip}}
+        </div>
     </div>
 </div>
 
@@ -34,13 +50,23 @@
     <div class="col-md-9">
         <textarea ng-if="params.bulk" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" required></textarea>
         <input ng-if="!params.bulk" type="text" class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" required>
-        <div>
-            <input type="checkbox" ng-model="params.bulk">&nbsp;Bulk
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="params.bulk">&nbsp;Bulk
+            </label>
             <span ng-show="params.bulk">(one observable per line)</span>
             <span ng-show="params.bulk" class="pull-right"><ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize></span>
         </div>
-        <div><input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC</div>
-        <div><input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted</div>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="params.ioc">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as IOC
+            </label>
+        </div>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="params.sighted">&nbsp;Mark <strong ng-show="params.bulk">all observables</strong> as sighted
+            </label>
+        </div>
     </div>
 </div>
 

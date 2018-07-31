@@ -1,15 +1,15 @@
 {
     "name": "thehive",
-    "version": "3.0.10",
+    "version": "3.1.0-RC1",
     "license": "AGPL-3.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/CERT-BDF/TheHive.git"
+        "url": "https://github.com/TheHive-Project/TheHive.git"
     },
     "bugs": {
-        "url": "https://github.com/CERT-BDF/TheHive/issues"
+        "url": "https://github.com/TheHive-Project/TheHive/issues"
     },
-    "homepage": "https://github.com/CERT-BDF/TheHive",
+    "homepage": "https://thehive-project.org/",
     "dependencies": {},
     "devDependencies": {
         "autoprefixer": "^6.4.1",

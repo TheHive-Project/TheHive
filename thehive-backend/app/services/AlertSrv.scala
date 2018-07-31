@@ -38,7 +38,6 @@ object AlertSrv {
 
 @Singleton
 class AlertSrv(
-    maxSimilarCases: Int,
     templates: Map[String, String],
     alertModel: AlertModel,
     createSrv: CreateSrv,
@@ -70,7 +69,6 @@ class AlertSrv(
       connectors: ConnectorRouter,
       ec: ExecutionContext,
       mat: Materializer) = this(
-    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     Map.empty[String, String],
     alertModel: AlertModel,
     createSrv,
@@ -194,7 +192,8 @@ class AlertSrv(
                   .set("tags", JsArray(alert.tags().map(JsString)))
                   .set("tlp", JsNumber(alert.tlp()))
                   .set("status", CaseStatus.Open.toString)
-                  .set("startDate", Json.toJson(alert.date())),
+                  .set("startDate", Json.toJson(alert.date()))
+                  .set("customFields", alert.customFields()),
                 caseTemplate)
               _ ← importArtifacts(alert, caze)
               _ ← setCase(alert, caze)
@@ -283,7 +282,7 @@ class AlertSrv(
       case AlertStatus.Imported ⇒ AlertStatus.Ignored
     }
     logger.debug(s"Remove case association in alert ${alert.id} (${alert.title}")
-    updateSrv(alert, Fields(Json.obj("case" -> JsNull, "status" -> status)), modifyConfig)
+    updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
   }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Alert] =
@@ -315,17 +314,17 @@ class AlertSrv(
         similarArtifacts(artifact)
           .getOrElse(Source.empty)
       }
-      .groupBy(maxSimilarCases, _.parentId)
-      .map {
-        case a if a.ioc() ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 1, 1)
-        case a            ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 0, 1)
+      .fold(Map.empty[String, (Int, Int)]) { (similarCases, artifact) ⇒
+        val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
+        val (iocCount, artifactCount) = similarCases.getOrElse(caseId, (0, 0))
+        if (artifact.ioc())
+          similarCases + (caseId → ((iocCount + 1, artifactCount)))
+        else
+          similarCases + (caseId → ((iocCount, artifactCount + 1)))
       }
-      .reduce[(String, Int, Int)] {
-        case ((caseId, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caseId, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
-      }
-      .mergeSubstreams
+      .mapConcat(identity)
       .mapAsyncUnordered(5) {
-        case (caseId, similarIOCCount, similarArtifactCount) ⇒
+        case (caseId, (similarIOCCount, similarArtifactCount)) ⇒
           caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
       }
       .filter {
@@ -369,7 +368,7 @@ class AlertSrv(
     updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
     val updateAlertProcess = updateAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated)")
+        logger.debug(s"Updating alert ${alert.id} (status: Update → Updated)")
         update(alert, updatedStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
@@ -381,7 +380,7 @@ class AlertSrv(
     ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
     val ignoreAlertProcess = ignoreAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored)")
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore → Ignored)")
         update(alert, ignoredStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)

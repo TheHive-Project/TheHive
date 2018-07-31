@@ -30,6 +30,10 @@
                     return $http.post(baseUrl + '/' + alertId + '/createCase', data || {});
                 },
 
+                update: function(alertId, updates) {
+                    return $http.patch(baseUrl + '/' + alertId, updates);
+                },
+
                 mergeInto: function(alertId, caseId) {
                     return $http.post(baseUrl + '/' + alertId + '/merge/' + caseId);
                 },

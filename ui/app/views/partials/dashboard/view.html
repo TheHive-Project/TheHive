@@ -11,6 +11,14 @@
                 <i class="fa fa-download"></i> Export
             </a>
 
+            <div class="btn-group" ng-show="!$vm.options.editLayout">
+                <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="null">Auto Refresh - Off</label>
+                <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="60">1m</label>
+                <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="300">5m</label>
+                <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="600">10m</label>
+                <label class="btn btn-sm btn-default" ng-model="$vm.autoRefresh" uib-btn-radio="900">15m</label>
+            </div>
+
             <a class="btn btn-box-tool" ui-sref="app.dashboards()">
                 <i class="fa fa-chevron-left"></i> Back to list
             </a>

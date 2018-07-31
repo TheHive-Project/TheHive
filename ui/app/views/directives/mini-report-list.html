@@ -8,7 +8,7 @@
             'malicious': 'label-danger'
         }[taxonomy.level]"
         ng-click="onItemClicked({observable: observable, analyzerId: taxonomy.id})">
-        {{taxonomy.namespace}}:{{taxonomy.predicate}}{{taxonomy.value ? '='+taxonomy.value: ''}}
+        {{taxonomy.namespace}}:{{taxonomy.predicate}}{{taxonomy.value ? '="'+taxonomy.value+'"': ''}}
     </span>
 </div>
 

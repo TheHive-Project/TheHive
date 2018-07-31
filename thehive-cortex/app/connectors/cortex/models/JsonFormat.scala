@@ -25,7 +25,7 @@ object JsonFormat {
       description ← (json \ "description").validate[String]
       dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
     } yield Analyzer(id, renamed, version, description, dataTypeList))
-  implicit val analyzerFormats: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
+  implicit val analyzerFormat: Format[Analyzer] = Format(analyzerReads, analyzerWrites)
 
   private val fileArtifactWrites = OWrites[FileArtifact](fileArtifact ⇒ Json.obj(
     "attributes" → fileArtifact.attributes))
@@ -50,15 +50,15 @@ object JsonFormat {
   implicit val jobStatusFormat: Format[JobStatus.Type] = enumFormat(JobStatus)
 
   private def filterObject(json: JsObject, attributes: String*): JsObject = {
-    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a -> _)))
+    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a → _)))
   }
 
-  implicit val cortexJobReads = Reads[CortexJob](json ⇒
+  implicit val cortexJobReads: Reads[CortexJob] = Reads[CortexJob](json ⇒
     for {
       id ← (json \ "id").validate[String]
-      analyzerId ← (json \ "analyzerId").validate[String]
-      analyzerName = (json \ "analyzerName").validate[String].getOrElse(analyzerId)
-      analyzerDefinition = (json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
+      analyzerId ← (json \ "workerId").validate[String]
+      analyzerName = (json \ "workerName").validate[String].getOrElse(analyzerId)
+      analyzerDefinition = (json \ "workerDefinitionId").validate[String].getOrElse(analyzerId)
       attributes = filterObject(json.as[JsObject], "tlp", "message", "parameters")
       artifact = (json \ "artifact").validate[CortexArtifact]
         .getOrElse {
@@ -67,7 +67,30 @@ object JsonFormat {
         }
       date ← (json \ "date").validate[Date]
       status ← (json \ "status").validate[JobStatus.Type]
-    } yield CortexJob(id, analyzerId, analyzerName, analyzerDefinition, artifact, date, status, Nil))
+    } yield CortexJob(id, analyzerId, analyzerName, analyzerDefinition, artifact, date, status))
 
   implicit val reportTypeFormat: Format[ReportType.Type] = enumFormat(ReportType)
+
+  private val responderWrites = Writes[Responder](responder ⇒ Json.obj(
+    "id" → responder.id,
+    "name" → responder.name,
+    "version" → responder.version,
+    "description" → responder.description,
+    "dataTypeList" → responder.dataTypeList,
+    "maxTlp" → responder.maxTlp,
+    "maxPap" → responder.maxPap,
+    "cortexIds" → responder.cortexIds))
+  private val responderReads = Reads[Responder](json ⇒
+    for {
+      name ← (json \ "name").validate[String]
+      version ← (json \ "version").validate[String]
+      definition = (name + "_" + version).replaceAll("\\.", "_")
+      id = (json \ "id").asOpt[String].getOrElse(definition)
+      renamed = if (id == definition) definition else name
+      description ← (json \ "description").validate[String]
+      dataTypeList ← (json \ "dataTypeList").validate[Seq[String]]
+      maxTlp ← (json \ "maxTlp").validateOpt[Long]
+      maxPap ← (json \ "maxPap").validateOpt[Long]
+    } yield Responder(id, renamed, version, description, dataTypeList, maxTlp, maxPap))
+  implicit val responderFormat: Format[Responder] = Format(responderReads, responderWrites)
 }

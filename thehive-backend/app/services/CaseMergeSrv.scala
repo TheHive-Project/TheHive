@@ -156,7 +156,7 @@ class CaseMergeSrv @Inject() (
       .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task → _) }
       .flatMapConcat {
         case (oldTask, newTask) ⇒
-          logger.info(s"\ttask : ${oldTask.id} -> ${newTask.id} : ${newTask.title()}")
+          logger.info(s"\ttask : ${oldTask.id} → ${newTask.id} : ${newTask.title()}")
           val (logs, futureLogCount) = logSrv.find(and(parent("case_task", withId(oldTask.id)), "status" ~!= LogStatus.Deleted), Some("all"), Nil)
           futureLogCount.foreach { count ⇒ logger.info(s"Creating $count log(s) in task ${newTask.id}") }
           logs.map(_ → newTask)
@@ -241,6 +241,7 @@ class CaseMergeSrv @Inject() (
           .set("ioc", JsBoolean(sameArtifacts.map(_.ioc()).reduce(_ || _)))
           .set("status", mergeArtifactStatus(sameArtifacts))
           .set("sighted", JsBoolean(sameArtifacts.map(_.sighted()).reduce(_ || _)))
+          .set("reports", sameArtifacts.map(a ⇒ Json.parse(a.reports()).as[JsObject]).reduce(_ deepMerge _).toString)
         // Merged artifact is created under new case
         artifactSrv
           .create(newCase, fields)

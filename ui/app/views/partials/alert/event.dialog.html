@@ -47,6 +47,15 @@
                         <div marked="dialog.event.description" class="markdown"></div>
                     </div>
                 </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Additional fields
+                    </h4>
+                    <div ng-include="'views/partials/alert/custom.fields.html'">
+
+                    </div>
+                </div>
             </div>
 
             <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">

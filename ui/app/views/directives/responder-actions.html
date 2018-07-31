@@ -1,0 +1,30 @@
+<div class="responder-actions">
+    <h4 class="text-primary">{{header}}</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th width="80" class="text-center">Status</th>
+                <th>Name</th>
+                <th width="200">Cortex Server</th>
+                <th width="120">Date</th>
+                <th width="40" class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="action in actions.values">
+                <td class="text-center">
+                  <span class="label label-default" ng-class="{
+                    'Success': 'label-success',
+                    'InProgress': 'label-warning',
+                    'Failure': 'label-danger'}[action.status]">{{action.status}}</span>
+                </td>
+                <td>{{action.responderName}}</td>
+                <td>{{action.cortexId}}</td>
+                <td>{{action.startDate | shortDate}}</td>
+                <td class="text-center">
+                    <a href class="noline" ng-click="showResponderJob(action)"><i class="fa fa-search"></i></a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

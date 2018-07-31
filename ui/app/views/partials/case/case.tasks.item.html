@@ -4,9 +4,35 @@
             Basic Information
 
             <div class="task-actions pull-right">
+                <span class="mr-xxs action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                    <a href class="text-primary noline" ng-click="getTaskResponders()" uib-dropdown-toggle>
+                        <i class="text-primary fa fa-cog"></i>
+                        Responders
+                        <i class="text-primary fa fa-angle-down"></i>
+                    </a>
+                    <ul class="dropdown-menu" uib-dropdown-menu>
+                      <li ng-if="taskResponders && taskResponders.length === 0">
+                        <a href ng-click="getTaskResponders(true)">
+                          <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                        </a>
+                      </li>
+                      <li ng-repeat="responder in taskResponders">
+                        <a href ng-click="runResponder(responder.id)">
+                          <strong>{{responder.name}}</strong>
+                          <br>
+                          <small>{{responder.description}}</small></a>
+                      </li>
+                    </ul>
+                </span>
                 <a href ng-click="switchFlag()">
                     <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
                         <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
+                    </span>
+                </a>
+
+                <a href ng-click="startTask(task)">
+                    <span ng-show="task.status == 'Waiting'" class="action-button text-primary">
+                        <i class="fa fa-play"></i> Start
                     </span>
                 </a>
 
@@ -28,6 +54,13 @@
             <dt class="pull-left">Title</dt>
             <dd>
                 <updatable-simple-text on-update="updateField('title', newValue)" value="task.title"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Group</dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('group', newValue)" value="task.group"/>
             </dd>
         </dl>
 
@@ -74,6 +107,10 @@
                 <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
             </dd>
         </dl>
+
+        <div class="task-actions vpad10" ng-if="actions.values.length">
+            <responder-actions header="Responder Jobs" actions="actions"></responder-actions>
+        </div>
     </div>
 
     <!-- New Log -->
@@ -138,7 +175,7 @@
 
         <psearch control="logs"></psearch>
         <div ng-repeat="log in logs.values">
-            <log-entry log="log"></log-entry>
+            <log-entry log="log" app-config="appConfig"></log-entry>
         </div>
         <psearch control="logs"></psearch>
     </div>
