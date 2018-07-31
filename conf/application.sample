@@ -198,5 +198,9 @@ misp {
   #      port = 3128
   #    }
   #  }
+  #
+  #  # MISP purpose defines if this instance can be used to import events (ImportOnly), export cases (ExportOnly) or both (ImportAndExport)
+  #  # Default is ImportAndExport
+  #  purpose = ImportAndExport
   #} ## <-- Uncomment to complete the configuration
 }
