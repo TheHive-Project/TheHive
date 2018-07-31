@@ -31,7 +31,6 @@ DELETE   /api/case/template/:caseTemplateId       controllers.CaseTemplateCtrl.d
 
 POST     /api/case/artifact/_search               controllers.ArtifactCtrl.find()
 POST     /api/case/:caseId/artifact/_search       controllers.ArtifactCtrl.findInCase(caseId)
-POST     /api/artifact/_stats                     controllers.ArtifactCtrl.stats()
 POST     /api/case/artifact/_stats                controllers.ArtifactCtrl.stats()
 POST     /api/case/:caseId/artifact               controllers.ArtifactCtrl.create(caseId)
 GET      /api/case/artifact/:artifactId           controllers.ArtifactCtrl.get(artifactId)
