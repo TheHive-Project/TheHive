@@ -34,15 +34,7 @@ Analysts can analyze tens or hundreds of observables in a few clicks by leveragi
 Security analysts with a knack for scripting can easily add their own analyzers to Cortex in order to automate actions that must be performed on observables or IOCs. They can also decide how analyzers behave according to the TLP. For example, a file added as observable can be submitted to VirusTotal if the associated TLP is WHITE or GREEN. If it's AMBER, its hash is computed and submitted to VT but not the file. If it's RED, no VT lookup is done.
 
 # Try it
-To use TheHive, you can:
-- Install the [RPM package](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/rpm-guide.md)
-- Install the [DEB package](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/deb-guide.md)
-- Use [docker](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/docker-guide.md)
-- Use the [binary](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/binary-guide.md)
-- Execute the [Ansible script](https://github.com/drewstinnett/ansible-thehive) contributed by
-[@drewstinnett](https://github.com/drewstinnett)
-- [Build it from sources](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/build-guide.md) then run it
-- [Use the training VM](https://github.com/TheHive-Project/TheHiveDocs/blob/master/training-material.md)
+To try TheHive, you can use the [training VM](https://github.com/TheHive-Project/TheHiveDocs/blob/master/training-material.md) or install it by reading the [Installation Guide](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md).
 
 # Details
 
@@ -52,12 +44,12 @@ We have made several guides available in the [Documentation repository](https://
 ## Architecture
 TheHive is written in Scala and uses ElasticSearch 5.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
 
-![](images/Architecture.png)
+![architecture](images/thehive-architecture.png)
 
 ## Workflow
 The following image shows a typical workflow:
 
-![](images/Workflow.png)
+![workflow](images/thehive-workflow.png)
 
 ## Additional features
 ### Authentication
@@ -77,7 +69,7 @@ Two cases can be easily merged together if you believe they relate to the same t
 You can filter cases and observables very easily to show only the data that is of interest to you.
 
 ### MISP and Cortex
-TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP instances to one or several MISP servers. 
+TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP events to one or several MISP servers. 
 
 [Cortex](https://github.com/TheHive-Project/Cortex/) is the perfect companion for TheHive. Use one or several to analyze observables at scale.
 
