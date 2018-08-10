@@ -11,7 +11,6 @@
             $scope.pendingAsync = false;
             $scope.step = 'form';
             $scope.params = {
-                bulk: false,
                 ioc: false,
                 sighted: false,
                 data: '',
@@ -79,14 +78,8 @@
                     };
 
                 if (params.data) {
-
-                    if ($scope.params.bulk) {
-                        postData.data = params.data.split('\n');
-                        count = postData.length;
-                    } else {
-                        postData.data = params.data;
-                    }
-
+                    postData.data = params.data.split('\n');
+                    count = postData.length;
                 } else if (params.attachment) {
                     postData.attachment = params.attachment;
                 }
