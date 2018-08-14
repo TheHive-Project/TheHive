@@ -1,18 +1,19 @@
 package connectors.cortex.models
 
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
 
 import scala.concurrent.Future
 
-import play.api.libs.json.{ JsObject, JsString, JsValue, Json }
+import play.api.libs.json._
+
+import connectors.cortex.models.JsonFormat.jobStatusFormat
+import javax.inject.{ Inject, Singleton }
+import models.{ Artifact, ArtifactModel }
+import services.AuditedModel
 
 import org.elastic4play.JsonFormat.dateFormat
 import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
 import org.elastic4play.utils.RichJson
-import connectors.cortex.models.JsonFormat.jobStatusFormat
-import models.{ Artifact, ArtifactModel }
-import services.AuditedModel
 
 object JobStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -33,7 +34,8 @@ trait JobAttributes { _: AttributeDef ⇒
 
 }
 @Singleton
-class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
+class JobModel @Inject() (
+    artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful {
     attrs
@@ -45,8 +47,8 @@ class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[Jo
 object Job {
   def fixJobAttr(attr: JsObject): JsObject = {
     val analyzerId = (attr \ "analyzerId").as[String]
-    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" -> JsString(analyzerId)))(_ ⇒ attr)
-    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" -> JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
+    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
+    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
   }
 }
 
@@ -56,12 +58,9 @@ class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job
 
 case class CortexJob(
     id: String,
-    analyzerId: String,
-    analyzerName: String,
-    analyzerDefinition: String,
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
     artifact: CortexArtifact,
     date: Date,
-    status: JobStatus.Type,
-    cortexIds: List[String] = Nil) {
-  def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
-}
+    status: JobStatus.Type)

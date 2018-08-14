@@ -6,8 +6,8 @@
                 <i class="fa fa-plus"></i>
             </a>
             <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
-                <li ng-repeat="(key, value) in allCustomFields">
-                    <a ng-click="addCustomField(value)">{{value.name}}</a>
+                <li ng-repeat="key in keys(allCustomFields) | orderBy">
+                    <a ng-click="addCustomField(allCustomFields[key])">{{allCustomFields[key].name}}</a>
                 </li>
             </ul>
         </span>

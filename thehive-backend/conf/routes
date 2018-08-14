@@ -7,6 +7,7 @@ GET      /api/status                              controllers.StatusCtrl.get
 GET      /api/health                              controllers.StatusCtrl.health
 GET      /api/logout                              controllers.AuthenticationCtrl.logout()
 POST     /api/login                               controllers.AuthenticationCtrl.login()
+POST     /api/ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
 POST     /api/_search                             controllers.SearchCtrl.find()
 POST     /api/_stats                              controllers.SearchCtrl.stats()
@@ -70,7 +71,10 @@ POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAl
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
 POST     /api/alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
-GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
+GET      /api/flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+GET      /api/audit                               controllers.AuditCtrl.find()
+POST     /api/audit/_search                       controllers.AuditCtrl.find()
+POST     /api/audit/_stats                        controllers.AuditCtrl.stats()
 
 GET      /api/datastore/:hash                     controllers.AttachmentCtrl.download(hash, name: Option[String])
 GET      /api/datastorezip/:hash                  controllers.AttachmentCtrl.downloadZip(hash, name: Option[String])

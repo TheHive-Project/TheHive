@@ -2,6 +2,14 @@
     <div class="col-md-7">
         <h4 class="vpad10 text-primary">Summary</h4>
         <dl class="dl-horizontal clear">
+            <dt class="pull-left">Title
+            </dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('title', newValue)" value="caze.title"></updatable-simple-text>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
             <dt class="pull-left">Severity</dt>
             <dd>
                 <a class="noline" href ng-click="activeSev = true" ng-init="activeSev = false">
@@ -20,10 +28,11 @@
         </dl>
 
         <dl class="dl-horizontal clear">
-            <dt class="pull-left">Title
-            </dt>
+            <dt class="pull-left">PAP</dt>
             <dd>
-                <updatable-simple-text on-update="updateField('title', newValue)" value="caze.title"></updatable-simple-text>
+                <a class="noline" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
+                    <tlp format="activePap" on-update="updateField('pap', newValue)" style="float:left;" value="caze.pap"></tlp>
+                </a>
             </dd>
         </dl>
 
@@ -105,11 +114,15 @@
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
                 <td style="text-align:center">
-                    <a href="./api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name}}" target="_blank">
+                    <a href="./api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name | escape}}" target="_blank">
                         <i class="glyphicon glyphicon-download"></i>
                     </a>
                 </td>
             </tr>
         </tbody>
     </table>
+</div>
+
+<div class="case-actions vpad10" ng-if="actions.values.length">
+    <responder-actions header="Responder Jobs" actions="actions"></responder-actions>
 </div>

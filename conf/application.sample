@@ -5,30 +5,70 @@
 
 # Elasticsearch
 search {
+  ## Basic configuration
   # Index name.
   index = the_hive
   # ElasticSearch cluster name.
   cluster = hive
   # ElasticSearch instance address.
   host = ["127.0.0.1:9300"]
+
+  ## Advanced configuration
   # Scroll keepalive.
-  keepalive = 1m
+  #keepalive = 1m
   # Scroll page size.
-  pagesize = 50
+  #pagesize = 50
+  # Number of shards
+  #nbshards = 5
+  # Number of replicas
+  #nbreplicas = 1
+  # Arbitrary settings
+  #settings {
+  #  # Maximum number of nested fields
+  #  mapping.nested_fields.limit = 100
+  #}
+
+  ### XPack SSL configuration
+  # Username for XPack authentication
+  #search.username
+  # Password for XPack authentication
+  #search.password
+  # Enable SSL to connect to ElasticSearch
+  search.ssl.enabled = false
+  # Path to certificate authority file
+  #search.ssl.ca
+  # Path to certificate file
+  #search.ssl.certificate
+  # Path to key file
+  #search.ssl.key
+
+  ### SearchGuard configuration
+  # Path to JKS file containing client certificate
+  #search.guard.keyStore.path
+  # Password of the keystore
+  #search.guard.keyStore.password
+  # Path to JKS file containing certificate authorities
+  #search.guard.trustStore.path
+  ## Password of the truststore
+  #search.guard.trustStore.password
+  # Enforce hostname verification
+  #search.guard.hostVerification
+  # If hostname verification is enabled specify if hostname should be resolved
+  #search.guard.hostVerificationResolveHostname
 }
 
 # Authentication
 auth {
-	# "type" parameter contains the authentication provider(s). It can be multi-valued, which is useful
-	# for migration.
-	# The available auth types are:
-	# - services.LocalAuthSrv : passwords are stored in the user entity within ElasticSearch). No
-	#   configuration are required.
-	# - ad : use ActiveDirectory to authenticate users. The associated configuration shall be done in
-	#   the "ad" section below.
-	# - ldap : use LDAP to authenticate users. The associated configuration shall be done in the
-	#   "ldap" section below.
-	type = [local]
+	# "provider" parameter contains authentication provider. It can be multi-valued (useful for migration)
+	# available auth types are:
+	# services.LocalAuthSrv : passwords are stored in user entity (in Elasticsearch). No configuration is required.
+	# ad : use ActiveDirectory to authenticate users. Configuration is under "auth.ad" key
+	# ldap : use LDAP to authenticate users. Configuration is under "auth.ldap" key
+	provider = [local]
+
+  # By default, basic authentication is disabled. You can enable it by setting "method.basic" to true.
+  #method.basic = true
+
 
 	ad {
 		# The Windows domain name in DNS format. This parameter is required if you do not use
@@ -72,14 +112,30 @@ auth {
 	}
 }
 
+# Maximum time between two requests without requesting authentication
+session {
+  warning = 5m
+  inactivity = 1h
+}
+
+# Max textual content length
+play.http.parser.maxMemoryBuffer=1M
+# Max file size
+play.http.parser.maxDiskBuffer=1G
+
 # Cortex
 # TheHive can connect to one or multiple  Cortex  instances.  Give  each
 # Cortex instance a name and specify the associated URL.
-
+#
+# In order to use Cortex, first you need to enable the Cortex module by uncomment the next line
+#play.modules.enabled += connectors.cortex.CortexConnector
+#
 cortex {
   #"CORTEX-SERVER-ID" {
-    # URL of the Cortex server.
-    #url = ""
+  #  url = ""
+  #  key = ""
+  #  # HTTP client configuration (SSL and proxy)
+  #  ws {}
   #}
 }
 
@@ -96,33 +152,55 @@ cortex {
 #play.modules.enabled += connectors.misp.MispConnector
 
 misp {
-  #"MISP-SERVER-ID" {
-    # URL of the MISP instance.
-    #url = ""
-
-    # Authentication key.
-    #key = ""
-
-    # Name of the case template in TheHive that shall be used to import
-    # MISP events as cases by default.
-    # caseTemplate = "<Template_Name_goes_here>"
-
-    # Tags to add to each observable imported from an event available on
-    # this instance.
-    #tags = ["misp-server-id"]
-
-    # Truststore to use to validate the X.509 certificate  of  the  MISP
-    # instance if the default truststore is not sufficient.
-
-    #ws.ssl.trustManager.stores =  [
-    #{
-    #  type: "JKS"
-    #  path: "/path/to/truststore.jks"
-    #}
-    #]
-  #}
-
   # Interval between consecutive MISP event  imports  in  hours  (h)  or
   # minutes (m).
   interval = 1h
+
+  #"MISP-SERVER-ID" {
+  #  # MISP connection configuration requires at least an url and a key. The key must
+  #  # be linked with a sync account on MISP.
+  #  url = ""
+  #  key = ""
+  #
+  #  # Name of the case template in TheHive that shall be used to import
+  #  # MISP events as cases by default.
+  #  caseTemplate = "<Template_Name_goes_here>"
+  #
+  #  # Optional tags to add to each observable  imported  from  an  event
+  #  # available on this instance.
+  #  tags = ["misp-server-id"]
+  #
+  #  ## MISP event filters
+  #  # MISP filters is used to exclude events from the import.
+  #  # Filter criteria are:
+  #  # The number of attribute
+  #  max-attributes = 1000
+  #  # The size of its JSON representation
+  #  max-size = 1 MiB
+  #  # The age of the last publish date
+  #  max-age = 7 days
+  #  # Organization and tags
+  #  exclusion {
+  #    organisation = ["bad organisation", "other orga"]
+  #    tags = ["tag1", "tag2"]
+  #  }
+  #
+  #  ## HTTP client configuration (SSL and proxy)
+  #  # Truststore to use to validate the X.509 certificate of the  MISP
+  #  # instance if the default truststore is not sufficient.
+  #  # Proxy can also be used
+  #  ws {
+  #    ssl.trustManager.stores = [ {
+  #      path = /path/to/truststore.jks
+  #    }
+  #    proxy {
+  #      host = proxy.mydomain.org
+  #      port = 3128
+  #    }
+  #  }
+  #
+  #  # MISP purpose defines if this instance can be used to import events (ImportOnly), export cases (ExportOnly) or both (ImportAndExport)
+  #  # Default is ImportAndExport
+  #  purpose = ImportAndExport
+  #} ## <-- Uncomment to complete the configuration
 }

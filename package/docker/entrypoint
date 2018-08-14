@@ -6,10 +6,11 @@ CONFIG_ES=1
 CONFIG_CORTEX=1
 CORTEX_HOSTNAME=cortex
 CORTEX_PROTO=http
-CORTEX_PORT=9000
+CORTEX_PORT=9001
 CORTEX_URLS=()
 CONFIG=1
 CONFIG_FILE=/etc/thehive/application.conf
+CORTEX_KEYS=()
 
 function usage {
 	cat <<- _EOF_
@@ -24,6 +25,7 @@ function usage {
 		--cortex-port <port>	| define port to connect to Cortex (default: 9000)
 		--cortex-url <url>	| add Cortex connection
 		--cortex-hostname <host>| resolve this hostname to find Cortex instances
+		--cortex-key <key>      | define Cortex key 
 	_EOF_
 	exit 1
 }
@@ -43,6 +45,7 @@ do
 		"--cortex-port")	shift; CORTEX_PORT=$1;;
 		"--cortex-url")		shift; CORTEX_URLS+=($1);;
 		"--cortex-hostname")	shift; CORTEX_HOSTNAME=$1;;
+		"--cortex-key")  	shift; CORTEX_KEYS=($1);;
 		"--")			STOP=1;;
 		*)			usage
 	esac
@@ -105,6 +108,13 @@ then
 		do
 			echo Add Cortex cortex$I: $C
 			echo cortex.cortex$I.url=\"$C\" >> $CONFIG_FILE
+			I=$(($I+1))
+		done
+		I=1
+		for K in ${CORTEX_KEYS[@]}
+		do
+			echo Add Cortex cortex$I key: $K
+			echo cortex.cortex$I.key=\"$K\" >> $CONFIG_FILE
 			I=$(($I+1))
 		done
 	fi

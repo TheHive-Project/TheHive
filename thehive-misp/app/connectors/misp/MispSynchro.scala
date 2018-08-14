@@ -77,7 +77,7 @@ class MispSynchro @Inject() (
     import org.elastic4play.services.QueryDSL._
 
     // for each MISP server
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       // get last synchronization
       .mapAsyncUnordered(1) { mispConnection ⇒
         alertSrv.stats(and("type" ~= "misp", "source" ~= mispConnection.name), Seq(selectMax("lastSyncDate")))
@@ -92,7 +92,7 @@ class MispSynchro @Inject() (
   }
 
   def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, None))
       .runWith(Sink.seq)
   }
@@ -122,6 +122,17 @@ class MispSynchro @Inject() (
     } yield createdArtifacts
   }
 
+  def getOriginalEvent(mispConnection: MispConnection, event: MispAlert): Future[MispAlert] = {
+    event.extendsUuid match {
+      case None                 ⇒ Future.successful(event)
+      case Some(e) if e.isEmpty ⇒ Future.successful(event)
+      case Some(originalEvent) ⇒
+        mispSrv
+          .getEvent(mispConnection, originalEvent)
+          .flatMap(getOriginalEvent(mispConnection, _))
+    }
+  }
+
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
     // get events that have been published after the last synchronization
@@ -129,7 +140,11 @@ class MispSynchro @Inject() (
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
-        alertSrv.get("misp", event.source, event.sourceRef)
+        getOriginalEvent(mispConnection, event)
+          .flatMap { originalEvent ⇒
+            logger.trace(s"Event misp:${event.source}:${event.sourceRef} is originated from misp:${originalEvent.source}:${originalEvent.sourceRef}")
+            alertSrv.get("misp", mispConnection.name, originalEvent.sourceRef)
+          }
           .map((event, _))
       }
       .mapAsyncUnordered(1) {

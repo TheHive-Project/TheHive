@@ -1,9 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
+            $scope.caseResponders = null;
 
             var caseId = $stateParams.caseId;
             if (!$rootScope.currentCaseId) {
@@ -281,7 +282,32 @@
                       NotificationSrv.error('caseDetails', response.data, response.status);
                   }
               });
-            }
+            };
+
+            $scope.getCaseResponders = function(force) {
+                if(!force && $scope.caseResponders !== null) {
+                   return;
+                }
+
+                $scope.caseResponders = null;
+                CortexSrv.getResponders('case', $scope.caseId)
+                  .then(function(responders) {
+                      $scope.caseResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('caseDetails', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId) {
+                CortexSrv.runResponder(responderId, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
+                  .then(function(response) {
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      NotificationSrv.error('caseDetails', response.data, response.status);
+                  });
+            };
 
             /**
              * A workaround filter to make sure the ngRepeat doesn't order the
@@ -292,6 +318,10 @@
                     return [];
                 }
                 return Object.keys(obj);
+            };
+
+            $scope.keys = function(obj) {
+                return _.keys(obj);
             };
 
             $scope.getTags = function(selection) {

@@ -291,7 +291,7 @@
             return period === 'all' ? null : {
                 _between: { _field: field, _from: from.valueOf(), _to: to.valueOf() }
             }
-        }
+        }        
 
         this.exportDashboard = function(dashboard) {
             var fileName = dashboard.title.replace(/\s/gi, '_') + '.json';

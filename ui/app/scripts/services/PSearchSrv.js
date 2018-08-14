@@ -92,7 +92,9 @@
                         rootId: root,
                         objectType: control.streamObjectType || objectType,
                         callback: function(updates) {
-                            update(objectType, control, updates);
+                            if(!control.guard || control.guard(updates)) {
+                                update(objectType, control, updates);
+                            }
                         }
                     };
 

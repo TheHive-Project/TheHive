@@ -25,6 +25,7 @@ case class MispAlert(
     date: Date,
     lastSyncDate: Date,
     isPublished: Boolean,
+    extendsUuid: Option[String],
     title: String,
     description: String,
     severity: Long,

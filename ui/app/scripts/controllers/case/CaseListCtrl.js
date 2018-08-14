@@ -3,12 +3,13 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, Severity, Tlp) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
         this.getUserInfo = UserInfoSrv;
         this.CaseResolutionStatus = CaseResolutionStatus;
+        this.caseResponders = null;
 
         this.uiSrv = CasesUISrv;
         this.uiSrv.initContext('list');
@@ -217,6 +218,31 @@
             this.list.sort = sort;
             this.list.update();
             this.uiSrv.setSort(sort);
+        };
+
+        this.getCaseResponders = function(caseId, force) {
+            if(!force && this.caseResponders !== null) {
+               return;
+            }
+
+            this.caseResponders = null;
+            CortexSrv.getResponders('case', caseId)
+              .then(function(responders) {
+                  self.caseResponders = responders;
+              })
+              .catch(function(err) {
+                  NotificationSrv.error('CaseList', response.data, response.status);
+              })
+        };
+
+        this.runResponder = function(responderId, caze) {
+            CortexSrv.runResponder(responderId, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
+              .then(function(response) {
+                  NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
+              })
+              .catch(function(response) {
+                  NotificationSrv.error('CaseList', response.data, response.status);
+              });
         };
 
     }

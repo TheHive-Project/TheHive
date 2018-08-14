@@ -44,6 +44,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag: A[Boolean] = attribute("flag", F.booleanFmt, "Flag of the case", false)
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
+  val pap: A[Long] = attribute("pap", TlpAttributeFormat, "PAP level", 2L)
   val status: A[CaseStatus.Value] = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
   val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics", JsObject.empty)
   val resolutionStatus: A[Option[CaseResolutionStatus.Value]] = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")

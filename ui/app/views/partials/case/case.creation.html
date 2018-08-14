@@ -76,6 +76,16 @@
                             </tags-input>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="col-md-3 control-label">PAP
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <a href ng-click="activePap='active'">
+                            <tlp format="activePap" on-update="updatePap(newValue)" value="newCase.pap"></tlp>
+                        </a>
+                    </div>
+                </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.description.$invalid && !caseCreateForm.description.$pristine }">

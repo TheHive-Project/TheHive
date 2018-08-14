@@ -87,6 +87,8 @@ class AuditSrv @Inject() (
     findSrv[AuditModel, Audit](auditModel, queryDef, range, sortBy)
   }
 
+  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(auditModel, queryDef, aggs: _*)
+
   def findFor(entity: BaseEntity, range: Option[String], sortBy: Seq[String]): (Source[Audit, NotUsed], Future[Long]) = {
     import org.elastic4play.services.QueryDSL._
     findSrv[AuditModel, Audit](auditModel, and("objectId" ~= entity.id, "objectType" ~= entity.model.modelName), range, sortBy)

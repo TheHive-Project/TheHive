@@ -98,7 +98,7 @@ class Migration(
             if Files.isReadable(dashboardFile)
             dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
             dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
-            dash = dashboardSrv.create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
+            dash = dashboardSrv.create(Fields(dashboardJson + ("definition" → JsString(dashboardDefinition))))
               .map(_ ⇒ ())
               .recover {
                 case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
@@ -296,24 +296,24 @@ class Migration(
         mapEntity(_ ⇒ true, entity ⇒ entity - "user"),
         mapEntity("caseTemplate") { caseTemplate ⇒
           val metricsName = (caseTemplate \ "metricNames").asOpt[Seq[String]].getOrElse(Nil)
-          val metrics = JsObject(metricsName.map(_ -> JsNull))
-          caseTemplate - "metricNames" + ("metrics" -> metrics)
+          val metrics = JsObject(metricsName.map(_ → JsNull))
+          caseTemplate - "metricNames" + ("metrics" → metrics)
         },
-        addAttribute("case_artifact", "sighted" -> JsFalse))
+        addAttribute("case_artifact", "sighted" → JsFalse))
     case ds @ DatabaseState(12) ⇒
       Seq(
         // Remove alert artifacts in audit trail
         mapEntity("audit") {
           case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
             (audit \ "details").asOpt[JsObject].fold(audit) { details ⇒
-              audit + ("details" -> (details - "artifacts"))
+              audit + ("details" → (details - "artifacts"))
             }
           case audit ⇒ audit
         },
         // Regenerate all alert ID
         mapEntity("alert") { alert ⇒
           val alertId = JsString(generateAlertId(alert))
-          alert + ("_id" → alertId) + ("_routing" -> alertId)
+          alert + ("_id" → alertId) + ("_routing" → alertId)
         },
         // and overwrite alert id in audit trail
         Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
@@ -322,7 +322,7 @@ class Migration(
               val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId ⇒
                 ds.getEntity("alert", alertId)
                   .map { alert ⇒
-                    audit + ("objectId" -> JsString(generateAlertId(alert)))
+                    audit + ("objectId" → JsString(generateAlertId(alert)))
                   }
                   .recover {
                     case e ⇒
@@ -335,6 +335,12 @@ class Migration(
           }
           case other ⇒ f(other)
         }))
+
+    case DatabaseState(13) ⇒
+      Seq(
+        addAttribute("alert", "customFields" → JsObject.empty),
+        addAttribute("case_task", "group" → JsString("default")),
+        addAttribute("case", "pap" → JsNumber(2)))
   }
 
   private def generateAlertId(alert: JsObject): String = {
