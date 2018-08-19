@@ -1,0 +1,22 @@
+<form class="form-horizontal" name="tplForm" ng-submit="vm.saveTemplate()" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">{{vm.formData.title ? 'Update' : 'Add'}} report template</h3>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">
+                {{vm.formData.title}}
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-10">
+                <div ui-ace="vm.editorOptions"
+                    ng-model="vm.formData.content" style="height: 400px;"></div>
+            </div>
+        </div>
+
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="vm.cancel()" type="button">Cancel</button>
+        <button class="btn btn-primary pull-right" ng-click="vm.ok()">Save template</button>
+    </div>
+</form>

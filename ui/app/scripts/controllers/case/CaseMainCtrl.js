@@ -26,7 +26,7 @@
 
             $scope.caze = caze;
             $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
-
+	        
             $scope.initExports = function() {
                 $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
                     return item.type === 'misp';
@@ -231,6 +231,20 @@
                 });
             };
 
+            $scope.reportCase = function() {
+                $uibModal.open({
+                    templateUrl: 'views/partials/case/case.report.html',
+                    controller: 'CaseReportModalCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return $scope.caze;
+                        }
+                    }
+                });
+            };
+
             $scope.shareCase = function() {
                 if($scope.appConfig.connectors.misp && $scope.appConfig.connectors.misp.servers.length === 0) {
                     NotificationSrv.log('There are no MISP servers defined', 'error');
@@ -333,6 +347,7 @@
 
                 return tags;
             };
+            
         }
     );
 })();

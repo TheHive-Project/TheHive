@@ -1,0 +1,16 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">Report Case #{{dialog.caze.caseId}}</h3>
+</div>
+<div class="modal-footer">
+	<div class="col-md-12">
+		<textarea name="newAbstract" class="content-box" markdown-editor="markdownEditorOptions" rows="10" ng-model="dialog.abstract" placeholder="Fill in your abstract, management summary, etc."></textarea>
+	</div>
+</div>
+<div class="modal-footer text-left" id="casereport" ng-if="dialog.templatesLoaded && dialog.artifactsLoaded && dialog.tasksLoaded">
+    <case-report abstract="dialog.abstract" caze="dialog.caze" templates="dialog.templates" artifacts="dialog.artifacts" tasks="dialog.tasks"></case-report>
+</div>
+
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+    <button class="btn btn-primary pull-right" ng-click="dialog.report($event)" type="button">Report</button>
+</div>

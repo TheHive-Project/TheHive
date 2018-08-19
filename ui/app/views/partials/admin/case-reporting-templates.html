@@ -1,0 +1,51 @@
+<div class="box">
+    <div class="box-header">
+        <h3 class="box-title">Case reporting template management</h3>
+    </div>
+    <div class="box-body">
+        <div class="row mb-s">
+            <div class="col-md-12 clearfix">
+                <div class="pull-left">
+                    <!-- Single button -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-primary" ng-click="vm.import()">
+                            <span class="fa fa-upload"></span> Import template
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mv-s" ng-show="vm.templateCount === 0">
+            <div class="col-md-12">
+                <div class="empty-message">No case report templates found.</div>
+            </div>
+        </div>
+        <div class="row" ng-show="vm.templateCount > 0">
+            <div class="col-md-12">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th width="300px">Template</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="template in vm.templates | orderBy:'toString()'">
+                            <td>
+                                {{::template.title}}<br>
+                            </td>
+                            <td class="vmiddle">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(template)">View Template</button>
+                                    <button type="button" class="btn btn-default" ng-show="!(template.isDefault === true)" ng-click="vm.makeDefaultTemplate(template, vm.templates)">Set as Default</button>
+                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(template)"><i class="fa fa-times"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>

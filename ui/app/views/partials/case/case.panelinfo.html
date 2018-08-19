@@ -37,6 +37,13 @@
         </span>
 
         <!-- Right side -->
+
+        <span class="ml-xxs pull-right">
+            <a href ng-click="reportCase()" class="text-muted noline" uib-tooltip="Report case">
+                <i class="text-muted fa fa-file-text" ng-class="ReportCase" ng-mouseout="ReportCase='text-muted fa fa-file-text'" ng-mouseover="ReportCase='text-success fa fa-file-text'"></i>
+                Report
+            </a>
+        </span>
         <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
             <span class="mr-xxs text-primary">|</span>
 

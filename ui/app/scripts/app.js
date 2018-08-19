@@ -192,6 +192,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     }
                 }
             })
+            .state('app.administration.case-reporting-templates', {
+                url: '/case-reporting-templates',
+                templateUrl: 'views/partials/admin/case-reporting-templates.html',
+                controller: 'AdminCaseReportingTemplatesCtrl',
+                controllerAs: 'vm',
+                title: 'Case Reporting Templates administration'
+            })
             .state('app.administration.report-templates', {
                 url: '/report-templates',
                 templateUrl: 'views/partials/admin/report-templates.html',
