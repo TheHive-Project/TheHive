@@ -653,3 +653,8 @@ table tr td.task-actions span.action-button {
     left: auto;
     right: 0;
 }
+
+.description-pane{
+    max-height: 550px;
+    overflow-y: auto;
+}
