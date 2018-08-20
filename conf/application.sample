@@ -1,7 +1,7 @@
 # Secret Key
 # The secret key is used to secure cryptographic functions.
 # WARNING: If you deploy your application on several servers, make sure to use the same key.
-#play.crypto.secret="***changeme***"
+#play.http.secret.key="***changeme***"
 
 # Elasticsearch
 search {
