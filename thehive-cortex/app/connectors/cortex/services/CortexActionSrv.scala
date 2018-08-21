@@ -221,7 +221,7 @@ class CortexActionSrv @Inject() (
         tlp,
         pap,
         message,
-        parameters)
+        parameters + ("user" -> JsString(authContext.userId)))
       job = jobJson.as[CortexJob] //(cortexActionJobReads(cortexClient.name))
       action ← createSrv[ActionModel, Action](actionModel, Fields.empty
         .set("objectType", entity.model.modelName)
