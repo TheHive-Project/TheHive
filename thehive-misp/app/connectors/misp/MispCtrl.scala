@@ -1,8 +1,9 @@
 package connectors.misp
 
 import javax.inject.{ Inject, Singleton }
-
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.DurationInt
+import scala.util.{ Failure, Success }
 
 import play.api.Logger
 import play.api.http.Status
@@ -13,7 +14,7 @@ import play.api.routing.sird.{ GET, POST, UrlContext }
 
 import akka.actor.ActorSystem
 import connectors.Connector
-import models._
+import models.{ HealthStatus, _ }
 import services.{ AlertTransformer, CaseSrv }
 
 import org.elastic4play.JsonFormat.tryWrites
@@ -38,31 +39,50 @@ class MispCtrl @Inject() (
 
   override val name: String = "misp"
 
-  override def status: Future[JsObject] =
-    Future.traverse(mispConfig.connections)(_.status())
-      .map { statusDetails ⇒
+  private var _status = JsObject.empty
+  private def updateStatus(): Unit = Future.traverse(mispConfig.connections)(instance ⇒ instance.status())
+    .onComplete {
+      case Success(statusDetails) ⇒
         val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
         val healthStatus = if (distinctStatus.contains("OK")) {
           if (distinctStatus.size > 1) "WARNING" else "OK"
         }
         else "ERROR"
-        Json.obj(
+        _status = Json.obj(
           "enabled" → true,
           "servers" → statusDetails,
           "status" → healthStatus)
-      }
+        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+      case _: Failure[_] ⇒
+        _status = Json.obj(
+          "enabled" → true,
+          "servers" → JsObject.empty,
+          "status" → "ERROR")
+        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+    }
+  updateStatus()
 
-  override def health: Future[HealthStatus.Type] = {
+  override def status: JsObject = _status
+
+  private var _health: HealthStatus.Type = HealthStatus.Ok
+  private def updateHealth(): Unit =
     Future.traverse(mispConfig.connections)(_.healthStatus())
-      .map { healthStatus ⇒
-        val distinctStatus = healthStatus.toSet
-        if (distinctStatus.contains(HealthStatus.Ok)) {
-          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-        }
-        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-        else HealthStatus.Warning
+      .onComplete {
+        case Success(healthStatus) ⇒
+          val distinctStatus = healthStatus.toSet
+          _health = if (distinctStatus.contains(HealthStatus.Ok)) {
+            if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+          }
+          else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+          else HealthStatus.Warning
+          system.scheduler.scheduleOnce(1.minute)(updateHealth())
+        case _: Failure[_] ⇒
+          _health = HealthStatus.Error
+          system.scheduler.scheduleOnce(1.minute)(updateHealth())
       }
-  }
+  updateHealth()
+
+  override def health: HealthStatus.Type = _health
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {
