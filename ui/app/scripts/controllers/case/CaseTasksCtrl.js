@@ -38,8 +38,8 @@
             sort: ['-flag', '+order', '+startDate', '+title'],
             onUpdate: function() {
                 $scope.buildTaskGroups($scope.tasks.values);
-            }
-            //pageSize: 30
+            },
+            pageSize: 1000
         });
 
         $scope.buildTaskGroups = function(tasks) {
