@@ -28,8 +28,7 @@
                             });
                             cached = true;
                         }
-
-                    })
+                    });
                 },
                 templateUrl: 'views/directives/updatable-user.html',
                 scope: {

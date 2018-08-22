@@ -3,7 +3,7 @@
     angular.module('theHiveServices').service('GlobalSearchSrv', function(localStorageService) {
         this.save = function(config) {
             localStorageService.set('search-section', config);
-        }
+        };
 
         this.saveSection = function(entity, config) {
             var cfg = this.restore();
@@ -12,7 +12,7 @@
             cfg[entity] = _.extend(cfg[entity], config);
 
             this.save(cfg);
-        }
+        };
 
         this.restore = function() {
             return localStorageService.get('search-section') || {
@@ -41,7 +41,7 @@
                     search: null,
                     filters: []
                 }
-            }
-        }
+            };
+        };
     });
 })();

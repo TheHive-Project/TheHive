@@ -31,7 +31,7 @@
             };
 
             $scope.getUserInfo = UserInfoSrv;
-            $scope.config = GlobalSearchSrv.restore()
+            $scope.config = GlobalSearchSrv.restore();
 
             $scope.openEntity = EntitySrv.open;
             $scope.isImage = function(contentType) {
@@ -50,7 +50,7 @@
                             return CaseTemplateSrv.list();
                         }
                     }
-                }).result.then(function(response) {
+                }).result.then(function(/*response*/) {
                   $scope.searchResults.update();
                 });
             };
@@ -77,7 +77,7 @@
                 $scope.searchResults = null;
 
                 GlobalSearchSrv.save($scope.config);
-            }
+            };
 
             $scope.setFilterField = function(filter, entity) {
                 var field = $scope.metadata[entity].attributes[filter.field];

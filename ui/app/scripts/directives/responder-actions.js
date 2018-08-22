@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('responderActions', function(UtilsSrv) {
+    angular.module('theHiveDirectives').directive('responderActions', function() {
         return {
             restrict: 'E',
             replace: true,
@@ -8,10 +8,7 @@
                 actions: '=',
                 header: '@'
             },
-            templateUrl: 'views/directives/responder-actions.html',
-            link: function(scope, el) {
-
-            },
+            templateUrl: 'views/directives/responder-actions.html',            
             controller: function($scope, $uibModal) {
                 $scope.showResponderJob = function(action) {
                     $uibModal.open({
@@ -27,10 +24,6 @@
                         }
                     });
                 };
-
-                $scope.close = function() {
-                    $uibModalInstance.dismiss();
-                }
             }
         };
     });

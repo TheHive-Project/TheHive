@@ -31,10 +31,10 @@
 
         this.create = function(template) {
             return $http.post('./api/case/template', template);
-        }
+        };
 
         this.update = function(id, template) {
             return $http.patch('./api/case/template/' + id, template);
-        }
+        };
     });
 })();
