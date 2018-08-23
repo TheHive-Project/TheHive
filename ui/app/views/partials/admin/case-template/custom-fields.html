@@ -30,7 +30,7 @@
                 <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length === 0" ng-switch="$vm.fields[cf.name].type">
                     <input ng-switch-when="string" type="text" class="form-control" ng-model="cf.value">
                     <input ng-switch-when="number" type="number" class="form-control" ng-model="cf.value">
-                    <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in [true, false]">
+                    <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in ['True', 'False']">
                         <option value=""></option>
                     </select>
                     <dt-picker ng-switch-when="date" date="cf.value"></dt-picker>
