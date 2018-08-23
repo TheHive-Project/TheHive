@@ -62,12 +62,12 @@
                 <h4 class="vpad10 text-primary">
                     Observables ({{dialog.event.artifacts.length || 0}})
                 </h4>
-                <div class="mb-xs" ng-if="dialog.dataTypes">
-                    <span class="label label-lg label-default mr-xxs clickable"
+                <div class="mb-xs flexwrap" ng-if="dialog.dataTypes">
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-click="dialog.filterArtifacts('');"
                         ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
 
-                    <span class="label label-lg label-default mr-xxs clickable"
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-repeat="(type, count) in dialog.dataTypes"
                         ng-click="dialog.filterArtifacts(type)"
                         ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
