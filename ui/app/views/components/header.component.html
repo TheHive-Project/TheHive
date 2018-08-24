@@ -66,14 +66,14 @@
                     </a>
                 </li>
 
-                <!-- <li>
+                <li>
                     <form ng-submit="search(querystring)" style="margin-top : 10px">
-                        <div class="input-group" style="width: 220px">
+                        <div class="input-group" style="width: 100px">
                             <span class="input-group-addon">
                                 <i class="glyphicon glyphicon-search"></i>
                             </span>
-                            <input class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
-                            <div class="input-group-btn">
+                            <input class="input-sm form-control" ng-model="querystring" placeholder="CaseId" style="width: 80px" tooltype="Enter a case number" type="number"></input>                            
+                            <!-- <div class="input-group-btn">
                                 <div class="btn-group dropdown" uib-dropdown>
                                     <a class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle href>
                                         <span class="caret"></span>
@@ -95,10 +95,10 @@
                                         </li>
                                     </ul>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                     </form>
-                </li> -->
+                </li>
                 <li class="dropdown" uib-dropdown ng-if="isAdmin(currentUser)">
                     <a class="dropdown-toggle" uib-dropdown-toggle href>
                         <i class="fa fa-cog"></i>
