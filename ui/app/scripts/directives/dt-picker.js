@@ -5,7 +5,8 @@
             restrict: 'E',
             scope: {
                 'date': '=',
-                'placeholder': '@?'
+                placeholder: '@?',
+                required: '='
             },
             templateUrl: 'views/directives/dt-picker.html',
             link: function(scope, elem) {
