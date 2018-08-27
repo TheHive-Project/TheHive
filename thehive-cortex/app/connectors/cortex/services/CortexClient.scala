@@ -50,11 +50,12 @@ object CortexConfig {
 }
 
 @Singleton
-case class CortexConfig(instances: Seq[CortexClient]) {
+case class CortexConfig(instances: Seq[CortexClient], maxRetryOnError: Int) {
 
   @Inject
   def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
-    CortexConfig.getInstances(configuration, globalWS))
+    CortexConfig.getInstances(configuration, globalWS),
+    configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3))
 }
 
 object CortexAuthentication {
