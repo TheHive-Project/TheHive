@@ -103,7 +103,7 @@ class CortexActionSrv @Inject() (
   private def update(action: Action, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
     updateSrv[Action](action, fields, modifyConfig)
 
-  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Future[Action] = {
+  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient, maxRetryOnError: Int = cortexConfig.maxRetryOnError)(implicit authContext: AuthContext): Future[Action] = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
     cortex.waitReport(cortexJobId, 1.minute).flatMap { j ⇒
       val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
@@ -136,9 +136,9 @@ class CortexActionSrv @Inject() (
             .set("status", JobStatus.Failure.toString)
             .set("endDate", Json.toJson(new Date))
           update(actionId, actionFields)
-        case _ if maxError > 0 ⇒
+        case _ if maxRetryOnError > 0 ⇒
           logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-          updateActionWithCortex(actionId, cortexJobId, entity, cortex, maxError - 1)
+          updateActionWithCortex(actionId, cortexJobId, entity, cortex, maxRetryOnError - 1)
         case _ ⇒
           logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
           update(actionId, Fields.empty
