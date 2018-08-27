@@ -50,11 +50,12 @@ object CortexConfig {
 }
 
 @Singleton
-case class CortexConfig(instances: Seq[CortexClient], maxRetryOnError: Int) {
+case class CortexConfig(instances: Seq[CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int) {
 
   @Inject
   def this(configuration: Configuration, globalWS: CustomWSAPI) = this(
     CortexConfig.getInstances(configuration, globalWS),
+    configuration.getOptional[FiniteDuration]("cortex.refreshDelay").getOrElse(1.minute),
     configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3))
 }
 

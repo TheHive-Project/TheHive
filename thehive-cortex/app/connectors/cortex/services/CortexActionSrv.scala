@@ -2,8 +2,8 @@ package connectors.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
@@ -11,6 +11,7 @@ import play.api.Logger
 import play.api.libs.json._
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.cortex.models.JsonFormat._
@@ -36,6 +37,7 @@ class CortexActionSrv @Inject() (
     findSrv: FindSrv,
     updateSrv: UpdateSrv,
     auxSrv: AuxSrv,
+    implicit val system: ActorSystem,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
@@ -103,9 +105,15 @@ class CortexActionSrv @Inject() (
   private def update(action: Action, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
     updateSrv[Action](action, fields, modifyConfig)
 
-  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient, maxRetryOnError: Int = cortexConfig.maxRetryOnError)(implicit authContext: AuthContext): Future[Action] = {
+  def updateActionWithCortex(
+      actionId: String,
+      cortexJobId: String,
+      entity: BaseEntity,
+      cortex: CortexClient,
+      retryDelay: FiniteDuration = cortexConfig.refreshDelay,
+      maxRetryOnError: Int = cortexConfig.maxRetryOnError)(implicit authContext: AuthContext): Future[Action] = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
-    cortex.waitReport(cortexJobId, 1.minute).flatMap { j ⇒
+    cortex.waitReport(cortexJobId, retryDelay).flatMap { j ⇒
       val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
       if (status == JobStatus.InProgress || status == JobStatus.Waiting)
         updateActionWithCortex(actionId, cortexJobId, entity, cortex)
@@ -138,7 +146,11 @@ class CortexActionSrv @Inject() (
           update(actionId, actionFields)
         case _ if maxRetryOnError > 0 ⇒
           logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-          updateActionWithCortex(actionId, cortexJobId, entity, cortex, maxRetryOnError - 1)
+          val result = Promise[Action]
+          system.scheduler.scheduleOnce(retryDelay) {
+            updateActionWithCortex(actionId, cortexJobId, entity, cortex, retryDelay, maxRetryOnError - 1).onComplete(result.complete)
+          }
+          result.future
         case _ ⇒
           logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
           update(actionId, Fields.empty
