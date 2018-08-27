@@ -1,37 +1,90 @@
 import Common._
+import Dependencies._
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
   .enablePlugins(PlayScala)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.cache,
+      Library.Play.ws,
+      Library.Play.ahc,
+      Library.Play.filters,
+      Library.Play.guice,
+      Library.scalaGuice,
+      Library.elastic4play,
+      Library.zip4j,
+      Library.reflections,
+      Library.akkaCluster,
+      Library.akkaClusterTools
+    ),
+    play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
+  )
 
 lazy val thehiveMetrics = (project in file("thehive-metrics"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.cache,
+      Library.Play.ws,
+      Library.scalaGuice,
+      Library.elastic4play,
+      Library.reflections,
+      "io.dropwizard.metrics" % "metrics-core" % "3.1.2",
+      "io.dropwizard.metrics" % "metrics-json" % "3.1.2",
+      "io.dropwizard.metrics" % "metrics-jvm" % "3.1.2",
+      "io.dropwizard.metrics" % "metrics-logback" % "3.1.2",
+      "io.dropwizard.metrics" % "metrics-graphite" % "3.1.2",
+      "io.dropwizard.metrics" % "metrics-ganglia" % "3.1.2",
+      "info.ganglia.gmetric4j" % "gmetric4j" % "1.0.10"
+    )
+  )
 
 lazy val thehiveMisp = (project in file("thehive-misp"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.ws,
+      Library.Play.guice,
+      Library.Play.ahc,
+      Library.zip4j,
+      Library.elastic4play
+    )
+  )
 
 lazy val thehiveCortex = (project in file("thehive-cortex"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.ws,
+      Library.Play.guice,
+      Library.Play.ahc,
+      Library.elastic4play,
+      Library.zip4j
+    )
+  )
 
 lazy val thehive = (project in file("."))
-  .enablePlugins(PlayScala)
+  .enablePlugins(PlayScala/*, PlayAkkaHttp2Support*/)
   .enablePlugins(Bintray)
   .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
   .settings(projectSettings)
-  .settings(aggregate in Debian := false)
-  .settings(aggregate in Rpm := false)
-  .settings(aggregate in Docker := false)
+  .settings(
+    aggregate in Debian := false,
+    aggregate in Rpm := false,
+    aggregate in Docker := false
+  )
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .enablePlugins(RpmPlugin)
