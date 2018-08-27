@@ -1,5 +1,45 @@
 # Change Log
 
+## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC1...3.1.0-RC2)
+
+**Implemented enhancements:**
+
+- Add a search box to quickly search for case by caseId [\#685](https://github.com/TheHive-Project/TheHive/issues/685)
+- MISP Exports in livestream miss hyperlink to caseid [\#684](https://github.com/TheHive-Project/TheHive/issues/684)
+- Remember task list configuration \(grouped/list\) [\#681](https://github.com/TheHive-Project/TheHive/issues/681)
+- x509 certificate authentication option 'wantClientAuth' [\#667](https://github.com/TheHive-Project/TheHive/issues/667)
+- TheHive 3.1RC1: Slow reaction if Cortex is \(unclear\) unreachable [\#664](https://github.com/TheHive-Project/TheHive/issues/664)
+- TheHive 3.1RC1: Add status to cases and tasks in new search page [\#663](https://github.com/TheHive-Project/TheHive/issues/663)
+- TheHive 3.1RC1: Add Username that executes an active response to json data field of responder [\#662](https://github.com/TheHive-Project/TheHive/issues/662)
+- Application.conf needs clarifications [\#606](https://github.com/TheHive-Project/TheHive/issues/606)
+- Ability to set custom fields as mandatory [\#652](https://github.com/TheHive-Project/TheHive/issues/652)
+- Observable type boxes doesn't line break on alert preview pane [\#593](https://github.com/TheHive-Project/TheHive/issues/593)
+-  On branch betterDescriptions [\#660](https://github.com/TheHive-Project/TheHive/pull/660) ([secdecompiled](https://github.com/secdecompiled))
+
+**Fixed bugs:**
+
+- 3.1.0-RC1- Tasks list is limited to 10 items. [\#679](https://github.com/TheHive-Project/TheHive/issues/679)
+- WebUI inaccessible after upgrading to 3.1.0-0-RC1 \(elastic4play and Play exceptions\) [\#674](https://github.com/TheHive-Project/TheHive/issues/674)
+- play.crypto.secret is depecrated [\#671](https://github.com/TheHive-Project/TheHive/issues/671)
+- The hive docker image has no latest tag [\#670](https://github.com/TheHive-Project/TheHive/issues/670)
+- 'Tagged as' displayed in Related Cases even if cases are untagged [\#594](https://github.com/TheHive-Project/TheHive/issues/594)
+- Horizontal Scrolling and Word-Wrap options for Logs [\#573](https://github.com/TheHive-Project/TheHive/issues/573)
+- case metrics unordered in cases [\#419](https://github.com/TheHive-Project/TheHive/issues/419)
+
+**Closed issues:**
+
+- ES Mapping bug [\#680](https://github.com/TheHive-Project/TheHive/issues/680)
+- ignore - delete me  [\#675](https://github.com/TheHive-Project/TheHive/issues/675)
+- HTTPS not working with Keystore [\#669](https://github.com/TheHive-Project/TheHive/issues/669)
+
+**Merged pull requests:**
+
+- Move input group addons from right to left for better usage [\#672](https://github.com/TheHive-Project/TheHive/pull/672) ([srilumpa](https://github.com/srilumpa))
+- Update Cortex reference.conf [\#668](https://github.com/TheHive-Project/TheHive/pull/668) ([ErnHem](https://github.com/ErnHem))
+- Fix some minor typos [\#658](https://github.com/TheHive-Project/TheHive/pull/658) ([srilumpa](https://github.com/srilumpa))
+
 ## [3.1.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC1) (2018-07-31)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.10...3.1.0-RC1)
 
