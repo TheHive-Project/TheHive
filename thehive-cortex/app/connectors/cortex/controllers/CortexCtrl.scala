@@ -1,10 +1,10 @@
 package connectors.cortex.controllers
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-import play.api.Logger
+import play.api.{ Configuration, Logger }
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
@@ -25,7 +25,8 @@ import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
 import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
 
 @Singleton
-class CortexCtrl @Inject() (
+class CortexCtrl(
+    statusCheckInterval: FiniteDuration,
     reportTemplateCtrl: ReportTemplateCtrl,
     cortexConfig: CortexConfig,
     cortexAnalyzerSrv: CortexAnalyzerSrv,
@@ -38,6 +39,32 @@ class CortexCtrl @Inject() (
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status {
 
+  @Inject
+  def this(
+      configuration: Configuration,
+      reportTemplateCtrl: ReportTemplateCtrl,
+      cortexConfig: CortexConfig,
+      cortexAnalyzerSrv: CortexAnalyzerSrv,
+      cortexActionSrv: CortexActionSrv,
+      auxSrv: AuxSrv,
+      authenticated: Authenticated,
+      fieldsBodyParser: FieldsBodyParser,
+      renderer: Renderer,
+      components: ControllerComponents,
+      ec: ExecutionContext,
+      system: ActorSystem) = this(
+    configuration.getOptional[FiniteDuration]("cortex.statusCheckInterval").getOrElse(1.minute),
+    reportTemplateCtrl,
+    cortexConfig,
+    cortexAnalyzerSrv,
+    cortexActionSrv,
+    auxSrv,
+    authenticated,
+    fieldsBodyParser,
+    renderer,
+    components,
+    ec,
+    system)
   val name = "cortex"
   private[CortexCtrl] lazy val logger = Logger(getClass)
 
@@ -54,13 +81,13 @@ class CortexCtrl @Inject() (
           "enabled" → true,
           "servers" → statusDetails,
           "status" → healthStatus)
-        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+        system.scheduler.scheduleOnce(statusCheckInterval)(updateStatus())
       case _: Failure[_] ⇒
         _status = Json.obj(
           "enabled" → true,
           "servers" → JsObject.empty,
           "status" → "ERROR")
-        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+        system.scheduler.scheduleOnce(statusCheckInterval)(updateStatus())
     }
   updateStatus()
 
@@ -77,10 +104,10 @@ class CortexCtrl @Inject() (
           }
           else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
           else HealthStatus.Warning
-          system.scheduler.scheduleOnce(1.minute)(updateHealth())
+          system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
         case _: Failure[_] ⇒
           _health = HealthStatus.Error
-          system.scheduler.scheduleOnce(1.minute)(updateHealth())
+          system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
       }
   updateHealth()
 

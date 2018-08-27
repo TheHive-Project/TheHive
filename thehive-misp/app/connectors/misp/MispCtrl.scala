@@ -1,19 +1,19 @@
 package connectors.misp
 
-import javax.inject.{ Inject, Singleton }
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.DurationInt
 import scala.util.{ Failure, Success }
 
-import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, POST, UrlContext }
+import play.api.{ Configuration, Logger }
 
 import akka.actor.ActorSystem
 import connectors.Connector
+import javax.inject.{ Inject, Singleton }
 import models.{ HealthStatus, _ }
 import services.{ AlertTransformer, CaseSrv }
 
@@ -24,7 +24,8 @@ import org.elastic4play.services._
 import org.elastic4play.{ NotFoundError, Timed }
 
 @Singleton
-class MispCtrl @Inject() (
+class MispCtrl(
+    checkStatusInterval: FiniteDuration,
     mispSynchro: MispSynchro,
     mispSrv: MispSrv,
     mispExport: MispExport,
@@ -36,6 +37,33 @@ class MispCtrl @Inject() (
     components: ControllerComponents,
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status with AlertTransformer {
+
+  @Inject()
+  def this(
+      configuration: Configuration,
+      mispSynchro: MispSynchro,
+      mispSrv: MispSrv,
+      mispExport: MispExport,
+      mispConfig: MispConfig,
+      caseSrv: CaseSrv,
+      authenticated: Authenticated,
+      renderer: Renderer,
+      eventSrv: EventSrv,
+      components: ControllerComponents,
+      ec: ExecutionContext,
+      system: ActorSystem) = this(
+    configuration.getOptional[FiniteDuration]("misp.statusCheckInterval").getOrElse(1.minute),
+    mispSynchro,
+    mispSrv,
+    mispExport,
+    mispConfig,
+    caseSrv,
+    authenticated,
+    renderer,
+    eventSrv,
+    components,
+    ec,
+    system)
 
   override val name: String = "misp"
 
@@ -52,13 +80,13 @@ class MispCtrl @Inject() (
           "enabled" → true,
           "servers" → statusDetails,
           "status" → healthStatus)
-        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+        system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
       case _: Failure[_] ⇒
         _status = Json.obj(
           "enabled" → true,
           "servers" → JsObject.empty,
           "status" → "ERROR")
-        system.scheduler.scheduleOnce(1.minute)(updateStatus())
+        system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
     }
   updateStatus()
 
@@ -75,10 +103,10 @@ class MispCtrl @Inject() (
           }
           else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
           else HealthStatus.Warning
-          system.scheduler.scheduleOnce(1.minute)(updateHealth())
+          system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
         case _: Failure[_] ⇒
           _health = HealthStatus.Error
-          system.scheduler.scheduleOnce(1.minute)(updateHealth())
+          system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
       }
   updateHealth()
 
