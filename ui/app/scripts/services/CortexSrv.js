@@ -21,7 +21,7 @@
                     }
                 }
             });
-        }
+        };
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
             return $http.post(baseUrl + '/job/_search', {
@@ -51,7 +51,7 @@
                         }
                     ]
                 }
-            })
+            });
         };
 
         this.getJob = function(jobId, nstats) {
@@ -104,7 +104,7 @@
               })
               .catch(function(err) {
                   return $q.reject(err);
-              })
+              });
         };
 
         this.runResponder = function(responderId, type, object) {
@@ -115,7 +115,7 @@
             };
 
             return $http.post(baseUrl + '/action', post);
-        }        
+        };
     });
 
 })();

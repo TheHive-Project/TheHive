@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('reportObservables', function($q, $filter, $uibModal, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('reportObservables', function($q, $filter, $uibModal) {
         return {
             restrict: 'E',
             scope: {
@@ -20,7 +20,7 @@
                         filter: '',
                         data: scope.observables
                     };
-                })
+                });
             },
             controller: function($scope) {
                 $scope.filterArtifacts = function(type) {
@@ -67,13 +67,11 @@
                         return item.selected === true;
                     }), 'dataType');
 
-                    var keys = _.keys(toImport);
-                    var promises = [];
                     var message = [
                         '### Discovered from:',
                         '- Observable: **['+ $scope.origin.dataType + '] - ' + $filter('fang')($scope.origin.data) + '**',
                         '- Analyzer: **'+ $scope.analyzer + '**'
-                    ].join('\n')
+                    ].join('\n');
 
                     _.each(toImport, function(list, key) {
 
@@ -94,16 +92,16 @@
                                         message: message,
                                         tags: [],
                                         tagNames: ''
-                                    }
+                                    };
                                 },
                                 tags: function() {
-                                    return [{text: 'src:' + $scope.analyzer}]
+                                    return [{text: 'src:' + $scope.analyzer}];
                                 }
                             }
                         });
 
                         modal.result
-                          .then(function(response) {
+                          .then(function(/*response*/) {
                               _.each(list, function(item) {
                                   item.id = true;
                                   item.selected = false;

@@ -1,3 +1,4 @@
+// jshint ignore: start
 (function() {
   var out$ = typeof exports != 'undefined' && exports || this;
 

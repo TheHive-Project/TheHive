@@ -1,19 +1,20 @@
 package connectors.misp
 
-import javax.inject.{ Inject, Singleton }
-
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
-import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
 import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ GET, POST, UrlContext }
+import play.api.{ Configuration, Logger }
 
 import akka.actor.ActorSystem
 import connectors.Connector
-import models._
+import javax.inject.{ Inject, Singleton }
+import models.{ HealthStatus, _ }
 import services.{ AlertTransformer, CaseSrv }
 
 import org.elastic4play.JsonFormat.tryWrites
@@ -23,7 +24,8 @@ import org.elastic4play.services._
 import org.elastic4play.{ NotFoundError, Timed }
 
 @Singleton
-class MispCtrl @Inject() (
+class MispCtrl(
+    checkStatusInterval: FiniteDuration,
     mispSynchro: MispSynchro,
     mispSrv: MispSrv,
     mispExport: MispExport,
@@ -36,33 +38,79 @@ class MispCtrl @Inject() (
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status with AlertTransformer {
 
+  @Inject()
+  def this(
+      configuration: Configuration,
+      mispSynchro: MispSynchro,
+      mispSrv: MispSrv,
+      mispExport: MispExport,
+      mispConfig: MispConfig,
+      caseSrv: CaseSrv,
+      authenticated: Authenticated,
+      renderer: Renderer,
+      eventSrv: EventSrv,
+      components: ControllerComponents,
+      ec: ExecutionContext,
+      system: ActorSystem) = this(
+    configuration.getOptional[FiniteDuration]("misp.statusCheckInterval").getOrElse(1.minute),
+    mispSynchro,
+    mispSrv,
+    mispExport,
+    mispConfig,
+    caseSrv,
+    authenticated,
+    renderer,
+    eventSrv,
+    components,
+    ec,
+    system)
+
   override val name: String = "misp"
 
-  override def status: Future[JsObject] =
-    Future.traverse(mispConfig.connections)(_.status())
-      .map { statusDetails ⇒
+  private var _status = JsObject.empty
+  private def updateStatus(): Unit = Future.traverse(mispConfig.connections)(instance ⇒ instance.status())
+    .onComplete {
+      case Success(statusDetails) ⇒
         val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
         val healthStatus = if (distinctStatus.contains("OK")) {
           if (distinctStatus.size > 1) "WARNING" else "OK"
         }
         else "ERROR"
-        Json.obj(
+        _status = Json.obj(
           "enabled" → true,
           "servers" → statusDetails,
           "status" → healthStatus)
-      }
+        system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
+      case _: Failure[_] ⇒
+        _status = Json.obj(
+          "enabled" → true,
+          "servers" → JsObject.empty,
+          "status" → "ERROR")
+        system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
+    }
+  updateStatus()
 
-  override def health: Future[HealthStatus.Type] = {
+  override def status: JsObject = _status
+
+  private var _health: HealthStatus.Type = HealthStatus.Ok
+  private def updateHealth(): Unit =
     Future.traverse(mispConfig.connections)(_.healthStatus())
-      .map { healthStatus ⇒
-        val distinctStatus = healthStatus.toSet
-        if (distinctStatus.contains(HealthStatus.Ok)) {
-          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-        }
-        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-        else HealthStatus.Warning
+      .onComplete {
+        case Success(healthStatus) ⇒
+          val distinctStatus = healthStatus.toSet
+          _health = if (distinctStatus.contains(HealthStatus.Ok)) {
+            if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+          }
+          else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+          else HealthStatus.Warning
+          system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
+        case _: Failure[_] ⇒
+          _health = HealthStatus.Error
+          system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
       }
-  }
+  updateHealth()
+
+  override def health: HealthStatus.Type = _health
 
   private[MispCtrl] lazy val logger = Logger(getClass)
   val router = SimpleRouter {

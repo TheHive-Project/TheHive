@@ -30,10 +30,10 @@
                         var json = response.toJSON();
 
                         metrics = {};
-                        
+
                         _.each(_.values(json), function(metric) {
                             metrics[metric.name] = metric;
-                        })
+                        });
 
                         deferred.resolve(metrics);
                     }, function(response) {

@@ -131,7 +131,7 @@ class TimedInterceptor @Inject() (
 class MetricsModule(
     environment: Environment,
     configuration: Configuration) extends ConnectorModule {
-  def configure(): Unit = {
+  override def configure(): Unit = {
     if (configuration.getOptional[Boolean]("metrics.enabled").getOrElse(false)) {
       bind[MetricConfig].toInstance(MetricConfig(configuration))
       bind[Metrics].asEagerSingleton()

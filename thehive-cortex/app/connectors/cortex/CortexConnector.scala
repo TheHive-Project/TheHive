@@ -12,7 +12,7 @@ class CortexConnector(
     configuration: Configuration) extends ConnectorModule with AkkaGuiceSupport {
   private[CortexConnector] lazy val logger = Logger(getClass)
 
-  def configure() {
+  override def configure() {
     try {
       registerController[CortexCtrl]
       bindActor[JobReplicateActor]("JobReplicateActor")

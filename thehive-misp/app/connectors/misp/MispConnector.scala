@@ -13,7 +13,7 @@ class MispConnector(
     configuration: Configuration) extends ConnectorModule with AkkaGuiceSupport {
   private[MispConnector] lazy val logger = Logger(getClass)
 
-  def configure() {
+  override def configure() {
     try {
       bind[MispSrv].asEagerSingleton()
       bindActor[UpdateMispAlertArtifactActor]("UpdateMispAlertArtifactActor")

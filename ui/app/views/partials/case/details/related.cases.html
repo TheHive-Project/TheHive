@@ -12,7 +12,7 @@
                 (<ng-pluralize count="newestLink.iocCount" when="{'0': 'No IOCs', 'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
             </strong>
         </div>
-        <div>
+        <div ng-if="newestLink.tags.length > 0">
             Tagged as <tag-list data="newestLink.tags"></tag-list>
         </div>
         <div class="hr-line-dashed"></div>
@@ -30,7 +30,7 @@
                 (<ng-pluralize count="oldestLink.iocCount" when="{'one': '1 IOC', 'other': '{} IOCs'}"></ng-pluralize>)
             </strong>
         </div>
-        <div>
+        <div ng-if="oldestLink.tags.length > 0">
             Tagged as <tag-list data="oldestLink.tags"></tag-list>
         </div>
         <div class="hr-line-dashed"></div>

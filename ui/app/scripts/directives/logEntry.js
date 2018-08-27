@@ -14,9 +14,9 @@
                             .then(function(responders) {
                                 $scope.logResponders = responders;
                             })
-                            .catch(function(err) {
+                            .catch(function(response) {
                                 NotificationSrv.error('logEntry', response.data, response.status);
-                            })
+                            });
                     };
 
                     $scope.runResponder = function(responderId, log) {

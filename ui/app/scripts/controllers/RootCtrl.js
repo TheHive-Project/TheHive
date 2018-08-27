@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, GlobalSearchSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -160,14 +160,21 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
-        $scope.search = function(querystring) {
-            var query = Base64.encode(angular.toJson({
-                _string: querystring
-            }));
+        $scope.search = function(caseId) {
+            if(!caseId || !_.isNumber(caseId)) {
+                return;
+            }
 
-            $state.go('app.search', {
-                q: query
+            GlobalSearchSrv.saveSection('case', {
+                search: null,
+                filters: [{
+                    field: 'caseId',
+                    type: 'number',
+                    value: {value: caseId}
+                }]
             });
+
+            $state.go('app.search', {}, {reload: true});
         };
 
         // Used to show spinning refresh icon n times

@@ -3,7 +3,7 @@ package controllers
 import javax.inject.{ Inject, Singleton }
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 import play.api.Configuration
 import play.api.libs.json.{ JsBoolean, JsObject, JsString, Json }
@@ -29,28 +29,25 @@ class StatusCtrl @Inject() (
   private[controllers] def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   @Timed("controllers.StatusCtrl.get")
-  def get: Action[AnyContent] = Action.async {
+  def get: Action[AnyContent] = Action {
     val clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
-    Future.traverse(connectors)(c ⇒ c.status.map(c.name → _))
-      .map { connectorStatus ⇒
-        Ok(Json.obj(
-          "versions" → Json.obj(
-            "TheHive" → getVersion(classOf[models.Case]),
-            "Elastic4Play" → getVersion(classOf[Timed]),
-            "Play" → getVersion(classOf[AbstractController]),
-            "Elastic4s" → getVersion(classOf[ElasticDsl]),
-            "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
-          "connectors" → JsObject(connectorStatus.toSeq),
-          "health" → Json.obj("elasticsearch" → clusterStatusName),
-          "config" → Json.obj(
-            "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
-            "authType" → (authSrv match {
-              case multiAuthSrv: MultiAuthSrv ⇒ multiAuthSrv.authProviders.map { a ⇒ JsString(a.name) }
-              case _                          ⇒ JsString(authSrv.name)
-            }),
-            "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
-            "ssoAutoLogin" → JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false)))))
-      }
+    Ok(Json.obj(
+      "versions" → Json.obj(
+        "TheHive" → getVersion(classOf[models.Case]),
+        "Elastic4Play" → getVersion(classOf[Timed]),
+        "Play" → getVersion(classOf[AbstractController]),
+        "Elastic4s" → getVersion(classOf[ElasticDsl]),
+        "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
+      "connectors" → JsObject(connectors.map(c ⇒ c.name → c.status).toSeq),
+      "health" → Json.obj("elasticsearch" → clusterStatusName),
+      "config" → Json.obj(
+        "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
+        "authType" → (authSrv match {
+          case multiAuthSrv: MultiAuthSrv ⇒ multiAuthSrv.authProviders.map { a ⇒ JsString(a.name) }
+          case _                          ⇒ JsString(authSrv.name)
+        }),
+        "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
+        "ssoAutoLogin" → JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false)))))
   }
 
   @Timed("controllers.StatusCtrl.health")
@@ -62,8 +59,8 @@ class StatusCtrl @Inject() (
         case 1 ⇒ HealthStatus.Warning
         case _ ⇒ HealthStatus.Error
       }
-      connectorStatus ← Future.traverse(connectors)(c ⇒ c.health)
-      distinctStatus = connectorStatus + dbStatus
+      connectorStatus = connectors.map(c ⇒ c.health).toSeq
+      distinctStatus = connectorStatus :+ dbStatus
       globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
         if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
       }

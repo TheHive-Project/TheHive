@@ -200,7 +200,12 @@
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.close.html',
                     controller: 'CaseCloseModalCtrl',
-                    size: 'lg'
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return angular.copy($scope.caze);
+                        }
+                    }
                 });
 
                 modalInstance.result.then(function() {
