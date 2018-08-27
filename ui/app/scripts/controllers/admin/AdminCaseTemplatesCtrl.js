@@ -50,12 +50,27 @@
                             }
                         }
 
-                        return {
-                            name: name,
-                            order: definition.order,
-                            value: fieldDef ? definition[type] : null,
-                            type: type
-                        };
+                        if (type === "boolean") {
+                            var valueName = null;
+                            if(definition[type] === true)
+                                valueName = 'True';
+                            else if(definition[type] === false)
+                                valueName = 'False';
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? valueName : null,
+                                type: type
+                            };
+                        }
+                        else {
+                            return {
+                                name: name,
+                                order: definition.order,
+                                value: fieldDef ? definition[type] : null,
+                                type: type
+                            };
+                        }
                     }),
                     function(item) {
                         return item.order;
@@ -285,7 +300,17 @@
                     }
 
                     self.template.customFields[cf.name] = {};
-                    self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
+                    if (self.fields[cf.name].type === "boolean") {
+                        if(value === 'True')  
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = true;
+                        else if(value === 'False')
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = false;
+                        else if(value === null)
+                            self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = null;
+                    }
+                    else {
+                        self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
+                    }
                     self.template.customFields[cf.name].order = index + 1;
                 });
 
