@@ -9,6 +9,7 @@
             $scope.sorting = {
               field: '-startDate'
             }
+            $scope.displayOptions = {};
             var tabName = 'links-' + $scope.caseId;
 
             // Add tab
@@ -79,6 +80,14 @@
 
             $scope.$watch('links', function(data){
                 $scope.linkStats = $scope.initStats(data);
+
+                _.each(data, function(link) {
+                    if($scope.displayOptions[link.id] === undefined) {
+                        $scope.displayOptions[link.id] = 5;
+                    }
+                });
+
+
             });
         }
     );
