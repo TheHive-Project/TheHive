@@ -1,0 +1,27 @@
+[
+  {
+    "name": "string1",
+    "description": "string custom field",
+    "type": "string"
+  },
+  {
+    "name": "boolean1",
+    "description": "boolean custom field",
+    "type": "boolean"
+  },
+  {
+    "name": "integer",
+    "description": "integer custom field",
+    "type": "integer"
+  },
+  {
+    "name": "float1",
+    "description": "float custom field",
+    "type": "float"
+  },
+  {
+    "name": "date",
+    "description": "date custom field",
+    "type": "date"
+  }
+]

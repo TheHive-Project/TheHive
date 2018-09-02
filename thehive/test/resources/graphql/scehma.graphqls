@@ -1,0 +1,377 @@
+schema {
+  query: TheHiveSchema
+}
+
+type CaseEntity implements Entity {
+  number: Int!
+  title: String!
+  description: String!
+  severity: Int!
+  startDate: Long!
+  endDate: Long
+  tags: [String!]!
+  flag: Boolean!
+  tlp: Int!
+  pap: Int!
+  status: Value!
+  impactStatus: Value
+  summary: String
+  _id: String!
+  _createdAt: Long!
+  _createdBy: String!
+  _updatedAt: Long
+  _updatedBy: String
+}
+
+input CaseFilter {
+  number: Int
+  number_not: Int
+  number_in: [Int!]
+  number_not_in: [Int!]
+  number_lt: Int
+  number_lte: Int
+  number_gt: Int
+  number_gte: Int
+  title: String
+  title_not: String
+  title_in: [String!]
+  title_not_in: [String!]
+  title_lt: String
+  title_lte: String
+  title_gt: String
+  title_gte: String
+  title_contains: String
+  title_not_contains: String
+  title_starts_with: String
+  title_not_starts_with: String
+  title_ends_with: String
+  title_not_ends_with: String
+  description: String
+  description_not: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_lt: String
+  description_lte: String
+  description_gt: String
+  description_gte: String
+  description_contains: String
+  description_not_contains: String
+  description_starts_with: String
+  description_not_starts_with: String
+  description_ends_with: String
+  description_not_ends_with: String
+  severity: Int
+  severity_not: Int
+  severity_in: [Int!]
+  severity_not_in: [Int!]
+  severity_lt: Int
+  severity_lte: Int
+  severity_gt: Int
+  severity_gte: Int
+  tlp: Int
+  tlp_not: Int
+  tlp_in: [Int!]
+  tlp_not_in: [Int!]
+  tlp_lt: Int
+  tlp_lte: Int
+  tlp_gt: Int
+  tlp_gte: Int
+  pap: Int
+  pap_not: Int
+  pap_in: [Int!]
+  pap_not_in: [Int!]
+  pap_lt: Int
+  pap_lte: Int
+  pap_gt: Int
+  pap_gte: Int
+}
+
+type CaseStep {
+  toList: [CaseEntity!]!
+  head: CaseEntity!
+  headOption: CaseEntity
+  sort: CaseStep!
+  filter(CaseFilter: CaseFilter!): CaseStep!
+  tasks: TaskStep!
+  number: intStep!
+  title: StringStep!
+  description: StringStep!
+  severity: intStep!
+  startDate: DateStep!
+  endDate: OptionStep!
+  tags: SeqStep!
+  flag: booleanStep!
+  tlp: intStep!
+  pap: intStep!
+  status: ValueStep!
+  impactStatus: OptionStep!
+  summary: OptionStep!
+}
+
+type DateStep {
+  toList: [Long!]!
+  head: Long!
+  headOption: Long
+  sort: DateStep!
+}
+
+interface Entity {
+  _id: String!
+  _createdAt: Long!
+  _createdBy: String!
+  _updatedAt: Long
+  _updatedBy: String
+}
+
+type LogEntity implements Entity {
+  message: String!
+  _id: String!
+  _createdAt: Long!
+  _createdBy: String!
+  _updatedAt: Long
+  _updatedBy: String
+}
+
+input LogFilter {
+  message: String
+  message_not: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_lt: String
+  message_lte: String
+  message_gt: String
+  message_gte: String
+  message_contains: String
+  message_not_contains: String
+  message_starts_with: String
+  message_not_starts_with: String
+  message_ends_with: String
+  message_not_ends_with: String
+}
+
+type LogStep {
+  toList: [LogEntity!]!
+  head: LogEntity!
+  headOption: LogEntity
+  sort: LogStep!
+  filter(LogFilter: LogFilter!): LogStep!
+  task: TaskStep!
+  message: StringStep!
+}
+
+type OptionStep {
+  toList: [Long]!
+  head: Long
+  headOption: Long
+  sort: OptionStep!
+}
+
+type Role {
+  name: String!
+}
+
+type SeqStep {
+  toList: [[Role!]!]!
+  head: [Role!]!
+  headOption: [Role!]
+  sort: SeqStep!
+}
+
+type StringStep {
+  toList: [String!]!
+  head: String!
+  headOption: String
+  sort: StringStep!
+}
+
+type TaskEntity implements Entity {
+  title: String!
+  description: String!
+  status: Value!
+  flag: Boolean!
+  startDate: Long!
+  endDate: Long
+  order: Int!
+  dueDate: Long
+  _id: String!
+  _createdAt: Long!
+  _createdBy: String!
+  _updatedAt: Long
+  _updatedBy: String
+}
+
+input TaskFilter {
+  title: String
+  title_not: String
+  title_in: [String!]
+  title_not_in: [String!]
+  title_lt: String
+  title_lte: String
+  title_gt: String
+  title_gte: String
+  title_contains: String
+  title_not_contains: String
+  title_starts_with: String
+  title_not_starts_with: String
+  title_ends_with: String
+  title_not_ends_with: String
+  description: String
+  description_not: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_lt: String
+  description_lte: String
+  description_gt: String
+  description_gte: String
+  description_contains: String
+  description_not_contains: String
+  description_starts_with: String
+  description_not_starts_with: String
+  description_ends_with: String
+  description_not_ends_with: String
+  order: Int
+  order_not: Int
+  order_in: [Int!]
+  order_not_in: [Int!]
+  order_lt: Int
+  order_lte: Int
+  order_gt: Int
+  order_gte: Int
+}
+
+type TaskStep {
+  toList: [TaskEntity!]!
+  head: TaskEntity!
+  headOption: TaskEntity
+  sort: TaskStep!
+  filter(TaskFilter: TaskFilter!): TaskStep!
+  logs: LogStep!
+  owner: UserStep!
+  title: StringStep!
+  description: StringStep!
+  status: ValueStep!
+  flag: booleanStep!
+  startDate: DateStep!
+  endDate: OptionStep!
+  order: intStep!
+  dueDate: OptionStep!
+}
+
+type TheHiveSchema {
+  case: CaseStep!
+  task: TaskStep!
+  log: LogStep!
+  user: UserStep!
+}
+
+type UserEntity implements Entity {
+  login: String!
+  name: String!
+  status: Value!
+  _id: String!
+  _createdAt: Long!
+  _createdBy: String!
+  _updatedAt: Long
+  _updatedBy: String
+}
+
+input UserFilter {
+  login: String
+  login_not: String
+  login_in: [String!]
+  login_not_in: [String!]
+  login_lt: String
+  login_lte: String
+  login_gt: String
+  login_gte: String
+  login_contains: String
+  login_not_contains: String
+  login_starts_with: String
+  login_not_starts_with: String
+  login_ends_with: String
+  login_not_ends_with: String
+  name: String
+  name_not: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_lt: String
+  name_lte: String
+  name_gt: String
+  name_gte: String
+  name_contains: String
+  name_not_contains: String
+  name_starts_with: String
+  name_not_starts_with: String
+  name_ends_with: String
+  name_not_ends_with: String
+  key: String
+  key_not: String
+  key_in: [String!]
+  key_not_in: [String!]
+  key_lt: String
+  key_lte: String
+  key_gt: String
+  key_gte: String
+  key_contains: String
+  key_not_contains: String
+  key_starts_with: String
+  key_not_starts_with: String
+  key_ends_with: String
+  key_not_ends_with: String
+  password: String
+  password_not: String
+  password_in: [String!]
+  password_not_in: [String!]
+  password_lt: String
+  password_lte: String
+  password_gt: String
+  password_gte: String
+  password_contains: String
+  password_not_contains: String
+  password_starts_with: String
+  password_not_starts_with: String
+  password_ends_with: String
+  password_not_ends_with: String
+}
+
+type UserStep {
+  toList: [UserEntity!]!
+  head: UserEntity!
+  headOption: UserEntity
+  sort: UserStep!
+  filter(UserFilter: UserFilter!): UserStep!
+  get(login: String!): UserEntity
+  login: StringStep!
+  name: StringStep!
+  key: StringStep!
+  roles: SeqStep!
+  status: ValueStep!
+  password: StringStep!
+}
+
+enum Value {
+  Deleted
+  Resolved
+  Open
+}
+
+type ValueStep {
+  toList: [Value!]!
+  head: Value!
+  headOption: Value
+  sort: ValueStep!
+}
+
+type booleanStep {
+  toList: [Boolean!]!
+  head: Boolean!
+  headOption: Boolean
+  sort: booleanStep!
+}
+
+type intStep {
+  toList: [Int!]!
+  head: Int!
+  headOption: Int
+  sort: intStep!
+}

@@ -1,0 +1,3 @@
+[submodule "ScalliGraph"]
+	path = ScalliGraph
+	url = git@github.com:TheHive-Project/ScalliGraph.git

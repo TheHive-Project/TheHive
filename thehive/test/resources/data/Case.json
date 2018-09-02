@@ -1,0 +1,50 @@
+[
+  {
+    "id": "case1",
+    "number": 1,
+    "title": "case#1",
+    "description": "description of case #1",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "open"
+  },
+  {
+    "id": "case2",
+    "number": 2,
+    "title": "case#2",
+    "description": "description of case #2",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "open"
+  },
+  {
+    "id": "case3",
+    "number": 3,
+    "title": "case#3",
+    "description": "description of case #3",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "open"
+  },
+  {
+    "id": "case4",
+    "number": 4,
+    "title": "case#4",
+    "description": "description of case #4",
+    "severity": 3,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 3,
+    "pap": 3,
+    "status": "open"
+  }
+]

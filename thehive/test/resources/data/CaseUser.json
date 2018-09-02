@@ -1,0 +1,18 @@
+[
+  {
+    "from": "case1",
+    "to": "user1"
+  },
+  {
+    "from": "case2",
+    "to": "user2"
+  },
+  {
+    "from": "case3",
+    "to": "user1"
+  },
+  {
+    "from": "case4",
+    "to": "user1"
+  }
+]

@@ -1,0 +1,30 @@
+logs
+bin
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+RUNNING_PID
+.cache-main
+.cache-tests
+sbt-launch.jar
+
+# Eclipse
+.project
+.target
+.settings
+tmp
+.classpath
+
+# IntelliJ IDEA
+/.idea
+/*.iml
+/out
+/.idea_modules
