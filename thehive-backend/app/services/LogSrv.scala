@@ -1,7 +1,6 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
-
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 
 import play.api.libs.json.JsObject
@@ -9,7 +8,7 @@ import play.api.libs.json.JsObject
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
-import models.{ Log, LogModel, Task, TaskModel }
+import models._
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
@@ -20,6 +19,7 @@ class LogSrv @Inject() (
     logModel: LogModel,
     taskModel: TaskModel,
     auditSrv: AuditSrv,
+    taskSrvProvider: Provider[TaskSrv],
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
@@ -30,11 +30,14 @@ class LogSrv @Inject() (
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
+  lazy val taskSrv: TaskSrv = taskSrvProvider.get
+
   def create(taskId: String, fields: Fields)(implicit authContext: AuthContext): Future[Log] =
     getSrv[TaskModel, Task](taskModel, taskId)
       .flatMap { task ⇒ create(task, fields) }
 
   def create(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Log] = {
+    if (task.status() == TaskStatus.Waiting) taskSrv.update(task, Fields.empty.set("status", TaskStatus.InProgress.toString))
     createSrv[LogModel, Log, Task](logModel, task, fields.addIfAbsent("owner", authContext.userId))
   }
 
