@@ -72,5 +72,5 @@ class LogSrv @Inject() (
     findSrv[LogModel, Log](logModel, queryDef, range, sortBy)
   }
 
-  def stats(queryDef: QueryDef, agg: Agg*): Future[JsObject] = findSrv(logModel, queryDef, agg: _*)
+  def stats(queryDef: QueryDef, agg: Seq[Agg]): Future[JsObject] = findSrv(logModel, queryDef, agg: _*)
 }
