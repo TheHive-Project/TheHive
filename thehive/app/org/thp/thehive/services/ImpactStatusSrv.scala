@@ -21,5 +21,5 @@ class ImpactStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ImpactS
 
 class ImpactStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[ImpactStatus, ImpactStatusSteps](raw) {
   @PrivateField override def newInstance(raw: GremlinScala[Vertex]): ImpactStatusSteps = new ImpactStatusSteps(raw)
-  def get(id: String): ImpactStatusSteps                                               = new ImpactStatusSteps(raw.coalesce(_.hasId(id), _.has(Key("value") of id)))
+  def get(id: String): ImpactStatusSteps                                               = new ImpactStatusSteps(raw.coalesce(_.has(Key("_id") of id), _.has(Key("value") of id)))
 }

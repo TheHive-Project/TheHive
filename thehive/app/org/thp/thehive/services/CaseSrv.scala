@@ -52,7 +52,7 @@ class CaseSrv @Inject()(caseUserSrv: CaseUserSrv, caseCustomFieldSrv: CaseCustom
       .filter(_.headOption.contains('#'))
       .map(_.tail.toInt)
       .map(steps.getCaseByNumber)
-      .getOrElse(steps(graph.V(caseIdOrNumber)))
+      .getOrElse(steps(graph.V().has(Key("_id") of caseIdOrNumber)))
 
   override def steps(implicit graph: Graph): CaseSteps     = new CaseSteps(graph.V.hasLabel(model.label), caseCustomFieldSrv, customFieldSrv)
   override def steps(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw, caseCustomFieldSrv, customFieldSrv)
@@ -70,7 +70,7 @@ class CaseSteps(raw: GremlinScala[Vertex], caseCustomFieldSrv: CaseCustomFieldSr
       Filter[Vertex](_.where(_.out("CaseImpactStatus").has(Key[a]("value"), p)))
   }
 
-  def getCaseById(id: String): CaseSteps = newInstance(raw.hasId(id))
+  def getCaseById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
 
   def getCaseByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 

@@ -2,25 +2,26 @@ package org.thp.thehive.models
 
 import java.io.File
 
-import akka.actor.{Actor, ActorRef, Props}
+import scala.io.Source
+import scala.reflect.ClassTag
+import scala.reflect.runtime.{ universe => ru }
+
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.concurrent.Akka
+import play.api.libs.json.{ JsArray, JsObject, JsValue, Json }
+import play.api.{ Application, Logger }
+
+import akka.actor.{ Actor, ActorRef, Props }
 import com.google.inject.name.Names
 import com.google.inject.util.Providers
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{ Inject, Provider, Singleton }
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.scalligraph.InternalError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.concurrent.Akka
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.{Application, Logger}
-
-import scala.io.Source
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe ⇒ ru}
+import org.thp.scalligraph.models.{ Database, Entity }
+import org.thp.scalligraph.services.{ EdgeSrv, VertexSrv }
 
 class AppBuilder extends ScalaModule {
 

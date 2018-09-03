@@ -17,5 +17,5 @@ class UserSrv @Inject()(implicit val db: Database) extends VertexSrv[User] {
 class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[User, UserSteps](raw) {
   @PrivateField override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
-  def get(id: String): UserSteps = new UserSteps(raw.coalesce(_.has(Key("login") of id), _.hasId(id)))
+  def get(id: String): UserSteps = new UserSteps(raw.coalesce(_.has(Key("login") of id), _.has(Key("_id") of id)))
 }

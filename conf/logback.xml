@@ -34,7 +34,7 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
-    <logger name="org.thp.scalligraph.models.database" level="TRACE" />
+    <logger name="org.thp.scalligraph.models.Database" level="TRACE" />
     <logger name="org.janusgraph.graphdb" level="INFO" />
 
     <root level="INFO">
