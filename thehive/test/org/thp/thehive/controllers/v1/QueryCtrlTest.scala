@@ -59,8 +59,7 @@ class QueryCtrlTest extends PlaySpecification with Mockito {
             "_createdAt"  → _createdAt,
             "_createdBy"  → "test",
             "_updatedAt"  → JsNull,
-            "_updatedBy"  → JsNull,
-            "_type"       → "Case"
+            "_updatedBy"  → JsNull
           ))
         bodyJson must be equalTo expected
       }

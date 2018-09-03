@@ -6,7 +6,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.query.AuthGraph
-import sangria.schema.{Field, ObjectType, OutputType, StringType, fields}
+import sangria.schema.{fields, Field, ObjectType, OutputType, StringType}
 
 object CaseStatus extends Enumeration {
   val open, resolved, deleted = Value

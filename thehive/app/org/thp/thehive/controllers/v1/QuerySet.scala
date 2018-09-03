@@ -16,9 +16,9 @@ import scala.reflect.runtime.{universe ⇒ ru}
 class QuerySet @Inject()(theHiveSchema: TheHiveSchema) extends JsonQueryExecutor {
   override def outputs: PartialFunction[ru.Type, Any ⇒ JsValue] =
     super.outputs.orElse {
-      case t if t <:< ru.typeOf[RichCase with Entity] ⇒
+      case t if t <:< ru.typeOf[RichCase] ⇒
         value ⇒
-          Json.toJson(OutputCase.fromRichCase(value.asInstanceOf[RichCase with Entity]))
+          Json.toJson(OutputCase.fromRichCase(value.asInstanceOf[RichCase]))
     }
 
   def caseById(id: String): InitQuery[CaseSteps] = InitQuery[CaseSteps]("caseById")(ag ⇒ theHiveSchema.caseSrv.steps(ag.graph).getCaseById(id))
