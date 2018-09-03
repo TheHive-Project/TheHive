@@ -1,6 +1,7 @@
 import Dependencies._
 
 lazy val thehive = (project in file("."))
+  .enablePlugins(PlayScala)
   .dependsOn(scalligraph, thehiveCore)
   .aggregate(scalligraph, thehiveCore)
   .settings(
@@ -51,6 +52,8 @@ lazy val thehiveCore = (project in file("thehive"))
     name := "thehive-core",
     libraryDependencies ++= Seq(
       chimney,
+      guice,
+      ws % Test,
       specs % Test
     ),
   )

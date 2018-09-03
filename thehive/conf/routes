@@ -1,0 +1,10 @@
+
+GET          /api/v1/case                org.thp.thehive.controllers.v1.CaseCtrl.list
+POST         /api/v1/case                org.thp.thehive.controllers.v1.CaseCtrl.create
+GET          /api/v1/case/:caseId        org.thp.thehive.controllers.v1.CaseCtrl.get(caseId)
+PATCH        /api/v1/case/:caseId        org.thp.thehive.controllers.v1.CaseCtrl.update(caseId)
+
+GET          /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl.list
+POST         /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl.create
+GET          /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.get(userId)
+PATCH        /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.update(userId)

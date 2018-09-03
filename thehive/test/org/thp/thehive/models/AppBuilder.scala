@@ -18,7 +18,7 @@ import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.scalligraph.InternalError
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{ AuthContext, Permission }
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
@@ -85,6 +85,7 @@ case class InitialAuthContext(authContext: AuthContext)
 @Singleton
 class DatabaseBuilder @Inject()(db: Database, schema: TheHiveSchema, initialAuthContext: InitialAuthContext) {
   implicit val authContext: AuthContext = initialAuthContext.authContext
+  implicit val permissionParser: FieldsParser[Permission] = Permissions.parser
 
   lazy val logger = Logger(getClass)
   try {

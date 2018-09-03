@@ -1,7 +1,6 @@
 package org.thp.thehive.models
 
 import org.thp.scalligraph.auth.Permission
-import org.thp.scalligraph.controllers.WithParser
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{PrivateField, VertexEntity}
 
@@ -15,7 +14,7 @@ case class User(
     login: String,
     name: String,
     @PrivateField apikey: Option[String],
-    @PrivateField @WithMapping(Permissions.mapping.sequence) @WithParser(Permissions.parser.sequence) permissions: Seq[Permission],
+    @PrivateField @WithMapping(Permissions.mapping.sequence) permissions: Seq[Permission],
     status: UserStatus.Value,
     @PrivateField password: Option[String])
     extends org.thp.scalligraph.auth.User {

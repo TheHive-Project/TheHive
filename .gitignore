@@ -1,5 +1,6 @@
 logs
 bin
+conf/application.conf
 
 # sbt specific
 .cache

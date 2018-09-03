@@ -1,16 +1,16 @@
 package org.thp.thehive.controllers.v1
 
+import scala.reflect.runtime.{universe ⇒ ru}
+
+import play.api.libs.json.{JsValue, Json}
+
 import gremlin.scala.GremlinScala
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.controllers.{FieldsParser, JsonQueryExecutor}
-import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{FObjOne, InitQuery, Query}
 import org.thp.thehive.models.{RichCase, TheHiveSchema}
 import org.thp.thehive.services.{CaseSteps, LogSteps, TaskSteps}
-import play.api.libs.json.{JsValue, Json}
-
-import scala.reflect.runtime.{universe ⇒ ru}
 
 @Singleton
 class QuerySet @Inject()(theHiveSchema: TheHiveSchema) extends JsonQueryExecutor {

@@ -23,11 +23,10 @@ case class InputCase(
     tlp: Option[Int],
     pap: Option[Int],
     status: Option[CaseStatus.Value],
-    summary: Option[String])
+    summary: Option[String]) {
 
-object InputCase {
-  def toCase(inputCase: InputCase): Case =
-    inputCase
+  def toCase: Case =
+    this
       .into[Case]
       .withFieldComputed(_.severity, _.severity.getOrElse(2))
       .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
@@ -62,11 +61,6 @@ object OutputCase {
   def fromRichCase(richCase: RichCase): OutputCase =
     richCase
       .into[OutputCase]
-//      .withFieldConst(_._id, richCase._id)
-//      .withFieldConst(_._createdAt, richCase._createdAt)
-//      .withFieldConst(_._createdBy, richCase._createdBy)
-//      .withFieldConst(_._updatedAt, richCase._updatedAt)
-//      .withFieldConst(_._updatedBy, richCase._updatedBy)
       .transform
   implicit val writes: Writes[OutputCase] = Output[OutputCase]
 }
@@ -84,9 +78,9 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
           val userId: String = request.body('user).getOrElse(request.userId)
           val user           = userSrv.getOrFail(userId)
           val customFields   = request.body('customFields)
-          val richCase       = caseSrv.create(InputCase.toCase(request.body('case)), user, customFields)
+          val richCase       = caseSrv.create(request.body('case).toCase, user, customFields)
           val outputCase     = OutputCase.fromRichCase(richCase)
-          Results.Ok(Json.toJson(outputCase))
+          Results.Created(Json.toJson(outputCase))
         }
       }
 
@@ -101,6 +95,17 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
             .getOrElse(throw NotFoundError(s"case number $caseIdOrNumber not found"))
           val outputCase = OutputCase.fromRichCase(richCase)
           Results.Ok(Json.toJson(outputCase))
+        }
+      }
+
+  def list: Action[AnyContent] =
+    apiMethod("list case")
+      .requires(Permissions.read) { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          val cases = caseSrv.steps.richCase
+            .map(OutputCase.fromRichCase)
+            .toList
+          Results.Ok(Json.toJson(cases))
         }
       }
 
