@@ -2,14 +2,14 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, GlobalSearchSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
             $state.go('maintenance');
             return;
         }else if(!currentUser || !currentUser.id) {
-            $state.go('login');
+            $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
             return;
         }
 
@@ -22,9 +22,31 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
         $scope.mispEnabled = false;
         $scope.customFieldsCache = [];
+        $scope.currentUser = currentUser;
 
         StreamSrv.init();
-        $scope.currentUser = currentUser;
+        VersionSrv.startMonitoring(function(conf) {
+          var connectors = ['misp', 'cortex'];
+
+          _.each(connectors, function(connector) {
+              var currentStatus = $scope.appConfig.connectors[connector];
+              var newStatus = conf.connectors[connector];
+              if(currentStatus && currentStatus.enabled === newStatus.enabled &&
+                  newStatus.enabled === true &&
+                  currentStatus.status !== newStatus.status) {
+
+                  if(newStatus.status === 'OK') {
+                      NotificationSrv.log('The configured ' + connector.toUpperCase() + ' connections are now up.', 'success');
+                  } else if(newStatus.status === 'WARNING') {
+                      NotificationSrv.log('Some of the configured ' + connector.toUpperCase() + ' connections have errors. Please check your configuration.', 'warning');
+                  } else {
+                      NotificationSrv.log('The configured ' + connector.toUpperCase() + ' connections have errors. Please check your configuration.', 'error');
+                  }
+              }
+          });
+
+          $scope.appConfig = conf;
+        });
 
         CaseTemplateSrv.list().then(function(templates) {
             $scope.templates = templates;
@@ -64,7 +86,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         // Get Alert counts
         $scope.alertEvents = AlertingSrv.stats($scope);
 
-        $scope.$on('templates:refresh', function(){            
+        $scope.$on('templates:refresh', function(){
             CaseTemplateSrv.list().then(function(templates) {
                 $scope.templates = templates;
             });
@@ -138,14 +160,21 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
-        $scope.search = function(querystring) {
-            var query = Base64.encode(angular.toJson({
-                _string: querystring
-            }));
+        $scope.search = function(caseId) {
+            if(!caseId || !_.isNumber(caseId)) {
+                return;
+            }
 
-            $state.go('app.search', {
-                q: query
+            GlobalSearchSrv.saveSection('case', {
+                search: null,
+                filters: [{
+                    field: 'caseId',
+                    type: 'number',
+                    value: {value: caseId}
+                }]
             });
+
+            $state.go('app.search', {}, {reload: true});
         };
 
         // Used to show spinning refresh icon n times

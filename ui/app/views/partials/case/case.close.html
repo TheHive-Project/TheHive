@@ -129,6 +129,29 @@
                     <p class="help-block" ng-show="caseCloseForm['metrics.' + k].$invalid && !caseCloseForm['metrics.' + k].$pristine">This field is required.</p>
                 </div>
             </div>
+            <!-- Custom Fields -->
+            <div class="form-group" ng-repeat="k in mandatoryFields" ng-init="fieldDef = allCustomFields[k];" ng-class="{ 'has-error' : caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine }">
+                <label class="col-sm-3 control-label" uib-tooltip="{{allCustomFields[k].description}}">{{fieldDef.name}}
+                    <i class="fa fa-asterisk text-danger"></i>
+                </label>
+
+                <div class="col-sm-3" ng-if="allCustomFields[k].options.length > 0">
+                    <select class="form-control" name="{{'customFields.' + k}}" ng-model="caze.customFields[k][fieldDef.type]" ng-options="v for v in allCustomFields[k].options" required>
+                        <option value=""></option>
+                    </select>
+                    <p class="help-block" ng-show="caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine">This field is required.</p>
+                </div>
+                <div class="col-sm-3" ng-if="allCustomFields[k].options.length === 0" ng-switch="allCustomFields[k].type">
+                    <input ng-switch-when="string" name="{{'customFields.' + k}}" type="text" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" required>
+                    <input ng-switch-when="number" name="{{'customFields.' + k}}" type="number" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" required>
+                    <select ng-switch-when="boolean" name="{{'customFields.' + k}}" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" ng-options="v for v in [true, false]" required>
+                        <option value=""></option>
+                    </select>
+                    <dt-picker ng-switch-when="date" name="{{'customFields.' + k}}" date="caze.customFields[k][fieldDef.type]" required="true"></dt-picker>
+                    <p class="help-block" ng-show="caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine">This field is required.</p>
+                </div>
+
+            </div>
         </div>
 
     </div>

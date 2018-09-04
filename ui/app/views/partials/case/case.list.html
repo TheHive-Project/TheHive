@@ -59,6 +59,7 @@
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
                                     <th style="width: 120px;">Date</th>
+                                    <th style="width: 40px;" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
                                 </tr>
                             </thead>
 
@@ -111,6 +112,28 @@
                                         <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
                                             <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                         </a>
+                                    </td>
+                                    <td ng-if="appConfig.connectors.cortex.enabled">
+                                        <span class="ml-xs" uib-dropdown>
+                                            <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase.id, true)" uib-dropdown-toggle>
+                                                <i class="text-primary fa fa-cog"></i>
+                                                <!-- Responders
+                                                <i class="text-primary fa fa-angle-down"></i> -->
+                                            </a>
+                                            <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                                              <li ng-if="$vm.caseResponders && $vm.caseResponders.length === 0">
+                                                <a href ng-click="$vm.getCaseResponders(currentCase.id, true)">
+                                                  <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                                                </a>
+                                              </li>
+                                              <li ng-repeat="responder in $vm.caseResponders">
+                                                <a href ng-click="$vm.runResponder(responder.id, currentCase)">
+                                                  <strong>{{responder.name}}</strong>
+                                                  <br>
+                                                  <small>{{responder.description}}</small></a>
+                                              </li>
+                                            </ul>
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>

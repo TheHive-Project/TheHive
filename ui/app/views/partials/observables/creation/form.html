@@ -23,6 +23,14 @@
         <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
             WARNING: This file seems to be empty
         </div>
+        <div class="checkbox">
+          <label>
+              <input type="checkbox" ng-model="params.isZip">&nbsp;The file is a zipped archive
+          </label>
+        </div>
+        <div ng-show="params.isZip">
+            <input type="text" class="form-control" ng-model="params.zipPassword" placeholder="Type archive's password if available"> {{params.izZip}}
+        </div>
     </div>
 </div>
 

@@ -1,12 +1,13 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
             $scope.caseId = $stateParams.caseId;
             $scope.report = null;
+            $scope.obsResponders = null;
             $scope.analyzers = {};
             $scope.analyzerJobs = {};
             $scope.jobs = {};
@@ -74,20 +75,44 @@
                         $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
+                  $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                      scope: $scope,
+                      streamObjectType: 'action',
+                      filter: {
+                          _and: [
+                              {
+                                  _not: {
+                                      status: 'Deleted'
+                                  }
+                              }, {
+                                  objectType: 'case_artifact'
+                              }, {
+                                  objectId: artifact.id
+                              }
+                          ]
+                      },
+                      sort: ['-startDate'],
+                      pageSize: 100,
+                      guard: function(updates) {
+                          return _.find(updates, function(item) {
+                              return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
+                          }) !== undefined;
+                      }
+                  });
             };
 
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
 
-                _.each(_.keys($scope.analyzers).sort(), function(analyzerId) {
-                    $scope.analyzerJobs[analyzerId] = [];
+                _.each(_.keys($scope.analyzers).sort(), function(analyzerName) {
+                    $scope.analyzerJobs[analyzerName] = [];
                 });
 
                 angular.forEach($scope.jobs.values, function (job) {
-                    if (job.analyzerId in $scope.analyzerJobs) {
-                        $scope.analyzerJobs[job.analyzerId].push(job);
+                    if (job.analyzerName in $scope.analyzerJobs) {
+                        $scope.analyzerJobs[job.analyzerName].push(job);
                     } else {
-                        $scope.analyzerJobs[job.analyzerId] = [job];
+                        $scope.analyzerJobs[job.analyzerName] = [job];
                     }
                 });
 
@@ -114,15 +139,17 @@
             $scope.showReport = function (jobId) {
                 $scope.report = {};
 
-                CortexSrv.getJob(jobId).then(function(response) {
+                CortexSrv.getJob(jobId, true).then(function(response) {
                     var job = response.data;
                     $scope.report = {
-                        template: job.analyzerId,
+                        template: job.analyzerDefinition,
                         content: job.report,
                         status: job.status,
                         startDate: job.startDate,
                         endDate: job.endDate
                     };
+
+                    $scope.currentJob = jobId;
 
                     $timeout(function() {
                         var reportEl = angular.element(document.getElementById('analysis-report'))[0];
@@ -181,19 +208,19 @@
                 });
             };
 
-            $scope.runAnalyzer = function (analyzerId, serverId) {
+            $scope.runAnalyzer = function (analyzerName, serverId) {
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
 
-                var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerId])
+                var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerName])
 
                 promise.then(function (serverId) {
-                        return $scope._runAnalyzer(serverId, analyzerId, $scope.artifact.id);
+                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact.id);
                     })
                     .then(function () {
-                        NotificationSrv.log('Analyzer ' + analyzerId + ' has been successfully started for observable: ' + artifactName, 'success');
+                        NotificationSrv.log('Analyzer ' + analyzerName + ' has been successfully started for observable: ' + artifactName, 'success');
                     }, function (response) {
                         if (response && response.status) {
-                            NotificationSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
+                            NotificationSrv.log('Unable to run analyzer ' + analyzerName + ' for observable: ' + artifactName, 'error');
                         }
                     });
             };
@@ -203,7 +230,7 @@
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
                     return a.active === true;
-                }), 'id');
+                }), 'name');
 
                 CortexSrv.getServers(analyzerIds)
                     .then(function (serverId) {
@@ -214,6 +241,32 @@
                     .then(function () {
                         NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
+            };
+
+            $scope.getObsResponders = function(observableId, force) {
+                if(!force && $scope.obsResponders !== null) {
+                   return;
+                }
+
+                $scope.obsResponders = null;
+                CortexSrv.getResponders('case_artifact', observableId)
+                  .then(function(responders) {
+                      $scope.obsResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, artifact) {
+                CortexSrv.runResponder(responderId, 'case_artifact', _.pick(artifact, 'id'))
+                  .then(function(response) {
+                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  });
             };
 
         }

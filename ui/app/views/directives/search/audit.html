@@ -1,0 +1,40 @@
+<div class="search-item-title" ng-switch="value.objectType">
+    <a href ng-switch-when="user">
+        {{value.operation}} of {{value.objectType}} <br>
+        <em class="text-muted"><span>{{value.stats.name}}</span></em>
+    </a>
+    <a href ng-switch-when="case" ui-sref="app.case.details({caseId: value.objectId})">
+        {{value.operation}} of {{value.objectType}} <br>
+        <em class="text-muted"><span>{{value.stats.title || value.details.title}}</span></em>
+    </a>
+    <a href ng-switch-when="case_task">
+        {{value.operation}} of task <br>
+        <em class="text-muted"><span>{{value.stats.title || value.details.title}}</span></em>
+    </a>
+    <a href ng-switch-when="case_task_log">
+        {{value.operation}} of task log
+    </a>
+    <a href ng-switch-when="case_artifact" ui-sref="app.case.observables-item({caseId: value.stats.case.id, itemId: value.stats.id})">
+        {{value.operation}} of observable <br>
+        <em class="text-muted"><span>{{value.stats.data}}</span></em>
+    </a>
+    <a href ng-switch-when="case_artifact_job">
+        {{value.operation}} of observable job <br>
+        <em class="text-muted"><span>{{value.stats.analyzerName}}</span></em>
+    </a>
+    <a href ng-switch-when="alert">
+        {{value.operation}} of alert <br>
+        <em class="text-muted"><span>{{value.stats.title}}</span></em>
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo.get(value.createdBy) | getField: 'name'}}</span>
+
+    <i class="glyphicon glyphicon-calendar ml-xxs"></i>
+    Occurred on <span ng-bind="value.startDate | showDate"> </span>
+</div>
+<div class="mt-xs wrap">
+    <strong>Details (<a href ng-show="!value.show" ng-click="value.show = true">Expand</a><a href ng-show="value.show" ng-click="value.show = false">Collapse</a>)</strong>
+    <pre ng-show="value.show">{{value.details | flattern | json}}</pre>
+</div>

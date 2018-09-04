@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -52,7 +52,6 @@
 
                     var statConfig = {
                         query: query,
-
                         objectType: scope.entity.path,
                         field: scope.options.field,
                         sort: scope.options.sort ? [scope.options.sort] : '-_count',
@@ -81,21 +80,14 @@
                                     type: 'donut',
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
-                                    // onclick: function(d) {
-                                    //     var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
-                                    //
-                                    //     if (scope.options.query && scope.options.query !== '*') {
-                                    //         criteria.push(scope.options.query);
-                                    //     }
-                                    //
-                                    //     var searchQuery = {
-                                    //         _and: criteria
-                                    //     };
-                                    //
-                                    //     $state.go('app.search', {
-                                    //         q: Base64.encode(angular.toJson(searchQuery))
-                                    //     });
-                                    // }
+                                    onclick: function(d) {
+                                        GlobalSearchSrv.saveSection(scope.options.entity, {
+                                            search: scope.options.field + ':"'+d.id+'"',
+                                            filters: scope.options.filters
+                                        });
+
+                                        $state.go('app.search');
+                                    }
                                 },
                                 donut: {
                                     title: 'Total: ' + total,

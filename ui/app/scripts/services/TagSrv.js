@@ -28,8 +28,7 @@
                 });
 
                 return defer.promise;
-            }
-
+            };
 
             this.fromCases = function(term) {
                 return getTags('case', term);

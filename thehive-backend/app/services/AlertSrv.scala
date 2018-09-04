@@ -19,6 +19,7 @@ import models._
 
 import org.elastic4play.InternalError
 import org.elastic4play.controllers.{ Fields, FileInputValue }
+import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
 import org.elastic4play.services._
@@ -37,7 +38,6 @@ object AlertSrv {
 
 @Singleton
 class AlertSrv(
-    maxSimilarCases: Int,
     templates: Map[String, String],
     alertModel: AlertModel,
     createSrv: CreateSrv,
@@ -69,7 +69,6 @@ class AlertSrv(
       connectors: ConnectorRouter,
       ec: ExecutionContext,
       mat: Materializer) = this(
-    configuration.getOptional[Int]("maxSimilarCases").getOrElse(100),
     Map.empty[String, String],
     alertModel: AlertModel,
     createSrv,
@@ -125,29 +124,40 @@ class AlertSrv(
   }
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv[AlertModel, Alert](alertModel, id, fields)
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
+    updateSrv[AlertModel, Alert](alertModel, id, fields, modifyConfig)
 
   def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv(alert, fields)
+    update(alert, fields, ModifyConfig.default)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] = {
-    updateSrv[AlertModel, Alert](alertModel, ids, fields)
-  }
+  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
+    updateSrv(alert, fields, modifyConfig)
+
+  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+    bulkUpdate(ids, fields, ModifyConfig.default)
+
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+    updateSrv[AlertModel, Alert](alertModel, ids, fields, modifyConfig)
 
   def bulkUpdate(updates: Seq[(Alert, Fields)])(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
-    updateSrv[Alert](updates)
+    bulkUpdate(updates, ModifyConfig.default)
 
-  def markAsRead(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
+  def bulkUpdate(updates: Seq[(Alert, Fields)], modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+    updateSrv[Alert](updates, modifyConfig)
+
+  def markAsRead(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
-      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"))
-      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"))
+      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"), modifyConfig)
+      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"), modifyConfig)
     }
   }
 
-  def markAsUnread(alert: Alert)(implicit authContext: AuthContext): Future[Alert] = {
+  def markAsUnread(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
     alert.caze() match {
-      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"))
-      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"))
+      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"), modifyConfig)
+      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"), modifyConfig)
     }
   }
 
@@ -182,7 +192,8 @@ class AlertSrv(
                   .set("tags", JsArray(alert.tags().map(JsString)))
                   .set("tlp", JsNumber(alert.tlp()))
                   .set("status", CaseStatus.Open.toString)
-                  .set("startDate", Json.toJson(alert.date())),
+                  .set("startDate", Json.toJson(alert.date()))
+                  .set("customFields", alert.customFields()),
                 caseTemplate)
               _ ← importArtifacts(alert, caze)
               _ ← setCase(alert, caze)
@@ -259,11 +270,22 @@ class AlertSrv(
     updatedCase
   }
 
-  def setCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Alert] = {
-    updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)))
+  def setCase(alert: Alert, caze: Case, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
+    updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)), modifyConfig)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Alert] =
+  def unsetCase(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
+    val status = alert.status match {
+      case AlertStatus.New      ⇒ AlertStatus.New
+      case AlertStatus.Updated  ⇒ AlertStatus.New
+      case AlertStatus.Ignored  ⇒ AlertStatus.Ignored
+      case AlertStatus.Imported ⇒ AlertStatus.Ignored
+    }
+    logger.debug(s"Remove case association in alert ${alert.id} (${alert.title}")
+    updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
+  }
+
+  def delete(id: String)(implicit authContext: AuthContext): Future[Alert] =
     deleteSrv[AlertModel, Alert](alertModel, id)
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Alert, NotUsed], Future[Long]) = {
@@ -272,8 +294,8 @@ class AlertSrv(
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(alertModel, queryDef, aggs: _*)
 
-  def setFollowAlert(alertId: String, follow: Boolean)(implicit authContext: AuthContext): Future[Alert] = {
-    updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)))
+  def setFollowAlert(alertId: String, follow: Boolean, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
+    updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)), modifyConfig)
   }
 
   def similarCases(alert: Alert): Future[Seq[CaseSimilarity]] = {
@@ -292,17 +314,17 @@ class AlertSrv(
         similarArtifacts(artifact)
           .getOrElse(Source.empty)
       }
-      .groupBy(100, _.parentId)
-      .map {
-        case a if a.ioc() ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 1, 1)
-        case a            ⇒ (a.parentId.getOrElse(sys.error("Artifact without case !")), 0, 1)
+      .fold(Map.empty[String, (Int, Int)]) { (similarCases, artifact) ⇒
+        val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
+        val (iocCount, artifactCount) = similarCases.getOrElse(caseId, (0, 0))
+        if (artifact.ioc())
+          similarCases + (caseId → ((iocCount + 1, artifactCount)))
+        else
+          similarCases + (caseId → ((iocCount, artifactCount + 1)))
       }
-      .reduce[(String, Int, Int)] {
-        case ((caseId, iocCount1, artifactCount1), (_, iocCount2, artifactCount2)) ⇒ (caseId, iocCount1 + iocCount2, artifactCount1 + artifactCount2)
-      }
-      .mergeSubstreams
+      .mapConcat(identity)
       .mapAsyncUnordered(5) {
-        case (caseId, similarIOCCount, similarArtifactCount) ⇒
+        case (caseId, (similarIOCCount, similarArtifactCount)) ⇒
           caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
       }
       .filter {
@@ -346,7 +368,7 @@ class AlertSrv(
     updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
     val updateAlertProcess = updateAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated)")
+        logger.debug(s"Updating alert ${alert.id} (status: Update → Updated)")
         update(alert, updatedStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
@@ -358,7 +380,7 @@ class AlertSrv(
     ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
     val ignoreAlertProcess = ignoreAlerts
       .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored)")
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore → Ignored)")
         update(alert, ignoredStatusFields)
           .andThen {
             case Failure(error) ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)

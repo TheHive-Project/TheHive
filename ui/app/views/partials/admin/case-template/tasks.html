@@ -21,7 +21,7 @@
                         <i class="fa" ng-class="{'fa-caret-down': isCollapsed, 'fa-caret-up': !isCollapsed}"></i>
                     </a>
                 </span>
-                <span class="hpad5">{{t.title}}</span>
+                <span class="hpad5">[{{t.group || 'default'}}] {{t.title}}</span>
                 <span class="mr-xxs" ng-if="t.owner">(Assigned to <em>{{$vm.getUserInfo.get(t.owner) | getField:'name'}}</em>)</span>
 
                 <span class="pull-right">

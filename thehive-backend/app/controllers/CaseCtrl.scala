@@ -94,6 +94,12 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
+  def realDelete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+    caseSrv.realDelete(id)
+      .map(_ ⇒ NoContent)
+  }
+
+  @Timed
   def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range = request.body.getString("range")

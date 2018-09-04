@@ -35,6 +35,14 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: '/login',
                 controller: 'AuthenticationCtrl',
                 templateUrl: 'views/login.html',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                                 return VersionSrv.get();
+                              }
+                },
+                params: {
+                    autoLogin: false
+                },
                 title: 'Login'
             })
             .state('live', {
@@ -94,7 +102,22 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: 'search?q',
                 templateUrl: 'views/partials/search/list.html',
                 controller: 'SearchCtrl',
-                title: 'Search'
+                title: 'Search',
+                resolve: {
+                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.getMetadata()
+                            .then(function(response) {
+                                defer.resolve(response);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             })
             .state('app.settings', {
                 url: 'settings',
@@ -165,7 +188,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                         return CaseTemplateSrv.list();
                     },
                     fields: function(CustomFieldsCacheSrv){
-                        return CustomFieldsCacheSrv.all()
+                        return CustomFieldsCacheSrv.all();
                     }
                 }
             })
@@ -332,6 +355,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
     .config(function($httpProvider) {
         'use strict';
 
+        $httpProvider.defaults.xsrfCookieName = 'THE-HIVE-XSRF-TOKEN';
+        $httpProvider.defaults.xsrfHeaderName = 'X-THE-HIVE-XSRF-TOKEN';
         $httpProvider.interceptors.push(function($rootScope, $q) {
             var isApiCall = function(url) {
                 return url && url.startsWith('./api') && !url.startsWith('./api/stream');
@@ -414,4 +439,5 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 $rootScope.title = toState.title;
             }
         });
-    });
+    })
+    .constant('UrlParser', url);

@@ -40,6 +40,31 @@
             nparent: 1
         });
 
+        $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+            scope: $scope,
+            streamObjectType: 'action',
+            filter: {
+                _and: [
+                    {
+                        _not: {
+                            status: 'Deleted'
+                        }
+                    }, {
+                        objectType: 'case'
+                    }, {
+                        objectId: $scope.caseId
+                    }
+                ]
+            },
+            sort: ['-startDate'],
+            pageSize: 100,
+            guard: function(updates) {
+                return _.find(updates, function(item) {
+                    return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
+                }) !== undefined;
+            }
+        });
+
         $scope.hasNoMetrics = function(caze) {
             return !caze.metrics || _.keys(caze.metrics).length === 0 || caze.metrics.length === 0;
         };
@@ -130,7 +155,15 @@
             });
         };
 
+        $scope.keys = function(obj) {
+            return _.keys(obj);
+        };
+
         $scope.updateCustomFieldsList();
+
+        $scope.$on('case:refresh-custom-fields', function() {
+            $scope.updateCustomFieldsList();
+        });
     });
 
     angular.module('theHiveControllers').controller('CaseAddMetadataConfirmCtrl', function($scope, $uibModalInstance, data) {

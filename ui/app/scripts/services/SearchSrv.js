@@ -7,7 +7,12 @@
                 if (!angular.isString(objectType) || objectType === 'any') {
                     url = './api/_search';
                 } else {
-                    url = './api/' + objectType.replace(/_/g, '/') + '/_search';
+                    var entity = objectType.replace(/_/g, '/');
+                    if(entity[0] === '/') {
+                        entity = entity.substr(1);
+                    }
+
+                    url = './api/' + entity + '/_search';
                 }
 
                 var params = '';
@@ -34,7 +39,7 @@
                 }).success(function(data, status, headers) {
                     cb(data, parseInt(headers('X-Total')));
                 }).error(function(data, status) {
-                    NotificationSrv.error('SearchSrv', data, status);
+                    NotificationSrv.error('SearchSrv', data.type || data.message, status);
                 });
             };
         });

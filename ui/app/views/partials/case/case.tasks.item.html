@@ -1,29 +1,57 @@
+<div class="vpad10">
+    <h4 class="mb-xs text-primary">
+        Basic Information
+
+        <div class="task-actions pull-right">
+            <span class="mr-xxs action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                <a href class="text-primary noline" ng-click="getTaskResponders()" uib-dropdown-toggle>
+                    <i class="text-primary fa fa-cog"></i>
+                    Responders
+                    <i class="text-primary fa fa-angle-down"></i>
+                </a>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                  <li ng-if="taskResponders && taskResponders.length === 0">
+                    <a href ng-click="getTaskResponders(true)">
+                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                    </a>
+                  </li>
+                  <li ng-repeat="responder in taskResponders">
+                    <a href ng-click="runResponder(responder.id)">
+                      <strong>{{responder.name}}</strong>
+                      <br>
+                      <small>{{responder.description}}</small></a>
+                  </li>
+                </ul>
+            </span>
+            <a href ng-click="switchFlag()">
+                <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
+                    <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
+                </span>
+            </a>
+
+            <a href ng-click="startTask(task)">
+                <span ng-show="task.status == 'Waiting'" class="action-button text-primary">
+                    <i class="fa fa-play"></i> Start
+                </span>
+            </a>
+
+            <a href ng-click="openTask(task)">
+                <span ng-show="task.status == 'Completed'" class="action-button text-success">
+                    <i class="fa fa-check-circle"></i> Reopen
+                </span>
+            </a>
+
+            <a href ng-click="closeTask(task)">
+                <span ng-show="task.status == 'InProgress'" class="action-button text-muted">
+                    <i class="fa fa-check-circle-o"></i> Close
+                </span>
+            </a>
+        </div>
+    </h4>
+</div>
+
 <div class="row">
-    <div class="col-md-5">
-        <h4 class="mb-xs text-primary">
-            Basic Information
-
-            <div class="task-actions pull-right">
-                <a href ng-click="switchFlag()">
-                    <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
-                        <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
-                    </span>
-                </a>
-
-                <a href ng-click="openTask(task)">
-                    <span ng-show="task.status == 'Completed'" class="action-button text-success">
-                        <i class="fa fa-check-circle"></i> Reopen
-                    </span>
-                </a>
-
-                <a href ng-click="closeTask(task)">
-                    <span ng-show="task.status == 'InProgress'" class="action-button text-muted">
-                        <i class="fa fa-check-circle-o"></i> Close
-                    </span>
-                </a>
-            </div>
-        </h4>
-
+    <div class="col-md-6">
         <dl class="dl-horizontal">
             <dt class="pull-left">Title</dt>
             <dd>
@@ -32,12 +60,21 @@
         </dl>
 
         <dl class="dl-horizontal">
-            <dt class="pull-left">Owner</dt>
+            <dt class="pull-left">Group</dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('group', newValue)" value="task.group"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Assignee</dt>
             <dd>
                 <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
             </dd>
         </dl>
+    </div>
 
+    <div class="col-md-6">
         <dl class="dl-horizontal">
             <dt class="pull-left">Date</dt>
             <dd><updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/></dd>
@@ -50,6 +87,16 @@
             </dd>
         </dl>
 
+        <dl class="dl-horizontal" ng-class="{'Completed': 'text-success', 'InProgress': 'text-warning'}[task.status]">
+            <dt class="pull-left">Duration</dt>
+            <dd ng-show="task.status === 'Completed'">
+                Closed after <em ng-bind="(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'"></em>
+            </dd>
+            <dd ng-show="task.status === 'InProgress'">
+                Started <em am-time-ago="task.startDate"></em>
+            </dd>
+        </dl>
+
         <dl class="dl-horizontal" ng-show="task.status !== 'Completed'">
             <dt class="pull-left">Status
             </dt>
@@ -57,18 +104,18 @@
                 <span ng-bind="task.status"></span>
             </dd>
         </dl>
+    </div>
 
-        <dl class="dl-horizontal">
-            <dt class="pull-left">Description</dt>
-            <dd>
-                <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
-            </dd>
-        </dl>
+    <div class="col-md-12">
+         <h4 class="vpad10 text-primary">Description</h4>
+         <div class="description-pane">
+             <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
+         </div>
     </div>
 
     <!-- New Log -->
-    <div class="col-md-7">
-        <h4 class="mb-xs text-primary">Task logs</h4>
+    <div class="col-md-12">
+        <h4 class="vpad10 text-primary">Task logs</h4>
 
         <div class="row clearfix" ng-show="!adding">
             <div class="col-md-12">
@@ -98,7 +145,7 @@
             </div>
         </div>
         <div class="row" ng-show="adding">
-            <div class="col-md-12">                
+            <div class="col-md-12">
                 <div class="clearfix">
                     <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
                 </div>
@@ -128,8 +175,17 @@
 
         <psearch control="logs"></psearch>
         <div ng-repeat="log in logs.values">
-            <log-entry log="log"></log-entry>
+            <log-entry log="log" app-config="appConfig"></log-entry>
         </div>
         <psearch control="logs"></psearch>
     </div>
+
+
+
+    <div class="col-md-12">
+        <div class="task-actions vpad10" ng-if="actions.values.length">
+            <responder-actions header="Responder Jobs" actions="actions"></responder-actions>
+        </div>
+    </div>
+
 </div>

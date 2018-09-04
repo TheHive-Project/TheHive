@@ -34,17 +34,18 @@
             <div class="col-md-12" ng-if="metrics.length === 0">
                 <div class="empty-message">There are no metrics defined yet</div>
             </div>
+
             <div class="col-md-12" ng-if="metrics.length !== 0">
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th class="col-md-3">Name</th>
-                            <th class="col-md-3">Title</th>
+                            <th class="col-md-3">Name <a ng-click="sortBy('name')"><i class="fa fa-sort" ng-class="{'fa-sort-up': state.sort==='name' && !state.asc, 'fa-sort-down': state.sort==='name' && state.asc}"></i></a></th>
+                            <th class="col-md-3">Title <a ng-click="sortBy('title')"><i class="fa fa-sort" ng-class="{'fa-sort-up': state.sort==='title' && !state.asc, 'fa-sort-down': state.sort==='title' && state.asc}"></i></a></th>
                             <th>Description</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="metric in metrics">
+                        <tr ng-repeat="metric in metrics | orderBy:state.sort:!state.asc">
                             <td>{{metric.name}}</td>
                             <td>{{metric.title}}</td>
                             <td>{{metric.description}}</td>

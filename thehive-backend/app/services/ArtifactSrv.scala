@@ -10,25 +10,33 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue.jsValueToJsLookup
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{ Sink, Source }
 import models.{ CaseResolutionStatus, CaseStatus, _ }
 
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services._
 import org.elastic4play.utils.{ RichFuture, RichOr }
+
+case class RemoveJobsOf(artifactId: String) extends EventMessage
 
 @Singleton
 class ArtifactSrv @Inject() (
     artifactModel: ArtifactModel,
     caseModel: CaseModel,
+    auditSrv: AuditSrv,
+    eventSrv: EventSrv,
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     fieldsSrv: FieldsSrv,
-    implicit val ec: ExecutionContext) {
+    dbRemove: DBRemove,
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer) {
 
   private[ArtifactSrv] lazy val logger = Logger(getClass)
 
@@ -39,17 +47,24 @@ class ArtifactSrv @Inject() (
   def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] = {
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
-        case _ ⇒ updateIfDeleted(caze, fields) // maybe the artifact already exists. If so, search it and update it
+        case _: ConflictError ⇒ updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
       }
   }
 
-  private def updateIfDeleted(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] = {
+  private def updateIfDeleted(caze: Case, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Artifact] = {
     fieldsSrv.parse(fields, artifactModel).toFuture.flatMap { attrs ⇒
       val updatedArtifact = for {
         id ← artifactModel.computeId(caze, attrs)
         artifact ← getSrv[ArtifactModel, Artifact](artifactModel, id)
         if artifact.status() == ArtifactStatus.Deleted
-        updatedArtifact ← updateSrv[ArtifactModel, Artifact](artifactModel, artifact.id, fields.unset("data").unset("dataType").unset("attachment").set("status", "Ok"))
+        updatedArtifact ← updateSrv[ArtifactModel, Artifact](
+          artifactModel,
+          artifact.id,
+          fields
+            .unset("data")
+            .unset("dataType")
+            .set("status", "Ok"),
+          modifyConfig)
       } yield updatedArtifact
       updatedArtifact.recoverWith {
         case _ ⇒ Future.failed(ConflictError("Artifact already exists", attrs))
@@ -77,15 +92,25 @@ class ArtifactSrv @Inject() (
     getSrv[ArtifactModel, Artifact](artifactModel, id)
   }
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
-    updateSrv[ArtifactModel, Artifact](artifactModel, id, fields)
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Artifact] =
+    updateSrv[ArtifactModel, Artifact](artifactModel, id, fields, modifyConfig)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] = {
-    updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields)
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] = {
+    updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields, modifyConfig)
   }
 
-  def delete(id: String)(implicit Context: AuthContext): Future[Artifact] =
+  def delete(id: String)(implicit authContext: AuthContext): Future[Artifact] =
     deleteSrv[ArtifactModel, Artifact](artifactModel, id)
+
+  def realDelete(artifact: Artifact): Future[Unit] = {
+    for {
+      _ ← auditSrv.findFor(artifact, Some("all"), Nil)._1
+        .mapAsync(1)(auditSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ = eventSrv.publish(RemoveJobsOf(artifact.id))
+      _ ← dbRemove(artifact)
+    } yield ()
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
     findSrv[ArtifactModel, Artifact](artifactModel, queryDef, range, sortBy)

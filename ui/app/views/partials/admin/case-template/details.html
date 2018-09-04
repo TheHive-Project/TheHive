@@ -40,6 +40,17 @@
     </div>
 </div>
 <div class="form-group">
+    <label class="col-md-3 control-label">PAP
+        <i class="fa fa10asterisk text-danger"></i>
+    </label>
+    <div class="col-md-9">
+        <a class="clearfix" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
+            <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px" value="$vm.template.pap"></tlp>
+        </a>
+        <p class="help-block small vpad5">This will be the default case PAP</p>
+    </div>
+</div>
+<div class="form-group">
     <label class="col-md-3 control-label">Tags</label>
     <div class="col-md-9">
         <tags-input min-length="2" name="tags" ng-model="$vm.tags" placeholder="Tags" replace-spaces-with-dashes="false"></tags-input>

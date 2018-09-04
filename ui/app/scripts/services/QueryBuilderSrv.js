@@ -8,7 +8,7 @@
                 _field: filter.field,
                 _value: filter.value
             };
-        }
+        };
 
         this._buildQueryFromNumberFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
@@ -32,7 +32,7 @@
                 default:
                     return {'_field': filter.field, '_value': filter.value.value};
             }
-        }
+        };
 
         this._buildQueryFromListFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
@@ -57,7 +57,7 @@
                             _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
                         };
                         break;
-                    case 'any':
+                    //case 'any':
                     default:
                         criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
                 }
@@ -71,8 +71,8 @@
         this._buildQueryFromDateFilter = function(fieldDef, filter) {
             var value = filter.value;
 
-            var start = value.from && value.from != null ? value.from.getTime() : null;
-            var end = value.to && value.to != null ? value.to.setHours(23, 59, 59, 999) : null;
+            var start = value.from && value.from !== null ? value.from.getTime() : null;
+            var end = value.to && value.to !== null ? value.to.setHours(23, 59, 59, 999) : null;
 
             if (start !== null && end !== null) {
                 return {

@@ -21,7 +21,7 @@
     <div class="mt-xs attachment">
         <div class="file-box">
             <div class="file">
-                <a href="./api/datastore/{{value.attachment.id}}?name={{value.attachment.name}}" target="_blank">
+                <a href="./api/datastore/{{value.attachment.id}}?name={{value.attachment.name | escape}}" target="_blank">
                     <div class="image" ng-show="isImage(value.attachment.contentType)">
                         <img class="btn img-responsive img-thumbnail" src="./api/datastore/{{value.attachment.id}}" alt="{{value.attachment.name}}"></img>
                     </div>

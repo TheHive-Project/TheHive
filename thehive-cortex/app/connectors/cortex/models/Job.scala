@@ -2,27 +2,28 @@ package connectors.cortex.models
 
 import java.util.Date
 
-import javax.inject.{ Inject, Singleton }
-
 import scala.concurrent.Future
 
-import play.api.libs.json.{ JsObject, JsValue, Json }
-
-import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, AttributeFormat ⇒ F, AttributeOption ⇒ O, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration }
-import org.elastic4play.utils.RichJson
+import play.api.libs.json._
 
 import connectors.cortex.models.JsonFormat.jobStatusFormat
+import javax.inject.{ Inject, Singleton }
 import models.{ Artifact, ArtifactModel }
 import services.AuditedModel
 
+import org.elastic4play.JsonFormat.dateFormat
+import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.utils.RichJson
+
 object JobStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val InProgress, Success, Failure = Value
+  val InProgress, Success, Failure, Waiting = Value
 }
 
 trait JobAttributes { _: AttributeDef ⇒
   val analyzerId = attribute("analyzerId", F.stringFmt, "Analyzer", O.readonly)
+  val analyzerName = optionalAttribute("analyzerName", F.stringFmt, "Name of the analyzer", O.readonly)
+  val analyzerDefinition = optionalAttribute("analyzerDefinition", F.stringFmt, "Name of the analyzer definition", O.readonly)
   val status = attribute("status", F.enumFmt(JobStatus), "Status of the job", JobStatus.InProgress)
   val artifactId = attribute("artifactId", F.stringFmt, "Original artifact on which this job was executed", O.readonly)
   val startDate = attribute("startDate", F.dateFmt, "Timestamp of the job start") // , O.model)
@@ -33,7 +34,8 @@ trait JobAttributes { _: AttributeDef ⇒
 
 }
 @Singleton
-class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
+class JobModel @Inject() (
+    artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful {
     attrs
@@ -41,10 +43,24 @@ class JobModel @Inject() (artifactModel: ArtifactModel) extends ChildModelDef[Jo
       .setIfAbsent("startDate", new Date)
   }
 }
-class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, attributes) with JobAttributes {
+
+object Job {
+  def fixJobAttr(attr: JsObject): JsObject = {
+    val analyzerId = (attr \ "analyzerId").as[String]
+    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
+    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
+  }
+}
+
+class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, Job.fixJobAttr(attributes)) with JobAttributes {
   override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject.empty)(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
 }
 
-case class CortexJob(id: String, analyzerId: String, artifact: CortexArtifact, date: Date, status: JobStatus.Type, cortexIds: List[String] = Nil) {
-  def onCortex(cortexId: String) = copy(cortexIds = cortexId :: cortexIds)
-}
+case class CortexJob(
+    id: String,
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
+    artifact: CortexArtifact,
+    date: Date,
+    status: JobStatus.Type)

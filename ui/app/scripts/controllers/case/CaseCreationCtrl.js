@@ -8,6 +8,7 @@
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
+            $scope.activePap = 'active';
             $scope.active = true;
             $scope.pendingAsync = false;
             $scope.metricsCache = {};
@@ -22,13 +23,14 @@
 
                 MetricsCacheSrv.all().then(function (list) {
                     // Set basic info from template
-                    $scope.newCase = {
+                    $scope.newCase = _.defaults({
                         status: 'Open',
                         title: '',
                         description: template.description,
                         tlp: template.tlp,
+                        pap: template.pap,
                         severity: template.severity
-                    };
+                    }, {tlp: 2, pap: 2});
 
                     // Set metrics from template
                     $scope.metricsCache = list;
@@ -56,6 +58,10 @@
 
             $scope.updateTlp = function (tlp) {
                 $scope.newCase.tlp = tlp;
+            };
+
+            $scope.updatePap = function (pap) {
+                $scope.newCase.pap = pap;
             };
 
             $scope.createNewCase = function (isValid) {
@@ -114,6 +120,10 @@
             $scope.getTags = function(query) {
                 return TagSrv.fromCases(query);
             };
+
+            $scope.keys = function(o) {
+                return _.keys(o).length;
+            }
         }
     );
 })();

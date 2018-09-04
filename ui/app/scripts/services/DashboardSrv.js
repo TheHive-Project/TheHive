@@ -33,7 +33,7 @@
                 type: 'last7Days',
                 label: 'Last 7 days'
             }
-        ]
+        ];
 
         this.timeIntervals = [{
             code: '1d',
@@ -139,7 +139,7 @@
             return _.filter(fields, function(item) {
                 return types.indexOf(item.type) !== -1;
             });
-        }
+        };
 
         this.fieldsForAggregation = function(fields, agg) {
             if(agg === 'count') {
@@ -149,7 +149,7 @@
             } else {
                 return fields;
             }
-        }
+        };
 
         this.renderers = {
             severity: function() {}
@@ -245,14 +245,14 @@
         };
 
         this.buildChartQuery = function(filter, query) {
-            var criteria = _.without([filter, query], null, undefined, '', '*');
+            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function(c){return !_.isEmpty(c);});
 
             if(criteria.length === 0) {
                 return {};
             } else {
                 return criteria.length === 1 ? criteria[0] : { _and: criteria };
             }
-        }
+        };
 
         this.buildPeriodQuery = function(period, field, start, end) {
             if(!period && !start && !end) {
@@ -270,8 +270,8 @@
             } else if (period === 'last3Months') {
                 from = moment(today).subtract(3, 'months');
             } else if(period === 'custom') {
-                from = start && start != null ? moment(start).valueOf() : null;
-                to = end && end != null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
+                from = start && start !== null ? moment(start).valueOf() : null;
+                to = end && end !== null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
 
                 if (from !== null && to !== null) {
                     return {
@@ -290,8 +290,8 @@
 
             return period === 'all' ? null : {
                 _between: { _field: field, _from: from.valueOf(), _to: to.valueOf() }
-            }
-        }
+            };
+        };
 
         this.exportDashboard = function(dashboard) {
             var fileName = dashboard.title.replace(/\s/gi, '_') + '.json';
@@ -313,6 +313,6 @@
 
             // Save the file
             saveAs(fileToSave, fileName);
-        }
+        };
     });
 })();

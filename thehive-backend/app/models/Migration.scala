@@ -18,6 +18,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import services.{ AlertSrv, DashboardSrv }
 
+import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
@@ -80,27 +81,32 @@ class Migration(
         dataTypeList.addItem(dt)
           .map(_ ⇒ ())
           .recover {
-            case error ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
+            case _: ConflictError ⇒
+            case error            ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
           }
       }
       .map(_ ⇒ ())
   }
 
   private def addDashboards(version: Int): Future[Unit] = {
-    userSrv.inInitAuthContext { implicit authContext ⇒
-      val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
-      val dashboards = for {
-        dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
-        if Files.isReadable(dashboardFile)
-        dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
-        dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
-        dash = dashboardSrv.create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
-          .map(_ ⇒ ())
-          .recover {
-            case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
-          }
-      } yield dash
-      Future.sequence(dashboards).map(_ ⇒ ())
+    dashboardSrv.find(QueryDSL.any, Some("0-0"), Nil)._2.flatMap {
+      case 0 ⇒
+        userSrv.inInitAuthContext { implicit authContext ⇒
+          val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
+          val dashboards = for {
+            dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
+            if Files.isReadable(dashboardFile)
+            dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
+            dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
+            dash = dashboardSrv.create(Fields(dashboardJson + ("definition" → JsString(dashboardDefinition))))
+              .map(_ ⇒ ())
+              .recover {
+                case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
+              }
+          } yield dash
+          Future.sequence(dashboards).map(_ ⇒ ())
+        }
+      case _ ⇒ Future.successful(())
     }
   }
 
@@ -290,10 +296,59 @@ class Migration(
         mapEntity(_ ⇒ true, entity ⇒ entity - "user"),
         mapEntity("caseTemplate") { caseTemplate ⇒
           val metricsName = (caseTemplate \ "metricNames").asOpt[Seq[String]].getOrElse(Nil)
-          val metrics = JsObject(metricsName.map(_ -> JsNull))
-          caseTemplate - "metricNames" + ("metrics" -> metrics)
+          val metrics = JsObject(metricsName.map(_ → JsNull))
+          caseTemplate - "metricNames" + ("metrics" → metrics)
         },
-        addAttribute("case_artifact", "sighted" -> JsFalse))
+        addAttribute("case_artifact", "sighted" → JsFalse))
+    case ds @ DatabaseState(12) ⇒
+      Seq(
+        // Remove alert artifacts in audit trail
+        mapEntity("audit") {
+          case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
+            (audit \ "details").asOpt[JsObject].fold(audit) { details ⇒
+              audit + ("details" → (details - "artifacts"))
+            }
+          case audit ⇒ audit
+        },
+        // Regenerate all alert ID
+        mapEntity("alert") { alert ⇒
+          val alertId = JsString(generateAlertId(alert))
+          alert + ("_id" → alertId) + ("_routing" → alertId)
+        },
+        // and overwrite alert id in audit trail
+        Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
+          case "audit" ⇒ f("audit").flatMapConcat {
+            case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
+              val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId ⇒
+                ds.getEntity("alert", alertId)
+                  .map { alert ⇒
+                    audit + ("objectId" → JsString(generateAlertId(alert)))
+                  }
+                  .recover {
+                    case e ⇒
+                      logger.error(s"Get alert $alertId", e)
+                      audit
+                  }
+              }
+              Source.fromFuture(updatedAudit)
+            case audit ⇒ Source.single(audit)
+          }
+          case other ⇒ f(other)
+        }))
+
+    case DatabaseState(13) ⇒
+      Seq(
+        addAttribute("alert", "customFields" → JsObject.empty),
+        addAttribute("case_task", "group" → JsString("default")),
+        addAttribute("case", "pap" → JsNumber(2)))
+  }
+
+  private def generateAlertId(alert: JsObject): String = {
+    val hasher = Hasher("MD5")
+    val tpe = (alert \ "type").asOpt[String].getOrElse("<null>")
+    val source = (alert \ "source").asOpt[String].getOrElse("<null>")
+    val sourceRef = (alert \ "sourceRef").asOpt[String].getOrElse("<null>")
+    hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
   }
 
   private def convertDate(json: JsValue): JsValue = {

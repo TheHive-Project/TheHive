@@ -43,8 +43,17 @@
                     <h4 class="vpad10 text-primary">
                         Description
                     </h4>
-                    <div>
+                    <div class="description-pane">
                         <div marked="dialog.event.description" class="markdown"></div>
+                    </div>
+                </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Additional fields
+                    </h4>
+                    <div ng-include="'views/partials/alert/custom.fields.html'">
+
                     </div>
                 </div>
             </div>
@@ -53,12 +62,12 @@
                 <h4 class="vpad10 text-primary">
                     Observables ({{dialog.event.artifacts.length || 0}})
                 </h4>
-                <div class="mb-xs" ng-if="dialog.dataTypes">
-                    <span class="label label-lg label-default mr-xxs clickable"
+                <div class="mb-xs flexwrap" ng-if="dialog.dataTypes">
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-click="dialog.filterArtifacts('');"
                         ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
 
-                    <span class="label label-lg label-default mr-xxs clickable"
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-repeat="(type, count) in dialog.dataTypes"
                         ng-click="dialog.filterArtifacts(type)"
                         ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>

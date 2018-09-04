@@ -5,21 +5,23 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, params, tags) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
             $scope.step = 'form';
-            $scope.params = {
+            $scope.params = params || {
                 ioc: false,
                 sighted: false,
+                isZip: false,
+                zipPassword: '',
                 data: '',
                 tlp: 2,
                 message: '',
                 tags: [],
                 tagNames: ''
             };
-            $scope.tags = [];
+            $scope.tags = tags || [];
 
             $scope.$watchCollection('tags', function(value) {
                 $scope.params.tagNames = _.pluck(value, 'text').join(',');
@@ -82,6 +84,11 @@
                     count = postData.length;
                 } else if (params.attachment) {
                     postData.attachment = params.attachment;
+
+                    if(params.isZip) {
+                        postData.isZip = params.isZip;
+                        postData.zipPassword = params.zipPassword;
+                    }
                 }
 
                 $scope.pendingAsync = true;
@@ -136,7 +143,12 @@
                     $scope.step = 'error';
 
                 } else {
-                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
+										if(response.data.type === "java.io.IOException")
+                    	NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+										else if(response.data.type === "InternalError")
+											NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+										else
+	                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
 
                     $uibModalInstance.close(response);
                 }
@@ -150,7 +162,7 @@
             };
 
             $scope.cancel = function() {
-                $uibModalInstance.dismiss();
+                $uibModalInstance.dismiss('cancel');
             };
 
             $scope.isFile = function() {
@@ -160,6 +172,7 @@
                     return false;
                 }
             };
+
         }
     );
 

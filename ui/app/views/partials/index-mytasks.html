@@ -4,6 +4,7 @@
 	<thead>
 		<tr>
 			<th class="text-center" style="width: 60px;">Severity</th>
+			<th style="width: 200px;">Group</th>
 			<th>Task</th>
 			<th width="250px;">Date</th>
 		</tr>
@@ -17,10 +18,14 @@
 			<td class="text-center">
 				<severity active="false" value="value.case.severity"></severity>
 			</td>
+			<td>{{value.group}}</td>
 			<td>
 				<div>
 					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
 					<span ng-bind="value.title"></span>
+				</div>
+				<div ng-show="value.status === 'InProgress'" class="text-warning">
+						Started <em am-time-ago="value.startDate"></em>
 				</div>
 				<div>
 					<small><entity-link value="value.case"></entity-link></small>

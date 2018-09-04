@@ -1,8 +1,8 @@
 package connectors.misp
 
 import java.util.Date
-import javax.inject.{ Inject, Provider, Singleton }
 
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
@@ -23,6 +23,7 @@ import JsonFormat.mispAlertWrites
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Attachment, AuthContext, MigrationSrv, TempSrv }
+import org.elastic4play.utils.Collection
 
 @Singleton
 class MispSynchro @Inject() (
@@ -76,7 +77,7 @@ class MispSynchro @Inject() (
     import org.elastic4play.services.QueryDSL._
 
     // for each MISP server
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       // get last synchronization
       .mapAsyncUnordered(1) { mispConnection ⇒
         alertSrv.stats(and("type" ~= "misp", "source" ~= mispConnection.name), Seq(selectMax("lastSyncDate")))
@@ -91,7 +92,7 @@ class MispSynchro @Inject() (
   }
 
   def fullSynchronize()(implicit authContext: AuthContext): Future[immutable.Seq[Try[Alert]]] = {
-    Source(mispConfig.connections.toList)
+    Source(mispConfig.connections.filter(_.canImport).toList)
       .flatMapConcat(mispConnection ⇒ synchronize(mispConnection, None))
       .runWith(Sink.seq)
   }
@@ -121,27 +122,50 @@ class MispSynchro @Inject() (
     } yield createdArtifacts
   }
 
+  def getOriginalEvent(mispConnection: MispConnection, event: MispAlert): Future[MispAlert] = {
+    event.extendsUuid match {
+      case None                 ⇒ Future.successful(event)
+      case Some(e) if e.isEmpty ⇒ Future.successful(event)
+      case Some(originalEvent) ⇒
+        mispSrv
+          .getEvent(mispConnection, originalEvent)
+          .flatMap(getOriginalEvent(mispConnection, _))
+    }
+  }
+
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
     logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
     // get events that have been published after the last synchronization
-    mispSrv.getEventsFromDate(mispConnection, lastSyncDate.getOrElse(new Date(0)))
+    mispSrv.getEventsFromDate(mispConnection, mispConnection.syncFrom(lastSyncDate.getOrElse(new Date(0))))
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")
-        alertSrv.get("misp", event.source, event.sourceRef)
+        getOriginalEvent(mispConnection, event)
+          .flatMap { originalEvent ⇒
+            logger.trace(s"Event misp:${event.source}:${event.sourceRef} is originated from misp:${originalEvent.source}:${originalEvent.sourceRef}")
+            alertSrv.get("misp", mispConnection.name, originalEvent.sourceRef)
+          }
           .map((event, _))
       }
       .mapAsyncUnordered(1) {
         case (event, alert) ⇒
           logger.trace(s"MISP synchro ${mispConnection.name}, event ${event.sourceRef}, alert ${alert.fold("no alert")(a ⇒ "alert " + a.alertId() + "last sync at " + a.lastSyncDate())}")
-          logger.info(s"getting MISP event ${event.source}:${event.sourceRef}")
+          logger.debug(s"getting MISP event ${event.source}:${event.sourceRef}")
           mispSrv.getAttributesFromMisp(mispConnection, event.sourceRef, lastSyncDate.flatMap(_ ⇒ alert.map(_.lastSyncDate())))
             .map((event, alert, _))
+      }
+      .filter {
+        // attrs is empty if the size of the http response exceed the configured limit (max-size)
+        case (_, _, attrs) if attrs.isEmpty ⇒ false
+        case (event, _, attrs) if mispConnection.maxAttributes.fold(false)(attrs.lengthCompare(_) > 0) ⇒
+          logger.debug(s"Event ${event.sourceRef} ignore because it has too many attributes (${attrs.length}>${mispConnection.maxAttributes.get})")
+          false
+        case _ ⇒ true
       }
       .mapAsyncUnordered(1) {
         // if there is no related alert, create a new one
         case (event, None, attrs) ⇒
-          logger.info(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
+          logger.debug(s"MISP event ${event.source}:${event.sourceRef} has no related alert, create it with ${attrs.size} observable(s)")
           val alertJson = Json.toJson(event).as[JsObject] +
             ("type" → JsString("misp")) +
             ("caseTemplate" → mispConnection.caseTemplate.fold[JsValue](JsNull)(JsString)) +
@@ -151,7 +175,7 @@ class MispSynchro @Inject() (
             .recover { case t ⇒ Failure(t) }
 
         case (event, Some(alert), attrs) ⇒
-          logger.info(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
+          logger.debug(s"MISP event ${event.source}:${event.sourceRef} has related alert, update it with ${attrs.size} observable(s)")
 
           alert.caze().fold[Future[Boolean]](Future.successful(lastSyncDate.isDefined && attrs.nonEmpty && alert.follow())) {
             case caze if alert.follow() ⇒
@@ -163,14 +187,19 @@ class MispSynchro @Inject() (
             case _ ⇒ Future.successful(false)
           }
             .flatMap { updateStatus ⇒
-              val artifacts = JsArray(alert.artifacts() ++ attrs.map(Json.toJson(_)))
+              val artifacts = Collection.distinctBy(alert.artifacts() ++ attrs.map(Json.toJson(_))) { a ⇒
+                (a \ "data").getOrElse(JsNull).toString +
+                  (a \ "dataType").getOrElse(JsNull).toString +
+                  (a \ "attachment").getOrElse(JsNull).toString +
+                  (a \ "remoteAttachment").getOrElse(JsNull).toString
+              }
               val alertJson = Json.toJson(event).as[JsObject] -
                 "type" -
                 "source" -
                 "sourceRef" -
                 "caseTemplate" -
                 "date" +
-                ("artifacts" → artifacts) +
+                ("artifacts" → JsArray(artifacts)) +
                 ("status" → (if (!updateStatus) Json.toJson(alert.status())
                 else alert.status() match {
                   case AlertStatus.New ⇒ Json.toJson(AlertStatus.New)

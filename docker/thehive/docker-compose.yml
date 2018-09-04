@@ -1,7 +1,7 @@
 version: "2"
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.0
     environment:
       - http.host=0.0.0.0
       - transport.host=0.0.0.0
@@ -11,12 +11,18 @@ services:
       - thread_pool.index.queue_size=100000
       - thread_pool.search.queue_size=100000
       - thread_pool.bulk.queue_size=100000
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
   cortex:
-    image: certbdf/cortex:latest
+    image: thehiveproject/cortex:latest
+    depends_on:
+      - elasticsearch
     ports:
-      - "0.0.0.0:9001:9000"
+      - "0.0.0.0:9001:9001"
   thehive:
-    image: certbdf/thehive:latest
+    image: thehiveproject/thehive:latest
     depends_on:
       - elasticsearch
       - cortex

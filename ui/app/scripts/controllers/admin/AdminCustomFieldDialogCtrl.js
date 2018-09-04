@@ -43,7 +43,7 @@
                 return;
             }
 
-            var postData = _.pick(self.customField, 'name', 'reference', 'description', 'type');
+            var postData = _.pick(self.customField, 'name', 'reference', 'description', 'type', 'mandatory');
             postData.options = buildOptionsCollection(self.customField.options);
 
             if (self.customField.id) {

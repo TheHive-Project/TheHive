@@ -58,10 +58,11 @@ trait AlertAttributes {
   val severity: A[Long] = attribute("severity", SeverityAttributeFormat, "Severity if the alert (0-3)", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Alert tags")
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
-  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert")
+  val artifacts: A[Seq[JsObject]] = multiAttribute("artifacts", F.objectFmt(artifactAttributes), "Artifact of the alert", O.unaudited)
   val caseTemplate: A[Option[String]] = optionalAttribute("caseTemplate", F.stringFmt, "Case template to use")
   val status: A[AlertStatus.Value] = attribute("status", F.enumFmt(AlertStatus), "Status of the alert", AlertStatus.New)
   val follow: A[Boolean] = attribute("follow", F.booleanFmt, "", true)
+  val customFields: A[JsValue] = attribute("customFields", F.customFields, "Custom fields", JsObject.empty)
 }
 
 @Singleton
@@ -94,7 +95,7 @@ class AlertModel @Inject() (dblists: DBLists)
           attrs
         else {
           val hasher = Hasher("MD5")
-          val tpe = (attrs \ "tpe").asOpt[String].getOrElse("<null>")
+          val tpe = (attrs \ "type").asOpt[String].getOrElse("<null>")
           val source = (attrs \ "source").asOpt[String].getOrElse("<null>")
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
@@ -117,11 +118,11 @@ class Alert(model: AlertModel, attributes: JsObject)
     }))
 
   def toCaseJson: JsObject = Json.obj(
-    //"caseId" -> caseId,
+    //"caseId" → caseId,
     "title" → title(),
     "description" → description(),
     "severity" → severity(),
-    //"owner" -> owner,
+    //"owner" → owner,
     "startDate" → date(),
     "tags" → tags(),
     "tlp" → tlp(),

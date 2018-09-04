@@ -13,17 +13,21 @@ import akka.stream.scaladsl.{ Sink, Source }
 import models._
 
 import org.elastic4play.controllers.Fields
+import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services._
 
 @Singleton
 class TaskSrv @Inject() (
     taskModel: TaskModel,
     caseModel: CaseModel,
+    auditSrv: AuditSrv,
     createSrv: CreateSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
+    dbRemove: DBRemove,
     findSrv: FindSrv,
+    logSrv: LogSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
@@ -44,20 +48,26 @@ class TaskSrv @Inject() (
   def get(id: String): Future[Task] =
     getSrv[TaskModel, Task](taskModel, id)
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Task] =
+    update(id, fields, ModifyConfig.default)
+
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Task] = {
     getSrv[TaskModel, Task](taskModel, id)
-      .flatMap { task ⇒ update(task, fields) }
+      .flatMap { task ⇒ update(task, fields, modifyConfig) }
   }
 
-  def update(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Task] = {
+  def update(task: Task, fields: Fields)(implicit authContext: AuthContext): Future[Task] =
+    update(task, fields, ModifyConfig.default)
+
+  def update(task: Task, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Task] = {
     // if update status from waiting to something else and owner is not set, then set owner to user
     val f = if (task.status() == TaskStatus.Waiting &&
-      !fields.getString("status").forall(_ == TaskStatus.Waiting.toString) &&
+      !fields.getString("status").contains(TaskStatus.Waiting.toString) &&
       !fields.contains("owner") &&
       task.owner().isEmpty)
       fields.set("owner", authContext.userId)
     else fields
-    updateSrv(task, f)
+    updateSrv(task, f, modifyConfig)
   }
 
   def closeTasksOfCase(caseIds: String*)(implicit authContext: AuthContext): Future[Seq[Try[Task]]] = {
@@ -74,11 +84,24 @@ class TaskSrv @Inject() (
         case task                                        ⇒ (task, completeTask)
       }
       .runWith(Sink.seq)
-      .flatMap { taskUpdate ⇒ updateSrv(taskUpdate) }
+      .flatMap { taskUpdate ⇒ updateSrv(taskUpdate, ModifyConfig.default) }
   }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Task] =
     deleteSrv[TaskModel, Task](taskModel, id)
+
+  def realDelete(task: Task): Future[Unit] = {
+    import org.elastic4play.services.QueryDSL._
+    for {
+      _ ← auditSrv.findFor(task, Some("all"), Nil)._1
+        .mapAsync(1)(auditSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← logSrv.find(withParent(task), Some("all"), Nil)._1
+        .mapAsync(1)(logSrv.realDelete)
+        .runWith(Sink.ignore)
+      _ ← dbRemove(task)
+    } yield ()
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Task, NotUsed], Future[Long]) = {
     findSrv[TaskModel, Task](taskModel, queryDef, range, sortBy)

@@ -1,6 +1,6 @@
 <div class="flow-case" ng-switch="base.operation">
     <div class="flow-item-title wrap">
-        <i class="glyphicon glyphicon-folder-open"></i>{{base.object.title}}
+        <i class="glyphicon glyphicon-folder-open"></i>{{base.object.title || base.details.title}}
         <div class="flow-item-bulk" ng-if="summary.case_task">
             <em ng-if="summary.case.Creation">This case contains <ng-pluralize count="summary.case_task.Creation"
              when="{'one': '1 task', 'other': '{} tasks'}"></ng-pluralize></em>
@@ -27,7 +27,7 @@
             </div>
             <div ng-switch-when="tags">
                 {{k}}:
-                <span ng-repeat="tag in v">
+                <span ng-repeat="tag in v track by $index">
                     <span class="label label-primary">{{tag}}</span>
                 </span>
                 <span ng-if="v.length === 0">
@@ -42,6 +42,13 @@
             </div>
             <div ng-switch-when="tlp">
                 {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
+            <div ng-switch-when="pap">
+                {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
+            <div ng-switch-when="owner">
+                {{k}}:
+                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
             </div>
             <div ng-switch-default>
                 {{k}}: <em>{{v | limitTo: 250}}</em>

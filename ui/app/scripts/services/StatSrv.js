@@ -25,9 +25,11 @@
                     stats.push(agg);
                 }
 
-                stats.push({
-                    _agg: 'count'
-                });
+                if(!config.skipTotal) {
+                  stats.push({
+                      _agg: 'count'
+                  });
+                }
 
                 var entity = config.objectType.replace(/_/g, '/');
                 if(entity[0] === '/') {

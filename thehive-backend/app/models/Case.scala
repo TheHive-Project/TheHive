@@ -44,6 +44,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag: A[Boolean] = attribute("flag", F.booleanFmt, "Flag of the case", false)
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
+  val pap: A[Long] = attribute("pap", TlpAttributeFormat, "PAP level", 2L)
   val status: A[CaseStatus.Value] = attribute("status", F.enumFmt(CaseStatus), "Status of the case", CaseStatus.Open)
   val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of metrics", JsObject.empty)
   val resolutionStatus: A[Option[CaseResolutionStatus.Value]] = optionalAttribute("resolutionStatus", F.enumFmt(CaseResolutionStatus), "Resolution status of the case")
@@ -56,15 +57,20 @@ trait CaseAttributes { _: AttributeDef ⇒
 
 @Singleton
 class CaseModel @Inject() (
-    artifactModel: Provider[ArtifactModel],
-    taskModel: Provider[TaskModel],
-    caseSrv: Provider[CaseSrv],
-    alertModel: Provider[AlertModel],
+    artifactModelProvider: Provider[ArtifactModel],
+    taskModelProvider: Provider[TaskModel],
+    caseSrvProvider: Provider[CaseSrv],
+    alertModelProvider: Provider[AlertModel],
     sequenceSrv: SequenceSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext) extends ModelDef[CaseModel, Case]("case", "Case", "/case") with CaseAttributes with AuditedModel { caseModel ⇒
 
-  private[CaseModel] lazy val logger = Logger(getClass)
+  private lazy val logger = Logger(getClass)
+  private lazy val artifactModel = artifactModelProvider.get
+  private lazy val taskModel = taskModelProvider.get
+  private lazy val caseSrv = caseSrvProvider.get
+  private lazy val alertModel = alertModelProvider.get
+
   override val defaultSortBy = Seq("-startDate")
   override val removeAttribute: JsObject = Json.obj("status" → CaseStatus.Deleted)
 
@@ -90,7 +96,7 @@ class CaseModel @Inject() (
   private[models] def buildArtifactStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(
-      artifactModel.get,
+      artifactModel,
       and(
         parent("case", withId(caze.id)),
         "status" ~= "Ok"),
@@ -103,7 +109,7 @@ class CaseModel @Inject() (
   private[models] def buildTaskStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(
-      taskModel.get,
+      taskModel,
       and(
         parent("case", withId(caze.id)),
         "status" in ("Waiting", "InProgress", "Completed")),
@@ -120,34 +126,44 @@ class CaseModel @Inject() (
 
   private[models] def buildMergeIntoStats(caze: Case): Future[JsObject] = {
     caze.mergeInto()
-      .fold(Future.successful(Json.obj())) { mergeCaseId ⇒
-        caseSrv.get.get(mergeCaseId).map { c ⇒
+      .fold(Future.successful(JsObject.empty)) { mergeCaseId ⇒
+        caseSrv.get(mergeCaseId).map { c ⇒
           Json.obj("mergeInto" → Json.obj(
             "caseId" → c.caseId(),
             "title" → c.title()))
         }
+          .recover {
+            case _ ⇒ Json.obj("mergeInto" → Json.obj(
+              "caseId" → "<deleted>",
+              "title" → "<deleted>"))
+          }
       }
   }
 
   private[models] def buildMergeFromStats(caze: Case): Future[JsObject] = {
     Future
       .traverse(caze.mergeFrom()) { id ⇒
-        caseSrv.get.get(id).map { c ⇒
+        caseSrv.get(id).map { c ⇒
           Json.obj(
             "caseId" → c.caseId(),
             "title" → c.title())
         }
+          .recover {
+            case _ ⇒ Json.obj(
+              "caseId" → "<deleted>",
+              "title" → "<deleted>")
+          }
       }
       .map {
         case mf if mf.nonEmpty ⇒ Json.obj("mergeFrom" → mf)
-        case _                 ⇒ Json.obj()
+        case _                 ⇒ JsObject.empty
       }
   }
 
   private[models] def buildAlertStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(
-      alertModel.get,
+      alertModel,
       "case" ~= caze.id,
       groupByField("type", groupByField("source", selectCount)))
       .map { alertStatsJson ⇒
@@ -172,7 +188,7 @@ class CaseModel @Inject() (
         } yield taskStats ++ artifactStats ++ alertStats ++ mergeIntoStats ++ mergeFromStats
       case other ⇒
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
-        Future.successful(Json.obj())
+        Future.successful(JsObject.empty)
     }
   }
 

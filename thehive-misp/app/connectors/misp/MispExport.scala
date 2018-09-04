@@ -2,12 +2,13 @@ package connectors.misp
 
 import java.text.SimpleDateFormat
 import java.util.Date
-import javax.inject.{ Inject, Provider, Singleton }
 
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Success, Try }
 
-import play.api.libs.json.{ JsObject, Json }
+import play.api.Logger
+import play.api.libs.json._
 
 import akka.stream.scaladsl.Sink
 import connectors.misp.JsonFormat.tlpWrites
@@ -16,7 +17,7 @@ import services.{ AlertSrv, ArtifactSrv }
 import JsonFormat.exportedAttributeWrites
 import akka.stream.Materializer
 
-import org.elastic4play.InternalError
+import org.elastic4play.{ BadRequestError, InternalError }
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.{ Attachment, AttachmentSrv, AuthContext }
 import org.elastic4play.services.JsonFormat.attachmentFormat
@@ -34,6 +35,7 @@ class MispExport @Inject() (
 
   lazy val dateFormat = new SimpleDateFormat("yy-MM-dd")
   private[misp] lazy val alertSrv = alertSrvProvider.get
+  lazy val logger = Logger(getClass)
 
   def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
     import org.elastic4play.services.QueryDSL._
@@ -57,7 +59,8 @@ class MispExport @Inject() (
       .map(_._1)
   }
 
-  def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute]): Future[(String, Seq[ExportedMispAttribute])] = {
+  def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute], extendsEvent: Option[String]): Future[(String, Seq[ExportedMispAttribute])] = {
+    logger.debug(s"Create MISP event $title, with ${attributes.size} attributes")
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution" → 0,
@@ -68,13 +71,15 @@ class MispExport @Inject() (
         "published" → false,
         "Attribute" → attributes,
         "Tag" → Json.arr(
-          Json.obj("name" → tlpWrites.writes(tlp)))))
+          Json.obj("name" → tlpWrites.writes(tlp))),
+        "extends_uuid" → extendsEvent.fold[JsValue](JsNull)(JsString)))
     mispConnection("events")
       .post(mispEvent)
       .map { mispResponse ⇒
         val eventId = (mispResponse.json \ "Event" \ "id")
           .asOpt[String]
           .getOrElse(throw InternalError(s"Unexpected MISP response: ${mispResponse.status} ${mispResponse.statusText}\n${mispResponse.body}"))
+        // Get list of attributes that export has failed
         val messages = (mispResponse.json \ "errors" \ "Attribute")
           .asOpt[JsObject]
           .getOrElse(JsObject.empty)
@@ -86,7 +91,7 @@ class MispExport @Inject() (
               .flatMap(_.headOption)
               .getOrElse(s"Unexpected message format: $m")
           }
-        val exportedAttributes = attributes.zipWithIndex.collect {
+        val exportedAttributes = attributes.zipWithIndex.collect { // keep only attributes that succeed
           case (attr, index) if !messages.contains(index.toString) ⇒ attr
         }
         eventId → exportedAttributes
@@ -103,7 +108,6 @@ class MispExport @Inject() (
             val b64data = java.util.Base64.getEncoder.encodeToString(data.toArray[Byte])
             val body = Json.obj(
               "request" → Json.obj(
-                "event_id" → eventId.toInt,
                 "category" → "Payload delivery",
                 "type" → "malware-sample",
                 "comment" → comment,
@@ -111,7 +115,7 @@ class MispExport @Inject() (
                   Json.obj(
                     "filename" → attachment.name,
                     "data" → b64data))))
-            mispConnection("events/upload_sample").post(body)
+            mispConnection(s"events/upload_sample/$eventId").post(body)
           }
       case attr ⇒ mispConnection(s"attributes/add/$eventId").post(Json.toJson(attr))
     }
@@ -135,62 +139,83 @@ class MispExport @Inject() (
     }
   }
 
-  def export(mispName: String, caze: Case)(implicit authContext: AuthContext): Future[(String, Seq[Try[Artifact]])] = {
-    val mispConnection = mispConfig.getConnection(mispName).getOrElse(sys.error("MISP instance not found"))
+  def getUpdatableEvent(mispConnection: MispConnection, eventId: String): Future[Option[String]] = {
+    mispConnection(s"/events/getEditStrategy/$eventId")
+      .get().map {
+        case resp if resp.status / 100 == 2 ⇒
+          val body = resp.json
+          val isEditStrategy = (body \ "strategy").asOpt[String].contains("edit")
+          if (!isEditStrategy) (body \ "extensions" \ 0 \ "id").asOpt[String]
+          else Some(eventId)
+        case _ ⇒ Some(eventId)
+      }
+  }
 
-    for {
-      (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
-      attributes ← mispSrv.getAttributesFromCase(caze)
-      uniqueAttributes = removeDuplicateAttributes(attributes)
-      (eventId, initialExportesArtifacts, existingAttributes) ← maybeEventId.fold {
-        val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
-        // if no event is associated to this case, create a new one
-        createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes).map {
-          case (eventId, exportedAttributes) ⇒ (eventId, exportedAttributes.map(a ⇒ Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
+  def export(mispName: String, caze: Case)(implicit authContext: AuthContext): Future[(String, Seq[Try[Artifact]])] = {
+    logger.info(s"Exporting case ${caze.caseId()} to MISP $mispName")
+    val mispConnection = mispConfig.getConnection(mispName).getOrElse(sys.error("MISP instance not found"))
+    if (!mispConnection.canExport)
+      Future.failed(BadRequestError(s"Export on MISP connection $mispName is denied by configuration"))
+    else {
+      for {
+        (maybeAlertId, maybeEventId) ← relatedMispEvent(mispName, caze.id)
+        _ = logger.debug(maybeEventId.fold(s"Related MISP event doesn't exist")(e ⇒ s"Related MISP event found : $e"))
+        attributes ← mispSrv.getAttributesFromCase(caze)
+        uniqueAttributes = removeDuplicateAttributes(attributes)
+        eventToUpdate ← maybeEventId.fold(Future.successful[Option[String]](None))(getUpdatableEvent(mispConnection, _))
+        (eventId, initialExportesArtifacts, existingAttributes) ← eventToUpdate.fold {
+          logger.debug(s"Creating a new MISP event that extends $maybeEventId")
+          val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
+          // if no event is associated to this case, create a new one
+          createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId).map {
+            case (eventId, exportedAttributes) ⇒ (eventId, exportedAttributes.map(a ⇒ Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
+          }
+        } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
+          logger.debug(s"Updating MISP event $eventId")
+          mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes ⇒
+            (eventId, Nil, attributes.map {
+              case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             ⇒ Left(data)
+              case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             ⇒ Right(filename)
+              case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) ⇒ Right(filename)
+            })
+          }
         }
-      } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one
-        mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes ⇒
-          (eventId, Nil, attributes.map {
-            case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             ⇒ Left(data)
-            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             ⇒ Right(filename)
-            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) ⇒ Right(filename)
-          })
+
+        newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
+        exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
+        artifacts = uniqueAttributes.map { a ⇒
+          Json.obj(
+            "data" → a.artifact.data(),
+            "dataType" → a.artifact.dataType(),
+            "message" → a.artifact.message(),
+            "startDate" → a.artifact.startDate(),
+            "attachment" → a.artifact.attachment(),
+            "tlp" → a.artifact.tlp(),
+            "tags" → a.artifact.tags(),
+            "ioc" → a.artifact.ioc())
         }
-      }
-      newAttributes = uniqueAttributes.filterNot(attr ⇒ existingAttributes.contains(attr.value.map(_.name)))
-      exportedArtifact ← Future.traverse(newAttributes)(attr ⇒ exportAttribute(mispConnection, eventId, attr).toTry)
-      artifacts = uniqueAttributes.map { a ⇒
-        Json.obj(
-          "data" → a.artifact.data(),
-          "dataType" → a.artifact.dataType(),
-          "message" → a.artifact.message(),
-          "startDate" → a.artifact.startDate(),
-          "attachment" → a.artifact.attachment(),
-          "tlp" → a.artifact.tlp(),
-          "tags" → a.artifact.tags(),
-          "ioc" → a.artifact.ioc())
-      }
-      alert ← maybeAlertId.fold {
-        alertSrv.create(Fields(Json.obj(
-          "type" → "misp",
-          "source" → mispName,
-          "sourceRef" → eventId,
-          "date" → caze.startDate(),
-          "lastSyncDate" → new Date(0),
-          "case" → caze.id,
-          "title" → caze.title(),
-          "description" → "Case have been exported to MISP",
-          "severity" → caze.severity(),
-          "tags" → caze.tags(),
-          "tlp" → caze.tlp(),
-          "artifacts" → artifacts,
-          "status" → "Imported",
-          "follow" → true)))
-      } { alertId ⇒
-        alertSrv.update(alertId, Fields(Json.obj(
-          "artifacts" → artifacts,
-          "status" → "Imported")))
-      }
-    } yield alert.id → (initialExportesArtifacts ++ exportedArtifact)
+        alert ← maybeAlertId.fold {
+          alertSrv.create(Fields(Json.obj(
+            "type" → "misp",
+            "source" → mispName,
+            "sourceRef" → eventId,
+            "date" → caze.startDate(),
+            "lastSyncDate" → new Date(0),
+            "case" → caze.id,
+            "title" → caze.title(),
+            "description" → "Case have been exported to MISP",
+            "severity" → caze.severity(),
+            "tags" → caze.tags(),
+            "tlp" → caze.tlp(),
+            "artifacts" → artifacts,
+            "status" → "Imported",
+            "follow" → true)))
+        } { alertId ⇒
+          alertSrv.update(alertId, Fields(Json.obj(
+            "artifacts" → artifacts,
+            "status" → "Imported")))
+        }
+      } yield alert.id → (initialExportesArtifacts ++ exportedArtifact)
+    }
   }
 }

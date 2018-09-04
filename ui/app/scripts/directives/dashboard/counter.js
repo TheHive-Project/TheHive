@@ -16,6 +16,7 @@
             link: function(scope) {
                 scope.error = false;
                 scope.data = null;
+                scope.globalQuery = null;
 
                 scope.load = function() {
                     if(!scope.entity) {
@@ -24,6 +25,7 @@
                     }
 
                     var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
+                    scope.globalQuery = query;
 
                     var statsPromise = $http.post('./api' + scope.entity.path + '/_stats', {
                         query: query,
@@ -49,6 +51,8 @@
                         scope.data = _.map(scope.options.series || [], function(serie, index) {
                             var name = 'agg_' + (index + 1);
                             return {
+                                serie: serie,
+                                agg: serie.agg,
                                 name: name,
                                 label: serie.label,
                                 value: data[name] || 0
@@ -59,6 +63,22 @@
                         scope.error = true;
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
+                };
+
+                scope.openSearch = function(item) {
+                  var criteria = [{ _type: scope.options.entity }, item.serie.query];
+
+                  if (scope.globalQuery && scope.globalQuery !== '*') {
+                      criteria.push(scope.globalQuery);
+                  }
+
+                  var searchQuery = {
+                      _and: _.without(criteria, null, undefined, '')
+                  };
+
+                  $state.go('app.search', {
+                      q: Base64.encode(angular.toJson(searchQuery))
+                  });
                 };
 
                 if (scope.autoload === true) {

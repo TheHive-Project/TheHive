@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, CaseResolutionStatus, AlertingSrv, NotificationSrv, event, templates) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, CustomFieldsCacheSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, event, templates) {
             var self = this;
             var eventId = event.id;
 
@@ -23,6 +23,22 @@
             self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
             self.currentSimilarFilter = '';
             self.similarCasesStats = [];
+            self.customFieldsCache = CustomFieldsCacheSrv;
+
+            var getTemplateCustomFields = function(customFields) {
+                var result = [];
+
+                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                    return {
+                        name: name,
+                        order: definition.order
+                    }
+                }), function(item){
+                    return item.order;
+                }), 'name');
+
+                return result;
+            }
 
             this.filterArtifacts = function(value) {
                 self.pagination.currentPage = 1;
@@ -44,6 +60,21 @@
                 });
 
                 self.pagination.data = data;
+
+                // load custom fields
+                self.updateCustomFieldsList();
+            };
+
+            self.getCustomFieldName = function(fieldDef) {
+                return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
+            };
+
+            self.updateCustomFieldsList = function() {
+                CustomFieldsCacheSrv.all().then(function(fields) {
+                    self.orderedFields = getTemplateCustomFields(self.event.customFields);
+                    self.allCustomFields = _.omit(fields, _.keys(self.event.customFields));
+                    self.customFieldsAvailable = _.keys(self.allCustomFields).length > 0;
+                });
             };
 
             self.load = function() {
@@ -63,6 +94,19 @@
                   $uibModalInstance.dismiss();
                 });
             };
+
+            self.updateField = function (fieldName, newValue) {
+                var field = {};
+                field[fieldName] = newValue;
+
+                return AlertingSrv.update(self.event.id, field)
+                  .then(function() {
+                      NotificationSrv.log('Alert updated successfully', 'success');
+                  })
+                  .catch(function (response) {
+                      NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                  });
+            }
 
             self.import = function() {
                 self.loading = true;
@@ -109,7 +153,7 @@
                 }
 
                 fn(self.event.id).then(function() {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }).catch(function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
@@ -128,7 +172,7 @@
                 }
 
                 fn(this.event.id).then(function( /*data*/ ) {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }, function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });

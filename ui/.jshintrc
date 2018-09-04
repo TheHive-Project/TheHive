@@ -30,6 +30,9 @@
     "Blob": false,
     "File": false,
     "hljs": false,
-    "Base64": false
+    "Base64": false,
+    "url": false,
+    "window": false,
+    "saveAs": false
   }
 }

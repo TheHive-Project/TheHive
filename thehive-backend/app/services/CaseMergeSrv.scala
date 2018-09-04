@@ -108,7 +108,7 @@ class CaseMergeSrv @Inject() (
 
     val mergedMetrics: Seq[(String, JsValue)] = metrics.flatMap(_.keys).distinct.map { key ⇒
       val metricValues = metrics.flatMap(m ⇒ (m \ key).asOpt[BigDecimal])
-      if (metricValues.size != 1)
+      if (metricValues.lengthCompare(1) != 0)
         key → JsNull
       else
         key → JsNumber(metricValues.head)
@@ -125,7 +125,7 @@ class CaseMergeSrv @Inject() (
 
     val mergedCustomFieldsObject: Seq[(String, JsValue)] = customFields.flatMap(_.keys).distinct.flatMap { key ⇒
       val customFieldsValues = customFields.flatMap(cf ⇒ (cf \ key).asOpt[JsObject]).distinct
-      if (customFieldsValues.size != 1)
+      if (customFieldsValues.lengthCompare(1) != 0)
         None
       else
         Some(key → customFieldsValues.head)
@@ -134,7 +134,7 @@ class CaseMergeSrv @Inject() (
     JsObject(mergedCustomFieldsObject)
   }
 
-  private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+  private[services] def baseFields(entity: BaseEntity): Fields = Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
 
   private[services] def mergeLogs(oldTask: Task, newTask: Task)(implicit authContext: AuthContext): Future[Done] = {
     logSrv.find("_parent" ~= oldTask.id, Some("all"), Nil)._1
@@ -156,7 +156,7 @@ class CaseMergeSrv @Inject() (
       .mapAsyncUnordered(5) { task ⇒ taskSrv.create(newCase, baseFields(task)).map(task → _) }
       .flatMapConcat {
         case (oldTask, newTask) ⇒
-          logger.info(s"\ttask : ${oldTask.id} -> ${newTask.id} : ${newTask.title()}")
+          logger.info(s"\ttask : ${oldTask.id} → ${newTask.id} : ${newTask.title()}")
           val (logs, futureLogCount) = logSrv.find(and(parent("case_task", withId(oldTask.id)), "status" ~!= LogStatus.Deleted), Some("all"), Nil)
           futureLogCount.foreach { count ⇒ logger.info(s"Creating $count log(s) in task ${newTask.id}") }
           logs.map(_ → newTask)
@@ -240,6 +240,8 @@ class CaseMergeSrv @Inject() (
           .set("tags", JsArray(sameArtifacts.flatMap(_.tags()).distinct.map(JsString)))
           .set("ioc", JsBoolean(sameArtifacts.map(_.ioc()).reduce(_ || _)))
           .set("status", mergeArtifactStatus(sameArtifacts))
+          .set("sighted", JsBoolean(sameArtifacts.map(_.sighted()).reduce(_ || _)))
+          .set("reports", sameArtifacts.map(a ⇒ Json.parse(a.reports()).as[JsObject]).reduce(_ deepMerge _).toString)
         // Merged artifact is created under new case
         artifactSrv
           .create(newCase, fields)

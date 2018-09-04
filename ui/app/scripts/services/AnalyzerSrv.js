@@ -32,7 +32,7 @@
 
                             analyzers = _.indexBy(_.map(response, function(item) {
                                 return item.toJSON();
-                            }), 'id');
+                            }), 'name');
 
                             deferred.resolve(analyzers);
                         }, function (rejection) {

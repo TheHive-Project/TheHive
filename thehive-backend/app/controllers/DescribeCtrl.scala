@@ -40,7 +40,7 @@ class DescribeCtrl @Inject() (
       .getOrElse(NotFound(s"Model $modelName not found"))
   }
 
-  private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "alert", "case_artifact_job")
+  private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "case_task_log", "alert", "case_artifact_job", "audit")
   def describeAll: Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     val entityDefinitions = modelSrv.list
       .collect {

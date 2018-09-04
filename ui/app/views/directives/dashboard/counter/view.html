@@ -7,9 +7,10 @@
             </h4>
         </div>
     </div>
-    <div ng-if="!error" class="row" ng-repeat="item in data">
+    <div ng-if="!error" class="row" ng-repeat="item in data">        
         <div class="col-md-4 text-right">
-            <h2>{{item.value | number}}</h2>
+            <h2 ng-if="item.agg !== 'count'">{{item.value | number}}</h2>
+            <h2 ng-if="item.agg === 'count'"><a href ng-click="openSearch(item)">{{item.value | number}}</a></h2>
         </div>
         <div class="col-md-8">
             <h2><small>{{item.label}}</small></h2>

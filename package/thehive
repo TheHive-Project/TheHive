@@ -1,4 +1,6 @@
 #!/bin/sh -e
+# chkconfig: 2345 80 20
+# description: TheHive: a FOSS Information Security Incident Management Platform
 ### BEGIN INIT INFO
 # Provides:          thehive
 # Required-Start:    $remote_fs $syslog
@@ -22,12 +24,33 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 # Load the VERBOSE setting and other rcS variables
-. /lib/init/vars.sh
+[ -r /lib/init/vars.sh ] && . /lib/init/vars.sh
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
 # and status_of_proc is working.
-. /lib/lsb/init-functions
+[ -r /lib/lsb/init-functions ] && . /lib/lsb/init-functions
+
+# Source function library.
+[ -r /etc/init.d/functions ] && . /etc/init.d/functions
+
+check_requirements() {
+  if ! which start-stop-daemon; then
+    echo Error: start-stop-daemon is missing, aborting
+    return 1
+  fi
+  INIT=$(readlink /proc/1/exe 2> /dev/null)
+  case ${INIT} in
+    *systemd*)
+      echo echo "Your are using systemd. This script should not be used"
+    *upstart*)
+      echo echo "Your are using upstart. This script should not be used"
+      return 1;;
+  esac
+  return 0
+}
+
+
 
 #
 # Function that starts the daemon/service
@@ -39,8 +62,7 @@ do_start() {
         #   2 if daemon could not be started
         start-stop-daemon --start --quiet --pidfile $PIDFILE --user $DAEMON_USER --exec $DAEMON --test > /dev/null \
                 || return 1
-        start-stop-daemon --start --quiet --pidfile $PIDFILE --user $DAEMON_USER --exec $DAEMON -- \
-                $DAEMON_ARGS \
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --user $DAEMON_USER --exec $DAEMON -- $DAEMON_ARGS \
                 || return 2
 }
 
@@ -69,16 +91,10 @@ do_stop() {
         return "$RETVAL"
 }
 
-check_for_upstart() {
-  if init_is_upstart; then
-    echo "Your are using upstart. This script should not be used"
-    exit $1
-  fi
-}
+check_requirements || exit 1
 
 case "$1" in
   start)
-    check_for_upstart 1
     if [ "$ENABLED" = no ]; then
       echo "The service TheHive is disabled (/etc/default/thehive)"
       exit 1
@@ -93,7 +109,6 @@ case "$1" in
     ;;
 
   stop)
-    check_for_upstart 1
     [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
     do_stop
     case "$?" in
@@ -103,7 +118,6 @@ case "$1" in
     ;;
 
   status)
-    check_for_upstart 1
     status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
     ;;
 

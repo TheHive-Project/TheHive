@@ -32,7 +32,7 @@
 
                         _.each(_.values(json), function(field) {
                             cache[field.reference] = field;
-                        })
+                        });
 
                         deferred.resolve(cache);
                     }, function(response) {
