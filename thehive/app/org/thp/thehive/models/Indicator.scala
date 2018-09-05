@@ -1,9 +1,8 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.VertexEntity
+import org.thp.scalligraph.models.{DefineIndex, IndexType}
 
-@EdgeEntity[Observable, Indicator]
-case class ObservableIndicator()
-
+@DefineIndex(IndexType.unique, "value")
 @VertexEntity
-case class Observable(`type`: String, tags: Seq[String], message: Option[String], tlp: Int, pap: Int)
+case class Indicator(value: String)

@@ -8,3 +8,6 @@ GET          /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl
 POST         /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl.create
 GET          /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.get(userId)
 PATCH        /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.update(userId)
+
+GET  /api/v1/customField org.thp.thehive.controllers.v1.CustomFieldCtrl.list
+POST /api/v1/customField org.thp.thehive.controllers.v1.CustomFieldCtrl.create

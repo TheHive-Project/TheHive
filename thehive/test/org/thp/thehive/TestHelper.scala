@@ -2,20 +2,18 @@ package org.thp.thehive
 import java.util.Date
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-
+import scala.util.{Failure, Success, Try}
 import play.api.Application
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient, WSResponse}
 import play.api.test.TestServer
-
 import org.specs2.matcher.{ContainWithResultSeq, Expectable, MatchResult, MatchResultLogicalCombinators, Matcher, TraversableMatchers, ValueCheck}
 import org.thp.thehive.models.CaseStatus
 
 case class ApplicationError(status: Int, body: JsValue) extends Exception(s"ApplicationError($status):\n${Json.prettyPrint(body)}")
 object ApplicationError {
-  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, r.body[JsValue])
+  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" → r.body)))
 }
 case class Authentication(username: String, password: String)
 
@@ -35,9 +33,10 @@ trait TestHelper {
           "permissions" → Seq("read", "write", "admin")
         ))
       .transform {
-        case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue])
-        case Success(r)                               ⇒ Failure(ApplicationError(r))
-        case Failure(t)                               ⇒ throw t
+        case Success(r) if r.status == Status.CREATED ⇒
+          Try(r.body[JsValue]).recoverWith { case _ ⇒ sys.error(s"Response body is invalid:\n${r.body}") }
+        case Success(r) ⇒ Failure(ApplicationError(r))
+        case Failure(t) ⇒ throw t
       }
 
   def createUser(login: String, username: String, permission: Seq[String], password: String)(
@@ -53,9 +52,10 @@ trait TestHelper {
           "permissions" → permission
         ))
       .transform {
-        case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue])
-        case Success(r)                               ⇒ Failure(ApplicationError(r))
-        case Failure(t)                               ⇒ throw t
+        case Success(r) if r.status == Status.CREATED ⇒
+          Try(r.body[JsValue]).recoverWith { case _ ⇒ sys.error(s"Response body is invalid:\n${r.body}") }
+        case Success(r) ⇒ Failure(ApplicationError(r))
+        case Failure(t) ⇒ throw t
       }
 
   def getUser(login: String)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
@@ -63,7 +63,7 @@ trait TestHelper {
       .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
       .get()
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue])
+        case Success(r) if r.status == Status.OK ⇒ Try(r.body[JsValue]).recoverWith { case _ ⇒ sys.error(s"Response body is invalid:\n${r.body}") }
         case Success(r)                          ⇒ Failure(ApplicationError(r))
         case Failure(t)                          ⇒ throw t
       }
@@ -73,7 +73,7 @@ trait TestHelper {
       .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
       .get()
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue])
+        case Success(r) if r.status == Status.OK ⇒ Try(r.body[JsValue]).recoverWith { case _ ⇒ sys.error(s"Response body is invalid:\n${r.body}") }
         case Success(r)                          ⇒ Failure(ApplicationError(r))
         case Failure(t)                          ⇒ throw t
       }
@@ -89,19 +89,23 @@ trait TestHelper {
       tlp: Option[Int] = None,
       pap: Option[Int] = None,
       status: Option[CaseStatus.Value] = None,
-      summary: Option[String] = None)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] = {
+      summary: Option[String] = None,
+      user: Option[String] = None,
+      customFields: JsObject = JsObject.empty)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] = {
     val body = Json.obj(
-      "title"       → title,
-      "description" → description,
-      "severity"    → severity,
-      "startDate"   → startDate,
-      "endDate"     → endDate,
-      "tags"        → tags,
-      "flag"        → flag,
-      "tlp"         → tlp,
-      "pap"         → pap,
-      "status"      → status,
-      "summary"     → summary
+      "title"        → title,
+      "description"  → description,
+      "severity"     → severity,
+      "startDate"    → startDate,
+      "endDate"      → endDate,
+      "tags"         → tags,
+      "flag"         → flag,
+      "tlp"          → tlp,
+      "pap"          → pap,
+      "status"       → status,
+      "summary"      → summary,
+      "user"         → user,
+      "customFields" → customFields
     )
 
     ws.url(s"$baseUrl/api/v1/case")
@@ -112,7 +116,7 @@ trait TestHelper {
         case Success(r)                               ⇒ Failure(ApplicationError(r))
         case Failure(t)                               ⇒ throw t
       }
-      }
+  }
 
   def getCase(caseId: String)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
     ws.url(s"$baseUrl/api/v1/case/$caseId")
@@ -133,6 +137,22 @@ trait TestHelper {
         case Success(r)                          ⇒ Failure(ApplicationError(r))
         case Failure(t)                          ⇒ throw t
       }
+
+  def createCustomField(name: String, description: String, `type`: String)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
+    ws.url(s"$baseUrl/api/v1/customField")
+      .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
+      .post(
+        Json.obj(
+          "name"        → name,
+          "description" → description,
+          "type"        → `type`
+        ))
+      .transform {
+        case Success(r) if r.status == Status.CREATED ⇒
+          Try(r.body[JsValue]).recoverWith { case _ ⇒ sys.error(s"Response body is invalid:\n${r.body}") }
+        case Success(r) ⇒ Failure(ApplicationError(r))
+        case Failure(t) ⇒ throw t
+      }
 }
 
 case class JsonMatcher(expected: JsValue) extends Matcher[JsValue] with MatchResultLogicalCombinators {
@@ -140,24 +160,23 @@ case class JsonMatcher(expected: JsValue) extends Matcher[JsValue] with MatchRes
     if (t.value == expected) success("ok", t)
     else {
       (expected, t.value) match {
-        case (JsNull, JsNull)             ⇒ success("JsNull == JsNull", t)
-        case (JsNumber(e), JsNumber(v))   ⇒ result(e == v, "ok", "ko", t)
-        case (JsString(e), JsString(v))   ⇒ result(e == v, "ok", "ko", t)
-        case (JsBoolean(e), JsBoolean(v)) ⇒ result(e == v, "ok", "ko", t)
-        case (JsArray(e), JsArray(v)) ⇒
-          val valueChecks: Seq[ValueCheck[JsValue]] = TraversableMatchers.matcherSeqIsContainCheckSeq(v.map(JsonMatcher))
-          val mr                                    = ContainWithResultSeq(valueChecks).exactly.apply(t.map(e))
-          result(mr, t)
-        case (JsObject(e), JsObject(v)) ⇒
-          val keys = e.keySet ++ v.keySet
-          val mr = keys
-            .map(k ⇒ e.get(k) → v.get(k))
+        case (JsArray(exp), JsArray(value)) ⇒
+          val valueChecks: Seq[ValueCheck[JsValue]] = TraversableMatchers.matcherSeqIsContainCheckSeq(value.map(JsonMatcher))
+          val expectable: Expectable[Seq[JsValue]]  = t.map(exp)
+          val matchResult                           = ContainWithResultSeq(valueChecks).exactly(expectable)
+          result(matchResult, t)
+        case (JsObject(exp), JsObject(value)) ⇒
+          val keys = exp.keySet ++ value.keySet
+          val matchResult = keys
+            .map(key ⇒ (key, exp.get(key), value.get(key)))
             .map {
-              case (Some(a), Some(b)) ⇒ JsonMatcher(a)(t.map(b))
+              case (key, Some(e), Some(v)) ⇒ JsonMatcher(e)(t.map(v).mapDescription(_ + "." + key))
+              case (key, None, Some(v))    ⇒ failure(s"${t.description} has key $key", t.map(v))
+              case (key, _, _)             ⇒ failure(s"${t.description} hasn't key $key", t)
             }
             .reduce(_ and _)
-          result(mr, t)
-        case (e, v) ⇒ failure(s"$e != $v", t)
+          result(matchResult, t)
+        case (_, v) ⇒ failure(s"${t.description} !=  $v", t)
       }
     }
 }

@@ -37,7 +37,7 @@ class UserCtrl @Inject()(apiMethod: ApiMethod, db: Database, userSrv: UserSrv, a
       .extract('user, FieldsParser[InputUser])
       .requires(Permissions.admin) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val inputUser = request.body('user)
+          val inputUser   = request.body('user)
           val createdUser = userSrv.create(inputUser.toUser)
           inputUser.password.foreach(password ⇒ authSrv.setPassword(createdUser._id, password))
           val outputUser = OutputUser.fromUser(createdUser)

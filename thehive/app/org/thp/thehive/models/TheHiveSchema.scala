@@ -1,6 +1,7 @@
 package org.thp.thehive.models
 
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.models.Model.{Edge, Vertex}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.services._
@@ -17,10 +18,10 @@ class TheHiveSchema @Inject()(
     val localUserSrv: LocalUserSrv
 )(implicit db: Database)
     extends Schema {
-  val observableSrv       = new VertexSrv[Observable]
-  val indicatorSrv        = new VertexSrv[Indicator]
-  val caseImpactStatusSrv = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
-  val caseUserSrv         = new EdgeSrv[CaseUser, Case, User]
-  val auditModel          = db.getVertexModel[Audit]
-  val auditedModel        = Audited.model
+  val observableSrv                               = new VertexSrv[Observable]
+  val indicatorSrv                                = new VertexSrv[Indicator]
+  val caseImpactStatusSrv                         = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
+  val caseUserSrv                                 = new EdgeSrv[CaseUser, Case, User]
+  val auditModel: Vertex[Audit]                   = db.getVertexModel[Audit]
+  val auditedModel: Edge[Audited, Audit, Product] = Audited.model
 }

@@ -34,6 +34,6 @@ class QuerySet @Inject()(theHiveSchema: TheHiveSchema) extends JsonQueryExecutor
   override val queryParser: FieldsParser[Query[_, _]] = FieldsParser[Query[_, _]]("query") {
     case (_, FObjOne("_richCase", _))     ⇒ Good(richCase)
     case (_, FObjOne("_caseGetTasks", _)) ⇒ Good(Query[CaseSteps, TaskSteps]("CaseGetTasks")(_.tasks))
-    case (_, FObjOne("_taskGetLogs", o))  ⇒ Good(Query[TaskSteps, LogSteps]("TaskGetLogs")(_.logs))
+    case (_, FObjOne("_taskGetLogs", _))  ⇒ Good(Query[TaskSteps, LogSteps]("TaskGetLogs")(_.logs))
   }
 }

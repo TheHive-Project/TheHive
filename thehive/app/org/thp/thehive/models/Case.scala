@@ -6,6 +6,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.query.AuthGraph
+import play.api.libs.json.{Json, OWrites}
 import sangria.schema.{fields, Field, ObjectType, OutputType, StringType}
 
 object CaseStatus extends Enumeration {
@@ -85,6 +86,8 @@ object CustomFieldValue {
       Field("value", StringType, resolve = _.value.value.toString)
     )
   )
+  implicit val writes: OWrites[CustomFieldValue] =
+    OWrites[CustomFieldValue](cfv ⇒ Json.obj("name" → cfv.name, "description" → cfv.description, "type" → cfv.tpe, "value" → cfv.value.toString))
 }
 
 case class RichCase(

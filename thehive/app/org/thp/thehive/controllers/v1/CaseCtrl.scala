@@ -55,7 +55,9 @@ case class OutputCase(
     tlp: Int,
     pap: Int,
     status: CaseStatus.Value,
-    summary: Option[String])
+    summary: Option[String],
+    user: String,
+    customFields: Seq[CustomFieldValue])
 
 object OutputCase {
   def fromRichCase(richCase: RichCase): OutputCase =
@@ -71,7 +73,7 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
   def create: Action[AnyContent] =
     apiMethod("create case")
       .extract('case, FieldsParser[InputCase])
-      .extract('customFields, CustomField.parser.sequence.on("customFields"))
+      .extract('customFields, CustomField.parser.on("customFields"))
       .extract('user, FieldsParser.string.optional.on("user"))
       .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒

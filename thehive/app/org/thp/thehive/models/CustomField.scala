@@ -2,10 +2,11 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.scalactic.Good
-import org.thp.scalligraph.controllers.{FAny, FBoolean, FNumber, FString, FieldsParser}
-import org.thp.scalligraph.{BadRequestError, FPath, InternalError, VertexEntity}
+import org.scalactic.{Bad, Good, One}
+import org.thp.scalligraph.controllers._
+import org.thp.scalligraph._
 import play.api.libs.json.{JsNumber, Writes}
+import org.scalactic.Accumulation._
 
 sealed abstract class CustomFieldType[T] {
   def setValue(value: Any): CaseCustomField =
@@ -25,7 +26,7 @@ sealed abstract class CustomFieldType[T] {
 }
 
 object CustomFieldString extends CustomFieldType[String] {
-  override val setTypedValue = { case s: String ⇒ CaseCustomField(stringValue = Some(s)) }
+  override val setTypedValue: PartialFunction[Any, CaseCustomField] = { case s: String ⇒ CaseCustomField(stringValue = Some(s)) }
   override def getValue(ccf: CaseCustomField): String =
     ccf.stringValue.getOrElse(throw InternalError(s"CaseCustomField $ccf is string type but don't have string value"))
   override val name: String           = "string"
@@ -71,10 +72,16 @@ object CustomFieldDate extends CustomFieldType[Date] {
 case class CustomField(name: String, description: String, `type`: CustomFieldType[_])
 
 object CustomField {
-  val parser: FieldsParser[(String, Any)] = FieldsParser("customField") {
-    case (FPath(name), FString(value))   ⇒ Good(name → value)
-    case (FPath(name), FNumber(value))   ⇒ Good(name → value)
-    case (FPath(name), FBoolean(value))  ⇒ Good(name → value)
-    case (FPath(name), FAny(value :: _)) ⇒ Good(name → value)
+  val parser: FieldsParser[Seq[(String, Any)]] = FieldsParser("customField") {
+    case (_, FObject(fields)) ⇒
+      fields
+        .validatedBy {
+          case (name, FString(value))   ⇒ Good(name → value)
+          case (name, FNumber(value))   ⇒ Good(name → value)
+          case (name, FBoolean(value))  ⇒ Good(name → value)
+          case (name, FAny(value :: _)) ⇒ Good(name → value)
+          case (name, other)            ⇒ Bad(One(InvalidFormatAttributeError(name, "CustomFieldValue", other)))
+        }
+        .map(_.toSeq)
   }
 }
