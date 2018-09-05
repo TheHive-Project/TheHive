@@ -17,7 +17,9 @@
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-md-9">
-                <input class="form-control" ng-model="task.group" placeholder="Task group" required type="text">
+                <input class="form-control" ng-model="task.group" placeholder="Task group" required type="text"
+                    uib-typeahead="g for g in groups | filter:$viewValue"
+                    typeahead-min-length="0">
             </div>
         </div>
 
