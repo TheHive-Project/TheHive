@@ -17,6 +17,7 @@
             status: 'Waiting'
         };
         $scope.taskResponders = null;
+        $scope.collapseOptions = {};
 
         $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
             scope: $scope,
