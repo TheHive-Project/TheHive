@@ -21,14 +21,14 @@ class QuerySet @Inject()(theHiveSchema: TheHiveSchema) extends JsonQueryExecutor
           Json.toJson(CaseXfrm.toOutput(value.asInstanceOf[RichCase]))
     }
 
-  def caseById(id: String): InitQuery[CaseSteps] = InitQuery[CaseSteps]("caseById")(ag ⇒ theHiveSchema.caseSrv.steps(ag.graph).getCaseById(id))
+  def caseById(id: String): InitQuery[CaseSteps] = InitQuery[CaseSteps]("caseById")(ag ⇒ theHiveSchema.caseSrv.initSteps(ag.graph).getCaseById(id))
 
   def richCase: Query[CaseSteps, GremlinScala[RichCase]] = Query("richCase")(_.richCase)
 
   override val initQueryParser: FieldsParser[InitQuery[_]] = FieldsParser[InitQuery[_]]("initQuery") {
     case (_, FObjOne("_caseGetById", o)) ⇒ FieldsParser[String].map("caseById")(caseById)(o)
-    case (_, FObjOne("_cases", _))       ⇒ Good(InitQuery("cases")(ag ⇒ theHiveSchema.caseSrv.steps(ag.graph)))
-    case (_, FObjOne("_tasks", _))       ⇒ Good(InitQuery("cases")(ag ⇒ theHiveSchema.taskSrv.steps(ag.graph)))
+    case (_, FObjOne("_cases", _))       ⇒ Good(InitQuery("cases")(ag ⇒ theHiveSchema.caseSrv.initSteps(ag.graph)))
+    case (_, FObjOne("_tasks", _))       ⇒ Good(InitQuery("cases")(ag ⇒ theHiveSchema.taskSrv.initSteps(ag.graph)))
   }
 
   override val queryParser: FieldsParser[Query[_, _]] = FieldsParser[Query[_, _]]("query") {

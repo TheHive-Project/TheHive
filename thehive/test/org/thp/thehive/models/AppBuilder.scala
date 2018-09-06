@@ -103,9 +103,9 @@ class DatabaseBuilder @Inject()(db: Database, schema: TheHiveSchema, initialAuth
       val idMap = createVertex(schema.caseSrv, FieldsParser[Case]) ++
         createVertex(schema.userSrv, FieldsParser[User]) ++
         createVertex(schema.customFieldSrv, FieldsParser[CustomField])
-      createEdge(schema.caseUserSrv, schema.caseSrv, schema.userSrv, FieldsParser[CaseUser], idMap)
-      createEdge(schema.caseImpactStatusSrv, schema.caseSrv, schema.impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
-      createEdge(schema.caseCustomFieldSrv, schema.caseSrv, schema.customFieldSrv, FieldsParser[CaseCustomField], idMap)
+      createEdge(schema.caseSrv.caseUserSrv, schema.caseSrv, schema.userSrv, FieldsParser[CaseUser], idMap)
+      createEdge(schema.caseSrv.caseImpactStatusSrv, schema.caseSrv, schema.impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
+      createEdge(schema.caseSrv.caseCustomFieldSrv, schema.caseSrv, schema.customFieldSrv, FieldsParser[CaseCustomField], idMap)
     }
   } catch {
     case t: Throwable ⇒ t.printStackTrace()
@@ -155,7 +155,9 @@ class DatabaseBuilder @Inject()(db: Database, schema: TheHiveSchema, initialAuth
     }
   }
 
-  def createVertex[V <: Product](srv: VertexSrv[V], parser: FieldsParser[V])(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
+  def createVertex[V <: Product](srv: VertexSrv[V, _], parser: FieldsParser[V])(
+      implicit graph: Graph,
+      authContext: AuthContext): Map[String, String] =
     readJsonFile(s"data/${srv.model.label}.json").flatMap { fields ⇒
       parser(fields - "id")
         .map(srv.create)
@@ -168,8 +170,8 @@ class DatabaseBuilder @Inject()(db: Database, schema: TheHiveSchema, initialAuth
 
   def createEdge[E <: Product, FROM <: Product: ru.TypeTag, TO <: Product: ru.TypeTag](
       srv: EdgeSrv[E, FROM, TO],
-      fromSrv: VertexSrv[FROM],
-      toSrv: VertexSrv[TO],
+      fromSrv: VertexSrv[FROM, _],
+      toSrv: VertexSrv[TO, _],
       parser: FieldsParser[E],
       idMap: Map[String, String])(implicit graph: Graph, authContext: AuthContext): Seq[E with Entity] =
     readJsonFile(s"data/${srv.model.label}.json")

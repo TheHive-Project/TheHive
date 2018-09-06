@@ -45,6 +45,7 @@ case class OutputCase(
     summary: Option[String] = None,
     user: String,
     customFields: Set[OutputCustomFieldValue] = Set.empty)
+
 object OutputCase {
   implicit val format: Format[OutputCase] = Json.format[OutputCase]
 }

@@ -1,13 +1,23 @@
 
-GET          /api/v1/case                org.thp.thehive.controllers.v1.CaseCtrl.list
-POST         /api/v1/case                org.thp.thehive.controllers.v1.CaseCtrl.create
-GET          /api/v1/case/:caseId        org.thp.thehive.controllers.v1.CaseCtrl.get(caseId)
-PATCH        /api/v1/case/:caseId        org.thp.thehive.controllers.v1.CaseCtrl.update(caseId)
+GET          /api/v1/case                                org.thp.thehive.controllers.v1.CaseCtrl.list
+POST         /api/v1/case                                org.thp.thehive.controllers.v1.CaseCtrl.create
+GET          /api/v1/case/:caseId                        org.thp.thehive.controllers.v1.CaseCtrl.get(caseId)
+PATCH        /api/v1/case/:caseId                        org.thp.thehive.controllers.v1.CaseCtrl.update(caseId)
 
-GET          /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl.list
-POST         /api/v1/user                org.thp.thehive.controllers.v1.UserCtrl.create
-GET          /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.get(userId)
-PATCH        /api/v1/user/:userId        org.thp.thehive.controllers.v1.UserCtrl.update(userId)
+GET          /api/v1/user                                org.thp.thehive.controllers.v1.UserCtrl.list
+POST         /api/v1/user                                org.thp.thehive.controllers.v1.UserCtrl.create
+GET          /api/v1/user/:userId                        org.thp.thehive.controllers.v1.UserCtrl.get(userId)
+PATCH        /api/v1/user/:userId                        org.thp.thehive.controllers.v1.UserCtrl.update(userId)
 
-GET  /api/v1/customField org.thp.thehive.controllers.v1.CustomFieldCtrl.list
-POST /api/v1/customField org.thp.thehive.controllers.v1.CustomFieldCtrl.create
+GET          /api/v1/organisation                        org.thp.thehive.controllers.v1.OrganisationCtrl.list
+POST         /api/v1/organisation                        org.thp.thehive.controllers.v1.OrganisationCtrl.create
+GET          /api/v1/organisation/:organisationId        org.thp.thehive.controllers.v1.OrganisationCtrl.get(organisationId)
+PATCH        /api/v1/organisation/:organisationId        org.thp.thehive.controllers.v1.OrganisationCtrl.update(organisationId)
+
+GET          /api/v1/share                               org.thp.thehive.controllers.v1.ShareCtrl.list
+POST         /api/v1/share                               org.thp.thehive.controllers.v1.ShareCtrl.create
+GET          /api/v1/share/:shareId                      org.thp.thehive.controllers.v1.ShareCtrl.get(shareId)
+PATCH        /api/v1/share/:shareId                      org.thp.thehive.controllers.v1.ShareCtrl.update(shareId)
+
+GET          /api/v1/customField                         org.thp.thehive.controllers.v1.CustomFieldCtrl.list
+POST         /api/v1/customField                         org.thp.thehive.controllers.v1.CustomFieldCtrl.create

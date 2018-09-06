@@ -24,7 +24,7 @@ class CaseSrvTest extends PlaySpecification {
       val db: Database     = app.instanceOf[Database]
 
       "list all cases" in db.transaction { implicit graph ⇒
-        caseSrv.steps.toList.map(_.number) must contain(allOf(1, 2, 3, 4))
+        caseSrv.initSteps.toList.map(_.number) must contain(allOf(1, 2, 3, 4))
       }
 
       "get a case without impact status" in db.transaction { implicit graph ⇒
@@ -51,6 +51,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = None,
           user = "toom",
+          organisation = "default",
           Nil
         )
       }
@@ -77,6 +78,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = Some("NoImpact"),
           user = "admin",
+          organisation = "default",
           Nil
         )
         richCase._createdBy must_=== authContext.userId

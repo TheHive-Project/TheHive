@@ -26,4 +26,6 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   val `case`       = new BaseClient[InputCase, OutputCase](s"$baseUrl/api/v1/case")
   val user         = new UserClient(baseUrl)
   val customFields = new BaseClient[InputCustomField, OutputCustomField](s"$baseUrl/api/v1/customField")
+  val organisation = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
+  val share = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
 }

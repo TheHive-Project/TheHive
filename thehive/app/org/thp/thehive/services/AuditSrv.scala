@@ -45,7 +45,9 @@ class AuditSrv @Inject()(implicit db: HookableDatabase) {
       }
   })
 
-  val vertexSrv: VertexSrv[Audit]               = new VertexSrv[Audit]
+  val vertexSrv: VertexSrv[Audit, VertexSteps[Audit]] = new VertexSrv[Audit, VertexSteps[Audit]] {
+    override def steps(raw: GremlinScala[Vertex]): VertexSteps[Audit] = new VertexSteps[Audit](raw)
+  }
   val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
 
   def create(audit: Audit, entity: Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {

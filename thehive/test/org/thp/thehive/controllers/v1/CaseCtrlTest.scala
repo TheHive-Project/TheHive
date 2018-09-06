@@ -9,7 +9,7 @@ import org.specs2.specification.core.Fragments
 import org.thp.scalligraph.controllers.Authenticated
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
+import org.thp.thehive.services.{AuditSrv, CaseSrv, OrganisationSrv, UserSrv}
 import play.api.libs.json.{JsNull, JsNumber, JsString, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -77,9 +77,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get a case" in {
-        val now     = new Date()
-        val caseSrv = app.instanceOf[CaseSrv]
-        val userSrv = app.instanceOf[UserSrv]
+        val now             = new Date()
+        val caseSrv         = app.instanceOf[CaseSrv]
+        val userSrv         = app.instanceOf[UserSrv]
+        val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdCase = app.instanceOf[Database].transaction { graph ⇒
           caseSrv
             .create(
@@ -98,6 +99,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 summary = None
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
+              organisationSrv.getOrFail("default")(graph),
               Nil
             )(graph, dummyUserSrv.authContext)
         }
@@ -128,10 +130,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "update a case" in {
-        val now     = new Date()
-        val caseSrv = app.instanceOf[CaseSrv]
-        val userSrv = app.instanceOf[UserSrv]
-        val db      = app.instanceOf[Database]
+        val now             = new Date()
+        val caseSrv         = app.instanceOf[CaseSrv]
+        val userSrv         = app.instanceOf[UserSrv]
+        val organisationSrv = app.instanceOf[OrganisationSrv]
+        val db              = app.instanceOf[Database]
         val createdCase = db.transaction { graph ⇒
           caseSrv
             .create(
@@ -150,6 +153,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 summary = None
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
+              organisationSrv.getOrFail("default")(graph),
               Nil
             )(graph, dummyUserSrv.authContext)
         }

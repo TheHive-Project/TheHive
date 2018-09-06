@@ -1,36 +1,42 @@
 package org.thp.thehive.services
 
-import java.util.{List ⇒ JList}
-
-import gremlin.scala._
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.Path
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.{Filter, PredicateFilter}
-import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, LogGeneratedCode, PrivateField}
-import org.thp.thehive.models._
-import shapeless.HList
+import java.util.{ List => JList }
 
 import scala.collection.JavaConverters._
 import scala.util.Success
 
-@Singleton
-class CaseSrv @Inject()(caseUserSrv: CaseUserSrv, caseCustomFieldSrv: CaseCustomFieldSrv, customFieldSrv: CustomFieldSrv)(implicit db: Database)
-    extends VertexSrv[Case] {
+import gremlin.scala._
+import javax.inject.{ Inject, Singleton }
+import org.apache.tinkerpop.gremlin.process.traversal.Path
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.{ Filter, PredicateFilter }
+import org.thp.scalligraph.services.{ EdgeSrv, _ }
+import org.thp.scalligraph.{ EntitySteps, LogGeneratedCode }
+import org.thp.thehive.models._
 
-  def create(`case`: Case, user: User with Entity, customFields: Seq[(String, Any)])(implicit graph: Graph, authContext: AuthContext): RichCase = {
+@Singleton
+class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv)(implicit db: Database) extends VertexSrv[Case, CaseSteps] {
+
+  val caseImpactStatusSrv = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
+  val caseUserSrv         = new EdgeSrv[CaseUser, Case, User]
+  val caseCustomFieldSrv  = new EdgeSrv[CaseCustomField, Case, CustomField]
+  val caseOrganisationSrv = new EdgeSrv[CaseOrganisation, Case, Organisation]
+
+  def create(`case`: Case, user: User with Entity, organisation: Organisation with Entity, customFields: Seq[(String, Any)])(
+      implicit graph: Graph,
+      authContext: AuthContext): RichCase = {
     val caseNumber  = nextCaseNumber
     val createdCase = create(`case`.copy(number = caseNumber))
     caseUserSrv.create(CaseUser(), createdCase, user)
+    caseOrganisationSrv.create(CaseOrganisation(), createdCase, organisation)
     val cfs = customFields.map {
       case (name, value) ⇒
         val cf = customFieldSrv.getOrFail(name)
         caseCustomFieldSrv.create(cf.`type`.setValue(value), createdCase, cf)
         CustomFieldValue(cf.name, cf.description, cf.`type`.name, value)
     }
-    RichCase(createdCase, None, user.login, cfs)
+    RichCase(createdCase, None, user.login, organisation.name, cfs)
   }
 
   def nextCaseNumber(implicit graph: Graph): Int = count.toInt + 1 // TODO use max(number)+1
@@ -51,18 +57,16 @@ class CaseSrv @Inject()(caseUserSrv: CaseUserSrv, caseCustomFieldSrv: CaseCustom
     Success(caseIdOrNumber)
       .filter(_.headOption.contains('#'))
       .map(_.tail.toInt)
-      .map(steps.getCaseByNumber)
+      .map(initSteps.getCaseByNumber)
       .getOrElse(steps(graph.V().has(Key("_id") of caseIdOrNumber)))
 
-  override def steps(implicit graph: Graph): CaseSteps     = new CaseSteps(graph.V.hasLabel(model.label), caseCustomFieldSrv, customFieldSrv)
-  override def steps(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw, caseCustomFieldSrv, customFieldSrv)
+  override def steps(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
 }
 
 @EntitySteps[Case]
 @LogGeneratedCode
-class CaseSteps(raw: GremlinScala[Vertex], caseCustomFieldSrv: CaseCustomFieldSrv, customFieldSrv: CustomFieldSrv)(implicit db: Database)
-    extends BaseVertexSteps[Case, CaseSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw, caseCustomFieldSrv, customFieldSrv)
+class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Case, CaseSteps](raw) {
+  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
   override def filter(f: EntityFilter[Vertex]): CaseSteps        = newInstance(f(raw))
 
   override val filterHook: PartialFunction[PredicateFilter[Vertex], Filter[Vertex]] = {
@@ -74,12 +78,18 @@ class CaseSteps(raw: GremlinScala[Vertex], caseCustomFieldSrv: CaseCustomFieldSr
 
   def getCaseByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  @PrivateField def richCase[NewLabels <: HList]: GremlinScala[RichCase] =
+  def availableFor(organisation: String): CaseSteps =
+    newInstance(raw.filter(_.or(
+      _.outTo[CaseOrganisation].value("name").is(organisation),
+      _.inTo[ShareCase].outTo[ShareOrganisation].value("name").is(organisation))))
+
+  def richCase: GremlinScala[RichCase] =
     raw
-      .project[Any]("case", "impactStatus", "user", "customFields")
+      .project[Any]("case", "impactStatus", "user", "organisation", "customFields")
       .by()
       .by(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold.traversal)
       .by(__[Vertex].outTo[CaseUser].values[String]("login").fold.traversal)
+      .by(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold.traversal)
       .by(__[Vertex].outToE[CaseCustomField].inV().path.fold.traversal)
       .map {
         case ValueMap(m) ⇒
@@ -97,6 +107,7 @@ class CaseSteps(raw: GremlinScala[Vertex], caseCustomFieldSrv: CaseCustomFieldSr
             m.get[Vertex]("case").as[Case],
             atMostOneOf[String](m.get[JList[String]]("impactStatus")),
             onlyOneOf[String](m.get[JList[String]]("user")),
+            onlyOneOf[String](m.get[JList[String]]("organisation")),
             customFieldValues
           )
       }

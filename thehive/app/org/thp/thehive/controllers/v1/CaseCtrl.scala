@@ -44,8 +44,9 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
         db.transaction { implicit graph ⇒
           val inputCase: InputCase = request.body('case)
           val user                 = userSrv.getOrFail(inputCase.user.getOrElse(request.userId))
+          val organisation         = userSrv.getOrganisation(user)
           val customFields         = inputCase.customFieldValue.map(CustomFieldXfrm.fromInput)
-          val richCase             = caseSrv.create(CaseXfrm.fromInput(request.body('case)), user, customFields)
+          val richCase             = caseSrv.create(CaseXfrm.fromInput(request.body('case)), user, organisation, customFields)
           val outputCase           = CaseXfrm.toOutput(richCase)
           Results.Created(Json.toJson(outputCase))
         }
@@ -57,9 +58,12 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
         db.transaction { implicit graph ⇒
           val richCase = caseSrv
             .get(caseIdOrNumber)
+            .availableFor(request.organisation)
             .richCase
             .headOption
             .getOrElse(throw NotFoundError(s"case number $caseIdOrNumber not found"))
+          if (richCase.organisation != request.organisation)
+            throw NotFoundError(s"case number $caseIdOrNumber not found")
           val outputCase = CaseXfrm.toOutput(richCase)
           Results.Ok(Json.toJson(outputCase))
         }
@@ -69,7 +73,9 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
     apiMethod("list case")
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val cases = caseSrv.steps.richCase
+          val cases = caseSrv.initSteps
+            .availableFor(request.organisation)
+            .richCase
             .map(CaseXfrm.toOutput)
             .toList
           Results.Ok(Json.toJson(cases))

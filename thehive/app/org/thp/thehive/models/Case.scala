@@ -56,6 +56,9 @@ case class CaseTask()
 @EdgeEntity[Case, Observable]
 case class CaseObservable()
 
+@EdgeEntity[Case, Organisation]
+case class CaseOrganisation()
+
 @VertexEntity
 @DefineIndex(IndexType.unique, "number")
 case class Case(
@@ -73,19 +76,6 @@ case class Case(
     summary: Option[String])
 
 case class CustomFieldValue(name: String, description: String, tpe: String, value: Any)
-//object CustomFieldValue {
-//  implicit val outputType: OutputType[CustomFieldValue] = ObjectType(
-//    "CustomFieldValue",
-//    fields[AuthGraph, CustomFieldValue](
-//      Field("name", StringType, resolve = _.value.name),
-//      Field("description", StringType, resolve = _.value.description),
-//      Field("type", StringType, resolve = _.value.tpe),
-//      Field("value", StringType, resolve = _.value.value.toString)
-//    )
-//  )
-//  implicit val writes: OWrites[CustomFieldValue] =
-//    OWrites[CustomFieldValue](cfv ⇒ Json.obj("name" → cfv.name, "description" → cfv.description, "type" → cfv.tpe, "value" → cfv.value.toString))
-//}
 
 case class RichCase(
     _id: String,
@@ -107,11 +97,17 @@ case class RichCase(
     summary: Option[String],
     impactStatus: Option[String],
     user: String,
+    organisation: String,
     customFields: Seq[CustomFieldValue]
 )
 
 object RichCase {
-  def apply(`case`: Case with Entity, caseImpactStatus: Option[String], caseUser: String, customFields: Seq[CustomFieldValue]): RichCase =
+  def apply(
+      `case`: Case with Entity,
+      caseImpactStatus: Option[String],
+      user: String,
+      organisation: String,
+      customFields: Seq[CustomFieldValue]): RichCase =
     `case`
       .asInstanceOf[Case]
       .into[RichCase]
@@ -121,7 +117,8 @@ object RichCase {
       .withFieldConst(_._updatedAt, `case`._updatedAt)
       .withFieldConst(_._updatedBy, `case`._updatedBy)
       .withFieldConst(_.impactStatus, caseImpactStatus)
-      .withFieldConst(_.user, caseUser)
+      .withFieldConst(_.organisation, organisation)
+      .withFieldConst(_.user, user)
       .withFieldConst(_.customFields, customFields)
       .transform
 }
