@@ -2,8 +2,8 @@ import Dependencies._
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(scalligraph, thehiveCore)
-  .aggregate(scalligraph, thehiveCore)
+  .dependsOn(scalligraph, thehiveCore, thehiveDto, thehiveClient)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient)
   .settings(
     inThisBuild(
       List(
@@ -48,6 +48,8 @@ lazy val thehiveCore = (project in file("thehive"))
   .enablePlugins(PlayScala)
   .dependsOn(scalligraph)
   .dependsOn(scalligraph % "test -> test")
+  .dependsOn(thehiveDto)
+  .dependsOn(thehiveClient % Test)
   .settings(
     name := "thehive-core",
     libraryDependencies ++= Seq(
@@ -55,5 +57,24 @@ lazy val thehiveCore = (project in file("thehive"))
       guice,
       ws % Test,
       specs % Test
-    ),
+    )
+  )
+
+lazy val thehiveDto = (project in file("dto"))
+  .dependsOn(scalligraph)
+  .settings(
+    name := "thehive-dto",
+    libraryDependencies ++= Seq(
+      chimney
+    )
+  )
+
+lazy val thehiveClient = (project in file("client"))
+  .dependsOn(scalligraph)
+  .dependsOn(thehiveDto)
+  .settings(
+    name := "thehive-client",
+    libraryDependencies ++= Seq(
+      ws
+    )
   )

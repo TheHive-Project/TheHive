@@ -2,31 +2,21 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
-import org.thp.scalligraph.models.{Database, Output}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, UserSrv}
-import play.api.libs.json.{Json, Writes}
-import play.api.mvc.{Action, AnyContent, Results}
 
-case class InputCase(
-    title: String,
-    description: String,
-    severity: Option[Int],
-    startDate: Option[Date],
-    endDate: Option[Date],
-    tags: Seq[String],
-    flag: Option[Boolean],
-    tlp: Option[Int],
-    pap: Option[Int],
-    status: Option[CaseStatus.Value],
-    summary: Option[String]) {
-
-  def toCase: Case =
-    this
+object CaseXfrm {
+  def fromInput(inputCase: InputCase): Case =
+    inputCase
       .into[Case]
       .withFieldComputed(_.severity, _.severity.getOrElse(2))
       .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
@@ -36,52 +26,27 @@ case class InputCase(
       .withFieldConst(_.status, CaseStatus.open)
       .withFieldConst(_.number, 0)
       .transform
-}
 
-case class OutputCase(
-    _id: String,
-    _createdBy: String,
-    _updatedBy: Option[String],
-    _createdAt: Date,
-    _updatedAt: Option[Date],
-    number: Int,
-    title: String,
-    description: String,
-    severity: Int,
-    startDate: Date,
-    endDate: Option[Date],
-    tags: Seq[String],
-    flag: Boolean,
-    tlp: Int,
-    pap: Int,
-    status: CaseStatus.Value,
-    summary: Option[String],
-    user: String,
-    customFields: Seq[CustomFieldValue])
-
-object OutputCase {
-  def fromRichCase(richCase: RichCase): OutputCase =
+  def toOutput(richCase: RichCase): OutputCase =
     richCase
       .into[OutputCase]
+      .withFieldComputed(_.customFields, _.customFields.map(CustomFieldXfrm.toOutput).toSet)
+      .withFieldComputed(_.status, _.status.toString)
       .transform
-  implicit val writes: Writes[OutputCase] = Output[OutputCase]
 }
-
 @Singleton
 class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, userSrv: UserSrv) {
 
   def create: Action[AnyContent] =
     apiMethod("create case")
       .extract('case, FieldsParser[InputCase])
-      .extract('customFields, CustomField.parser.on("customFields"))
-      .extract('user, FieldsParser.string.optional.on("user"))
       .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val userId: String = request.body('user).getOrElse(request.userId)
-          val user           = userSrv.getOrFail(userId)
-          val customFields   = request.body('customFields)
-          val richCase       = caseSrv.create(request.body('case).toCase, user, customFields)
-          val outputCase     = OutputCase.fromRichCase(richCase)
+          val inputCase: InputCase = request.body('case)
+          val user                 = userSrv.getOrFail(inputCase.user.getOrElse(request.userId))
+          val customFields         = inputCase.customFieldValue.map(CustomFieldXfrm.fromInput)
+          val richCase             = caseSrv.create(CaseXfrm.fromInput(request.body('case)), user, customFields)
+          val outputCase           = CaseXfrm.toOutput(richCase)
           Results.Created(Json.toJson(outputCase))
         }
       }
@@ -95,7 +60,7 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
             .richCase
             .headOption
             .getOrElse(throw NotFoundError(s"case number $caseIdOrNumber not found"))
-          val outputCase = OutputCase.fromRichCase(richCase)
+          val outputCase = CaseXfrm.toOutput(richCase)
           Results.Ok(Json.toJson(outputCase))
         }
       }
@@ -105,7 +70,7 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
           val cases = caseSrv.steps.richCase
-            .map(OutputCase.fromRichCase)
+            .map(CaseXfrm.toOutput)
             .toList
           Results.Ok(Json.toJson(cases))
         }

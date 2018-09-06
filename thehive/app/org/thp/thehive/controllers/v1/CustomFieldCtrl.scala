@@ -1,21 +1,31 @@
 package org.thp.thehive.controllers.v1
 
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser}
-import org.thp.scalligraph.models.{Database, Output}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.dto.v1.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
-import play.api.libs.json.{Json, Writes}
-import play.api.mvc.{Action, AnyContent, Results}
 
-case class OutputCustomFields(name: String, description: String, `type`: String)
-object OutputCustomFields {
-  def fromCustomField(cf: CustomField): OutputCustomFields =
-    cf.into[OutputCustomFields]
+object CustomFieldXfrm {
+  def fromInput(inputCustomFieldValue: InputCustomFieldValue): (String, Any) = inputCustomFieldValue.name → inputCustomFieldValue.value
+
+  def toOutput(customFieldValue: CustomFieldValue): OutputCustomFieldValue =
+    customFieldValue
+      .into[OutputCustomFieldValue]
+      .withFieldComputed(_.value, _.value.toString)
+      .transform
+
+  def toOutput(customField: CustomField): OutputCustomField =
+    customField
+      .into[OutputCustomField]
       .withFieldComputed(_.`type`, _.`type`.name)
       .transform
-  implicit val writes: Writes[OutputCustomFields] = Output[OutputCustomFields]
+
 }
 
 @Singleton
@@ -28,7 +38,7 @@ class CustomFieldCtrl @Inject()(apiMethod: ApiMethod, db: Database, customFieldS
         db.transaction { implicit graph ⇒
           val customField        = request.body('customField)
           val createdCustomField = customFieldSrv.create(customField)
-          val outputCustomField  = OutputCustomFields.fromCustomField(createdCustomField)
+          val outputCustomField  = CustomFieldXfrm.toOutput(createdCustomField)
           Results.Created(Json.toJson(outputCustomField))
         }
       }
@@ -38,7 +48,7 @@ class CustomFieldCtrl @Inject()(apiMethod: ApiMethod, db: Database, customFieldS
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
           val customFields = customFieldSrv.steps.toList
-            .map(OutputCustomFields.fromCustomField)
+            .map(CustomFieldXfrm.toOutput)
           Results.Ok(Json.toJson(customFields))
         }
       }

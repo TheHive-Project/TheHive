@@ -26,14 +26,14 @@ class GraphqlTest extends PlaySpecification with Mockito {
   app.instanceOf[DatabaseBuilder]
   val querySet: QuerySet = app.instanceOf[QuerySet]
 
-  "TheHive" should {
-    "have graphql schema" in {
-
-      val schema    = graphql.Schema(querySet)
-      val schemaStr = SchemaRenderer.renderSchema(schema)
-      println(s"new modern graphql schema is:\n$schemaStr")
-
-      schemaStr must_!== ""
-    }
-  }
+//  "TheHive" should {
+//    "have graphql schema" in {
+//
+//      val schema    = graphql.Schema(querySet)
+//      val schemaStr = SchemaRenderer.renderSchema(schema)
+//      println(s"new modern graphql schema is:\n$schemaStr")
+//
+//      schemaStr must_!== ""
+//    }
+//  }
 }

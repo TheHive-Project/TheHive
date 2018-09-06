@@ -2,11 +2,9 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.scalactic.{Bad, Good, One}
-import org.thp.scalligraph.controllers._
-import org.thp.scalligraph._
 import play.api.libs.json.{JsNumber, Writes}
-import org.scalactic.Accumulation._
+
+import org.thp.scalligraph._
 
 sealed abstract class CustomFieldType[T] {
   def setValue(value: Any): CaseCustomField =
@@ -70,18 +68,3 @@ object CustomFieldDate extends CustomFieldType[Date] {
 
 @VertexEntity
 case class CustomField(name: String, description: String, `type`: CustomFieldType[_])
-
-object CustomField {
-  val parser: FieldsParser[Seq[(String, Any)]] = FieldsParser("customField") {
-    case (_, FObject(fields)) ⇒
-      fields
-        .validatedBy {
-          case (name, FString(value))   ⇒ Good(name → value)
-          case (name, FNumber(value))   ⇒ Good(name → value)
-          case (name, FBoolean(value))  ⇒ Good(name → value)
-          case (name, FAny(value :: _)) ⇒ Good(name → value)
-          case (name, other)            ⇒ Bad(One(InvalidFormatAttributeError(name, "CustomFieldValue", other)))
-        }
-        .map(_.toSeq)
-  }
-}

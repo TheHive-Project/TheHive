@@ -36,6 +36,7 @@
 
     <logger name="org.thp.scalligraph.models.Database" level="TRACE" />
     <logger name="org.janusgraph.graphdb" level="INFO" />
+    <logger name="org.thp.thehive.client" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE" />

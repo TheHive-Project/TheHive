@@ -18,7 +18,7 @@ class QuerySet @Inject()(theHiveSchema: TheHiveSchema) extends JsonQueryExecutor
     super.outputs.orElse {
       case t if t <:< ru.typeOf[RichCase] ⇒
         value ⇒
-          Json.toJson(OutputCase.fromRichCase(value.asInstanceOf[RichCase]))
+          Json.toJson(CaseXfrm.toOutput(value.asInstanceOf[RichCase]))
     }
 
   def caseById(id: String): InitQuery[CaseSteps] = InitQuery[CaseSteps]("caseById")(ag ⇒ theHiveSchema.caseSrv.steps(ag.graph).getCaseById(id))

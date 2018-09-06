@@ -1,14 +1,18 @@
 package org.thp.thehive
 
 import scala.concurrent.{ExecutionContext, Promise}
+
 import play.api.Configuration
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, Json}
+import play.api.libs.json._
+import play.api.libs.ws.WSClient
 import play.api.test.{Helpers, PlaySpecification, TestServer}
-import com.typesafe.config.ConfigFactory
-import org.thp.thehive.models.CaseStatus
 
-class FunctionalTest extends PlaySpecification with TestHelper {
+import com.typesafe.config.ConfigFactory
+import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
+import org.thp.thehive.dto.v1._
+
+class FunctionalTest extends PlaySpecification {
 
   val serverPromise: Promise[TestServer] = Promise[TestServer]
   lazy val server: TestServer            = serverPromise.future.value.get.get
@@ -26,6 +30,8 @@ class FunctionalTest extends PlaySpecification with TestHelper {
     lazy val initialUserPassword                      = "azerty"
     implicit lazy val initialUserAuth: Authentication = Authentication(initialUserLogin, initialUserPassword)
     implicit lazy val ec: ExecutionContext            = app.injector.instanceOf[ExecutionContext]
+    implicit lazy val ws: WSClient                    = app.injector.instanceOf[WSClient]
+    lazy val client                                   = new TheHiveClient(s"http://127.0.0.1:${server.runningHttpPort.get}")
 
     "start the application" in {
       serverPromise.success(
@@ -38,99 +44,99 @@ class FunctionalTest extends PlaySpecification with TestHelper {
       1 must_=== 1
     }
 
+    var user1: OutputUser = null
     "create initial user" in {
-      val asyncResp = createInitialUser(initialUserLogin, initialUserName, initialUserPassword)
-      val expected  = Json.obj("login" → initialUserLogin, "name" → initialUserName, "permissions" → Seq("read", "write", "admin"))
-      await(asyncResp) must JsonMatcher(expected)
+      val asyncResp =
+        client.user.createInitial(InputUser(initialUserLogin, initialUserName, Seq("read", "write", "admin"), Some(initialUserPassword)))
+      user1 = await(asyncResp)
+      val expected = OutputUser(initialUserLogin, initialUserName, Set("read", "write", "admin"))
+      user1 must_=== expected
     }
 
+    var user2: OutputUser = null
     "create new user" in {
-      val asyncResp = createUser("toom", "Thomas", Seq("read", "write"), "secret")
-      val expected  = Json.obj("login" → "toom", "name" → "Thomas", "permissions" → Seq("read", "write"))
-      await(asyncResp) must JsonMatcher(expected)
+      val asyncResp = client.user.create(InputUser("toom", "Thomas", Seq("read", "write"), Some("secret")))
+      user2 = await(asyncResp)
+      val expected = OutputUser("toom", "Thomas", Set("read", "write"))
+      user2 must_=== expected
     }
 
     "list users" in {
-      val asyncResp = listUser
-      val expected = Json.arr(
-        Json.obj("login" → initialUserLogin, "name" → initialUserName, "permissions" → Seq("read", "write", "admin")),
-        Json.obj("login" → "toom", "name"           → "Thomas", "permissions"        → Seq("read", "write"))
-      )
-      await(asyncResp) must JsonMatcher(expected)
+      val asyncResp = client.user.list
+      await(asyncResp) must contain(exactly(user1, user2))
     }
 
     "return an authentication error if password is wrong" in {
-      val asyncResp = listUser(ec, initialUserAuth.copy(password = "nopassword"))
+      val asyncResp = client.user.list(ec, initialUserAuth.copy(password = "nopassword"))
       val expected  = ApplicationError(401, Json.obj("type" → "AuthenticationError", "message" → "Authentication failure"))
       await(asyncResp) must throwA(expected)
     }
 
+    var case1: OutputCase = null
     "create a simple case" in {
-      val asyncResp = createCase("First case", "This case is the first case of functional tests")
-      val resp      = await(asyncResp)
-      val expected = Json.obj(
-        "title"        → "First case",
-        "description"  → "This case is the first case of functional tests",
-        "_createdBy"   → "admin",
-        "number"       → 1,
-        "severity"     → 2,
-        "tags"         → JsArray(),
-        "flag"         → false,
-        "tlp"          → 2,
-        "pap"          → 2,
-        "status"       → "open",
-        "user"         → "admin",
-        "_updatedBy"   → JsNull,
-        "_updatedAt"   → JsNull,
-        "summary"      → JsNull,
-        "endDate"      → JsNull,
-        "customFields" → JsArray()
-      ) +
-        ("_id"        → (resp \ "_id").as[JsString]) +
-        ("_createdAt" → (resp \ "_createdAt").as[JsNumber]) +
-        ("startDate"  → (resp \ "startDate").as[JsNumber])
-      resp must JsonMatcher(expected)
+      val asyncResp = client.`case`.create(InputCase("First case", "This case is the first case of functional tests"))
+      case1 = await(asyncResp)
+      val expected = OutputCase(
+        _id = case1._id,
+        _createdBy = "admin",
+        _createdAt = case1._createdAt,
+        number = 1,
+        title = "First case",
+        description = "This case is the first case of functional tests",
+        severity = 2,
+        startDate = case1.startDate,
+        flag = false,
+        tlp = 2,
+        pap = 2,
+        status = "open",
+        user = "admin"
+      )
+
+      case1 must_=== expected
     }
 
     "create a custom field" in {
-      val asyncResp = createCustomField("businessUnit", "Business unit impacted by the incident", "string")
-      val expected  = Json.obj("name" → "businessUnit", "description" → "Business unit impacted by the incident", "type" → "string")
+      val asyncResp = client.customFields.create(InputCustomField("businessUnit", "Business unit impacted by the incident", "string"))
+      val expected  = OutputCustomField("businessUnit", "Business unit impacted by the incident", "string")
       await(asyncResp) must_=== expected
     }
 
+    var case2: OutputCase = null
     "create a case with custom fields" in {
-      val asyncResp = createCase(
-        "Second case",
-        "This case contains status, summary and custom fields",
-        status = Some(CaseStatus.resolved),
+      val asyncResp = client.`case`.create(
+        InputCase(
+          title = "Second case",
+          description = "This case contains status, summary and custom fields",
+          status = Some("resolved"),
+          summary = Some("no comment"),
+          customFieldValue = Seq(InputCustomFieldValue("businessUnit", "HR"))
+        ))
+      case2 = await(asyncResp)
+      val expected = OutputCase(
+        _id = case2._id,
+        _createdBy = "admin",
+        _createdAt = case2._createdAt,
+        number = 2,
+        title = "Second case",
+        description = "This case contains status, summary and custom fields",
+        severity = 2,
+        startDate = case2.startDate,
+        flag = false,
+        tlp = 2,
+        pap = 2,
+        status = "open",
+        user = "admin",
         summary = Some("no comment"),
-        customFields = Json.obj("businessUnit" → "HR")
+        customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", "HR"))
       )
-      val resp = await(asyncResp)
-      val expected = Json.obj(
-        "title"       → "Second case",
-        "description" → "This case contains status, summary and custom fields",
-        "_createdBy"  → "admin",
-        "number"      → 2,
-        "severity"    → 2,
-        "tags"        → JsArray(),
-        "flag"        → false,
-        "tlp"         → 2,
-        "pap"         → 2,
-        "status"      → "open",
-        "summary"     → "no comment",
-        "user"        → "admin",
-        "endDate"     → JsNull,
-        "_updatedBy"  → JsNull,
-        "_updatedAt"  → JsNull,
-        "customFields" → Json.arr(
-          Json.obj("name" → "businessUnit", "description" → "Business unit impacted by the incident", "type" → "string", "value" → "HR"))
-      ) +
-        ("_id"        → (resp \ "_id").as[JsString]) +
-        ("_createdAt" → (resp \ "_createdAt").as[JsNumber]) +
-        ("startDate"  → (resp \ "startDate").as[JsNumber])
-      resp must JsonMatcher(expected)
+      case2 must_=== expected
     }
+
+    "list cases" in {
+      val asyncResp = client.`case`.list
+      await(asyncResp) must contain(exactly(case1, case2))
+    }
+
     "stop the application" in {
       server.stop()
       1 must_=== 1

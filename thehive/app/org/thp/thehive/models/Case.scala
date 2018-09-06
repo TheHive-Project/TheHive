@@ -5,9 +5,6 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
-import org.thp.scalligraph.query.AuthGraph
-import play.api.libs.json.{Json, OWrites}
-import sangria.schema.{fields, Field, ObjectType, OutputType, StringType}
 
 object CaseStatus extends Enumeration {
   val open, resolved, deleted = Value
@@ -76,19 +73,19 @@ case class Case(
     summary: Option[String])
 
 case class CustomFieldValue(name: String, description: String, tpe: String, value: Any)
-object CustomFieldValue {
-  implicit val outputType: OutputType[CustomFieldValue] = ObjectType(
-    "CustomFieldValue",
-    fields[AuthGraph, CustomFieldValue](
-      Field("name", StringType, resolve = _.value.name),
-      Field("description", StringType, resolve = _.value.description),
-      Field("type", StringType, resolve = _.value.tpe),
-      Field("value", StringType, resolve = _.value.value.toString)
-    )
-  )
-  implicit val writes: OWrites[CustomFieldValue] =
-    OWrites[CustomFieldValue](cfv ⇒ Json.obj("name" → cfv.name, "description" → cfv.description, "type" → cfv.tpe, "value" → cfv.value.toString))
-}
+//object CustomFieldValue {
+//  implicit val outputType: OutputType[CustomFieldValue] = ObjectType(
+//    "CustomFieldValue",
+//    fields[AuthGraph, CustomFieldValue](
+//      Field("name", StringType, resolve = _.value.name),
+//      Field("description", StringType, resolve = _.value.description),
+//      Field("type", StringType, resolve = _.value.tpe),
+//      Field("value", StringType, resolve = _.value.value.toString)
+//    )
+//  )
+//  implicit val writes: OWrites[CustomFieldValue] =
+//    OWrites[CustomFieldValue](cfv ⇒ Json.obj("name" → cfv.name, "description" → cfv.description, "type" → cfv.tpe, "value" → cfv.value.toString))
+//}
 
 case class RichCase(
     _id: String,
