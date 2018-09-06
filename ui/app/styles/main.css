@@ -658,3 +658,12 @@ table tr td.task-actions span.action-button {
     max-height: 550px;
     overflow-y: auto;
 }
+
+.table.tasks-table>tbody+tbody {
+  border: none;
+}
+
+.table.tasks-table .filter-panel {
+  margin-left:40px;
+  margin-right:40px;
+}

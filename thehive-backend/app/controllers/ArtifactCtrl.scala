@@ -125,14 +125,14 @@ class ArtifactCtrl @Inject() (
 
   @Timed
   def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    artifactSrv.update(id, request.body)
+    artifactSrv.update(id, request.body.unset("attachment"))
       .map(artifact ⇒ renderer.toOutput(OK, artifact))
   }
 
   @Timed
   def bulkUpdate(): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
-      artifactSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
+      artifactSrv.bulkUpdate(ids, request.body.unset("ids").unset("attachment")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
     }
   }
 

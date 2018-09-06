@@ -1,7 +1,29 @@
 # Change Log
 
-## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
+## [3.1.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC3) (2018-09-06)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC2...3.1.0-RC3)
 
+**Implemented enhancements:**
+
+- Display task description via a collapsible row [\#709](https://github.com/TheHive-Project/TheHive/issues/709)
+- Allow task group auto complete in case template admin section [\#707](https://github.com/TheHive-Project/TheHive/issues/707)
+- Display task group in global task lists [\#705](https://github.com/TheHive-Project/TheHive/issues/705)
+- Make task group input optional [\#696](https://github.com/TheHive-Project/TheHive/issues/696)
+- Related Cases: See \(x\) more links [\#690](https://github.com/TheHive-Project/TheHive/issues/690)
+- Search section: Search for a string over all types of objects [\#689](https://github.com/TheHive-Project/TheHive/issues/689)
+- Filter on computedHandlingDuration in SearchDialog fails [\#688](https://github.com/TheHive-Project/TheHive/issues/688)
+- Extend Case Description Field [\#81](https://github.com/TheHive-Project/TheHive/issues/81)
+- Change layout of observable creation form [\#706](https://github.com/TheHive-Project/TheHive/pull/706) ([srilumpa](https://github.com/srilumpa))
+
+**Fixed bugs:**
+
+- .sbt build of current git version fails with x-pack-transport error [\#710](https://github.com/TheHive-Project/TheHive/issues/710)
+- PKI authentication fails if user name in certificate has the wrong case [\#700](https://github.com/TheHive-Project/TheHive/issues/700)
+- Error handling deletion and re creation of file observables [\#699](https://github.com/TheHive-Project/TheHive/issues/699)
+- Start waiting tasks when adding task logs [\#695](https://github.com/TheHive-Project/TheHive/issues/695)
+- Adding new observables to an alert retrospectively is impossible [\#511](https://github.com/TheHive-Project/TheHive/issues/511)
+
+## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC1...3.1.0-RC2)
 
 **Implemented enhancements:**

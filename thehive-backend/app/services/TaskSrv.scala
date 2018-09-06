@@ -62,7 +62,7 @@ class TaskSrv @Inject() (
   def update(task: Task, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Task] = {
     // if update status from waiting to something else and owner is not set, then set owner to user
     val f = if (task.status() == TaskStatus.Waiting &&
-      !fields.getString("status").forall(_ == TaskStatus.Waiting.toString) &&
+      !fields.getString("status").contains(TaskStatus.Waiting.toString) &&
       !fields.contains("owner") &&
       task.owner().isEmpty)
       fields.set("owner", authContext.userId)

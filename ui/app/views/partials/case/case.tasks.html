@@ -39,13 +39,14 @@
             <div class="row">
                 <div class="col-sm-3">
                   <div class="form-group">
-                      <input name="group"class="form-control" ng-model="newTask.group" type="text" placeholder="Enter task group" required
-                        uib-typeahead="g for g in groups | filter:$viewValue">
+                      <input name="group" class="form-control" ng-model="newTask.group" type="text" placeholder="Task group"
+                          uib-typeahead="g for g in groups | filter:$viewValue"
+                          typeahead-min-length="0">
                   </div>
                 </div>
                 <div class="col-sm-9">
                   <div class="input-group input-group">
-                      <input name="title"class="form-control" ng-model="newTask.title" type="text" placeholder="Enter task title" required>
+                      <input name="title"class="form-control" ng-model="newTask.title" type="text" placeholder="Task title" required>
                       <span class="input-group-btn">
                           <button class="btn btn-default" ng-disabled="form.$invalid" type="submit">
                               <i class="text-success glyphicon glyphicon-ok"></i>
@@ -63,9 +64,10 @@
 
 <div class="row mt-l" ng-show="!state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
-        <table class="table table-striped table-hover valigned">
+        <table class="table table-hover valigned tasks-table">
             <thead>
                 <tr>
+                    <th style="width: 20px"></th>
                     <th style="width: 40px"></th>
                     <th style="width: 250px">Group</th>
                     <th>Task</th>
@@ -74,8 +76,16 @@
                     <th style="width: 250px" class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr ng-repeat="task in tasks.values" class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+            <tbody ng-repeat="task in tasks.values">
+                <tr class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+                    <td>
+                        <a href ng-click="collapseOptions[task.id] = !collapseOptions[task.id]" ng-show="task.description" uib-tooltip="Show/Hide description" tooltip-placement="right">
+                          <i class="fa" ng-class="{
+                            true: 'fa-chevron-up',
+                            false: 'fa-chevron-down'
+                          }[!!collapseOptions[task.id]]"></i>
+                        </a>
+                    </td>
                     <td class="task-status" align="center" ng-switch="task.status">
                         <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                         <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
@@ -144,6 +154,12 @@
                         </span>
                     </td>
                 </tr>
+
+                <tr ng-if="task.description && collapseOptions[task.id]">
+                    <td colspan="7" class="wrap">
+                        <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -156,9 +172,10 @@
                 <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.tasks.length}} task(s))</small>
             </div>
             <div class="panel-body p-0">
-                <table class="table table-hover valigned">
+                <table class="table table-hover valigned tasks-table">
                     <thead>
                         <tr>
+                            <th style="width: 20px"></th>
                             <th style="width: 40px"></th>
                             <th style="width: 250px">Group</th>
                             <th>Task</th>
@@ -167,8 +184,16 @@
                             <th style="width: 250px" class="text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr ng-repeat="task in group.tasks" class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+                    <tbody ng-repeat="task in group.tasks">
+                        <tr class="task-row" ng-class="{'warning': (task.status == 'InProgress' && task.flag == true)}">
+                            <td>
+                                <a href ng-click="collapseOptions[task.id] = !collapseOptions[task.id]" ng-show="task.description" uib-tooltip="Show/Hide description" tooltip-placement="right">
+                                  <i class="fa" ng-class="{
+                                    true: 'fa-chevron-up',
+                                    false: 'fa-chevron-down'
+                                  }[!!collapseOptions[task.id]]"></i>
+                                </a>
+                            </td>
                             <td class="task-status" align="center" ng-switch="task.status">
                                 <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                                 <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
@@ -187,7 +212,7 @@
                                   Started <em am-time-ago="task.startDate"></em>
                               </div>
                             </td>
-                            <td>{{task.startDate | showDate}}</td>
+                            <td>{{task.startDate | shortDate}}</td>
                             <td>
                                 <span ng-show="task.owner">
                                     <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
@@ -235,6 +260,11 @@
                                       </li>
                                     </ul>
                                 </span>
+                            </td>
+                        </tr>
+                        <tr ng-if="task.description && collapseOptions[task.id]">
+                            <td colspan="7" class="wrap">
+                                <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
                             </td>
                         </tr>
                     </tbody>
