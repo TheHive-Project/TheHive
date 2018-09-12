@@ -655,7 +655,7 @@ table tr td.task-actions span.action-button {
 }
 
 .description-pane{
-    max-height: 550px;
+    /* max-height: 550px; */
     overflow-y: auto;
 }
 
