@@ -8,16 +8,16 @@
 	</div>
 
 	<span ng-switch-when="static" ng-switch="value">
-		<span ng-switch-when="0" class="label label-info">TLP:WHITE</span>
-		<span ng-switch-when="1" class="label label-success">TLP:GREEN</span>
-		<span ng-switch-when="2" class="label label-warning">TLP:AMBER</span>
-		<span ng-switch-when="3" class="label label-danger">TLP:RED</span>
+		<span ng-switch-when="0" class="label label-info">{{namespace || 'TLP'}}:WHITE</span>
+		<span ng-switch-when="1" class="label label-success">{{namespace || 'TLP'}}:GREEN</span>
+		<span ng-switch-when="2" class="label label-warning">{{namespace || 'TLP'}}:AMBER</span>
+		<span ng-switch-when="3" class="label label-danger">{{namespace || 'TLP'}}:RED</span>
 	</span>
 
 	<span ng-switch-default ng-switch="value">
-		<span ng-switch-when="0" class="text-tlp-default fa fa-circle-o hpad10" uib-tooltip="TLP:WHITE"></span>
-		<span ng-switch-when="1" class="text-tlp-green fa fa-circle hpad10" uib-tooltip="TLP:GREEN"></span>
-		<span ng-switch-when="2" class="text-tlp-amber fa fa-circle hpad10" uib-tooltip="TLP:AMBER"></span>
-		<span ng-switch-when="3"  class="text-tlp-red fa fa-circle hpad10" uib-tooltip="TLP:RED"></span>
+		<span ng-switch-when="0" class="text-tlp-default fa fa-circle-o hpad10" uib-tooltip="{{namespace || 'TLP'}}:WHITE"></span>
+		<span ng-switch-when="1" class="text-tlp-green fa fa-circle hpad10" uib-tooltip="{{namespace || 'TLP'}}:GREEN"></span>
+		<span ng-switch-when="2" class="text-tlp-amber fa fa-circle hpad10" uib-tooltip="{{namespace || 'TLP'}}:AMBER"></span>
+		<span ng-switch-when="3"  class="text-tlp-red fa fa-circle hpad10" uib-tooltip="{{namespace || 'TLP'}}:RED"></span>
 	</span>
 </span>
