@@ -39,7 +39,7 @@
     "angular-clipboard": "^1.5.0",
     "angular-local-storage": "^0.4.0",
     "myforce-angularjs-dropdown-multiselect": "^1.10.2",
-    "angular-markdown-editor-ghiscoding": "1.1.0",
+    "angular-markdown-editor-ghiscoding": "1.1.5",
     "angular-highlightjs": "^0.6.2",
     "highlight.js.origin": "^9.7.0",
     "angular-ui-ace": "bower",
