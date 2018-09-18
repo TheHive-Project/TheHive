@@ -38,7 +38,7 @@
         <dl class="dl-horizontal clear" ng-if="artifact.attachment && artifact.attachment.hashes">
             <dt class="pull-left">Hash</dt>
             <dd>
-                <div ng-repeat="hash in artifact.attachment.hashes" class="wrap" btf-markdown="hash | hashType"></div>
+                <div ng-repeat="hash in artifact.attachment.hashes" class="wrap" marked="hash | hashType"></div>
             </dd>
         </dl>
 
