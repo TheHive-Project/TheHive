@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import javax.inject.{ Inject, Singleton }
-import models.{ Alert, Case }
-import services.{ CaseSrv, TaskSrv }
+import models.{ Alert, Case, Artifact }
+import services.{ CaseSrv, TaskSrv, ArtifactSrv }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
@@ -34,23 +34,30 @@ case class AddTagToCase(tag: String, status: ActionOperationStatus.Type = Action
   def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToCase = copy(status = newStatus, message = newMessage)
 }
 
+case class AddTagToArtifact(tag: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToArtifact = copy(status = newStatus, message = newMessage)
+}
+
 case class CreateTask(fields: JsObject, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
   def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
 }
 
 object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
+  val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
   val createTaskWrites = Json.writes[CreateTask]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
-      case "AddTagToCase" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
-      case "CreateTask"   ⇒ JsSuccess(CreateTask(json.as[JsObject] - "type"))
-      case other          ⇒ JsError(s"Unknown operation $other")
+      case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
+      case "AddTagToArtifact" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToArtifact(tag))
+      case "CreateTask"       ⇒ JsSuccess(CreateTask(json.as[JsObject] - "type"))
+      case other              ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
-    case a: AddTagToCase ⇒ addTagToCaseWrites.writes(a)
-    case a: CreateTask   ⇒ createTaskWrites.writes(a)
-    case a               ⇒ Json.obj("unsupported operation" → a.toString)
+    case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
+    case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
+    case a: CreateTask       ⇒ createTaskWrites.writes(a)
+    case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
 
@@ -59,6 +66,7 @@ class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
     findSrv: FindSrv,
+    artifactSrv: ArtifactSrv,
     implicit val system: ActorSystem,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
@@ -76,6 +84,13 @@ class ActionOperationSrv @Inject() (
     }
   }
 
+  def findArtifactEntity(entity: BaseEntity): Future[Artifact] = {
+    (entity, entity.model) match {
+      case (a: Artifact, _) ⇒ Future.successful(a)
+      case _                ⇒ Future.failed(BadRequestError("Artifact not found"))
+    }
+  }
+
   def execute(entity: BaseEntity, operation: ActionOperation)(implicit authContext: AuthContext): Future[ActionOperation] = {
     if (operation.status == ActionOperationStatus.Waiting) {
       val updatedOperation = operation match {
@@ -85,6 +100,14 @@ class ActionOperationSrv @Inject() (
               initialCase ← findCaseEntity(entity)
               caze ← caseSrv.get(initialCase.id)
               _ ← caseSrv.update(caze, Fields.empty.set("tags", Json.toJson((caze.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          }
+        case AddTagToArtifact(tag, _, _) ⇒
+          RetryOnError() { // FIXME find the right exception
+            for {
+              initialArtifact ← findArtifactEntity(entity)
+              art ← artifactSrv.get(initialArtifact.artifactId())
+              _ ← artifactSrv.update(art.artifactId(), Fields.empty.set("tags", Json.toJson((art.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(art.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
         case CreateTask(fields, _, _) ⇒
