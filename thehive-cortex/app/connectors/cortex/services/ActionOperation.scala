@@ -106,7 +106,7 @@ class ActionOperationSrv @Inject() (
           RetryOnError() { // FIXME find the right exception
             for {
               initialArtifact ← findArtifactEntity(entity)
-              art ← artifactSrv.get(initialArtifact.id)
+              art ← artifactSrv.get(initialArtifact.artifactId())
               _ ← artifactSrv.update(art.artifactId(), Fields.empty.set("tags", Json.toJson((art.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(art.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
