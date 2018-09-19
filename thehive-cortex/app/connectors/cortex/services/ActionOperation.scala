@@ -42,6 +42,10 @@ case class CreateTask(fields: JsObject, status: ActionOperationStatus.Type = Act
   def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
 }
 
+case class AddCustomFields(name: String, tpe: String, value: JsValue, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddCustomFields = copy(status = newStatus, message = newMessage)
+}
+
 case class CloseTask(status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
   def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
 }
@@ -50,19 +54,26 @@ object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
   val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
   val createTaskWrites = Json.writes[CreateTask]
+  val addCustomFieldsWrites = Json.writes[AddCustomFields]
   val closeTaskWrites = Json.writes[CloseTask]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
       case "AddTagToArtifact" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToArtifact(tag))
       case "CreateTask"       ⇒ JsSuccess(CreateTask(json.as[JsObject] - "type"))
-      case "CloseTask"        ⇒ JsSuccess(CloseTask())
-      case other              ⇒ JsError(s"Unknown operation $other")
+      case "AddCustomFields" ⇒ for {
+        name ← (json \ "name").validate[String]
+        tpe ← (json \ "tpe").validate[String]
+        value ← (json \ "value").validate[JsValue]
+      } yield AddCustomFields(name, tpe, value)
+      case "CloseTask" ⇒ JsSuccess(CloseTask())
+      case other       ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
     case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
     case a: CreateTask       ⇒ createTaskWrites.writes(a)
+    case a: AddCustomFields  ⇒ addCustomFieldsWrites.writes(a)
     case a: CloseTask        ⇒ closeTaskWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
@@ -129,6 +140,15 @@ class ActionOperationSrv @Inject() (
             caze ← findCaseEntity(entity)
             _ ← taskSrv.create(caze, Fields(fields))
           } yield operation.updateStatus(ActionOperationStatus.Success, "")
+        case AddCustomFields(name, tpe, value, _, _) ⇒
+          RetryOnError() { // FIXME find the right exception
+            for {
+              initialCase ← findCaseEntity(entity)
+              caze ← caseSrv.get(initialCase.id)
+              customFields = caze.customFields().asOpt[JsObject].getOrElse(JsObject.empty) ++ Json.obj(name -> Json.obj(tpe -> value))
+              _ ← caseSrv.update(caze, Fields.empty.set("customFields", customFields), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          }
         case CloseTask(_, _) ⇒
           for {
             initialTask ← findTaskEntity(entity)
