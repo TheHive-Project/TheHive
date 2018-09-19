@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import javax.inject.{ Inject, Singleton }
-import models.{ Alert, Case, Artifact }
+import models.{ Alert, Case, Artifact, Task, TaskStatus }
 import services.{ CaseSrv, TaskSrv, ArtifactSrv }
 
 import org.elastic4play.controllers.Fields
@@ -42,21 +42,28 @@ case class CreateTask(fields: JsObject, status: ActionOperationStatus.Type = Act
   def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
 }
 
+case class CloseTask(status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
+}
+
 object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
   val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
   val createTaskWrites = Json.writes[CreateTask]
+  val closeTaskWrites = Json.writes[CloseTask]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
       case "AddTagToArtifact" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToArtifact(tag))
       case "CreateTask"       ⇒ JsSuccess(CreateTask(json.as[JsObject] - "type"))
+      case "CloseTask"        ⇒ JsSuccess(CloseTask())
       case other              ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
     case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
     case a: CreateTask       ⇒ createTaskWrites.writes(a)
+    case a: CloseTask        ⇒ closeTaskWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
@@ -91,6 +98,13 @@ class ActionOperationSrv @Inject() (
     }
   }
 
+  def findTaskEntity(entity: BaseEntity): Future[Task] = {
+    (entity, entity.model) match {
+      case (a: Task, _) ⇒ Future.successful(a)
+      case _            ⇒ Future.failed(BadRequestError("Task not found"))
+    }
+  }
+
   def execute(entity: BaseEntity, operation: ActionOperation)(implicit authContext: AuthContext): Future[ActionOperation] = {
     if (operation.status == ActionOperationStatus.Waiting) {
       val updatedOperation = operation match {
@@ -114,6 +128,12 @@ class ActionOperationSrv @Inject() (
           for {
             caze ← findCaseEntity(entity)
             _ ← taskSrv.create(caze, Fields(fields))
+          } yield operation.updateStatus(ActionOperationStatus.Success, "")
+        case CloseTask(_, _) ⇒
+          for {
+            initialTask ← findTaskEntity(entity)
+            task ← taskSrv.get(initialTask.id)
+            _ ← taskSrv.update(task, Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsFalse), ModifyConfig(retryOnConflict = 0, version = Some(task.version)))
           } yield operation.updateStatus(ActionOperationStatus.Success, "")
         case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
       }
