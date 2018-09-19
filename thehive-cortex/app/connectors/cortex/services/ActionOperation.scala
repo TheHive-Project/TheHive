@@ -9,7 +9,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import javax.inject.{ Inject, Singleton }
 import models.{ Alert, Case, Artifact }
-import services.{ CaseSrv, ArtifactSrv }
+import services.{ CaseSrv, TaskSrv, ArtifactSrv }
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
@@ -64,6 +64,7 @@ object ActionOperation {
 @Singleton
 class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
     findSrv: FindSrv,
     artifactSrv: ArtifactSrv,
     implicit val system: ActorSystem,
@@ -96,18 +97,25 @@ class ActionOperationSrv @Inject() (
         case AddTagToCase(tag, _, _) ⇒
           RetryOnError() { // FIXME find the right exception
             for {
-              caze ← findCaseEntity(entity)
+              initialCase ← findCaseEntity(entity)
+              caze ← caseSrv.get(initialCase.id)
               _ ← caseSrv.update(caze, Fields.empty.set("tags", Json.toJson((caze.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
         case AddTagToArtifact(tag, _, _) ⇒
           RetryOnError() { // FIXME find the right exception
             for {
-              art ← findArtifactEntity(entity)
+              initialArtifact ← findArtifactEntity(entity)
+              art ← artifactSrv.get(initialArtifact.id)
               _ ← artifactSrv.update(art.artifactId(), Fields.empty.set("tags", Json.toJson((art.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(art.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
-        case _ ⇒ Future.successful(operation)
+        case CreateTask(fields, _, _) ⇒
+          for {
+            caze ← findCaseEntity(entity)
+            _ ← taskSrv.create(caze, Fields(fields))
+          } yield operation.updateStatus(ActionOperationStatus.Success, "")
+        case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
       }
       updatedOperation.recover { case error ⇒ operation.updateStatus(ActionOperationStatus.Failure, error.getMessage) }
     }

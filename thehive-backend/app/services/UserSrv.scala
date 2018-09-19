@@ -75,7 +75,7 @@ class UserSrv @Inject() (
     }
   }
 
-  override def get(id: String): Future[User] = getSrv[UserModel, User](userModel, id)
+  override def get(id: String): Future[User] = getSrv[UserModel, User](userModel, id.toLowerCase)
 
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[User] =
     update(id, fields, ModifyConfig.default)

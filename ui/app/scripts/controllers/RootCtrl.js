@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, GlobalSearchSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -161,20 +161,25 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.search = function(caseId) {
-            if(!caseId || !_.isNumber(caseId)) {
+            if(!caseId || !_.isNumber(caseId) || caseId <= 0) {
                 return;
             }
 
-            GlobalSearchSrv.saveSection('case', {
-                search: null,
-                filters: [{
-                    field: 'caseId',
-                    type: 'number',
-                    value: {value: caseId}
-                }]
+            CaseSrv.query({
+                query: {
+                    caseId: caseId
+                },
+                range: '0-1'
+            }, function(response) {
+                if(response.length === 1) {
+                    $state.go('app.case.details', {caseId: response[0].id}, {reload: true});
+                } else {
+                    NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
+                }
+                console.log(response[0]);
+            }, function(err) {
+                NotificationSrv.error('Case search', err.data, err.status);
             });
-
-            $state.go('app.search', {}, {reload: true});
         };
 
         // Used to show spinning refresh icon n times

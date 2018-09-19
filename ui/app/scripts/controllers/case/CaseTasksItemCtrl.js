@@ -178,6 +178,11 @@
                 TaskLogSrv.save({
                     'taskId': $scope.task.id
                 }, $scope.newLog, function () {
+                    if($scope.task.status === 'Waiting') {
+                        // Reload the task
+                        $scope.reloadTask();
+                    }
+
                     delete $scope.newLog.attachment;
                     $scope.state.attachmentCollapsed = true;
                     $scope.newLog.message = '';
@@ -226,6 +231,16 @@
                       NotificationSrv.error('taskDetails', response.data, response.status);
                   });
             };
+
+            $scope.reloadTask = function() {
+                CaseTaskSrv.get({
+                    'taskId': $scope.task.id
+                }, function(data) {
+                    $scope.task = data;
+                }, function(response) {
+                    NotificationSrv.error('taskDetails', response.data, response.status);
+                });
+            }
 
             // Add tabs
             CaseTabsSrv.addTab($scope.tabName, {

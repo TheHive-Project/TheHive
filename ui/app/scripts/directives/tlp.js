@@ -4,9 +4,10 @@
         return {
             restrict: 'E',
             scope: {
-                'value': '=',
-                'format': '=?',
-                'onUpdate': '&'
+                value: '=',
+                format: '=?',
+                onUpdate: '&',
+                namespace: '@'
             },
             'link': UtilsSrv.updatableLink,
             'templateUrl': 'views/directives/tlp.html',

@@ -1,20 +1,19 @@
 package controllers
 
-import javax.inject.{ Inject, Singleton }
-
 import scala.concurrent.ExecutionContext
 
 import play.api.http.Status
 import play.api.mvc._
 
+import javax.inject.{ Inject, Singleton }
 import models.Roles
 import services.LogSrv
 
-import org.elastic4play.Timed
 import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.JsonFormat.queryReads
-import org.elastic4play.services.{ QueryDSL, QueryDef }
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
+import org.elastic4play.services.{ Agg, QueryDSL, QueryDef }
+import org.elastic4play.{ BadRequestError, Timed }
 
 @Singleton
 class LogCtrl @Inject() (
@@ -69,5 +68,12 @@ class LogCtrl @Inject() (
 
     val (logs, total) = logSrv.find(query, range, sort)
     renderer.toOutput(OK, logs, total)
+  }
+
+  @Timed
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+    val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val aggs = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
+    logSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 }

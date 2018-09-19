@@ -1,6 +1,6 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
 	<span ng-if="value!==null && value !==''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value">{{value}}</span>
-	<span ng-if="value === null || value === undefined" style="vertical-align: top;" class="updatable-value text-warning"><em>Not Specified</em></span>
+	<span ng-if="value === null || value === undefined || value === ''" style="vertical-align: top;" class="updatable-value text-warning"><em>Not Specified</em></span>
 	<small ng-show="active">
 		<a href class="clickable" tooltip-popup-delay='500' uib-tooltip="edit">
 			<i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>

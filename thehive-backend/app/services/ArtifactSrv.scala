@@ -63,7 +63,6 @@ class ArtifactSrv @Inject() (
           fields
             .unset("data")
             .unset("dataType")
-            .unset("attachment")
             .set("status", "Ok"),
           modifyConfig)
       } yield updatedArtifact
