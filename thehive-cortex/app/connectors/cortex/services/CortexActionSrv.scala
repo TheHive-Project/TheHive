@@ -22,7 +22,7 @@ import services.UserSrv
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
-import org.elastic4play.models.BaseEntity
+import org.elastic4play.models.{ AttributeOption, BaseEntity }
 import org.elastic4play.services.{ User ⇒ _, _ }
 import org.elastic4play.{ BadRequestError, MissingAttributeError, NotFoundError }
 
@@ -221,7 +221,7 @@ class CortexActionSrv @Inject() (
         case _                 ⇒ JsObject.empty
       }
       entity ← getEntity(objectType, objectId)
-      entityJson ← auxSrv(entity, 10, withStats = false, removeUnaudited = true)
+      entityJson ← auxSrv(entity, 10, withStats = false, !_.contains(AttributeOption.sensitive))
       caze ← actionOperationSrv.findCaseEntity(entity).map(Some(_)).recover { case _ ⇒ None }
       tlp = fields.getLong("tlp").orElse(caze.map(_.tlp())).getOrElse(2L)
       pap = caze.map(_.pap()).getOrElse(2L)

@@ -64,11 +64,11 @@ object ActionOperation {
       case other ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
-    case a: AddTagToCase    ⇒ addTagToCaseWrites.writes(a)
+    case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
     case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
-    case a:CreateTask      ⇒ createTaskWrites.writes(a)
-    case a: AddCustomFields ⇒ addCustomFieldsWrites.writes(a)
-    case a                  ⇒ Json.obj("unsupported operation" → a.toString)
+    case a: CreateTask       ⇒ createTaskWrites.writes(a)
+    case a: AddCustomFields  ⇒ addCustomFieldsWrites.writes(a)
+    case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
 
