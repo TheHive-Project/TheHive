@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import javax.inject.{ Inject, Singleton }
-import models.{ Alert, Case, Artifact }
+import models.{ Alert, Case, Artifact, Task, TaskStatus }
 import services.{ CaseSrv, TaskSrv, ArtifactSrv }
 
 import org.elastic4play.controllers.Fields
@@ -46,11 +46,16 @@ case class AddCustomFields(name: String, tpe: String, value: JsValue, status: Ac
   override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddCustomFields = copy(status = newStatus, message = newMessage)
 }
 
+case class CloseTask(status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
+}
+
 object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
   val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
   val createTaskWrites = Json.writes[CreateTask]
   val addCustomFieldsWrites = Json.writes[AddCustomFields]
+  val closeTaskWrites = Json.writes[CloseTask]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
@@ -61,13 +66,15 @@ object ActionOperation {
         tpe ← (json \ "tpe").validate[String]
         value ← (json \ "value").validate[JsValue]
       } yield AddCustomFields(name, tpe, value)
-      case other ⇒ JsError(s"Unknown operation $other")
+      case "CloseTask" ⇒ JsSuccess(CloseTask())
+      case other       ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
     case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
     case a: CreateTask       ⇒ createTaskWrites.writes(a)
     case a: AddCustomFields  ⇒ addCustomFieldsWrites.writes(a)
+    case a: CloseTask        ⇒ closeTaskWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
@@ -90,7 +97,7 @@ class ActionOperationSrv @Inject() (
       case (a: Alert, _) ⇒ a.caze().fold(Future.failed[Case](BadRequestError("Alert hasn't been imported to case")))(caseSrv.get)
       case (_, model: ChildModelDef[_, _, _, _]) ⇒
         findSrv(model.parentModel, "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")), Some("0-1"), Nil)
-          ._1.runWith(Sink.head).flatMap(findCaseEntity)
+          ._1.runWith(Sink.head).flatMap(findCaseEntity _)
       case _ ⇒ Future.failed(BadRequestError("Case not found"))
     }
   }
@@ -99,6 +106,18 @@ class ActionOperationSrv @Inject() (
     (entity, entity.model) match {
       case (a: Artifact, _) ⇒ Future.successful(a)
       case _                ⇒ Future.failed(BadRequestError("Artifact not found"))
+    }
+  }
+
+  def findTaskEntity(entity: BaseEntity): Future[Task] = {
+    import org.elastic4play.services.QueryDSL._
+
+    (entity, entity.model) match {
+      case (a: Task, _) ⇒ Future.successful(a)
+      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+        findSrv(model.parentModel, "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")), Some("0-1"), Nil)
+          ._1.runWith(Sink.head).flatMap(findTaskEntity _)
+      case _ ⇒ Future.failed(BadRequestError("Task not found"))
     }
   }
 
@@ -135,6 +154,12 @@ class ActionOperationSrv @Inject() (
               _ ← caseSrv.update(caze, Fields.empty.set("customFields", customFields), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           }
+        case CloseTask(_, _) ⇒
+          for {
+            initialTask ← findTaskEntity(entity)
+            task ← taskSrv.get(initialTask.id)
+            _ ← taskSrv.update(task, Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsFalse), ModifyConfig(retryOnConflict = 0, version = Some(task.version)))
+          } yield operation.updateStatus(ActionOperationStatus.Success, "")
         case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
       }
       updatedOperation.recover { case error ⇒ operation.updateStatus(ActionOperationStatus.Failure, error.getMessage) }
