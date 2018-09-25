@@ -25,6 +25,11 @@
                     params: {
                         caseId: '@caseId'
                     }
+                },
+                query: {
+                    method: 'POST',
+                    url: './api/case/_search',
+                    isArray: true
                 }
             });
         });

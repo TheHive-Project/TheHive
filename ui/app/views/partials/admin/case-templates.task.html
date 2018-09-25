@@ -26,7 +26,8 @@
         <div class="form-group" ng-class="{ 'has-error' : taskForm.description.$invalid && !taskForm.description.$pristine }">
             <label class="col-md-3 control-label">Task description</label>
             <div class="col-md-9">
-                <markdown-editor content="task.description"></markdown-editor>
+                <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="task.description"></textarea>
+
                 <p class="help-block small">Task's default description</p>
             </div>
         </div>
