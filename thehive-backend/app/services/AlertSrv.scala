@@ -1,8 +1,8 @@
 package services
 
 import java.nio.file.Files
-import javax.inject.{ Inject, Singleton }
 
+import javax.inject.{ Inject, Singleton }
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.matching.Regex
@@ -23,6 +23,7 @@ import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
 import org.elastic4play.services._
+import org.elastic4play.utils.Collection
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
@@ -103,7 +104,14 @@ class AlertSrv(
         case a ⇒ Future.successful(a)
       }
     artifactsFields.flatMap { af ⇒
-      createSrv[AlertModel, Alert](alertModel, fields.set("artifacts", JsArray(af)))
+      /* remove duplicate artifacts */
+      val distinctArtifacts = Collection.distinctBy(af) { a ⇒
+        val data = (a \ "data").asOpt[String]
+        val attachment = (a \ "attachment" \ "id").asOpt[String]
+        val dataType = (a \ "dataType").asOpt[String]
+        data.orElse(attachment).map(_ -> dataType).getOrElse(a)
+      }
+      createSrv[AlertModel, Alert](alertModel, fields.set("artifacts", JsArray(distinctArtifacts)))
     }
   }
 
