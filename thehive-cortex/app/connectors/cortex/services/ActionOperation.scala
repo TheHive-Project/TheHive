@@ -8,7 +8,7 @@ import play.api.libs.json._
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{ Inject, Provider, Singleton }
 import models._
 import org.elasticsearch.index.engine.VersionConflictEngineException
 import services.{ AlertSrv, ArtifactSrv, CaseSrv, TaskSrv }
@@ -92,7 +92,7 @@ object ActionOperation {
 class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
-    alertSrv: AlertSrv,
+    alertSrvProvider: Provider[AlertSrv],
     findSrv: FindSrv,
     artifactSrv: ArtifactSrv,
     implicit val system: ActorSystem,
@@ -100,6 +100,7 @@ class ActionOperationSrv @Inject() (
     implicit val mat: Materializer) {
 
   lazy val logger = Logger(getClass)
+  lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
   def findCaseEntity(entity: BaseEntity): Future[Case] = {
     import org.elastic4play.services.QueryDSL._
