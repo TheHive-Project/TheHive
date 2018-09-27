@@ -51,7 +51,7 @@ trait MispConverter {
     dataType match {
       case "filename"     ⇒ "Payload delivery" → "filename"
       case "fqdn"         ⇒ "Network activity" → "hostname"
-      case "url"          ⇒ "External analysis" → "url"
+      case "url"          ⇒ "Network activity" → "url"
       case "user-agent"   ⇒ "Network activity" → "user-agent"
       case "domain"       ⇒ "Network activity" → "domain"
       case "ip"           ⇒ "Network activity" → "ip-src"
