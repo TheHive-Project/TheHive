@@ -4,3 +4,4 @@ bower_components/
 .idea/
 .tmp/
 dist/
+package-lock.json
