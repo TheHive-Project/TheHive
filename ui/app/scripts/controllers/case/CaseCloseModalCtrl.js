@@ -1,8 +1,8 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCloseModalCtrl',
-        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, NotificationSrv) {
-
+        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, CustomFieldsCacheSrv, NotificationSrv, caze) {
+            $scope.caze = caze;
             $scope.tasksValid = false;
             $scope.tasks = [];
             $scope.formData = {};
@@ -30,8 +30,36 @@
                 }]
             }, 'case_task', 'all');
 
+            var getTemplateCustomFields = function(customFields) {
+                var result = [];
+
+                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                    return {
+                        name: name,
+                        order: definition.order
+                    }
+                }), function(item){
+                    return item.order;
+                }), 'name');
+
+                return result;
+            }
 
             $scope.initialize = function() {
+                CustomFieldsCacheSrv.all().then(function(fields) {
+                    $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
+                    $scope.allCustomFields = fields;                    
+
+                    $scope.mandatoryFields = _.without(_.map($scope.orderedFields, function(cf) {
+                        var fieldDef = fields[cf];
+                        var fieldValue = $scope.caze.customFields[cf][cf.type];
+
+                        if((fieldValue === undefined || fieldValue === null) && fieldDef.mandatory === true) {
+                            return cf;
+                        }
+                    }), undefined);
+
+                });
                 MetricsCacheSrv.all().then(function(metricsCache) {
 
                     $scope.formData = {
@@ -62,9 +90,19 @@
                     data.impactStatus = 'NotApplicable';
                 }
 
-                var promise = $scope.updateField(_.extend({
-                    metrics: $scope.caze.metrics
-                }, data));
+                data.metrics = $scope.caze.metrics;
+                data.customFields = $scope.caze.customFields;
+
+                _.each($scope.mandatoryFields, function(cf) {
+                    var field = data.customFields[cf];
+                    var fieldDef = $scope.allCustomFields[cf];
+
+                    if(fieldDef.type === 'date') {
+                        field[fieldDef.type] = field[fieldDef.type] ? moment(field[fieldDef.type]).valueOf() : field[fieldDef.type];
+                    }
+                });
+
+                var promise = $scope.updateField(data);
 
                 promise.then(function(caze) {
                     $scope.caze = caze;

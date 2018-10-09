@@ -4,19 +4,20 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv, CortexSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
         $scope.caseId = $stateParams.caseId;
         $scope.state = {
             isNewTask: false,
-            showGrouped: false
+            showGrouped: !!AppLayoutSrv.layout.groupTasks
         };
         $scope.newTask = {
             status: 'Waiting'
         };
         $scope.taskResponders = null;
+        $scope.collapseOptions = {};
 
         $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
             scope: $scope,
@@ -38,9 +39,15 @@
             sort: ['-flag', '+order', '+startDate', '+title'],
             onUpdate: function() {
                 $scope.buildTaskGroups($scope.tasks.values);
-            }
-            //pageSize: 30
+            },
+            pageSize: 1000
         });
+
+        $scope.toggleGroupedView = function() {
+            $scope.state.showGrouped = !$scope.state.showGrouped;
+
+            AppLayoutSrv.groupTasks($scope.state.showGrouped);
+        };
 
         $scope.buildTaskGroups = function(tasks) {
             // Sort tasks by order

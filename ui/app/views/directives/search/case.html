@@ -23,5 +23,11 @@
     <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
 </div>
 <div class="mt-xs wrap">
+    <strong>Status:</strong>
+    <div>
+      <span class="label label-default" ng-class="{'label-success': value.status === 'Resolved'}">{{value.status}}</span>
+    </div>
+</div>
+<div class="mt-xs wrap">
     <span ng-bind="value.description| limitTo: 250"></span>
 </div>

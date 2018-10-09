@@ -1,5 +1,120 @@
 # Change Log
 
+## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0...3.1.1)
+
+**Implemented enhancements:**
+
+- Publish stable versions in beta package channels [\#733](https://github.com/TheHive-Project/TheHive/issues/733)
+- url category to MISP: poll for default [\#732](https://github.com/TheHive-Project/TheHive/issues/732)
+- Change Debian dependencies [\#751](https://github.com/TheHive-Project/TheHive/issues/751)
+
+**Fixed bugs:**
+
+- Console output should not be logged in syslog [\#749](https://github.com/TheHive-Project/TheHive/issues/749)
+- Update breaks RHEL [\#743](https://github.com/TheHive-Project/TheHive/issues/743)
+- Observable Result Icons Not Displaying [\#738](https://github.com/TheHive-Project/TheHive/issues/738)
+- UPN attribute is not correctly lowercased [\#736](https://github.com/TheHive-Project/TheHive/issues/736)
+
+**Closed issues:**
+
+- Artifact tags are overwritten by alert sourceRef during import to case [\#734](https://github.com/TheHive-Project/TheHive/issues/734)
+
+## [3.1.0](https://github.com/TheHive-Project/TheHive/tree/3.1.0) (2018-09-25)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC3...3.1.0)
+
+**Implemented enhancements:**
+
+- Add MarkAlertAsRead action to responders [\#729](https://github.com/TheHive-Project/TheHive/issues/729)
+- AddCustomField responder operation [\#724](https://github.com/TheHive-Project/TheHive/issues/724)
+- 3.1.0RC3: Browsing to negative case ids is possible [\#713](https://github.com/TheHive-Project/TheHive/issues/713)
+
+**Fixed bugs:**
+
+- RPM Updates not available \(404\) [\#719](https://github.com/TheHive-Project/TheHive/issues/719)
+- Observables not being displayed [\#655](https://github.com/TheHive-Project/TheHive/issues/655)
+- TheHive Hyperlinking  [\#723](https://github.com/TheHive-Project/TheHive/issues/723)
+- Multiple responder actions does not seem to be handled [\#722](https://github.com/TheHive-Project/TheHive/issues/722)
+- API allows alert creation with duplicate artifacts [\#720](https://github.com/TheHive-Project/TheHive/issues/720)
+- 3.0.1RC3: certificate based authentication failes as attributes are not correctly lowercased [\#714](https://github.com/TheHive-Project/TheHive/issues/714)
+- Fix PAP labels [\#711](https://github.com/TheHive-Project/TheHive/issues/711)
+
+**Closed issues:**
+
+- Cortex Connector [\#721](https://github.com/TheHive-Project/TheHive/issues/721)
+- Markdown syntex not rendered correctly [\#718](https://github.com/TheHive-Project/TheHive/issues/718)
+- 3.1.0RC3: Search produces errors on screen [\#712](https://github.com/TheHive-Project/TheHive/issues/712)
+- TheHive:Alerts don't send observables to Responders [\#725](https://github.com/TheHive-Project/TheHive/issues/725)
+
+**Merged pull requests:**
+
+- CloseTask responder operation [\#728](https://github.com/TheHive-Project/TheHive/pull/728) ([srilumpa](https://github.com/srilumpa))
+- Add AddTagToArtifact action to responders [\#717](https://github.com/TheHive-Project/TheHive/pull/717) ([srilumpa](https://github.com/srilumpa))
+
+## [3.1.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC3) (2018-09-06)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC2...3.1.0-RC3)
+
+**Implemented enhancements:**
+
+- Extend Case Description Field [\#81](https://github.com/TheHive-Project/TheHive/issues/81)
+- Display task description via a collapsible row [\#709](https://github.com/TheHive-Project/TheHive/issues/709)
+- Allow task group auto complete in case template admin section [\#707](https://github.com/TheHive-Project/TheHive/issues/707)
+- Display task group in global task lists [\#705](https://github.com/TheHive-Project/TheHive/issues/705)
+- Make task group input optional [\#696](https://github.com/TheHive-Project/TheHive/issues/696)
+- Related Cases: See \(x\) more links [\#690](https://github.com/TheHive-Project/TheHive/issues/690)
+- Search section: Search for a string over all types of objects [\#689](https://github.com/TheHive-Project/TheHive/issues/689)
+- Filter on computedHandlingDuration in SearchDialog fails [\#688](https://github.com/TheHive-Project/TheHive/issues/688)
+- Change layout of observable creation form [\#706](https://github.com/TheHive-Project/TheHive/pull/706) ([srilumpa](https://github.com/srilumpa))
+
+**Fixed bugs:**
+
+- Adding new observables to an alert retrospectively is impossible [\#511](https://github.com/TheHive-Project/TheHive/issues/511)
+- .sbt build of current git version fails with x-pack-transport error [\#710](https://github.com/TheHive-Project/TheHive/issues/710)
+- PKI authentication fails if user name in certificate has the wrong case [\#700](https://github.com/TheHive-Project/TheHive/issues/700)
+- Error handling deletion and re creation of file observables [\#699](https://github.com/TheHive-Project/TheHive/issues/699)
+- Start waiting tasks when adding task logs [\#695](https://github.com/TheHive-Project/TheHive/issues/695)
+
+## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC1...3.1.0-RC2)
+
+**Implemented enhancements:**
+
+- Add a search box to quickly search for case by caseId [\#685](https://github.com/TheHive-Project/TheHive/issues/685)
+- MISP Exports in livestream miss hyperlink to caseid [\#684](https://github.com/TheHive-Project/TheHive/issues/684)
+- Remember task list configuration \(grouped/list\) [\#681](https://github.com/TheHive-Project/TheHive/issues/681)
+- x509 certificate authentication option 'wantClientAuth' [\#667](https://github.com/TheHive-Project/TheHive/issues/667)
+- TheHive 3.1RC1: Slow reaction if Cortex is \(unclear\) unreachable [\#664](https://github.com/TheHive-Project/TheHive/issues/664)
+- TheHive 3.1RC1: Add status to cases and tasks in new search page [\#663](https://github.com/TheHive-Project/TheHive/issues/663)
+- TheHive 3.1RC1: Add Username that executes an active response to json data field of responder [\#662](https://github.com/TheHive-Project/TheHive/issues/662)
+- Ability to set custom fields as mandatory [\#652](https://github.com/TheHive-Project/TheHive/issues/652)
+- Application.conf needs clarifications [\#606](https://github.com/TheHive-Project/TheHive/issues/606)
+- Observable type boxes doesn't line break on alert preview pane [\#593](https://github.com/TheHive-Project/TheHive/issues/593)
+-  On branch betterDescriptions [\#660](https://github.com/TheHive-Project/TheHive/pull/660) ([secdecompiled](https://github.com/secdecompiled))
+
+**Fixed bugs:**
+
+- The hive docker image has no latest tag [\#670](https://github.com/TheHive-Project/TheHive/issues/670)
+- case metrics unordered in cases [\#419](https://github.com/TheHive-Project/TheHive/issues/419)
+- 3.1.0-RC1- Tasks list is limited to 10 items. [\#679](https://github.com/TheHive-Project/TheHive/issues/679)
+- WebUI inaccessible after upgrading to 3.1.0-0-RC1 \(elastic4play and Play exceptions\) [\#674](https://github.com/TheHive-Project/TheHive/issues/674)
+- play.crypto.secret is depecrated [\#671](https://github.com/TheHive-Project/TheHive/issues/671)
+- 'Tagged as' displayed in Related Cases even if cases are untagged [\#594](https://github.com/TheHive-Project/TheHive/issues/594)
+- Horizontal Scrolling and Word-Wrap options for Logs [\#573](https://github.com/TheHive-Project/TheHive/issues/573)
+- Dashboard visualizations do not work with custom fields [\#478](https://github.com/TheHive-Project/TheHive/issues/478)
+
+**Closed issues:**
+
+- ES Mapping bug [\#680](https://github.com/TheHive-Project/TheHive/issues/680)
+- ignore - delete me  [\#675](https://github.com/TheHive-Project/TheHive/issues/675)
+- HTTPS not working with Keystore [\#669](https://github.com/TheHive-Project/TheHive/issues/669)
+
+**Merged pull requests:**
+
+- Update Cortex reference.conf [\#668](https://github.com/TheHive-Project/TheHive/pull/668) ([ErnHem](https://github.com/ErnHem))
+- Fix some minor typos [\#658](https://github.com/TheHive-Project/TheHive/pull/658) ([srilumpa](https://github.com/srilumpa))
+- Move input group addons from right to left for better usage [\#672](https://github.com/TheHive-Project/TheHive/pull/672) ([srilumpa](https://github.com/srilumpa))
+
 ## [3.1.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC1) (2018-07-31)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.10...3.1.0-RC1)
 

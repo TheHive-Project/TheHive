@@ -1,9 +1,10 @@
 package connectors.cortex.controllers
 
-import javax.inject.{ Inject, Singleton }
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
-import play.api.Logger
+import play.api.{ Configuration, Logger }
 import play.api.http.Status
 import play.api.libs.json.{ JsObject, Json }
 import play.api.mvc._
@@ -11,20 +12,21 @@ import play.api.routing.SimpleRouter
 import play.api.routing.sird.{ DELETE, GET, PATCH, POST, UrlContext }
 
 import akka.actor.ActorSystem
-
-import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
-import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.{ analyzerFormat, responderFormat }
 import connectors.cortex.services.{ CortexActionSrv, CortexAnalyzerSrv, CortexConfig }
-import models.HealthStatus.Type
+import javax.inject.{ Inject, Singleton }
 import models.{ HealthStatus, Roles }
 
+import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
+import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
+import org.elastic4play.{ BadRequestError, NotFoundError, Timed }
+
 @Singleton
-class CortexCtrl @Inject() (
+class CortexCtrl(
+    statusCheckInterval: FiniteDuration,
     reportTemplateCtrl: ReportTemplateCtrl,
     cortexConfig: CortexConfig,
     cortexAnalyzerSrv: CortexAnalyzerSrv,
@@ -37,34 +39,79 @@ class CortexCtrl @Inject() (
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem) extends AbstractController(components) with Connector with Status {
 
+  @Inject
+  def this(
+      configuration: Configuration,
+      reportTemplateCtrl: ReportTemplateCtrl,
+      cortexConfig: CortexConfig,
+      cortexAnalyzerSrv: CortexAnalyzerSrv,
+      cortexActionSrv: CortexActionSrv,
+      auxSrv: AuxSrv,
+      authenticated: Authenticated,
+      fieldsBodyParser: FieldsBodyParser,
+      renderer: Renderer,
+      components: ControllerComponents,
+      ec: ExecutionContext,
+      system: ActorSystem) = this(
+    configuration.getOptional[FiniteDuration]("cortex.statusCheckInterval").getOrElse(1.minute),
+    reportTemplateCtrl,
+    cortexConfig,
+    cortexAnalyzerSrv,
+    cortexActionSrv,
+    auxSrv,
+    authenticated,
+    fieldsBodyParser,
+    renderer,
+    components,
+    ec,
+    system)
   val name = "cortex"
   private[CortexCtrl] lazy val logger = Logger(getClass)
 
-  override def status: Future[JsObject] =
-    Future.traverse(cortexConfig.instances)(instance ⇒ instance.status())
-      .map { statusDetails ⇒
+  private var _status = JsObject.empty
+  private def updateStatus(): Unit = Future.traverse(cortexConfig.instances)(instance ⇒ instance.status())
+    .onComplete {
+      case Success(statusDetails) ⇒
         val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
         val healthStatus = if (distinctStatus.contains("OK")) {
           if (distinctStatus.size > 1) "WARNING" else "OK"
         }
         else "ERROR"
-        Json.obj(
+        _status = Json.obj(
           "enabled" → true,
           "servers" → statusDetails,
           "status" → healthStatus)
-      }
+        system.scheduler.scheduleOnce(statusCheckInterval)(updateStatus())
+      case _: Failure[_] ⇒
+        _status = Json.obj(
+          "enabled" → true,
+          "servers" → JsObject.empty,
+          "status" → "ERROR")
+        system.scheduler.scheduleOnce(statusCheckInterval)(updateStatus())
+    }
+  updateStatus()
 
-  override def health: Future[Type] = {
-    Future.traverse(cortexConfig.instances)(instance ⇒ instance.health())
-      .map { healthStatus ⇒
-        val distinctStatus = healthStatus.toSet
-        if (distinctStatus.contains(HealthStatus.Ok)) {
-          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-        }
-        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-        else HealthStatus.Warning
+  override def status: JsObject = _status
+
+  private var _health: HealthStatus.Type = HealthStatus.Ok
+  private def updateHealth(): Unit =
+    Future.traverse(cortexConfig.instances)(_.health())
+      .onComplete {
+        case Success(healthStatus) ⇒
+          val distinctStatus = healthStatus.toSet
+          _health = if (distinctStatus.contains(HealthStatus.Ok)) {
+            if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+          }
+          else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+          else HealthStatus.Warning
+          system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
+        case _: Failure[_] ⇒
+          _health = HealthStatus.Error
+          system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
       }
-  }
+  updateHealth()
+
+  override def health: HealthStatus.Type = _health
 
   val router = SimpleRouter {
     case POST(p"/job") ⇒ createJob

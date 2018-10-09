@@ -2,7 +2,7 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET      /                                        controllers.Default.redirect(to = "/index.html")
+GET      /                                        controllers.Home.redirect
 GET      /api/status                              controllers.StatusCtrl.get
 GET      /api/health                              controllers.StatusCtrl.health
 GET      /api/logout                              controllers.AuthenticationCtrl.logout()
@@ -50,6 +50,7 @@ POST     /api/case/:caseId/task                   controllers.TaskCtrl.create(ca
 GET      /api/case/task/:taskId/log               controllers.LogCtrl.findInTask(taskId)
 POST     /api/case/task/:taskId/log/_search       controllers.LogCtrl.findInTask(taskId)
 POST     /api/case/task/log/_search               controllers.LogCtrl.find()
+POST     /api/case/task/log/_stats                controllers.LogCtrl.stats()
 POST     /api/case/task/:taskId/log               controllers.LogCtrl.create(taskId)
 PATCH    /api/case/task/log/:logId                controllers.LogCtrl.update(logId)
 DELETE   /api/case/task/log/:logId                controllers.LogCtrl.delete(logId)

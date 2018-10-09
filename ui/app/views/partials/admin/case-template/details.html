@@ -45,7 +45,7 @@
     </label>
     <div class="col-md-9">
         <a class="clearfix" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
-            <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px" value="$vm.template.pap"></tlp>
+            <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px" value="$vm.template.pap" namespace="PAP"></tlp>
         </a>
         <p class="help-block small vpad5">This will be the default case PAP</p>
     </div>

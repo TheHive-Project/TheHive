@@ -1,7 +1,7 @@
 # Secret Key
 # The secret key is used to secure cryptographic functions.
 # WARNING: If you deploy your application on several servers, make sure to use the same key.
-#play.crypto.secret="***changeme***"
+#play.http.secret.key="***changeme***"
 
 # Elasticsearch
 search {
@@ -128,8 +128,9 @@ play.http.parser.maxDiskBuffer=1G
 # Cortex instance a name and specify the associated URL.
 #
 # In order to use Cortex, first you need to enable the Cortex module by uncomment the next line
+
 #play.modules.enabled += connectors.cortex.CortexConnector
-#
+
 cortex {
   #"CORTEX-SERVER-ID" {
   #  url = ""
@@ -149,6 +150,7 @@ cortex {
 # Prior to configuring the integration with a MISP  instance,  you  must
 # enable the MISP connector. This will allow you  to  import  events  to
 # and/or export cases to the MISP instance(s).
+
 #play.modules.enabled += connectors.misp.MispConnector
 
 misp {

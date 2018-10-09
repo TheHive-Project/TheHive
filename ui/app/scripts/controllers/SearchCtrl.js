@@ -4,8 +4,10 @@
         .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserInfoSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
+                {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
                 {name: 'case', label: 'Cases', icon: 'glyphicon glyphicon-folder-open'},
                 {name: 'case_task', label: 'Tasks', icon: 'glyphicon glyphicon-tasks'},
+                {name: 'case_task_log', label: 'Tasks Logs', icon: 'glyphicon glyphicon-comment'},
                 {name: 'case_artifact', label: 'Observables', icon: 'glyphicon glyphicon-pushpin'},
                 {name: 'alert', label: 'Alerts', icon: 'glyphicon glyphicon-alert'},
                 {name: 'case_artifact_job', label: 'Jobs', icon: 'glyphicon glyphicon-cog'},
@@ -31,7 +33,7 @@
             };
 
             $scope.getUserInfo = UserInfoSrv;
-            $scope.config = GlobalSearchSrv.restore()
+            $scope.config = GlobalSearchSrv.restore();
 
             $scope.openEntity = EntitySrv.open;
             $scope.isImage = function(contentType) {
@@ -50,7 +52,7 @@
                             return CaseTemplateSrv.list();
                         }
                     }
-                }).result.then(function(response) {
+                }).result.then(function(/*response*/) {
                   $scope.searchResults.update();
                 });
             };
@@ -77,7 +79,7 @@
                 $scope.searchResults = null;
 
                 GlobalSearchSrv.save($scope.config);
-            }
+            };
 
             $scope.setFilterField = function(filter, entity) {
                 var field = $scope.metadata[entity].attributes[filter.field];
@@ -103,16 +105,23 @@
                 $scope.search();
             };
 
+            $scope.filterFields = function(entity) {
+                return _.filter($scope.metadata[entity].attributes, function(value, key) {
+                    return !key.startsWith('computed.');
+                });
+            };
+
             $scope.search = function() {
-                var entity = $scope.config.entity,
-                    search = $scope.config[entity].search,
-                    filters = $scope.config[entity].filters || [],
+                var entityName = $scope.config.entity,
+                    entity = $scope.config[entityName] || {},
+                    search = entity.search,
+                    filters = entity.filters || [],
                     filters_query = null,
                     search_query = null;
 
                 try {
-                    if(filters.length > 0) {
-                        filters_query = QueryBuilderSrv.buildFiltersQuery($scope.metadata[entity].attributes, filters);
+                    if(entityName !== 'all' && filters.length > 0) {
+                        filters_query = QueryBuilderSrv.buildFiltersQuery($scope.metadata[entityName].attributes, filters);
                     }
 
                     if(search) {
@@ -125,11 +134,11 @@
                     if(query) {
                         GlobalSearchSrv.save($scope.config);
 
-                        $scope.searchResults = PSearchSrv(undefined, $scope.metadata[entity].path, {
+                        $scope.searchResults = PSearchSrv(undefined, entityName === 'all' ? 'any' : $scope.metadata[entityName].path, {
                             filter: query,
                             baseFilter: $scope.baseFilter,
                             nparent: 10,
-                            nstats: entity === 'audit',
+                            nstats: entityName === 'audit',
                             skipStream: true
                         });
                     } else {

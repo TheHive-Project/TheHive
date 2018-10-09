@@ -310,7 +310,7 @@ ul.observable-reports-summary li {
     padding: 20px 10px 10px 10px;
 }
 
-.case-metrics dt, .case-custom-fields dt {
+.case-details dt, .case-metrics dt, .case-custom-fields dt {
     width: 200px !important;
 }
 
@@ -652,4 +652,18 @@ table tr td.task-actions span.action-button {
 .dropdown-menu.align-right {
     left: auto;
     right: 0;
+}
+
+.description-pane{
+    /* max-height: 550px; */
+    overflow-y: auto;
+}
+
+.table.tasks-table>tbody+tbody {
+  border: none;
+}
+
+.table.tasks-table .filter-panel {
+  margin-left:40px;
+  margin-right:40px;
 }

@@ -3,7 +3,7 @@
     angular.module('theHiveDirectives').directive('fixedHeight', function($window, $timeout) {
         return {
             restrict: 'A',
-            link: function(scope, elem, attr) {
+            link: function(scope, elem) {
 
                 $timeout(function() {
                     var windowHeight = $(window).height();
@@ -22,7 +22,7 @@
                 });
 
             }
-        }
+        };
     });
 
 })();

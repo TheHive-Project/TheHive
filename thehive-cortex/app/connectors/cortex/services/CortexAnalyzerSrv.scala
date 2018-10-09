@@ -2,8 +2,8 @@ package connectors.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -215,7 +215,12 @@ class CortexAnalyzerSrv @Inject() (
     } yield job + ("report" → updatedReport)
   }
 
-  def updateJobWithCortex(jobId: String, cortexJobId: String, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Future[Job] = {
+  def updateJobWithCortex(
+      jobId: String,
+      cortexJobId: String,
+      cortex: CortexClient,
+      retryDelay: FiniteDuration = cortexConfig.refreshDelay,
+      maxRetryOnError: Int = cortexConfig.maxRetryOnError)(implicit authContext: AuthContext): Future[Job] = {
     def updateArtifactSummary(job: Job, report: String) = {
       Try(Json.parse(report))
         .toOption
@@ -237,7 +242,7 @@ class CortexAnalyzerSrv @Inject() (
     }
 
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update job $jobId")
-    cortex.waitReport(cortexJobId, 1.minute).flatMap { j ⇒
+    cortex.waitReport(cortexJobId, retryDelay).flatMap { j ⇒
       val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
       if (status == JobStatus.InProgress || status == JobStatus.Waiting)
         updateJobWithCortex(jobId, cortexJobId, cortex)
@@ -264,9 +269,13 @@ class CortexAnalyzerSrv @Inject() (
             .set("status", JobStatus.Failure.toString)
             .set("endDate", Json.toJson(new Date))
           update(jobId, jobFields)
-        case _ if maxError > 0 ⇒
+        case _ if maxRetryOnError > 0 ⇒
           logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-          updateJobWithCortex(jobId, cortexJobId, cortex, maxError - 1)
+          val result = Promise[Job]
+          system.scheduler.scheduleOnce(retryDelay) {
+            updateJobWithCortex(jobId, cortexJobId, cortex, retryDelay, maxRetryOnError - 1).onComplete(result.complete)
+          }
+          result.future
         case _ ⇒
           logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
           update(jobId, Fields.empty

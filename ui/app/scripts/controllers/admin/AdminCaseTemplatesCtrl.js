@@ -202,10 +202,15 @@
                             return action;
                         },
                         task: function() {
-                            return _.extend({}, {group: 'default'}, task);
+                            return _.extend({}, task);
                         },
                         users: function() {
                             return UserSrv.list({ status: 'Ok' });
+                        },
+                        groups: function() {
+                            var existingGroups = _.uniq(_.pluck(self.template.tasks, 'group').sort());
+
+                            return existingGroups.length === 0 ? ['default'] : existingGroups;
                         }
                     }
                 });
@@ -366,10 +371,11 @@
                     });
             };
         })
-        .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users) {
+        .controller('AdminCaseTemplateTasksCtrl', function($scope, $uibModalInstance, action, task, users, groups) {
             $scope.task = task || {};
             $scope.action = action;
             $scope.users = users;
+            $scope.groups = groups;
 
             $scope.cancel = function() {
                 $uibModalInstance.dismiss();

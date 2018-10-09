@@ -2,8 +2,8 @@ package connectors.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
@@ -11,6 +11,7 @@ import play.api.Logger
 import play.api.libs.json._
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
 import connectors.cortex.models.JsonFormat._
@@ -21,7 +22,7 @@ import services.UserSrv
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
-import org.elastic4play.models.BaseEntity
+import org.elastic4play.models.{ AttributeOption, BaseEntity }
 import org.elastic4play.services.{ User ⇒ _, _ }
 import org.elastic4play.{ BadRequestError, MissingAttributeError, NotFoundError }
 
@@ -36,6 +37,7 @@ class CortexActionSrv @Inject() (
     findSrv: FindSrv,
     updateSrv: UpdateSrv,
     auxSrv: AuxSrv,
+    implicit val system: ActorSystem,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer) {
 
@@ -103,9 +105,15 @@ class CortexActionSrv @Inject() (
   private def update(action: Action, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
     updateSrv[Action](action, fields, modifyConfig)
 
-  def updateActionWithCortex(actionId: String, cortexJobId: String, entity: BaseEntity, cortex: CortexClient, maxError: Int = 3)(implicit authContext: AuthContext): Future[Action] = {
+  def updateActionWithCortex(
+      actionId: String,
+      cortexJobId: String,
+      entity: BaseEntity,
+      cortex: CortexClient,
+      retryDelay: FiniteDuration = cortexConfig.refreshDelay,
+      maxRetryOnError: Int = cortexConfig.maxRetryOnError)(implicit authContext: AuthContext): Future[Action] = {
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
-    cortex.waitReport(cortexJobId, 1.minute).flatMap { j ⇒
+    cortex.waitReport(cortexJobId, retryDelay).flatMap { j ⇒
       val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
       if (status == JobStatus.InProgress || status == JobStatus.Waiting)
         updateActionWithCortex(actionId, cortexJobId, entity, cortex)
@@ -136,9 +144,13 @@ class CortexActionSrv @Inject() (
             .set("status", JobStatus.Failure.toString)
             .set("endDate", Json.toJson(new Date))
           update(actionId, actionFields)
-        case _ if maxError > 0 ⇒
+        case _ if maxRetryOnError > 0 ⇒
           logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
-          updateActionWithCortex(actionId, cortexJobId, entity, cortex, maxError - 1)
+          val result = Promise[Action]
+          system.scheduler.scheduleOnce(retryDelay) {
+            updateActionWithCortex(actionId, cortexJobId, entity, cortex, retryDelay, maxRetryOnError - 1).onComplete(result.complete)
+          }
+          result.future
         case _ ⇒
           logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
           update(actionId, Fields.empty
@@ -209,7 +221,7 @@ class CortexActionSrv @Inject() (
         case _                 ⇒ JsObject.empty
       }
       entity ← getEntity(objectType, objectId)
-      entityJson ← auxSrv(entity, 10, withStats = false, removeUnaudited = true)
+      entityJson ← auxSrv(entity, 10, withStats = false, !_.contains(AttributeOption.sensitive))
       caze ← actionOperationSrv.findCaseEntity(entity).map(Some(_)).recover { case _ ⇒ None }
       tlp = fields.getLong("tlp").orElse(caze.map(_.tlp())).getOrElse(2L)
       pap = caze.map(_.pap()).getOrElse(2L)
@@ -221,7 +233,7 @@ class CortexActionSrv @Inject() (
         tlp,
         pap,
         message,
-        parameters)
+        parameters + ("user" -> JsString(authContext.userId)))
       job = jobJson.as[CortexJob] //(cortexActionJobReads(cortexClient.name))
       action ← createSrv[ActionModel, Action](actionModel, Fields.empty
         .set("objectType", entity.model.modelName)

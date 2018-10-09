@@ -104,8 +104,10 @@
                 },
 
                 extractQueryParam: function(paramName, queryString) {
-                    if (!queryString || !paramName)
+                    if (!queryString || !paramName) {
                         return;
+                    }
+
                     var param = $location.search()[paramName];
 
                     if (param) {

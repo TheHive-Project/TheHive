@@ -28,6 +28,14 @@
             <div ng-switch-when="severity">
                 {{k}}: <severity active="false" value="v"></severity>
             </div>
+            <div ng-switch-when="status">
+                {{k}}: <span class="clickable label label-default" ng-class="{
+                  'label-danger': v === 'New', 
+                  'label-warning': v === 'Update'}">{{::v}}</span>
+            </div>
+            <div ng-switch-when="case">
+                {{k}}: <a href ui-sref="app.case.details({caseId: v})">{{v}}</a>
+            </div>
             <div ng-switch-when="tags">
                 {{k}}:
                 <span ng-repeat="tag in v">

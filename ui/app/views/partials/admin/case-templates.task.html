@@ -17,14 +17,17 @@
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-md-9">
-                <input class="form-control" ng-model="task.group" placeholder="Task group" required type="text">
+                <input class="form-control" ng-model="task.group" placeholder="Task group" required type="text"
+                    uib-typeahead="g for g in groups | filter:$viewValue"
+                    typeahead-min-length="0">
             </div>
         </div>
 
         <div class="form-group" ng-class="{ 'has-error' : taskForm.description.$invalid && !taskForm.description.$pristine }">
             <label class="col-md-3 control-label">Task description</label>
             <div class="col-md-9">
-                <markdown-editor content="task.description"></markdown-editor>
+                <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="task.description"></textarea>
+
                 <p class="help-block small">Task's default description</p>
             </div>
         </div>
