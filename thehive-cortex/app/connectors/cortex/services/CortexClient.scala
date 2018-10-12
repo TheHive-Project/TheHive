@@ -2,6 +2,7 @@ package connectors.cortex.services
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 import play.api.{ Configuration, Logger }
 import play.api.http.HeaderNames
@@ -42,7 +43,7 @@ object CortexConfig {
       cortexWS = globalWS.withConfig(cfg)
       key ← cfg.subKeys
       if key != "ws"
-      c ← cfg.getOptional[Configuration](key)
+      c ← Try(cfg.get[Configuration](key)).toOption
       instanceWS = cortexWS.withConfig(c)
       cic ← getCortexClient(key, c, instanceWS)
     } yield cic
