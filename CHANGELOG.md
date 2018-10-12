@@ -1,14 +1,21 @@
 # Change Log
 
-## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
+## [3.1.2](https://github.com/TheHive-Project/TheHive/tree/3.1.2) (2018-10-12)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.1...3.1.2)
 
+**Fixed bugs:**
+
+- Cortex polling settings break startup [\#754](https://github.com/TheHive-Project/TheHive/issues/754)
+
+## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0...3.1.1)
 
 **Implemented enhancements:**
 
+- Allow TheHive to use a custom root context [\#752](https://github.com/TheHive-Project/TheHive/issues/752)
+- Change Debian dependencies [\#751](https://github.com/TheHive-Project/TheHive/issues/751)
 - Publish stable versions in beta package channels [\#733](https://github.com/TheHive-Project/TheHive/issues/733)
 - url category to MISP: poll for default [\#732](https://github.com/TheHive-Project/TheHive/issues/732)
-- Change Debian dependencies [\#751](https://github.com/TheHive-Project/TheHive/issues/751)
 
 **Fixed bugs:**
 
