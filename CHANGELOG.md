@@ -1,5 +1,33 @@
 # Change Log
 
+## [3.1.2](https://github.com/TheHive-Project/TheHive/tree/3.1.2) (2018-10-12)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.1...3.1.2)
+
+**Fixed bugs:**
+
+- Cortex polling settings break startup [\#754](https://github.com/TheHive-Project/TheHive/issues/754)
+
+## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0...3.1.1)
+
+**Implemented enhancements:**
+
+- Allow TheHive to use a custom root context [\#752](https://github.com/TheHive-Project/TheHive/issues/752)
+- Change Debian dependencies [\#751](https://github.com/TheHive-Project/TheHive/issues/751)
+- Publish stable versions in beta package channels [\#733](https://github.com/TheHive-Project/TheHive/issues/733)
+- url category to MISP: poll for default [\#732](https://github.com/TheHive-Project/TheHive/issues/732)
+
+**Fixed bugs:**
+
+- Console output should not be logged in syslog [\#749](https://github.com/TheHive-Project/TheHive/issues/749)
+- Update breaks RHEL [\#743](https://github.com/TheHive-Project/TheHive/issues/743)
+- Observable Result Icons Not Displaying [\#738](https://github.com/TheHive-Project/TheHive/issues/738)
+- UPN attribute is not correctly lowercased [\#736](https://github.com/TheHive-Project/TheHive/issues/736)
+
+**Closed issues:**
+
+- Artifact tags are overwritten by alert sourceRef during import to case [\#734](https://github.com/TheHive-Project/TheHive/issues/734)
+
 ## [3.1.0](https://github.com/TheHive-Project/TheHive/tree/3.1.0) (2018-09-25)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC3...3.1.0)
 
@@ -11,19 +39,20 @@
 
 **Fixed bugs:**
 
+- RPM Updates not available \(404\) [\#719](https://github.com/TheHive-Project/TheHive/issues/719)
+- Observables not being displayed [\#655](https://github.com/TheHive-Project/TheHive/issues/655)
 - TheHive Hyperlinking  [\#723](https://github.com/TheHive-Project/TheHive/issues/723)
 - Multiple responder actions does not seem to be handled [\#722](https://github.com/TheHive-Project/TheHive/issues/722)
 - API allows alert creation with duplicate artifacts [\#720](https://github.com/TheHive-Project/TheHive/issues/720)
 - 3.0.1RC3: certificate based authentication failes as attributes are not correctly lowercased [\#714](https://github.com/TheHive-Project/TheHive/issues/714)
 - Fix PAP labels [\#711](https://github.com/TheHive-Project/TheHive/issues/711)
-- Observables not being displayed [\#655](https://github.com/TheHive-Project/TheHive/issues/655)
 
 **Closed issues:**
 
-- TheHive:Alerts don't send observables to Responders [\#725](https://github.com/TheHive-Project/TheHive/issues/725)
 - Cortex Connector [\#721](https://github.com/TheHive-Project/TheHive/issues/721)
 - Markdown syntex not rendered correctly [\#718](https://github.com/TheHive-Project/TheHive/issues/718)
 - 3.1.0RC3: Search produces errors on screen [\#712](https://github.com/TheHive-Project/TheHive/issues/712)
+- TheHive:Alerts don't send observables to Responders [\#725](https://github.com/TheHive-Project/TheHive/issues/725)
 
 **Merged pull requests:**
 

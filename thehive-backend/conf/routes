@@ -2,7 +2,7 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET      /                                        controllers.Default.redirect(to = "/index.html")
+GET      /                                        controllers.Home.redirect
 GET      /api/status                              controllers.StatusCtrl.get
 GET      /api/health                              controllers.StatusCtrl.health
 GET      /api/logout                              controllers.AuthenticationCtrl.logout()
