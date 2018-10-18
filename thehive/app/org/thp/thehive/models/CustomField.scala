@@ -20,7 +20,7 @@ sealed abstract class CustomFieldType[T] {
   def getValue(ccf: CaseCustomField): T
   val name: String
   val writes: Writes[T]
-  override def toString = name
+  override def toString: String = name
 }
 
 object CustomFieldString extends CustomFieldType[String] {

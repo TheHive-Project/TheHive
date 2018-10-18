@@ -32,7 +32,9 @@ object InputCustomFieldValue {
           case (name, FNumber(value))   ⇒ Good(InputCustomFieldValue(name, value))
           case (name, FBoolean(value))  ⇒ Good(InputCustomFieldValue(name, value))
           case (name, FAny(value :: _)) ⇒ Good(InputCustomFieldValue(name, value))
-          case (name, other)            ⇒ Bad(One(InvalidFormatAttributeError(name, "CustomFieldValue", other)))
+          case (name, other) ⇒
+            Bad(One(
+              InvalidFormatAttributeError(name, "CustomFieldValue", Seq("field: string", "field: number", "field: boolean", "field: string"), other)))
         }
         .map(_.toSeq)
   }

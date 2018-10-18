@@ -1,6 +1,6 @@
 package org.thp.thehive.models
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{ EdgeEntity, VertexEntity }
+import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @VertexEntity
 case class Share()

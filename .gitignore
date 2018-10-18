@@ -1,6 +1,8 @@
 logs
 bin
 conf/application.conf
+graphql.config.json
+graphql.schema.json
 
 # sbt specific
 .cache

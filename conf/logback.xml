@@ -38,6 +38,7 @@
     <logger name="org.janusgraph.graphdb" level="INFO" />
     <logger name="org.thp.thehive.client" level="DEBUG" />
     <logger name="org.thp.thehive.services.LocalAuthSrv" level="TRACE" />
+    <logger name="org.thp.scalligraph.graphql" level="TRACE" />
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE" />

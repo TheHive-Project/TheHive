@@ -1,16 +1,16 @@
 package org.thp.thehive.controllers.v1
 
 import play.api.libs.json.Json
-import play.api.mvc.{ Action, AnyContent, Results }
+import play.api.mvc.{Action, AnyContent, Results}
 
 import io.scalaland.chimney.dsl._
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.{ ApiMethod, FieldsParser, UpdateFieldsParser }
+import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.dto.v1.{ InputShare, OutputShare }
+import org.thp.thehive.dto.v1.{InputShare, OutputShare}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{ CaseSrv, OrganisationSrv, ShareSrv }
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv}
 
 object ShareXfrm {
   def fromInput(inputShare: InputShare): Share =
@@ -35,7 +35,7 @@ class ShareCtrl @Inject()(apiMethod: ApiMethod, db: Database, shareSrv: ShareSrv
           val inputShare: InputShare = request.body('share)
           val organisation           = organisationSrv.getOrFail(inputShare.organisationName)
           val `case`                 = caseSrv.getOrFail(inputShare.caseId)
-          val richShare           = shareSrv.create(`case`, organisation)
+          val richShare              = shareSrv.create(`case`, organisation)
           val outputShare            = ShareXfrm.toOutput(richShare)
           Results.Created(Json.toJson(outputShare))
         }
@@ -59,10 +59,7 @@ class ShareCtrl @Inject()(apiMethod: ApiMethod, db: Database, shareSrv: ShareSrv
     apiMethod("list share")
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val shares = shareSrv
-            .initSteps
-              .richShare
-            .toList
+          val shares = shareSrv.initSteps.richShare.toList
             .map(ShareXfrm.toOutput)
           Results.Ok(Json.toJson(shares))
         }

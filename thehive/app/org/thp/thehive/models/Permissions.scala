@@ -26,7 +26,7 @@ object Permissions {
   def toPermission: PartialFunction[String, Permission] = Function.unlift(withName)
 
   val mapping: Mapping[Permission, Permission, String] =
-    new SingleMapping[Permission, String](classOf[String], r ⇒ Some(r.name), withName(_).get)
+    new SingleMapping[Permission, String](r ⇒ Some(r.name), withName(_).get)
 
   val parser: FieldsParser[Permission] = FieldsParser.string.map("")(toPermission)
 

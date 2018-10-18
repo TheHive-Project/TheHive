@@ -3,8 +3,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WSClient
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.ws.{WSAuthScheme, WSClient}
 
 import org.thp.thehive.dto.v1._
 
@@ -27,5 +27,15 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   val user         = new UserClient(baseUrl)
   val customFields = new BaseClient[InputCustomField, OutputCustomField](s"$baseUrl/api/v1/customField")
   val organisation = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
-  val share = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
+  val share        = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
+  val task         = new BaseClient[InputTask, OutputTask](s"$baseUrl/api/v1/task")
+  def query(q: JsObject*)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
+    ws.url(s"$baseUrl/api/v1/query")
+      .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
+      .post(Json.obj("query" → q))
+      .transform {
+        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue])
+        case Success(r)                          ⇒ Failure(ApplicationError(r))
+        case Failure(t)                          ⇒ throw t
+      }
 }

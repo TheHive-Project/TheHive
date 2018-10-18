@@ -1,6 +1,6 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{ Format, Json, Writes }
+import play.api.libs.json.{Format, Json, Writes}
 
 case class InputUser(login: String, name: String, permissions: Seq[String], password: Option[String], organisation: Option[String] = None)
 

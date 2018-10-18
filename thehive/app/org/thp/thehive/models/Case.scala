@@ -50,9 +50,6 @@ case class CaseIndicator()
 @EdgeEntity[Case, User]
 case class CaseUser()
 
-@EdgeEntity[Case, Task]
-case class CaseTask()
-
 @EdgeEntity[Case, Observable]
 case class CaseObservable()
 

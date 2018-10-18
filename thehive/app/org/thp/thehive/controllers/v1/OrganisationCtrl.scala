@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v1
 
 import play.api.libs.json.Json
-import play.api.mvc.{ Action, AnyContent, Results }
+import play.api.mvc.{Action, AnyContent, Results}
 
 import io.scalaland.chimney.dsl._
-import javax.inject.{ Inject, Singleton }
-import org.thp.scalligraph.controllers.{ ApiMethod, FieldsParser, UpdateFieldsParser }
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.dto.v1.{ InputOrganisation, OutputOrganisation }
+import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationSrv
 
@@ -32,8 +32,8 @@ class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisatio
       .requires(Permissions.admin) { implicit request ⇒
         db.transaction { implicit graph ⇒
           val inputOrganisation: InputOrganisation = request.body('organisation)
-          val createdOrganisation  = organisationSrv.create(OrganisationXfrm.fromInput(inputOrganisation))
-          val outputOrganisation = OrganisationXfrm.toOutput(createdOrganisation)
+          val createdOrganisation                  = organisationSrv.create(OrganisationXfrm.fromInput(inputOrganisation))
+          val outputOrganisation                   = OrganisationXfrm.toOutput(createdOrganisation)
           Results.Created(Json.toJson(outputOrganisation))
         }
       }
@@ -43,8 +43,8 @@ class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisatio
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
           val organisation = organisationSrv
-              .getOrFail(organisationId)
-          val outputOrganisation   = OrganisationXfrm.toOutput(organisation)
+            .getOrFail(organisationId)
+          val outputOrganisation = OrganisationXfrm.toOutput(organisation)
           Results.Ok(Json.toJson(outputOrganisation))
         }
       }
@@ -53,9 +53,7 @@ class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisatio
     apiMethod("list organisation")
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val organisations = organisationSrv
-            .initSteps
-            .toList
+          val organisations = organisationSrv.initSteps.toList
             .map(OrganisationXfrm.toOutput)
           Results.Ok(Json.toJson(organisations))
         }

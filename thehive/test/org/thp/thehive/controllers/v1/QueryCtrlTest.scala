@@ -8,8 +8,9 @@ import org.thp.thehive.models.{AppBuilder, DatabaseBuilder, InitialAuthContext, 
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, PlaySpecification}
-
 import scala.concurrent.Future
+
+import org.thp.scalligraph.auth.AuthSrv
 
 class QueryCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read))
@@ -23,6 +24,7 @@ class QueryCtrlTest extends PlaySpecification with Mockito {
       .bindToProvider(dbProvider)
       .bindToProvider(dbProvider.asHookable)
       .bindInstance[Authenticated](authenticated)
+      .bindInstance[AuthSrv](mock[AuthSrv])
     app.instanceOf[DatabaseBuilder]
     val queryCtrl: QueryCtrl = app.instanceOf[QueryCtrl]
 
@@ -31,11 +33,12 @@ class QueryCtrlTest extends PlaySpecification with Mockito {
         val request = FakeRequest("POST", "/api/v1/query")
           .withJsonBody(
             Json.obj("query" → Json.arr(
-              Json.obj("_cases" → JsNull),
-              Json.obj("_filter" → Json.obj("_and" → Json
-                .arr(Json.obj("_is" → Json.obj("tlp" → 3)), Json.obj("_is" → Json.obj("severity" → 3)), Json.obj("_is" → Json.obj("pap" → 3))))),
-              Json.obj("_richCase" → JsNull),
-              Json.obj("_toList"   → JsNull)
+              Json.obj("_name" → "listCase"),
+              Json.obj(
+                "_name" → "filter",
+                "_and" → Json
+                  .arr(Json.obj("_is" → Json.obj("tlp" → 3)), Json.obj("_is" → Json.obj("severity" → 3)), Json.obj("_is" → Json.obj("pap" → 3)))),
+              Json.obj("_name" → "toList")
             )))
         val result              = queryCtrl.execute(request)
         val bodyJson            = contentAsJson(result)

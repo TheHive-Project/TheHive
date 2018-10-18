@@ -1,9 +1,9 @@
 package org.thp.thehive.services
 
-import java.util.{ List => JList }
+import java.util.{List ⇒ JList}
 
 import gremlin.scala._
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
@@ -14,7 +14,7 @@ import org.thp.thehive.models._
 class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, ShareSteps] {
 
   val shareOrganisationSrv = new EdgeSrv[ShareOrganisation, Share, Organisation]
-  val shareCaseSrv = new EdgeSrv[ShareCase, Share, Case]
+  val shareCaseSrv         = new EdgeSrv[ShareCase, Share, Case]
 
   override def steps(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
 
@@ -31,18 +31,18 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseV
   override def newInstance(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
 
   def richShare: GremlinScala[RichShare] =
-  raw
-    .project[Any]("share", "case", "organisation")
-    .by()
-    .by(__[Vertex].outTo[ShareCase].values[String]("_id").fold.traversal)
-    .by(__[Vertex].outTo[ShareOrganisation].values[String]("name").fold.traversal)
-    .map {
-      case ValueMap(m) ⇒
-        RichShare(
-          onlyOneOf[String](m.get[JList[String]]("case")),
-          onlyOneOf[String](m.get[JList[String]]("organisation"))
-        )
-    }
+    raw
+      .project[Any]("share", "case", "organisation")
+      .by()
+      .by(__[Vertex].outTo[ShareCase].values[String]("_id").fold.traversal)
+      .by(__[Vertex].outTo[ShareOrganisation].values[String]("name").fold.traversal)
+      .map {
+        case ValueMap(m) ⇒
+          RichShare(
+            onlyOneOf[String](m.get[JList[String]]("case")),
+            onlyOneOf[String](m.get[JList[String]]("organisation"))
+          )
+      }
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[ShareOrganisation])
 

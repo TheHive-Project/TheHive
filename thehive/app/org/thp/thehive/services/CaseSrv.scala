@@ -1,18 +1,17 @@
 package org.thp.thehive.services
 
-import java.util.{ List => JList }
+import java.util.{List ⇒ JList}
 
 import scala.collection.JavaConverters._
 import scala.util.Success
 
 import gremlin.scala._
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.{ Filter, PredicateFilter }
-import org.thp.scalligraph.services.{ EdgeSrv, _ }
-import org.thp.scalligraph.{ EntitySteps, LogGeneratedCode }
+import org.thp.scalligraph.services.{EdgeSrv, _}
+import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
 import org.thp.thehive.models._
 
 @Singleton
@@ -64,55 +63,53 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv)(implicit db: Database) e
 }
 
 @EntitySteps[Case]
-@LogGeneratedCode
 class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Case, CaseSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
-  override def filter(f: EntityFilter[Vertex]): CaseSteps        = newInstance(f(raw))
-
-  override val filterHook: PartialFunction[PredicateFilter[Vertex], Filter[Vertex]] = {
-    case PredicateFilter("ImpactStatus", p: P[a]) ⇒
-      Filter[Vertex](_.where(_.out("CaseImpactStatus").has(Key[a]("value"), p)))
-  }
 
   def getCaseById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
 
   def getCaseByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  def availableFor(organisation: String): CaseSteps =
-    newInstance(raw.filter(_.or(
-      _.outTo[CaseOrganisation].value("name").is(organisation),
-      _.inTo[ShareCase].outTo[ShareOrganisation].value("name").is(organisation))))
+  def availableFor(authContext: Option[AuthContext]): CaseSteps =
+    availableFor(authContext.getOrElse(throw AuthorizationError("access denied")).organisation)
 
-  def richCase: GremlinScala[RichCase] =
-    raw
-      .project[Any]("case", "impactStatus", "user", "organisation", "customFields")
-      .by()
-      .by(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold.traversal)
-      .by(__[Vertex].outTo[CaseUser].values[String]("login").fold.traversal)
-      .by(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold.traversal)
-      .by(__[Vertex].outToE[CaseCustomField].inV().path.fold.traversal)
-      .map {
-        case ValueMap(m) ⇒
-          val customFieldValues = m
-            .get[JList[Path]]("customFields")
-            .asScala
-            .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-            .map {
-              case ccf :: cf :: Nil ⇒
-                val customField     = cf.as[CustomField]
-                val caseCustomField = ccf.as[CaseCustomField]
-                CustomFieldValue(customField.name, customField.description, customField.`type`.name, customField.`type`.getValue(caseCustomField))
-            }
-          RichCase(
-            m.get[Vertex]("case").as[Case],
-            atMostOneOf[String](m.get[JList[String]]("impactStatus")),
-            onlyOneOf[String](m.get[JList[String]]("user")),
-            onlyOneOf[String](m.get[JList[String]]("organisation")),
-            customFieldValues
-          )
-      }
+  def availableFor(organisation: String): CaseSteps =
+    newInstance(
+      raw.filter(
+        _.or(_.outTo[CaseOrganisation].value("name").is(organisation), _.inTo[ShareCase].outTo[ShareOrganisation].value("name").is(organisation))))
+
+  def richCase: ScalarSteps[RichCase] =
+    ScalarSteps(
+      raw
+        .project[Any]("case", "impactStatus", "user", "organisation", "customFields")
+        .by()
+        .by(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold.traversal)
+        .by(__[Vertex].outTo[CaseUser].values[String]("login").fold.traversal)
+        .by(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold.traversal)
+        .by(__[Vertex].outToE[CaseCustomField].inV().path.fold.traversal)
+        .map {
+          case ValueMap(m) ⇒
+            val customFieldValues = m
+              .get[JList[Path]]("customFields")
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case ccf :: cf :: Nil ⇒
+                  val customField     = cf.as[CustomField]
+                  val caseCustomField = ccf.as[CaseCustomField]
+                  CustomFieldValue(customField.name, customField.description, customField.`type`.name, customField.`type`.getValue(caseCustomField))
+                case _ ⇒ throw InternalError("Not possible")
+              }
+            RichCase(
+              m.get[Vertex]("case").as[Case],
+              atMostOneOf[String](m.get[JList[String]]("impactStatus")),
+              onlyOneOf[String](m.get[JList[String]]("user")),
+              onlyOneOf[String](m.get[JList[String]]("organisation")),
+              customFieldValues
+            )
+        })
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks = new TaskSteps(raw.outTo[CaseTask])
+  def tasks = new TaskSteps(raw.inTo[TaskCase])
 }

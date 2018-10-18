@@ -1,5 +1,5 @@
 package org.thp.thehive.dto.v1
-import play.api.libs.json.{ Format, Json, Writes }
+import play.api.libs.json.{Format, Json, Writes}
 
 case class InputOrganisation(name: String)
 

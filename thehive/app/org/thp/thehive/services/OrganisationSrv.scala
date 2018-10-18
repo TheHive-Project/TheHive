@@ -18,7 +18,7 @@ class OrganisationSrv @Inject()()(implicit db: Database) extends VertexSrv[Organ
 @EntitySteps[Case]
 class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Organisation, OrganisationSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(raw)
-  override def filter(f: EntityFilter[Vertex]): OrganisationSteps        = newInstance(f(raw))
+//  override def filter(f: EntityFilter[Vertex]): OrganisationSteps        = newInstance(f(raw))
 
   def getById(id: String): OrganisationSteps = newInstance(raw.has(Key("_id") of id))
 

@@ -1,4 +1,5 @@
 package org.thp.thehive
+
 import play.api.{Configuration, Environment, Logger}
 
 import com.google.inject.AbstractModule
@@ -13,7 +14,7 @@ import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv, MultiAuthSrv}
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.LocalAuthSrv
 
-class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule /*with AkkaGuiceSupport*/ {
+class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
   lazy val logger = Logger(getClass)
 
   override def configure(): Unit = {
@@ -41,13 +42,6 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bind[Schema].to[TheHiveSchema]
     bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
     bind[SchemaChecker].asEagerSingleton()
-
-//      if (environment.mode == Mode.Prod)
-//        bind[AssetCtrl].to[AssetCtrlProd]
-//      else
-//        bind[AssetCtrl].to[AssetCtrlDev]
-
-//      ScalaMultibinder.newSetBinder[Connector](binder)
     ()
   }
 }

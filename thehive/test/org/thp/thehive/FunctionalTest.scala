@@ -50,6 +50,7 @@ class FunctionalTest extends PlaySpecification {
     var case1: OutputCase = null
     var case2: OutputCase = null
     var case3: OutputCase = null
+    var task1: OutputTask = null
 
     "create initial user" in {
       val asyncResp =
@@ -80,7 +81,6 @@ class FunctionalTest extends PlaySpecification {
         await(asyncResp) must throwA(expected)
       }
 
-
       "create a simple case" in {
         val asyncResp = client.`case`.create(InputCase("First case", "This case is the first case of functional tests"))
         case1 = await(asyncResp)
@@ -108,7 +108,6 @@ class FunctionalTest extends PlaySpecification {
         val expected  = OutputCustomField("businessUnit", "Business unit impacted by the incident", "string")
         await(asyncResp) must_=== expected
       }
-
 
       "create a case with custom fields" in {
         val asyncResp = client.`case`.create(
@@ -138,6 +137,44 @@ class FunctionalTest extends PlaySpecification {
           customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", "HR"))
         )
         case2 must_=== expected
+      }
+
+      "list cases with custom fields" in {
+        val asyncResp = client.query(
+          Json.obj("_name" → "listCase"),
+          Json.obj(
+            "_name" → "filter",
+            "_and" → Json
+              .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))),
+          Json.obj("_name" → "richCase"),
+          Json.obj("_name" → "toList")
+        )
+        await(asyncResp) must beLike {
+          case JsArray(cases) ⇒ cases must contain(exactly(Json.toJson(case2)))
+        }
+      }
+
+      "add a task to case 2" in {
+        val asyncResp = client.task.create(InputTask(case2._id, "identification"))
+        task1 = await(asyncResp)
+        val expected = OutputTask(
+          title = "identification",
+          description = None,
+          status = "waiting",
+          flag = false,
+          startDate = None,
+          endDate = None,
+          order = 0,
+          dueDate = None)
+        task1 must_=== expected
+      }
+
+      "list task for case 2" in {
+        val asyncResp =
+          client.query(Json.obj("_name" → "getCase", "id" → case2._id), Json.obj("_name" → "caseListTask"), Json.obj("_name" → "toList"))
+        await(asyncResp) must beLike {
+          case JsArray(tasks) ⇒ tasks must contain(exactly(Json.toJson(task1)))
+        }
       }
 
       "list cases" in {
@@ -173,7 +210,7 @@ class FunctionalTest extends PlaySpecification {
       }
 
       "create a case in test organisation" in {
-        val asyncResp = client.`case`.create(InputCase("test case", "Case in test organisation", severity= Some(1), pap = Some(1)))
+        val asyncResp = client.`case`.create(InputCase("test case", "Case in test organisation", severity = Some(1), pap = Some(1)))
         case3 = await(asyncResp)
         val expected = OutputCase(
           _id = case3._id,
