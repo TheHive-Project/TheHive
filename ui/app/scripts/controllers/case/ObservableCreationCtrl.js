@@ -43,8 +43,6 @@
 
             $scope.selectDataType = function(type) {
                 $scope.params.dataType = type;
-                delete $scope.params.data;
-                delete $scope.params.attachment;
             };
 
             $scope.countObservables = function() {
@@ -79,10 +77,12 @@
                         tags: _.unique(_.pluck($scope.tags, 'text'))
                     };
 
-                if (params.data) {
+                var isFile = params.dataType === 'file';
+
+                if (!isFile) {
                     postData.data = params.data.split('\n');
                     count = postData.length;
-                } else if (params.attachment) {
+                } else {
                     postData.attachment = params.attachment;
 
                     if(params.isZip) {
