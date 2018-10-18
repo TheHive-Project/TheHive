@@ -258,14 +258,16 @@
                   })
             };
 
-            $scope.runResponder = function(responderId, artifact) {
-                CortexSrv.runResponder(responderId, 'case_artifact', _.pick(artifact, 'id'))
+            $scope.runResponder = function(responderId, responderName, artifact) {
+                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
                   .then(function(response) {
                       var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
                   })
                   .catch(function(response) {
-                      NotificationSrv.error('observablesList', response.data, response.status);
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('observablesList', response.data, response.status);
+                      }
                   });
             };
 

@@ -189,13 +189,15 @@
               })
         };
 
-        $scope.runResponder = function(responderId, task) {
-            CortexSrv.runResponder(responderId, 'case_task', _.pick(task, 'id'))
+        $scope.runResponder = function(responderId, responderName, task) {
+            CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, 'id'))
               .then(function(response) {
                   NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '), 'success');
               })
               .catch(function(response) {
-                  NotificationSrv.error('taskList', response.data, response.status);
+                  if(response && !_.isString(response)) {
+                      NotificationSrv.error('taskList', response.data, response.status);
+                  }
               });
         };
     }

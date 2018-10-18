@@ -121,7 +121,7 @@
                                                     </a>
                                                   </li>
                                                   <li ng-repeat="responder in $vm.responders">
-                                                    <a href ng-click="$vm.runResponder(responder.id, event)">
+                                                    <a href ng-click="$vm.runResponder(responder.id, responder.name, event)">
                                                       <strong>{{responder.name}}</strong>
                                                       <br>
                                                       <small>{{responder.description}}</small></a>

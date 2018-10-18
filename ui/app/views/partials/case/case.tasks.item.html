@@ -16,7 +16,7 @@
                     </a>
                   </li>
                   <li ng-repeat="responder in taskResponders">
-                    <a href ng-click="runResponder(responder.id)">
+                    <a href ng-click="runResponder(responder.id, responder.name)">
                       <strong>{{responder.name}}</strong>
                       <br>
                       <small>{{responder.description}}</small></a>
