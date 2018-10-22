@@ -152,6 +152,24 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
+        $scope.openTemplateSelector = function() {
+            var modal = $uibModal.open({
+                templateUrl: 'views/partials/case/case.templates.selector.html',
+                controller: 'CaseTemplatesDialogCtrl',
+                controllerAs: 'dialog',
+                size: 'lg',
+                resolve: {
+                    templates: function(){
+                        return $scope.templates;
+                    }
+                }
+            });
+
+            modal.result.then(function(template) {
+                $scope.createNewCase(template);
+            })
+        };
+
         $scope.aboutTheHive = function() {
             $uibModal.open({
                 templateUrl: 'views/partials/about.html',
