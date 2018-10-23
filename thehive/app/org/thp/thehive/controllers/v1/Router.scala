@@ -1,4 +1,5 @@
 package org.thp.thehive.controllers.v1
+
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._

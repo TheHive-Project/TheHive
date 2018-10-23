@@ -1,7 +1,6 @@
 package org.thp.thehive
 
 import play.api.{Configuration, Environment, Logger}
-
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
@@ -10,7 +9,9 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema, SchemaChecker}
 import org.thp.scalligraph.neo4j.Neo4jDatabase
 import org.thp.scalligraph.orientdb.OrientDatabase
-import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv, MultiAuthSrv}
+import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
+import org.thp.thehive.controllers.v1.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.LocalAuthSrv
 
@@ -30,7 +31,6 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
         case "local" ⇒ authBindings.addBinding.to[LocalAuthSrv]
         case other   ⇒ logger.error(s"Authentication provider [$other] is not recognized")
       }
-    bind[AuthSrv].to[MultiAuthSrv]
 
     configuration.get[String]("db.provider") match {
       case "janusgraph" ⇒ bind[Database].to[JanusDatabase]
@@ -39,7 +39,13 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
       case other        ⇒ sys.error(s"Authentication provider [$other] is not recognized")
     }
 
+    val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
+    queryExecutorBindings.addBinding.to[TheHiveQueryExecutor]
+
+    bind[play.api.routing.Router].to[Router]
+
     bind[Schema].to[TheHiveSchema]
+
     bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
     bind[SchemaChecker].asEagerSingleton()
     ()

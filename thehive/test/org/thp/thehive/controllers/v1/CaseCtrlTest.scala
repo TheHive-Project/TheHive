@@ -9,7 +9,7 @@ import org.specs2.specification.core.Fragments
 import org.thp.scalligraph.controllers.Authenticated
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSrv, CaseSrv, OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{AuditedDatabase, CaseSrv, OrganisationSrv, UserSrv}
 import play.api.libs.json.{JsNull, JsNumber, JsString, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -29,10 +29,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
         .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
         .bindToProvider(dbProvider)
-        .bindToProvider(dbProvider.asHookable)
         .bindInstance[Authenticated](authenticated)
       app.instanceOf[DatabaseBuilder]
-      app.instanceOf[AuditSrv]
+      app.instanceOf[AuditedDatabase]
       val caseCtrl: CaseCtrl = app.instanceOf[CaseCtrl]
 
       implicit lazy val mat: Materializer = app.instanceOf[Materializer]

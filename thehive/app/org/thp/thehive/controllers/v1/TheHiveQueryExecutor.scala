@@ -3,10 +3,10 @@ package org.thp.thehive.controllers.v1
 import gremlin.scala.Element
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.FieldsParser
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query._
-import org.thp.thehive.dto.v1.OutputCase
-import org.thp.thehive.models.RichCase
+import org.thp.thehive.dto.v1.{OutputCase, OutputTask}
+import org.thp.thehive.models.{RichCase, Task}
 import org.thp.thehive.services._
 
 case class GetCaseParams(id: String)
@@ -23,7 +23,9 @@ class TheHiveQueryExecutor @Inject()(caseSrv: CaseSrv, taskSrv: TaskSrv, implici
     Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).availableFor(authContext)),
     Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList),
-    Query.output[RichCase, OutputCase]
+    Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
+    Query.output[RichCase, OutputCase],
+    Query.output[Task with Entity, OutputTask]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)

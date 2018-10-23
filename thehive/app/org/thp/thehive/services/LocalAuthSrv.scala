@@ -35,7 +35,7 @@ class LocalAuthSrv @Inject()(
         false
     }
 
-  override def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] =
+  override def authenticate(username: String, password: String)(implicit request: RequestHeader, ec: ExecutionContext): Future[AuthContext] =
     db.transaction { implicit graph ⇒
       userSrv
         .get(username)
@@ -45,7 +45,9 @@ class LocalAuthSrv @Inject()(
         .getOrElse(Future.failed(AuthenticationError("Authentication failure")))
     }
 
-  override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] =
+  override def changePassword(username: String, oldPassword: String, newPassword: String)(
+      implicit authContext: AuthContext,
+      ec: ExecutionContext): Future[Unit] =
     db.transaction { implicit graph ⇒
       userSrv
         .get(username)
@@ -55,7 +57,7 @@ class LocalAuthSrv @Inject()(
         .getOrElse(Future.failed(AuthorizationError("Authentication failure")))
     }
 
-  override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] =
+  override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] =
     db.transaction { implicit graph ⇒
       val seed    = Random.nextString(10).replace(',', '!')
       val newHash = seed + "," + Hasher("SHA-256").fromString(seed + newPassword).head.toString

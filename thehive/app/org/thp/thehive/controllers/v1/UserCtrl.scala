@@ -1,12 +1,14 @@
 package org.thp.thehive.controllers.v1
 
+import scala.concurrent.ExecutionContext
+
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.auth.AuthSrv
+import org.thp.scalligraph.auth.MultiAuthSrv
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
@@ -33,7 +35,13 @@ object UserXfrm {
 }
 
 @Singleton
-class UserCtrl @Inject()(apiMethod: ApiMethod, db: Database, userSrv: UserSrv, authSrv: AuthSrv, organisationSrv: OrganisationSrv) {
+class UserCtrl @Inject()(
+    apiMethod: ApiMethod,
+    db: Database,
+    userSrv: UserSrv,
+    authSrv: MultiAuthSrv,
+    organisationSrv: OrganisationSrv,
+    implicit val ec: ExecutionContext) {
 
   def create: Action[AnyContent] =
     apiMethod("create user")

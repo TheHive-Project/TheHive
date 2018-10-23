@@ -1,26 +1,29 @@
 package org.thp.thehive
 
-import scala.concurrent.{ExecutionContext, Promise}
-
-import play.api.Configuration
+import com.typesafe.config.ConfigFactory
+import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
+import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
+import org.thp.thehive.dto.v1._
+import org.thp.thehive.services.AuditModule
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.test.{Helpers, PlaySpecification, TestServer}
+import play.api.{Configuration, Environment}
 
-import com.typesafe.config.ConfigFactory
-import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
-import org.thp.thehive.dto.v1._
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Promise}
 
 class FunctionalTest extends PlaySpecification {
 
   val serverPromise: Promise[TestServer] = Promise[TestServer]
-  lazy val server: TestServer            = serverPromise.future.value.get.get
+  lazy val server: TestServer            = Await.result(serverPromise.future, 5.seconds)
 
   sequential
 
   val config = Configuration(ConfigFactory.parseString("""
       |db.provider: janusgraph
+      |auth.provider: [local]
     """.stripMargin))
 
   "TheHive" should {
@@ -34,12 +37,22 @@ class FunctionalTest extends PlaySpecification {
     lazy val client                        = new TheHiveClient(s"http://127.0.0.1:${server.runningHttpPort.get}")
 
     "start the application" in {
-      serverPromise.success(
-        TestServer(
-          port = Helpers.testServerPort,
-          application = GuiceApplicationBuilder()
-            .configure(config)
-            .build()))
+      val applicationBuilder = GuiceApplicationBuilder()
+        .configure(config)
+        .load(
+          new play.api.inject.BuiltinModule,
+          new play.api.i18n.I18nModule,
+          new play.api.mvc.CookiesModule,
+          new play.api.libs.ws.ahc.AhcWSModule,
+          new TheHiveModule(Environment.simple(), config),
+          new AuditModule,
+          new ScalligraphModule
+        )
+      val application = applicationBuilder
+        .load(ScalligraphApplicationLoader.loadModules(applicationBuilder.loadModules))
+        .build()
+
+      serverPromise.success(TestServer(port = Helpers.testServerPort, application = application))
       server.start()
       1 must_=== 1
     }
@@ -146,7 +159,7 @@ class FunctionalTest extends PlaySpecification {
             "_name" → "filter",
             "_and" → Json
               .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))),
-          Json.obj("_name" → "richCase"),
+//          Json.obj("_name" → "richCase"),
           Json.obj("_name" → "toList")
         )
         await(asyncResp) must beLike {
@@ -171,7 +184,7 @@ class FunctionalTest extends PlaySpecification {
 
       "list task for case 2" in {
         val asyncResp =
-          client.query(Json.obj("_name" → "getCase", "id" → case2._id), Json.obj("_name" → "caseListTask"), Json.obj("_name" → "toList"))
+          client.query(Json.obj("_name" → "getCase", "id" → case2._id), Json.obj("_name" → "listTask"), Json.obj("_name" → "toList"))
         await(asyncResp) must beLike {
           case JsArray(tasks) ⇒ tasks must contain(exactly(Json.toJson(task1)))
         }

@@ -25,7 +25,6 @@ class GraphqlTest extends PlaySpecification with Mockito {
     .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
     .bindInstance[AuthSrv](mock[AuthSrv])
     .bindToProvider(db)
-    .bindToProvider(db.asHookable)
     .bindInstance[Authenticated](authenticated)
   app.instanceOf[DatabaseBuilder]
   val queryExecutor: TheHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]

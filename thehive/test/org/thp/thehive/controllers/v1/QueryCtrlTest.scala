@@ -22,7 +22,6 @@ class QueryCtrlTest extends PlaySpecification with Mockito {
       .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
       .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
       .bindToProvider(dbProvider)
-      .bindToProvider(dbProvider.asHookable)
       .bindInstance[Authenticated](authenticated)
       .bindInstance[AuthSrv](mock[AuthSrv])
     app.instanceOf[DatabaseBuilder]

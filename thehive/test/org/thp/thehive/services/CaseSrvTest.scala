@@ -18,7 +18,6 @@ class CaseSrvTest extends PlaySpecification {
         .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
         .bindInstance[InitialAuthContext](InitialAuthContext(authContext))
         .bindToProvider(dbProvider)
-        .bindToProvider(dbProvider.asHookable)
       app.instanceOf[DatabaseBuilder]
       val caseSrv: CaseSrv = app.instanceOf[CaseSrv]
       val db: Database     = app.instanceOf[Database]
