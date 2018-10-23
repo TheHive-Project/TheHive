@@ -5,6 +5,7 @@ object Dependencies {
   lazy val gremlinScala                   = "com.michaelpollmeier"  %% "gremlin-scala"           % "3.3.3.4"
   lazy val gremlinOrientdb                = "com.orientechnologies" % "orientdb-gremlin"         % "3.0.4"
   lazy val janusGraph                     = "org.janusgraph"        % "janusgraph-core"          % "0.3.1"
+  lazy val janusGraphBerkeleyDB           = "org.janusgraph"        % "janusgraph-berkeleyje"    % "0.3.1"
   lazy val scalactic                      = "org.scalactic"         %% "scalactic"               % "3.0.5"
   lazy val specs                          = "com.typesafe.play"     %% "play-specs2"             % play.core.PlayVersion.current
   lazy val scalaGuice                     = "net.codingwell"        %% "scala-guice"             % "4.2.0"

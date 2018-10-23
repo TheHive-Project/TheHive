@@ -1,28 +1,31 @@
 package org.thp.thehive
 
 import com.typesafe.config.ConfigFactory
-import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
-import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
+import org.thp.scalligraph.{ ScalligraphApplicationLoader, ScalligraphModule }
+import org.thp.thehive.client.{ ApplicationError, Authentication, TheHiveClient }
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.services.AuditModule
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.test.{Helpers, PlaySpecification, TestServer}
-import play.api.{Configuration, Environment}
-
+import play.api.test.{ Helpers, PlaySpecification, TestServer }
+import play.api.{ Configuration, Environment }
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Promise}
+import scala.concurrent.{ Await, ExecutionContext, Promise }
+
+import org.thp.scalligraph.models.Database
 
 class FunctionalTest extends PlaySpecification {
 
   val serverPromise: Promise[TestServer] = Promise[TestServer]
-  lazy val server: TestServer            = Await.result(serverPromise.future, 5.seconds)
+  lazy val server: TestServer            = serverPromise.future.value.get.get //Await.result(serverPromise.future, 5.seconds)
 
   sequential
 
   val config = Configuration(ConfigFactory.parseString("""
       |db.provider: janusgraph
+      |storage.backend: berkeleyje
+      |storage.directory: /tmp/thehive-test.db
       |auth.provider: [local]
     """.stripMargin))
 
@@ -44,9 +47,10 @@ class FunctionalTest extends PlaySpecification {
           new play.api.i18n.I18nModule,
           new play.api.mvc.CookiesModule,
           new play.api.libs.ws.ahc.AhcWSModule,
+          new ScalligraphModule,
           new TheHiveModule(Environment.simple(), config),
-          new AuditModule,
-          new ScalligraphModule
+          new AuditModule
+
         )
       val application = applicationBuilder
         .load(ScalligraphApplicationLoader.loadModules(applicationBuilder.loadModules))
@@ -54,6 +58,11 @@ class FunctionalTest extends PlaySpecification {
 
       serverPromise.success(TestServer(port = Helpers.testServerPort, application = application))
       server.start()
+//      val db = application.injector.instanceOf[Database]
+//      println("******************************************")
+//      println(s"****${db.getClass.getName}****")
+//      println("******************************************")
+//      sys.exit()
       1 must_=== 1
     }
 

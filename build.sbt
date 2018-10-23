@@ -10,6 +10,7 @@ lazy val thehive = (project in file("."))
         organization := "org.thp",
         scalaVersion := "2.12.6",
         resolvers += Resolver.mavenLocal,
+        resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven",
         scalacOptions ++= Seq(
           "-encoding",
           "UTF-8",
@@ -55,6 +56,7 @@ lazy val thehiveCore = (project in file("thehive"))
     libraryDependencies ++= Seq(
       chimney,
       guice,
+      janusGraphBerkeleyDB % Test,
       ws % Test,
       specs % Test
     )
