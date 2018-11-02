@@ -1,19 +1,21 @@
 package org.thp.thehive
 
+import java.util.Date
+
 import com.typesafe.config.ConfigFactory
-import org.thp.scalligraph.{ ScalligraphApplicationLoader, ScalligraphModule }
-import org.thp.thehive.client.{ ApplicationError, Authentication, TheHiveClient }
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
+import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
 import org.thp.thehive.dto.v1._
-import org.thp.thehive.services.AuditModule
+import org.thp.thehive.services.AuditedDatabase
+import play.api.inject.{SimpleModule, bind}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.test.{ Helpers, PlaySpecification, TestServer }
-import play.api.{ Configuration, Environment }
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Promise }
+import play.api.test.{Helpers, PlaySpecification, TestServer}
+import play.api.{Configuration, Environment}
 
-import org.thp.scalligraph.models.Database
+import scala.concurrent.{ExecutionContext, Promise}
 
 class FunctionalTest extends PlaySpecification {
 
@@ -39,6 +41,60 @@ class FunctionalTest extends PlaySpecification {
     implicit lazy val ws: WSClient         = app.injector.instanceOf[WSClient]
     lazy val client                        = new TheHiveClient(s"http://127.0.0.1:${server.runningHttpPort.get}")
 
+    def auditWithStableValues(audit: OutputAudit): OutputAudit = audit.copy(
+      _id = "_entityId_",
+      _createdAt = new Date(0),
+      _updatedAt = None,
+      requestId = "_requestId_",
+      obj = audit.obj.copy(
+        _id = "",
+        _createdAt = new Date(0),
+        _updatedAt = None,
+        _updatedBy = None
+      )
+    )
+
+    def creationAudit(createdBy: String, objType: String, summary: Map[String, Map[String, Int]]): OutputAudit =
+      OutputAudit(
+        "_entityId_",
+        createdBy,
+        None,
+        new Date(0),
+        None,
+        "Creation",
+        "_requestId_",
+        None,
+        None,
+        None,
+        OutputEntity(objType, "", new Date(0), createdBy, None, None),
+        summary
+      )
+
+    def updateAudit(
+        createdBy: String,
+        updatedBy: Option[String] = None,
+        operation: String,
+        attributeName: Option[String],
+        oldValue: Option[String],
+        newValue: Option[String],
+        objType: String,
+        objCreatedBy: String,
+        summary: Map[String, Map[String, Int]]): OutputAudit =
+      OutputAudit(
+        "",
+        createdBy,
+        updatedBy,
+        new Date(0),
+        None,
+        operation,
+        "",
+        attributeName,
+        oldValue,
+        newValue,
+        OutputEntity(objType, "", new Date(0), objCreatedBy, None, None),
+        summary
+      )
+
     "start the application" in {
       val applicationBuilder = GuiceApplicationBuilder()
         .configure(config)
@@ -49,8 +105,7 @@ class FunctionalTest extends PlaySpecification {
           new play.api.libs.ws.ahc.AhcWSModule,
           new ScalligraphModule,
           new TheHiveModule(Environment.simple(), config),
-          new AuditModule
-
+          new SimpleModule(bind[Database].to[AuditedDatabase])
         )
       val application = applicationBuilder
         .load(ScalligraphApplicationLoader.loadModules(applicationBuilder.loadModules))
@@ -58,11 +113,6 @@ class FunctionalTest extends PlaySpecification {
 
       serverPromise.success(TestServer(port = Helpers.testServerPort, application = application))
       server.start()
-//      val db = application.injector.instanceOf[Database]
-//      println("******************************************")
-//      println(s"****${db.getClass.getName}****")
-//      println("******************************************")
-//      sys.exit()
       1 must_=== 1
     }
 
@@ -161,6 +211,22 @@ class FunctionalTest extends PlaySpecification {
         case2 must_=== expected
       }
 
+      "list audit" in {
+        val asyncResp = client.audit.list
+        await(asyncResp).map(auditWithStableValues) must contain(
+          exactly(
+            creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
+            creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
+            creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
+            creationAudit("system", "Organisation", Map("Organisation" → Map("Creation" → 1))),
+            creationAudit("system", "User", Map("User" → Map("Update" → 1, "Creation" → 1))),
+            creationAudit("admin", "User", Map("User" → Map("Update" → 1, "Creation" → 1))),
+            creationAudit("admin", "Case", Map("Case" → Map("Creation" → 1))),
+            creationAudit("admin", "CustomField", Map("CustomField" → Map("Creation" → 1))),
+            creationAudit("admin", "Case", Map("Case" → Map("Creation" → 1)))
+          ))
+      }
+
       "list cases with custom fields" in {
         val asyncResp = client.query(
           Json.obj("_name" → "listCase"),
@@ -168,12 +234,9 @@ class FunctionalTest extends PlaySpecification {
             "_name" → "filter",
             "_and" → Json
               .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))),
-//          Json.obj("_name" → "richCase"),
           Json.obj("_name" → "toList")
         )
-        await(asyncResp) must beLike {
-          case JsArray(cases) ⇒ cases must contain(exactly(Json.toJson(case2)))
-        }
+        (await(asyncResp) \ "result").as[Seq[JsValue]] must contain(exactly(Json.toJson(case2)))
       }
 
       "add a task to case 2" in {
@@ -194,9 +257,7 @@ class FunctionalTest extends PlaySpecification {
       "list task for case 2" in {
         val asyncResp =
           client.query(Json.obj("_name" → "getCase", "id" → case2._id), Json.obj("_name" → "listTask"), Json.obj("_name" → "toList"))
-        await(asyncResp) must beLike {
-          case JsArray(tasks) ⇒ tasks must contain(exactly(Json.toJson(task1)))
-        }
+        (await(asyncResp) \ "result").as[Seq[JsValue]] must contain(exactly(Json.toJson(task1)))
       }
 
       "list cases" in {

@@ -1,7 +1,7 @@
 package org.thp.thehive.dto.v1
 import java.util.Date
 
-import play.api.libs.json.{Format, Json, Writes}
+import play.api.libs.json.{Json, OFormat, OWrites}
 import org.thp.scalligraph.controllers.WithParser
 case class InputCase(
     title: String,
@@ -20,7 +20,7 @@ case class InputCase(
     customFieldValue: Seq[InputCustomFieldValue] = Nil)
 
 object InputCase {
-  implicit val writes: Writes[InputCase] = Json.writes[InputCase]
+  implicit val writes: OWrites[InputCase] = Json.writes[InputCase]
 }
 
 case class OutputCase(
@@ -45,5 +45,5 @@ case class OutputCase(
     customFields: Set[OutputCustomFieldValue] = Set.empty)
 
 object OutputCase {
-  implicit val format: Format[OutputCase] = Json.format[OutputCase]
+  implicit val format: OFormat[OutputCase] = Json.format[OutputCase]
 }

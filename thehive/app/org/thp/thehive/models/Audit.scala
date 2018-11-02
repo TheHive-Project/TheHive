@@ -21,6 +21,34 @@ case class Audit(
     oldValue: Option[String],
     newValue: Option[String])
 
+case class RichAudit(
+    _id: String,
+    _createdAt: Date,
+    _createdBy: String,
+    operation: AuditableAction.Value,
+    requestId: String,
+    attributeName: Option[String],
+    oldValue: Option[String],
+    newValue: Option[String],
+    obj: Entity,
+    summary: Map[String, Map[AuditableAction.Value, Int]]
+)
+
+object RichAudit {
+  def apply(audit: Audit with Entity, obj: Entity, summary: Map[String, Map[AuditableAction.Value, Int]]): RichAudit =
+    new RichAudit(
+      audit._id,
+      audit._createdAt,
+      audit._createdBy,
+      audit.operation,
+      audit.requestId,
+      audit.attributeName,
+      audit.oldValue,
+      audit.newValue,
+      obj,
+      summary)
+}
+
 case class Audited()
 
 object Audited extends HasEdgeModel[Audited, Audit, Product] {

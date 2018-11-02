@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json.{Format, Json, Writes}
+import play.api.libs.json.{Json, OFormat, OWrites}
 
 case class InputTask(
     caseId: String,
@@ -16,7 +16,7 @@ case class InputTask(
     dueDate: Option[Date] = None)
 
 object InputTask {
-  implicit val writes: Writes[InputTask] = Json.writes[InputTask]
+  implicit val writes: OWrites[InputTask] = Json.writes[InputTask]
 }
 
 case class OutputTask(
@@ -30,5 +30,5 @@ case class OutputTask(
     dueDate: Option[Date])
 
 object OutputTask {
-  implicit val format: Format[OutputTask] = Json.format[OutputTask]
+  implicit val format: OFormat[OutputTask] = Json.format[OutputTask]
 }

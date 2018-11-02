@@ -29,6 +29,19 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   val organisation = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
   val share        = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
   val task         = new BaseClient[InputTask, OutputTask](s"$baseUrl/api/v1/task")
+  object audit {
+    def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[OutputAudit]] = {
+      Client.logger.debug(s"Request GET $baseUrl")
+      ws.url(s"$baseUrl/api/v1/audit")
+        .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
+        .get()
+        .transform {
+          case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[OutputAudit]])
+          case Success(r)                          ⇒ Failure(ApplicationError(r))
+          case Failure(t)                          ⇒ throw t
+        }
+    }
+  }
   def query(q: JsObject*)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
     ws.url(s"$baseUrl/api/v1/query")
       .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)

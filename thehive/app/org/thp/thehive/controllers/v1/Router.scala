@@ -13,7 +13,8 @@ class Router @Inject()(
     organisationCtrl: OrganisationCtrl,
     shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
-    customFieldCtrl: CustomFieldCtrl)
+    customFieldCtrl: CustomFieldCtrl,
+    auditCtrl: AuditCtrl)
     extends SimpleRouter {
 
   override def routes: Routes = {
@@ -44,7 +45,7 @@ class Router @Inject()(
 
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
-//case POST(p"/query") => QueryCtrl.execute
 
+    case GET(p"/audit") ⇒ auditCtrl.flow()
   }
 }
