@@ -15,7 +15,7 @@ class UserSrv @Inject()(implicit val db: Database) extends VertexSrv[User, UserS
 
   val userOrganisationSrv = new EdgeSrv[UserOrganisation, User, Organisation]
 
-  override def steps(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   override def get(id: String)(implicit graph: Graph): UserSteps = initSteps.get(id)
 
@@ -30,7 +30,7 @@ class UserSrv @Inject()(implicit val db: Database) extends VertexSrv[User, UserS
 }
 
 @EntitySteps[User]
-class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[User, UserSteps](raw) {
+class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[User, UserSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
   def get(id: String): UserSteps = new UserSteps(raw.coalesce(_.has(Key("login") of id), _.has(Key("_id") of id)))

@@ -10,13 +10,14 @@ import org.thp.thehive.models._
 @Singleton
 class OrganisationSrv @Inject()()(implicit db: Database) extends VertexSrv[Organisation, OrganisationSteps] {
 
-  override val initialValues: Seq[Organisation]                          = Seq(Organisation("default"))
-  override def get(id: String)(implicit graph: Graph): OrganisationSteps = initSteps.get(id)
-  override def steps(raw: GremlinScala[Vertex]): OrganisationSteps       = new OrganisationSteps(raw)
+  override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
+  override def get(id: String)(implicit graph: Graph): OrganisationSteps                  = initSteps.get(id)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
 }
 
 @EntitySteps[Case]
-class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Organisation, OrganisationSteps](raw) {
+class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
+    extends BaseVertexSteps[Organisation, OrganisationSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(raw)
 //  override def filter(f: EntityFilter[Vertex]): OrganisationSteps        = newInstance(f(raw))
 

@@ -16,7 +16,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
   val shareOrganisationSrv = new EdgeSrv[ShareOrganisation, Share, Organisation]
   val shareCaseSrv         = new EdgeSrv[ShareCase, Share, Case]
 
-  override def steps(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ShareSteps = new ShareSteps(raw)
 
   def create(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): RichShare = {
     val createdShare = create(Share())
@@ -27,7 +27,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
 }
 
 @EntitySteps[Share]
-class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Share, ShareSteps](raw) {
+class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Share, ShareSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
 
   def richShare: GremlinScala[RichShare] =

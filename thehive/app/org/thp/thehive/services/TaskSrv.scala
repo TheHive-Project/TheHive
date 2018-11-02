@@ -13,7 +13,7 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
   val taskCaseSrv = new EdgeSrv[TaskCase, Task, Case]
   val taskUserSrv = new EdgeSrv[TaskUser, Task, User]
 
-  override def steps(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
   def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Task with Entity = {
     val createdTask = create(task)
@@ -29,7 +29,7 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
 }
 
 @EntitySteps[Task]
-class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Task, TaskSteps](raw) {
+class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
   def logs = new LogSteps(raw.inTo[LogTask])

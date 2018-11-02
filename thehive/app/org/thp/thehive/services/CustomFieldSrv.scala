@@ -7,11 +7,11 @@ import org.thp.thehive.models.CustomField
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database) extends VertexSrv[CustomField, CustomFieldSteps] {
-  override def steps(raw: GremlinScala[Vertex]): CustomFieldSteps       = new CustomFieldSteps(raw)
-  override def get(id: String)(implicit graph: Graph): CustomFieldSteps = initSteps.get(id)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
+  override def get(id: String)(implicit graph: Graph): CustomFieldSteps                  = initSteps.get(id)
 }
 
-class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[CustomField, CustomFieldSteps](raw) {
+class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[CustomField, CustomFieldSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(raw)
   def get(id: String): CustomFieldSteps                                 = new CustomFieldSteps(raw.coalesce(_.hasId(id), _.has(Key("name") of id)))
 }

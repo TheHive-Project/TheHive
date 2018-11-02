@@ -59,11 +59,11 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv)(implicit db: Database) e
       .map(initSteps.getCaseByNumber)
       .getOrElse(steps(graph.V().has(Key("_id") of caseIdOrNumber)))
 
-  override def steps(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 }
 
 @EntitySteps[Case]
-class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database) extends BaseVertexSteps[Case, CaseSteps](raw) {
+class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Case, CaseSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
 
   def getCaseById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
