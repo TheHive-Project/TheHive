@@ -19,7 +19,6 @@ import models.HealthStatus
 import services.CustomWSAPI
 
 import org.elastic4play.NotFoundError
-import org.elastic4play.utils.RichFuture
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
@@ -194,7 +193,6 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
   def getCurrentUser()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
@@ -204,7 +202,6 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
   def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =

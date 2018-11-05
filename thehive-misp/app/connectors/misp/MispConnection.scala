@@ -13,8 +13,6 @@ import akka.actor.ActorSystem
 import models.HealthStatus
 import services.CustomWSAPI
 
-import org.elastic4play.utils.RichFuture
-
 object MispPurpose extends Enumeration {
   val ImportOnly, ExportOnly, ImportAndExport = Value
 }
@@ -46,6 +44,7 @@ case class MispConnection(
        |    max size:       ${maxSize.getOrElse("<not set>")}
        |    excluded orgs:  ${excludedOrganisations.mkString}
        |    excluded tags:  ${excludedTags.mkString}
+       |  purpose:          $purpose
        |""".stripMargin)
 
   private[misp] def apply(url: String): WSRequest =
@@ -92,7 +91,6 @@ case class MispConnection(
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
   def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] = {
