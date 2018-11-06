@@ -39,9 +39,20 @@
     <label class="col-md-3 control-label">Value <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
         <textarea class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" ng-required="!isFile()"></textarea>
-        <div>
-            <span>(one observable per line)</span>
-            <span class="pull-right"><ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize></span>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="false">
+                One observable per line
+                <span class="ml-xxxs">
+                    (<ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize>)
+                </span>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="true">
+                One single multiline observable
+            </label>
         </div>
     </div>
 </div>

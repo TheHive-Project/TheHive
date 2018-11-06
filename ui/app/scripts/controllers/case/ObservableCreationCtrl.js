@@ -13,6 +13,7 @@
             $scope.params = params || {
                 ioc: false,
                 sighted: false,
+                single: false,
                 isZip: false,
                 zipPassword: '',
                 data: '',
@@ -80,8 +81,12 @@
                 var isFile = params.dataType === 'file';
 
                 if (!isFile) {
-                    postData.data = params.data.split('\n');
-                    count = postData.length;
+                    if(params.single === true) {
+                        postData.data = params.data;
+                    } else {
+                        postData.data = params.data.split('\n');
+                        count = postData.length;
+                    }                    
                 } else {
                     postData.attachment = params.attachment;
 
