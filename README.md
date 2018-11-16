@@ -65,7 +65,7 @@ TheHive supports several authentication methods:
 TheHive comes with a powerful, highly configurable module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
 
 ### Case Merging
-Two (or more)cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
+Two (or more) cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
 
 ### Case and Observable Filtering
 You can filter cases and observables very easily to show only the data that is of interest to you.
