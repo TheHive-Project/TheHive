@@ -28,6 +28,7 @@ case class MispConnection(
     maxSize: Option[Long],
     excludedOrganisations: Seq[String],
     excludedTags: Set[String],
+    whitelistTags: Set[String],
     purpose: MispPurpose.Value) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
@@ -44,6 +45,7 @@ case class MispConnection(
        |    max size:       ${maxSize.getOrElse("<not set>")}
        |    excluded orgs:  ${excludedOrganisations.mkString}
        |    excluded tags:  ${excludedTags.mkString}
+       |    whitelist tags: ${whitelistTags.mkString}
        |  purpose:          $purpose
        |""".stripMargin)
 
@@ -70,7 +72,11 @@ case class MispConnection(
   }
 
   def isExcluded(event: MispAlert): Boolean = {
-    if (excludedOrganisations.contains(event.source)) {
+    if (whitelistTags.nonEmpty && whitelistTags.intersect(event.tags.toSet).isEmpty) {
+      logger.debug(s"event ${event.sourceRef} is ignored because it doesn't contain any of whitelist tags (${whitelistTags.mkString(",")})")
+      true
+    }
+    else if (excludedOrganisations.contains(event.source)) {
       logger.debug(s"event ${event.sourceRef} is ignored because its organisation (${event.source}) is excluded")
       true
     }
