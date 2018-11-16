@@ -225,13 +225,15 @@
                   });
             };
 
-            this.runResponder = function(responderId, event) {
-                CortexSrv.runResponder(responderId, 'alert', _.pick(event, 'id', 'tlp'))
+            this.runResponder = function(responderId, responderName, event) {
+                CortexSrv.runResponder(responderId, responderName, 'alert', _.pick(event, 'id', 'tlp'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
                   })
                   .catch(function(response) {
-                      NotificationSrv.error('CaseList', response.data, response.status);
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('CaseList', response.data, response.status);
+                      }
                   });
             };
 

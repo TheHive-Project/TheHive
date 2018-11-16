@@ -15,10 +15,10 @@
 </div>
 
 <!-- File observable -->
-<div class="form-group" ng-if="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
+<div class="form-group" ng-show="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
     <label class="col-md-3 control-label">File <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
-        <input type="hidden" name="attachment" ng-model="params.attachment.status" required>
+        <input type="hidden" name="attachment" ng-model="params.attachment.status" ng-required="isFile()">
         <div file-chooser="" filemodel="params.attachment"></div>
         <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
             WARNING: This file seems to be empty
@@ -35,13 +35,24 @@
 </div>
 
 <!-- Non file observable -->
-<div class="form-group" ng-if="!isFile()" ng-class="{ 'has-error' : observableForm.data.$invalid && !observableForm.data.$pristine }">
+<div class="form-group" ng-show="!isFile()" ng-class="{ 'has-error' : observableForm.data.$invalid && !observableForm.data.$pristine }">
     <label class="col-md-3 control-label">Value <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
-        <textarea class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" required></textarea>
-        <div>
-            <span>(one observable per line)</span>
-            <span class="pull-right"><ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize></span>
+        <textarea class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" ng-required="!isFile()"></textarea>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="false">
+                One observable per line
+                <span class="ml-xxxs">
+                    (<ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize>)
+                </span>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="true">
+                One single multiline observable
+            </label>
         </div>
     </div>
 </div>

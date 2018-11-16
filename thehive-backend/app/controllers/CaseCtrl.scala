@@ -88,13 +88,13 @@ class CaseCtrl @Inject() (
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     caseSrv.delete(id)
       .map(_ ⇒ NoContent)
   }
 
   @Timed
-  def realDelete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def realDelete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
     caseSrv.realDelete(id)
       .map(_ ⇒ NoContent)
   }

@@ -14,6 +14,12 @@
             this.save(cfg);
         };
 
+        this.getSection = function(entity) {
+            var cfg = this.restore();
+
+            return cfg[entity] || {};
+        }
+
         this.restore = function() {
             return localStorageService.get('search-section') || {
                 entity: 'case',
@@ -42,6 +48,26 @@
                     filters: []
                 }
             };
+        };
+
+        this.buildDefaultFilterValue = function(fieldDef, value) {
+            if(fieldDef.type === 'user' || fieldDef.values.length > 0) {
+                return {
+                    operator: 'any',
+                    list: [{text: value.id, label:value.name}]
+                }
+            } else {
+                switch(fieldDef.type) {
+                    case 'number':
+                        return Number.parseInt(value.id);
+                    case 'boolean':
+                        return value.id === 'true';
+                    default:
+                      return value.id;
+                }
+                return value.id;
+            }
+
         };
     });
 })();

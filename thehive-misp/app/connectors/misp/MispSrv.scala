@@ -298,7 +298,7 @@ class MispSrv @Inject() (
             None
           }
 
-        tempFile = tempSrv.newTemporaryFile("misp_malware", file.name)
+        tempFile = tempSrv.newTemporaryFile("misp", "malware")
         _ = logger.info(s"Extract malware file ${file.filepath} in file $tempFile")
         _ = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.getFileName.toString)
       } yield FileInputValue(filename, tempFile, "application/octet-stream")).getOrElse(file)

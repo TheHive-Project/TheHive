@@ -1,5 +1,33 @@
 # Change Log
 
+## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.2...3.2.0-RC1)
+
+**Implemented enhancements:**
+
+- Add ability to add a log in responder operation [\#795](https://github.com/TheHive-Project/TheHive/issues/795)
+- Add responder actions in dashboard [\#794](https://github.com/TheHive-Project/TheHive/issues/794)
+- Show observable description on mouseover observables [\#793](https://github.com/TheHive-Project/TheHive/issues/793)
+- Update Play [\#791](https://github.com/TheHive-Project/TheHive/issues/791)
+- Show tags of observables in Alert preview [\#778](https://github.com/TheHive-Project/TheHive/issues/778)
+- Observable Value gets cleared when changing its type \(importing it from an analyser result\) [\#763](https://github.com/TheHive-Project/TheHive/issues/763)
+- Add confirmation dialogs when running a responder [\#762](https://github.com/TheHive-Project/TheHive/issues/762)
+- Whitelist of tags for MISP alerts [\#481](https://github.com/TheHive-Project/TheHive/issues/481)
+
+**Fixed bugs:**
+
+- MISP synchronization fails if event contains attachment with invalid name [\#801](https://github.com/TheHive-Project/TheHive/issues/801)
+- Observable creation doesn't allow multiline observables [\#790](https://github.com/TheHive-Project/TheHive/issues/790)
+- A user with "write" permission can delete a case using API [\#773](https://github.com/TheHive-Project/TheHive/issues/773)
+- Basic authentication method should be disabled by default [\#772](https://github.com/TheHive-Project/TheHive/issues/772)
+- Case search from dashboard clic "invalid filters error" [\#761](https://github.com/TheHive-Project/TheHive/issues/761)
+- Intermittently losing Cortex [\#739](https://github.com/TheHive-Project/TheHive/issues/739)
+
+**Merged pull requests:**
+
+- Added Integration with FireEye iSIGHT [\#755](https://github.com/TheHive-Project/TheHive/pull/755) ([garanews](https://github.com/garanews))
+
 ## [3.1.2](https://github.com/TheHive-Project/TheHive/tree/3.1.2) (2018-10-12)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.1...3.1.2)
 
