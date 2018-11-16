@@ -25,7 +25,7 @@ import org.elastic4play.controllers.Fields
 import org.elastic4play.database.{ DBRemove, ModifyConfig }
 import org.elastic4play.services.JsonFormat.attachmentFormat
 import org.elastic4play.services._
-import org.elastic4play.utils.RetryOnError
+import org.elastic4play.utils.Retry
 import org.elastic4play.{ InternalError, NotFoundError }
 
 @Singleton
@@ -226,7 +226,7 @@ class CortexAnalyzerSrv @Inject() (
         .toOption
         .flatMap(r ⇒ (r \ "summary").asOpt[JsObject])
         .map { jobSummary ⇒
-          RetryOnError() {
+          Retry()(classOf[Exception]) {
             for {
               artifact ← artifactSrv.get(job.artifactId())
               reports = Try(Json.parse(artifact.reports()).asOpt[JsObject]).toOption.flatten.getOrElse(JsObject.empty)

@@ -9,7 +9,6 @@ import play.api.Logger
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSRequest
 
-import akka.actor.ActorSystem
 import models.HealthStatus
 import services.CustomWSAPI
 
@@ -90,7 +89,7 @@ case class MispConnection(
     }
   }
 
-  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+  def getVersion()(implicit ec: ExecutionContext): Future[Option[String]] = {
     apply("servers/getVersion").get
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "version").asOpt[String]
@@ -99,7 +98,7 @@ case class MispConnection(
       .recover { case _ ⇒ None }
   }
 
-  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] = {
+  def status()(implicit ec: ExecutionContext): Future[JsObject] = {
     getVersion()
       .map {
         case Some(version) ⇒ Json.obj(
@@ -115,7 +114,7 @@ case class MispConnection(
       }
   }
 
-  def healthStatus()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+  def healthStatus()(implicit ec: ExecutionContext): Future[HealthStatus.Type] = {
     getVersion()
       .map {
         case None ⇒ HealthStatus.Error
