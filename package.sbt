@@ -1,3 +1,5 @@
+import Common.{stableVersion, betaVersion}
+
 // Remove conf files
 // Install service files
 mappings in Universal ~= {
