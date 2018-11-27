@@ -7,11 +7,12 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models.Model.Base
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.{FPath, ParentProvider}
+import org.thp.scalligraph.services.{EdgeSrv, ElementSrv, VertexSrv}
+import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
-
 import scala.reflect.runtime.{universe ⇒ ru}
+
+import org.thp.scalligraph.query.PublicProperty
 
 @Singleton
 class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) extends Database {
@@ -57,6 +58,38 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) exte
     }
   }
 
+  override def update(
+      graph: Graph,
+      authContext: AuthContext,
+      elementSrv: ElementSrv[_, _],
+      id: String,
+      properties: Seq[PublicProperty[_, _]],
+      fields: Map[FPath, UpdateOps.Type]): Unit = {
+    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Any]]
+
+    val updateFields: Seq[(String, String, String)] = fields.map {
+      case (FPath("password"), _) if elementSrv.model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
+      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
+        properties
+          .find(_.propertyName == field)
+          .flatMap { prop ⇒
+            prop.get(Some(authContext)).headOption.asInstanceOf[Option[GremlinScala[Any] ⇒ GremlinScala[_]]]
+          }
+          .map(f ⇒ (field, f(element).toString, value.toString))
+          .getOrElse(throw BadRequestError(s"Field $field not found"))
+    }.toSeq
+
+    db.update(graph, authContext, elementSrv, id, properties, fields)
+
+    updateFields.foreach {
+      case (field, oldValue, newValue) ⇒
+        create(
+          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
+          elementSrv.model.toDomain(element.asInstanceOf[elementSrv.model.ElementType])
+        )(graph, authContext)
+    }
+  }
+
   lazy val vertexSrv: VertexSrv[Audit, VertexSteps[Audit]] = new VertexSrv[Audit, VertexSteps[Audit]] {
     override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): VertexSteps[Audit] = new VertexSteps[Audit](raw)
   }
@@ -74,6 +107,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) exte
   override def createSchema(models: Seq[Model]): Unit                                                          = db.createSchema(models)
   override def createSchema(models: Seq[Model], vertexSrvs: Seq[VertexSrv[_, _]], edgeSrvs: Seq[EdgeSrv[_, _, _]])(
       implicit authContext: AuthContext): Unit = db.createSchema(models, vertexSrvs, edgeSrvs)(authContext)
+  override def drop(): Unit                    = db.drop()
 
   override def getSingleProperty[D, G](element: Element, key: String, mapping: SingleMapping[D, G]): D = db.getSingleProperty(element, key, mapping)
   override def getOptionProperty[D, G](element: Element, key: String, mapping: OptionMapping[D, G]): Option[D] =

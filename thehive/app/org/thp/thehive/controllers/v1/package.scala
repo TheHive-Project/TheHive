@@ -18,7 +18,7 @@ package object v1 {
     new Output[OutputCase](
       richCase
         .into[OutputCase]
-        .withFieldComputed(_.customFields, _.customFields.map(CustomFieldXfrm.toOutput).toSet)
+        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
         .withFieldComputed(_.status, _.status.toString)
         .transform)
 
@@ -35,47 +35,31 @@ package object v1 {
       .transform
 
   def outputCaseProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+    // format: off
     PublicPropertyListBuilder[CaseSteps, Vertex]
-      .property[String]("title")
-      .simple
-      .property[String]("description")
-      .simple
-      .property[String]("severity")
-      .simple
-      .property[Date]("startDate")
-      .simple
-      .property[Option[Date]]("endDate")
-      .simple
-      .property[Set[String]]("tags")
-      .simple
-      .property[Boolean]("flag")
-      .simple
-      .property[Int]("tlp")
-      .simple
-      .property[Int]("pap")
-      .simple
-      .property[String]("status")
-      .simple
-      .property[Option[String]]("summary")
-      .simple
-      .property[String]("user")
-      .simple
-      .property[String]("customFieldName")
-      .derived(_ ⇒ _.outTo[CaseCustomField].value("name"))
-      .property[String]("customFieldDescription")
-      .derived(_ ⇒ _.outTo[CaseCustomField].value("description"))
-      .property[String]("customFieldType")
-      .derived(_ ⇒ _.outTo[CaseCustomField].value("type"))
-      .property[String]("customFieldValue")
-      .seq(_ ⇒
-        Seq(
-          _.outToE[CaseCustomField].value("stringValue"),
-          _.outToE[CaseCustomField].value("booleanValue"),
-          _.outToE[CaseCustomField].value("integerValue"),
-          _.outToE[CaseCustomField].value("floatValue"),
-          _.outToE[CaseCustomField].value("dateValue")
-      ))
+      .property[String]("title").simple
+      .property[String]("description").simple
+      .property[String]("severity").simple
+      .property[Date]("startDate").simple
+      .property[Option[Date]]("endDate") .simple
+      .property[Set[String]]("tags").simple
+      .property[Boolean]("flag").simple
+      .property[Int]("tlp").simple
+      .property[Int]("pap").simple
+      .property[String]("status").simple
+      .property[Option[String]]("summary").simple
+      .property[String]("user").simple
+      .property[String]("customFieldName").derived(_ ⇒ _.outTo[CaseCustomField], "name")
+      .property[String]("customFieldDescription").derived(_ ⇒ _.outTo[CaseCustomField], "description")
+      .property[String]("customFieldType").derived(_ ⇒ _.outTo[CaseCustomField], "type")
+      .property[String]("customFieldValue").seq(
+        _.derived(_ ⇒ _.outToE[CaseCustomField], "stringValue")
+         .derived(_ ⇒ _.outToE[CaseCustomField], "booleanValue")
+         .derived(_ ⇒ _.outToE[CaseCustomField], "integerValue")
+         .derived(_ ⇒ _.outToE[CaseCustomField], "floatValue")
+         .derived(_ ⇒ _.outToE[CaseCustomField], "dateValue"))
       .build
+  // format: on
 
   implicit def fromInputTask(inputTask: InputTask): Task =
     inputTask
@@ -110,4 +94,43 @@ package object v1 {
           }))
         .transform
     )
+
+  def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Any) = inputCustomFieldValue.name → inputCustomFieldValue.value
+
+  implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
+    new Output[OutputCustomFieldValue](
+      customFieldValue
+        .into[OutputCustomFieldValue]
+        .withFieldComputed(_.value, _.value.toString)
+        .transform
+    )
+
+  implicit def toOutputCustomField(customField: CustomField with Entity): Output[OutputCustomField] =
+    new Output[OutputCustomField](
+      customField
+        .asInstanceOf[CustomField]
+        .into[OutputCustomField]
+        .withFieldComputed(_.`type`, _.`type`.name)
+        .transform
+    )
+
+  implicit def toOutputAlert(richAlert: RichAlert): Output[OutputAlert] =
+    new Output[OutputAlert](
+      richAlert
+        .into[OutputAlert]
+        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.status, _.status.toString)
+        .transform)
+
+  implicit def fromInputAlert(inputAlert: InputAlert): Alert =
+    inputAlert
+      .into[Alert]
+      .withFieldComputed(_.severity, _.severity.getOrElse(2))
+      .withFieldComputed(_.flag, _.flag.getOrElse(false))
+      .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
+      .withFieldComputed(_.pap, _.pap.getOrElse(2))
+      .withFieldConst(_.status, AlertStatus.`new`)
+      .withFieldConst(_.lastSyncDate, new Date)
+      .withFieldConst(_.follow, true)
+      .transform
 }

@@ -12,7 +12,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, UserSrv}
 
 @Singleton
-class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, userSrv: UserSrv) {
+class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv) {
 
   def create: Action[AnyContent] =
     apiMethod("create case")
@@ -21,8 +21,8 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
         db.transaction { implicit graph ⇒
           val inputCase: InputCase = request.body('case)
           val user                 = userSrv.getOrFail(inputCase.user.getOrElse(request.userId))
-          val organisation         = userSrv.getOrganisation(user)
-          val customFields         = inputCase.customFieldValue.map(CustomFieldXfrm.fromInput)
+          val organisation         = organisationSrv.getOrFail(request.organisation)
+          val customFields         = inputCase.customFieldValue.map(fromInputCustomField)
           val richCase             = caseSrv.create(request.body('case), user, organisation, customFields)
           Results.Created(richCase.toJson)
         }
@@ -38,8 +38,6 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
             .richCase
             .headOption
             .getOrElse(throw NotFoundError(s"case number $caseIdOrNumber not found"))
-          if (richCase.organisation != request.organisation)
-            throw NotFoundError(s"case number $caseIdOrNumber not found")
           Results.Ok(richCase.toJson)
         }
       }
@@ -52,7 +50,7 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
             .availableFor(request.organisation)
             .richCase
             .map(_.toJson)
-            .toList
+            .toList()
           Results.Ok(Json.toJson(cases))
         }
       }
