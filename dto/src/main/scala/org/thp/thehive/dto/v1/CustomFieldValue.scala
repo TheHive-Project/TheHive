@@ -18,7 +18,7 @@ object InputCustomField {
 case class OutputCustomField(name: String, description: String, `type`: String)
 
 object OutputCustomField {
-  implicit val format: Format[OutputCustomField] = Json.format[OutputCustomField]
+  implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
 }
 
 case class InputCustomFieldValue(name: String, value: Any)
@@ -54,5 +54,5 @@ object InputCustomFieldValue {
 case class OutputCustomFieldValue(name: String, description: String, tpe: String, value: String)
 
 object OutputCustomFieldValue {
-  implicit val format: Format[OutputCustomFieldValue] = Json.format[OutputCustomFieldValue]
+  implicit val format: OFormat[OutputCustomFieldValue] = Json.format[OutputCustomFieldValue]
 }

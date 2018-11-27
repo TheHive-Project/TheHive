@@ -14,14 +14,15 @@ class Router @Inject()(
     shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
     customFieldCtrl: CustomFieldCtrl,
+    alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl)
     extends SimpleRouter {
 
   override def routes: Routes = {
-    case GET(p"/case")          ⇒ caseCtrl.list
-    case POST(p"/case")         ⇒ caseCtrl.create
-    case GET(p"/case/$caseId")  ⇒ caseCtrl.get(caseId)
-    case PATCH(p"/case$caseId") ⇒ caseCtrl.update(caseId)
+    case GET(p"/case")           ⇒ caseCtrl.list
+    case POST(p"/case")          ⇒ caseCtrl.create
+    case GET(p"/case/$caseId")   ⇒ caseCtrl.get(caseId)
+    case PATCH(p"/case/$caseId") ⇒ caseCtrl.update(caseId)
 
     case GET(p"/user")           ⇒ userCtrl.list
     case POST(p"/user")          ⇒ userCtrl.create
@@ -45,6 +46,11 @@ class Router @Inject()(
 
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
+
+    case GET(p"/alert")            ⇒ alertCtrl.list
+    case POST(p"/alert")           ⇒ alertCtrl.create
+    case GET(p"/alert/$alertId")   ⇒ alertCtrl.get(alertId)
+    case PATCH(p"/alert/$alertId") ⇒ alertCtrl.update(alertId)
 
     case GET(p"/audit") ⇒ auditCtrl.flow()
   }

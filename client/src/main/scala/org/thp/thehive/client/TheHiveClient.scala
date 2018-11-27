@@ -1,4 +1,5 @@
 package org.thp.thehive.client
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -29,6 +30,7 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   val organisation = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
   val share        = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
   val task         = new BaseClient[InputTask, OutputTask](s"$baseUrl/api/v1/task")
+  val alert        = new BaseClient[InputAlert, OutputAlert](s"$baseUrl/api/v1/alert")
   object audit {
     def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[OutputAudit]] = {
       Client.logger.debug(s"Request GET $baseUrl")
