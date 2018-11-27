@@ -1,25 +1,35 @@
 package org.thp.thehive.services
-import org.specs2.specification.core.Fragments
+import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 
+import org.thp.scalligraph.AppBuilder
+
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
   implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
 
-  Fragments.foreach(DatabaseProviders.list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
       .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
-      .bindInstance[InitialAuthContext](InitialAuthContext(authContext))
+      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
       .bindToProvider(dbProvider)
-//      .bind[DatabaseBuilder, DatabaseBuilder]
+    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
+  }
+
+  def setupDatabase(app: AppBuilder): Unit =
+    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+
+  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
+
+  def specs(name: String, app: AppBuilder): Fragment = {
     val userSrv: UserSrv = app.instanceOf[UserSrv]
     val db: Database     = app.instanceOf[Database]
-    app.instanceOf[DatabaseBuilder]
 
-    s"[${dbProvider.name}] user service" should {
+    s"[$name] user service" should {
+
       "create and get an user by his id" in db.transaction { implicit graph ⇒
         val user =
           userSrv.create(

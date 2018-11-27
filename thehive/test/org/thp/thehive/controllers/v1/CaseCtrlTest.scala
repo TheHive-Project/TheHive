@@ -2,19 +2,22 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import akka.stream.Materializer
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.Fragments
-import org.thp.scalligraph.controllers.Authenticated
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
-import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditedDatabase, CaseSrv, OrganisationSrv, UserSrv}
-import play.api.libs.json.{JsNull, JsNumber, JsString, Json}
+import scala.concurrent.Future
+
+import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, PlaySpecification}
 
-import scala.concurrent.Future
+import akka.stream.Materializer
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.controllers.Authenticated
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.dto.v1.{InputCase, OutputCase}
+import org.thp.thehive.models._
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write))
@@ -22,57 +25,65 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
   authenticated.getContext(any[RequestHeader]) returns Future.successful(dummyUserSrv.authContext)
   implicit val ee: ExecutionEnv = ExecutionEnv.fromGlobalExecutionContext
 
-  Fragments.foreach(DatabaseProviders.list) { dbProvider ⇒
-    s"[${dbProvider.name}] case controller" should {
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+    val app: AppBuilder = AppBuilder()
+      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
+      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
+      .bindToProvider(dbProvider)
+      .bindInstance[Authenticated](authenticated)
+    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
+  }
 
-      val app: AppBuilder = AppBuilder()
-        .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
-        .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
-        .bindToProvider(dbProvider)
-        .bindInstance[Authenticated](authenticated)
-      app.instanceOf[DatabaseBuilder]
-      app.instanceOf[AuditedDatabase]
-      val caseCtrl: CaseCtrl = app.instanceOf[CaseCtrl]
+  def setupDatabase(app: AppBuilder): Unit =
+    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
-      implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
+
+  def specs(name: String, app: AppBuilder): Fragment = {
+    val caseCtrl: CaseCtrl              = app.instanceOf[CaseCtrl]
+    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+
+    s"[$name] case controller" should {
 
       "create a new case" in {
         val now = new Date()
         val request = FakeRequest("POST", "/api/v1/case")
           .withJsonBody(
-            Json.obj(
-              "title"       → "case title (create case test)",
-              "description" → "case description (create case test)",
-              "severity"    → 2,
-              "startDate"   → Json.toJson(now),
-              "tags"        → Seq("tag1", "tag2"),
-              "flag"        → false,
-              "tlp"         → 1,
-              "pap"         → 3
-            ))
-        val result   = caseCtrl.create(request)
-        val bodyJson = contentAsJson(result)
-        val expected = Json.obj(
-          "number"      → (bodyJson \ "number").as[JsNumber],
-          "title"       → "case title (create case test)",
-          "description" → "case description (create case test)",
-          "severity"    → 2,
-          "startDate"   → Json.toJson(now),
-          "endDate"     → JsNull,
-          "tags"        → Seq("tag1", "tag2"),
-          "flag"        → false,
-          "tlp"         → 1,
-          "pap"         → 3,
-          "status"      → "open",
-          "summary"     → JsNull,
-          "_createdBy"  → dummyUserSrv.authContext.userId,
-          "_id"         → (bodyJson \ "_id").as[JsString],
-          "_createdAt"  → (bodyJson \ "_createdAt").as[JsNumber],
-          "_updatedAt"  → JsNull,
-          "_updatedBy"  → JsNull
+            Json.toJson(InputCase(
+              title = "case title (create case test)",
+              description = "case description (create case test)",
+              severity = Some(2),
+              startDate = Some(now),
+              tags = Seq("tag1", "tag2"),
+              flag = Some(false),
+              tlp = Some(1),
+              pap = Some(3)
+            )))
+        val result     = caseCtrl.create(request)
+        val resultCase = contentAsJson(result).as[OutputCase]
+        val expected = OutputCase(
+          _id = resultCase._id,
+          _createdBy = resultCase._createdBy,
+          _updatedBy = None,
+          _createdAt = resultCase._createdAt,
+          _updatedAt = None,
+          number = resultCase.number,
+          title = "case title (create case test)",
+          description = "case description (create case test)",
+          severity = 2,
+          startDate = now,
+          endDate = None,
+          tags = Set("tag1", "tag2"),
+          flag = false,
+          tlp = 1,
+          pap = 3,
+          status = "open",
+          summary = None,
+          user = dummyUserSrv.authContext.userId,
+          customFields = Set.empty
         )
 
-        bodyJson must be equalTo expected
+        resultCase must_=== expected
       }
 
       "get a case" in {
@@ -98,34 +109,32 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 summary = None
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
-              organisationSrv.getOrFail("default")(graph),
+              organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Nil
             )(graph, dummyUserSrv.authContext)
         }
-        val request  = FakeRequest("GET", s"/api/v1/case/#${createdCase.number}")
-        val result   = caseCtrl.get("#" + createdCase.number)(request)
-        val bodyJson = contentAsJson(result)
-        val expected = Json.obj(
-          "number"      → createdCase.number,
-          "title"       → "case title (get case test)",
-          "description" → "case description (get case test)",
-          "severity"    → 2,
-          "startDate"   → now.getTime,
-          "endDate"     → JsNull,
-          "tags"        → Seq("tag1", "tag2"),
-          "flag"        → true,
-          "tlp"         → 1,
-          "pap"         → 3,
-          "status"      → "open",
-          "summary"     → JsNull,
-          "_createdBy"  → dummyUserSrv.authContext.userId,
-          "_id"         → (bodyJson \ "_id").as[String],
-          "_createdAt"  → createdCase._createdAt,
-          "_updatedAt"  → JsNull,
-          "_updatedBy"  → JsNull
+        val request    = FakeRequest("GET", s"/api/v1/case/#${createdCase.number}")
+        val result     = caseCtrl.get("#" + createdCase.number)(request)
+        val resultCase = contentAsJson(result).as[OutputCase]
+        val expected = OutputCase(
+          number = createdCase.number,
+          title = "case title (get case test)",
+          description = "case description (get case test)",
+          severity = 2,
+          startDate = now,
+          endDate = None,
+          tags = Set("tag1", "tag2"),
+          flag = true,
+          tlp = 1,
+          pap = 3,
+          status = "open",
+          user = dummyUserSrv.authContext.userId,
+          _createdBy = dummyUserSrv.authContext.userId,
+          _id = createdCase._id,
+          _createdAt = createdCase._createdAt,
         )
 
-        bodyJson must be equalTo expected
+        resultCase must_=== expected
       }
 
       "update a case" in {
@@ -152,11 +161,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 summary = None
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
-              organisationSrv.getOrFail("default")(graph),
+              organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Nil
             )(graph, dummyUserSrv.authContext)
         }
-        val request = FakeRequest("PATCH", s"/api/v1/case/#${createdCase.number}")
+        val updateRequest = FakeRequest("PATCH", s"/api/v1/case/#${createdCase.number}")
           .withJsonBody(
             Json.obj(
               "title"  → "new title",
@@ -165,31 +174,33 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               "pap"    → 1,
               "status" → "resolved"
             ))
-        val updateResult = caseCtrl.update("#" + createdCase.number)(request)
+        val updateResult = caseCtrl.update("#" + createdCase.number)(updateRequest)
         status(updateResult) must_=== 204
-        val getResult = caseCtrl.get("#" + createdCase.number)(request)
-        val bodyJson  = contentAsJson(getResult)
-        val expected = Json.obj(
-          "number"      → createdCase.number,
-          "title"       → "new title",
-          "description" → "case description (update case test)",
-          "severity"    → 2,
-          "startDate"   → now.getTime,
-          "endDate"     → JsNull,
-          "tags"        → Seq("tag1", "tag2"),
-          "flag"        → false,
-          "tlp"         → 2,
-          "pap"         → 1,
-          "status"      → "resolved",
-          "summary"     → JsNull,
-          "_createdBy"  → dummyUserSrv.authContext.userId,
-          "_id"         → (bodyJson \ "_id").as[String],
-          "_createdAt"  → createdCase._createdAt,
-          "_updatedAt"  → (bodyJson \ "_updatedAt").as[Date],
-          "_updatedBy"  → "test"
+
+        val getRequest = FakeRequest("GET", s"/api/v1/case/#${createdCase.number}")
+        val getResult  = caseCtrl.get("#" + createdCase.number)(getRequest)
+        val resultCase = contentAsJson(getResult).as[OutputCase]
+        val expected = OutputCase(
+          number = createdCase.number,
+          title = "new title",
+          description = "case description (update case test)",
+          severity = 2,
+          startDate = now,
+          endDate = None,
+          tags = Set("tag1", "tag2"),
+          flag = false,
+          tlp = 2,
+          pap = 1,
+          status = "resolved",
+          user = dummyUserSrv.authContext.userId,
+          _createdBy = dummyUserSrv.authContext.userId,
+          _id = createdCase._id,
+          _createdAt = createdCase._createdAt,
+          _updatedAt = resultCase._updatedAt,
+          _updatedBy = Some(dummyUserSrv.authContext.userId)
         )
 
-        bodyJson must be equalTo expected
+        resultCase must_=== expected
       }
     }
   }
