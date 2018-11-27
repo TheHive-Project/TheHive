@@ -2,28 +2,37 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import org.specs2.specification.core.Fragments
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
-import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 
-class CaseSrvTest extends PlaySpecification {
-  val dummyUserSrv             = DummyUserSrv()
-  val authContext: AuthContext = dummyUserSrv.initialAuthContext
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.models._
 
-  Fragments.foreach(DatabaseProviders.list) { dbProvider ⇒
-    s"[${dbProvider.name}] case service" should {
-      val app: AppBuilder = AppBuilder()
-        .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
-        .bindInstance[InitialAuthContext](InitialAuthContext(authContext))
-        .bindToProvider(dbProvider)
-      app.instanceOf[DatabaseBuilder]
-      val caseSrv: CaseSrv = app.instanceOf[CaseSrv]
-      val db: Database     = app.instanceOf[Database]
+class CaseSrvTest extends PlaySpecification {
+  val dummyUserSrv = DummyUserSrv()
+
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+    val app: AppBuilder = AppBuilder()
+      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
+      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
+      .bindToProvider(dbProvider)
+    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
+  }
+
+  def setupDatabase(app: AppBuilder): Unit =
+    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+
+  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
+
+  def specs(name: String, app: AppBuilder): Fragment = {
+    val caseSrv: CaseSrv = app.instanceOf[CaseSrv]
+    val db: Database     = app.instanceOf[Database]
+
+    s"[$name] case service" should {
 
       "list all cases" in db.transaction { implicit graph ⇒
-        caseSrv.initSteps.toList.map(_.number) must contain(allOf(1, 2, 3, 4))
+        caseSrv.initSteps.toList().map(_.number) must contain(allOf(1, 2, 3, 4))
       }
 
       "get a case without impact status" in db.transaction { implicit graph ⇒
@@ -32,7 +41,7 @@ class CaseSrvTest extends PlaySpecification {
         val richCase = caseSrv.get(caseId).richCase.head()
         richCase must_== RichCase(
           richCase._id,
-          authContext.userId,
+          dummyUserSrv.userId,
           richCase._updatedBy,
           richCase._createdAt,
           richCase._updatedAt,
@@ -49,8 +58,9 @@ class CaseSrvTest extends PlaySpecification {
           status = CaseStatus.open,
           summary = None,
           impactStatus = None,
+          resolutionStatus = None,
           user = "toom",
-          organisation = "default",
+          organisation = "cert",
           Nil
         )
       }
@@ -59,7 +69,7 @@ class CaseSrvTest extends PlaySpecification {
         val richCase = caseSrv.get("#2").richCase.head()
         richCase must_== RichCase(
           richCase._id,
-          authContext.userId,
+          dummyUserSrv.userId,
           richCase._updatedBy,
           richCase._createdAt,
           richCase._updatedAt,
@@ -76,11 +86,12 @@ class CaseSrvTest extends PlaySpecification {
           status = CaseStatus.open,
           summary = None,
           impactStatus = Some("NoImpact"),
+          resolutionStatus = None,
           user = "admin",
-          organisation = "default",
+          organisation = "cert",
           Nil
         )
-        richCase._createdBy must_=== authContext.userId
+        richCase._createdBy must_=== dummyUserSrv.userId
       }
 
       "get a case with custom fields" in db.transaction { implicit graph ⇒
@@ -101,10 +112,32 @@ class CaseSrvTest extends PlaySpecification {
         richCase.user must_=== "toom"
         richCase.customFields must contain(
           allOf(
-            CustomFieldValue("boolean1", "boolean custom field", CustomFieldBoolean.name, true),
-            CustomFieldValue("string1", "string custom field", CustomFieldString.name, "string1 custom field")
+            CustomFieldWithValue("boolean1", "boolean custom field", CustomFieldBoolean.name, true),
+            CustomFieldWithValue("string1", "string custom field", CustomFieldString.name, "string1 custom field")
           ))
+      }
 
+      "merge two cases" in db.transaction { implicit graph ⇒
+        val mergedCase = caseSrv.merge("#2", "#3")(graph, dummyUserSrv.initialAuthContext)
+
+        mergedCase.title must_=== "case#2 / case#3"
+        mergedCase.description must_=== "description of case #2\n\ndescription of case #3"
+        mergedCase.severity must_=== 2
+        mergedCase.startDate must_=== new Date(1531667370000L)
+        mergedCase.endDate must beNone
+        mergedCase.tags must_=== Nil
+        mergedCase.flag must_=== false
+        mergedCase.tlp must_=== 2
+        mergedCase.pap must_=== 2
+        mergedCase.status must_=== CaseStatus.open
+        mergedCase.summary must beNone
+        mergedCase.impactStatus must beNone
+        mergedCase.user must_=== "test"
+        mergedCase.customFields must contain(
+          allOf(
+            CustomFieldWithValue("boolean1", "boolean custom field", CustomFieldBoolean.name, true),
+            CustomFieldWithValue("string1", "string custom field", CustomFieldString.name, "string1 custom field")
+          ))
       }
     }
   }

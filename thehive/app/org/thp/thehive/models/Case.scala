@@ -43,9 +43,13 @@ case class CaseCustomField(
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None)
-
-@EdgeEntity[Case, Indicator]
-case class CaseIndicator()
+    extends CustomFieldValue[CaseCustomField] {
+  override def setStringValue(value: String): CaseCustomField   = copy(stringValue = Some(value))
+  override def setBooleanValue(value: Boolean): CaseCustomField = copy(booleanValue = Some(value))
+  override def setIntegerValue(value: Int): CaseCustomField     = copy(integerValue = Some(value))
+  override def setFloatValue(value: Float): CaseCustomField     = copy(floatValue = Some(value))
+  override def setDateValue(value: Date): CaseCustomField       = copy(dateValue = Some(value))
+}
 
 @EdgeEntity[Case, User]
 case class CaseUser()
@@ -72,7 +76,7 @@ case class Case(
     status: CaseStatus.Value,
     summary: Option[String])
 
-case class CustomFieldValue(name: String, description: String, tpe: String, value: Any)
+case class CustomFieldWithValue(name: String, description: String, tpe: String, value: Any)
 
 case class RichCase(
     _id: String,
@@ -93,18 +97,20 @@ case class RichCase(
     status: CaseStatus.Value,
     summary: Option[String],
     impactStatus: Option[String],
+    resolutionStatus: Option[String],
     user: String,
     organisation: String,
-    customFields: Seq[CustomFieldValue]
+    customFields: Seq[CustomFieldWithValue]
 )
 
 object RichCase {
   def apply(
       `case`: Case with Entity,
       caseImpactStatus: Option[String],
+      resolutionStatus: Option[String],
       user: String,
       organisation: String,
-      customFields: Seq[CustomFieldValue]): RichCase =
+      customFields: Seq[CustomFieldWithValue]): RichCase =
     `case`
       .asInstanceOf[Case]
       .into[RichCase]
@@ -114,6 +120,7 @@ object RichCase {
       .withFieldConst(_._updatedAt, `case`._updatedAt)
       .withFieldConst(_._updatedBy, `case`._updatedBy)
       .withFieldConst(_.impactStatus, caseImpactStatus)
+      .withFieldConst(_.resolutionStatus, resolutionStatus)
       .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.user, user)
       .withFieldConst(_.customFields, customFields)

@@ -5,11 +5,11 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser}
+import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.InputCase
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, UserSrv}
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
 
 @Singleton
 class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv) {
@@ -56,14 +56,21 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
       }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
-//    apiMethod("update case")
-//      .extract('case, UpdateFieldsParser[InputCase])
-//      .requires(Permissions.write) { implicit request ⇒
-//        db.transaction { implicit graph ⇒
-//          val caseId = caseSrv.getOrFail(caseIdOrNumber)._id
-//          caseSrv.update(caseId, request.body('case))
-//          Results.NoContent
-//        }
-//      }
-    ???
+    apiMethod("update case")
+      .extract('case, UpdateFieldsParser[InputCase])
+      .requires(Permissions.write) { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
+          Results.NoContent
+        }
+      }
+
+  def merge(caseIdsOrNumbers: String): Action[AnyContent] =
+    apiMethod("merge cases")
+      .requires(Permissions.write) { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          val mergedCase = caseSrv.merge(caseIdsOrNumbers.split(','): _*)
+          Results.Ok(mergedCase.toJson)
+        }
+      }
 }
