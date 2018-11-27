@@ -56,8 +56,7 @@ lazy val thehiveCore = (project in file("thehive"))
     libraryDependencies ++= Seq(
       chimney,
       guice,
-      janusGraphBerkeleyDB % Test,
-      ws % Test,
+      ws    % Test,
       specs % Test
     )
   )

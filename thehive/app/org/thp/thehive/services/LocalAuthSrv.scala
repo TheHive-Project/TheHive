@@ -39,7 +39,7 @@ class LocalAuthSrv @Inject()(
     db.transaction { implicit graph ⇒
       userSrv
         .get(username)
-        .headOption
+        .headOption()
         .filter(user ⇒ doAuthenticate(user, password))
         .map(user ⇒ localUserSrv.getFromUser(request, user))
         .getOrElse(Future.failed(AuthenticationError("Authentication failure")))
@@ -51,7 +51,7 @@ class LocalAuthSrv @Inject()(
     db.transaction { implicit graph ⇒
       userSrv
         .get(username)
-        .headOption
+        .headOption()
         .filter(user ⇒ doAuthenticate(user, oldPassword))
         .map(_ ⇒ setPassword(username, newPassword))
         .getOrElse(Future.failed(AuthorizationError("Authentication failure")))
