@@ -17,7 +17,7 @@
                         </a>
                       </li>
                       <li ng-repeat="responder in obsResponders">
-                        <a href ng-click="runResponder(responder.id, artifact)">
+                        <a href ng-click="runResponder(responder.id, responder.name, artifact)">
                           <strong>{{responder.name}}</strong>
                           <br>
                           <small>{{responder.description}}</small></a>

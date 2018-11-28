@@ -2,6 +2,7 @@ package connectors.cortex.services
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 import play.api.{ Configuration, Logger }
 import play.api.http.HeaderNames
@@ -9,7 +10,6 @@ import play.api.libs.json.{ JsObject, JsValue, Json }
 import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
 import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
 
-import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
@@ -18,7 +18,6 @@ import models.HealthStatus
 import services.CustomWSAPI
 
 import org.elastic4play.NotFoundError
-import org.elastic4play.utils.RichFuture
 
 object CortexConfig {
   def getCortexClient(name: String, configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
@@ -42,7 +41,7 @@ object CortexConfig {
       cortexWS = globalWS.withConfig(cfg)
       key ← cfg.subKeys
       if key != "ws"
-      c ← cfg.getOptional[Configuration](key)
+      c ← Try(cfg.get[Configuration](key)).toOption
       instanceWS = cortexWS.withConfig(c)
       cic ← getCortexClient(key, c, instanceWS)
     } yield cic
@@ -186,27 +185,25 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
     request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, _.json.as[JsObject])
   }
 
-  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+  def getVersion()(implicit ec: ExecutionContext): Future[Option[String]] = {
     request("api/status", _.get, identity)
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "versions" \ "Cortex").asOpt[String]
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
-  def getCurrentUser()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+  def getCurrentUser()(implicit ec: ExecutionContext): Future[Option[String]] = {
     request("api/user/current", _.get, identity)
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "id").asOpt[String]
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
-  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] =
+  def status()(implicit ec: ExecutionContext): Future[JsObject] =
     for {
       version ← getVersion()
       versionValue = version.getOrElse("")
@@ -221,7 +218,7 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
         "status" → status)
     }
 
-  def health()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+  def health()(implicit ec: ExecutionContext): Future[HealthStatus.Type] = {
     getVersion()
       .map {
         case None ⇒ HealthStatus.Error

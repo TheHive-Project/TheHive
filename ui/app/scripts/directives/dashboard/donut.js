@@ -81,11 +81,19 @@
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
                                     onclick: function(d) {
-                                        GlobalSearchSrv.saveSection(scope.options.entity, {
-                                            search: scope.options.field + ':"'+d.id+'"',
-                                            filters: scope.options.filters
-                                        });
+                                        var fieldDef = scope.entity.attributes[scope.options.field];
+                                        var fieldType = fieldDef.type;
 
+                                        var data = {
+                                            field: scope.options.field,
+                                            type: fieldDef.type,
+                                            value: GlobalSearchSrv.buildDefaultFilterValue(fieldDef, d)
+                                        };
+
+                                        GlobalSearchSrv.saveSection(scope.options.entity, {
+                                            search: null,
+                                            filters: scope.options.filters.concat([data])
+                                        });
                                         $state.go('app.search');
                                     }
                                 },

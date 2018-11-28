@@ -304,13 +304,15 @@
                   })
             };
 
-            $scope.runResponder = function(responderId) {
-                CortexSrv.runResponder(responderId, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
+            $scope.runResponder = function(responderId, responderName) {
+                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
                   })
                   .catch(function(response) {
-                      NotificationSrv.error('caseDetails', response.data, response.status);
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('caseDetails', response.data, response.status);
+                      }
                   });
             };
 

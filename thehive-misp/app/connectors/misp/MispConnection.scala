@@ -9,11 +9,8 @@ import play.api.Logger
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.ws.WSRequest
 
-import akka.actor.ActorSystem
 import models.HealthStatus
 import services.CustomWSAPI
-
-import org.elastic4play.utils.RichFuture
 
 object MispPurpose extends Enumeration {
   val ImportOnly, ExportOnly, ImportAndExport = Value
@@ -30,6 +27,7 @@ case class MispConnection(
     maxSize: Option[Long],
     excludedOrganisations: Seq[String],
     excludedTags: Set[String],
+    whitelistTags: Set[String],
     purpose: MispPurpose.Value) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
@@ -46,6 +44,8 @@ case class MispConnection(
        |    max size:       ${maxSize.getOrElse("<not set>")}
        |    excluded orgs:  ${excludedOrganisations.mkString}
        |    excluded tags:  ${excludedTags.mkString}
+       |    whitelist tags: ${whitelistTags.mkString}
+       |  purpose:          $purpose
        |""".stripMargin)
 
   private[misp] def apply(url: String): WSRequest =
@@ -71,7 +71,11 @@ case class MispConnection(
   }
 
   def isExcluded(event: MispAlert): Boolean = {
-    if (excludedOrganisations.contains(event.source)) {
+    if (whitelistTags.nonEmpty && whitelistTags.intersect(event.tags.toSet).isEmpty) {
+      logger.debug(s"event ${event.sourceRef} is ignored because it doesn't contain any of whitelist tags (${whitelistTags.mkString(",")})")
+      true
+    }
+    else if (excludedOrganisations.contains(event.source)) {
       logger.debug(s"event ${event.sourceRef} is ignored because its organisation (${event.source}) is excluded")
       true
     }
@@ -85,17 +89,16 @@ case class MispConnection(
     }
   }
 
-  def getVersion()(implicit system: ActorSystem, ec: ExecutionContext): Future[Option[String]] = {
+  def getVersion()(implicit ec: ExecutionContext): Future[Option[String]] = {
     apply("servers/getVersion").get
       .map {
         case resp if resp.status / 100 == 2 ⇒ (resp.json \ "version").asOpt[String]
         case _                              ⇒ None
       }
       .recover { case _ ⇒ None }
-      .withTimeout(1.seconds, None)
   }
 
-  def status()(implicit system: ActorSystem, ec: ExecutionContext): Future[JsObject] = {
+  def status()(implicit ec: ExecutionContext): Future[JsObject] = {
     getVersion()
       .map {
         case Some(version) ⇒ Json.obj(
@@ -111,7 +114,7 @@ case class MispConnection(
       }
   }
 
-  def healthStatus()(implicit system: ActorSystem, ec: ExecutionContext): Future[HealthStatus.Type] = {
+  def healthStatus()(implicit ec: ExecutionContext): Future[HealthStatus.Type] = {
     getVersion()
       .map {
         case None ⇒ HealthStatus.Error

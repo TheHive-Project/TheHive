@@ -13,6 +13,7 @@
             $scope.params = params || {
                 ioc: false,
                 sighted: false,
+                single: false,
                 isZip: false,
                 zipPassword: '',
                 data: '',
@@ -43,8 +44,6 @@
 
             $scope.selectDataType = function(type) {
                 $scope.params.dataType = type;
-                delete $scope.params.data;
-                delete $scope.params.attachment;
             };
 
             $scope.countObservables = function() {
@@ -79,10 +78,16 @@
                         tags: _.unique(_.pluck($scope.tags, 'text'))
                     };
 
-                if (params.data) {
-                    postData.data = params.data.split('\n');
-                    count = postData.length;
-                } else if (params.attachment) {
+                var isFile = params.dataType === 'file';
+
+                if (!isFile) {
+                    if(params.single === true) {
+                        postData.data = params.data;
+                    } else {
+                        postData.data = params.data.split('\n');
+                        count = postData.length;
+                    }                    
+                } else {
                     postData.attachment = params.attachment;
 
                     if(params.isZip) {

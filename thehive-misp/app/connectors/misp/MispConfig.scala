@@ -33,6 +33,7 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
       maxSize = mispConnectionConfig.getOptional[ConfigMemorySize]("max-size").map(_.toBytes)
       excludedOrganisations = mispConnectionConfig.getOptional[Seq[String]]("exclusion.organisation").getOrElse(Nil)
       excludedTags = mispConnectionConfig.getOptional[Seq[String]]("exclusion.tags").fold(Set.empty[String])(_.toSet)
+      whitelistTags = mispConnectionConfig.getOptional[Seq[String]]("whitelist.tags").fold(Set.empty[String])(_.toSet)
       purpose = mispConnectionConfig.getOptional[String]("purpose")
         .fold(MispPurpose.ImportAndExport) { purposeName ⇒
           Try(MispPurpose.withName(purposeName)).getOrElse {
@@ -40,7 +41,7 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
             MispPurpose.ImportAndExport
           }
         }
-    } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags, maxAge, maxAttributes, maxSize, excludedOrganisations, excludedTags, purpose))
+    } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags, maxAge, maxAttributes, maxSize, excludedOrganisations, excludedTags, whitelistTags, purpose))
 
   @Inject def this(configuration: Configuration, httpSrv: CustomWSAPI) =
     this(

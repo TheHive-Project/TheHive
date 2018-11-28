@@ -17,7 +17,7 @@
                     </a>
                   </li>
                   <li ng-repeat="responder in logResponders">
-                    <a href ng-click="runResponder(responder.id, log)">
+                    <a href ng-click="runResponder(responder.id, responder.name, log)">
                       <strong>{{responder.name}}</strong>
                       <br>
                       <small>{{responder.description}}</small></a>

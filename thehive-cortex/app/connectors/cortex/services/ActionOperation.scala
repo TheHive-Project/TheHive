@@ -8,10 +8,11 @@ import play.api.libs.json._
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
+import connectors.cortex.services.ActionOperationStatus.Type
 import javax.inject.{ Inject, Provider, Singleton }
 import models._
 import org.elasticsearch.index.engine.VersionConflictEngineException
-import services.{ AlertSrv, ArtifactSrv, CaseSrv, TaskSrv }
+import services._
 
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
@@ -33,15 +34,15 @@ trait ActionOperation {
 }
 
 case class AddTagToCase(tag: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToCase = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToCase = copy(status = newStatus, message = newMessage)
 }
 
 case class AddTagToArtifact(tag: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToArtifact = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToArtifact = copy(status = newStatus, message = newMessage)
 }
 
 case class CreateTask(fields: JsObject, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
 }
 
 case class AddCustomFields(name: String, tpe: String, value: JsValue, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
@@ -49,11 +50,15 @@ case class AddCustomFields(name: String, tpe: String, value: JsValue, status: Ac
 }
 
 case class CloseTask(status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
 }
 
 case class MarkAlertAsRead(status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): MarkAlertAsRead = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): MarkAlertAsRead = copy(status = newStatus, message = newMessage)
+}
+
+case class AddLogToTask(content: String, owner: Option[String], status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: Type, newMessage: String): ActionOperation = copy(status = newStatus, message = newMessage)
 }
 
 object ActionOperation {
@@ -63,6 +68,7 @@ object ActionOperation {
   val addCustomFieldsWrites = Json.writes[AddCustomFields]
   val closeTaskWrites = Json.writes[CloseTask]
   val markAlertAsReadWrites = Json.writes[MarkAlertAsRead]
+  val addLogToTaskWrites = Json.writes[AddLogToTask]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
@@ -75,7 +81,11 @@ object ActionOperation {
       } yield AddCustomFields(name, tpe, value)
       case "CloseTask"       ⇒ JsSuccess(CloseTask())
       case "MarkAlertAsRead" ⇒ JsSuccess(MarkAlertAsRead())
-      case other             ⇒ JsError(s"Unknown operation $other")
+      case "AddLogToTask" ⇒ for {
+        content ← (json \ "content").validate[String]
+        owner ← (json \ "owner").validateOpt[String]
+      } yield AddLogToTask(content, owner)
+      case other ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
@@ -84,6 +94,7 @@ object ActionOperation {
     case a: AddCustomFields  ⇒ addCustomFieldsWrites.writes(a)
     case a: CloseTask        ⇒ closeTaskWrites.writes(a)
     case a: MarkAlertAsRead  ⇒ markAlertAsReadWrites.writes(a)
+    case a: AddLogToTask     ⇒ addLogToTaskWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
@@ -92,6 +103,7 @@ object ActionOperation {
 class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
+    logSrv: LogSrv,
     alertSrvProvider: Provider[AlertSrv],
     findSrv: FindSrv,
     artifactSrv: ArtifactSrv,
@@ -169,6 +181,11 @@ class ActionOperationSrv @Inject() (
               case alert: Alert ⇒ alertSrv.markAsRead(alert).map(_ ⇒ operation.updateStatus(ActionOperationStatus.Success, ""))
               case _            ⇒ Future.failed(BadRequestError("Alert not found"))
             }
+          case AddLogToTask(content, owner, _, _) ⇒
+            for {
+              task ← findTaskEntity(entity)
+              _ ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
         }
       }

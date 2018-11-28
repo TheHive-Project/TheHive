@@ -84,7 +84,7 @@
                                 params: function() {
                                     return {
                                         dataType: key,
-                                        bulk: true,
+                                        single: list.length === 1,
                                         ioc: false,
                                         sighted: false,
                                         data: _.pluck(list, 'data').join('\n'),
