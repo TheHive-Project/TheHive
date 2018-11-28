@@ -61,7 +61,8 @@ class ArtifactCtrl @Inject() (
       throw InternalError("Error extracting file: output size doesn't match header")
     }
     input.close()
-    FileInputValue(header.getFileName, file, Files.probeContentType(file))
+    val contentType = Option(Files.probeContentType(file)).getOrElse("application/octet-stream")
+    FileInputValue(header.getFileName, file, contentType)
   }
 
   @Timed
