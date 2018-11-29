@@ -1,10 +1,16 @@
-import Common._
+import Common.{stableVersion, betaVersion}
 import com.typesafe.sbt.packager.docker.{ Cmd, ExecCmd }
 
-version in Docker := getVersion(version.value) + '-' + getRelease(version.value)
+version in Docker := {
+  version.value match {
+    case stableVersion(_, _) => version.value
+    case betaVersion(v1, v2) => v1 + "-0.1RC" + v2
+    case _ => sys.error("Invalid version: " + version.value)
+  }
+}
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("thehiveproject")
-dockerUpdateLatest := !version.value.contains('-')
+dockerUpdateLatest := !version.value.toUpperCase.contains("RC")
 dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
 mappings in Docker ++= Seq(
