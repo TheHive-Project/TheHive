@@ -170,13 +170,11 @@ class AlertSrv(
   }
 
   def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] = {
-    val templateName = customCaseTemplate
-      .orElse(alert.caseTemplate())
-      .orElse(templates.get(alert.tpe()))
-      .getOrElse(alert.tpe())
-    caseTemplateSrv.getByName(templateName)
-      .map { ct ⇒ Some(ct) }
-      .recover { case _ ⇒ None }
+    customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName =>
+      caseTemplateSrv.getByName(templateName)
+        .map { ct ⇒ Some(ct) }
+        .recover { case _ ⇒ None }
+    }
   }
 
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] = {
