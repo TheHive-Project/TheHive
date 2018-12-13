@@ -1,5 +1,7 @@
-import sbt._
+import scala.util.matching.Regex
+
 import sbt.Keys._
+import sbt._
 
 object Common {
 
@@ -35,13 +37,6 @@ object Common {
     excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
   )
 
-  def getVersion(version: String): String = version.takeWhile(_ != '-')
-
-  def getRelease(version: String): String = {
-    version.dropWhile(_ != '-').dropWhile(_ == '-') match {
-      case "" ⇒ "1"
-      case r if r.contains('-') ⇒ sys.error("Version can't have more than one dash")
-      case r ⇒ s"0.1$r"
-    }
-  }
+  val stableVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-(\\d+)".r
+  val betaVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-[Rr][Cc](\\d+)".r
 }

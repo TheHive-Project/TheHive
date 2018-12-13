@@ -1,7 +1,19 @@
 # Change Log
 
-## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1)
+## [3.2.0](https://github.com/TheHive-Project/TheHive/tree/3.2.0) (2018-11-29)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0-RC1...3.2.0)
+
+**Implemented enhancements:**
+
+- Add configuration for drone continuous integration [\#803](https://github.com/TheHive-Project/TheHive/issues/803)
+
+**Fixed bugs:**
+
+- Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
+- Lowercase user ID coming from HTTP header [\#808](https://github.com/TheHive-Project/TheHive/issues/808)
+
+## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1) (2018-11-16)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.2...3.2.0-RC1)
 
 **Implemented enhancements:**
@@ -13,6 +25,7 @@
 - Show tags of observables in Alert preview [\#778](https://github.com/TheHive-Project/TheHive/issues/778)
 - Observable Value gets cleared when changing its type \(importing it from an analyser result\) [\#763](https://github.com/TheHive-Project/TheHive/issues/763)
 - Add confirmation dialogs when running a responder [\#762](https://github.com/TheHive-Project/TheHive/issues/762)
+- Support header variable authentication [\#554](https://github.com/TheHive-Project/TheHive/issues/554)
 - Whitelist of tags for MISP alerts [\#481](https://github.com/TheHive-Project/TheHive/issues/481)
 
 **Fixed bugs:**
