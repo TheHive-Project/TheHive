@@ -10,6 +10,7 @@
 
 **Fixed bugs:**
 
+- Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
 - Lowercase user ID coming from HTTP header [\#808](https://github.com/TheHive-Project/TheHive/issues/808)
 
 ## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1) (2018-11-16)

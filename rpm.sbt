@@ -10,7 +10,7 @@ version in Rpm := {
 }
 rpmRelease := {
   version.value match {
-    case stableVersion(_, _) => version.value
+    case stableVersion(_, v2) => v2
     case betaVersion(v1, v2) => "0.1RC" + v2
     case snapshotVersion(v1, v2) => v2 + "-SNAPSHOT"
     case _ => sys.error("Invalid version: " + version.value)
