@@ -1,9 +1,10 @@
-import Common.{stableVersion, betaVersion}
+import Common.{stableVersion, snapshotVersion, betaVersion}
 
 version in Rpm := {
   version.value match {
     case stableVersion(v1, v2) => v1
     case betaVersion(v1, v2) => v1
+    case snapshotVersion(v1, v2) => v1
     case _ => sys.error("Invalid version: " + version.value)
   }
 }
@@ -11,6 +12,7 @@ rpmRelease := {
   version.value match {
     case stableVersion(_, _) => version.value
     case betaVersion(v1, v2) => "0.1RC" + v2
+    case snapshotVersion(v1, v2) => v2 + "-SNAPSHOT"
     case _ => sys.error("Invalid version: " + version.value)
   }
 }

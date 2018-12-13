@@ -170,7 +170,7 @@ class AlertSrv(
   }
 
   def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] = {
-    customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName =>
+    customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName ⇒
       caseTemplateSrv.getByName(templateName)
         .map { ct ⇒ Some(ct) }
         .recover { case _ ⇒ None }
