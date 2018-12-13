@@ -28,7 +28,7 @@ steps:
     image: thehiveproject/drone-scala-node
     commands:
       - . ~/.nvm/nvm.sh
-      - sbt -Duser.home=$PWD test
+      - sbt -Duser.home=$PWD test stage
 
   # Build packages
   - name: build-packages
