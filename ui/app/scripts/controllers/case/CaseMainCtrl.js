@@ -223,15 +223,42 @@
             };
 
             $scope.mergeCase = function() {
-                $uibModal.open({
+                var caseModal = $uibModal.open({
                     templateUrl: 'views/partials/case/case.merge.html',
                     controller: 'CaseMergeModalCtrl',
                     controllerAs: 'dialog',
                     size: 'lg',
                     resolve: {
-                        caze: function() {
+                        source: function() {
                             return $scope.caze;
+                        },
+                        title: function() {
+                            return 'Merge Case #' + $scope.caze.caseId;
+                        },
+                        prompt: function() {
+                            return '#' + $scope.caze.caseId + ': ' + $scope.caze.title;
                         }
+                    }
+                });
+
+                caseModal.result.then(function(selectedCase) {
+                    CaseSrv.merge({}, {
+                        caseId: $scope.caze.id,
+                        mergedCaseId: selectedCase.id
+                    }, function (merged) {
+
+                        $state.go('app.case.details', {
+                            caseId: merged.id
+                        });
+
+                        NotificationSrv.log('The cases have been successfully merged into a new case #' + merged.caseId, 'success');
+                    }, function (response) {
+                        //this.pendingAsync = false;
+                        NotificationSrv.error('Case Merge', response.data, response.status);
+                    });
+                }).catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Case Merge', err.data, err.status);
                     }
                 });
             };
@@ -284,7 +311,7 @@
               })
               .catch(function(err) {
                   if(err && !_.isString(err)) {
-                      NotificationSrv.error('caseDetails', response.data, response.status);
+                      NotificationSrv.error('caseDetails', err.data, err.status);
                   }
               });
             };
@@ -299,9 +326,9 @@
                   .then(function(responders) {
                       $scope.caseResponders = responders;
                   })
-                  .catch(function(err) {
+                  .catch(function(response) {
                       NotificationSrv.error('caseDetails', response.data, response.status);
-                  })
+                  });
             };
 
             $scope.runResponder = function(responderId, responderName) {
