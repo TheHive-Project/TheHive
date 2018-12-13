@@ -133,13 +133,60 @@ steps:
     settings:
       context: target/docker/stage
       dockerfile: target/docker/stage/Dockerfile
-      repo: tooom/thehive
+      repo: thehiveproject/thehive
       auto_tag: true
       username: {from_secret: docker_username}
       password: {from_secret: docker_password}
     when:
       event: [tag]
 
+  # Deploy binaries in integration environment
+  - name: copy binaries in integration environment
+    image: appleboy/drone-scp
+    settings:
+      host: {from_secret: deploy_beta_host}
+      username: {from_secret: deploy_username}
+      key: {from_secret: deploy_key}
+      target: ./thehive-builds/${DRONE_BUILD_NUMBER}
+      source: target/universal/stage
+      strip_components: 3
+    when:
+      branch: [develop]
+
+  - name: deploy binaries in integration environment
+    image: appleboy/drone-ssh
+    settings:
+      host: {from_secret: deploy_beta_host}
+      username: {from_secret: deploy_username}
+      key: {from_secret: deploy_key}
+      script:
+        - ./start thehive ${DRONE_BUILD_NUMBER}
+    when:
+      branch: [develop]
+
+  # Deploy binaries in staging environment
+  - name: copy binaries in staging environment
+    image: appleboy/drone-scp
+    settings:
+      host: {from_secret: deploy_stable_host}
+      username: {from_secret: deploy_username}
+      key: {from_secret: deploy_key}
+      target: ./thehive-builds/${DRONE_BUILD_NUMBER}
+      source: target/universal/stage
+      strip_components: 3
+    when:
+      branch: [master]
+
+  - name: deploy binaries in staging environment
+    image: appleboy/drone-ssh
+    settings:
+      host: {from_secret: deploy_stable_host}
+      username: {from_secret: deploy_username}
+      key: {from_secret: deploy_key}
+      script:
+        - ./start thehive ${DRONE_BUILD_NUMBER}
+    when:
+      branch: [master]
 
 volumes:
   - name: cache
