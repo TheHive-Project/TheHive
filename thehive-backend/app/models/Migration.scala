@@ -16,7 +16,7 @@ import play.api.{ Configuration, Environment, Logger }
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import services.{ AlertSrv, DashboardSrv }
+import services.{ AlertSrv, DashboardSrv, CaseReportSrv }
 
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
@@ -35,6 +35,7 @@ class Migration(
     dblists: DBLists,
     eventSrv: EventSrv,
     dashboardSrv: DashboardSrv,
+    caseReportSrv: CaseReportSrv,
     userSrv: UserSrv,
     environment: Environment,
     implicit val ec: ExecutionContext,
@@ -44,6 +45,7 @@ class Migration(
       dblists: DBLists,
       eventSrv: EventSrv,
       dashboardSrv: DashboardSrv,
+      caseReportSrv: CaseReportSrv,
       userSrv: UserSrv,
       environment: Environment,
       ec: ExecutionContext,
@@ -56,6 +58,7 @@ class Migration(
       dblists,
       eventSrv,
       dashboardSrv,
+      caseReportSrv,
       userSrv,
       environment,
       ec, materializer)
@@ -110,11 +113,19 @@ class Migration(
     }
   }
 
+  private def createDefaultReport(): Future[CaseReport] = {
+    userSrv.inInitAuthContext { implicit authContext ⇒
+      caseReportSrv.create(Fields(Json.obj("name" -> "Default", "content" -> "")))
+    }
+  }
+
   override def endMigration(version: Int): Future[Unit] = {
     if (requireUpdateMispAlertArtifact) {
       logger.info("Retrieve MISP attribute to update alerts")
       eventSrv.publish(UpdateMispAlertArtifact())
     }
+    logger.info("Creating the base case report")
+    createDefaultReport()
     logger.info("Updating observable data type list")
     addDataTypes(Seq("filename", "fqdn", "url", "user-agent", "domain", "ip", "mail_subject", "hash", "mail",
       "registry", "uri_path", "regexp", "other", "file", "autonomous-system"))
@@ -341,6 +352,9 @@ class Migration(
         addAttribute("alert", "customFields" → JsObject.empty),
         addAttribute("case_task", "group" → JsString("default")),
         addAttribute("case", "pap" → JsNumber(2)))
+
+    case DatabaseState(14) ⇒
+      Seq()
   }
 
   private def generateAlertId(alert: JsObject): String = {

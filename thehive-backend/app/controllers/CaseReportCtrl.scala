@@ -21,8 +21,8 @@ class CaseReportCtrl @Inject() (
     caseReportSrv: CaseReportSrv,
     implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
 
-  def create: Action[AnyContent] = Action { implicit request ⇒
-    Ok
+  def create(): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+    caseReportSrv.create(request.body).map(caseReport ⇒ renderer.toOutput(OK, caseReport.toJson))
   }
 
   @Timed
@@ -31,7 +31,7 @@ class CaseReportCtrl @Inject() (
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     val query = QueryDSL.any
     val range = request.body.getString("range")
     val sort = request.body.getStrings("sort").getOrElse(Nil)
