@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardCounter', function($http, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardCounter', function($http, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -76,9 +76,11 @@
                       _and: _.without(criteria, null, undefined, '')
                   };
 
-                  $state.go('app.search', {
-                      q: Base64.encode(angular.toJson(searchQuery))
+                  GlobalSearchSrv.saveSection(scope.options.entity, {
+                      search: null,
+                      filters: scope.options.filters.concat(item.serie.filters)
                   });
+                  $state.go('app.search');
                 };
 
                 if (scope.autoload === true) {

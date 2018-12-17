@@ -34,7 +34,7 @@ trait ArtifactAttributes { _: AttributeDef ⇒
   val dataType: A[String] = attribute("dataType", F.listEnumFmt("artifactDataType")(dblists), "Type of the artifact", O.readonly)
   val message: A[Option[String]] = optionalAttribute("message", F.textFmt, "Description of the artifact in the context of the case")
   val startDate: A[Date] = attribute("startDate", F.dateFmt, "Creation date", new Date)
-  val attachment: A[Option[Attachment]] = optionalAttribute("attachment", F.attachmentFmt, "Artifact file content", O.readonly)
+  val attachment: A[Option[Attachment]] = optionalAttribute("attachment", F.attachmentFmt, "Artifact file content")
   val tlp: A[Long] = attribute("tlp", TlpAttributeFormat, "TLP level", 2L)
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Artifact tags")
   val ioc: A[Boolean] = attribute("ioc", F.booleanFmt, "Artifact is an IOC", false)

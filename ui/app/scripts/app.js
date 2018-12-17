@@ -5,9 +5,12 @@ angular.module('theHiveDirectives', []);
 
 angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router', 'ui.sortable',
         'theHiveControllers', 'theHiveServices', 'theHiveFilters',
-        'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput', 'btford.markdown',
+        'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput',
+        // 'btford.markdown',
         'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
-        'LocalStorageModule', 'angular-markdown-editor', 'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
+        'LocalStorageModule',
+        'angular-markdown-editor',
+        'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
         'dndLists', 'colorpicker.module'
     ])
     .config(function($resourceProvider) {
@@ -15,15 +18,9 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
 
         $resourceProvider.defaults.stripTrailingSlashes = true;
     })
-    .config(function($compileProvider, markedProvider) {
+    .config(function($compileProvider) {
         'use strict';
         $compileProvider.debugInfoEnabled(false);
-
-        markedProvider.setRenderer({
-            link: function(href, title, text) {
-                return "<a href='" + href + "'" + (title ? " title='" + title + "'" : '') + " target='_blank'>" + text + "</a>";
-            }
-        });
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
@@ -35,6 +32,14 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: '/login',
                 controller: 'AuthenticationCtrl',
                 templateUrl: 'views/login.html',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                                 return VersionSrv.get();
+                              }
+                },
+                params: {
+                    autoLogin: false
+                },
                 title: 'Login'
             })
             .state('live', {
@@ -94,7 +99,22 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 url: 'search?q',
                 templateUrl: 'views/partials/search/list.html',
                 controller: 'SearchCtrl',
-                title: 'Search'
+                title: 'Search',
+                resolve: {
+                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                        var defer = $q.defer();
+
+                        DashboardSrv.getMetadata()
+                            .then(function(response) {
+                                defer.resolve(response);
+                            }, function(err) {
+                                NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
+                                defer.reject(err);
+                            });
+
+                        return defer.promise;
+                    }
+                }
             })
             .state('app.settings', {
                 url: 'settings',
@@ -165,7 +185,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                         return CaseTemplateSrv.list();
                     },
                     fields: function(CustomFieldsCacheSrv){
-                        return CustomFieldsCacheSrv.all()
+                        return CustomFieldsCacheSrv.all();
                     }
                 }
             })
@@ -389,10 +409,9 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
             positionY: 'bottom'
         });
     })
-    .config(['markedProvider', 'hljsServiceProvider', function(markedProvider, hljsServiceProvider) {
+    .config(function($provide, markedProvider, hljsServiceProvider) {
         'use strict';
 
-        // marked config
         markedProvider.setOptions({
             gfm: true,
             tables: true,
@@ -408,10 +427,32 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
 
         // highlight config
         hljsServiceProvider.setOptions({
-            // replace tab with 4 spaces
             tabReplace: '    '
         });
-    }])
+
+        // Decorate the marked service to allow generating links with _target="blank"
+        $provide.decorator('marked', [
+            '$delegate',
+            function markedDecorator($delegate) {
+              // Credits: https://github.com/markedjs/marked/issues/655#issuecomment-383226346
+              var defaults = markedProvider.defaults;
+
+              var renderer = defaults.renderer;
+              var linkRenderer = _.wrap(renderer.link, function(originalLink, href, title, text) {
+                  var html = originalLink.call(renderer, href, title, text);
+                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ')
+              });
+
+              // Customize the link renderer
+              defaults.renderer.link = linkRenderer;
+
+              // Patch the marked instance
+              $delegate.setOptions(defaults);
+
+              return $delegate;
+            }
+        ]);
+    })
     .run(function($rootScope) {
         'use strict';
         $rootScope.async = 0;
@@ -423,4 +464,5 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 $rootScope.title = toState.title;
             }
         });
-    });
+    })
+    .constant('UrlParser', url);

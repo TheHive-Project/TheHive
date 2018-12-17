@@ -1,7 +1,213 @@
 # Change Log
 
-## [3.0.10](https://github.com/TheHive-Project/TheHive/tree/3.0.10) (2018-05-29)
+## [3.2.0](https://github.com/TheHive-Project/TheHive/tree/3.2.0) (2018-11-29)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0-RC1...3.2.0)
+
+**Implemented enhancements:**
+
+- Add configuration for drone continuous integration [\#803](https://github.com/TheHive-Project/TheHive/issues/803)
+
+**Fixed bugs:**
+
+- Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
+- Lowercase user ID coming from HTTP header [\#808](https://github.com/TheHive-Project/TheHive/issues/808)
+
+## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1) (2018-11-16)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.2...3.2.0-RC1)
+
+**Implemented enhancements:**
+
+- Add ability to add a log in responder operation [\#795](https://github.com/TheHive-Project/TheHive/issues/795)
+- Add responder actions in dashboard [\#794](https://github.com/TheHive-Project/TheHive/issues/794)
+- Show observable description on mouseover observables [\#793](https://github.com/TheHive-Project/TheHive/issues/793)
+- Update Play [\#791](https://github.com/TheHive-Project/TheHive/issues/791)
+- Show tags of observables in Alert preview [\#778](https://github.com/TheHive-Project/TheHive/issues/778)
+- Observable Value gets cleared when changing its type \(importing it from an analyser result\) [\#763](https://github.com/TheHive-Project/TheHive/issues/763)
+- Add confirmation dialogs when running a responder [\#762](https://github.com/TheHive-Project/TheHive/issues/762)
+- Support header variable authentication [\#554](https://github.com/TheHive-Project/TheHive/issues/554)
+- Whitelist of tags for MISP alerts [\#481](https://github.com/TheHive-Project/TheHive/issues/481)
+
+**Fixed bugs:**
+
+- MISP synchronization fails if event contains attachment with invalid name [\#801](https://github.com/TheHive-Project/TheHive/issues/801)
+- Observable creation doesn't allow multiline observables [\#790](https://github.com/TheHive-Project/TheHive/issues/790)
+- A user with "write" permission can delete a case using API [\#773](https://github.com/TheHive-Project/TheHive/issues/773)
+- Basic authentication method should be disabled by default [\#772](https://github.com/TheHive-Project/TheHive/issues/772)
+- Case search from dashboard clic "invalid filters error" [\#761](https://github.com/TheHive-Project/TheHive/issues/761)
+- Intermittently losing Cortex [\#739](https://github.com/TheHive-Project/TheHive/issues/739)
+
+**Merged pull requests:**
+
+- Added Integration with FireEye iSIGHT [\#755](https://github.com/TheHive-Project/TheHive/pull/755) ([garanews](https://github.com/garanews))
+
+## [3.1.2](https://github.com/TheHive-Project/TheHive/tree/3.1.2) (2018-10-12)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.1...3.1.2)
+
+**Fixed bugs:**
+
+- Cortex polling settings break startup [\#754](https://github.com/TheHive-Project/TheHive/issues/754)
+
+## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0...3.1.1)
+
+**Implemented enhancements:**
+
+- Allow TheHive to use a custom root context [\#752](https://github.com/TheHive-Project/TheHive/issues/752)
+- Change Debian dependencies [\#751](https://github.com/TheHive-Project/TheHive/issues/751)
+- Publish stable versions in beta package channels [\#733](https://github.com/TheHive-Project/TheHive/issues/733)
+- url category to MISP: poll for default [\#732](https://github.com/TheHive-Project/TheHive/issues/732)
+
+**Fixed bugs:**
+
+- Console output should not be logged in syslog [\#749](https://github.com/TheHive-Project/TheHive/issues/749)
+- Update breaks RHEL [\#743](https://github.com/TheHive-Project/TheHive/issues/743)
+- Observable Result Icons Not Displaying [\#738](https://github.com/TheHive-Project/TheHive/issues/738)
+- UPN attribute is not correctly lowercased [\#736](https://github.com/TheHive-Project/TheHive/issues/736)
+
+**Closed issues:**
+
+- Artifact tags are overwritten by alert sourceRef during import to case [\#734](https://github.com/TheHive-Project/TheHive/issues/734)
+
+## [3.1.0](https://github.com/TheHive-Project/TheHive/tree/3.1.0) (2018-09-25)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC3...3.1.0)
+
+**Implemented enhancements:**
+
+- Add MarkAlertAsRead action to responders [\#729](https://github.com/TheHive-Project/TheHive/issues/729)
+- AddCustomField responder operation [\#724](https://github.com/TheHive-Project/TheHive/issues/724)
+- 3.1.0RC3: Browsing to negative case ids is possible [\#713](https://github.com/TheHive-Project/TheHive/issues/713)
+
+**Fixed bugs:**
+
+- RPM Updates not available \(404\) [\#719](https://github.com/TheHive-Project/TheHive/issues/719)
+- Observables not being displayed [\#655](https://github.com/TheHive-Project/TheHive/issues/655)
+- TheHive Hyperlinking  [\#723](https://github.com/TheHive-Project/TheHive/issues/723)
+- Multiple responder actions does not seem to be handled [\#722](https://github.com/TheHive-Project/TheHive/issues/722)
+- API allows alert creation with duplicate artifacts [\#720](https://github.com/TheHive-Project/TheHive/issues/720)
+- 3.0.1RC3: certificate based authentication failes as attributes are not correctly lowercased [\#714](https://github.com/TheHive-Project/TheHive/issues/714)
+- Fix PAP labels [\#711](https://github.com/TheHive-Project/TheHive/issues/711)
+
+**Closed issues:**
+
+- Cortex Connector [\#721](https://github.com/TheHive-Project/TheHive/issues/721)
+- Markdown syntex not rendered correctly [\#718](https://github.com/TheHive-Project/TheHive/issues/718)
+- 3.1.0RC3: Search produces errors on screen [\#712](https://github.com/TheHive-Project/TheHive/issues/712)
+- TheHive:Alerts don't send observables to Responders [\#725](https://github.com/TheHive-Project/TheHive/issues/725)
+
+**Merged pull requests:**
+
+- CloseTask responder operation [\#728](https://github.com/TheHive-Project/TheHive/pull/728) ([srilumpa](https://github.com/srilumpa))
+- Add AddTagToArtifact action to responders [\#717](https://github.com/TheHive-Project/TheHive/pull/717) ([srilumpa](https://github.com/srilumpa))
+
+## [3.1.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC3) (2018-09-06)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC2...3.1.0-RC3)
+
+**Implemented enhancements:**
+
+- Extend Case Description Field [\#81](https://github.com/TheHive-Project/TheHive/issues/81)
+- Display task description via a collapsible row [\#709](https://github.com/TheHive-Project/TheHive/issues/709)
+- Allow task group auto complete in case template admin section [\#707](https://github.com/TheHive-Project/TheHive/issues/707)
+- Display task group in global task lists [\#705](https://github.com/TheHive-Project/TheHive/issues/705)
+- Make task group input optional [\#696](https://github.com/TheHive-Project/TheHive/issues/696)
+- Related Cases: See \(x\) more links [\#690](https://github.com/TheHive-Project/TheHive/issues/690)
+- Search section: Search for a string over all types of objects [\#689](https://github.com/TheHive-Project/TheHive/issues/689)
+- Filter on computedHandlingDuration in SearchDialog fails [\#688](https://github.com/TheHive-Project/TheHive/issues/688)
+- Change layout of observable creation form [\#706](https://github.com/TheHive-Project/TheHive/pull/706) ([srilumpa](https://github.com/srilumpa))
+
+**Fixed bugs:**
+
+- Adding new observables to an alert retrospectively is impossible [\#511](https://github.com/TheHive-Project/TheHive/issues/511)
+- .sbt build of current git version fails with x-pack-transport error [\#710](https://github.com/TheHive-Project/TheHive/issues/710)
+- PKI authentication fails if user name in certificate has the wrong case [\#700](https://github.com/TheHive-Project/TheHive/issues/700)
+- Error handling deletion and re creation of file observables [\#699](https://github.com/TheHive-Project/TheHive/issues/699)
+- Start waiting tasks when adding task logs [\#695](https://github.com/TheHive-Project/TheHive/issues/695)
+
+## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC1...3.1.0-RC2)
+
+**Implemented enhancements:**
+
+- Add a search box to quickly search for case by caseId [\#685](https://github.com/TheHive-Project/TheHive/issues/685)
+- MISP Exports in livestream miss hyperlink to caseid [\#684](https://github.com/TheHive-Project/TheHive/issues/684)
+- Remember task list configuration \(grouped/list\) [\#681](https://github.com/TheHive-Project/TheHive/issues/681)
+- x509 certificate authentication option 'wantClientAuth' [\#667](https://github.com/TheHive-Project/TheHive/issues/667)
+- TheHive 3.1RC1: Slow reaction if Cortex is \(unclear\) unreachable [\#664](https://github.com/TheHive-Project/TheHive/issues/664)
+- TheHive 3.1RC1: Add status to cases and tasks in new search page [\#663](https://github.com/TheHive-Project/TheHive/issues/663)
+- TheHive 3.1RC1: Add Username that executes an active response to json data field of responder [\#662](https://github.com/TheHive-Project/TheHive/issues/662)
+- Ability to set custom fields as mandatory [\#652](https://github.com/TheHive-Project/TheHive/issues/652)
+- Application.conf needs clarifications [\#606](https://github.com/TheHive-Project/TheHive/issues/606)
+- Observable type boxes doesn't line break on alert preview pane [\#593](https://github.com/TheHive-Project/TheHive/issues/593)
+-  On branch betterDescriptions [\#660](https://github.com/TheHive-Project/TheHive/pull/660) ([secdecompiled](https://github.com/secdecompiled))
+
+**Fixed bugs:**
+
+- The hive docker image has no latest tag [\#670](https://github.com/TheHive-Project/TheHive/issues/670)
+- case metrics unordered in cases [\#419](https://github.com/TheHive-Project/TheHive/issues/419)
+- 3.1.0-RC1- Tasks list is limited to 10 items. [\#679](https://github.com/TheHive-Project/TheHive/issues/679)
+- WebUI inaccessible after upgrading to 3.1.0-0-RC1 \(elastic4play and Play exceptions\) [\#674](https://github.com/TheHive-Project/TheHive/issues/674)
+- play.crypto.secret is depecrated [\#671](https://github.com/TheHive-Project/TheHive/issues/671)
+- 'Tagged as' displayed in Related Cases even if cases are untagged [\#594](https://github.com/TheHive-Project/TheHive/issues/594)
+- Horizontal Scrolling and Word-Wrap options for Logs [\#573](https://github.com/TheHive-Project/TheHive/issues/573)
+- Dashboard visualizations do not work with custom fields [\#478](https://github.com/TheHive-Project/TheHive/issues/478)
+
+**Closed issues:**
+
+- ES Mapping bug [\#680](https://github.com/TheHive-Project/TheHive/issues/680)
+- ignore - delete me  [\#675](https://github.com/TheHive-Project/TheHive/issues/675)
+- HTTPS not working with Keystore [\#669](https://github.com/TheHive-Project/TheHive/issues/669)
+
+**Merged pull requests:**
+
+- Update Cortex reference.conf [\#668](https://github.com/TheHive-Project/TheHive/pull/668) ([ErnHem](https://github.com/ErnHem))
+- Fix some minor typos [\#658](https://github.com/TheHive-Project/TheHive/pull/658) ([srilumpa](https://github.com/srilumpa))
+- Move input group addons from right to left for better usage [\#672](https://github.com/TheHive-Project/TheHive/pull/672) ([srilumpa](https://github.com/srilumpa))
+
+## [3.1.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC1) (2018-07-31)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.10...3.1.0-RC1)
+
+**Implemented enhancements:**
+
+- Display drop-down for custom fields sorted alphabetically [\#653](https://github.com/TheHive-Project/TheHive/issues/653)
+- Custom fields in Alerts? [\#635](https://github.com/TheHive-Project/TheHive/issues/635)
+- Check Cortex authentication in status page [\#625](https://github.com/TheHive-Project/TheHive/issues/625)
+- Revamp the search section capabilities [\#620](https://github.com/TheHive-Project/TheHive/issues/620)
+- New TheHive-Project repository [\#618](https://github.com/TheHive-Project/TheHive/issues/618)
+- Add PAP to case to indicate which kind of action is allowed [\#616](https://github.com/TheHive-Project/TheHive/issues/616)
+- Ability to execute active response on any element of TheHive [\#609](https://github.com/TheHive-Project/TheHive/issues/609)
+- Consider providing checksums for the release files [\#590](https://github.com/TheHive-Project/TheHive/issues/590)
+- Start Task  - Button [\#540](https://github.com/TheHive-Project/TheHive/issues/540)
+- Handling malware as zip protected file [\#538](https://github.com/TheHive-Project/TheHive/issues/538)
+- Auto-refresh for Dashboards [\#476](https://github.com/TheHive-Project/TheHive/issues/476)
+- Assign Tasks to users from the Tasks tab [\#426](https://github.com/TheHive-Project/TheHive/issues/426)
+- Make The Hive MISP integration sharing vs pull configurable [\#374](https://github.com/TheHive-Project/TheHive/issues/374)
+- MISP Sharing Improvements [\#366](https://github.com/TheHive-Project/TheHive/issues/366)
+- Output of analyzer as new observable [\#246](https://github.com/TheHive-Project/TheHive/issues/246)
+- Ability to have nested tasks [\#148](https://github.com/TheHive-Project/TheHive/issues/148)
+- Single-Sign On support [\#354](https://github.com/TheHive-Project/TheHive/issues/354)
+
+**Fixed bugs:**
+
+- Default value of custom fields are not saved [\#649](https://github.com/TheHive-Project/TheHive/issues/649)
+- Attachments with character "\#" in the filename are wrongly proceesed [\#645](https://github.com/TheHive-Project/TheHive/issues/645)
+- Session does not expire correctly [\#640](https://github.com/TheHive-Project/TheHive/issues/640)
+- Dashboards contain analyzer IDs instead of correct names [\#608](https://github.com/TheHive-Project/TheHive/issues/608)
+- Error with Single Sign-On on TheHive with X.509 Certificates [\#600](https://github.com/TheHive-Project/TheHive/issues/600)
+- Entity case XXXXXXXXXX not found - After deleting case [\#534](https://github.com/TheHive-Project/TheHive/issues/534)
+- Artifacts reports are not merged when merging cases [\#446](https://github.com/TheHive-Project/TheHive/issues/446)
+- If cortex modules fails in some way, it is permanently repolled by TheHive [\#324](https://github.com/TheHive-Project/TheHive/issues/324)
+- Previewing alerts fails with "too many substreams open" due to case similarity process [\#280](https://github.com/TheHive-Project/TheHive/issues/280)
+- File upload when /tmp is full [\#321](https://github.com/TheHive-Project/TheHive/issues/321)
+- StreamSrv: Unexpected message : StreamNotFound [\#414](https://github.com/TheHive-Project/TheHive/issues/414)
+
+**Merged pull requests:**
+
+- fix bug in AlertListCtrl [\#642](https://github.com/TheHive-Project/TheHive/pull/642) ([billmurrin](https://github.com/billmurrin))
+- flag for Windows env [\#641](https://github.com/TheHive-Project/TheHive/pull/641) ([billmurrin](https://github.com/billmurrin))
+- 426 - assign tasks to users from tasks tab [\#628](https://github.com/TheHive-Project/TheHive/pull/628) ([billmurrin](https://github.com/billmurrin))
+- Fix installation links [\#603](https://github.com/TheHive-Project/TheHive/pull/603) ([Viltaria](https://github.com/Viltaria))
+
+## [3.0.10](https://github.com/TheHive-Project/TheHive/tree/3.0.10) (2018-05-29)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.9...3.0.10)
 
 **Implemented enhancements:**
@@ -22,7 +228,6 @@
 - Making dashboards private makes them "invisible" [\#555](https://github.com/TheHive-Project/TheHive/issues/555)
 - MISP Synchronisation error [\#522](https://github.com/TheHive-Project/TheHive/issues/522)
 - Short Report is not shown on observables \(3.0.8\) [\#512](https://github.com/TheHive-Project/TheHive/issues/512)
-- Artifacts reports are not merged when merging cases [\#446](https://github.com/TheHive-Project/TheHive/issues/446)
 
 **Closed issues:**
 
@@ -247,7 +452,6 @@
 - Undefined threat level from MISP events becomes severity "4" [\#300](https://github.com/TheHive-Project/TheHive/issues/300)
 - File name is not displayed in observable conflict dialog [\#295](https://github.com/TheHive-Project/TheHive/issues/295)
 - A colon punctuation mark in a search query results in 500 [\#285](https://github.com/TheHive-Project/TheHive/issues/285)
-- Previewing alerts fails with "too many substreams open" due to case similarity process [\#280](https://github.com/TheHive-Project/TheHive/issues/280)
 
 **Closed issues:**
 

@@ -1,3 +1,4 @@
+// jshint ignore: start
 (function() {
   var out$ = typeof exports != 'undefined' && exports || this;
 
@@ -38,7 +39,6 @@
           }
         }
         img.onerror = function() {
-          console.log("Could not load "+href);
           left--;
           if (left == 0) {
             callback();

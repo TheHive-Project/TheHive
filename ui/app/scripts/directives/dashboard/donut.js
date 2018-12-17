@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -81,19 +81,20 @@
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
                                     onclick: function(d) {
-                                        var criteria = [{ _type: scope.options.entity }, { _field: scope.options.field, _value: d.id }];
+                                        var fieldDef = scope.entity.attributes[scope.options.field];
+                                        var fieldType = fieldDef.type;
 
-                                        if (query && query !== '*') {
-                                            criteria.push(query);
-                                        }
-
-                                        var searchQuery = {
-                                            _and: criteria
+                                        var data = {
+                                            field: scope.options.field,
+                                            type: fieldDef.type,
+                                            value: GlobalSearchSrv.buildDefaultFilterValue(fieldDef, d)
                                         };
 
-                                        $state.go('app.search', {
-                                            q: Base64.encode(angular.toJson(searchQuery))
+                                        GlobalSearchSrv.saveSection(scope.options.entity, {
+                                            search: null,
+                                            filters: scope.options.filters.concat([data])
                                         });
+                                        $state.go('app.search');
                                     }
                                 },
                                 donut: {

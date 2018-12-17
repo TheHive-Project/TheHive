@@ -53,17 +53,19 @@ The following image shows a typical workflow:
 
 ## Additional features
 ### Authentication
-TheHive supports 4 authentication methods:
+TheHive supports several authentication methods:
 + Active Directory
 + LDAP
 + API keys
-+ local
++ X.509 SSO
++ OAuth 2
++ Local authentication
 
-### Statistics
-TheHive comes with a powerful statistics module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
+### Dashboards
+TheHive comes with a powerful, highly configurable module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
 
 ### Case Merging
-Two cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
+Two (or more) cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
 
 ### Case and Observable Filtering
 You can filter cases and observables very easily to show only the data that is of interest to you.
@@ -78,6 +80,9 @@ TheHive Project provides [DigitalShadows2TH](https://github.com/TheHive-Project/
 
 ### Integration with Zerofox
 [Zerofox2TH](https://github.com/TheHive-Project/Zerofox2TH) is a free, open source [ZeroFOX](https://www.zerofox.com/) alert feeder for TheHive, written by TheHive Project. You can use it to feed ZeroFOX alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+### Integration with FireEye iSIGHT
+[FireEye2TH](https://github.com/LDO-CERT/FireEye2TH) is a free, open source [FireEye iSIGHT](https://www.fireeye.com/) alert feeder for TheHive, written by LDO-CERT. You can use it to feed FireEye iSIGHT alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
 
 # License
 TheHive is an open source and free software released under the [AGPL](https://github.com/TheHive-Project/TheHive/blob/master/LICENSE) (Affero General Public License). We, TheHive Project, are committed to ensure that TheHive will remain a free and open source project on the long-run.

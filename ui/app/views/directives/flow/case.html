@@ -27,7 +27,7 @@
             </div>
             <div ng-switch-when="tags">
                 {{k}}:
-                <span ng-repeat="tag in v">
+                <span ng-repeat="tag in v track by $index">
                     <span class="label label-primary">{{tag}}</span>
                 </span>
                 <span ng-if="v.length === 0">
@@ -42,6 +42,9 @@
             </div>
             <div ng-switch-when="tlp">
                 {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
+            <div ng-switch-when="pap">
+                {{k}}: <tlp format="'static'" value="v" namespace="PAP"></tlp>
             </div>
             <div ng-switch-when="owner">
                 {{k}}:

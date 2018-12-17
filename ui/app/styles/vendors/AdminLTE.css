@@ -3260,6 +3260,11 @@ table.text-center th {
 .social-auth-links {
   margin: 10px 0;
 }
+
+.sso-login-box {
+    margin-top: 20px;
+    text-align: center;
+}
 /*
  * Page: 400 and 500 error pages
  * ------------------------------

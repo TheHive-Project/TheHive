@@ -23,6 +23,7 @@ trait CaseTemplateAttributes { _: AttributeDef ⇒
   val tags: A[Seq[String]] = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag: A[Option[Boolean]] = optionalAttribute("flag", F.booleanFmt, "Flag of the case")
   val tlp: A[Option[Long]] = optionalAttribute("tlp", TlpAttributeFormat, "TLP level")
+  val pap: A[Option[Long]] = optionalAttribute("pap", TlpAttributeFormat, "PAP level")
   val status: A[CaseTemplateStatus.Value] = attribute("status", F.enumFmt(CaseTemplateStatus), "Status of the case", CaseTemplateStatus.Ok)
   val metrics: A[JsValue] = attribute("metrics", F.metricsFmt, "List of acceptable metrics")
   val customFields: A[Option[JsValue]] = optionalAttribute("customFields", F.customFields, "List of acceptable custom fields")

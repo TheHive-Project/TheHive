@@ -1,12 +1,13 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, appConfig) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
             $scope.caseId = $stateParams.caseId;
             $scope.report = null;
+            $scope.obsResponders = null;
             $scope.analyzers = {};
             $scope.analyzerJobs = {};
             $scope.jobs = {};
@@ -74,6 +75,30 @@
                         $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                     });
 
+                  $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                      scope: $scope,
+                      streamObjectType: 'action',
+                      filter: {
+                          _and: [
+                              {
+                                  _not: {
+                                      status: 'Deleted'
+                                  }
+                              }, {
+                                  objectType: 'case_artifact'
+                              }, {
+                                  objectId: artifact.id
+                              }
+                          ]
+                      },
+                      sort: ['-startDate'],
+                      pageSize: 100,
+                      guard: function(updates) {
+                          return _.find(updates, function(item) {
+                              return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
+                          }) !== undefined;
+                      }
+                  });
             };
 
             $scope.onJobsChange = function (updates) {
@@ -114,7 +139,7 @@
             $scope.showReport = function (jobId) {
                 $scope.report = {};
 
-                CortexSrv.getJob(jobId).then(function(response) {
+                CortexSrv.getJob(jobId, true).then(function(response) {
                     var job = response.data;
                     $scope.report = {
                         template: job.analyzerDefinition,
@@ -123,6 +148,8 @@
                         startDate: job.startDate,
                         endDate: job.endDate
                     };
+
+                    $scope.currentJob = jobId;
 
                     $timeout(function() {
                         var reportEl = angular.element(document.getElementById('analysis-report'))[0];
@@ -214,6 +241,34 @@
                     .then(function () {
                         NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
                     });
+            };
+
+            $scope.getObsResponders = function(observableId, force) {
+                if(!force && $scope.obsResponders !== null) {
+                   return;
+                }
+
+                $scope.obsResponders = null;
+                CortexSrv.getResponders('case_artifact', observableId)
+                  .then(function(responders) {
+                      $scope.obsResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, responderName, artifact) {
+                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
+                  .then(function(response) {
+                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('observablesList', response.data, response.status);
+                      }
+                  });
             };
 
         }

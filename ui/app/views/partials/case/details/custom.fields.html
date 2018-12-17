@@ -1,20 +1,20 @@
 <div class="case-custom-fields" ng-controller="CaseCustomFieldsCtrl">
     <h4 class="vpad10 text-primary">
         Additional information
-        <span uib-dropdown class="pull-right" ng-show="customFieldsAvailable">
+        <span uib-dropdown class="ml-m" ng-show="customFieldsAvailable">
             <a href class="dropdown-toggle" uib-dropdown-toggle>
                 <i class="fa fa-plus"></i>
             </a>
             <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
-                <li ng-repeat="(key, value) in allCustomFields">
-                    <a ng-click="addCustomField(value)">{{value.name}}</a>
+                <li ng-repeat="key in keys(allCustomFields) | orderBy">
+                    <a ng-click="addCustomField(allCustomFields[key])">{{allCustomFields[key].name}}</a>
                 </li>
             </ul>
         </span>
     </h4>
 
     <div ng-if="!orderedFields || orderedFields.length === 0">
-        <em>No aditional information have been specified</em>
+        <em>No additional information have been specified</em>
     </div>
 
     <dl class="dl-horizontal clear"

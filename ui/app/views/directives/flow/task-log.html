@@ -17,7 +17,7 @@
                         ng-click="showImage(base.object.attachment.id, base.object.attachment.name)"></img>
                 </div>
 
-                <a href="./api/datastore/{{base.object.attachment.id}}?name={{base.object.attachment.name}}" target="_blank">
+                <a href="./api/datastore/{{base.object.attachment.id}}?name={{base.object.attachment.name | escape}}" target="_blank">
                     <div class="icon" ng-hide="isImage(base.object.attachment.contentType)">
                         <i class="glyphicon glyphicon-file"></i>
                     </div>

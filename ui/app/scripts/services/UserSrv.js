@@ -131,7 +131,7 @@ angular.module('theHiveServices')
 
                 return filtered;
             });
-        }
+        };
 
         return res;
     });

@@ -15,7 +15,13 @@
     </div>
 
     <div class="flow-item-updates wrap" ng-switch-when="Creation">
-        description: <span ng-bind="base.object.message| limitTo: 250"></span>
+        <div ng-if="base.object.message">description: {{base.object.message| limitTo: 250}}</div>
+        <div ng-if="base.object.tags.length > 0">
+            Tags: 
+            <span ng-repeat="tag in base.object.tags">
+                <span class="label label-primary">{{tag}}</span>
+            </span>
+        </div>
     </div>
 
     <div class="flow-item-updates wrap" ng-switch-default>

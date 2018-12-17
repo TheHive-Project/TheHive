@@ -8,7 +8,7 @@
                     main: 'Action',
                     export: 'Export',
                     changeSightedFlog: 'Change sighted flag',
-                    changeIOCFlog: 'Change sighted flag',
+                    changeIOCFlog: 'Change IOC flag',
                     changeTlp: 'Change TLP',
                     addTags: 'Add tags',
                     runAnalyzers: 'Run analyzers',

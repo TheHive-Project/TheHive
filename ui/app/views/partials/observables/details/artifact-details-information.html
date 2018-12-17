@@ -1,84 +1,111 @@
 <div class="row">
     <!-- Observable details information-->
     <div class="col-md-7">
-		<h3 class="vpad10 text-primary">Metadata</h3>
-		<dl class="dl-horizontal clear">
-			<dt class="pull-left">TLP</dt>
-			<dd>
-				<a class="noline" href ng-init="activeTlp = 'static'" ng-click="activeTlp = 'active'">
-					<tlp value="artifact.tlp" format="activeTlp" style="font-size:16px" on-update="updateField('tlp', newValue)"></tlp>
-				</a>
-			</dd>
-		</dl>
-
-		<dl class="dl-horizontal clear" ng-if="artifact.attachment && artifact.attachment.hashes">
-			<dt class="pull-left">Hash</dt>
-			<dd>
-                <div ng-repeat="hash in artifact.attachment.hashes" class="wrap" btf-markdown="hash | hashType"></div>
+        <h4 class="vpad10 text-primary">
+            Metadata
+            <div class="task-actions pull-right">
+                <span class="mr-xxs action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                    <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
+                        <i class="text-primary fa fa-cog"></i>
+                        Responders
+                        <i class="text-primary fa fa-angle-down"></i>
+                    </a>
+                    <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                      <li ng-if="obsResponders && obsResponders.length === 0">
+                        <a href ng-click="getObsResponders(artifact.id, true)">
+                          <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                        </a>
+                      </li>
+                      <li ng-repeat="responder in obsResponders">
+                        <a href ng-click="runResponder(responder.id, responder.name, artifact)">
+                          <strong>{{responder.name}}</strong>
+                          <br>
+                          <small>{{responder.description}}</small></a>
+                      </li>
+                    </ul>
+                </span>
+            </div>
+        </h4>
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">TLP</dt>
+            <dd>
+                <a class="noline" href ng-init="activeTlp = 'static'" ng-click="activeTlp = 'active'">
+                    <tlp value="artifact.tlp" format="activeTlp" style="font-size:16px" on-update="updateField('tlp', newValue)"></tlp>
+                </a>
             </dd>
-		</dl>
+        </dl>
 
-		<dl class="dl-horizontal clear" ng-show="artifact.metadata.size">
-			<dt class="pull-left">Size</dt>
-			<dd>{{artifact.attachment.size}} bytes</dd>
-		</dl>
+        <dl class="dl-horizontal clear" ng-if="artifact.attachment && artifact.attachment.hashes">
+            <dt class="pull-left">Hash</dt>
+            <dd>
+                <div ng-repeat="hash in artifact.attachment.hashes" class="wrap" marked="hash | hashType"></div>
+            </dd>
+        </dl>
 
-		<dl class="dl-horizontal clear">
-			<dt class="pull-left">Date added</dt>
-			<dd>{{artifact.startDate | showDate}}</dd>
-		</dl>
+        <dl class="dl-horizontal clear" ng-show="artifact.metadata.size">
+            <dt class="pull-left">Size</dt>
+            <dd>{{artifact.attachment.size}} bytes</dd>
+        </dl>
 
         <dl class="dl-horizontal clear">
-			<dt class="pull-left">Is IOC</dt>
-			<dd>
-				<span class="clickable" ng-click="updateField('ioc', !artifact.ioc)">
+            <dt class="pull-left">Date added</dt>
+            <dd>{{artifact.startDate | showDate}}</dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Is IOC</dt>
+            <dd>
+                <span class="clickable" ng-click="updateField('ioc', !artifact.ioc)">
                     <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
 				</span>
-			</dd>
-		</dl>
+            </dd>
+        </dl>
 
         <dl class="dl-horizontal clear">
-			<dt class="pull-left">Has been sighted</dt>
-			<dd>
-				<span class="clickable" ng-click="updateField('sighted', !artifact.sighted)">
-                    <i class="text-primary fa" ng-class="{'true': 'fa-toggle-on', 'false': 'fa-toggle-off'}[artifact.sighted]"></i>                    
-				</span>
-			</dd>
-		</dl>
+            <dt class="pull-left">Has been sighted</dt>
+            <dd>
+                <span class="clickable" ng-click="updateField('sighted', !artifact.sighted)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-toggle-on', 'false': 'fa-toggle-off'}[artifact.sighted]"></i>
+                </span>
+            </dd>
+        </dl>
 
-		<dl class="dl-horizontal clear">
-			<dt class="pull-left">Labels</dt>
-			<dd>
-				<updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))"></updatable-tags>
-			</dd>
-		</dl>
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Labels</dt>
+            <dd>
+                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))"></updatable-tags>
+            </dd>
+        </dl>
 
-		<dl class="dl-horizontal clear">
-			<dt class="pull-left">Description</dt>
-			<dd><updatable-text value="artifact.message" on-update="updateField('message', newValue)" placeholder="Artifact description"></updatable-text></dd>
-		</dl>
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Description</dt>
+            <dd>
+                <updatable-text value="artifact.message" on-update="updateField('message', newValue)" placeholder="Artifact description"></updatable-text>
+            </dd>
+        </dl>
     </div>
     <!-- Observable links -->
     <div class="col-md-5">
-		<h3 class="vpad10 text-primary">Links</h3>
-		<strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
-		<table  ng-if="similarArtifacts.length > 0" class="table table-hover">
-			<thead>
-				<tr>
-					<th>TLP</th>
-					<th>Case</th>
-					<th>Date added</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
-					<td><tlp value="a.tlp"></tlp></td>
-					<td>[{{a.dataType}}]: {{a.data}}<br>
-                        #{{a.case.caseId}} - {{a.case.title}}
+        <h4 class="vpad10 text-primary">Links</h4>
+        <strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
+        <table ng-if="similarArtifacts.length > 0" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>TLP</th>
+                    <th>Case</th>
+                    <th>Date added</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
+                    <td>
+                        <tlp value="a.tlp"></tlp>
                     </td>
-					<td>{{a.startDate | showDate}}</td>
-				</tr>
-			</tbody>
-		</table>
+                    <td>[{{a.dataType}}]: {{a.data}}<br> #{{a.case.caseId}} - {{a.case.title}}
+                    </td>
+                    <td>{{a.startDate | showDate}}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>

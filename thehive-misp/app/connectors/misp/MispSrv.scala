@@ -45,6 +45,17 @@ class MispSrv @Inject() (
       Future.successful(instanceConfig)
     }
 
+  def getEvent(mispConnection: MispConnection, eventId: String): Future[MispAlert] = {
+    logger.debug(s"Get MISP event $eventId")
+    require(!eventId.isEmpty)
+    mispConnection(s"events/$eventId")
+      .get().map { e ⇒
+        (e.json \ "Event")
+          .as[MispAlert]
+          .copy(source = mispConnection.name)
+      }
+  }
+
   def getEventsFromDate(mispConnection: MispConnection, fromDate: Date): Source[MispAlert, NotUsed] = {
     logger.debug(s"Get MISP events from $fromDate")
     val date = fromDate.getTime / 1000
@@ -287,7 +298,7 @@ class MispSrv @Inject() (
             None
           }
 
-        tempFile = tempSrv.newTemporaryFile("misp_malware", file.name)
+        tempFile = tempSrv.newTemporaryFile("misp", "malware")
         _ = logger.info(s"Extract malware file ${file.filepath} in file $tempFile")
         _ = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.getFileName.toString)
       } yield FileInputValue(filename, tempFile, "application/octet-stream")).getOrElse(file)

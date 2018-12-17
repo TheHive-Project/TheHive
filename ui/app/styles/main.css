@@ -310,7 +310,7 @@ ul.observable-reports-summary li {
     padding: 20px 10px 10px 10px;
 }
 
-.case-metrics dt, .case-custom-fields dt {
+.case-details dt, .case-metrics dt, .case-custom-fields dt {
     width: 200px !important;
 }
 
@@ -495,6 +495,14 @@ td.vmiddle {
     vertical-align: middle !important;
 }
 
+.search-list pre {
+    /* max-height: 120px; */
+    /* overflow-y: scroll; */
+    font-size: 10px !important;
+    margin: 0 !important;
+}
+
+.search-list pre,
 .observable-report pre {
     display: block;
     padding: 9.5px;
@@ -564,6 +572,17 @@ table tr.tr-warning>td {
 
 tags-input .tags {
     border-radius: 0;
+    box-shadow: none;
+}
+
+tags-input .tags:focus,
+tags-input .host:focus {
+    outline: none;
+}
+tags-input .tags.focuced {
+    border-color: #3c8dbc;
+    box-shadow: none;
+    outline: none;
 }
 
 tags-input.input-sm .tags {
@@ -633,4 +652,18 @@ table tr td.task-actions span.action-button {
 .dropdown-menu.align-right {
     left: auto;
     right: 0;
+}
+
+.description-pane{
+    /* max-height: 550px; */
+    overflow-y: auto;
+}
+
+.table.tasks-table>tbody+tbody {
+  border: none;
+}
+
+.table.tasks-table .filter-panel {
+  margin-left:40px;
+  margin-right:40px;
 }

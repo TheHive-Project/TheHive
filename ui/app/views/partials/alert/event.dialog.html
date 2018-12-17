@@ -43,8 +43,17 @@
                     <h4 class="vpad10 text-primary">
                         Description
                     </h4>
-                    <div>
+                    <div class="description-pane">
                         <div marked="dialog.event.description" class="markdown"></div>
+                    </div>
+                </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Additional fields
+                    </h4>
+                    <div ng-include="'views/partials/alert/custom.fields.html'">
+
                     </div>
                 </div>
             </div>
@@ -53,12 +62,12 @@
                 <h4 class="vpad10 text-primary">
                     Observables ({{dialog.event.artifacts.length || 0}})
                 </h4>
-                <div class="mb-xs" ng-if="dialog.dataTypes">
-                    <span class="label label-lg label-default mr-xxs clickable"
+                <div class="mb-xs flexwrap" ng-if="dialog.dataTypes">
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-click="dialog.filterArtifacts('');"
                         ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
 
-                    <span class="label label-lg label-default mr-xxs clickable"
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
                         ng-repeat="(type, count) in dialog.dataTypes"
                         ng-click="dialog.filterArtifacts(type)"
                         ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
@@ -77,15 +86,22 @@
                                 <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
                             </td>
                             <td>{{attribute.dataType}}</td>
-                            <td class="wrap" ng-if="attribute.dataType !== 'file'">
-                                {{attribute.data | fang | ellipsis:250}}
+                            <td class="wrap">
+                              <div class="wrap" ng-if="attribute.dataType !== 'file'">
+                                  {{attribute.data | fang | ellipsis:250}}
+                              </div>
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
+                                  {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
+                              </div>
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
+                                  {{attribute.remoteAttachment.filename}}
+                              </div>
+                              <div class="case-tags flexwrap mt-xxs" ng-if="attribute.tags.length > 0">
+                                  <strong><i class="fa fa-tags mr-xxxs"></i></strong>
+                                  <span ng-repeat="tag in attribute.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
+                              </div>
                             </td>
-                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
-                                {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
-                            </td>
-                            <td class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
-                                {{attribute.remoteAttachment.filename}}
-                            </td>
+
                         </tr>
                     </tbody>
                 </table>

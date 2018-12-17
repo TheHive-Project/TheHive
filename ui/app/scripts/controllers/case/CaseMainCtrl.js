@@ -1,9 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CaseReportSrv, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserInfoSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, CaseReportSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
+            $scope.caseResponders = null;
 
             var caseId = $stateParams.caseId;
             if (!$rootScope.currentCaseId) {
@@ -199,7 +200,12 @@
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.close.html',
                     controller: 'CaseCloseModalCtrl',
-                    size: 'lg'
+                    size: 'lg',
+                    resolve: {
+                        caze: function() {
+                            return angular.copy($scope.caze);
+                        }
+                    }
                 });
 
                 modalInstance.result.then(function() {
@@ -281,7 +287,34 @@
                       NotificationSrv.error('caseDetails', response.data, response.status);
                   }
               });
-            }
+            };
+
+            $scope.getCaseResponders = function(force) {
+                if(!force && $scope.caseResponders !== null) {
+                   return;
+                }
+
+                $scope.caseResponders = null;
+                CortexSrv.getResponders('case', $scope.caseId)
+                  .then(function(responders) {
+                      $scope.caseResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('caseDetails', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, responderName) {
+                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
+                  .then(function(response) {
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('caseDetails', response.data, response.status);
+                      }
+                  });
+            };
 
             $scope.caseReport = function() {
               $uibModal.open({
@@ -306,6 +339,10 @@
                     return [];
                 }
                 return Object.keys(obj);
+            };
+
+            $scope.keys = function(obj) {
+                return _.keys(obj);
             };
 
             $scope.getTags = function(selection) {

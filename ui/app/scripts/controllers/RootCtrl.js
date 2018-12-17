@@ -2,14 +2,14 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
             $state.go('maintenance');
             return;
         }else if(!currentUser || !currentUser.id) {
-            $state.go('login');
+            $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
             return;
         }
 
@@ -160,13 +160,25 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
-        $scope.search = function(querystring) {
-            var query = Base64.encode(angular.toJson({
-                _string: querystring
-            }));
+        $scope.search = function(caseId) {
+            if(!caseId || !_.isNumber(caseId) || caseId <= 0) {
+                return;
+            }
 
-            $state.go('app.search', {
-                q: query
+            CaseSrv.query({
+                query: {
+                    caseId: caseId
+                },
+                range: '0-1'
+            }, function(response) {
+                if(response.length === 1) {
+                    $state.go('app.case.details', {caseId: response[0].id}, {reload: true});
+                } else {
+                    NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
+                }
+                console.log(response[0]);
+            }, function(err) {
+                NotificationSrv.error('Case search', err.data, err.status);
             });
         };
 

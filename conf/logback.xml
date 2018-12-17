@@ -42,6 +42,10 @@
     <!-- Uncomment the next line to log debug information on Misp synchronization -->
     <!-- logger name="connectors.misp" level="DEBUG" /-->
 
+    <!-- Uncomment the next lines to log debug information on stream -->
+    <!--logger name="services.LocalStreamActor" level="DEBUG" /-->
+    <!--logger name="services.StreamActor" level="DEBUG" /-->
+
     <root level="INFO">
         <appender-ref ref="ASYNCFILE" />
         <appender-ref ref="ASYNCSTDOUT" />
