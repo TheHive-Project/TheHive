@@ -15,7 +15,8 @@
 
 <span ng-show="updatable.updating">
     <div class="form-group">
-        <tags-input class="ti-input-sm" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false"></tags-input>
+        <tags-input class="ti-input-sm" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false">
+        </tags-input>
     </div>
     <div class="form-group">
         <span class="btn" ng-click='update()' tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="save">

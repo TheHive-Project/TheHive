@@ -123,7 +123,7 @@
 
             $scope.keys = function(o) {
                 return _.keys(o).length;
-            }
+            };
         }
     );
 })();

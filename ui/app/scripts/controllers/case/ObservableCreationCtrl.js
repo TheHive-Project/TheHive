@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, params, tags) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, TagSrv, params, tags) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -86,7 +86,7 @@
                     } else {
                         postData.data = params.data.split('\n');
                         count = postData.length;
-                    }                    
+                    }
                 } else {
                     postData.attachment = params.attachment;
 
@@ -148,12 +148,13 @@
                     $scope.step = 'error';
 
                 } else {
-										if(response.data.type === "java.io.IOException")
-                    	NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
-										else if(response.data.type === "InternalError")
-											NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
-										else
-	                    NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
+										if(response.data.type === "java.io.IOException") {
+                        NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+                    } else if(response.data.type === "InternalError") {
+											  NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
+                    } else {
+                        NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
+                    }
 
                     $uibModalInstance.close(response);
                 }
@@ -178,6 +179,9 @@
                 }
             };
 
+            $scope.getTags = function(query) {
+                return TagSrv.fromObservables(query);
+            };
         }
     );
 
