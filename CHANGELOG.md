@@ -1,7 +1,21 @@
 # Change Log
 
-## [3.2.0](https://github.com/TheHive-Project/TheHive/tree/3.2.0) (2018-11-29)
+## [Unreleased](https://github.com/TheHive-Project/TheHive/tree/3.2.1) (2018-12-20)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0...3.2.1)
+
+**Fixed bugs:**
+
+- Bug UI "Tooltip" / Hint is cropped by window borders [\#832](https://github.com/TheHive-Project/TheHive/issues/832)
+- Can't unset case template when alert is imported [\#825](https://github.com/TheHive-Project/TheHive/issues/825)
+- Potential Regression: Case templates cannot be exported in 3.2.0 [\#823](https://github.com/TheHive-Project/TheHive/issues/823)
+- Tag order is reversed if a case is created from an alert [\#810](https://github.com/TheHive-Project/TheHive/issues/810)
+
+**Merged pull requests:**
+
+- Make improvements to configuration file [\#828](https://github.com/TheHive-Project/TheHive/pull/828) ([adl1995](https://github.com/adl1995))
+
+## [3.2.0](https://github.com/TheHive-Project/TheHive/tree/3.2.0) (2018-11-29)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0-RC1...3.2.0)
 
 **Implemented enhancements:**
@@ -12,6 +26,7 @@
 
 - Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
 - Lowercase user ID coming from HTTP header [\#808](https://github.com/TheHive-Project/TheHive/issues/808)
+- Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
 
 ## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1) (2018-11-16)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.2...3.2.0-RC1)

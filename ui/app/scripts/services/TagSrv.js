@@ -38,5 +38,9 @@
                 return getTags('alert', term);
             };
 
+            this.fromObservables = function(term) {
+                return getTags('case/artifact', term);
+            };
+
         });
 })();
