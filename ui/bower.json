@@ -1,6 +1,6 @@
 {
   "name": "thehive",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "license": "AGPL-3.0",
   "dependencies": {
     "angular": "1.5.8",
@@ -51,7 +51,7 @@
     "underscore.string": "^3.3.4",
     "angular-drag-and-drop-lists": "^2.1.0",
     "angular-bootstrap-colorpicker": "^3.0.31",
-    "file-saver": "^1.3.3",
+    "file-saver": "1.3.4",
     "js-url": "^2.5.2"
   },
   "devDependencies": {
