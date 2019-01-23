@@ -8,7 +8,7 @@ lazy val thehive = (project in file("."))
     inThisBuild(
       List(
         organization := "org.thp",
-        scalaVersion := "2.12.6",
+        scalaVersion := "2.12.8",
         resolvers += Resolver.mavenLocal,
         resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven",
         scalacOptions ++= Seq(
