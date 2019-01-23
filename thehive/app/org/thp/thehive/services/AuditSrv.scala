@@ -3,6 +3,7 @@ import java.util.Date
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, Schema, VertexModel}
 import org.thp.scalligraph.services._

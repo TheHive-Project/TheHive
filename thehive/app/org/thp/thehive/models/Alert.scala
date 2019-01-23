@@ -6,10 +6,6 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 
-object AlertStatus extends Enumeration {
-  val `new`, updated, ignored, imported = Value
-}
-
 @EdgeEntity[Alert, CustomField]
 case class AlertCustomField(
     stringValue: Option[String] = None,
@@ -34,8 +30,14 @@ case class AlertObservable()
 @EdgeEntity[Alert, Organisation]
 case class AlertOrganisation()
 
+@EdgeEntity[Alert, Case]
+case class AlertCase()
+
+@EdgeEntity[Alert, CaseTemplate]
+case class AlertCaseTemplate()
+
 @VertexEntity
-@DefineIndex(IndexType.unique, "number")
+@DefineIndex(IndexType.unique, "type", "source", "sourceRef")
 case class Alert(
     `type`: String,
     source: String,
@@ -49,7 +51,7 @@ case class Alert(
     flag: Boolean,
     tlp: Int,
     pap: Int,
-    status: AlertStatus.Value,
+    read: Boolean,
     follow: Boolean)
 
 case class RichAlert(
@@ -82,14 +84,9 @@ object RichAlert {
     alert
       .asInstanceOf[Alert]
       .into[RichAlert]
-      .withFieldConst(_._id, alert._id)
-      .withFieldConst(_._createdAt, alert._createdAt)
-      .withFieldConst(_._createdBy, alert._createdBy)
-      .withFieldConst(_._updatedAt, alert._updatedAt)
-      .withFieldConst(_._updatedBy, alert._updatedBy)
-      .withFieldComputed(_.status, _.status.toString)
-      .withFieldConst(_.organisation, organisation)
+      .withFieldConst(_.alert, alert)
       .withFieldConst(_.user, user)
+      .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.customFields, customFields)
       .transform
 }

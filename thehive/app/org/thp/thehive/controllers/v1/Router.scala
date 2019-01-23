@@ -47,10 +47,15 @@ class Router @Inject()(
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
 
-    case GET(p"/alert")            ⇒ alertCtrl.list
-    case POST(p"/alert")           ⇒ alertCtrl.create
-    case GET(p"/alert/$alertId")   ⇒ alertCtrl.get(alertId)
-    case PATCH(p"/alert/$alertId") ⇒ alertCtrl.update(alertId)
+    case GET(p"/alert")                    ⇒ alertCtrl.list
+    case POST(p"/alert")                   ⇒ alertCtrl.create
+    case GET(p"/alert/$alertId")           ⇒ alertCtrl.get(alertId)
+    case PATCH(p"/alert/$alertId")         ⇒ alertCtrl.update(alertId)
+    case POST(p"/alert/$alertId/read")     ⇒ alertCtrl.markAsRead(alertId)
+    case POST(p"/alert/$alertId/unread")   ⇒ alertCtrl.markAsUnread(alertId)
+    case POST(p"/alert/$alertId/follow")   ⇒ alertCtrl.followAlert(alertId)
+    case POST(p"/alert/$alertId/unfollow") ⇒ alertCtrl.unfollowAlert(alertId)
+    case POST(p"/alert/$alertId/case")     ⇒ alertCtrl.createCase(alertId)
 
     case GET(p"/audit") ⇒ auditCtrl.flow()
   }

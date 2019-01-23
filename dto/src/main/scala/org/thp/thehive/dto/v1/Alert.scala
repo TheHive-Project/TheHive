@@ -31,6 +31,9 @@ case class OutputAlert(
     _updatedBy: Option[String] = None,
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
+    `type`: String,
+    source: String,
+    sourceRef: String,
     title: String,
     description: String,
     severity: Int,
@@ -42,7 +45,8 @@ case class OutputAlert(
     status: String,
     follow: Boolean,
     user: String,
-    customFields: Set[OutputCustomFieldValue] = Set.empty)
+    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    caseTemplate: Option[String] = None)
 
 object OutputAlert {
   implicit val format: OFormat[OutputAlert] = Json.format[OutputAlert]
