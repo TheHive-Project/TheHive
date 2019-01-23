@@ -10,16 +10,16 @@ import org.thp.thehive.models.{RichCase, Task}
 import org.thp.thehive.services._
 
 case class GetCaseParams(id: String)
-object GetCaseParams {
-  implicit val parser: FieldsParser[GetCaseParams] = FieldsParser[GetCaseParams]
-}
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(caseSrv: CaseSrv, taskSrv: TaskSrv, implicit val db: Database) extends QueryExecutor {
 
   override val publicProperties: List[PublicProperty[_ <: Element, _]] = outputCaseProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
-    Query.initWithParam[GetCaseParams, CaseSteps]("getCase", (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).availableFor(authContext)),
+    Query.initWithParam[GetCaseParams, CaseSteps](
+      "getCase",
+      FieldsParser[GetCaseParams],
+      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).availableFor(authContext)),
     Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).availableFor(authContext)),
     Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList),
