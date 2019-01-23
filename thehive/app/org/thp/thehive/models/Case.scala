@@ -4,7 +4,7 @@ import java.util.Date
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 
 object CaseStatus extends Enumeration {
   val open, resolved, deleted = Value
@@ -13,16 +13,6 @@ object CaseStatus extends Enumeration {
 @VertexEntity
 case class ResolutionStatus(value: String) {
   require(!value.isEmpty, "ResolutionStatus can't be empty")
-}
-
-object ResolutionStatus {
-  val initialValues = Seq(
-    ResolutionStatus("Indeterminate"),
-    ResolutionStatus("FalsePositive"),
-    ResolutionStatus("TruePositive"),
-    ResolutionStatus("Other"),
-    ResolutionStatus("Duplicated")
-  )
 }
 
 @EdgeEntity[Case, ResolutionStatus]
@@ -60,6 +50,9 @@ case class CaseObservable()
 @EdgeEntity[Case, Organisation]
 case class CaseOrganisation()
 
+@EdgeEntity[Case, CaseTemplate]
+case class CaseCaseTemplate()
+
 @VertexEntity
 @DefineIndex(IndexType.unique, "number")
 case class Case(
@@ -76,32 +69,31 @@ case class Case(
     status: CaseStatus.Value,
     summary: Option[String])
 
-case class CustomFieldWithValue(name: String, description: String, tpe: String, value: Any)
-
 case class RichCase(
-    _id: String,
-    _createdBy: String,
-    _updatedBy: Option[String],
-    _createdAt: Date,
-    _updatedAt: Option[Date],
-    number: Int,
-    title: String,
-    description: String,
-    severity: Int,
-    startDate: Date,
-    endDate: Option[Date],
-    tags: Seq[String],
-    flag: Boolean,
-    tlp: Int,
-    pap: Int,
-    status: CaseStatus.Value,
-    summary: Option[String],
+    `case`: Case with Entity,
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: String,
     organisation: String,
-    customFields: Seq[CustomFieldWithValue]
-)
+    customFields: Seq[CustomFieldWithValue]) {
+  val _id: String                = `case`._id
+  val _createdBy: String         = `case`._createdBy
+  val _updatedBy: Option[String] = `case`._updatedBy
+  val _createdAt: Date           = `case`._createdAt
+  val _updatedAt: Option[Date]   = `case`._updatedAt
+  val number: Int                = `case`.number
+  val title: String              = `case`.title
+  val description: String        = `case`.description
+  val severity: Int              = `case`.severity
+  val startDate: Date            = `case`.startDate
+  val endDate: Option[Date]      = `case`.endDate
+  val tags: Seq[String]          = `case`.tags
+  val flag: Boolean              = `case`.flag
+  val tlp: Int                   = `case`.tlp
+  val pap: Int                   = `case`.pap
+  val status: CaseStatus.Value   = `case`.status
+  val summary: Option[String]    = `case`.summary
+}
 
 object RichCase {
   def apply(
@@ -114,15 +106,46 @@ object RichCase {
     `case`
       .asInstanceOf[Case]
       .into[RichCase]
-      .withFieldConst(_._id, `case`._id)
-      .withFieldConst(_._createdAt, `case`._createdAt)
-      .withFieldConst(_._createdBy, `case`._createdBy)
-      .withFieldConst(_._updatedAt, `case`._updatedAt)
-      .withFieldConst(_._updatedBy, `case`._updatedBy)
+      .withFieldConst(_.`case`, `case`)
       .withFieldConst(_.impactStatus, caseImpactStatus)
       .withFieldConst(_.resolutionStatus, resolutionStatus)
       .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.user, user)
       .withFieldConst(_.customFields, customFields)
       .transform
+
+  def apply(
+      __id: String,
+      __createdBy: String,
+      __updatedBy: Option[String],
+      __createdAt: Date,
+      __updatedAt: Option[Date],
+      number: Int,
+      title: String,
+      description: String,
+      severity: Int,
+      startDate: Date,
+      endDate: Option[Date],
+      tags: Seq[String],
+      flag: Boolean,
+      tlp: Int,
+      pap: Int,
+      status: CaseStatus.Value,
+      summary: Option[String],
+      impactStatus: Option[String],
+      resolutionStatus: Option[String],
+      user: String,
+      organisation: String,
+      customFields: Seq[CustomFieldWithValue]
+  ): RichCase = {
+    val `case` = new Case(number, title, description, severity, startDate, endDate, tags, flag, tlp, pap, status, summary) with Entity {
+      override val _id: String                = __id
+      override val _model: Model              = Model.vertex[Case]
+      override val _createdBy: String         = __createdBy
+      override val _updatedBy: Option[String] = __updatedBy
+      override val _createdAt: Date           = __createdAt
+      override val _updatedAt: Option[Date]   = __updatedAt
+    }
+    RichCase(`case`, impactStatus, resolutionStatus, user, organisation, customFields)
+  }
 }

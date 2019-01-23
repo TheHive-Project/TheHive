@@ -4,7 +4,7 @@ import java.util.Date
 
 import scala.concurrent.Future
 
-import play.api.libs.json.Json
+import play.api.libs.json.{JsString, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -15,12 +15,12 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.controllers.Authenticated
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
-import org.thp.thehive.dto.v1.{InputCase, OutputCase}
+import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write))
+  val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write), organisation = "cert")
   val authenticated: Authenticated = mock[Authenticated]
   authenticated.getContext(any[RequestHeader]) returns Future.successful(dummyUserSrv.authContext)
   implicit val ee: ExecutionEnv = ExecutionEnv.fromGlobalExecutionContext
@@ -86,6 +86,50 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCase must_=== expected
       }
 
+      "create a new case using a template" in {
+        val now = new Date()
+        val request = FakeRequest("POST", "/api/v1/case")
+          .withJsonBody(
+            Json.toJsObject(InputCase(
+              title = "case title (create case test with template)",
+              description = "case description (create case test with template)",
+              severity = None,
+              startDate = Some(now),
+              tags = Seq("tag1", "tag2"),
+              flag = Some(false),
+              tlp = Some(1),
+              pap = Some(3)
+            )) + ("caseTemplate" → JsString("spam")))
+        val result     = caseCtrl.create(request)
+        val resultCase = contentAsJson(result).as[OutputCase]
+        val expected = OutputCase(
+          _id = resultCase._id,
+          _createdBy = resultCase._createdBy,
+          _updatedBy = None,
+          _createdAt = resultCase._createdAt,
+          _updatedAt = None,
+          number = resultCase.number,
+          title = "[SPAM] case title (create case test with template)",
+          description = "case description (create case test with template)",
+          severity = 1,
+          startDate = now,
+          endDate = None,
+          tags = Set("tag1", "tag2", "spam", "src:mail"),
+          flag = false,
+          tlp = 1,
+          pap = 3,
+          status = "open",
+          summary = None,
+          user = dummyUserSrv.authContext.userId,
+          customFields = Set(
+            OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
+            OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
+          )
+        )
+
+        resultCase must_=== expected
+      }
+
       "get a case" in {
         val now             = new Date()
         val caseSrv         = app.instanceOf[CaseSrv]
@@ -110,7 +154,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
-              Nil
+              Map.empty,
+              None
             )(graph, dummyUserSrv.authContext)
         }
         val request    = FakeRequest("GET", s"/api/v1/case/#${createdCase.number}")
@@ -162,7 +207,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               ),
               userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
-              Nil
+              Map.empty,
+              None
             )(graph, dummyUserSrv.authContext)
         }
         val updateRequest = FakeRequest("PATCH", s"/api/v1/case/#${createdCase.number}")

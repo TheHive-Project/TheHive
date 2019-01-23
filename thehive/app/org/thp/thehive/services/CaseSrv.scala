@@ -2,17 +2,17 @@ package org.thp.thehive.services
 
 import java.util.{List ⇒ JList}
 
-import scala.collection.JavaConverters._
-import scala.util.Success
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services.{EdgeSrv, _}
+import org.thp.scalligraph.services._
 import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
 import org.thp.thehive.models._
+
+import scala.collection.JavaConverters._
+import scala.util.Success
 
 @Singleton
 class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv)(implicit db: Database)
@@ -23,36 +23,53 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organi
   val caseUserSrv          = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv   = new EdgeSrv[CaseCustomField, Case, CustomField]
   val caseOrganisationSrv  = new EdgeSrv[CaseOrganisation, Case, Organisation]
+  val caseCaseTemplateSrv  = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
 
-  def create(`case`: Case, user: User with Entity, organisation: Organisation with Entity, customFields: Seq[(String, Any)])(
-      implicit graph: Graph,
-      authContext: AuthContext): RichCase = {
+  def create(
+      `case`: Case,
+      user: User with Entity,
+      organisation: Organisation with Entity,
+      customFields: Map[String, Any],
+      caseTemplate: Option[RichCaseTemplate])(implicit graph: Graph, authContext: AuthContext): RichCase = {
     val caseNumber  = nextCaseNumber
     val createdCase = create(`case`.copy(number = caseNumber))
     caseUserSrv.create(CaseUser(), createdCase, user)
     caseOrganisationSrv.create(CaseOrganisation(), createdCase, organisation)
-    val cfs = customFields.map {
-      case (name, value) ⇒
+    caseTemplate.foreach(ct ⇒ caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
+
+    val caseCustomFields = caseTemplate.fold(Map.empty[String, Any])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap) ++ customFields
+    caseCustomFields.foreach {
+      case (name, Some(value)) ⇒
         val cf = customFieldSrv.getOrFail(name)
         caseCustomFieldSrv.create(cf.`type`.setValue(CaseCustomField(), value), createdCase, cf)
-        CustomFieldWithValue(cf.name, cf.description, cf.`type`.name, value)
+      case (name, _) ⇒
+        val cf = customFieldSrv.getOrFail(name)
+        caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
     }
-    RichCase(createdCase, None, None, user.login, organisation.name, cfs)
+    RichCase(createdCase, None, None, user.login, organisation.name, get(createdCase).customFields().toList())
   }
+
+  def isAvailableFor(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
+    get(caseIdOrNumber).availableFor(Some(authContext)).isDefined
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
-  def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext): CaseCustomField with Entity =
+  def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Unit =
     setCustomField(`case`, customFieldSrv.getOrFail(customFieldName), value)
 
   def setCustomField(`case`: Case with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
-      authContext: AuthContext): CaseCustomField with Entity = {
-    val caseCustomField = customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value)
-    caseCustomFieldSrv.create(caseCustomField, `case`, customField)
-  }
+      authContext: AuthContext): Unit =
+    getCustomField(`case`, customField.name) match {
+      case Some(cf) ⇒ caseCustomFieldSrv.update(cf.customFieldValue._id, cf.`type`.name + "Value", Some(value))
+      case None ⇒
+        val caseCustomField = customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value)
+        caseCustomFieldSrv.create(caseCustomField, `case`, customField)
+        ()
+    }
+
+  def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
+    get(`case`).customFields(Some(customFieldName)).headOption()
 
   override def get(caseIdOrNumber: String)(implicit graph: Graph): CaseSteps =
     Success(caseIdOrNumber)
@@ -63,8 +80,7 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organi
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
-  def merge(caseIds: String*)(implicit graph: Graph, authContext: AuthContext): RichCase = {
-    val cases        = caseIds.map(getOrFail)
+  def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = {
     val summaries    = cases.flatMap(_.summary)
     val user         = userSrv.getOrFail(authContext.userId)
     val organisation = organisationSrv.getOrFail(authContext.organisation)
@@ -89,16 +105,16 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organi
     caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
     cases
       .map(get)
-      .flatMap(_.customFields.toList())
+      .flatMap(_.customFields().toList())
       .groupBy(_.name)
       .foreach {
-        case (name, l) if l.size == 1 ⇒
-          val cf = customFieldSrv.getOrFail(name)
-          caseCustomFieldSrv.create(cf.`type`.setValue(CaseCustomField(), l.head.value), mergedCase, cf)
-          l.head.name → l.head.value
-        case (name, _) ⇒
-          val cf = customFieldSrv.getOrFail(name)
-          caseCustomFieldSrv.create(CaseCustomField(), mergedCase, cf)
+        case (name, l) ⇒
+          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined ⇒ cfwv.value.get }
+          val cf     = customFieldSrv.getOrFail(name)
+          val caseCustomField =
+            if (values.size == 1) cf.`type`.setValue(CaseCustomField(), values.head)
+            else CaseCustomField()
+          caseCustomFieldSrv.create(caseCustomField, mergedCase, cf)
       }
 
     cases
@@ -148,15 +164,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case ccf :: cf :: Nil ⇒
-                  val customField     = cf.as[CustomField]
-                  val caseCustomField = ccf.as[CaseCustomField].asInstanceOf[CaseCustomField]
-                  CustomFieldWithValue(
-                    customField.name,
-                    customField.description,
-                    customField.`type`.name,
-                    customField.`type`.getValue(caseCustomField))
-                case _ ⇒ throw InternalError("Not possible")
+                case ccf :: cf :: Nil ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _                ⇒ throw InternalError("Not possible")
               }
             RichCase(
               m.get[Vertex]("case").as[Case],
@@ -168,17 +177,16 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             )
         })
 
-  def customFields: ScalarSteps[CustomFieldWithValue] =
+  def customFields(name: Option[String] = None): ScalarSteps[CustomFieldWithValue] = {
+    val ccfSteps: GremlinScala[Vertex] = raw
+      .outToE[CaseCustomField]
+      .inV()
     ScalarSteps(
-      raw
-        .outToE[CaseCustomField]
-        .inV()
+      name
+        .fold[GremlinScala[Vertex]](ccfSteps)(n ⇒ ccfSteps.has(Key("name") of n))
         .path
-        .map { y ⇒
-          val caseCustomField = y.get[Edge](1).as[CaseCustomField].asInstanceOf[CaseCustomField]
-          val customField     = y.get[Vertex](2).as[CustomField]
-          CustomFieldWithValue(customField.name, customField.description, customField.`type`.name, customField.`type`.getValue(caseCustomField))
-        })
+        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField])))
+  }
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 

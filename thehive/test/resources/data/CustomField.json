@@ -20,7 +20,7 @@
     "type": "float"
   },
   {
-    "name": "date",
+    "name": "date1",
     "description": "date custom field",
     "type": "date"
   }

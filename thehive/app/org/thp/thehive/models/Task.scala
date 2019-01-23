@@ -11,6 +11,9 @@ object TaskStatus extends Enumeration {
 @EdgeEntity[Task, Case]
 case class TaskCase()
 
+@EdgeEntity[Task, CaseTemplate]
+case class TaskCaseTemplate()
+
 @EdgeEntity[Task, User]
 case class TaskUser()
 

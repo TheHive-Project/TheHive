@@ -5,8 +5,8 @@ import java.util.Date
 import play.api.test.PlaySpecification
 
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.{AppBuilder, BadRequestError}
 import org.thp.thehive.models._
 
 class CaseSrvTest extends PlaySpecification {
@@ -110,15 +110,17 @@ class CaseSrvTest extends PlaySpecification {
         richCase.summary must beNone
         richCase.impactStatus must beNone
         richCase.user must_=== "toom"
-        richCase.customFields must contain(
-          allOf(
-            CustomFieldWithValue("boolean1", "boolean custom field", CustomFieldBoolean.name, true),
-            CustomFieldWithValue("string1", "string custom field", CustomFieldString.name, "string1 custom field")
+        CustomField("boolean1", "boolean custom field", CustomFieldBoolean)
+        richCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
+          allOf[(String, String, Option[Any])](
+            ("boolean1", "boolean", Some(true)),
+            ("string1", "string", Some("string1 custom field"))
           ))
       }
 
       "merge two cases" in db.transaction { implicit graph ⇒
-        val mergedCase = caseSrv.merge("#2", "#3")(graph, dummyUserSrv.initialAuthContext)
+        val cases      = Seq("#2", "#3").map(caseSrv.getOrFail)
+        val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.initialAuthContext)
 
         mergedCase.title must_=== "case#2 / case#3"
         mergedCase.description must_=== "description of case #2\n\ndescription of case #3"
@@ -133,11 +135,28 @@ class CaseSrvTest extends PlaySpecification {
         mergedCase.summary must beNone
         mergedCase.impactStatus must beNone
         mergedCase.user must_=== "test"
-        mergedCase.customFields must contain(
-          allOf(
-            CustomFieldWithValue("boolean1", "boolean custom field", CustomFieldBoolean.name, true),
-            CustomFieldWithValue("string1", "string custom field", CustomFieldString.name, "string1 custom field")
+        mergedCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
+          allOf[(String, String, Option[Any])](
+            ("boolean1", "boolean", Some(true)),
+            ("string1", "string", Some("string1 custom field"))
           ))
+      }
+
+      "add custom field with wrong type" in db.transaction { implicit graph ⇒
+        val `case` = caseSrv.getOrFail("#4")
+        caseSrv.setCustomField(`case`, "boolean1", "plop")(graph, dummyUserSrv.initialAuthContext) must throwA[BadRequestError]
+      }
+
+      "add custom field" in db.transaction { implicit graph ⇒
+        val `case` = caseSrv.getOrFail("#4")
+        caseSrv.setCustomField(`case`, "boolean1", true)(graph, dummyUserSrv.initialAuthContext)
+        caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == true)
+      }
+
+      "update custom field" in db.transaction { implicit graph ⇒
+        val `case` = caseSrv.getOrFail("#4")
+        caseSrv.setCustomField(`case`, "boolean1", false)(graph, dummyUserSrv.initialAuthContext)
+        caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
       }
     }
   }

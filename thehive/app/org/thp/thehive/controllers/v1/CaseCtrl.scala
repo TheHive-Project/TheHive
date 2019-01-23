@@ -9,21 +9,45 @@ import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsPar
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.InputCase
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
+import org.thp.thehive.services._
 
 @Singleton
-class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv) {
+class CaseCtrl @Inject()(
+    apiMethod: ApiMethod,
+    db: Database,
+    caseSrv: CaseSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    taskSrv: TaskSrv,
+    userSrv: UserSrv,
+    organisationSrv: OrganisationSrv) {
 
   def create: Action[AnyContent] =
     apiMethod("create case")
       .extract('case, FieldsParser[InputCase])
+      .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
       .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒
+          val caseTemplateName: Option[String] = request.body('caseTemplate)
+          val caseTemplate = caseTemplateName
+            .map { templateName ⇒
+              caseTemplateSrv
+                .get(templateName)
+                .availableFor(request.organisation)
+                .richCaseTemplate
+                .getOrFail()
+            }
           val inputCase: InputCase = request.body('case)
+          val `case`               = fromInputCase(inputCase, caseTemplate)
           val user                 = userSrv.getOrFail(inputCase.user.getOrElse(request.userId))
           val organisation         = organisationSrv.getOrFail(request.organisation)
-          val customFields         = inputCase.customFieldValue.map(fromInputCustomField)
-          val richCase             = caseSrv.create(request.body('case), user, organisation, customFields)
+          val customFields         = inputCase.customFieldValue.map(fromInputCustomField).toMap
+          val richCase             = caseSrv.create(`case`, user, organisation, customFields, caseTemplate)
+
+          caseTemplate.foreach { ct ⇒
+            caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
+              taskSrv.create(task, richCase.`case`)
+            }
+          }
           Results.Created(richCase.toJson)
         }
       }
@@ -36,8 +60,7 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
             .get(caseIdOrNumber)
             .availableFor(request.organisation)
             .richCase
-            .headOption
-            .getOrElse(throw NotFoundError(s"case number $caseIdOrNumber not found"))
+            .getOrFail()
           Results.Ok(richCase.toJson)
         }
       }
@@ -60,8 +83,10 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
       .extract('case, UpdateFieldsParser[InputCase])
       .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
-          Results.NoContent
+          if (caseSrv.isAvailableFor(caseIdOrNumber)) {
+            caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
+            Results.NoContent
+          } else Results.Unauthorized(s"Case $caseIdOrNumber doesn't exist or permission is insufficient")
         }
       }
 
@@ -69,7 +94,15 @@ class CaseCtrl @Inject()(apiMethod: ApiMethod, db: Database, caseSrv: CaseSrv, u
     apiMethod("merge cases")
       .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val mergedCase = caseSrv.merge(caseIdsOrNumbers.split(','): _*)
+          val cases = caseIdsOrNumbers
+            .split(',')
+            .map { i ⇒
+              caseSrv
+                .get(i)
+                .availableFor(request.organisation)
+                .getOrFail()
+            }
+          val mergedCase = caseSrv.merge(cases)
           Results.Ok(mergedCase.toJson)
         }
       }

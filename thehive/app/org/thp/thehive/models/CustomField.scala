@@ -5,6 +5,7 @@ import java.util.Date
 import play.api.libs.json.{JsNumber, Writes}
 
 import org.thp.scalligraph._
+import org.thp.scalligraph.models.Entity
 
 abstract class CustomFieldAccessor[T, C] {
   def setValue(value: T): C
@@ -32,10 +33,10 @@ sealed abstract class CustomFieldType[T] {
                              |  Expected: $name
                              |  Found   : $value (${value.getClass})
                            """.stripMargin)
-  def getValue[C <: CustomFieldValue[C]](ccf: C): T
+  def getValue(ccf: CustomFieldValue[_]): Option[T]
 
-  protected def getValueFailure(ccf: CustomFieldValue[_]): Nothing =
-    throw InternalError(s"CaseCustomField $ccf is $name typed but don't have $name value")
+//  protected def getValueFailure(ccf: CustomFieldValue[_]): Nothing =
+//    throw InternalError(s"CaseCustomField $ccf is $name typed but don't have $name value")
 
   val name: String
   val writes: Writes[T]
@@ -47,7 +48,7 @@ object CustomFieldString extends CustomFieldType[String] {
     case v: String ⇒ customFieldValue.setStringValue(v)
     case _         ⇒ setValueFailure(value)
   }
-  override def getValue[C <: CustomFieldValue[C]](ccf: C): String = ccf.stringValue.getOrElse(getValueFailure(ccf))
+  override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
   override val name: String                                       = "string"
   override val writes: Writes[String]                             = Writes.StringWrites
 }
@@ -57,7 +58,7 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
     case v: Boolean ⇒ customFieldValue.setBooleanValue(v)
     case _          ⇒ setValueFailure(value)
   }
-  override def getValue[C <: CustomFieldValue[C]](ccf: C): Boolean = ccf.booleanValue.getOrElse(getValueFailure(ccf))
+  override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
   override val name: String                                        = "boolean"
   override val writes: Writes[Boolean]                             = Writes.BooleanWrites
 }
@@ -67,7 +68,7 @@ object CustomFieldInteger extends CustomFieldType[Int] {
     case v: Int ⇒ customFieldValue.setIntegerValue(v)
     case _      ⇒ setValueFailure(value)
   }
-  override def getValue[C <: CustomFieldValue[C]](ccf: C): Int = ccf.integerValue.getOrElse(getValueFailure(ccf))
+  override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
   override val name: String                                    = "integer"
   override val writes: Writes[Int]                             = Writes.IntWrites
 }
@@ -77,7 +78,7 @@ object CustomFieldFloat extends CustomFieldType[Float] {
     case v: Float ⇒ customFieldValue.setFloatValue(v)
     case _        ⇒ setValueFailure(value)
   }
-  override def getValue[C <: CustomFieldValue[C]](ccf: C): Float = ccf.floatValue.getOrElse(getValueFailure(ccf))
+  override def getValue(ccf: CustomFieldValue[_]): Option[Float] = ccf.floatValue
   override val name: String                                      = "float"
   override val writes: Writes[Float]                             = Writes.FloatWrites
 }
@@ -87,10 +88,18 @@ object CustomFieldDate extends CustomFieldType[Date] {
     case v: Date ⇒ customFieldValue.setDateValue(v)
     case _       ⇒ setValueFailure(value)
   }
-  override def getValue[C <: CustomFieldValue[C]](ccf: C): Date = ccf.dateValue.getOrElse(getValueFailure(ccf))
+  override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
   override val name: String                                     = "date"
   override val writes: Writes[Date]                             = Writes[Date](d ⇒ JsNumber(d.getTime))
 }
 
 @VertexEntity
 case class CustomField(name: String, description: String, `type`: CustomFieldType[_])
+
+case class CustomFieldWithValue(customField: CustomField with Entity, customFieldValue: CustomFieldValue[_] with Entity) {
+  def name: String               = customField.name
+  def description: String        = customField.description
+  def `type`: CustomFieldType[_] = customField.`type`
+  def typeName: String           = customField.`type`.name
+  def value: Option[Any]         = `type`.getValue(customFieldValue)
+}

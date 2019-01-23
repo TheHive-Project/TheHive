@@ -55,32 +55,41 @@ case class Alert(
     follow: Boolean)
 
 case class RichAlert(
-    _id: String,
-    _createdBy: String,
-    _updatedBy: Option[String],
-    _createdAt: Date,
-    _updatedAt: Option[Date],
-    `type`: String,
-    source: String,
-    sourceRef: String,
-    title: String,
-    description: String,
-    severity: Int,
-    date: Date,
-    lastSyncDate: Date,
-    tags: Seq[String],
-    flag: Boolean,
-    tlp: Int,
-    pap: Int,
-    status: String,
-    follow: Boolean,
+    alert: Alert with Entity,
     user: String,
     organisation: String,
-    customFields: Seq[CustomFieldWithValue]
-)
+    customFields: Seq[CustomFieldWithValue],
+    caseId: Option[String],
+    caseTemplate: Option[String]) {
+  val _id: String                = alert._id
+  val _createdAt: Date           = alert._createdAt
+  val _createdBy: String         = alert._createdBy
+  val _updatedAt: Option[Date]   = alert._updatedAt
+  val _updatedBy: Option[String] = alert._updatedBy
+  val `type`: String             = alert.`type`
+  val source: String             = alert.source
+  val sourceRef: String          = alert.sourceRef
+  val title: String              = alert.title
+  val description: String        = alert.description
+  val severity: Int              = alert.severity
+  val date: Date                 = alert.date
+  val lastSyncDate: Date         = alert.lastSyncDate
+  val tags: Seq[String]          = alert.tags
+  val flag: Boolean              = alert.flag
+  val tlp: Int                   = alert.tlp
+  val pap: Int                   = alert.pap
+  val read: Boolean              = alert.read
+  val follow: Boolean            = alert.follow
+}
 
 object RichAlert {
-  def apply(alert: Alert with Entity, user: String, organisation: String, customFields: Seq[CustomFieldWithValue]): RichAlert =
+  def apply(
+      alert: Alert with Entity,
+      user: String,
+      organisation: String,
+      customFields: Seq[CustomFieldWithValue],
+      caseId: Option[String],
+      caseTemplate: Option[String]): RichAlert =
     alert
       .asInstanceOf[Alert]
       .into[RichAlert]
@@ -88,5 +97,7 @@ object RichAlert {
       .withFieldConst(_.user, user)
       .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.customFields, customFields)
+      .withFieldConst(_.caseId, caseId)
+      .withFieldConst(_.caseTemplate, caseTemplate)
       .transform
 }

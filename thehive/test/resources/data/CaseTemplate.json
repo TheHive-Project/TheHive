@@ -1,0 +1,13 @@
+[
+  {
+    "id": "spam",
+    "name": "spam",
+    "titlePrefix": "[SPAM] ",
+    "description": "description of SPAM case",
+    "severity": 1,
+    "flag": false,
+    "tlp": 1,
+    "pap": 1,
+    "tags": ["spam", "src:mail"]
+  }
+]

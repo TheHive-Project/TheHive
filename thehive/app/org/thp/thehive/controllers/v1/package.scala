@@ -11,7 +11,7 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services.RichGremlinScala
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseSteps
+import org.thp.thehive.services.{CaseSteps, CaseTemplateSteps}
 
 package object v1 {
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
@@ -34,19 +34,36 @@ package object v1 {
       .withFieldConst(_.number, 0)
       .transform
 
+  def fromInputCase(inputCase: InputCase, caseTemplate: Option[RichCaseTemplate]): Case =
+    caseTemplate.fold(fromInputCase(inputCase)) { ct ⇒
+      inputCase
+        .into[Case]
+        .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)
+        .withFieldComputed(_.severity, _.severity.orElse(ct.severity).getOrElse(2))
+        .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
+        .withFieldComputed(_.flag, _.flag.getOrElse(ct.flag))
+        .withFieldComputed(_.tlp, _.tlp.orElse(ct.tlp).getOrElse(2))
+        .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))
+        .withFieldComputed(_.tags, _.tags ++ ct.tags)
+        .withFieldConst(_.summary, ct.summary)
+        .withFieldConst(_.status, CaseStatus.open)
+        .withFieldConst(_.number, 0)
+        .transform
+    }
+
   def outputCaseProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
     // format: off
     PublicPropertyListBuilder[CaseSteps, Vertex]
       .property[String]("title").simple
       .property[String]("description").simple
-      .property[String]("severity").simple
+      .property[Int]("severity").simple
       .property[Date]("startDate").simple
       .property[Option[Date]]("endDate") .simple
       .property[Set[String]]("tags").simple
       .property[Boolean]("flag").simple
       .property[Int]("tlp").simple
       .property[Int]("pap").simple
-      .property[String]("status").simple
+      .property[String]("status").simple // FIXME status attribute doesn't exist any more
       .property[Option[String]]("summary").simple
       .property[String]("user").simple
       .property[String]("customFieldName").derived(_ ⇒ _.outTo[CaseCustomField], "name")
@@ -58,6 +75,44 @@ package object v1 {
          .derived(_ ⇒ _.outToE[CaseCustomField], "integerValue")
          .derived(_ ⇒ _.outToE[CaseCustomField], "floatValue")
          .derived(_ ⇒ _.outToE[CaseCustomField], "dateValue"))
+      .build
+  // format: on
+
+  implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
+    inputCaseTemplate
+      .into[CaseTemplate]
+      .withFieldComputed(_.flag, _.flag.getOrElse(false))
+      .transform
+
+  implicit def toOutputCaseTemplate(richCaseTemplate: RichCaseTemplate): Output[OutputCaseTemplate] =
+    new Output[OutputCaseTemplate](
+      richCaseTemplate
+        .into[OutputCaseTemplate]
+        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .transform)
+
+  def outputCaseTemplateProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+    // format: off
+    PublicPropertyListBuilder[CaseTemplateSteps, Vertex]
+      .property[String]("name").simple
+      .property[Option[String]]("titlePrefix").simple
+      .property[Option[String]]("description").simple
+      .property[Option[Int]]("severity").simple
+      .property[Set[String]]("tags").simple
+      .property[Boolean]("flag").simple
+      .property[Option[Int]]("tlp").simple
+      .property[Option[Int]]("pap").simple
+      .property[Option[String]]("summary").simple
+      .property[String]("user").simple
+      .property[String]("customFieldName").derived(_ ⇒ _.outTo[CaseCustomField], "name")
+      .property[String]("customFieldDescription").derived(_ ⇒ _.outTo[CaseCustomField], "description")
+      .property[String]("customFieldType").derived(_ ⇒ _.outTo[CaseCustomField], "type")
+      .property[String]("customFieldValue").seq(
+      _.derived(_ ⇒ _.outToE[CaseCustomField], "stringValue")
+        .derived(_ ⇒ _.outToE[CaseCustomField], "booleanValue")
+        .derived(_ ⇒ _.outToE[CaseCustomField], "integerValue")
+        .derived(_ ⇒ _.outToE[CaseCustomField], "floatValue")
+        .derived(_ ⇒ _.outToE[CaseCustomField], "dateValue"))
       .build
   // format: on
 
@@ -101,7 +156,8 @@ package object v1 {
     new Output[OutputCustomFieldValue](
       customFieldValue
         .into[OutputCustomFieldValue]
-        .withFieldComputed(_.value, _.value.toString)
+        .withFieldComputed(_.value, _.value.map(_.toString))
+        .withFieldComputed(_.tpe, _.typeName)
         .transform
     )
 
@@ -119,7 +175,15 @@ package object v1 {
       richAlert
         .into[OutputAlert]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
-        .withFieldComputed(_.status, _.status.toString)
+        .withFieldComputed(
+          _.status,
+          alert ⇒
+            (alert.caseId, alert.read) match {
+              case (None, true)  ⇒ "Ignored"
+              case (None, false) ⇒ "New"
+              case (_, true)     ⇒ "Imported"
+              case (_, false)    ⇒ "Updated"
+          })
         .transform)
 
   implicit def fromInputAlert(inputAlert: InputAlert): Alert =
@@ -129,7 +193,7 @@ package object v1 {
       .withFieldComputed(_.flag, _.flag.getOrElse(false))
       .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
       .withFieldComputed(_.pap, _.pap.getOrElse(2))
-      .withFieldConst(_.status, AlertStatus.`new`)
+      .withFieldConst(_.read, false)
       .withFieldConst(_.lastSyncDate, new Date)
       .withFieldConst(_.follow, true)
       .transform

@@ -37,11 +37,26 @@ object DatabaseBuilder {
       val idMap = createVertex(schema.caseSrv, FieldsParser[Case]) ++
         createVertex(schema.userSrv, FieldsParser[User]) ++
         createVertex(schema.customFieldSrv, FieldsParser[CustomField]) ++
-        createVertex(schema.organisationSrv, FieldsParser[Organisation])
+        createVertex(schema.organisationSrv, FieldsParser[Organisation]) ++
+        createVertex(schema.caseTemplateSrv, FieldsParser[CaseTemplate])
       createEdge(schema.caseSrv.caseUserSrv, schema.caseSrv, schema.userSrv, FieldsParser[CaseUser], idMap)
       createEdge(schema.caseSrv.caseImpactStatusSrv, schema.caseSrv, schema.impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
       createEdge(schema.caseSrv.caseCustomFieldSrv, schema.caseSrv, schema.customFieldSrv, FieldsParser[CaseCustomField], idMap)
       createEdge(schema.caseSrv.caseOrganisationSrv, schema.caseSrv, schema.organisationSrv, FieldsParser[CaseOrganisation], idMap)
+      createEdge(schema.caseSrv.caseCaseTemplateSrv, schema.caseSrv, schema.caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
+      createEdge(schema.caseSrv.caseResolutionStatus, schema.caseSrv, schema.resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
+      createEdge(
+        schema.caseTemplateSrv.caseTemplateCustomFieldSrv,
+        schema.caseTemplateSrv,
+        schema.customFieldSrv,
+        FieldsParser[CaseTemplateCustomField],
+        idMap)
+      createEdge(
+        schema.caseTemplateSrv.caseTemplateOrganisationSrv,
+        schema.caseTemplateSrv,
+        schema.organisationSrv,
+        FieldsParser[CaseTemplateOrganisation],
+        idMap)
       ()
     }
   }
