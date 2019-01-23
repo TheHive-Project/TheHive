@@ -5,7 +5,7 @@ import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.EntitySteps
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, Schema, VertexModel}
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models.{Audit, Audited, RichAudit}
 
@@ -24,15 +24,16 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
 
   def list: GremlinScala[RichAudit] =
     raw
-      .order(By(Key[Date]("_createdAt")))
-      .dedup(By(Key[String]("requestId")))
-      .map(v ⇒ richAudit(v.value[String]("requestId")))
+      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
+      .value[String]("requestId")
+      .dedup()
+      .map(requestId ⇒ richAudit(requestId))
 
   def richAudit(requestId: String): RichAudit = {
     val auditList = graph
       .V()
       .has("Audit", Key[String]("requestId"), requestId)
-      .order(By(Key[Date]("_createdAt")))
+      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
       .project[Any]("audit", "object")
       .by()
       .by(__[Vertex].outTo[Audited].traversal)

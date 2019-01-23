@@ -23,20 +23,29 @@ class FunctionalTest extends PlaySpecification {
 
   sequential
 
-  def auditWithStableValues(audit: OutputAudit): OutputAudit = audit.copy(
-    _id = "_entityId_",
-    _createdAt = new Date(0),
-    _updatedAt = None,
-    requestId = "_requestId_",
-    obj = audit.obj.copy(
-      _id = "",
-      _createdAt = new Date(0),
-      _updatedAt = None,
-      _updatedBy = None
-    )
-  )
+  case class StableAudit(
+      _createdBy: String,
+      _updatedBy: Option[String] = None,
+      operation: String,
+      attributeName: Option[String] = None,
+      oldValue: Option[String] = None,
+      newValue: Option[String] = None,
+      objType: String,
+      summary: Map[String, Map[String, Int]])
+  object StableAudit {
+    def apply(audit: OutputAudit): StableAudit =
+      StableAudit(
+        audit._createdBy,
+        audit._updatedBy,
+        audit.operation,
+        audit.attributeName,
+        audit.oldValue,
+        audit.newValue,
+        audit.obj._type,
+        audit.summary)
+  }
 
-  def creationAudit(createdBy: String, objType: String, summary: Map[String, Map[String, Int]]): OutputAudit =
+  private def creationAudit(createdBy: String, objType: String, summary: Map[String, Map[String, Int]]): OutputAudit =
     OutputAudit(
       "_entityId_",
       createdBy,
@@ -52,7 +61,7 @@ class FunctionalTest extends PlaySpecification {
       summary
     )
 
-  def updateAudit(
+  private def updateAudit(
       createdBy: String,
       updatedBy: Option[String] = None,
       operation: String,
@@ -77,25 +86,29 @@ class FunctionalTest extends PlaySpecification {
       summary
     )
 
-  val janusGraphConfig = Configuration(ConfigFactory.parseString("""
+  val janusGraphConfig =
+    Configuration(ConfigFactory.parseString("""
       |db.provider: janusgraph
       |storage.backend: inmemory
       |auth.provider: [local]
-    """.stripMargin)) /*
-  storage.backend: berkeleyje
-  storage.directory: target/thehive-test-2.db
-   */
+    """.stripMargin))
+//  Configuration(ConfigFactory.parseString("""
+//      |db.provider: janusgraph
+//      |storage.backend: berkeleyje
+//      |storage.directory: /tmp/thehive-test.db
+//      |auth.provider: [local]
+//    """.stripMargin))
 
   val orientdbConfig = Configuration(ConfigFactory.parseString("""
-                                                                 |db.provider: orientdb
-                                                                 |auth.provider: [local]
-                                                               """.stripMargin))
+     |db.provider: orientdb
+     |auth.provider: [local]
+   """.stripMargin))
 
   val neo4jConfig = Configuration(ConfigFactory.parseString("""
-                                                              |db.provider: neo4j
-                                                              |auth.provider: [local]
-                                                            """.stripMargin))
-  Fragments.foreach(Seq( /*janusGraphConfig, orientdbConfig,*/ neo4jConfig)) { dbConfig ⇒
+      |db.provider: neo4j
+      |auth.provider: [local]
+    """.stripMargin))
+  Fragments.foreach(Seq(janusGraphConfig, orientdbConfig /*, neo4jConfig*/ )) { dbConfig ⇒
     val serverPromise: Promise[TestServer] = Promise[TestServer]
     lazy val server: TestServer            = serverPromise.future.value.get.get
 
@@ -202,7 +215,7 @@ class FunctionalTest extends PlaySpecification {
               description = "This case contains status, summary and custom fields",
               status = Some("resolved"),
               summary = Some("no comment"),
-              customFieldValue = Seq(InputCustomFieldValue("businessUnit", "HR"))
+              customFieldValue = Seq(InputCustomFieldValue("businessUnit", Some("HR")))
             ))
           case2 = await(asyncResp)
           val expected = OutputCase(
@@ -220,25 +233,32 @@ class FunctionalTest extends PlaySpecification {
             status = "open",
             user = "admin",
             summary = Some("no comment"),
-            customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", "HR"))
+            customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", Some("HR")))
           )
           case2 must_=== expected
         }
 
         "list audit" in {
+          // format: off
           val asyncResp = client.audit.list
-          await(asyncResp).map(auditWithStableValues) must contain(
+          await(asyncResp).map(StableAudit.apply) must contain(
             exactly(
-              creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
-              creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
-              creationAudit("system", "ImpactStatus", Map("ImpactStatus" → Map("Creation" → 1))),
-              creationAudit("system", "Organisation", Map("Organisation" → Map("Creation" → 1))),
-              creationAudit("system", "User", Map("User"                 → Map("Update"   → 1, "Creation" → 1))),
-              creationAudit("admin", "User", Map("User"                  → Map("Update"   → 1, "Creation" → 1))),
-              creationAudit("admin", "Case", Map("Case"                  → Map("Creation" → 1))),
-              creationAudit("admin", "CustomField", Map("CustomField"    → Map("Creation" → 1))),
-              creationAudit("admin", "Case", Map("Case"                  → Map("Creation" → 1)))
+              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="Organisation",     summary=Map("Organisation"     → Map("Creation" → 1))),
+              StableAudit(_createdBy="system", operation="Creation", objType="User",             summary=Map("User"             → Map("Update"   → 1, "Creation" → 1))),
+              StableAudit(_createdBy="admin",  operation="Creation", objType="User",             summary=Map("User"             → Map("Update"   → 1, "Creation" → 1))),
+              StableAudit(_createdBy="admin",  operation="Creation", objType="Case",             summary=Map("Case"             → Map("Creation" → 1))),
+              StableAudit(_createdBy="admin",  operation="Creation", objType="CustomField",      summary=Map("CustomField"      → Map("Creation" → 1))),
+              StableAudit(_createdBy="admin",  operation="Creation", objType="Case",             summary=Map("Case"             → Map("Creation" → 1)))
             ))
+          // format: on
         }
 
         "list cases with custom fields" in {
@@ -358,6 +378,9 @@ class FunctionalTest extends PlaySpecification {
             _id = alert._id,
             _createdBy = "testAdmin",
             _createdAt = alert._createdAt,
+            `type` = "test",
+            source = "source1",
+            sourceRef = "sourceRef1",
             title = "new alert",
             description = "test alert",
             severity = 2,
@@ -366,7 +389,7 @@ class FunctionalTest extends PlaySpecification {
             flag = false,
             tlp = 2,
             pap = 2,
-            status = "new",
+            status = "New",
             follow = true,
             user = "testAdmin",
             customFields = Set.empty
@@ -376,7 +399,7 @@ class FunctionalTest extends PlaySpecification {
 
       "stop the application and drop database" in {
         server.stop()
-        app.injector.instanceOf[Database].drop()
+        //app.injector.instanceOf[Database].drop()
         1 must_=== 1
       }
     }
