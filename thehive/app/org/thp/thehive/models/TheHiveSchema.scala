@@ -1,8 +1,8 @@
 package org.thp.thehive.models
 
-import javax.inject.{ Inject, Singleton }
-import org.thp.scalligraph.models.Model.{ Edge, Vertex }
-import org.thp.scalligraph.models.{ InitialValue, Model, Schema }
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.models.Model.{Edge, Vertex}
+import org.thp.scalligraph.models.{InitialValue, Model, Schema}
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.services._
 
