@@ -56,11 +56,17 @@ angular.module('theHiveControllers').controller('RootCtrl',
             scope: $scope,
             rootId: 'any',
             query: {
-                '_and': [{
-                    'status': 'InProgress'
-                }, {
-                    'owner': $scope.currentUser.id
-                }]
+                '_and': [
+                    {
+                        '_in': {
+                            '_field': 'status',
+                            '_values': ['Waiting', 'InProgress']
+                        }
+                    },
+                    {
+                        'owner': $scope.currentUser.id
+                    }
+                ]
             },
             result: {},
             objectType: 'case_task',
