@@ -221,7 +221,7 @@
                       self.responders = responders;
                   })
                   .catch(function(err) {
-                      NotificationSrv.error('AlertList', response.data, response.status);
+                      NotificationSrv.error('AlertList', err.data, err.status);
                   });
             };
 
@@ -390,6 +390,21 @@
             };
 
             this.sortBy = function(sort) {
+                self.list.sort = sort;
+                self.list.update();
+                self.filtering.setSort(sort);
+            };
+
+            this.sortByField = function(field) {
+                var currentSort = Array.isArray(this.filtering.context.sort) ? this.filtering.context.sort[0] : this.filtering.context.sort;
+                var sort = null;
+
+                if(currentSort.substr(1) !== field) {
+                    sort = ['+' + field];
+                } else {
+                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                }
+
                 self.list.sort = sort;
                 self.list.update();
                 self.filtering.setSort(sort);
