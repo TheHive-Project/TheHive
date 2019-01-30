@@ -230,7 +230,13 @@ class AlertSrv(
   }
 
   def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext): Future[Case] = {
-    Future.traverse(alerts)(importArtifacts(_, caze)).map(_ ⇒ caze)
+    Future.traverse(alerts) { alert ⇒
+      for {
+        _ ← importArtifacts(alert, caze)
+        _ ← setCase(alert, caze)
+      } yield ()
+    }
+      .map(_ ⇒ caze)
   }
 
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
