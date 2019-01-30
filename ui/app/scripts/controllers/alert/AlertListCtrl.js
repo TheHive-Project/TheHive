@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity) {
+        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity) {
             var self = this;
 
             self.list = [];
@@ -270,8 +270,11 @@
 
                 temp = _.uniq(_.pluck(self.selection, 'status'));
 
-                self.menu.markAsRead = temp.indexOf('Ignores') === -1 && temp.indexOf('Imported') === -1;
+                self.menu.markAsRead = temp.indexOf('Ignored') === -1 && temp.indexOf('Imported') === -1;
                 self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Updated') === -1;
+
+                self.menu.createNewCase = temp.indexOf('Imported') === -1;
+                self.menu.mergeInCase = temp.indexOf('Imported') === -1;
 
             };
 
@@ -302,6 +305,48 @@
 
                 self.updateMenu();
 
+            };
+
+            self.createNewCase = function() {
+
+            };
+
+
+
+            self.mergeInCase = function() {
+                var caseModal = $uibModal.open({
+                    templateUrl: 'views/partials/case/case.merge.html',
+                    controller: 'CaseMergeModalCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        source: function() {
+                            return self.event;
+                        },
+                        title: function() {
+                            return 'Merge selected Alert(s)';
+                        },
+                        prompt: function() {
+                            return 'the ' + self.selection.length + ' selected Alert(s)';
+                        }
+                    }
+                });
+
+                caseModal.result.then(function(selectedCase) {
+                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, 'id'), selectedCase.id);
+                })
+                .then(function(response) {
+                    $rootScope.$broadcast('alert:event-imported');
+
+                    $state.go('app.case.details', {
+                        caseId: response.data.id
+                    });
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AlertEventCtrl', err.data, err.status);
+                    }
+                });
             };
 
             this.filter = function () {

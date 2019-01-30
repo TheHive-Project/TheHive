@@ -7,9 +7,10 @@
     function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserInfoSrv, NotificationSrv, source, title, prompt) {
         var me = this;
 
+        this.source = source;
         this.caze = source;
         this.title = title;
-        this.prompt = prompt;        
+        this.prompt = prompt;
         this.search = {
             type: 'title',
             placeholder: 'Search by case title',

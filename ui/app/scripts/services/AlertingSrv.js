@@ -38,6 +38,13 @@
                     return $http.post(baseUrl + '/' + alertId + '/merge/' + caseId);
                 },
 
+                bulkMergeInto: function(alertIds, caseId) {
+                    return $http.post(baseUrl + '/merge/_bulk', {
+                        caseId: caseId,
+                        alertIds: alertIds
+                    });
+                },
+
                 canMarkAsRead: function(event) {
                     return event.status === 'New' || event.status === 'Updated';
                 },
