@@ -229,6 +229,10 @@ class AlertSrv(
     }
   }
 
+  def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    Future.traverse(alerts)(importArtifacts(_, caze)).map(_ ⇒ caze)
+  }
+
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     val artifactsFields = alert.artifacts()
       .map { artifact ⇒
