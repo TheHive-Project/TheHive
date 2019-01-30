@@ -78,6 +78,12 @@
                         defaultValue: '',
                         label: 'Title'
                     },
+                    sourceRef: {
+                        field: 'sourceRef',
+                        type: 'string',
+                        defaultValue: '',
+                        label: 'Reference'
+                    },
                     date: {
                         field: 'date',
                         type: 'date',
@@ -414,6 +420,10 @@
 
             this.getStatuses = function(query) {
                 return AlertingSrv.statuses(query);
+            };
+
+            this.getTypes = function(query) {
+                return AlertingSrv.types(query);
             };
 
             this.getSources = function(query) {
