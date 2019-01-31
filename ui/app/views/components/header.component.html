@@ -15,7 +15,11 @@
         <div class="collapse navbar-collapse" id="th-navbar-collapse">
             <ul class="nav navbar-nav" ng-show="currentUser.id">
                 <li ui-sref-active="active">
-                    <a href ng-click="openTemplateSelector()">
+                    <a href ng-click="createNewCase()" ng-if="!templates || templates.length === 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                    <a href ng-click="openTemplateSelector()" ng-if="templates && templates.length > 0">
                         <i class="fa fa-plus"></i>
                         <span class="hpad5">New Case</span>
                     </a>

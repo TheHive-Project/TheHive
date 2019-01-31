@@ -1,34 +1,46 @@
 <div class="modal-header bg-primary">
-    <h3 class="modal-title">Create new case</h3>
+    <h3 class="modal-title">Create new Case</h3>
 </div>
 <div class="modal-body">
-    <div class="list-group">
-        <a href class="list-group-item" ng-click="dialog.next()">
-            <h4>Empty case</h4>
-            <p class="list-group-item-text text-muted">Create a case from scratch</p>
-        </a>
+    <div class="mv-xs">
+      <button class="btn btn-block btn-primary btn-lg" ng-click="dialog.next()">
+          Empty Case
+      </button>
     </div>
 
-    <hr>
+    <p class="mv-m text-separator text-muted">OR</p>
 
-    <div class="form-group">
-        <input type="text" ng-model="dialog.state.filter" class="form-control input-lg" placeholder="Filter templates">
-    </div>
-    <div class="empty-message" ng-if="dialog.filteredTemplate.length === 0">
-        No templates found
-    </div>
-    <div class="list-group">
-        <a href class="list-group-item"
-            ng-repeat="template in dialog.filteredTemplate = (dialog.templates | filter:dialog.state.filter)"
-            ng-class="{'active': dialog.state.selected === template.id}"
-            ng-click="dialog.next(template)"
-            >
-            <h4 class="list-group-item-heading">{{template.name}}</h4>
-            <p class="list-group-item-text text-muted">{{template.description | ellipsis:200}}</p>
-        </a>
+    <div class="box box-primary">
+      <div class="box-header">
+        <h3 class="box-title">Select a template</h3>
+        <div class="box-tools pull-right">
+            <div class="has-feedback">
+                <input type="text" ng-model="dialog.state.filter" class="form-control input-sm" placeholder="Filter templates" autofocus>
+                <span class="glyphicon glyphicon-search form-control-feedback"></span>
+            </div>
+        </div>
+      </div>
+      <div class="box-body template-selector">
+          <div class="empty-message" ng-if="dialog.filteredTemplate.length === 0">
+              No templates found
+          </div>
+          <table class="table table-hover table-striped">
+              <tbody>
+                  <tr ng-repeat="template in dialog.filteredTemplate = (dialog.templates | filter:dialog.state.filter)"
+                  class="clickable"
+                  ng-class="{'active': dialog.state.selected === template.id}"
+                  ng-click="dialog.next(template)">
+                      <td>
+                          <strong>{{template.name}}</strong><br>
+                          <p class="list-group-item-text text-muted">{{template.description | ellipsis:200}}</p>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+
+      </div>
     </div>
 </div>
 <div class="modal-footer text-left">
     <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
-    <!-- <button class="btn btn-primary pull-right" ng-disabled="!dialog.state.selected" ng-click="dialog.next">Next</button> -->
 </div>

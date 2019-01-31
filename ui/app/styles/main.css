@@ -667,3 +667,14 @@ table tr td.task-actions span.action-button {
   margin-left:40px;
   margin-right:40px;
 }
+
+.text-separator {
+  font-size: 18px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.template-selector {
+  max-height: 300px;
+  overflow-y: auto;
+}
