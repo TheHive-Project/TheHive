@@ -154,6 +154,7 @@ class AlertSrv(
           caze ← caseSrv.get(caseId)
           a ← updatedAlert
           _ ← importArtifacts(a, caze)
+          _ ← caseSrv.update(caze, Fields.empty.set("status", CaseStatus.Open.toString))
         } yield a
       case _ ⇒ updatedAlert
     }
