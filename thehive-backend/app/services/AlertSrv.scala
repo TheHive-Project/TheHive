@@ -134,14 +134,30 @@ class AlertSrv(
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv[AlertModel, Alert](alertModel, id, fields, modifyConfig)
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
+    for {
+      alert ← get(id)
+      updatedAlert ← update(alert, fields, modifyConfig)
+    } yield updatedAlert
+  }
 
   def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     update(alert, fields, ModifyConfig.default)
 
-  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv(alert, fields, modifyConfig)
+  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
+    val follow = fields.getBoolean("follow").getOrElse(alert.follow())
+    val newStatus = if (follow) AlertStatus.Updated else alert.status()
+    val updatedAlert = updateSrv(alert, fields.set("status", Json.toJson(newStatus)), modifyConfig)
+    alert.caze() match {
+      case Some(caseId) if follow ⇒
+        for {
+          caze ← caseSrv.get(caseId)
+          a ← updatedAlert
+          _ ← importArtifacts(a, caze)
+        } yield a
+      case _ ⇒ updatedAlert
+    }
+  }
 
   def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
     bulkUpdate(ids, fields, ModifyConfig.default)
