@@ -308,10 +308,66 @@
             };
 
             self.createNewCase = function() {
+                var alertIds = _.pluck(self.selection, 'id');
+
+                CaseTemplateSrv.list()
+                  .then(function(templates) {
+
+                      // Open template selection dialog
+                      var modal = $uibModal.open({
+                          templateUrl: 'views/partials/case/case.templates.selector.html',
+                          controller: 'CaseTemplatesDialogCtrl',
+                          controllerAs: 'dialog',
+                          size: 'lg',
+                          resolve: {
+                              templates: function(){
+                                  return templates;
+                              }
+                          }
+                      });
+
+                      return modal.result;
+                  })
+                  .then(function(template) {
+
+                      // Open case creation dialog
+                      var modal = $uibModal.open({
+                          templateUrl: 'views/partials/case/case.creation.html',
+                          controller: 'CaseCreationCtrl',
+                          size: 'lg',
+                          resolve: {
+                              template: template
+                          }
+                      });
+
+                      return modal.result;
+                  })
+                  .then(function(createdCase) {
+                      // Bulk merge the selected alerts into the created case
+                      NotificationSrv.log('New case has been created', 'success');
+
+                      return AlertingSrv.bulkMergeInto(alertIds, createdCase.id);
+                  })
+                  .then(function(response) {
+                      if(alertIds.length === 1) {
+                          NotificationSrv.log(alertIds.length + ' Alert has been merged into the newly created case.', 'success');
+                      } else {
+                          NotificationSrv.log(alertIds.length + ' Alert(s) have been merged into the newly created case.', 'success');
+                      }
+
+                      $rootScope.$broadcast('alert:event-imported');
+
+                      $state.go('app.case.details', {
+                          caseId: response.data.id
+                      });
+                  })
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('AlertEventCtrl', err.data, err.status);
+                      }
+                  });
 
             };
-
-
 
             self.mergeInCase = function() {
                 var caseModal = $uibModal.open({
