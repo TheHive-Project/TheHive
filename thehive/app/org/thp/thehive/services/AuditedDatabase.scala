@@ -1,5 +1,8 @@
 package org.thp.thehive.services
 import java.io.InputStream
+import java.util.{Date, UUID}
+
+import scala.reflect.runtime.{universe ⇒ ru}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -7,19 +10,25 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models.Model.Base
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services.{EdgeSrv, ElementSrv, VertexSrv}
+import org.thp.scalligraph.query.PublicProperty
+import org.thp.scalligraph.services.{EdgeSrv, ElementSrv}
 import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
-import scala.reflect.runtime.{universe ⇒ ru}
-
-import org.thp.scalligraph.query.PublicProperty
 
 @Singleton
-class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) extends Database {
+class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], auditSrv: AuditSrv) extends Database {
   implicit lazy val db: Database = originalDatabase.get().get
 
+  override val idMapping: SingleMapping[UUID, String]            = db.idMapping
+  override val createdAtMapping: SingleMapping[Date, Date]       = db.createdAtMapping
+  override val createdByMapping: SingleMapping[String, String]   = db.createdByMapping
+  override val updatedAtMapping: OptionMapping[Date, Date]       = db.updatedAtMapping
+  override val updatedByMapping: OptionMapping[String, String]   = db.updatedByMapping
+  override val binaryMapping: SingleMapping[Array[Byte], String] = db.binaryMapping
+
+  lazy val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
   def create(audit: Audit, entity: Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
-    val createdAudit = vertexSrv.create(audit)
+    val createdAudit = auditSrv.create(audit)
     edgeSrv.create(Audited(), createdAudit, entity)
     ()
   }
@@ -90,11 +99,6 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) exte
     }
   }
 
-  lazy val vertexSrv: VertexSrv[Audit, VertexSteps[Audit]] = new VertexSrv[Audit, VertexSteps[Audit]] {
-    override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): VertexSteps[Audit] = new VertexSteps[Audit](raw)
-  }
-  lazy val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
-
   override def noTransaction[A](body: Graph ⇒ A): A                                                            = db.noTransaction(body)
   override def transaction[A](body: Graph ⇒ A): A                                                              = db.transaction(body)
   override def version: Int                                                                                    = db.version
@@ -102,12 +106,10 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) exte
   override def getModel[E <: Product: ru.TypeTag]: Base[E]                                                     = db.getModel[E]
   override def getVertexModel[E <: Product: ru.TypeTag]: Model.Vertex[E]                                       = db.getVertexModel[E]
   override def getEdgeModel[E <: Product: ru.TypeTag, FROM <: Product, TO <: Product]: Model.Edge[E, FROM, TO] = db.getEdgeModel[E, FROM, TO]
-  override def createSchemaFrom(schemaObject: Any)(implicit authContext: AuthContext): Unit                    = db.createSchemaFrom(schemaObject)(authContext)
+  override def createSchemaFrom(schemaObject: Schema)(implicit authContext: AuthContext): Unit                 = db.createSchemaFrom(schemaObject)(authContext)
   override def createSchema(model: Model, models: Model*): Unit                                                = db.createSchema(model, models: _*)
   override def createSchema(models: Seq[Model]): Unit                                                          = db.createSchema(models)
-  override def createSchema(models: Seq[Model], vertexSrvs: Seq[VertexSrv[_, _]], edgeSrvs: Seq[EdgeSrv[_, _, _]])(
-      implicit authContext: AuthContext): Unit = db.createSchema(models, vertexSrvs, edgeSrvs)(authContext)
-  override def drop(): Unit                    = db.drop()
+  override def drop(): Unit                                                                                    = db.drop()
 
   override def getSingleProperty[D, G](element: Element, key: String, mapping: SingleMapping[D, G]): D = db.getSingleProperty(element, key, mapping)
   override def getOptionProperty[D, G](element: Element, key: String, mapping: OptionMapping[D, G]): Option[D] =
@@ -126,5 +128,6 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database]) exte
   override def setProperty[D](element: Element, key: String, value: D, mapping: Mapping[D, _, _]): Unit = db.setProperty(element, key, value, mapping)
   override def loadBinary(initialVertex: Vertex)(implicit graph: Graph): InputStream                    = db.loadBinary(initialVertex)(graph)
   override def loadBinary(id: String)(implicit graph: Graph): InputStream                               = db.loadBinary(id)(graph)
-  override def saveBinary(is: InputStream)(implicit graph: Graph): Vertex                               = db.saveBinary(is)(graph)
+  override def saveBinary(id: String, is: InputStream)(implicit graph: Graph): Vertex                   = db.saveBinary(id, is)(graph)
+  override val extraModels: Seq[Model]                                                                  = db.extraModels
 }
