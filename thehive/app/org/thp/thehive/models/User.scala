@@ -2,10 +2,9 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 object UserStatus extends Enumeration {
   val ok, locked = Value
@@ -34,30 +33,17 @@ case class User(
 //    avatar: Array[Byte],
 //    preference: JsObject)
 
-case class RichUser(
-    _id: String,
-    _createdBy: String,
-    _updatedBy: Option[String],
-    _createdAt: Date,
-    _updatedAt: Option[Date],
-    login: String,
-    name: String,
-    apikey: Option[String],
-    @WithMapping(Permissions.mapping.sequence) permissions: Seq[Permission],
-    status: UserStatus.Value,
-    password: Option[String],
-    organisation: String)
-
-object RichUser {
-  def apply(user: User with Entity, organisation: String): RichUser =
-    user
-      .asInstanceOf[User]
-      .into[RichUser]
-      .withFieldConst(_._id, user._id)
-      .withFieldConst(_._createdAt, user._createdAt)
-      .withFieldConst(_._createdBy, user._createdBy)
-      .withFieldConst(_._updatedAt, user._updatedAt)
-      .withFieldConst(_._updatedBy, user._updatedBy)
-      .withFieldConst(_.organisation, organisation)
-      .transform
+case class RichUser(user: User with Entity, organisation: String) {
+  val _id: String                = user._id
+  val _createdBy: String         = user._createdBy
+  val _updatedBy: Option[String] = user._updatedBy
+  val _createdAt: Date           = user._createdAt
+  val _updatedAt: Option[Date]   = user._updatedAt
+  val login: String              = user.login
+  val name: String               = user.name
+  val apikey: Option[String]     = user.apikey
+  /*@WithMapping(Permissions.mapping.sequence) */
+  val permissions: Seq[Permission] = user.permissions
+  val status: UserStatus.Value     = user.status
+  val password: Option[String]     = user.password
 }

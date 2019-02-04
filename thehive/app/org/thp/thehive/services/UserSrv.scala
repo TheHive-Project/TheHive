@@ -7,7 +7,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, InternalError}
+import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
 import org.thp.thehive.models._
 
 @Singleton
@@ -25,6 +25,9 @@ class UserSrv @Inject()(implicit val db: Database) extends VertexSrv[User, UserS
     RichUser(createdUser, organisation.name)
   }
 
+  def isAvailableFor(userId: String, organisation: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
+    get(userId).availableFor(Some(authContext)).isDefined
+
   def getOrganisation(user: User with Entity)(implicit graph: Graph): Organisation with Entity =
     get(user).organisation.headOption.getOrElse(throw InternalError(s"The user $user (${user._id}) has no organisation."))
 }
@@ -36,6 +39,11 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def get(id: String): UserSteps = new UserSteps(raw.coalesce(_.has(Key("login") of id), _.has(Key("_id") of id)))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[UserOrganisation])
+
+  def availableFor(authContext: Option[AuthContext]): UserSteps =
+    availableFor(authContext.getOrElse(throw AuthorizationError("access denied")).organisation)
+
+  def availableFor(organisation: String): UserSteps = newInstance(raw.filter(_.outTo[UserOrganisation].value("name").is(organisation)))
 
   def richUser: GremlinScala[RichUser] =
     raw

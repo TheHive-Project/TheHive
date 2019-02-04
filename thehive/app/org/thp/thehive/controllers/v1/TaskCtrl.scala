@@ -30,7 +30,9 @@ class TaskCtrl @Inject()(apiMethod: ApiMethod, db: Database, taskSrv: TaskSrv, c
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
           val task = taskSrv
-            .getOrFail(taskId)
+            .get(taskId)
+            .availableFor(request.organisation)
+            .getOrFail()
           Results.Ok(task.toJson)
         }
       }
@@ -39,7 +41,10 @@ class TaskCtrl @Inject()(apiMethod: ApiMethod, db: Database, taskSrv: TaskSrv, c
     apiMethod("list task")
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val tasks = taskSrv.initSteps.toList.map(_.toJson)
+          val tasks = taskSrv.initSteps
+            .availableFor(request.organisation)
+            .toList()
+            .map(_.toJson)
           Results.Ok(Json.toJson(tasks))
         }
       }
@@ -47,10 +52,12 @@ class TaskCtrl @Inject()(apiMethod: ApiMethod, db: Database, taskSrv: TaskSrv, c
   def update(taskId: String): Action[AnyContent] =
     apiMethod("update task")
       .extract('task, UpdateFieldsParser[InputTask])
-      .requires(Permissions.admin) { implicit request ⇒
+      .requires(Permissions.write) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          taskSrv.update(taskId, request.body('task))
-          Results.NoContent
+          if (taskSrv.isAvailableFor(taskId)) {
+            taskSrv.update(taskId, outputTaskProperties(db), request.body('task))
+            Results.NoContent
+          } else Results.Unauthorized(s"Task $taskId doesn't exist or permission is insufficient")
         }
       }
 }

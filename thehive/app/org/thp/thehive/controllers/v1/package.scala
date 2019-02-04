@@ -3,6 +3,7 @@ package org.thp.thehive.controllers
 import java.util.Date
 
 import scala.language.implicitConversions
+
 import gremlin.scala.Vertex
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
@@ -11,9 +12,27 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services.RichGremlinScala
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSteps, CaseTemplateSteps}
+import org.thp.thehive.services.{CaseSteps, CaseTemplateSteps, TaskSteps}
 
 package object v1 {
+
+  implicit def fromInputUser(inputUser: InputUser): User =
+    inputUser
+      .into[User]
+      .withFieldComputed(_.id, _.login)
+      .withFieldConst(_.apikey, None)
+      .withFieldConst(_.password, None)
+      .withFieldConst(_.status, UserStatus.ok)
+      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unkown permissions are ignored
+      .transform
+
+  implicit def toOutputUser(user: RichUser): Output[OutputUser] =
+    new Output[OutputUser](
+      user
+        .into[OutputUser]
+        .withFieldComputed(_.permissions, _.permissions.map(_.name).toSet)
+        .transform)
+
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
     new Output[OutputCase](
       richCase
@@ -63,7 +82,7 @@ package object v1 {
       .property[Boolean]("flag").simple
       .property[Int]("tlp").simple
       .property[Int]("pap").simple
-      .property[String]("status").simple // FIXME status attribute doesn't exist any more
+      .property[String]("status").simple
       .property[Option[String]]("summary").simple
       .property[String]("user").simple
       .property[String]("customFieldName").derived(_ ⇒ _.outTo[CaseCustomField], "name")
@@ -132,6 +151,20 @@ package object v1 {
         .transform
     )
 
+  def outputTaskProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+    // format: off
+    PublicPropertyListBuilder[TaskSteps, Vertex]
+      .property[String]("title").simple
+      .property[Option[String]]("description").simple
+      .property[String]("status").simple
+      .property[Boolean]("flag").simple
+      .property[Option[Date]]("startDate").simple
+      .property[Option[Date]]("endDate").simple
+      .property[Int]("order").simple
+      .property[Option[Date]]("dueDate").simple
+    .build
+  // format: on
+
   implicit def toOutputAudit(audit: RichAudit): Output[OutputAudit] =
     new Output[OutputAudit](
       audit
@@ -150,7 +183,8 @@ package object v1 {
         .transform
     )
 
-  def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Any) = inputCustomFieldValue.name → inputCustomFieldValue.value
+  def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Option[Any]) =
+    inputCustomFieldValue.name → inputCustomFieldValue.value
 
   implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
     new Output[OutputCustomFieldValue](

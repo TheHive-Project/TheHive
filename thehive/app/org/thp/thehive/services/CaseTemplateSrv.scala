@@ -18,20 +18,25 @@ class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv:
 
   val caseTemplateCustomFieldSrv  = new EdgeSrv[CaseTemplateCustomField, CaseTemplate, CustomField]
   val caseTemplateOrganisationSrv = new EdgeSrv[CaseTemplateOrganisation, CaseTemplate, Organisation]
+  val caseTemplateTaskSrv         = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
-  def create(caseTemplate: CaseTemplate, organisation: Organisation with Entity, customFields: Seq[(String, Any)])(
+  def create(caseTemplate: CaseTemplate, organisation: Organisation with Entity, customFields: Seq[(String, Option[Any])])(
       implicit graph: Graph,
       authContext: AuthContext): RichCaseTemplate = {
 
     val createdCaseTemplate = create(caseTemplate)
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
     val cfs = customFields.map {
-      case (name, value) ⇒
+      case (name, Some(value)) ⇒
         val customField = customFieldSrv.getOrFail(name)
         val caseTemplateCustomField =
           caseTemplateCustomFieldSrv.create(customField.`type`.setValue(CaseTemplateCustomField(), value), createdCaseTemplate, customField)
+        CustomFieldWithValue(customField, caseTemplateCustomField)
+      case (name, None) ⇒
+        val customField             = customFieldSrv.getOrFail(name)
+        val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
         CustomFieldWithValue(customField, caseTemplateCustomField)
     }
     RichCaseTemplate(createdCaseTemplate, organisation.name, cfs)
@@ -41,6 +46,11 @@ class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv:
     Try(UUID.fromString(caseTemplateNameOrId))
       .map(_ ⇒ initSteps.getById(caseTemplateNameOrId))
       .getOrElse(initSteps.getByName(caseTemplateNameOrId))
+
+  def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
+    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
+    ()
+  }
 }
 
 @EntitySteps[CaseTemplate]

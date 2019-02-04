@@ -23,6 +23,9 @@ case class CaseTemplateCustomField(
   override def setDateValue(value: Date): CaseTemplateCustomField       = copy(dateValue = Some(value))
 }
 
+@EdgeEntity[CaseTemplate, Task]
+case class CaseTemplateTask()
+
 @VertexEntity
 @DefineIndex(IndexType.unique, "name")
 case class CaseTemplate(

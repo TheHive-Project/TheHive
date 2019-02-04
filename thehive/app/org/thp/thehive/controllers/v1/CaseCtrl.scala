@@ -4,7 +4,6 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.InputCase
@@ -38,7 +37,7 @@ class CaseCtrl @Inject()(
             }
           val inputCase: InputCase = request.body('case)
           val `case`               = fromInputCase(inputCase, caseTemplate)
-          val user                 = userSrv.getOrFail(inputCase.user.getOrElse(request.userId))
+          val user                 = inputCase.user.map(userSrv.getOrFail)
           val organisation         = organisationSrv.getOrFail(request.organisation)
           val customFields         = inputCase.customFieldValue.map(fromInputCustomField).toMap
           val richCase             = caseSrv.create(`case`, user, organisation, customFields, caseTemplate)
@@ -85,6 +84,17 @@ class CaseCtrl @Inject()(
         db.transaction { implicit graph ⇒
           if (caseSrv.isAvailableFor(caseIdOrNumber)) {
             caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
+            Results.NoContent
+          } else Results.Unauthorized(s"Case $caseIdOrNumber doesn't exist or permission is insufficient")
+        }
+      }
+
+  def delete(caseIdOrNumber: String): Action[AnyContent] =
+    apiMethod("delete case")
+      .requires(Permissions.write) { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          if (caseSrv.isAvailableFor(caseIdOrNumber)) {
+            caseSrv.update(caseIdOrNumber, "status", "deleted")
             Results.NoContent
           } else Results.Unauthorized(s"Case $caseIdOrNumber doesn't exist or permission is insufficient")
         }

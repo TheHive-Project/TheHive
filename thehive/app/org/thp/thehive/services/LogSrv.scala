@@ -3,13 +3,34 @@ package org.thp.thehive.services
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
-import org.thp.scalligraph.models.{BaseVertexSteps, Database}
-import org.thp.scalligraph.services.VertexSrv
-import org.thp.thehive.models.Log
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.FFile
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.thehive.models._
 
 @Singleton
-class LogSrv @Inject()(implicit db: Database) extends VertexSrv[Log, LogSteps] {
+class LogSrv @Inject()(attachmentSrv: AttachmentSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
+  val logTaskSrv                                                                 = new EdgeSrv[LogTask, Log, Task]
+  val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)
+
+  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Log with Entity = {
+    val createdLog = create(log)
+    logTaskSrv.create(LogTask(), createdLog, task)
+    createdLog
+  }
+
+  def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
+    val attachment = attachmentSrv.create(file)
+    addAttachment(log, attachment)
+    attachment
+  }
+
+  def addAttachment(log: Log with Entity, attachment: Attachment with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext): LogAttachment with Entity =
+    logAttachmentSrv.create(LogAttachment(), log, attachment)
 }
 
 @EntitySteps[Log]

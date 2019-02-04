@@ -1,38 +1,18 @@
 package org.thp.thehive.controllers.v1
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.MultiAuthSrv
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.dto.v1.{InputUser, OutputUser}
+import org.thp.scalligraph.{AuthenticationError, NotFoundError}
+import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, UserSrv}
-
-object UserXfrm {
-  def fromInput(inputUser: InputUser): User =
-    inputUser
-      .into[User]
-      .withFieldComputed(_.id, _.login)
-      .withFieldConst(_.apikey, None)
-      .withFieldConst(_.password, None)
-      .withFieldConst(_.status, UserStatus.ok)
-      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unkown permissions are ignored
-      .transform
-
-  def toOutput(user: RichUser): OutputUser =
-    user
-      .into[OutputUser]
-      .withFieldComputed(_.permissions, _.permissions.map(_.name).toSet)
-      .transform
-
-}
 
 @Singleton
 class UserCtrl @Inject()(
@@ -43,6 +23,18 @@ class UserCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     implicit val ec: ExecutionContext) {
 
+  def current: Action[AnyContent] =
+    apiMethod("current user")
+      .requires() { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          val user = userSrv
+            .get(request.userId)
+            .richUser
+            .headOption()
+            .getOrElse(throw AuthenticationError("Authentication failure"))
+          Results.Ok(user.toJson)
+        }
+      }
   def create: Action[AnyContent] =
     apiMethod("create user")
       .extract('user, FieldsParser[InputUser])
@@ -52,10 +44,9 @@ class UserCtrl @Inject()(
           val organisationName     = inputUser.organisation.getOrElse(request.organisation)
           val organisation         = organisationSrv.getOrFail(organisationName)
           // TODO check if the requester can create a new user in that organisation
-          val richUser = userSrv.create(UserXfrm.fromInput(inputUser), organisation)
+          val richUser = userSrv.create(inputUser, organisation)
           inputUser.password.foreach(password ⇒ authSrv.setPassword(richUser._id, password))
-          val outputUser = UserXfrm.toOutput(richUser)
-          Results.Created(Json.toJson(outputUser))
+          Results.Created(richUser.toJson)
         }
       }
 
@@ -68,8 +59,7 @@ class UserCtrl @Inject()(
             .richUser
             .headOption()
             .getOrElse(throw NotFoundError(s"user $userId not found"))
-          val outputUser = UserXfrm.toOutput(user)
-          Results.Ok(Json.toJson(outputUser))
+          Results.Ok(user.toJson)
         }
       }
 
@@ -77,8 +67,9 @@ class UserCtrl @Inject()(
     apiMethod("list user")
       .requires(Permissions.read) { implicit request ⇒
         db.transaction { implicit graph ⇒
-          val users = userSrv.initSteps.richUser.toList
-            .map(UserXfrm.toOutput)
+          val users = userSrv.initSteps.richUser
+            .map(_.toJson)
+            .toList
           Results.Ok(Json.toJson(users))
         }
       }
@@ -90,6 +81,72 @@ class UserCtrl @Inject()(
         db.transaction { implicit graph ⇒
           userSrv.update(userId, request.body('user))
           Results.NoContent
+        }
+      }
+
+  def setPassword(userId: String): Action[AnyContent] =
+    apiMethod("set password")
+      .extract('password, FieldsParser[String])
+      .requires(Permissions.admin)
+      .async { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          if (userSrv.isAvailableFor(userId, request.organisation))
+            authSrv
+              .setPassword(userId, request.body('password))
+              .map(_ ⇒ Results.NoContent)
+          else
+            Future.successful(Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient"))
+        }
+      }
+
+  def changePassword(userId: String): Action[AnyContent] =
+    apiMethod("change password")
+      .extract('password, FieldsParser[String])
+      .extract('currentPassword, FieldsParser[String])
+      .requires()
+      .async { implicit request ⇒
+        if (userId == request.userId) {
+          db.transaction { implicit graph ⇒
+            authSrv
+              .changePassword(userId, request.body('currentPassword), request.body('password))
+              .map(_ ⇒ Results.NoContent)
+          }
+        } else Future.successful(Results.Unauthorized(s"You are not authorized to change password of $userId"))
+      }
+
+  def getKey(userId: String): Action[AnyContent] =
+    apiMethod("get key")
+      .requires(Permissions.admin)
+      .async { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          if (userSrv.isAvailableFor(userId, request.organisation))
+            authSrv.getKey(userId).map(Results.Ok(_))
+          else
+            Future.successful(Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient"))
+        }
+      }
+
+  def removeKey(userId: String): Action[AnyContent] =
+    apiMethod("remove key")
+      .requires(Permissions.admin)
+      .async { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          if (userSrv.isAvailableFor(userId, request.organisation))
+            authSrv.removeKey(userId).map(_ ⇒ Results.NoContent)
+          else
+            Future.successful(Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient"))
+        }
+      }
+
+  def renewKey(userId: String): Action[AnyContent] =
+    apiMethod("renew key")
+      .requires(Permissions.admin)
+      .async { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          if (userSrv.isAvailableFor(userId, request.organisation))
+            authSrv.renewKey(userId).map(Results.Ok(_))
+          else
+            Future.successful(Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient"))
         }
       }
 }
