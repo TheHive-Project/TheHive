@@ -9,22 +9,33 @@ import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 import gremlin.scala._
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.thehive.services._
 
 case class InitialAuthContext(authContext: AuthContext)
 
-object DatabaseBuilder {
-  def build(schema: TheHiveSchema)(implicit db: Database, authContext: AuthContext): Unit = {
+@Singleton
+class DatabaseBuilder @Inject()(
+    schema: TheHiveSchema,
+    userSrv: UserSrv,
+    organisationSrv: OrganisationSrv,
+    caseSrv: CaseSrv,
+    customFieldSrv: CustomFieldSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    impactStatusSrv: ImpactStatusSrv,
+    resolutionStatusSrv: ResolutionStatusSrv) {
+  def build()(implicit db: Database, authContext: AuthContext): Unit = {
     implicit val permissionParser: FieldsParser[Permission] = Permissions.parser
 
     lazy val logger = Logger(getClass)
     logger.info("Initialize database schema")
     db.createSchemaFrom(schema)
     db.transaction { implicit graph ⇒
-      val testUser = schema.userSrv.create(
+      val testUser = userSrv.create(
         User(
           login = authContext.userId,
           name = authContext.userName,
@@ -32,31 +43,21 @@ object DatabaseBuilder {
           permissions = authContext.permissions,
           status = UserStatus.ok,
           password = None))(graph, authContext)
-      val testOrganisation = schema.organisationSrv.create(Organisation(authContext.organisation))
-      schema.userSrv.userOrganisationSrv.create(UserOrganisation(), testUser, testOrganisation)
-      val idMap = createVertex(schema.caseSrv, FieldsParser[Case]) ++
-        createVertex(schema.userSrv, FieldsParser[User]) ++
-        createVertex(schema.customFieldSrv, FieldsParser[CustomField]) ++
-        createVertex(schema.organisationSrv, FieldsParser[Organisation]) ++
-        createVertex(schema.caseTemplateSrv, FieldsParser[CaseTemplate])
-      createEdge(schema.caseSrv.caseUserSrv, schema.caseSrv, schema.userSrv, FieldsParser[CaseUser], idMap)
-      createEdge(schema.caseSrv.caseImpactStatusSrv, schema.caseSrv, schema.impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
-      createEdge(schema.caseSrv.caseCustomFieldSrv, schema.caseSrv, schema.customFieldSrv, FieldsParser[CaseCustomField], idMap)
-      createEdge(schema.caseSrv.caseOrganisationSrv, schema.caseSrv, schema.organisationSrv, FieldsParser[CaseOrganisation], idMap)
-      createEdge(schema.caseSrv.caseCaseTemplateSrv, schema.caseSrv, schema.caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
-      createEdge(schema.caseSrv.caseResolutionStatus, schema.caseSrv, schema.resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
-      createEdge(
-        schema.caseTemplateSrv.caseTemplateCustomFieldSrv,
-        schema.caseTemplateSrv,
-        schema.customFieldSrv,
-        FieldsParser[CaseTemplateCustomField],
-        idMap)
-      createEdge(
-        schema.caseTemplateSrv.caseTemplateOrganisationSrv,
-        schema.caseTemplateSrv,
-        schema.organisationSrv,
-        FieldsParser[CaseTemplateOrganisation],
-        idMap)
+      val testOrganisation = organisationSrv.create(Organisation(authContext.organisation))
+      userSrv.userOrganisationSrv.create(UserOrganisation(), testUser, testOrganisation)
+      val idMap = createVertex(caseSrv, FieldsParser[Case]) ++
+        createVertex(userSrv, FieldsParser[User]) ++
+        createVertex(customFieldSrv, FieldsParser[CustomField]) ++
+        createVertex(organisationSrv, FieldsParser[Organisation]) ++
+        createVertex(caseTemplateSrv, FieldsParser[CaseTemplate])
+      createEdge(caseSrv.caseUserSrv, caseSrv, userSrv, FieldsParser[CaseUser], idMap)
+      createEdge(caseSrv.caseImpactStatusSrv, caseSrv, impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
+      createEdge(caseSrv.caseCustomFieldSrv, caseSrv, customFieldSrv, FieldsParser[CaseCustomField], idMap)
+      createEdge(caseSrv.caseOrganisationSrv, caseSrv, organisationSrv, FieldsParser[CaseOrganisation], idMap)
+      createEdge(caseSrv.caseCaseTemplateSrv, caseSrv, caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
+      createEdge(caseSrv.caseResolutionStatusSrv, caseSrv, resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
+      createEdge(caseTemplateSrv.caseTemplateCustomFieldSrv, caseTemplateSrv, customFieldSrv, FieldsParser[CaseTemplateCustomField], idMap)
+      createEdge(caseTemplateSrv.caseTemplateOrganisationSrv, caseTemplateSrv, organisationSrv, FieldsParser[CaseTemplateOrganisation], idMap)
       ()
     }
   }

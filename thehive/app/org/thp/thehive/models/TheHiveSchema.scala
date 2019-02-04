@@ -1,30 +1,49 @@
 package org.thp.thehive.models
 
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.{universe ⇒ ru}
+
+import play.api.Logger
+import play.api.inject.Injector
+
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.models.Model.{Edge, Vertex}
-import org.thp.scalligraph.models.{InitialValue, Model, Schema}
+import org.reflections.Reflections
+import org.reflections.scanners.SubTypesScanner
+import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.models.{HasModel, InitialValue, Model, Schema}
 import org.thp.scalligraph.services.VertexSrv
-import org.thp.thehive.services._
 
 @Singleton
-class TheHiveSchema @Inject()(
-    val caseSrv: CaseSrv,
-    val userSrv: UserSrv,
-    val taskSrv: TaskSrv,
-    val logSrv: LogSrv,
-    val alertSrv: AlertSrv,
-    val impactStatusSrv: ImpactStatusSrv,
-    val customFieldSrv: CustomFieldSrv,
-    val localUserSrv: LocalUserSrv,
-    val organisationSrv: OrganisationSrv,
-    val caseTemplateSrv: CaseTemplateSrv,
-    val resolutionStatusSrv: ResolutionStatusSrv)
-    extends Schema {
+class TheHiveSchema @Inject()(injector: Injector) extends Schema {
 
-  val auditModel: Vertex[Audit]                   = Model.vertex[Audit]
-  val auditedModel: Edge[Audited, Audit, Product] = Audited.model
-  def vertexSrvList: Seq[VertexSrv[_, _]] =
-    Seq(caseSrv, userSrv, taskSrv, logSrv, alertSrv, impactStatusSrv, customFieldSrv, organisationSrv, caseTemplateSrv, resolutionStatusSrv)
-  override def modelList: Seq[Model]               = vertexSrvList.map(_.model) :+ auditModel :+ auditedModel
-  override def initialValues: Seq[InitialValue[_]] = vertexSrvList.flatMap[InitialValue[_], Seq[InitialValue[_]]](_.getInitialValues)
+  lazy val logger   = Logger(getClass)
+  val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
+
+  val reflectionClasses = new Reflections(
+    new ConfigurationBuilder()
+      .forPackages("org.thp.thehive.models")
+      .addClassLoader(getClass.getClassLoader)
+      .setExpandSuperTypes(true)
+      .setScanners(new SubTypesScanner(false)))
+
+  override lazy val modelList: Seq[Model] =
+    reflectionClasses
+      .getSubTypesOf(classOf[HasModel[_]])
+      .asScala
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
+      .map { modelClass ⇒
+        val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel[_]]
+        logger.info(s"Loading model ${hasModel.model.label}")
+        hasModel.model
+      }
+      .toSeq
+  override lazy val initialValues: Seq[InitialValue[_]] =
+    reflectionClasses
+      .getSubTypesOf(classOf[VertexSrv[_, _]])
+      .asScala
+      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
+      .toSeq
+      .flatMap[InitialValue[_], Seq[InitialValue[_]]] { vertexSrvClass ⇒
+        injector.instanceOf(vertexSrvClass).getInitialValues
+      }
 }

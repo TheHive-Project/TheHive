@@ -20,7 +20,7 @@ class UserSrvTest extends PlaySpecification {
   }
 
   def setupDatabase(app: AppBuilder): Unit =
-    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
