@@ -1,7 +1,5 @@
 package org.thp.thehive
 
-import java.util.Date
-
 import scala.concurrent.{ExecutionContext, Promise}
 
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -44,47 +42,6 @@ class FunctionalTest extends PlaySpecification {
         audit.obj._type,
         audit.summary)
   }
-
-  private def creationAudit(createdBy: String, objType: String, summary: Map[String, Map[String, Int]]): OutputAudit =
-    OutputAudit(
-      "_entityId_",
-      createdBy,
-      None,
-      new Date(0),
-      None,
-      "Creation",
-      "_requestId_",
-      None,
-      None,
-      None,
-      OutputEntity(objType, "", new Date(0), createdBy, None, None),
-      summary
-    )
-
-  private def updateAudit(
-      createdBy: String,
-      updatedBy: Option[String] = None,
-      operation: String,
-      attributeName: Option[String],
-      oldValue: Option[String],
-      newValue: Option[String],
-      objType: String,
-      objCreatedBy: String,
-      summary: Map[String, Map[String, Int]]): OutputAudit =
-    OutputAudit(
-      "",
-      createdBy,
-      updatedBy,
-      new Date(0),
-      None,
-      operation,
-      "",
-      attributeName,
-      oldValue,
-      newValue,
-      OutputEntity(objType, "", new Date(0), objCreatedBy, None, None),
-      summary
-    )
 
   val janusGraphConfig =
     Configuration(ConfigFactory.parseString("""
@@ -196,7 +153,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "open",
-            user = "admin"
+            user = Some("admin")
           )
 
           case1 must_=== expected
@@ -231,7 +188,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "open",
-            user = "admin",
+            user = Some("admin"),
             summary = Some("no comment"),
             customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", Some("HR")))
           )
@@ -342,7 +299,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 1,
             status = "open",
-            user = "testAdmin"
+            user = Some("testAdmin")
           )
 
           case3 must_=== expected
@@ -391,7 +348,6 @@ class FunctionalTest extends PlaySpecification {
             pap = 2,
             status = "New",
             follow = true,
-            user = "testAdmin",
             customFields = Set.empty
           )
         }

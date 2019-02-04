@@ -17,7 +17,7 @@ import org.thp.scalligraph.controllers.Authenticated
 import org.thp.scalligraph.models.{Database, DatabaseException, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert, OutputCase, OutputCustomFieldValue}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, OrganisationSrv}
 
 class AlertCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write), organisation = "cert")
@@ -35,7 +35,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
   }
 
   def setupDatabase(app: AppBuilder): Unit =
-    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
@@ -69,7 +69,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           pap = 2,
           status = "New",
           follow = true,
-          user = dummyUserSrv.userId,
           customFields = Set.empty
         )
 
@@ -111,7 +110,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           pap = 2,
           status = "New",
           follow = true,
-          user = dummyUserSrv.userId,
           customFields = Set.empty,
           caseTemplate = Some("spam")
         )
@@ -122,7 +120,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "get an alert" in {
         val now             = new Date()
         val alertSrv        = app.instanceOf[AlertSrv]
-        val userSrv         = app.instanceOf[UserSrv]
         val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdAlert = app.instanceOf[Database].transaction { graph ⇒
           alertSrv
@@ -143,7 +140,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 read = false,
                 follow = true
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -168,8 +164,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "New",
-          follow = true,
-          user = dummyUserSrv.authContext.userId
+          follow = true
         )
 
         resultAlert must be equalTo expected
@@ -178,7 +173,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "update an alert" in {
         val now             = new Date()
         val alertSrv        = app.instanceOf[AlertSrv]
-        val userSrv         = app.instanceOf[UserSrv]
         val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdAlert = app.instanceOf[Database].transaction { graph ⇒
           alertSrv
@@ -199,7 +193,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 read = false,
                 follow = true
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -236,8 +229,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           tlp = 3,
           pap = 1,
           status = "New",
-          follow = true,
-          user = dummyUserSrv.authContext.userId
+          follow = true
         )
 
         resultAlert must be equalTo expected
@@ -246,7 +238,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "mark an alert as read" in {
         val now             = new Date()
         val alertSrv        = app.instanceOf[AlertSrv]
-        val userSrv         = app.instanceOf[UserSrv]
         val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdAlert = app.instanceOf[Database].transaction { graph ⇒
           alertSrv
@@ -267,7 +258,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 read = false,
                 follow = true
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -297,8 +287,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "Ignored",
-          follow = true,
-          user = dummyUserSrv.authContext.userId
+          follow = true
         )
 
         resultAlert must be equalTo expected
@@ -307,7 +296,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "unfollow an alert" in {
         val now             = new Date()
         val alertSrv        = app.instanceOf[AlertSrv]
-        val userSrv         = app.instanceOf[UserSrv]
         val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdAlert = app.instanceOf[Database].transaction { graph ⇒
           alertSrv
@@ -328,7 +316,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 read = false,
                 follow = true
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -358,8 +345,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "New",
-          follow = true,
-          user = dummyUserSrv.authContext.userId
+          follow = true
         )
 
         resultAlert must be equalTo expected
@@ -368,7 +354,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "create a case from an alert" in {
         val now             = new Date()
         val alertSrv        = app.instanceOf[AlertSrv]
-        val userSrv         = app.instanceOf[UserSrv]
         val organisationSrv = app.instanceOf[OrganisationSrv]
         val createdAlert = app.instanceOf[Database].transaction { graph ⇒
           val spamCaseTemplate = app
@@ -394,7 +379,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 read = false,
                 follow = true
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map("date1" → now, "string1" → "value from alert"),
               Some(spamCaseTemplate)
@@ -419,7 +403,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "open",
-          user = dummyUserSrv.authContext.userId,
+          user = Some(dummyUserSrv.authContext.userId),
           customFields = Set(
             OutputCustomFieldValue("date1", "date custom field", "date", Some(now.toString)), // from alert creation
             OutputCustomFieldValue("string1", "string custom field", "string", Some("value from alert")), // from alert creation

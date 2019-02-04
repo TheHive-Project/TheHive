@@ -21,9 +21,6 @@ case class AlertCustomField(
   override def setDateValue(value: Date): AlertCustomField       = copy(dateValue = Some(value))
 }
 
-@EdgeEntity[Alert, User]
-case class AlertUser()
-
 @EdgeEntity[Alert, Observable]
 case class AlertObservable()
 
@@ -56,7 +53,6 @@ case class Alert(
 
 case class RichAlert(
     alert: Alert with Entity,
-    user: String,
     organisation: String,
     customFields: Seq[CustomFieldWithValue],
     caseId: Option[String],
@@ -85,7 +81,6 @@ case class RichAlert(
 object RichAlert {
   def apply(
       alert: Alert with Entity,
-      user: String,
       organisation: String,
       customFields: Seq[CustomFieldWithValue],
       caseId: Option[String],
@@ -94,7 +89,6 @@ object RichAlert {
       .asInstanceOf[Alert]
       .into[RichAlert]
       .withFieldConst(_.alert, alert)
-      .withFieldConst(_.user, user)
       .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.customFields, customFields)
       .withFieldConst(_.caseId, caseId)

@@ -19,29 +19,29 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
     implicit db: Database)
     extends VertexSrv[Alert, AlertSteps] {
 
-  val alertUserSrv         = new EdgeSrv[AlertUser, Alert, User]
   val alertCustomFieldSrv  = new EdgeSrv[AlertCustomField, Alert, CustomField]
   val alertOrganisationSrv = new EdgeSrv[AlertOrganisation, Alert, Organisation]
   val alertCaseSrv         = new EdgeSrv[AlertCase, Alert, Case]
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
 
-  def create(
-      alert: Alert,
-      user: User with Entity,
-      organisation: Organisation with Entity,
-      customFields: Map[String, Any],
-      caseTemplate: Option[RichCaseTemplate])(implicit graph: Graph, authContext: AuthContext): RichAlert = {
+  def create(alert: Alert, organisation: Organisation with Entity, customFields: Map[String, Any], caseTemplate: Option[RichCaseTemplate])(
+      implicit graph: Graph,
+      authContext: AuthContext): RichAlert = {
     val createdAlert = create(alert)
-    alertUserSrv.create(AlertUser(), createdAlert, user)
     alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
     caseTemplate.foreach(ct ⇒ alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
     val cfs = customFields.map {
-      case (name, value) ⇒
+      case (name, Some(value)) ⇒
         val cf               = customFieldSrv.getOrFail(name)
         val alertCustomField = alertCustomFieldSrv.create(cf.`type`.setValue(AlertCustomField(), value), createdAlert, cf)
         CustomFieldWithValue(cf, alertCustomField)
+      case (name, _) ⇒
+        val cf               = customFieldSrv.getOrFail(name)
+        val alertCustomField = alertCustomFieldSrv.create(AlertCustomField(), createdAlert, cf)
+        CustomFieldWithValue(cf, alertCustomField)
+
     }.toSeq
-    RichAlert(createdAlert, user.login, organisation.name, cfs, None, caseTemplate.map(_.name))
+    RichAlert(createdAlert, organisation.name, cfs, None, caseTemplate.map(_.name))
   }
 
   def isAvailableFor(alertId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
@@ -72,12 +72,12 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Unit =
     db.update(graph, authContext, Model.vertex[Alert], alertId, Map(FPath("read") → UpdateOps.SetAttribute(false)))
 
-  def createCase(alert: RichAlert, user: User with Entity, organisation: Organisation with Entity)(
+  def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
       implicit graph: Graph,
       authContext: AuthContext): RichCase = {
     val caseTemplate = alert.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
     val customField = caseTemplate
-      .fold[Seq[(String, Any)]](Nil) { ct ⇒
+      .fold[Seq[(String, Option[Any])]](Nil) { ct ⇒
         ct.customFields.map(f ⇒ f.name → f.value)
       }
       .toMap ++ alert.customFields.map(f ⇒ f.name → f.value)
@@ -140,7 +140,6 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       raw
         .project[Any]("alert", "user", "organisation", "customFields", "caseId", "caseTemplate")
         .by()
-        .by(__[Vertex].outTo[AlertUser].values[String]("login").fold.traversal)
         .by(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold.traversal)
         .by(__[Vertex].outToE[AlertCustomField].inV().path.fold.traversal)
         .by(__[Vertex].outTo[AlertCase].values[String]("_id").fold.traversal)
@@ -157,7 +156,6 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               }
             RichAlert(
               m.get[Vertex]("alert").as[Alert],
-              onlyOneOf[String](m.get[JList[String]]("user")),
               onlyOneOf[String](m.get[JList[String]]("organisation")),
               customFieldValues,
               atMostOneOf[String](m.get[JList[String]]("caseId")),

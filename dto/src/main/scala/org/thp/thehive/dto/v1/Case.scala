@@ -44,7 +44,7 @@ case class OutputCase(
     pap: Int,
     status: String,
     summary: Option[String] = None,
-    user: String,
+    user: Option[String],
     customFields: Set[OutputCustomFieldValue] = Set.empty)
 
 object OutputCase {

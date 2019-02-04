@@ -21,7 +21,7 @@ class CaseSrvTest extends PlaySpecification {
   }
 
   def setupDatabase(app: AppBuilder): Unit =
-    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
@@ -59,7 +59,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = None,
           resolutionStatus = None,
-          user = "toom",
+          user = Some("toom"),
           organisation = "cert",
           Nil
         )
@@ -87,7 +87,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = Some("NoImpact"),
           resolutionStatus = None,
-          user = "admin",
+          user = Some("admin"),
           organisation = "cert",
           Nil
         )
@@ -109,7 +109,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.status must_=== CaseStatus.open
         richCase.summary must beNone
         richCase.impactStatus must beNone
-        richCase.user must_=== "toom"
+        richCase.user must beSome("toom")
         CustomField("boolean1", "boolean custom field", CustomFieldBoolean)
         richCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
@@ -134,7 +134,7 @@ class CaseSrvTest extends PlaySpecification {
         mergedCase.status must_=== CaseStatus.open
         mergedCase.summary must beNone
         mergedCase.impactStatus must beNone
-        mergedCase.user must_=== "test"
+        mergedCase.user must beSome("test")
         mergedCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),

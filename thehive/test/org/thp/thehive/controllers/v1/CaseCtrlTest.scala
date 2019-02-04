@@ -35,7 +35,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
   }
 
   def setupDatabase(app: AppBuilder): Unit =
-    DatabaseBuilder.build(app.instanceOf[TheHiveSchema])(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
@@ -79,7 +79,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "open",
           summary = None,
-          user = dummyUserSrv.authContext.userId,
+          user = Some(dummyUserSrv.authContext.userId),
           customFields = Set.empty
         )
 
@@ -120,7 +120,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "open",
           summary = None,
-          user = dummyUserSrv.authContext.userId,
+          user = Some(dummyUserSrv.authContext.userId),
           customFields = Set(
             OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
             OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
@@ -152,7 +152,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 status = CaseStatus.open,
                 summary = None
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
+              Some(userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph)),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -173,7 +173,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 1,
           pap = 3,
           status = "open",
-          user = dummyUserSrv.authContext.userId,
+          user = Some(dummyUserSrv.authContext.userId),
           _createdBy = dummyUserSrv.authContext.userId,
           _id = createdCase._id,
           _createdAt = createdCase._createdAt,
@@ -205,7 +205,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 status = CaseStatus.open,
                 summary = None
               ),
-              userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph),
+              Some(userSrv.getOrFail(dummyUserSrv.authContext.userId)(graph)),
               organisationSrv.getOrFail(dummyUserSrv.authContext.organisation)(graph),
               Map.empty,
               None
@@ -238,7 +238,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 1,
           status = "resolved",
-          user = dummyUserSrv.authContext.userId,
+          user = Some(dummyUserSrv.authContext.userId),
           _createdBy = dummyUserSrv.authContext.userId,
           _id = createdCase._id,
           _createdAt = createdCase._createdAt,

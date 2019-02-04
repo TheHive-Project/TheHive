@@ -7,7 +7,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 
 object CaseStatus extends Enumeration {
-  val open, resolved, deleted = Value
+  val open, resolved, deleted, duplicated = Value
 }
 
 @VertexEntity
@@ -25,6 +25,9 @@ case class ImpactStatus(value: String) {
 
 @EdgeEntity[Case, ImpactStatus]
 case class CaseImpactStatus()
+
+@EdgeEntity[Case, Case]
+case class MergedFrom()
 
 @EdgeEntity[Case, CustomField]
 case class CaseCustomField(
@@ -73,7 +76,7 @@ case class RichCase(
     `case`: Case with Entity,
     impactStatus: Option[String],
     resolutionStatus: Option[String],
-    user: String,
+    user: Option[String],
     organisation: String,
     customFields: Seq[CustomFieldWithValue]) {
   val _id: String                = `case`._id
@@ -100,7 +103,7 @@ object RichCase {
       `case`: Case with Entity,
       caseImpactStatus: Option[String],
       resolutionStatus: Option[String],
-      user: String,
+      user: Option[String],
       organisation: String,
       customFields: Seq[CustomFieldWithValue]): RichCase =
     `case`
@@ -134,7 +137,7 @@ object RichCase {
       summary: Option[String],
       impactStatus: Option[String],
       resolutionStatus: Option[String],
-      user: String,
+      user: Option[String],
       organisation: String,
       customFields: Seq[CustomFieldWithValue]
   ): RichCase = {

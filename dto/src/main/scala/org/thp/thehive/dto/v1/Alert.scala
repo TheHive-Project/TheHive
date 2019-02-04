@@ -44,7 +44,6 @@ case class OutputAlert(
     pap: Int,
     status: String,
     follow: Boolean,
-    user: String,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
     caseTemplate: Option[String] = None)
 

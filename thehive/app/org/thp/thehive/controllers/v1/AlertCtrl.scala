@@ -33,7 +33,7 @@ class AlertCtrl @Inject()(apiMethod: ApiMethod, db: Database, alertSrv: AlertSrv
           val user                   = userSrv.getOrFail(request.userId)
           val organisation           = userSrv.getOrganisation(user)
           val customFields           = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          val richAlert              = alertSrv.create(request.body('alert), user, organisation, customFields, caseTemplate)
+          val richAlert              = alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
           Results.Created(richAlert.toJson)
         }
       }
@@ -110,7 +110,7 @@ class AlertCtrl @Inject()(apiMethod: ApiMethod, db: Database, alertSrv: AlertSrv
           val alert        = alertSrv.get(alertId).availableFor(request.organisation).richAlert.getOrFail()
           val user         = userSrv.getOrFail(request.userId)
           val organisation = userSrv.getOrganisation(user)
-          val richCase     = alertSrv.createCase(alert, user, organisation)
+          val richCase     = alertSrv.createCase(alert, Some(user), organisation)
           Results.Created(richCase.toJson)
         }
       }
