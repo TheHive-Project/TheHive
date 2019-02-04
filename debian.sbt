@@ -10,7 +10,7 @@ version in Debian := {
   }
 }
 debianPackageRecommends := Seq("elasticsearch")
-debianPackageDependencies += "java8-runtime | java8-runtime-headless"
+debianPackageDependencies += "java-runtime (>= 8) | java-runtime-headless (>= 8)"
 maintainerScripts in Debian := maintainerScriptsFromDirectory(
   baseDirectory.value / "package" / "debian",
   Seq(DebianConstants.Postinst, DebianConstants.Prerm, DebianConstants.Postrm)
