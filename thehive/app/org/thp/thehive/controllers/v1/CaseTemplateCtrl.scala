@@ -1,14 +1,15 @@
 package org.thp.thehive.controllers.v1
 
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.dto.v1.{InputCase, InputCaseTemplate}
+import org.thp.thehive.dto.v1.InputCaseTemplate
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, CaseTemplateSrv, OrganisationSrv, UserSrv}
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
+import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, UserSrv}
 
 @Singleton
 class CaseTemplateCtrl @Inject()(
