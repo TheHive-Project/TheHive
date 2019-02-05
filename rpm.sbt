@@ -19,7 +19,7 @@ rpmRelease := {
 rpmVendor := organizationName.value
 rpmUrl := organizationHomepage.value.map(_.toString)
 rpmLicense := Some("AGPL")
-rpmRequirements += "java-1.8.0-openjdk-headless"
+rpmRequirements += "java-11-openjdk-headless"
 
 maintainerScripts in Rpm := maintainerScriptsFromDirectory(
   baseDirectory.value / "package" / "rpm",

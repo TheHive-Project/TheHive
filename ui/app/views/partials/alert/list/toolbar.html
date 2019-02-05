@@ -25,6 +25,13 @@
                     <li ng-show="$vm.menu.markAsUnread">
                         <a href ng-click="$vm.bulkMarkAsRead(false)">Mark as unread</a>
                     </li>
+                    <li class="divider" ng-show="$vm.menu.createNewCase"></li>
+                    <li ng-show="$vm.menu.createNewCase">
+                        <a href ng-click="$vm.createNewCase()">New case from selection</a>
+                    </li>
+                    <li ng-show="$vm.menu.mergeInCase">
+                        <a href ng-click="$vm.mergeInCase()">Merge selection into case</a>
+                    </li>
                 </ul>
             </div>
 

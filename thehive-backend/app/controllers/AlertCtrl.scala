@@ -55,6 +55,17 @@ class AlertCtrl @Inject() (
   }
 
   @Timed
+  def bulkMergeWithCase: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+    val caseId = request.body.getString("caseId").getOrElse(throw BadRequestError("Parameter \"caseId\" is missing"))
+    val alertIds = request.body.getStrings("alertIds").getOrElse(throw BadRequestError("Parameter \"alertIds\" is missing"))
+    for {
+      alerts ← Future.traverse(alertIds)(alertSrv.get)
+      caze ← caseSrv.get(caseId)
+      updatedCaze ← alertSrv.bulkMergeWithCase(alerts, caze)
+    } yield renderer.toOutput(CREATED, updatedCaze)
+  }
+
+  @Timed
   def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
     val withStats = request
       .queryString

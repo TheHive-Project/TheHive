@@ -151,18 +151,17 @@
         <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
 
+    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.merge()">
+        <i class="fa fa-compress"></i> Merge into case
+    </button>
+
     <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
         <div class="form-group">
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">
-                <!-- <input type="text" class="form-control" placeholder="Search for..."> -->
                 <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
                     <option value="">Empty case</option>
                 </select>
-                <!-- <select class="form-control">
-
-                    <option value="MISP">MISP</option>
-                </select> -->
                 <span class="input-group-btn">
                     <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
                 </span>

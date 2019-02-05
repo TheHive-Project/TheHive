@@ -15,7 +15,10 @@
                     scope: $scope,
                     baseFilter: {
                         '_and': [{
-                            'status': 'InProgress'
+                            '_in': {
+                                '_field': 'status',
+                                '_values': ['Waiting', 'InProgress']
+                            }
                         }, {
                             'owner': $scope.currentUser.id
                         }]

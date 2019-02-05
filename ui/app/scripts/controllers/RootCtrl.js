@@ -56,11 +56,17 @@ angular.module('theHiveControllers').controller('RootCtrl',
             scope: $scope,
             rootId: 'any',
             query: {
-                '_and': [{
-                    'status': 'InProgress'
-                }, {
-                    'owner': $scope.currentUser.id
-                }]
+                '_and': [
+                    {
+                        '_in': {
+                            '_field': 'status',
+                            '_values': ['Waiting', 'InProgress']
+                        }
+                    },
+                    {
+                        'owner': $scope.currentUser.id
+                    }
+                ]
             },
             result: {},
             objectType: 'case_task',
@@ -142,7 +148,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.createNewCase = function(template) {
-            $uibModal.open({
+            var modal = $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',
                 controller: 'CaseCreationCtrl',
                 size: 'lg',
@@ -150,6 +156,36 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     template: template
                 }
             });
+
+            modal.result
+                .then(function(data) {
+                    $state.go('app.case.details', {
+                        caseId: data.id
+                    });
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('CaseCreationCtrl', err.data, err.status);
+                    }
+                });
+        };
+
+        $scope.openTemplateSelector = function() {
+            var modal = $uibModal.open({
+                templateUrl: 'views/partials/case/case.templates.selector.html',
+                controller: 'CaseTemplatesDialogCtrl',
+                controllerAs: 'dialog',
+                size: 'lg',
+                resolve: {
+                    templates: function(){
+                        return $scope.templates;
+                    }
+                }
+            });
+
+            modal.result.then(function(template) {
+                $scope.createNewCase(template);
+            })
         };
 
         $scope.aboutTheHive = function() {

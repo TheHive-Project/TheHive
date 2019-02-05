@@ -3,7 +3,7 @@ package models
 import scala.concurrent.Future
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{ JsArray, JsBoolean, JsObject, JsString }
+import play.api.libs.json._
 
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
@@ -28,6 +28,8 @@ trait UserAttributes { _: AttributeDef ⇒
 }
 
 class UserModel extends ModelDef[UserModel, User]("user", "User", "/user") with UserAttributes with AuditedModel {
+
+  override def removeAttribute: JsObject = Json.obj("status" → UserStatus.Locked)
 
   private def setUserId(attrs: JsObject) = (attrs \ "login").asOpt[JsString].fold(attrs) { login ⇒
     attrs - "login" + ("_id" → login)

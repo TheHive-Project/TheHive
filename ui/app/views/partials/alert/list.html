@@ -44,14 +44,60 @@
                             <thead>
                                 <tr>
                                     <th width="20px"><input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()"></th>
-                                    <th width="150px">Reference</th>
-                                    <th width="80px">Type</th>
-                                    <th width="80px">Status</th>
-                                    <th>Title</th>
-                                    <th width="150px">Source</th>
-                                    <th width="80px">Severity</th>
-                                    <th width="80px">Attributes</th>
-                                    <th style="width: 160px">Date</th>
+                                    <th width="150px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('sourceRef')">
+                                        Reference
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') === -1 && $vm.filtering.context.sort.indexOf('-sourceRef') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-sourceRef') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('type')">
+                                        Type
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+type') === -1 && $vm.filtering.context.sort.indexOf('-type') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+type') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-type') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('status')">
+                                        Status
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') === -1 && $vm.filtering.context.sort.indexOf('-status') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-status') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th>
+                                      Title
+                                    </th>
+                                    <th width="150px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('source')">
+                                        Source
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+source') === -1 && $vm.filtering.context.sort.indexOf('-source') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+source') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-source') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('severity')">
+                                        Severity
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+severity') === -1 && $vm.filtering.context.sort.indexOf('-severity') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+severity') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-severity') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      Attributes
+                                    </th>
+                                    <th style="width: 160px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('date')">
+                                        Date
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+date') === -1 && $vm.filtering.context.sort.indexOf('-date') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+date') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-date') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
                                     <th style="width: 160px"></th>
                                 </tr>
                             </thead>

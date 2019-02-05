@@ -59,8 +59,9 @@ class MispExport @Inject() (
       .map(_._1)
   }
 
-  def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute], extendsEvent: Option[String]): Future[(String, Seq[ExportedMispAttribute])] = {
+  def createEvent(mispConnection: MispConnection, title: String, severity: Long, tlp: Long, date: Date, attributes: Seq[ExportedMispAttribute], extendsEvent: Option[String], tags: Seq[String]): Future[(String, Seq[ExportedMispAttribute])] = {
     logger.debug(s"Create MISP event $title, with ${attributes.size} attributes")
+
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution" → 0,
@@ -70,8 +71,7 @@ class MispExport @Inject() (
         "date" → dateFormat.format(date),
         "published" → false,
         "Attribute" → attributes,
-        "Tag" → Json.arr(
-          Json.obj("name" → tlpWrites.writes(tlp))),
+        "Tag" → JsArray((tags.map(JsString.apply) :+ tlpWrites.writes(tlp)).map(t ⇒ Json.obj("name" -> t))),
         "extends_uuid" → extendsEvent.fold[JsValue](JsNull)(JsString)))
     mispConnection("events")
       .post(mispEvent)
@@ -167,7 +167,7 @@ class MispExport @Inject() (
           logger.debug(s"Creating a new MISP event that extends $maybeEventId")
           val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
           // if no event is associated to this case, create a new one
-          createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId).map {
+          createEvent(mispConnection, caze.title(), caze.severity(), caze.tlp(), caze.startDate(), simpleAttributes, maybeEventId, if (mispConnection.exportCaseTags) caze.tags() else Nil).map {
             case (eventId, exportedAttributes) ⇒ (eventId, exportedAttributes.map(a ⇒ Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
           }
         } { eventId ⇒ // if an event already exists, retrieve its attributes in order to export only new one

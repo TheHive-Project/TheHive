@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -88,13 +88,9 @@
                     });
                 }
 
-
                 $scope.pendingAsync = true;
                 CaseSrv.save({}, $scope.newCase, function (data) {
-                    $state.go('app.case.details', {
-                        caseId: data.id
-                    });
-                    $uibModalInstance.close();
+                    $uibModalInstance.close(data);
                 }, function (response) {
                     $scope.pendingAsync = false;
                     NotificationSrv.error('CaseCreationCtrl', response.data, response.status);
@@ -123,7 +119,7 @@
 
             $scope.keys = function(o) {
                 return _.keys(o).length;
-            }
+            };
         }
     );
 })();

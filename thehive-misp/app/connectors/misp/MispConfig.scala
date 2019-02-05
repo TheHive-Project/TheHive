@@ -41,7 +41,8 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
             MispPurpose.ImportAndExport
           }
         }
-    } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags, maxAge, maxAttributes, maxSize, excludedOrganisations, excludedTags, whitelistTags, purpose))
+      exportCaseTags = mispConnectionConfig.getOptional[Boolean]("exportCaseTags").contains(true)
+    } yield MispConnection(name, url, key, instanceWS, caseTemplate, artifactTags, maxAge, maxAttributes, maxSize, excludedOrganisations, excludedTags, whitelistTags, purpose, exportCaseTags))
 
   @Inject def this(configuration: Configuration, httpSrv: CustomWSAPI) =
     this(

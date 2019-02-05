@@ -28,7 +28,8 @@ case class MispConnection(
     excludedOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String],
-    purpose: MispPurpose.Value) {
+    purpose: MispPurpose.Value,
+    exportCaseTags: Boolean) {
 
   private[MispConnection] lazy val logger = Logger(getClass)
 

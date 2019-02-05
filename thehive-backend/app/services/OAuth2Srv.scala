@@ -132,13 +132,13 @@ class OAuth2Srv(
         userFields ⇒
           val userId = userFields.getString("login").getOrElse("")
           userSrv.get(userId).flatMap(user ⇒ {
-            userSrv.getFromUser(request, user)
+            userSrv.getFromUser(request, user, name)
           }).recoverWith {
             case authErr: AuthorizationError ⇒ Future.failed(authErr)
             case _ if cfg.autocreate ⇒
               userSrv.inInitAuthContext { implicit authContext ⇒
                 userSrv.create(userFields).flatMap(user ⇒ {
-                  userSrv.getFromUser(request, user)
+                  userSrv.getFromUser(request, user, name)
                 })
               }
           }
