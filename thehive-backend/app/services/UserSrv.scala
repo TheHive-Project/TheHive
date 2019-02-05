@@ -29,16 +29,16 @@ class UserSrv @Inject() (
     dbIndex: DBIndex,
     implicit val ec: ExecutionContext) extends org.elastic4play.services.UserSrv {
 
-  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role]) extends AuthContext
+  private case class AuthContextImpl(userId: String, userName: String, requestId: String, roles: Seq[Role], authMethod: String) extends AuthContext
 
-  override def getFromId(request: RequestHeader, userId: String): Future[AuthContext] = {
+  override def getFromId(request: RequestHeader, userId: String, authMethod: String): Future[AuthContext] = {
     getSrv[UserModel, User](userModel, userId)
-      .flatMap { user ⇒ getFromUser(request, user) }
+      .flatMap { user ⇒ getFromUser(request, user, authMethod) }
   }
 
-  override def getFromUser(request: RequestHeader, user: org.elastic4play.services.User): Future[AuthContext] = {
+  override def getFromUser(request: RequestHeader, user: org.elastic4play.services.User, authMethod: String): Future[AuthContext] = {
     user match {
-      case u: User if u.status() == UserStatus.Ok ⇒ Future.successful(AuthContextImpl(user.id, user.getUserName, Instance.getRequestId(request), user.getRoles))
+      case u: User if u.status() == UserStatus.Ok ⇒ Future.successful(AuthContextImpl(user.id, user.getUserName, Instance.getRequestId(request), user.getRoles, authMethod))
       case _                                      ⇒ Future.failed(AuthorizationError("Your account is locked"))
     }
 
@@ -47,11 +47,11 @@ class UserSrv @Inject() (
   override def getInitialUser(request: RequestHeader): Future[AuthContext] =
     dbIndex.getSize(userModel.modelName).map {
       case size if size > 0 ⇒ throw AuthenticationError(s"Use of initial user is forbidden because users exist in database")
-      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Roles.admin, Roles.read, Roles.alert))
+      case _                ⇒ AuthContextImpl("init", "", Instance.getRequestId(request), Seq(Roles.admin, Roles.read, Roles.alert), "init")
     }
 
   override def inInitAuthContext[A](block: AuthContext ⇒ Future[A]): Future[A] = {
-    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Roles.admin, Roles.read, Roles.alert))
+    val authContext = AuthContextImpl("init", "", Instance.getInternalId, Seq(Roles.admin, Roles.read, Roles.alert), "init")
     eventSrv.publish(InternalRequestProcessStart(authContext.requestId))
     block(authContext).andThen {
       case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(authContext.requestId))
@@ -59,7 +59,7 @@ class UserSrv @Inject() (
   }
 
   def extraAuthContext[A](block: AuthContext ⇒ Future[A])(implicit authContext: AuthContext): Future[A] = {
-    val ac = AuthContextImpl(authContext.userId, authContext.userName, Instance.getInternalId, authContext.roles)
+    val ac = AuthContextImpl(authContext.userId, authContext.userName, Instance.getInternalId, authContext.roles, "init")
     eventSrv.publish(InternalRequestProcessStart(ac.requestId))
     block(ac).andThen {
       case _ ⇒ eventSrv.publish(InternalRequestProcessEnd(ac.requestId))

@@ -39,7 +39,7 @@ class KeyAuthSrv @Inject() (
       .filter(_.key().contains(key))
       .runWith(Sink.headOption)
       .flatMap {
-        case Some(user) ⇒ userSrv.getFromUser(request, user)
+        case Some(user) ⇒ userSrv.getFromUser(request, user, name)
         case None       ⇒ Future.failed(AuthenticationError("Authentication failure"))
       }
   }
