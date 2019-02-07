@@ -80,10 +80,17 @@ steps:
         fi
 
         CHANNEL=stable
-        echo $PLUGIN_VERSION | grep -qi rc && CHANNEL=beta
+        if $(echo $PLUGIN_VERSION | grep -qi rc)
+        then
+          CHANNEL=beta
+          V=$(echo $PLUGIN_VERSION | sed -e 's/-\([rR][cC]\)/-0.1\1/')
+          DEB_FILE=target/thehive_$${V}_all.deb
+          RPM_FILE=target/rpm/RPMS/noarch/thehive-$${V}.noarch.rpm
+        else
+          DEB_FILE=target/thehive_$${PLUGIN_VERSION}_all.deb
+          RPM_FILE=target/rpm/RPMS/noarch/thehive-$${PLUGIN_VERSION}.noarch.rpm
+        fi
 
-        DEB_FILE=target/thehive_$${PLUGIN_VERSION}_all.deb
-        RPM_FILE=target/rpm/RPMS/noarch/thehive-$${PLUGIN_VERSION}.noarch.rpm
         ZIP_FILE=target/universal/thehive-$${PLUGIN_VERSION}.zip
 
         upload \
