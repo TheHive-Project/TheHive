@@ -1,17 +1,24 @@
 # Change Log
 
-## [3.3.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC1) (2019-02-05)
+## [3.3.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC2) (2019-02-07)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC1...3.3.0-RC2)
+
+**Fixed bugs:**
+
+- Java dependency of DEB package is broken [\#867](https://github.com/TheHive-Project/TheHive/issues/867)
+
+## [3.3.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC1) (2019-02-06)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.1...3.3.0-RC1)
 
 **Implemented enhancements:**
 
+- \[BUG\] Session cookie received with API token  [\#864](https://github.com/TheHive-Project/TheHive/issues/864)
 - Add support to Java versions, higher than 8 [\#861](https://github.com/TheHive-Project/TheHive/issues/861)
 - MISP - Add an Event Tag instead of/additionnally to Attribute Tag [\#836](https://github.com/TheHive-Project/TheHive/issues/836)
 - sorting in alerts [\#824](https://github.com/TheHive-Project/TheHive/issues/824)
 - Improve case template selection for case creation [\#769](https://github.com/TheHive-Project/TheHive/issues/769)
 - Bulk Merge Alerts into Case [\#271](https://github.com/TheHive-Project/TheHive/issues/271)
-- \[BUG\] Session cookie received with API token  [\#864](https://github.com/TheHive-Project/TheHive/issues/864)
 - Merge alerts directly to a case [\#826](https://github.com/TheHive-Project/TheHive/issues/826)
 - Tag normalization [\#657](https://github.com/TheHive-Project/TheHive/pull/657) ([Viltaria](https://github.com/Viltaria))
 
