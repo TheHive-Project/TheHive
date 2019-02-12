@@ -1,7 +1,7 @@
 <div class="box box-primary">
     <div class="box-header with-border">
         <h3 class="box-title">
-            <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>{{component.options.title || 'No title'}}
+            <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>{{component.options.title || 'No title'}} {{mode}}
         </h3>
 
         <div class="box-tools pull-right">
@@ -13,11 +13,11 @@
             </a>
 
         </div>
-        <div class="box-tools pull-right" ng-if="mode === 'edit'">
+        <!-- <div class="box-tools pull-right" ng-if="mode === 'edit'">
             <button type="button" class="btn btn-box-tool" >
                 <i class="fa fa-save"></i> Save
             </button>
-        </div>
+        </div> -->
     </div>
     <div class="box-body" ng-switch="component.type">
         <dashboard-donut ng-switch-when="donut"

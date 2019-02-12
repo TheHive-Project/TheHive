@@ -81,8 +81,11 @@
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
                                     onclick: function(d) {
+                                        if(scope.mode === 'edit') {
+                                            return;
+                                        }
+
                                         var fieldDef = scope.entity.attributes[scope.options.field];
-                                        var fieldType = fieldDef.type;
 
                                         var data = {
                                             field: scope.options.field,
@@ -107,7 +110,7 @@
                                 }
                             };
                         },
-                        function(err) {
+                        function(/*err*/) {
                             scope.error = true;
                             NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                         }

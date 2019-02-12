@@ -56,29 +56,25 @@
                                 name: name,
                                 label: serie.label,
                                 value: data[name] || 0
-                            }
+                            };
                         });
 
-                    }, function(err) {
+                    }, function(/*err*/) {
                         scope.error = true;
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
                 };
 
                 scope.openSearch = function(item) {
-                  var criteria = [{ _type: scope.options.entity }, item.serie.query];
-
-                  if (scope.globalQuery && scope.globalQuery !== '*') {
-                      criteria.push(scope.globalQuery);
+                  if(scope.mode === 'edit') {
+                      return;
                   }
 
-                  var searchQuery = {
-                      _and: _.without(criteria, null, undefined, '')
-                  };
+                  var filters = (scope.options.filters || []).concat(item.serie.filters || []);
 
                   GlobalSearchSrv.saveSection(scope.options.entity, {
-                      search: null,
-                      filters: scope.options.filters.concat(item.serie.filters)
+                      search: filters.length === 0 ? '*' : null,
+                      filters: filters
                   });
                   $state.go('app.search');
                 };
