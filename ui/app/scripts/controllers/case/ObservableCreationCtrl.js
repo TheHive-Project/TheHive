@@ -153,7 +153,7 @@
                         NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
                     }
 
-                    $uibModalInstance.close(response);
+                    //$uibModalInstance.close(response);
                 }
 
             };
