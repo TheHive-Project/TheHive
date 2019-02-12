@@ -142,16 +142,13 @@
             $scope.handleSaveFailure = function(response) {
                 $scope.pendingAsync = false;
 
-                if (response.status === 400) {
+                if (response.status === 400 && response.data.type === 'ConflictError') {
                     $scope.failedObservables = $scope.getFailedObservables(response.data);
 
                     $scope.step = 'error';
-
                 } else {
-										if(response.data.type === "java.io.IOException") {
+										if(response.data.type) {
                         NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
-                    } else if(response.data.type === "InternalError") {
-											  NotificationSrv.error('ObservableCreationCtrl', response.data.message, response.status);
                     } else {
                         NotificationSrv.error('ObservableCreationCtrl', 'An unexpected error occurred while creating the observables', response.status);
                     }
