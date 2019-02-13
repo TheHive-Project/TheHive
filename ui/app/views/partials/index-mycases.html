@@ -1,0 +1,42 @@
+<psearch control="list"></psearch>
+
+<table class="table table-striped table-hover">
+	<thead>
+		<tr>
+			<th class="text-center" style="width: 60px;">Severity</th>
+			<th style="width: 200px;">Group</th>
+			<th>Case</th>
+			<th width="250px;">Date</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		<tr class="pointer task-row"
+			ng-repeat="value in list.values"
+			ng-class="{'warning': (value.flag == true)}"
+			ng-click="openEntity(value)">
+			<td class="text-center">
+				<severity active="false" value="value.case.severity"></severity>
+			</td>
+			<td>{{value.group}}</td>
+			<td>
+				<div>
+					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
+					<span ng-bind="value.title"></span>
+				</div>
+				<div ng-show="value.status === 'Open'" class="text-warning">
+						Started <em am-time-ago="value.startDate"></em>
+				</div>
+				<div>
+					<small><entity-link value="value.case"></entity-link></small>
+				</div>
+			</td>
+			<td>
+				{{value.startDate | showDate}}
+			</td>
+		</tr>
+	</tbody>
+
+</table>
+
+<psearch control="list"></psearch>
