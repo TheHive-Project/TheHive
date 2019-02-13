@@ -14,7 +14,17 @@
 
         <div class="collapse navbar-collapse" id="th-navbar-collapse">
             <ul class="nav navbar-nav" ng-show="currentUser.id">
-                <li class="dropdown" uib-dropdown>
+                <li ui-sref-active="active">
+                    <a href ng-click="createNewCase()" ng-if="!templates || templates.length === 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                    <a href ng-click="openTemplateSelector()" ng-if="templates && templates.length > 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                </li>
+                <!-- <li class="dropdown" uib-dropdown>
                     <a class="dropdown-toggle" uib-dropdown-toggle href>
                         <i class="fa fa-plus"></i>
                         <span class="hpad5">New Case</span>
@@ -28,8 +38,11 @@
                         <li ng-repeat="template in templates">
                             <a href ng-click="createNewCase(template)">{{template.name}}</a>
                         </li>
+                        <li ng-if="templates && templates.length > 0">
+                            <a href ng-click="openTemplateSelector()">From a template...</a>
+                        </li>
                     </ul>
-                </li>
+                </li> -->
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
                         <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
@@ -72,7 +85,7 @@
                             <span class="input-group-addon">
                                 <i class="glyphicon glyphicon-search"></i>
                             </span>
-                            <input class="input-sm form-control" ng-model="querystring" placeholder="CaseId" style="width: 80px" tooltype="Enter a case number" type="number"></input>                            
+                            <input class="input-sm form-control" ng-model="querystring" placeholder="CaseId" style="width: 80px" tooltype="Enter a case number" type="number"></input>
                             <!-- <div class="input-group-btn">
                                 <div class="btn-group dropdown" uib-dropdown>
                                     <a class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle href>

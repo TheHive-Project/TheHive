@@ -134,14 +134,31 @@ class AlertSrv(
   def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv[AlertModel, Alert](alertModel, id, fields, modifyConfig)
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
+    for {
+      alert ← get(id)
+      updatedAlert ← update(alert, fields, modifyConfig)
+    } yield updatedAlert
+  }
 
   def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
     update(alert, fields, ModifyConfig.default)
 
-  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
-    updateSrv(alert, fields, modifyConfig)
+  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
+    val follow = fields.getBoolean("follow").getOrElse(alert.follow())
+    val newStatus = if (follow) AlertStatus.Updated else alert.status()
+    val updatedAlert = updateSrv(alert, fields.set("status", Json.toJson(newStatus)), modifyConfig)
+    alert.caze() match {
+      case Some(caseId) if follow ⇒
+        for {
+          caze ← caseSrv.get(caseId)
+          a ← updatedAlert
+          _ ← importArtifacts(a, caze)
+          _ ← caseSrv.update(caze, Fields.empty.set("status", CaseStatus.Open.toString))
+        } yield a
+      case _ ⇒ updatedAlert
+    }
+  }
 
   def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
     bulkUpdate(ids, fields, ModifyConfig.default)
@@ -227,6 +244,16 @@ class AlertSrv(
             } yield updatedCase
         }
     }
+  }
+
+  def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+    Future.traverse(alerts) { alert ⇒
+      for {
+        _ ← importArtifacts(alert, caze)
+        _ ← setCase(alert, caze)
+      } yield ()
+    }
+      .map(_ ⇒ caze)
   }
 
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {

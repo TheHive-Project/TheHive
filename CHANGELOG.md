@@ -1,7 +1,34 @@
 # Change Log
 
-## [Unreleased](https://github.com/TheHive-Project/TheHive/tree/3.2.1) (2018-12-20)
+## [3.3.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC2) (2019-02-07)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC1...3.3.0-RC2)
+
+**Fixed bugs:**
+
+- Java dependency of DEB package is broken [\#867](https://github.com/TheHive-Project/TheHive/issues/867)
+
+## [3.3.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC1) (2019-02-06)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.1...3.3.0-RC1)
+
+**Implemented enhancements:**
+
+- \[BUG\] Session cookie received with API token  [\#864](https://github.com/TheHive-Project/TheHive/issues/864)
+- Add support to Java versions, higher than 8 [\#861](https://github.com/TheHive-Project/TheHive/issues/861)
+- MISP - Add an Event Tag instead of/additionnally to Attribute Tag [\#836](https://github.com/TheHive-Project/TheHive/issues/836)
+- sorting in alerts [\#824](https://github.com/TheHive-Project/TheHive/issues/824)
+- Improve case template selection for case creation [\#769](https://github.com/TheHive-Project/TheHive/issues/769)
+- Bulk Merge Alerts into Case [\#271](https://github.com/TheHive-Project/TheHive/issues/271)
+- Merge alerts directly to a case [\#826](https://github.com/TheHive-Project/TheHive/issues/826)
+- Tag normalization [\#657](https://github.com/TheHive-Project/TheHive/pull/657) ([Viltaria](https://github.com/Viltaria))
+
+**Fixed bugs:**
+
+- Alert updates and tracking \(follow\) [\#856](https://github.com/TheHive-Project/TheHive/issues/856)
+- Assigned Tasks do not show up in 'My Tasks' before they are started [\#845](https://github.com/TheHive-Project/TheHive/issues/845)
+- Delete user from Thehive:   DELETE /api/user/user1 returned 500 org.elastic4play.InternalError: user can't be removed [\#844](https://github.com/TheHive-Project/TheHive/issues/844)
+
+## [3.2.1](https://github.com/TheHive-Project/TheHive/tree/3.2.1) (2018-12-20)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0...3.2.1)
 
 **Fixed bugs:**
@@ -212,8 +239,10 @@
 - Artifacts reports are not merged when merging cases [\#446](https://github.com/TheHive-Project/TheHive/issues/446)
 - If cortex modules fails in some way, it is permanently repolled by TheHive [\#324](https://github.com/TheHive-Project/TheHive/issues/324)
 - Previewing alerts fails with "too many substreams open" due to case similarity process [\#280](https://github.com/TheHive-Project/TheHive/issues/280)
-- File upload when /tmp is full [\#321](https://github.com/TheHive-Project/TheHive/issues/321)
-- StreamSrv: Unexpected message : StreamNotFound [\#414](https://github.com/TheHive-Project/TheHive/issues/414)
+
+**Closed issues:**
+
+- add double quotes in mini reports [\#634](https://github.com/TheHive-Project/TheHive/issues/634)
 
 **Merged pull requests:**
 

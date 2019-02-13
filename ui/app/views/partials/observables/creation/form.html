@@ -98,7 +98,9 @@
     </label>
     <div class="col-md-9">
         <input type="hidden" name="tags" ng-model="params.tagNames" ng-required="!params.message.length"/>
-        <tags-input name="tagsInput" ng-model="tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"></tags-input>
+        <tags-input name="tagsInput" ng-model="tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2">
+            <auto-complete min-length="1" debounceDelay="400" source="getTags($query)"></auto-complete>
+        </tags-input>
         <p class="help-block" ng-show="observableForm.tags.$invalid && !observableForm.tagsInput.$pristine">The observable(s) description or tags are required.</p>
     </div>
 </div>

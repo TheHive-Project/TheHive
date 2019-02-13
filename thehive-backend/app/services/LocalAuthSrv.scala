@@ -35,7 +35,7 @@ class LocalAuthSrv @Inject() (
 
   override def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] = {
     userSrv.get(username).flatMap { user ⇒
-      if (doAuthenticate(user, password)) userSrv.getFromUser(request, user)
+      if (doAuthenticate(user, password)) userSrv.getFromUser(request, user, name)
       else Future.failed(AuthenticationError("Authentication failure"))
     }
   }
