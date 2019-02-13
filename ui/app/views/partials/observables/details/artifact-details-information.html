@@ -70,10 +70,10 @@
             </dd>
         </dl>
 
-        <dl class="dl-horizontal clear">
-            <dt class="pull-left">Labels</dt>
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Tags</dt>
             <dd>
-                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))"></updatable-tags>
+                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))" source="getTags"></updatable-tags>
             </dd>
         </dl>
 
