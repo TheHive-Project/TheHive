@@ -73,6 +73,27 @@ angular.module('theHiveControllers').controller('RootCtrl',
             field: 'status'
         });
 
+        $scope.myCases = StreamStatSrv({
+            scope: $scope,
+            rootId: 'any',
+            query: {
+                '_and': [
+                    {
+                        '_in': {
+                            '_field': 'status',
+                            '_values': ['Open']
+                        }
+                    },
+                    {
+                        'owner': $scope.currentUser.id
+                    }
+                ]
+            },
+            result: {},
+            objectType: 'case',
+            field: 'status'
+        });
+
         $scope.waitingTasks = StreamStatSrv({
             scope: $scope,
             rootId: 'any',
