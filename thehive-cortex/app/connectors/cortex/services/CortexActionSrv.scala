@@ -72,10 +72,14 @@ class CortexActionSrv @Inject() (
 
   def findResponderFor(entityType: String, entityId: String): Future[Seq[Responder]] = {
     for {
-      (tlp, pap) ← getEntity(entityType, entityId)
-        .flatMap(actionOperationSrv.findCaseEntity)
-        .map { caze ⇒ (caze.tlp(), caze.pap()) }
-        .recover { case _ ⇒ (0L, 0L) }
+      entity ← getEntity(entityType, entityId)
+      artifactTlp ← actionOperationSrv
+        .findArtifactEntity(entity)
+        .map(a ⇒ Some(a.tlp()))
+        .recover { case _ ⇒ None }
+      (tlp, pap) ← actionOperationSrv.findCaseEntity(entity)
+        .map { caze ⇒ (artifactTlp.getOrElse(caze.tlp()), caze.pap()) }
+        .recover { case _ ⇒ (artifactTlp.getOrElse(0L), 0L) }
       query = Json.obj(
         "dataTypeList" → s"thehive:$entityType")
       responders ← findResponders(query)

@@ -1,5 +1,7 @@
 <div class="modal-header bg-primary">
-    <h3 class="modal-title">Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span></h3>
+    <h3 class="modal-title">
+      Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
+    </h3>
 </div>
 <div class="modal-body">
     <div class="row text-center" ng-show="dialog.loading">
@@ -17,6 +19,10 @@
                 </h4>
                 <div class="mt-xxs">
                     <span>
+                        <strong><i class="fa fa-copy"></i> ID: </strong>
+                        <span><a href ng-click="dialog.copyId(dialog.event.id)">{{dialog.event.id}}</a></span>
+                    </span>
+                    <span class="ml-xxs">
                         <strong><i class="fa fa-calendar"></i> Date: </strong>
                         <span>{{dialog.event.date | showDate}}</span>
                     </span>
