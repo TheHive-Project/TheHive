@@ -33,7 +33,17 @@
         <span class="ml-xxs text-danger" ng-show="links.length > 0">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
-                <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})"><ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize></a>
+                <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})">
+                  <ng-pluralize count="links.length" when="{'one': '1 case', 'other': '{} cases'}"></ng-pluralize>
+                </a>
+            </strong>
+        </span>
+        <span class="ml-xxs text-danger" ng-show="alerts.count > 0">
+            <i class="glyphicon glyphicon-link"></i>
+            <strong>
+                <a class="text-danger" href ui-sref="app.case.alerts({caseId:caze.id})">
+                  <ng-pluralize count="alerts.count" when="{'one': '1 alert', 'other': '{} alerts'}"></ng-pluralize>
+                </a>
             </strong>
         </span>
 

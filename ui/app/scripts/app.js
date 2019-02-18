@@ -263,6 +263,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/case/case.links.html',
                 controller: 'CaseLinksCtrl'
             })
+            .state('app.case.alerts', {
+                url: '/alerts',
+                templateUrl: 'views/partials/case/case.alerts.html',
+                controller: 'CaseAlertsCtrl',
+                resolve: {
+                    alerts: function($stateParams, CaseSrv) {
+                        return CaseSrv.alerts({range: 'all'}, {
+                            query: {
+                              case: $stateParams.caseId
+                            }
+                        }).$promise;
+                    }
+                }
+            })
             .state('app.case.tasks-item', {
                 url: '/tasks/{itemId}',
                 templateUrl: 'views/partials/case/case.tasks.item.html',
@@ -433,7 +447,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
               var renderer = defaults.renderer;
               var linkRenderer = _.wrap(renderer.link, function(originalLink, href, title, text) {
                   var html = originalLink.call(renderer, href, title, text);
-                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ')
+                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ');
               });
 
               // Customize the link renderer
