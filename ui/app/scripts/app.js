@@ -313,6 +313,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 resolve: {
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
+                    },
+                    artifact: function($q, $stateParams, CaseArtifactSrv, NotificationSrv) {
+                        var deferred = $q.defer();
+
+                        CaseArtifactSrv.api().get({
+                            'artifactId': $stateParams.itemId
+                        }).$promise.then(function(data) {
+                            deferred.resolve(data);
+                        }).catch(function(response) {
+                            deferred.reject(response);
+                            NotificationSrv.error('Observable Details', response.data, response.status);
+                        });
+
+                        return deferred.promise;
                     }
                 }
             })
