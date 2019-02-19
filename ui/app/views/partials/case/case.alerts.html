@@ -10,13 +10,6 @@
             ng-click="filterBy('');"
             ng-class="{'label-primary': currentFilter===''}">All ({{alerts.length || 0}})</span>
 
-        <!-- <span><strong>Status:</strong></span>
-
-        <span class="label label-lg label-default mr-xxs clickable"
-            ng-repeat="statsItem in alertStats.status"
-            ng-click="filterBy('status', statsItem.key)"
-            ng-class="{'label-primary': currentFilter===statsItem.key}">{{statsItem.key}} ({{statsItem.value}})</span> -->
-
         <span><strong>Type:</strong></span>
         <span class="label label-lg label-default mr-xxs clickable"
             ng-repeat="statsItem in alertStats.type"
@@ -103,7 +96,14 @@
         <tbody>
             <tr ng-repeat="event in filteredAlerts = (alerts | filter:filtering | orderBy:sorting.field)">
                 <td class="wrap">
-                    <strong>{{::event.sourceRef}}</strong>
+                    <strong>
+                        <span>{{::event.sourceRef}}</span>
+                        <span ng-if="event.type === 'misp'" class="pl-xxs">
+                            <a ng-href="{{mispUrls[event.source]}}/events/{{event.sourceRef}}" target="_blank">
+                                <i class="fa fa-external-link"></i>
+                            </a>
+                        </span>
+                    </strong>
                 </td>
                 <td>
                     <span>{{::event.type}}</span>

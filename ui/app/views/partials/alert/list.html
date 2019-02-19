@@ -108,7 +108,15 @@
                                         <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
                                     </td>
                                     <td class="wrap">
-                                        <strong>{{::event.sourceRef}}</strong>
+                                        <strong>
+                                            <span>{{::event.sourceRef}}</span>
+                                            <span ng-if="event.type === 'misp'" class="pl-xxs">
+                                                <a ng-href="{{$vm.urls[event.source]}}/events/{{event.sourceRef}}" target="_blank">
+                                                    <i class="fa fa-external-link"></i>
+                                                </a>
+                                            </span>
+                                        </strong>
+
                                     </td>
                                     <td>
                                         <span><a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
@@ -130,6 +138,10 @@
                                             <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
                                             <span ng-repeat="tag in event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
                                         </div>
+                                        <!-- <div class="flexwrap" ng-if="event.type === 'misp'">
+                                            <span class="mr-xxxs text-muted"><i class="fa fa-link"></i></span>
+                                            <a ng-href="{{$vm.urls[event.source]}}/events/{{event.sourceRef}}" target="_blank">Open in MISP</a>
+                                        </div> -->
                                     </td>
                                     <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
                                     <td class="text-center">

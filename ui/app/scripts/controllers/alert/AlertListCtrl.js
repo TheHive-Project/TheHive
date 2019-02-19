@@ -1,8 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity) {
+        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
+
+            self.urls = VersionSrv.mispUrls();
 
             self.list = [];
             self.selection = [];

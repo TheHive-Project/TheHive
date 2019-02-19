@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseAlertsCtrl',
-        function($scope, $state, $stateParams, $uibModal, $timeout, CaseTabsSrv, alerts) {
+        function($scope, $state, $stateParams, $uibModal, $timeout, CaseTabsSrv, VersionSrv, alerts) {
             $scope.caseId = $stateParams.caseId;
             $scope.alerts = alerts;
             $scope.alertStats = [];
@@ -11,6 +11,8 @@
               field: '-date'
             };
             var tabName = 'alerts-' + $scope.caseId;
+
+            $scope.mispUrls = VersionSrv.mispUrls();
 
             // Add tab
             CaseTabsSrv.addTab(tabName, {

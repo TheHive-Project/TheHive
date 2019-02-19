@@ -34,8 +34,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/login.html',
                 resolve: {
                     appConfig: function(VersionSrv) {
-                                 return VersionSrv.get();
-                              }
+                       return VersionSrv.get();
+                    }
                 },
                 params: {
                     autoLogin: false
