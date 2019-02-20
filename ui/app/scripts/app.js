@@ -77,6 +77,10 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     appLayout: function($q, $rootScope, AppLayoutSrv) {
                         AppLayoutSrv.init();
                         return $q.resolve();
+                    },
+                    uiConfig: function($q, UiSettingsSrv) {
+                        UiSettingsSrv.all();
+                        return $q.resolve();
                     }
                 }
             })
@@ -214,6 +218,18 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/admin/observables.html',
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
+            })
+            .state('app.administration.ui-settings', {
+                url: '/ui-settings',
+                templateUrl: 'views/partials/admin/ui-settings.html',
+                controller: 'AdminUiSettingsCtrl',
+                controllerAs: '$vm',
+                title: 'UI settings',
+                resolve: {
+                    uiConfig: function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }
+                }
             })
             .state('app.case', {
                 abstract: true,
