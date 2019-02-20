@@ -324,6 +324,9 @@
                           resolve: {
                               templates: function(){
                                   return templates;
+                              },                              
+                              uiSettings: function(UiSettingsSrv) {
+                                  return UiSettingsSrv.all();
                               }
                           }
                       });

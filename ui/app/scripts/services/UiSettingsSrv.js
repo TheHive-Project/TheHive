@@ -4,12 +4,12 @@
 
         var settings = null;
 
-        return {
-            keys: [
-                'hideEmptyCaseButton',
-                'hideMyTasks',
-                'hideWaitingTasks'
-            ],
+        var keys = [
+            'hideEmptyCaseButton'
+        ];
+
+        var factory = {
+            keys: keys,
             clearCache: function() {
                 settings = null;
             },
@@ -63,5 +63,13 @@
                 return deferred.promise;
             }
         };
+
+        keys.forEach(function(key) {
+            factory[key] = function() {
+                return (settings[key] || {}).value;
+            };
+        });
+
+        return factory;
     });
 })();
