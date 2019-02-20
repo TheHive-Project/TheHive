@@ -6,7 +6,9 @@
 
         return {
             keys: [
-                'hideEmptyCaseButton'
+                'hideEmptyCaseButton',
+                'hideMyTasks',
+                'hideWaitingTasks'
             ],
             clearCache: function() {
                 settings = null;
