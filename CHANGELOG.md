@@ -1,7 +1,38 @@
 # Change Log
 
-## [3.3.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC2) (2019-02-07)
+## [3.3.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC3) (2019-02-21)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC2...3.3.0-RC3)
+
+**Implemented enhancements:**
+
+- Add a UI configuration admin section [\#888](https://github.com/TheHive-Project/TheHive/issues/888)
+- Add a Related Alerts link to case details view [\#884](https://github.com/TheHive-Project/TheHive/issues/884)
+- Update Copyright with year 2019 [\#879](https://github.com/TheHive-Project/TheHive/issues/879)
+- Provide a quick link to copy alert id [\#870](https://github.com/TheHive-Project/TheHive/issues/870)
+- \[BUG\] Audit trail for alert ignore [\#863](https://github.com/TheHive-Project/TheHive/issues/863)
+- Related artifacts: IOC/not IOC [\#838](https://github.com/TheHive-Project/TheHive/issues/838)
+- Feature: Add "auto-completion" to the UI [\#831](https://github.com/TheHive-Project/TheHive/issues/831)
+- Improvement: Upload of observables seem to fail "silently" [\#829](https://github.com/TheHive-Project/TheHive/issues/829)
+- Feature Request: link to and from Hive to MISP [\#820](https://github.com/TheHive-Project/TheHive/issues/820)
+- Disable clickable widgets in dashboard edit mode [\#485](https://github.com/TheHive-Project/TheHive/issues/485)
+- Ability to disable "New Case" -\> "Empty case" [\#449](https://github.com/TheHive-Project/TheHive/issues/449)
+
+**Fixed bugs:**
+
+- Drone build fails on pull-requests [\#882](https://github.com/TheHive-Project/TheHive/issues/882)
+- AKKA version missmatch [\#877](https://github.com/TheHive-Project/TheHive/issues/877)
+- Label Typo in Updated Alerts [\#874](https://github.com/TheHive-Project/TheHive/issues/874)
+- Log message related to MISP synchronization is confusing [\#871](https://github.com/TheHive-Project/TheHive/issues/871)
+- Cortex responders with DataType `thehive:case\_artifact` do not show up within thehive when attempting to run them for observables. [\#869](https://github.com/TheHive-Project/TheHive/issues/869)
+- Alert updates and tracking \(follow\) [\#856](https://github.com/TheHive-Project/TheHive/issues/856)
+
+**Merged pull requests:**
+
+- Update akka version [\#878](https://github.com/TheHive-Project/TheHive/pull/878) ([zpriddy](https://github.com/zpriddy))
+- Fix Update Label to Warning [\#873](https://github.com/TheHive-Project/TheHive/pull/873) ([zpriddy](https://github.com/zpriddy))
+
+## [3.3.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC2) (2019-02-07)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC1...3.3.0-RC2)
 
 **Fixed bugs:**
