@@ -146,7 +146,7 @@ class AlertSrv(
 
   def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
     val follow = fields.getBoolean("follow").getOrElse(alert.follow())
-    val newStatus = if (follow) AlertStatus.Updated else alert.status()
+    val newStatus = if (follow && alert.status() != AlertStatus.New) AlertStatus.Updated else alert.status()
     val updatedAlert = updateSrv(alert, fields.set("status", Json.toJson(newStatus)), modifyConfig)
     alert.caze() match {
       case Some(caseId) if follow ⇒

@@ -1,11 +1,13 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTemplatesDialogCtrl',
-        function($scope, $uibModalInstance, templates) {
+        function($scope, $uibModalInstance, UiSettingsSrv, templates, uiSettings) {
             this.templates = templates;
+            this.uiSettings = uiSettings;
             this.state = {
                 filter: null,
-                selected: null
+                selected: null,
+                hideEmptyCaseButton: UiSettingsSrv.hideEmptyCaseButton()
             };
 
             this.selectTemplate = function(template) {
@@ -18,7 +20,7 @@
 
             this.next = function(template) {
                 $uibModalInstance.close(template);
-            }
+            };
 
             this.cancel = function() {
                 $uibModalInstance.dismiss();

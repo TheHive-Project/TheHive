@@ -159,6 +159,7 @@ steps:
       strip_components: 3
     when:
       branch: [develop]
+      event: {exclude: [pull_request]}
 
   - name: deploy binaries in integration environment
     image: appleboy/drone-ssh
@@ -170,6 +171,7 @@ steps:
         - ./start thehive ${DRONE_BUILD_NUMBER}
     when:
       branch: [develop]
+      event: {exclude: [pull_request]}
 
   # Deploy binaries in staging environment
   - name: copy binaries in staging environment
@@ -183,6 +185,7 @@ steps:
       strip_components: 3
     when:
       branch: [master]
+      event: {exclude: [pull_request]}
 
   - name: deploy binaries in staging environment
     image: appleboy/drone-ssh
@@ -194,6 +197,7 @@ steps:
         - ./start thehive ${DRONE_BUILD_NUMBER}
     when:
       branch: [master]
+      event: {exclude: [pull_request]}
 
 volumes:
   - name: cache

@@ -139,6 +139,18 @@ class ActionOperationSrv @Inject() (
     }
   }
 
+  def findArtifactEntity(entity: BaseEntity): Future[Artifact] = {
+    import org.elastic4play.services.QueryDSL._
+
+    (entity, entity.model) match {
+      case (a: Artifact, _) ⇒ Future.successful(a)
+      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+        findSrv(model.parentModel, "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")), Some("0-1"), Nil)
+          ._1.runWith(Sink.head).flatMap(findArtifactEntity _)
+      case _ ⇒ Future.failed(BadRequestError("Artifact not found"))
+    }
+  }
+
   def execute(entity: BaseEntity, operation: ActionOperation)(implicit authContext: AuthContext): Future[ActionOperation] = {
     if (operation.status == ActionOperationStatus.Waiting) {
       Retry()(classOf[VersionConflictEngineException]) {

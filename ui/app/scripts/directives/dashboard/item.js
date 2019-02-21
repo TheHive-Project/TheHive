@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardItem', function(DashboardSrv, UserSrv, $uibModal, $timeout, $q) {
+    angular.module('theHiveDirectives').directive('dashboardItem', function(DashboardSrv, UserSrv, $uibModal, $timeout) {
         return {
             restrict: 'E',
             replace: true,
@@ -13,13 +13,13 @@
                 autoload: '=',
                 refreshOn: '@',
                 resizeOn: '@',
-                mode: '@',
+                mode: '=',
                 showEdit: '=',
                 showRemove: '=',
                 onRemove: '&'
             },
             templateUrl: 'views/directives/dashboard/item.html',
-            link: function(scope, element) {
+            link: function(scope/*, element*/) {
                 scope.typeClasses = DashboardSrv.typeClasses;
                 scope.timeIntervals = DashboardSrv.timeIntervals;
                 scope.aggregations = DashboardSrv.aggregations;
@@ -35,7 +35,7 @@
                 scope.query = null;
 
                 if(scope.component.id) {
-                    scope.$on('edit-chart-' + scope.component.id, function(data) {
+                    scope.$on('edit-chart-' + scope.component.id, function(/*data*/) {
                         scope.editItem();
                     });
                 }
@@ -72,7 +72,7 @@
                             if(serie.filters) {
                                 serie.query = DashboardSrv.buildFiltersQuery(scope.metadata[entity || serie.entity].attributes, serie.filters);
                             }
-                        })
+                        });
 
                         scope.component.options = definition;
 
