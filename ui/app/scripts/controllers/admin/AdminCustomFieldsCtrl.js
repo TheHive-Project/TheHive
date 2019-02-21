@@ -59,12 +59,12 @@
                     }
                 });
 
-                modalInstance.result.then(function(data) {
+                modalInstance.result.then(function(/*data*/) {
                     self.initCustomfields();
                     CustomFieldsCacheSrv.clearCache();
                     $scope.$emit('custom-fields:refresh');
                 });
-            }
+            };
 
             self.initCustomfields();
         });

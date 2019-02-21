@@ -78,11 +78,11 @@
         self.clearUniqueReferenceError = function(form) {
             form.reference.$setValidity('unique', true);
             form.reference.$setPristine();
-        }
+        };
 
         self.cancel = function() {
             $uibModalInstance.dismiss();
-        }
+        };
 
         self.onNamechanged = function(form) {
             if (!self.customField.name) {

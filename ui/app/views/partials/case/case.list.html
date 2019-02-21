@@ -68,7 +68,7 @@
 
                                     <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.filterByTlp(currentCase.tlp)"></td>
                                     <td>
-                                        <div class="case-title">
+                                        <div class="case-title wrap">
                                             <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
                                         </div>
                                         <div class="case-tags flexwrap mt-xxs">
@@ -84,11 +84,11 @@
                                             </small>
                                         </div>
                                         <div class="text-danger" ng-if="currentCase.mergeFrom">
-                        					<small>
+                        					          <small>
                                                 Merged from <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[0]})"> Case #{{currentCase.stats.mergeFrom[0].caseId}}</a> and
                                                 <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
                                             </small>
-                        				</div>
+                        				        </div>
                                     </td>
                                     <td align="center">
                                         <div class="clickable" ng-click="$vm.filterBySeverity(currentCase.severity)">

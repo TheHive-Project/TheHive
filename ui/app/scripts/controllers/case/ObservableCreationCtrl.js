@@ -142,7 +142,7 @@
             $scope.handleSaveFailure = function(response) {
                 $scope.pendingAsync = false;
 
-                if (response.status === 400 && response.data.type === 'ConflictError') {
+                if (response.status === 400 && (response.data.type === 'ConflictError' || _.isArray(response.data))) {
                     $scope.failedObservables = $scope.getFailedObservables(response.data);
 
                     $scope.step = 'error';

@@ -77,11 +77,23 @@ TheHive can be configured to import events from one or multiple [MISP](http://ww
 
 [Cortex](https://github.com/TheHive-Project/Cortex/) is the perfect companion for TheHive. Use one or several to analyze observables at scale and respond to incidents.
 
-### Integration with Digital Shadows
-TheHive Project provides [DigitalShadows2TH](https://github.com/TheHive-Project/DigitalShadows2TH), a free, open source [Digital Shadows](https://www.digitalshadows.com/) alert feeder for TheHive. You can use it to import Digital Shadows *incidents* and *intel-incidents* as alerts in TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+### Alert Feeders by TheHive Project
 
-### Integration with Zerofox
+#### DigitalShadows2TH
+[DigitalShadows2TH](https://github.com/TheHive-Project/DigitalShadows2TH) is a free, open source [Digital Shadows](https://www.digitalshadows.com/) alert feeder for TheHive. You can use it to import Digital Shadows *incidents* and *intel-incidents* as alerts in TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+#### Synapse
+[Synapse](https://github.com/TheHive-Project/Synapse) is a meta-alert feeder that allows you to centrally feed TheHive from multiple alert sources. It leverages TheHive's API to automate case and alert creation. Case creation from email or alert creation from SIEM event are typical use cases. Currently, Synapse allows you to integrate Exchange, O365 & QRadar.
+
+#### Zerofox2TH
 [Zerofox2TH](https://github.com/TheHive-Project/Zerofox2TH) is a free, open source [ZeroFOX](https://www.zerofox.com/) alert feeder for TheHive, written by TheHive Project. You can use it to feed ZeroFOX alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+### Alert Feeders from the User Community
+
+### Integration with Crowdstrike Falcon (WIP)
+[Crowdstrike2TH](https://github.com/xg5-simon/CrowdStrike2TH) is a [Crowdstrike Falcon](https://www.crowdstrike.com/endpoint-security-products/) alert feeder for TheHive, written by [Simon](https://github.com/xg5-simon). You can use it to feed Crowdstrike alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+**Note**: this is a work in progress. Currently, the code licensing is unclear. 
 
 ### Integration with FireEye iSIGHT
 [FireEye2TH](https://github.com/LDO-CERT/FireEye2TH) is a free, open source [FireEye iSIGHT](https://www.fireeye.com/) alert feeder for TheHive, written by LDO-CERT. You can use it to feed FireEye iSIGHT alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.

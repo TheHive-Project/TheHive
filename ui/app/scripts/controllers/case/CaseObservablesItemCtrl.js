@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -18,7 +18,7 @@
                 'logMissing': ''
             };
 
-            $scope.artifact = {};
+            $scope.artifact = artifact;
             $scope.artifact.tlp = $scope.artifact.tlp || -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.cortexServers = $scope.analysisEnabled && appConfig.connectors.cortex.servers;
@@ -32,37 +32,23 @@
                 mode: 'vb'
             };
 
-            CaseArtifactSrv.api().get({
-                'artifactId': observableId
-            }, function (observable) {
-
-                // Add tab
-                CaseTabsSrv.addTab(observableName, {
-                    name: observableName,
-                    label: observable.data || observable.attachment.name,
-                    closable: true,
-                    state: 'app.case.observables-item',
-                    params: {
-                        itemId: observable.id
-                    }
-                });
-
-                // Select tab
-                $timeout(function() {
-                    CaseTabsSrv.activateTab(observableName);
-                }, 0);
-
-
-                // Prepare the scope data
-                $scope.initScope(observable);
-
-            }, function (response) {
-                NotificationSrv.error('ObservableDetails', response.data, response.status);
-                CaseTabsSrv.activateTab('observables');
+            // Add tab
+            CaseTabsSrv.addTab(observableName, {
+                name: observableName,
+                label: artifact.data || artifact.attachment.name,
+                closable: true,
+                state: 'app.case.observables-item',
+                params: {
+                    itemId: artifact.id
+                }
             });
 
-            $scope.initScope = function (artifact) {
-                $scope.artifact = artifact;
+            // Select tab
+            $timeout(function() {
+                CaseTabsSrv.activateTab(observableName);
+            }, 0);
+
+            $scope.initScope = function (artifact) {                
 
                 // Get analyzers available for the observable's datatype
                 AnalyzerSrv.forDataType(artifact.dataType)
@@ -100,6 +86,9 @@
                       }
                   });
             };
+
+            // Prepare the scope data
+            $scope.initScope(artifact);
 
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
