@@ -1,7 +1,18 @@
 # Change Log
 
-## [3.3.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC3) (2019-02-21)
+## [3.3.0-RC4](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC4) (2019-02-22)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC3...3.3.0-RC4)
 
+**Implemented enhancements:**
+
+- Use empty case modal when merging alerts and no templates are defined [\#893](https://github.com/TheHive-Project/TheHive/issues/893)
+
+**Fixed bugs:**
+
+- Issue with navigation from dashboard clickable donuts to search page [\#894](https://github.com/TheHive-Project/TheHive/issues/894)
+- Hide Empty Case Button Broken [\#890](https://github.com/TheHive-Project/TheHive/issues/890)
+
+## [3.3.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC3) (2019-02-21)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC2...3.3.0-RC3)
 
 **Implemented enhancements:**
