@@ -180,9 +180,9 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     templates: function(){
                         return $scope.templates;
                     },
-                    uiSettings: function(UiSettingsSrv) {
+                    uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
                         return UiSettingsSrv.all();
-                    }
+                    }]
                 }
             });
 
