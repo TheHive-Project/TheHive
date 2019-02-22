@@ -328,10 +328,10 @@
                           resolve: {
                               templates: function(){
                                   return templates;
-                              },                              
-                              uiSettings: function(UiSettingsSrv) {
+                              },
+                              uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
                                   return UiSettingsSrv.all();
-                              }
+                              }]
                           }
                       });
 
