@@ -18,7 +18,7 @@
             var cfg = this.restore();
 
             return cfg[entity] || {};
-        }
+        };
 
         this.restore = function() {
             return localStorageService.get('search-section') || {
@@ -55,7 +55,7 @@
                 return {
                     operator: 'any',
                     list: [{text: value.id, label:value.name}]
-                }
+                };
             } else {
                 switch(fieldDef.type) {
                     case 'number':
