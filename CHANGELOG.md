@@ -1,5 +1,17 @@
 # Change Log
 
+## [3.3.0-RC5](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-02-24)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC4...3.3.0-RC5)
+
+**Implemented enhancements:**
+
+- Mouseover text for alert preview [\#897](https://github.com/TheHive-Project/TheHive/issues/897)
+
+**Fixed bugs:**
+
+- dashboard clicks are not correctly translated to tag filters [\#896](https://github.com/TheHive-Project/TheHive/issues/896)
+- Search results not visible [\#895](https://github.com/TheHive-Project/TheHive/issues/895)
+
 ## [3.3.0-RC4](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC4) (2019-02-22)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC3...3.3.0-RC4)
 

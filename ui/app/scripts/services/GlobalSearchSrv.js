@@ -51,7 +51,7 @@
         };
 
         this.buildDefaultFilterValue = function(fieldDef, value) {
-            if(fieldDef.type === 'user' || fieldDef.values.length > 0) {
+            if(fieldDef.name === 'tags' || fieldDef.type === 'user' || fieldDef.values.length > 0) {
                 return {
                     operator: 'any',
                     list: [{text: value.id, label:value.name}]
