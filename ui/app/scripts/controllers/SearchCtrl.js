@@ -25,7 +25,7 @@
                     _not: {
                         '_in': {
                             '_field': '_type',
-                            '_values': ['dashboard', 'data', 'user', 'analyzer', 'caseTemplate']
+                            '_values': ['dashboard', 'data', 'user', 'analyzer', 'caseTemplate', 'reportTemplate', 'action']
                         }
                     }
                   }
