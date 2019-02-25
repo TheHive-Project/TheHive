@@ -315,6 +315,10 @@
                 CaseTemplateSrv.list()
                   .then(function(templates) {
 
+                      if(!templates || templates.length === 0) {
+                          return $q.resolve(undefined);
+                      }
+
                       // Open template selection dialog
                       var modal = $uibModal.open({
                           templateUrl: 'views/partials/case/case.templates.selector.html',
@@ -324,10 +328,10 @@
                           resolve: {
                               templates: function(){
                                   return templates;
-                              },                              
-                              uiSettings: function(UiSettingsSrv) {
+                              },
+                              uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
                                   return UiSettingsSrv.all();
-                              }
+                              }]
                           }
                       });
 
