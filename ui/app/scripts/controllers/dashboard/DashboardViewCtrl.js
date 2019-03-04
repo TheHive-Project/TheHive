@@ -57,11 +57,11 @@
             this.canEditDashboard = function() {
                 return (this.createdBy === this.currentUser.id) ||
                     (this.dashboardStatus = 'Shared' && AuthenticationSrv.isAdmin(this.currentUser));
-            }
+            };
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
-                containerAllowedTypes: ['bar', 'line', 'donut', 'counter', 'multiline'],
+                containerAllowedTypes: ['bar', 'line', 'donut', 'counter', 'text', 'multiline'],
                 maxColumns: 3,
                 cls: DashboardSrv.typeClasses,
                 labels: {
@@ -70,6 +70,7 @@
                     donut: 'Donut',
                     line: 'Line',
                     counter: 'Counter',
+                    text: 'Text',
                     multiline: 'Multi Lines'
                 },
                 editLayout: !_.find(this.definition.items, function(row) {
@@ -132,9 +133,9 @@
                     }, 0);
                 });
 
-            }
+            };
 
-            this.itemInserted = function(item, rows, rowIndex, index) {
+            this.itemInserted = function(item, rows/*, rowIndex, index*/) {
                 if(!item.id){
                     item.id = UtilsSrv.guid();
                 }
