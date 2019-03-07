@@ -169,7 +169,7 @@
                     <option value="" ng-if="dialog.templates.length === 0 || !!!dialog.hideEmptyCaseButton">Empty case</option>
                 </select>
                 <span class="input-group-btn">
-                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)">Yes, Import</button>
                 </span>
             </div>
 

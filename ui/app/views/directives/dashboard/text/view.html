@@ -1,0 +1,19 @@
+<div class="c3-container">
+    <div class="c3-error" ng-if="error">
+        <div class="text-center">
+            <h4 class="text-danger">
+                <div class="mb-xxs"><i class="fa fa-2x fa-exclamation-triangle"></i></div>
+                <div>Failed to fetch data, please edit the widget definition</div>
+            </h4>
+        </div>
+    </div>
+    <div ng-if="!error" class="row">
+        <div class="col-sm-12">
+            <div class="clearfix" ng-show="content">
+                <a class="pull-right ml-xxs" href ng-click="copyHTML()"><i class="fa fa-file-text-o mr-xxxs"></i>HTML</a>
+                <strong class="text-primary pull-right">Copy</strong>
+            </div>
+            <div marked="content" class="markdown widget-content"></div>
+        </div>
+    </div>
+</div>

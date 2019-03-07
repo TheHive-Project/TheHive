@@ -1,6 +1,23 @@
 # Change Log
 
-## [3.3.0-RC5](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-02-24)
+## [3.3.0-RC6](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC6) (2019-02-07)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC5...3.3.0-RC6)
+
+**Implemented enhancements:**
+
+- Add Tags to an Alert with Responder [\#912](https://github.com/TheHive-Project/TheHive/issues/912)
+- Dashboards - Add text widget [\#908](https://github.com/TheHive-Project/TheHive/issues/908)
+- Empty case still available when disabled [\#901](https://github.com/TheHive-Project/TheHive/issues/901)
+- Support for filtering Tags by prefix \(using asterisk, % or something\) in search dialog [\#666](https://github.com/TheHive-Project/TheHive/issues/666)
+
+**Closed issues:**
+
+- Dynamic \(auto-refresh\) of cases is break in 3.3.0-RC5 [\#907](https://github.com/TheHive-Project/TheHive/issues/907)
+- Hostname Artifact [\#900](https://github.com/TheHive-Project/TheHive/issues/900)
+- DOS issue: Firefox crashing TheHive  [\#899](https://github.com/TheHive-Project/TheHive/issues/899)
+
+## [3.3.0-RC5](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC5) (2019-02-23)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC4...3.3.0-RC5)
 
 **Implemented enhancements:**
