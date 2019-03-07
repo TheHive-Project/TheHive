@@ -144,6 +144,18 @@
                 scope.showQuery = function() {
                     scope.query = DashboardSrv.buildFiltersQuery(scope.metadata[scope.component.options.entity], scope.component.options.filters);
                 };
+
+                scope.clearProperty = function(obj, property) {
+                    if(obj[property] !== undefined && obj[property] !== null) {
+                      if(_.isArray(obj[property])){
+                        obj[property] = [];
+                      } else if (_.isObject(obj[property])) {
+                        obj[property] = {};
+                      } else {
+                        obj[property] = null;
+                      }
+                    }
+                };
             }
         };
     });

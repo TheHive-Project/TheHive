@@ -1,0 +1,27 @@
+<uib-tabset class="nav-tabs-custom" active="layout.activeTab">
+    <uib-tab index="0">
+        <uib-tab-heading>
+            <i class="fa fa-bars"></i> Basic
+        </uib-tab-heading>
+        <ng-include src="'views/directives/dashboard/category/basic.html'"></ng-include>
+    </uib-tab>
+    <uib-tab index="1">
+        <uib-tab-heading>
+            <i class="fa fa-arrows-h"></i> X Axis
+        </uib-tab-heading>
+        <ng-include src="'views/directives/dashboard/category/xaxis.html'"></ng-include>
+    </uib-tab>
+    <uib-tab index="2">
+        <uib-tab-heading>
+            <i class="fa fa-arrows-v"></i> Y Axis
+        </uib-tab-heading>
+        <ng-include src="'views/directives/dashboard/category/yaxis.html'"></ng-include>
+    </uib-tab>
+    <uib-tab index="3">
+        <uib-tab-heading>
+            <i class="fa fa-filter"></i> Filters
+        </uib-tab-heading>
+        <ng-include src="'views/directives/dashboard/filters.html'"></ng-include>
+    </uib-tab>
+</uib-tabset>
+<pre>{{component | json}}</pre>

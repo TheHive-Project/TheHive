@@ -1,0 +1,48 @@
+<div class="form-group">
+    <div>
+        <label>Type</label>
+    </div>
+    <div class="btn-group">
+        <label class="btn btn-default" ng-model="component.options.xAxis.type" uib-btn-radio="'field'">Field Aggregation</label>
+        <label class="btn btn-default" ng-model="component.options.xAxis.type" uib-btn-radio="'category'">Custom Series</label>
+    </div>
+</div>
+<div ng-switch="component.options.xAxis.type">
+    <div ng-switch-when="field">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Aggregation Field</label>
+                    <select class="form-control" ng-model="component.options.xAxis.field"
+                        ng-options="item.name as item.name for item in skipFields(metadata[component.options.entity].attributes, ['date', 'text']) | orderBy:'name'"
+                        ng-change="clearProperty(component.options.xAxis, 'names')"
+                        ></select>
+                </div>
+            </div>
+        </div>
+
+        <div ng-if="component.options.xAxis.field && metadata[component.options.entity].attributes[component.options.xAxis.field].values.length > 0">
+            <label>Customize</label>
+            <div class="row mb-xxs" ng-repeat="val in metadata[component.options.entity].attributes[component.options.xAxis.field].values track by $index">
+                <div class="col-sm-4">
+                    <div class="form-control">
+                        <label>{{val}}</label>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" ng-model="component.options.xAxis.names[val]" placeholder="Label">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" ng-switch-when="category">
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label>Entity</label>
+                <select class="form-control" ng-model="component.options.xAxis.entity"
+                    ng-options="item as metadata[item].label for item in metadata.entities"></select>
+            </div>
+        </div>
+    </div>
+</div>

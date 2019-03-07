@@ -19,7 +19,7 @@
                 return period === 'custom' ?
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
-            }
+            };
 
             this.loadDashboard = function(dashboard) {
                 this.dashboard = dashboard;
@@ -33,7 +33,7 @@
                     ]
                 };
                 this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
-            }
+            };
 
             this.loadDashboard(dashboard);
 
@@ -61,17 +61,18 @@
 
             this.options = {
                 dashboardAllowedTypes: ['container'],
-                containerAllowedTypes: ['bar', 'line', 'donut', 'counter', 'text', 'multiline'],
+                containerAllowedTypes: ['bar', 'line', 'donut', 'counter', 'text', 'multiline', 'category'],
                 maxColumns: 3,
                 cls: DashboardSrv.typeClasses,
                 labels: {
                     container: 'Row',
                     bar: 'Bar',
                     donut: 'Donut',
-                    line: 'Line',
+                    line: 'Lines',
                     counter: 'Counter',
                     text: 'Text',
-                    multiline: 'Multi Lines'
+                    multiline: 'Multi Lines',
+                    category: 'Categories'
                 },
                 editLayout: !_.find(this.definition.items, function(row) {
                     return row.items.length > 0;

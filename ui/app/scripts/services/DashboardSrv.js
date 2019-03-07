@@ -75,7 +75,8 @@
             line: 'fa-line-chart',
             multiline: 'fa-area-chart',
             counter: 'fa-calculator',
-            text: 'fa-file'
+            text: 'fa-file',
+            category: 'fa-bar-chart'
         };
 
         this.sortOptions = [{
@@ -120,6 +121,19 @@
                     title: null,
                     template: null,
                     entity: null
+                }
+            },
+            {
+                type: 'category',
+                options: {
+                    title: null,
+                    entity: null,
+                    xAxis: {
+                      type: null
+                    },
+                    yAxis: {
+                      type: null
+                    }
                 }
             },
             {
