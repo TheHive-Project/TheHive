@@ -1,11 +1,10 @@
 package org.thp.thehive.services
-import java.io.InputStream
 import java.util.{Date, UUID}
 
 import scala.reflect.runtime.{universe ⇒ ru}
 
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models.Model.Base
@@ -16,8 +15,9 @@ import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
 
 @Singleton
-class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], auditSrv: AuditSrv) extends Database {
+class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], auditSrvProvider: Provider[AuditSrv]) extends Database {
   implicit lazy val db: Database = originalDatabase.get().get
+  lazy val auditSrv: AuditSrv    = auditSrvProvider.get()
 
   override val idMapping: SingleMapping[UUID, String]            = db.idMapping
   override val createdAtMapping: SingleMapping[Date, Date]       = db.createdAtMapping
@@ -72,7 +72,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], audi
       authContext: AuthContext,
       elementSrv: ElementSrv[_, _],
       id: String,
-      properties: Seq[PublicProperty[_, _]],
+      properties: Seq[PublicProperty[_, _, _]],
       fields: Map[FPath, UpdateOps.Type]): Unit = {
     val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Any]]
 
@@ -126,8 +126,9 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], audi
   override def setSetProperty[D, G](element: Element, key: String, values: Set[D], mapping: SetMapping[D, _]): Unit =
     db.setSetProperty[D, G](element, key, values, mapping)
   override def setProperty[D](element: Element, key: String, value: D, mapping: Mapping[D, _, _]): Unit = db.setProperty(element, key, value, mapping)
-  override def loadBinary(initialVertex: Vertex)(implicit graph: Graph): InputStream                    = db.loadBinary(initialVertex)(graph)
-  override def loadBinary(id: String)(implicit graph: Graph): InputStream                               = db.loadBinary(id)(graph)
-  override def saveBinary(id: String, is: InputStream)(implicit graph: Graph): Vertex                   = db.saveBinary(id, is)(graph)
-  override val extraModels: Seq[Model]                                                                  = db.extraModels
+  override def vertexStep(graph: Graph, model: Model): GremlinScala[Vertex]                             = db.vertexStep(graph, model)
+  override def edgeStep(graph: Graph, model: Model): GremlinScala[Edge]                                 = db.edgeStep(graph, model)
+  //  override def loadBinary(id: String)(implicit graph: Graph): InputStream                               = db.loadBinary(id)(graph)
+//  override def saveBinary(id: String, is: InputStream)(implicit graph: Graph): Vertex                   = db.saveBinary(id, is)(graph)
+  override val extraModels: Seq[Model] = db.extraModels
 }
