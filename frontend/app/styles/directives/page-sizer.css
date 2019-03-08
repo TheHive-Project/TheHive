@@ -1,0 +1,14 @@
+.page-sizer {
+    display:flex;
+    align-items: center;
+    width: 150px;
+}
+
+.page-sizer .page-sizer-label {
+    flex: auto;
+    white-space: nowrap;
+}
+
+.page-sizer select {
+    flex: auto;
+}

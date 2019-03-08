@@ -1,0 +1,13 @@
+<form ng-submit="search()">
+    <div class="input-group input-group-sm">
+        <input type="text" class="form-control" ng-model="searchForm.searchQuery" placeholder="Filter" autofocus="autofocus">
+        <span class="input-group-btn">
+            <button class="btn btn-sm btn-default" type="button" ng-click="clearSearch()">
+                <i class="text-danger glyphicon glyphicon-remove"></i>
+            </button>
+            <button class="btn btn-sm btn-default" type="button" ng-click="search()">
+                <i class="text-default glyphicon glyphicon-search"></i>
+            </button>
+        </span>
+    </div>
+</form>

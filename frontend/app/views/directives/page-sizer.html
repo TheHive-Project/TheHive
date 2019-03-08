@@ -1,0 +1,7 @@
+<div class="page-sizer">
+    <select class="form-control input-sm" ng-class="cls"
+        ng-model="collection.pageSize"
+        ng-change="collection.update()"
+        ng-options="v for v in sizes"></select>
+    <span class="page-sizer-label nowrap ml-xxs">per page</span>
+</div>

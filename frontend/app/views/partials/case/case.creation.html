@@ -1,0 +1,153 @@
+<form class="form-horizontal" name="caseCreateForm" ng-submit="createNewCase(caseCreateForm.$valid);" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Create a new case</h3>
+    </div>
+    <div class="modal-body">
+        <h4 class="vpad10 text-primary">Case details</h4>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.title.$invalid && !caseCreateForm.title.$pristine }">
+                    <label class="col-md-3 control-label">Title
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+
+                        <input class="form-control input-sm" name="title" ng-if="!fromTemplate" ng-model="newCase.title" placeholder="Title" required type="text"/>
+
+                        <div class="input-group" ng-if="fromTemplate">
+                            <span class="input-group-addon">{{template.titlePrefix}}</span>
+                            <input class="form-control input-sm" name="title" ng-model="newCase.title" placeholder="Title" required type="text"/>
+                        </div>
+
+                        <p class="help-block" ng-show="caseCreateForm.title.$invalid && !caseCreateForm.title.$pristine">The case title is required.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.startDate.$invalid && !caseCreateForm.startDate.$pristine }">
+                    <label class="col-md-3 control-label">Date
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <date-time-picker date="newCase.startDate" name="startDate"></date-time-picker>
+                        <p class="help-block" ng-show="caseCreateForm.startDate.$invalid && !caseCreateForm.startDate.$pristine">The case start date is required.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="col-md-3 control-label">Severity
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <severity active="active" value="newCase.severity"></severity>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="col-md-3 control-label">TLP
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <a href ng-click="activeTlp='active'">
+                            <tlp format="activeTlp" on-update="updateTlp(newValue)" value="newCase.tlp"></tlp>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="col-md-3 control-label">Tags</label>
+                    <div class="col-md-9">
+                        <!-- <tags-input class="ti-input-sm" replace-spaces-with-dashes="false"></tags-input> -->
+                        <tags-input class="ti-input-sm input-sm form-control form-control-wrapper"
+                            name="tags"
+                            placeholder="Tags"
+                            min-length="2"
+                            ng-model="tags"
+                            replace-spaces-with-dashes="false">
+                                <auto-complete min-length="1" debounceDelay="400" source="getTags($query)"></auto-complete>
+                            </tags-input>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-md-3 control-label">PAP
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <a href ng-click="activePap='active'">
+                            <tlp format="activePap" on-update="updatePap(newValue)" value="newCase.pap" namespace="PAP"></tlp>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.description.$invalid && !caseCreateForm.description.$pristine }">
+                    <label class="col-sm-3 control-label">Description
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-sm-9">
+                        <textarea class="form-control" name="description" ng-model="newCase.description" placeholder="Case description" required rows="3"></textarea>
+                        <p class="help-block" ng-show="caseCreateForm.description.$invalid && !caseCreateForm.description.$pristine">The case description is required.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="vpad10 text-primary">Case tasks
+            <small ng-if="fromTemplate">(from [{{template.name}}] template)</small>
+        </h4>
+        <div class="row" ng-if="!fromTemplate">
+            <div class="col-md-12">
+                <div class="input-group input-group-sm">
+                    <input class="form-control task-input" name="task-input" ng-model="temp.task" placeholder="Task title" type="text" />
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" type="button" ng-disabled="!temp.task" ng-click="addTask(temp.task)">Add task</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="row vpad5" ng-if="tasks.length === 0">
+            <div class="col-md-12">
+                <div class="empty-message">
+                    No tasks have been specified
+                </div>
+            </div>
+        </div>
+        <div class="row vpad5" ng-if="tasks.length !== 0" ng-repeat="t in tasks">
+            <div class="col-md-12">
+                <span>
+                    <a ng-click="removeTask(t)" ng-if="!fromTemplate" style="cursor:pointer;"><i class="fa fa-times text-danger"></i></a>
+                    <span class="hpad10">{{t}}</span>
+                </span>
+            </div>
+        </div>
+
+        <h4 class="vpad10 text-primary" ng-if="fromTemplate">Case metrics <small> (from [{{template.name}}] template)</small></h4>
+        <div class="row vpad5" ng-if="fromTemplate">
+            <div class="col-md-12" ng-if="keys(template.metrics) > 0">
+                <span class="rm2 label label-default" ng-repeat="(m, v) in template.metrics">{{metricsCache[m].title}}</span>
+            </div>
+            <div class="col-md-12" ng-if="keys(template.metrics) === 0">
+                <div class="empty-message">
+                  No metrics have been specified
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+        <span class="btn">
+            <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+        <button class="btn btn-primary pull-right" ng-disabled="caseCreateForm.$invalid || pendingAsync" type="submit">
+            <i class="fa fa-plus"></i>&nbsp;Create case</button>
+    </div>
+</form>

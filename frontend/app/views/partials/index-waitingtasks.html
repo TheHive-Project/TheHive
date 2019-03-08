@@ -1,0 +1,34 @@
+<psearch control="list"></psearch>
+
+<table class="table table-striped table-hover">
+	<thead>
+		<tr>
+			<th class="text-center" style="width: 60px;">Severity</th>
+			<th width="200px;">Group</th>
+			<th>Task</th>
+			<th width="100px;">Action</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		<tr class="task-row"
+			ng-repeat="value in list.values">
+			<td class="text-center">
+				<severity active="false" value="value.case.severity"></severity>
+			</td>
+			<td>{{value.group}}</td>
+			<td>
+				<div>{{value.title}}</div>
+				<div>
+					<small><entity-link value="value.case"></entity-link></small>
+				</div>
+			</td>
+			<td>
+				<button type="button" class="btn btn-sm btn-primary" ng-click="openWTask(value)">Take</button>
+			</td>
+		</tr>
+	</tbody>
+
+</table>
+
+<psearch control="list"></psearch>

@@ -1,0 +1,42 @@
+<div class="search-item-title">
+    <a href ui-sref="app.case.tasks-item({caseId: value.case_task.case.id, itemId: value.case_task.id})">
+        Message by {{value.owner}}
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-calendar"></i>
+    <span ng-bind="value.startDate | showDate"></span>
+
+    <i class="glyphicon glyphicon-pushpin ml-xxs"></i>
+    <span class="wrap" ng-bind="value.case_task.title"></span>
+</div>
+<div class="mt-xs wrap" ng-if="!value.attachment.name">
+    <span ng-bind="value.message | limitTo: 250"></span>
+</div>
+
+<div class="mt-xs wrap" ng-if="value.attachment.name">
+    <div>
+        <span ng-bind="value.message | limitTo: 250"></span>
+    </div>
+    <div class="mt-xs attachment">
+        <div class="file-box">
+            <div class="file">
+                <a href="./api/datastore/{{value.attachment.id}}?name={{value.attachment.name | escape}}" target="_blank">
+                    <div class="image" ng-show="isImage(value.attachment.contentType)">
+                        <img class="btn img-responsive img-thumbnail" src="./api/datastore/{{value.attachment.id}}" alt="{{value.attachment.name}}"></img>
+                    </div>
+
+                    <div class="icon" ng-hide="isImage(value.attachment.contentType)">
+                        <i class="glyphicon glyphicon-file"></i>
+                    </div>
+                    <div class="file-name">
+                        {{value.attachment.name}}
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+</div>

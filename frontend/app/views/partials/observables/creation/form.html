@@ -1,0 +1,119 @@
+<div class="form-group" ng-class="{ 'has-error' : observableForm.dataType.$invalid && !observableForm.dataType.$pristine }">
+    <label class="col-md-3 control-label">Type <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <input type="hidden" name="dataType" ng-model="params.dataType" required>
+        <div class="btn-group" uib-dropdown>
+            <button type="button" class="btn btn-default" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li ng-repeat="type in types">
+                    <a ng-click="selectDataType(type)">{{type}}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- File observable -->
+<div class="form-group" ng-show="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
+    <label class="col-md-3 control-label">File <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <input type="hidden" name="attachment" ng-model="params.attachment.status" ng-required="isFile()">
+        <div file-chooser="" filemodel="params.attachment"></div>
+        <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
+            WARNING: This file seems to be empty
+        </div>
+        <div class="checkbox">
+          <label>
+              <input type="checkbox" ng-model="params.isZip">&nbsp;The file is a zipped archive
+          </label>
+        </div>
+        <div ng-show="params.isZip">
+            <input type="text" class="form-control" ng-model="params.zipPassword" placeholder="Type archive's password if available"> {{params.izZip}}
+        </div>
+    </div>
+</div>
+
+<!-- Non file observable -->
+<div class="form-group" ng-show="!isFile()" ng-class="{ 'has-error' : observableForm.data.$invalid && !observableForm.data.$pristine }">
+    <label class="col-md-3 control-label">Value <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <textarea class="form-control" placeholder="{{params.dataType}}" name="data" ng-model="params.data" rows="5" ng-required="!isFile()"></textarea>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="false">
+                One observable per line
+                <span class="ml-xxxs">
+                    (<ng-pluralize count="countObservables()" when="{'0': '0 observables', 'one': '1 unique observable', 'other': '{} unique observables'}"></ng-pluralize>)
+                </span>
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="bulk" ng-model="params.single" ng-value="true">
+                One single multiline observable
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="col-md-3 control-label">TLP <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <p class="form-control-static">
+            <a href ng-click="activeTlp='active'">
+                <tlp value="params.tlp" format="activeTlp" on-update="updateTlp(newValue)" class="form-control-static"></tlp>
+            </a>
+        </p>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="col-md-3 control-label">Is IOC</label>
+    <div class="col-md-9">
+        <p class="form-control-static">
+            <a href ng-click="params.ioc = !params.ioc">
+                <i class="text-primary fa" ng-class="{ 'fa-star' : params.ioc, 'fa-star-o' : !params.ioc }"></i>
+            </a>
+        </p>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="col-md-3 control-label">Has been sighted</label>
+    <div class="col-md-9">
+        <p class="form-control-static">
+            <a href ng-click="params.sighted = !params.sighted">
+                <i class="text-primary fa" ng-class="{ 'fa-toggle-on' : params.sighted, 'fa-toggle-off' : !params.sighted }"></i>
+            </a>
+        </p>
+    </div>
+</div>
+
+<!-- missing.tags -->
+<div class="form-group" ng-class="{ 'has-error' : observableForm.tags.$invalid && !observableForm.tagsInput.$pristine }">
+    <label class="col-md-3 control-label">
+        Tags
+        <span><i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i></span>
+    </label>
+    <div class="col-md-9">
+        <input type="hidden" name="tags" ng-model="params.tagNames" ng-required="!params.message.length"/>
+        <tags-input name="tagsInput" ng-model="tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2">
+            <auto-complete min-length="1" debounceDelay="400" source="getTags($query)"></auto-complete>
+        </tags-input>
+        <p class="help-block" ng-show="observableForm.tags.$invalid && !observableForm.tagsInput.$pristine">The observable(s) description or tags are required.</p>
+    </div>
+</div>
+
+<div class="form-group" ng-class="{ 'has-error' : observableForm.description.$invalid && !observableForm.description.$pristine }">
+    <label class="col-sm-3 control-label">Description <i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-sm-9">
+        <textarea class="form-control" name="description" ng-model="params.message" placeholder="Observable(s) description" rows="3" ng-required="!params.tagNames.length"></textarea>
+        <p class="help-block" ng-show="observableForm.description.$invalid && !observableForm.description.$pristine">The observable(s) description or tags are required.</p>
+    </div>
+</div>
+
+<p class="clearfix">
+    <span class="pull-right"><i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i> At least, one required field</span>
+    <span class="pull-right mr-xxs"><i class="fa fa-asterisk text-danger"></i> Required field</span>
+</p>

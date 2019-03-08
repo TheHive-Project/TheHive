@@ -1,0 +1,49 @@
+div.case-collection:nth-of-type(odd) {
+    background-color: #f9f9f9;
+}
+
+div.case-item {
+    margin-bottom: 1px;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+}
+
+div.case-item>div {
+    padding: 5px;
+}
+
+div.case-item>div.case-tlp {
+    width: 8px;
+}
+
+div.case-item>div.case-details {
+    flex: 1;
+}
+
+div.case-item>div.case-owner {
+    width: 50px;
+}
+
+div.case-item>div.case-severity {
+    width: 40px;
+}
+
+div.case-item>div.case-date {
+    width: 120px;
+}
+
+div.case-item>div.case-observables-count {
+    width: 30px;
+}
+
+div.case-item>div.case-observables-list {
+    width: 450px;
+}
+div.case-item>div.case-similarity {
+    width: 200px;
+}
+div.case-item>div.case-similarity-merge {
+    width: 150px;
+    text-align: center;
+}

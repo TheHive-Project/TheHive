@@ -1,0 +1,44 @@
+<div class="case-template-section">
+    <h4 class="vpad10 text-primary">
+        Custom fields ({{$vm.keys($vm.template.customFields).length}})
+        <a class="pull-right" href ng-click="$vm.addCustomFieldRow()">
+            <i class="fa fa-plus"></i>
+        </a>
+    </h4>
+
+    <div class="empty-message" ng-if="$vm.templateCustomFields.length === 0">
+        No custom fields have been added. <a href class="mr-xxxs" ng-click="$vm.addCustomFieldRow()">Add a custom field</a>
+    </div>
+
+    <div ng-if="$vm.templateCustomFields.length !== 0" ui-sortable="$vm.sortableFields" ng-model="$vm.templateCustomFields">
+        <div class="customfield-item" ng-repeat="cf in $vm.templateCustomFields">
+            <div class="row">
+                <div class="col-sm-12">
+                    <span class="drag-handle text-primary clickable mr-xxs">
+                        <i class="fa fa-bars"></i>
+                    </span>
+                    <a href ng-click="$vm.removeCustomField(cf)"><span class="pull-right text-danger"><i class="fa fa-trash"></i> Delete</span></a>
+                </div>
+                <div class="col-sm-6">
+                    <select class="form-control" ng-model="cf.name" ng-options="item.reference as item.name for (key, item) in $vm.fields" required></select>
+                </div>
+                <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length > 0">
+                    <select class="form-control" ng-model="cf.value" ng-options="v for v in $vm.fields[cf.name].options">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length === 0" ng-switch="$vm.fields[cf.name].type">
+                    <input ng-switch-when="string" type="text" class="form-control" ng-model="cf.value">
+                    <input ng-switch-when="number" type="number" class="form-control" ng-model="cf.value">
+                    <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in [true, false]">
+                        <option value=""></option>
+                    </select>
+                    <dt-picker ng-switch-when="date" date="cf.value"></dt-picker>
+                </div>
+                <div class="col-sm-12">
+                    <i class="pl-xxss fa fa-question-circle" aria-hidden="true"></i> <small>{{$vm.fields[cf.name].description || 'No description'}}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

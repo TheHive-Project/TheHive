@@ -1,0 +1,61 @@
+<div class="row" ng-controller="CaseStatsCtrl as statsCtrl">
+    <div class="col-md-12">
+        <h4>Statistics</h4>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">Cases by Status</div>
+            <div class="panel-body">
+                <table class="table table-condensed">
+                    <tr ng-repeat="item in statsCtrl.byStatus.details">
+                        <td class="active">{{item.key}}</td>
+                        <td>
+                            <a href ng-click="$vm.addFilterValue('status', item.key)">{{item.count}}</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">Case by Resolution</div>
+            <div class="panel-body">
+                <table class="table table-condensed">
+                    <tr ng-repeat="item in statsCtrl.byResolution.details">
+                        <td class="active">{{item.key}}</td>
+                        <td>
+                            <a href ng-click="$vm.addFilterValue('resolutionStatus', item.key)">{{item.count}}</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">Top 5 tags</div>
+            <div class="panel-body">
+                <table class="table table-condensed">
+                    <tr ng-repeat="item in statsCtrl.byTags.details">
+                        <td class="active">{{item.key}}</td>
+                        <td>
+                            <a href ng-click="$vm.addFilterValue('tags', item.key)">{{item.count}}</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- <div class="col-md-4">
+    <chart type="donut" options="observableByType" refresh-on="refresh-charts" autoload="false"></chart>
+</div>
+<div class="col-md-4 p-xxs">
+    <chart type="donut" options="observableByIoc" refresh-on="refresh-charts" autoload="false"></chart>
+</div>
+<div class="col-md-4 p-xxs">
+    <chart type="donut" options="observableByTags" refresh-on="refresh-charts" autoload="false"></chart>
+</div> -->

@@ -1,0 +1,62 @@
+<div class="box">
+    <div class="box-header">
+        <h3 class="box-title">Case metrics management</h3>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-md-12">
+                <form name="metricForm" ng-submit="addMetric()">
+                    <div class="row">
+                        <div class="form-group col-md-3">
+                            <label>Name</label>
+                            <input class="form-control" ng-model="metric.name" placeholder="The name of the metric" required type="text">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label>Title</label>
+                            <input class="form-control" ng-model="metric.title" placeholder="The label that will be used in the case form" required type="text">
+
+                        </div>
+                        <div class="form-group col-md-5">
+                            <label>Description</label>
+                            <input class="form-control" ng-model="metric.description" placeholder="A brief description of the metric" required type="text">
+                        </div>
+                        <div class="form-group col-md-1">
+                            <label>&nbsp;</label><br>
+                            <button class="btn btn-primary" type="submit" ng-disabled="metricForm.$invalid">Add metric</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <hr>
+        <div class="vpad10"></div>
+        <div class="row">
+            <div class="col-md-12" ng-if="metrics.length === 0">
+                <div class="empty-message">There are no metrics defined yet</div>
+            </div>
+
+            <div class="col-md-12" ng-if="metrics.length !== 0">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-md-3">Name <a ng-click="sortBy('name')"><i class="fa fa-sort" ng-class="{'fa-sort-up': state.sort==='name' && !state.asc, 'fa-sort-down': state.sort==='name' && state.asc}"></i></a></th>
+                            <th class="col-md-3">Title <a ng-click="sortBy('title')"><i class="fa fa-sort" ng-class="{'fa-sort-up': state.sort==='title' && !state.asc, 'fa-sort-down': state.sort==='title' && state.asc}"></i></a></th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="metric in metrics | orderBy:state.sort:!state.asc">
+                            <td>{{metric.name}}</td>
+                            <td>{{metric.title}}</td>
+                            <td>{{metric.description}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="vpad10"></div>
+
+    </div>
+</div>

@@ -1,0 +1,22 @@
+<div class="search-item-title">
+    <a href ui-sref="app.case.observables-item({caseId: value.case.id, itemId: value.id})">
+        [<span ng-bind="value.dataType"></span>]:
+        <em>
+            <span ng-if="!value.attachment.name" ng-bind="value.data"></span>
+            <span ng-if="value.attachment.name" ng-bind="value.attachment.name"></span>
+        </em>
+    </a>
+</div>
+<div>
+    <i class="glyphicon glyphicon-user"></i>
+    <span>{{getUserInfo.get(value.createdBy) | getField: 'name'}}</span>
+
+    <i class="glyphicon glyphicon-calendar ml-xxs"></i>
+    <span ng-bind="value.startDate | showDate"></span>
+</div>
+<div class="mt-xs wrap" ng-if="value.tags.length>0">
+    <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
+</div>
+<div class="mt-xs wrap">
+    <span ng-bind="(value.message || 'No Description') | limitTo: 250"></span>
+</div>

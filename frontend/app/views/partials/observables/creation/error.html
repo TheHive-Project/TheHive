@@ -1,0 +1,21 @@
+<div class="alert alert-danger">
+    Failed to create the following observables
+</div>
+<table class="table table-striped">
+    <thead>
+        <th>Observable</th>
+        <th>Reason</th>
+    </thead>
+    <tbody>
+        <tr ng-repeat="o in failedObservables">
+            <td class="wrap">{{o.data | fang}}</td>
+            <td class="nowrap" ng-switch="o.type">
+                <span ng-switch-when="CreateError">Already exists</span>
+                <span ng-switch-when="ConflictError">Already exists</span>
+                <span ng-switch-when="AttributeError">Format error</span>
+                <span ng-switch-default>Unexpected error</span>
+            </td>
+        </tr>
+    </tbody>
+
+</table>

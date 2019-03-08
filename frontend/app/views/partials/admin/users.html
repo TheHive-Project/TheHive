@@ -1,0 +1,98 @@
+<div class="box">
+    <div class="box-header">
+        <h3 class="box-title">User management</h3>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-xs-12">
+                <button class="btn btn-sm btn-primary" type="button" ng-click="showUserDialog()">Add user</button>
+
+                <div class="btn-group pull-right" role="group">
+                    <page-sizer collection="userlist" sizes="[10, 15, 30, 100]"></page-sizer>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-xs">
+            <div class="col-md-12">
+                <table class="table table-striped valigned">
+                    <thead>
+                        <tr>
+                            <th>Login</th>
+                            <th>Full Name</th>
+                            <th>Roles</th>
+                            <th width="300">Password</th>
+                            <th width="400">API key</th>
+                            <th width="150" class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="user in userlist.values">
+                            <td ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]">
+                                <a href ng-click="showUserDialog(user)"><strong>{{user.id}}</strong></a>
+                            </td>
+                            <td ng-class="{ 'Locked':'text-muted', 'Ok':''}[user.status]">
+                                <updatable-simple-text active="state.editing" on-update="updateField(user, 'name', newValue)" value="user.name"></updatable-simple-text>
+                            </td>
+
+                            <td>
+                                <span ng-bind="user.roles.join(', ') || 'none'"></span>
+                            </td>
+
+                            <td ng-init="showPwdForm[user] = false">
+                                <span ng-if="canSetPass === true">
+                                    <span class="btn btn-sm btn-default" ng-class="{ 'Locked':'disabled', 'Ok':''}[user.status]" ng-click="showPwdForm[user] = true" ng-hide="showPwdForm[user]">New password</span>
+                                    <form ng-show="showPwdForm[user]" ng-submit="setPassword(user, newValue); showPwdForm[user] = false;">
+                                        <div class="input-group input-group-sm">
+                                            <input autofocus="autofocus" class="form-control input-sm" ng-model="newValue" type="password">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-default" type="button" ng-click="showPwdForm[user] = false">
+                                                    <i class="fa fa-times text-danger"></i>
+                                                </button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </span>
+                            </td>
+
+                            <td>
+                                <span ng-if="!user.hasKey">
+                                    <span class="btn btn-sm btn-default" ng-class="{'Locked':'disabled'}[user.status]" ng-click="createKey(user)">Create API Key</span>
+                                </span>
+                                <span ng-if="user.hasKey">
+
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-btn">
+                                            <span class="btn btn-sm btn-default" ng-class="{'Locked':'disabled'}[user.status]" ng-click="createKey(user)">Renew</span>
+                                            <span class="btn btn-sm btn-danger" ng-class="{'Locked':'disabled'}[user.status]" ng-click="revokeKey(user)">Revoke</span>
+                                            <span class="btn btn-sm btn-primary" ng-class="{'Locked':'disabled'}[user.status]" ng-click="getKey(user)" ng-if="!usrKey[user.id]">Reveal</span>
+                                        </span>
+                                        <input class="form-control" readonly ng-model="usrKey[user.id]" ng-if="usrKey[user.id]">
+                                        <span class="input-group-btn" ng-if="usrKey[user.id]">
+                                            <button class="btn btn-primary" type="button" ng-click="copyKey(user)" uib-tooltip="Copy key">
+                                                <i class="fa fa-copy"></i>
+                                            </button>
+                                        </span>
+                                    </div>
+
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary pull-right" ng-click="showUserDialog(user)">
+                                    <i class="fa fa-pencil"></i> Edit
+                                </button>
+                                <button class="btn btn-sm pull-right mr-xxxs" ng-class="{'Locked':'btn-danger', 'Ok': 'btn-default'}[user.status]" ng-click="lockUser(user)">
+                                    <i class="fa fa-lock"></i> {{user.status === 'Ok' ? 'Lock' : 'Unlock'}}
+                                </button>
+
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
+                <psearch control="userlist"></psearch>
+            </div>
+        </div>
+    </div>
+</div>

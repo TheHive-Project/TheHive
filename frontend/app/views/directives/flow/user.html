@@ -1,0 +1,25 @@
+<div class="flow-user" ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="glyphicon glyphicon-user"></i>
+        {{base.object.name}}
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Creation">
+        User {{base.object.name}} added
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Delete">
+        User {{base.object.name}} removed
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-default>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <span ng-switch-when="password">
+                password changed
+            </span>
+            <span ng-switch-default>
+                {{k}}: <em>{{v}}</em>
+            </span>
+        </span>
+    </div>
+</div>

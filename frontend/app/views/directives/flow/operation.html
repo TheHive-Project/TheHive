@@ -1,0 +1,22 @@
+<div class="flow-operation small">
+    <span class="operation-type" ng-switch="base.operation">
+        <span ng-switch-when="Delete"><i class="text-danger glyphicon glyphicon-remove"></i><span> Deleted by </span></span>
+        <span ng-switch-when="Creation"><i class="text-info glyphicon glyphicon-plus"></i><span> Added by </span></span>
+        <span ng-switch-when="Update">
+            <span ng-switch="base.details.status">
+                <span ng-switch-when="Cancel"><i class="text-danger glyphicon glyphicon-remove"></i><span> Deleted by </span></span>
+                <span ng-switch-when="completed"><i class="text-success glyphicon glyphicon-ok"></i><span> Completed by </span></span>
+                <span ng-switch-when="Resolved"><i class="text-success glyphicon glyphicon-ok"></i><span> Closed by </span></span>
+                <span ng-switch-default><i class="text-success glyphicon glyphicon-refresh"></i><span>Updated by </span></span>
+            </span>
+        </span>
+    </span>
+    <span class="operation-user">{{getUserInfo.get(base.createdBy) | getField: 'name'}}</span>
+
+    <span class="operation-timer pull-right">
+        <i class="text-default glyphicon glyphicon-time"></i>
+    	<timer interval="30000" start-time="gtime(base.startDate)">
+            {{millis  | amDurationFormat : 'milliseconds'}}
+    	</timer>
+    </span>
+</div>

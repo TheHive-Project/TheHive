@@ -1,0 +1,13 @@
+<div class="form-group">
+    <label>Title</label>
+    <input type="text" class="form-control" placeholder="Ex: cases per TLP" ng-model="component.options.title">
+</div>
+<div class="row">    
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label>Interval</label>
+            <select class="form-control" ng-model="component.options.interval"
+                ng-options="item.code as item.label for item in timeIntervals"></select>
+        </div>
+    </div>
+</div>

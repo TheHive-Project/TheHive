@@ -1,0 +1,110 @@
+<div class="row" ng-show="links.length === 0">
+    <div class="col-md-12">
+        <div class=" empty-message">No records</div>
+    </div>
+</div>
+
+<div class="case-links" ng-show="links.length > 0" ng-init="filteredLinks = (links | filter:filtering | orderBy:sorting.field)">
+    <div class="mv-s" ng-if="linkStats">
+        <span class="label label-lg label-default mr-xxs clickable"
+            ng-click="filterLinks('');"
+            ng-class="{'label-primary': currentFilter===''}">All ({{links.length || 0}})</span>
+
+        <span class="label label-lg label-default mr-xxs clickable"
+            ng-repeat="statsItem in linkStats"
+            ng-click="filterLinks(statsItem.key)"
+            ng-class="{'label-primary': currentFilter===statsItem.key}">{{CaseResolutionStatus[statsItem.key] || statsItem.key}} ({{statsItem.value}})</span>
+    </div>
+
+    <div class="row" ng-show="filteredLinks.length === 0">
+        <div class="col-md-12">
+            <div class=" empty-message">No records</div>
+        </div>
+    </div>
+
+    <div class="case-item" ng-show="filteredLinks.length !== 0">
+        <div class="case-details text-bold">
+          <a href class="text-default" ng-click="sortBy('title')">
+            Title
+            <i ng-show="sorting.field !== '+title' && sorting.field !== '-title'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+title'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-title'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
+        <div class="case-date text-bold">
+          <a href class="text-default" ng-click="sortBy('startDate')">
+            Date
+            <i ng-show="sorting.field !== '+startDate' && sorting.field !== '-startDate'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+startDate'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-startDate'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
+        <div class="case-observables-list text-bold">
+          <a href class="text-default" ng-click="sortBy('linksCount')">
+            Linked observables
+            <i ng-show="sorting.field !== '+linksCount' && sorting.field !== '-linksCount'" class="fa fa-sort"></i>
+            <i ng-show="sorting.field === '+linksCount'" class="fa fa-caret-up"></i>
+            <i ng-show="sorting.field === '-linksCount'" class="fa fa-caret-down"></i>
+          </a>
+        </div>
+    </div>
+    <div class="case-collection" ng-repeat="item in filteredLinks = (links | filter:filtering | orderBy:sorting.field)">
+        <div class="case-item" >
+            <!-- case severity -->
+            <div class="case-tlp bg-tlp-{{item.tlp}}"></div>
+
+            <!-- case title and main details -->
+            <div class="case-details">
+                <div class="case-title">
+                    <a ui-sref="app.case.details({caseId: item.id})">#{{item.caseId}} - {{item.title}}</a>
+                </div>
+                <div class="case-tags flexwrap mt-xxs">
+                    <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                    <strong class="text-muted mr-xxxs" ng-if="!item.tags || item.tags.length === 0">None</strong>
+                    <span ng-repeat="tag in item.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                </div>
+                <div class="text-success" ng-show="item.status !== 'Open'">
+                    <small>
+                        (Closed at {{item.endDate | showDate}} as <strong>{{CaseResolutionStatus[item.resolutionStatus]}}</strong>)
+                    </small>
+                </div>
+                <div class="text-danger" ng-if="item.mergeFrom">
+                    <small>
+                        Merged from <a href ui-sref="app.case.details({caseId: item.mergeFrom[0]})"> Case #{{item.stats.mergeFrom[0].caseId}}</a> and
+                        <a href ui-sref="app.case.details({caseId: item.mergeFrom[1]})"> Case #{{utem.stats.mergeFrom[1].caseId}}</a>
+                    </small>
+                </div>
+            </div>
+
+            <div class="case-severity">
+                <div class="clickable">
+                    <severity active="false" value="item.severity"></severity>
+                </div>
+            </div>
+
+            <div class="case-date">
+                <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
+            </div>
+
+            <div class="case-observables-count">
+                <span class="badge">{{item.linksCount}}</span>
+            </div>
+
+            <div class="case-observables-list">
+                <div ng-repeat="observable in item.linkedWith | limitTo:displayOptions[item.id]" class="wrap">
+                    <i class="fa fa-star" ng-if="observable.ioc"></i>
+                    <a href ui-sref="app.case.observables-item({caseId: item.id, itemId: observable.id})">
+                        <strong>[{{observable.dataType}}]</strong>:
+                        <span ng-if="observable.attachment"></span>{{observable.attachment.name}}
+                        <span ng-if="!observable.attachment"></span>{{observable.data | fang}}
+                    </a>
+                </div>
+                <div class="mt-xs" ng-if="item.linkedWith.length > 5">
+                    <a class="text-muted" ng-show="displayOptions[item.id]===5" href ng-click="displayOptions[item.id]=null"><strong>Show more links ({{item.linkedWith.length - 5}})</strong></a>
+                    <a class="text-muted" ng-show="displayOptions[item.id]===null" href ng-click="displayOptions[item.id]=5"><strong>Show less links</strong></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

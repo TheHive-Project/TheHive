@@ -1,0 +1,120 @@
+<div class="row case-details">
+    <div class="col-md-8">
+        <h4 class="vpad10 text-primary">Summary</h4>
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Title
+            </dt>
+            <dd>
+                <updatable-simple-text on-update="updateField('title', newValue)" value="caze.title"></updatable-simple-text>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Severity</dt>
+            <dd>
+                <a class="noline" href ng-click="activeSev = true" ng-init="activeSev = false">
+                    <severity active="activeSev" on-update="updateField('severity', newValue)" style="float:left; font-size:16px" value="caze.severity"></severity>
+                </a>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">TLP</dt>
+            <dd>
+                <a class="noline" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
+                    <tlp format="activeTlp" on-update="updateField('tlp', newValue)" style="float:left;" value="caze.tlp"></tlp>
+                </a>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">PAP</dt>
+            <dd>
+                <a class="noline" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
+                    <tlp format="activePap" on-update="updateField('pap', newValue)" style="float:left;" value="caze.pap" namespace="PAP"></tlp>
+                </a>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Assignee</dt>
+            <dd>
+                <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Date</dt>
+            <dd>
+                <updatable-date on-update="updateField('startDate', newValue)" value="caze.startDate"></updatable-date>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Tags</dt>
+            <dd>
+                <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags"></updatable-tags>
+            </dd>
+        </dl>
+
+        <dl class="dl-horizontal clear" ng-show="isCaseClosed()">
+            <dt class="pull-left text-success">Close date</dt>
+            <dd class="text-success">
+                <updatable-date on-update="updateField('endDate', newValue)" value="caze.endDate"></updatable-date>
+            </dd>
+        </dl>
+    </div>
+    <div class="col-md-4">
+        <ng-include src="'views/partials/case/details/related.cases.html'"></ng-include>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-8">
+        <ng-include src="'views/partials/case/details/custom.fields.html'"></ng-include>
+    </div>
+    <div class="col-sm-4">
+        <ng-include src="'views/partials/case/details/metrics.html'"></ng-include>
+    </div>
+</div>
+<div class="vpad10">
+     <h4 class="vpad10 text-primary">Description</h4>
+     <div class="description-pane">
+         <updatable-text on-update="updateField('description', newValue)" value="caze.description"></updatable-text>
+     </div>
+</div>
+<div class="vpad10" ng-show="isCaseClosed()">
+     <h4 class="vpad10 text-primary">Summary</h4>
+     <div class="description-pane">
+         <updatable-text on-update="updateField('summary', newValue)" value="caze.summary"></updatable-text>
+     </div>
+</div>
+<div class="case-actions vpad10" ng-if="actions.values.length">
+    <responder-actions header="Responder Jobs" actions="actions"></responder-actions>
+</div>
+<div class="case-attachments vpad10" ng-if="attachments.values.length > 0">
+    <h4 class="vpad10 text-primary">Attachments</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th style="text-align:center">Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="attachment in attachments.values" style="cursor: pointer;" tooltip-placement="bottom" tooltip-popup-delay="500" uib-tooltip="{{attachment.message}}">
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.name}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.startDate | shortDate}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
+                <td style="text-align:center">
+                    <a href="./api/datastore/{{attachment.attachment.id}}?name={{attachment.attachment.name | escape}}" target="_blank">
+                        <i class="glyphicon glyphicon-download"></i>
+                    </a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

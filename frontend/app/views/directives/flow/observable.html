@@ -1,0 +1,48 @@
+<div class="flow-observable" ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="glyphicon glyphicon-pushpin"></i>
+        <span>{{base.object.dataType}}:
+        </span>
+        <span class="wrap" ng-bind="base.object.data | fang | ellipsis:100" ng-if="!base.object.attachment.name"></span>
+        <span class="wrap" ng-bind="base.object.attachment.name" ng-if="base.object.attachment.name"></span>
+        <span ng-if="base.operation == 'Creation'">
+            <tlp value="base.object.tlp"></tlp>
+        </span>
+        <div class="flow-item-bulk" ng-if="isBulkOperation()">
+            <em>{{summary.case_artifact.Creation}} other observables have also been {{base.operation === 'Creation' ? 'added' : 'updated'}}</em>
+            <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.case.id})">See all</a>
+        </div>
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Creation">
+        <div ng-if="base.object.message">description: {{base.object.message| limitTo: 250}}</div>
+        <div ng-if="base.object.tags.length > 0">
+            Tags: 
+            <span ng-repeat="tag in base.object.tags">
+                <span class="label label-primary">{{tag}}</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-default>
+        <span ng-repeat="(k,v) in base.details" ng-switch="k">
+            <div ng-switch-when="tlp">
+                {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
+            <div ng-switch-when="tags">
+                {{k}}:
+                <span ng-repeat="tag in v">
+                    <span class="label label-primary">{{tag}}</span>
+                </span>
+                <span ng-if="v.length === 0">
+                    <em>None</em>
+                </span>
+            </div>
+
+            <div ng-switch-default>
+                {{k}}:
+                <em>{{v}}</em>
+            </div>
+        </span>
+    </div>
+</div>

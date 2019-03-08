@@ -1,0 +1,58 @@
+<div class="flow-case" ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="glyphicon glyphicon-folder-open"></i>{{base.object.title || base.details.title}}
+        <div class="flow-item-bulk" ng-if="summary.case_task">
+            <em ng-if="summary.case.Creation">This case contains <ng-pluralize count="summary.case_task.Creation"
+             when="{'one': '1 task', 'other': '{} tasks'}"></ng-pluralize></em>
+
+             <em ng-if="summary.case.Update"><ng-pluralize count="summary.case_task.Update"
+              when="{'one': '1 task has', 'other': '{} tasks have'}"></ng-pluralize> been updated</em>
+
+             <!-- <a class="small" ui-sref="app.case.tasks({caseId: base.object.id})">See all</a> -->
+             <a class="small" href ng-click="openState('app.case.tasks', {caseId: base.object.id})">See all</a>
+        </div>
+        <div class="flow-item-bulk" ng-if="summary.case_artifact">
+            <em ng-if="summary.case.Creation">This case contains <ng-pluralize count="summary.case_artifact.Creation"
+             when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></em>
+             <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.id})">See all</a>
+        </div>
+    </div>
+    <div class="flow-item-updates wrap" ng-switch-when="Creation">
+        <div>description: {{base.object.description | limitTo: 250}}</div>
+    </div>
+    <div class="flow-item-updates wrap" ng-switch-default>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <div ng-switch-when="severity">
+                {{k}}: <severity active="false" value="v"></severity>
+            </div>
+            <div ng-switch-when="tags">
+                {{k}}:
+                <span ng-repeat="tag in v track by $index">
+                    <span class="label label-primary">{{tag}}</span>
+                </span>
+                <span ng-if="v.length === 0">
+                    <em>None</em>
+                </span>
+            </div>
+            <div ng-switch-when="startDate">
+                {{k}}: <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-when="endDate">
+                {{k}}: <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-when="tlp">
+                {{k}}: <tlp format="'static'" value="v"></tlp>
+            </div>
+            <div ng-switch-when="pap">
+                {{k}}: <tlp format="'static'" value="v" namespace="PAP"></tlp>
+            </div>
+            <div ng-switch-when="owner">
+                {{k}}:
+                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
+            </div>
+            <div ng-switch-default>
+                {{k}}: <em>{{v | limitTo: 250}}</em>
+            </div>
+        </span>
+    </div>
+</div>

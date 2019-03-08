@@ -1,0 +1,46 @@
+.flow-item {
+    padding: 5px 10px;
+    background-color: #FFF;
+    border-bottom: 1px solid lightgrey;
+}
+
+.flow-item:hover {
+    background-color: #F8F8F8;
+}
+
+.flow-item .flow-item-breadcrumbs {
+    margin: 5px 0;
+}
+
+.flow-item .operation-type i {
+    margin-right: 5px;
+}
+
+.flow-item .flow-item-title {
+    font-weight: bold;
+    padding: 5px 0;
+    /*white-space: pre-wrap;*/
+}
+.flow-item .flow-item-bulk {
+    margin-left: 22px;
+    color: #777;
+    font-weight: normal;
+}
+
+.flow-item .flow-item-title > i {
+    color: grey;
+    margin-right: 5px;
+}
+
+.flow-item .flow-item-updates {
+    margin-left: 10px;
+}
+
+.flow-item .flow-item-updates .img-thumbnail{
+    width: 150px;
+}
+
+.flow-item span.label {
+    margin-right:2px;
+    display: inline;
+}

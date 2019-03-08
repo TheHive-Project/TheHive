@@ -1,0 +1,190 @@
+<nav class="navbar navbar-static-top main-navbar bg-navy" ng-if="!hideStatusBar" ng-show="currentUser.id">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#th-navbar-collapse" data-toggle="collapse" type="button">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" ui-sref="app.cases()">
+                <img alt="TheHive" src="images/logo.white.svg">
+            </a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="th-navbar-collapse">
+            <ul class="nav navbar-nav" ng-show="currentUser.id">
+                <li ui-sref-active="active">
+                    <a href ng-click="createNewCase()" ng-if="!templates || templates.length === 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                    <a href ng-click="openTemplateSelector()" ng-if="templates && templates.length > 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                </li>
+                <!-- <li class="dropdown" uib-dropdown>
+                    <a class="dropdown-toggle" uib-dropdown-toggle href>
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu scroll-dropdown-2x" uib-dropdown-menu>
+                        <li>
+                            <a href ng-click="createNewCase()">Empty Case</a>
+                        </li>
+                        <li class="divider" ng-if="templates && templates.length > 0"></li>
+                        <li ng-repeat="template in templates">
+                            <a href ng-click="createNewCase(template)">{{template.name}}</a>
+                        </li>
+                        <li ng-if="templates && templates.length > 0">
+                            <a href ng-click="openTemplateSelector()">From a template...</a>
+                        </li>
+                    </ul>
+                </li> -->
+                <li ui-sref-active="active">
+                    <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
+                        <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
+                    </a>
+                </li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
+                        <span class="badge alert-danger">{{waitingTasks.count}}</span>
+                    </a>
+                </li>
+                <li ui-sref-active="active">
+                    <a href ui-sref="app.alert-list">
+                        Alerts
+                        <span class="badge alert-danger">{{(alertEvents.New.count || 0)  + (alertEvents.Updated.count || 0)}}</span>
+                    </a>
+                </li>
+                <li class="hdivider hidden-xs"></li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.dashboards">
+                        <i class="fa fa-bar-chart"></i> Dashboards
+                    </a>
+                </li>
+                <li class="hdivider hidden-xs"></li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.search">
+                        <i class="fa fa-search"></i> Search
+                    </a>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li ng-if="async > 0" class="hidden-xs">
+                    <a>{{async}}
+                        <i class="fa fa-circle-o-notch fa-spin"></i>
+                    </a>
+                </li>
+
+                <li>
+                    <form ng-submit="search(querystring)" style="margin-top : 10px">
+                        <div class="input-group" style="width: 100px">
+                            <span class="input-group-addon">
+                                <i class="glyphicon glyphicon-search"></i>
+                            </span>
+                            <input class="input-sm form-control" ng-model="querystring" placeholder="CaseId" style="width: 80px" tooltype="Enter a case number" type="number"></input>
+                            <!-- <div class="input-group-btn">
+                                <div class="btn-group dropdown" uib-dropdown>
+                                    <a class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle href>
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu" uib-dropdown-menu>
+                                        <li class="dropdown-header" role="presentation">Custom search</li>
+                                        <li>
+                                            <a ng-click="querystring = 'status:Resolved' ; search(querystring);">Closed cases</a>
+                                        </li>
+                                        <li>
+                                            <a ng-click="querystring = 'caseId:'">By case number</a>
+                                        </li>
+                                        <li>
+                                            <a ng-click="querystring = '_type:case_artifact '">Observables</a>
+                                        </li>
+                                        <li class="divider"></li>
+                                        <li>
+                                            <a ng-click="querystring = '_type:case AND (_missing_:endDate) AND (startDate:{* TO now-1M})' ; search(querystring);">Cold cases</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div> -->
+                        </div>
+                    </form>
+                </li>
+                <li class="dropdown" uib-dropdown ng-if="isAdmin(currentUser)">
+                    <a class="dropdown-toggle" uib-dropdown-toggle href>
+                        <i class="fa fa-cog"></i>
+                        <span class="hpad5">Admin</span>
+                        <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu" uib-dropdown-menu>
+                        <li>
+                            <a ui-sref="app.administration.users">
+                                <i class="fa fa-users"></i>
+                                <span class="hpad5">Users</span>
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a ui-sref="app.administration.case-templates">
+                                <i class="fa fa-file-text"></i>
+                                <span class="hpad5">Case templates</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="app.administration.report-templates">
+                                <i class="fa fa-file-text"></i>
+                                <span class="hpad5">Report templates</span>
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a ui-sref="app.administration.metrics">
+                                <i class="fa fa-tachometer"></i>
+                                <span class="hpad5">Case metrics</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="app.administration.observables">
+                                <i class="glyphicon glyphicon-pushpin"></i>
+                                <span class="hpad5">Observables</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="app.administration.custom-fields">
+                                <i class="fa fa-edit"></i>
+                                <span class="hpad5">Case custom fields</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="dropdown" uib-dropdown>
+                    <a class="profile dropdown-toggle" uib-dropdown-toggle href>
+                        <user user-id="currentUser.id"></user>
+                    </a>
+                    <ul class="dropdown-menu" uib-dropdown-menu>
+                        <li>
+                            <a ui-sref="app.settings">
+                              <i class="fa fa-address-book"></i> Settings
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href ng-click="aboutTheHive()">
+                              <i class="fa fa-question-circle"></i> About
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href ng-click="logout()">
+                              <i class="fa fa-sign-out"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</nav>

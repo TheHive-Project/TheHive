@@ -1,0 +1,38 @@
+<div class="box">
+    <div class="box-header">
+        <h3 class="box-title">Observable datatypes management</h3>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-md-6">
+                <form class="mv-s" name="dtForm" ng-submit="addArtifactDataTypeList()">
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" ng-model="params.newDataType" placeholder="Specify the datatype to add. Ex: domain, ip, email" required>
+                        <span class="input-group-btn">
+                            <button type="submit" class="btn btn-primary btn-flat" ng-disabled="dtForm.$invalid">Add dataType</button>
+                        </span>
+                    </div>
+                </form>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>dataType</th>
+                            <th width="80">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="datatype in dataTypeList">
+                            <td>{{datatype.value}}</td>
+                            <td>
+                                <a href ng-click="deleteArtifactDataType(datatype)">
+                                    <i class="text-danger glyphicon glyphicon-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,25 @@
+<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
+	<span ng-if="value!==null && value !==''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value">{{value ? trueText || 'True' : falseText || 'False'}}</span>
+	<span ng-if="value === null || value === undefined" style="vertical-align: top;" class="updatable-value text-warning"><em>Not Specified</em></span>
+	<small ng-show="active">
+		<a href class="clickable" tooltip-popup-delay='500' uib-tooltip="edit">
+			<i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+		</a>
+	</small>
+	<small ng-hide="active">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
+</span>
+<span ng-show="updatable.updating" ng-init="updatable.dropdownOpen=false">
+	<form ng-submit="update()">
+		<div class="input-group input-group-sm">
+			<select class="form-control input-sm" ng-model="value" ng-options="v for v in [true, false]" ng-change="update()"></select>
+			<span class="input-group-btn">
+				<button class="btn btn-sm btn-default" type="submit">
+					<i class="text-success glyphicon glyphicon-ok"></i>
+				</button>
+				<button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
+					<i class="text-danger glyphicon glyphicon-remove"></i>
+				</button>
+            </span>
+		</div>
+	</form>
+</span>

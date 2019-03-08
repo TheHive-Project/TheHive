@@ -1,0 +1,37 @@
+<span ng-if="value._type == 'case'">
+	<a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
+		<i class="glyphicon glyphicon-folder-open"></i>
+		&nbsp;#{{value.caseId}} - {{value.title}}&nbsp;
+	</a>
+</span>
+<span ng-if="value._type == 'case_task'">
+	<entity-link value="value.case" target="target"></entity-link>
+	<a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
+		<i class=" glyphicon glyphicon-tasks"></i>
+		&nbsp;{{value.title}}
+	</a>
+</span>
+<span ng-if="value._type == 'case_task_log'">
+	<entity-link value="value.case_task" target="target"></entity-link>
+	<i class="text-muted wrap" class="glyphicon glyphicon-comment"></i>
+</span>
+<span ng-if="value._type == 'case_artifact'">
+	<entity-link value="value.case" target="target"></entity-link>
+	<a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
+		<i class="glyphicon glyphicon-pushpin"></i>
+		&nbsp;{{value.data | ellipsis:100}}{{value.attachment.name}}
+	</a>
+</span>
+<span ng-if="value._type == 'case_artifact_job'">
+	<entity-link value="value.case_artifact" target="target"></entity-link>
+</span>
+
+<span ng-if="value._type == 'case_artifact_job_log'">
+	<entity-link value="value.case_artifact_job" target="target"></entity-link>
+	<i class="text-muted wrap" class=" glyphicon glyphicon-plus"></i>
+</span>
+
+<span ng-if="value._type == 'analyzer'">
+	<i class="text-muted wrap" class=" glyphicon glyphicon-cog"></i>
+	ANALYZER / TODO
+</span>

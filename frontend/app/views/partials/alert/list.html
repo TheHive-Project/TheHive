@@ -1,0 +1,193 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{alertEvents.count}})</h3>
+            </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
+
+                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
+
+                <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                <!-- Filters preview  -->
+                <div class="row mt-s">
+                    <div class="col-md-12 clearfix">
+                        <div class="active-filters">
+                            <ul ng-if="$vm.filtering.countFilters() > 0">
+                                <li>{{$vm.filtering.countFilters()}}
+                                    filter(s) applied:
+                                </li>
+                                <li class="filter-item" ng-repeat="(field,filter) in $vm.filtering.filters">
+                                    <span>
+                                        <strong>{{filter.label}}:</strong>
+                                        {{filter.value | filterValue}}</span>
+                                    <a href ng-click="$vm.removeFilter(field)">
+                                        <span class="filter-close fa fa-times text-danger"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datalist  -->
+                <div class="row mt-s">
+                    <div class="col-md-12">
+                        <psearch control="$vm.list"></psearch>
+
+                        <table class="table table-striped case-list">
+                            <thead>
+                                <tr>
+                                    <th width="20px"><input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()"></th>
+                                    <th width="150px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('sourceRef')">
+                                        Reference
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') === -1 && $vm.filtering.context.sort.indexOf('-sourceRef') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-sourceRef') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('type')">
+                                        Type
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+type') === -1 && $vm.filtering.context.sort.indexOf('-type') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+type') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-type') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('status')">
+                                        Status
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') === -1 && $vm.filtering.context.sort.indexOf('-status') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-status') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th>
+                                      Title
+                                    </th>
+                                    <th width="150px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('source')">
+                                        Source
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+source') === -1 && $vm.filtering.context.sort.indexOf('-source') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+source') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-source') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('severity')">
+                                        Severity
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+severity') === -1 && $vm.filtering.context.sort.indexOf('-severity') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+severity') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-severity') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th width="80px">
+                                      Attributes
+                                    </th>
+                                    <th style="width: 160px">
+                                      <a href class="text-default" ng-click="$vm.sortByField('date')">
+                                        Date
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+date') === -1 && $vm.filtering.context.sort.indexOf('-date') === -1" class="fa fa-sort"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('+date') !== -1" class="fa fa-caret-up"></i>
+                                        <i ng-show="$vm.filtering.context.sort.indexOf('-date') !== -1" class="fa fa-caret-down"></i>
+                                      </a>
+                                    </th>
+                                    <th style="width: 160px"></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr ng-repeat="event in $vm.list.values">
+                                    <td>
+                                        <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
+                                    </td>
+                                    <td class="wrap">
+                                        <strong>{{::event.sourceRef}}</strong>
+                                    </td>
+                                    <td>
+                                        <span><a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
+                                    </td>
+                                    <td>
+                                        <span class="clickable label label-default" ng-class="{'label-danger': event.status==='New', 'label-warning': event.status === 'Updated'}" ng-click="$vm.addFilterValue('status', event.status)">{{::event.status}}</span>
+                                    </td>
+                                    <td class="wrap">
+                                        <div class="case-title">
+                                            <span>
+                                                <span ng-if="!event.case">{{::event.title}}</span>
+                                                <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
+                                                    <a href>{{::event.title}}</a>
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="case-tags flexwrap mt-xxs">
+                                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                                            <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
+                                            <span ng-repeat="tag in event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
+                                        </div>
+                                    </td>
+                                    <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
+                                    <td class="text-center">
+                                        <div class="clickable" ng-click="$vm.filterBySeverity(event.severity)">
+                                            <severity active="false" value="event.severity"></severity>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">{{::event.artifacts.length || 0}}</td>
+                                    <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>
+                                    <td class="clearfix">
+                                        <div class="pull-left">
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
+                                                <i class="text-info text-20 fa fa-file-text-o"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
+                                                <i class="text-info text-20 fa fa-search"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
+                                                <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as read" ng-if="$vm.canMarkAsRead(event)">
+                                                <i class="text-info text-20 fa fa-envelope"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
+                                                <i class="text-info text-20 fa fa-envelope-open-o"></i>
+                                            </a>
+                                            <span class="btn btn-xs btn-icon btn-clear" uib-dropdown>
+                                                <a href class="text-primary noline nowrap" ng-click="$vm.getResponders(event.id, true)" uib-dropdown-toggle>
+                                                    <i class="text-info text-20 fa fa-cog"></i>
+                                                </a>
+                                                <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                                                  <li ng-if="$vm.responders && $vm.responders.length === 0">
+                                                    <a href ng-click="$vm.getResponders(event.id, true)">
+                                                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                                                    </a>
+                                                  </li>
+                                                  <li ng-repeat="responder in $vm.responders">
+                                                    <a href ng-click="$vm.runResponder(responder.id, responder.name, event)">
+                                                      <strong>{{responder.name}}</strong>
+                                                      <br>
+                                                      <small>{{responder.description}}</small></a>
+                                                  </li>
+                                                </ul>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <psearch control="$vm.list"></psearch>
+
+                    </div>
+                </div>
+
+
+
+            </div>
+        </div>
+    </div>
+</div>

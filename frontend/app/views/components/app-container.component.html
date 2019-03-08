@@ -1,0 +1,36 @@
+<header class="main-header"></header>
+<!--<main-sidebar class="main-sidebar"></main-sidebar>-->
+<div class="content-wrapper" fixed-height>
+	<div class="container-fluid container-main" ng-if="currentUser.id" ui-view>
+	</div>
+</div>
+<footer class="main-footer">
+	<div class="container-fluid">
+		<div class="pull-right hidden-xs">
+			<span>
+				<strong>Version</strong>: {{appConfig.versions.TheHive}}
+			</span>
+			<!--
+				show appConfig.connectors.cortex.status (OK, WARNING or ERROR)
+				and in tooltip the list of appConfig.connectors.cortex.server (property name, status and version)
+			-->
+			<span ng-if="appConfig.connectors.cortex.enabled" uib-tooltip="Cortex integration enabled">
+				<img class="footer-logo logo-{{appConfig.connectors.cortex.status | lowercase}}" src="images/cortex-logo.svg"/>
+			</span>
+			<!--
+				show appConfig.connectors.misp.status (OK, WARNING or ERROR)
+				and in tooltip the list of appConfig.connectors.misp.server (property name, status and version)
+			-->
+			<span ng-if="appConfig.connectors.misp.enabled" uib-tooltip="MISP integration enabled">
+				<img class="footer-logo logo-{{appConfig.connectors.misp.status | lowercase}}" src="images/misp-logo.svg"/>
+			</span>
+		</div>
+		<div>
+			<strong><a href="http://www.thehive-project.org" target="_blank">TheHive Project</a> 2016-2018, <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank">AGPL-V3</a></strong>
+		</div>
+	</div>
+</footer>
+<!--
+<control-sidebar class="control-sidebar control-sidebar-dark"></control-sidebar>
+<div class="control-sidebar-bg"></div>
+-->

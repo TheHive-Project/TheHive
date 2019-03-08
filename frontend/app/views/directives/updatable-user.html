@@ -1,0 +1,26 @@
+<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
+    <span class="updatable-value" ng-bind="getUserInfo.get(value) | getField:'name'" style="vertical-align:top"></span>
+    <small ng-show="active">
+        <a class="clickable" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
+            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
+        </a>
+    </small>
+    <small ng-hide="active">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
+
+</span>
+<span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
+    <span class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
+        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+            {{getUserInfo.get(value) | getField:'name'}}
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+            <li ng-repeat="user in userList.allValues">
+                <a ng-click="update(user.id)">{{user.name}}</a>
+            </li>
+        </ul>
+    </span>
+    <span class="btn" ng-click='updatable.updating = false' target="_self" tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="cancel">
+        <i class="text-danger glyphicon glyphicon-remove"></i>
+    </span>
+</span>

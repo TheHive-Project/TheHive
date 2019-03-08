@@ -1,0 +1,31 @@
+<div class="flow-task" ng-switch="base.operation">
+    <div class="flow-item-title">
+        <i class="glyphicon glyphicon-tasks"></i>{{base.object.title}}
+        <span ng-if="base.operation === 'Update' && base.details.flag !== undefined">
+            <i class="glyphicon glyphicon-flag" ng-class="{'text-yellow': base.details.flag, 'text-muted': !base.details.flag}"></i>
+        </span>
+    </div>
+    <div class="flow-item-updates" ng-switch-when="Creation">
+        <span ng-bind="base.object.description| limitTo: 250"></span>
+    </div>
+    <div class="flow-item-updates" ng-switch-default>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <div ng-switch-when="owner">
+                {{k}}:
+                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
+            </div>
+            <div ng-switch-when="startDate">
+                {{k}}:
+                <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-when="endDate">
+                {{k}}:
+                <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-default>
+                {{k}}:
+                <em>{{v | limitTo: 250}}</em>
+            </div>
+        </span>
+    </div>
+</div>

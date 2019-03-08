@@ -1,0 +1,119 @@
+<div class="box box-default">
+    <div class="box-header with-border">
+        <h3 class="box-title">
+            <severity value="caze.severity"></severity>
+            <span>Case #
+                {{caze.caseId}}
+                -
+                {{caze.title}}</span>
+        </h3>
+        <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
+            <span class="ml-xs" tooltip="Open in new window">
+                <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
+                    <i class="fa fa-plus"></i> Show live stream
+                </a>
+            </span>
+        </div>
+    </div>
+
+    <div class="box-body">
+        <span>
+            <i class="glyphicon glyphicon-user"></i>
+            Created by <span ng-bind="getUserInfo.get(caze.createdBy) | getField: 'name'"></span>
+        </span>
+        <span class="ml-xxs">
+            <i class="glyphicon glyphicon-calendar"></i>
+            <span class="mr-xxxs">{{caze.createdAt | showDate}}</span>
+        <span ng-show="isCaseClosed()" class="text-success">(Closed at
+                {{caze.endDate | shortDate}}
+                as
+                <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>
+                <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>)</span>
+        </span>
+        <span class="ml-xxs text-danger" ng-show="links.length > 0">
+            <i class="glyphicon glyphicon-link"></i>
+            <strong>
+                <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})"><ng-pluralize count="links.length" when="{'one': '1 Related case', 'other': '{} Related cases'}"></ng-pluralize></a>
+            </strong>
+        </span>
+
+        <!-- Right side -->
+        <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+            <span class="mr-xxs text-primary">|</span>
+
+            <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
+                <i class="text-primary fa fa-cog"></i>
+                Responders
+                <i class="text-primary fa fa-angle-down"></i>
+            </a>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+              <li ng-if="caseResponders && caseResponders.length === 0">
+                <a href ng-click="getCaseResponders(true)">
+                  <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                </a>
+              </li>
+              <li ng-repeat="responder in caseResponders">
+                <a href ng-click="runResponder(responder.id, responder.name)">
+                  <strong>{{responder.name}}</strong>
+                  <br>
+                  <small>{{responder.description}}</small></a>
+              </li>
+            </ul>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">
+            <span class="mr-xxs text-primary">|</span>
+            <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
+                <i class="text-primary fa fa-share"></i>
+                Share ({{existingExports}})
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="isAdmin(currentUser)">
+            <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
+                <i class="text-danger fa fa-times"></i>
+                Remove
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right">
+            <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
+                <i class="text-primary fa fa-compress"></i>
+                Merge
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
+            <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
+                <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>
+                Flag
+            </a>
+        </span>
+        <span class="ml-xxs pull-right" ng-if="caze.flag">
+            <a href ng-click="switchFlag()" class="text-yellow noline" uib-tooltip="Unflag case">
+                <i class="text-yellow fa fa-flag" ng-show="caze.flag"></i>
+                Unflag
+            </a>
+        </span>
+        <span class="ml-xxs pull-right" ng-hide="isCaseClosed()">
+            <a href ng-click="openCloseDialog()" class="text-muted noline" uib-tooltip="Close case">
+                <i class="text-muted fa fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                Close
+            </a>
+        </span>
+        <span class="ml-xxs pull-right" ng-show="isCaseClosed()">
+            <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
+                <i class="text-success fa fa-check-circle"></i>
+                Reopen
+            </a>
+        </span>
+
+    </div>
+</div>
+
+<div class="alert alert-warning text-center" ng-show="caze.mergeInto">
+    <h4 class="mb-0">
+        This case has been closed as a duplicate and merged into <br>
+        <div class="mt-xs text-primary"><a href ui-sref="app.case.details({caseId: caze.mergeInto})">Case #{{caze.stats.mergeInto.caseId}}: {{caze.stats.mergeInto.title}}</a></div>
+    </h4>
+</div>

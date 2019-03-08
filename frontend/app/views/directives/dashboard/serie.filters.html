@@ -1,0 +1,26 @@
+<div ng-if="serie.filters.length > 0">
+    <strong>Serie's filter</strong>
+</div>
+<div class="row mb-xxxs" ng-repeat="filter in serie.filters track by $index">
+    <div class="col-sm-4">
+        <div class="input-group">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="removeSerieFilter(serie, $index)">
+                    <i class="fa fa-times text-danger"></i>
+                </button>
+            </span>
+            <select class="form-control" ng-model="filter.field"
+                ng-options="item.name as item.name for (key, item) in metadata[component.options.entity].attributes"
+                ng-change="setFilterField(filter, component.options.entity)"></select>
+        </div>
+    </div>
+    <!-- <div class="col-sm-8" ng-include="'views/directives/dashboard/filter-editor.html'"></div> -->
+    <div class="col-sm-8">
+        <filter-editor metadata="metadata" filter="filter" entity="component.options.entity"></filter-editor>
+    </div>
+</div>
+<div class="mt-xxs">
+    <a href ng-click="addSerieFilter(serie)">
+        <i class="fa fa-plus"></i> Add a filter
+    </a>
+</div>

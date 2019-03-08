@@ -1,0 +1,282 @@
+<!doctype html>
+<html ng-app="thehive">
+  <head>
+    <meta charset="utf-8">
+    <title ng-bind="'TheHive' + (title ? ' - ' + title : '')"></title>
+
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+
+    <!-- <link rel="icon" type="image/png" href="images/favicon.png" /> -->
+
+    <link rel="icon" type="image/png" href="images/favicons/favicon-196x196.png" sizes="196x196" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="images/favicons/favicon-128.png" sizes="128x128" />
+
+    <!-- build:css(.) styles/vendor.css -->
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
+    <!-- bower:css -->
+    <link rel="stylesheet" href="bower_components/angular-json-human/dist/angular-json-human.css" />
+    <link rel="stylesheet" href="bower_components/animate.css/animate.css" />
+    <link rel="stylesheet" href="bower_components/dropzone/dist/min/dropzone.min.css" />
+    <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.css" />
+    <link rel="stylesheet" href="bower_components/roboto-fontface/css/roboto/roboto-fontface.css" />
+    <link rel="stylesheet" href="bower_components/roboto-fontface/css/roboto-condensed/roboto-condensed-fontface.css" />
+    <link rel="stylesheet" href="bower_components/angular-ui-notification/dist/angular-ui-notification.css" />
+    <link rel="stylesheet" href="bower_components/c3/c3.css" />
+    <link rel="stylesheet" href="bower_components/css-spaces/dist/spaces.css" />
+    <link rel="stylesheet" href="bower_components/bootstrap-markdown/css/bootstrap-markdown.min.css" />
+    <link rel="stylesheet" href="bower_components/angular-markdown-editor-ghiscoding/styles/angular-markdown-editor.css" />
+    <link rel="stylesheet" href="bower_components/angular-page-loader/dist/angular-page-loader.css" />
+    <link rel="stylesheet" href="bower_components/angular-bootstrap-colorpicker/css/colorpicker.css" />
+    <!-- endbower -->
+    <link rel="stylesheet" href="bower_components/smalot-bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
+    <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.bootstrap.min.css"/>
+    <!-- endbuild -->
+
+    <!-- build:css(.tmp) styles/app.css -->
+    <link rel="stylesheet" href="styles/vendors/AdminLTE.css">
+    <link rel="stylesheet" href="styles/vendors/AdminLTE-skin-blue.css">
+
+    <link rel="stylesheet" href="styles/main.css"/>
+    <link rel="stylesheet" href="styles/case.css"/>
+    <link rel="stylesheet" href="styles/flow.css"/>
+    <link rel="stylesheet" href="styles/search.css"/>
+    <link rel="stylesheet" href="styles/filters.css"/>
+    <link rel="stylesheet" href="styles/dashboard.css"/>
+    <link rel="stylesheet" href="styles/case-item.css"/>
+    <link rel="stylesheet" href="styles/case-template.css"/>
+    <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
+    <link rel="stylesheet" href="styles/directives/user.css"/>
+    <!-- endbuild -->
+
+    <style>
+		app-container { display: block }
+	</style>
+
+  </head>
+  <body ng-cloak class="hold-transition skin-blue layout-top-nav">
+    <page-loader bg-color="#ecf0f5"></page-loader>
+    <div ui-view></div>
+
+    <!-- build:js(.) scripts/vendor.js -->
+    <!-- bower:js -->
+    <script src="bower_components/es5-shim/es5-shim.js"></script>
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-animate/angular-animate.js"></script>
+    <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+    <script src="bower_components/angular-cookies/angular-cookies.js"></script>
+    <script src="bower_components/lodash/dist/lodash.compat.js"></script>
+    <script src="bower_components/angular-json-human/dist/angular-json-human.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
+    <script src="bower_components/angular-moment/angular-moment.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+    <script src="bower_components/humanize-duration/humanize-duration.js"></script>
+    <script src="bower_components/angular-timer/dist/angular-timer.js"></script>
+    <script src="bower_components/angular-touch/angular-touch.js"></script>
+    <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="bower_components/bootstrap-sass-official/assets/javascripts/bootstrap.js"></script>
+    <script src="bower_components/dropzone/dist/min/dropzone.min.js"></script>
+    <script src="bower_components/ng-csv/build/ng-csv.min.js"></script>
+    <script src="bower_components/ng-tags-input/ng-tags-input.js"></script>
+    <script src="bower_components/underscore/underscore.js"></script>
+    <script src="bower_components/angular-ui-notification/dist/angular-ui-notification.js"></script>
+    <script src="bower_components/d3/d3.js"></script>
+    <script src="bower_components/c3/c3.js"></script>
+    <script src="bower_components/angular-messages/angular-messages.js"></script>
+    <script src="bower_components/ng-file-upload/ng-file-upload.js"></script>
+    <script src="bower_components/ng-file-upload-shim/ng-file-upload-shim.js"></script>
+    <script src="bower_components/es6-shim/es6-shim.js"></script>
+    <script src="bower_components/angular-clipboard/angular-clipboard.js"></script>
+    <script src="bower_components/angular-local-storage/dist/angular-local-storage.js"></script>
+    <script src="bower_components/myforce-angularjs-dropdown-multiselect/src/angularjs-dropdown-multiselect.js"></script>
+    <script src="bower_components/angular-highlightjs/build/angular-highlightjs.js"></script>
+    <script src="bower_components/marked/lib/marked.js"></script>
+    <script src="bower_components/angular-marked/dist/angular-marked.js"></script>
+    <script src="bower_components/bootstrap-markdown/js/bootstrap-markdown.js"></script>
+    <script src="bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js"></script>
+    <script src="bower_components/angular-page-loader/dist/angular-page-loader.js"></script>
+    <script src="bower_components/angular-images-resizer/angular-images-resizer.js"></script>
+    <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
+    <script src="bower_components/jquery-ui/jquery-ui.js"></script>
+    <script src="bower_components/angular-ui-sortable/sortable.js"></script>
+    <script src="bower_components/js-base64/base64.js"></script>
+    <script src="bower_components/angular-scroll/angular-scroll.js"></script>
+    <script src="bower_components/underscore.string/dist/underscore.string.js"></script>
+    <script src="bower_components/angular-drag-and-drop-lists/angular-drag-and-drop-lists.js"></script>
+    <script src="bower_components/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.js"></script>
+    <script src="bower_components/file-saver/FileSaver.js"></script>
+    <script src="bower_components/js-url/url.js"></script>
+    <!-- endbower -->
+
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
+    <script type="text/javascript" src="bower_components/angular-ui-ace/ui-ace.js"></script>
+
+    <script src="bower_components/smalot-bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+    <script src="bower_components/cryptojslib/components/core-min.js"></script>
+    <script src="bower_components/cryptojslib/components/sha256-min.js"></script>
+    <!-- endbuild -->
+
+    <!-- build:js({.tmp,app}) scripts/scripts.js -->
+    <!-- injector:js -->
+    <script src="scripts/app.js"></script>
+    <script src="scripts/components/app-container.component.js"></script>
+    <script src="scripts/components/control-sidebar.component.js"></script>
+    <script src="scripts/components/header.component.js"></script>
+    <script src="scripts/components/main-sidebar.component.js"></script>
+    <script src="scripts/controllers/AboutCtrl.js"></script>
+    <script src="scripts/controllers/AuthenticationCtrl.js"></script>
+    <script src="scripts/controllers/LiveCtrl.js"></script>
+    <script src="scripts/controllers/MainPageCtrl.js"></script>
+    <script src="scripts/controllers/MigrationCtrl.js"></script>
+    <script src="scripts/controllers/RootCtrl.js"></script>
+    <script src="scripts/controllers/SearchCtrl.js"></script>
+    <script src="scripts/controllers/SettingsCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCustomFieldDialogCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminMetricsCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminReportTemplatesCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminUserDialogCtrl.js"></script>
+    <script src="scripts/controllers/admin/AdminUsersCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertEventCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertListCtrl.js"></script>
+    <script src="scripts/controllers/alert/AlertStatsCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseCloseModalCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseDeleteModalCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseDetailsCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseExportDialogCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseLinksCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseListCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseMainCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseMergeModalCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseObservablesCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseObservablesExportCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseObservablesItemCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseReopenModalCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseStatsCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseTasksCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseTasksItemCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseTemplatesDialogCtrl.js"></script>
+    <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
+    <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
+    <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/cortex/ResponderActionDialogCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardsCtrl.js"></script>
+    <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
+    <script src="scripts/directives/affixer.js"></script>
+    <script src="scripts/directives/auto-focus.js"></script>
+    <script src="scripts/directives/charts/c3Chart.js"></script>
+    <script src="scripts/directives/compare-to.js"></script>
+    <script src="scripts/directives/dashboard/bar.js"></script>
+    <script src="scripts/directives/dashboard/counter.js"></script>
+    <script src="scripts/directives/dashboard/donut.js"></script>
+    <script src="scripts/directives/dashboard/filter-editor.js"></script>
+    <script src="scripts/directives/dashboard/item.js"></script>
+    <script src="scripts/directives/dashboard/line.js"></script>
+    <script src="scripts/directives/dashboard/multiline.js"></script>
+    <script src="scripts/directives/dateTimePicker.js"></script>
+    <script src="scripts/directives/dt-picker.js"></script>
+    <script src="scripts/directives/entityLink.js"></script>
+    <script src="scripts/directives/fileChooser.js"></script>
+    <script src="scripts/directives/filter-box.js"></script>
+    <script src="scripts/directives/fixed-height.js"></script>
+    <script src="scripts/directives/flow/flow-item.js"></script>
+    <script src="scripts/directives/flow/flow.js"></script>
+    <script src="scripts/directives/logEntry.js"></script>
+    <script src="scripts/directives/mini-report-list.js"></script>
+    <script src="scripts/directives/page-sizer.js"></script>
+    <script src="scripts/directives/psearch.js"></script>
+    <script src="scripts/directives/report-observables.js"></script>
+    <script src="scripts/directives/report.js"></script>
+    <script src="scripts/directives/responder-actions.js"></script>
+    <script src="scripts/directives/search/search-item.js"></script>
+    <script src="scripts/directives/severity.js"></script>
+    <script src="scripts/directives/tag-list.js"></script>
+    <script src="scripts/directives/task-progress.js"></script>
+    <script src="scripts/directives/tlp.js"></script>
+    <script src="scripts/directives/updatable.js"></script>
+    <script src="scripts/directives/updatableBoolean.js"></script>
+    <script src="scripts/directives/updatableDataDropdown.js"></script>
+    <script src="scripts/directives/updatableDate.js"></script>
+    <script src="scripts/directives/updatableSelect.js"></script>
+    <script src="scripts/directives/updatableSimpleText.js"></script>
+    <script src="scripts/directives/updatableTags.js"></script>
+    <script src="scripts/directives/updatableText.js"></script>
+    <script src="scripts/directives/updatableUser.js"></script>
+    <script src="scripts/directives/user.js"></script>
+    <script src="scripts/directives/utils/autofocus.js"></script>
+    <script src="scripts/filters/ellipsis.js"></script>
+    <script src="scripts/filters/fang.js"></script>
+    <script src="scripts/filters/filter-value.js"></script>
+    <script src="scripts/filters/flattern-object.js"></script>
+    <script src="scripts/filters/getField.js"></script>
+    <script src="scripts/filters/hash-type.js"></script>
+    <script src="scripts/filters/offset.js"></script>
+    <script src="scripts/filters/order-object-by.js"></script>
+    <script src="scripts/filters/percent.js"></script>
+    <script src="scripts/filters/sha256.js"></script>
+    <script src="scripts/filters/shortDate.js"></script>
+    <script src="scripts/filters/showDate.js"></script>
+    <script src="scripts/filters/urlencode.js"></script>
+    <script src="scripts/services/AfkSrv.js"></script>
+    <script src="scripts/services/AlertingSrv.js"></script>
+    <script src="scripts/services/AnalyzerInfoSrv.js"></script>
+    <script src="scripts/services/AnalyzerSrv.js"></script>
+    <script src="scripts/services/AppLayoutSrv.js"></script>
+    <script src="scripts/services/AuditSrv.js"></script>
+    <script src="scripts/services/AuthenticationSrv.js"></script>
+    <script src="scripts/services/CaseArtifactSrv.js"></script>
+    <script src="scripts/services/CaseSrv.js"></script>
+    <script src="scripts/services/CaseTabsSrv.js"></script>
+    <script src="scripts/services/CaseTaskSrv.js"></script>
+    <script src="scripts/services/CaseTemplate.js"></script>
+    <script src="scripts/services/CasesUISrv.js"></script>
+    <script src="scripts/services/ChartSrv.js"></script>
+    <script src="scripts/services/Constants.js"></script>
+    <script src="scripts/services/CortexSrv.js"></script>
+    <script src="scripts/services/CustomFieldsCacheSrv.js"></script>
+    <script src="scripts/services/DashboardSrv.js"></script>
+    <script src="scripts/services/EntitySrv.js"></script>
+    <script src="scripts/services/FileResource.js"></script>
+    <script src="scripts/services/FilteringSrv.js"></script>
+    <script src="scripts/services/GlobalSearchSrv.js"></script>
+    <script src="scripts/services/HtmlSanitizeSrv.js"></script>
+    <script src="scripts/services/JobSrv.js"></script>
+    <script src="scripts/services/ListSrv.js"></script>
+    <script src="scripts/services/MetricsCacheSrv.js"></script>
+    <script src="scripts/services/MispSrv.js"></script>
+    <script src="scripts/services/ModalUtilsSrv.js"></script>
+    <script src="scripts/services/NotificationSrv.js"></script>
+    <script src="scripts/services/ObservablesUISrv.js"></script>
+    <script src="scripts/services/PSearchSrv.js"></script>
+    <script src="scripts/services/QueryBuilderSrv.js"></script>
+    <script src="scripts/services/ReportTemplateSrv.js"></script>
+    <script src="scripts/services/SearchSrv.js"></script>
+    <script src="scripts/services/StatSrv.js"></script>
+    <script src="scripts/services/StatisticSrv.js"></script>
+    <script src="scripts/services/StreamSrv.js"></script>
+    <script src="scripts/services/StreamStatSrv.js"></script>
+    <script src="scripts/services/TagSrv.js"></script>
+    <script src="scripts/services/TaskLogSrv.js"></script>
+    <script src="scripts/services/UserInfoSrv.js"></script>
+    <script src="scripts/services/UserSrv.js"></script>
+    <script src="scripts/services/UtilsSrv.js"></script>
+    <script src="scripts/services/VersionSrv.js"></script>
+    <script src="scripts/thirdparty/theme.js"></script>
+    <script src="scripts/utils/highlight.min.js"></script>
+    <script src="scripts/utils/saveSvgAsPng.js"></script>
+    <!-- endinjector -->
+    <!-- endbuild -->
+
+  </body>
+</html>

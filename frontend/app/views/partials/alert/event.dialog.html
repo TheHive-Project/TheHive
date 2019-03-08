@@ -1,0 +1,191 @@
+<div class="modal-header bg-primary">
+    <h3 class="modal-title">
+      Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
+    </h3>
+</div>
+<div class="modal-body">
+    <div class="row text-center" ng-show="dialog.loading">
+        <div class="m-s">
+            <i class="fa fa-3x fa-spinner fa-spin"></i>
+        </div>
+        Loading...
+    </div>
+    <div class="row" ng-hide="dialog.loading">
+        <div class="col-md-12">
+            <div class="alert-details">
+                <h4 class="text-primary">
+                    <severity value="dialog.event.severity"></severity>
+                    <span>{{dialog.event.title}}</span>
+                </h4>
+                <div class="mt-xxs">
+                    <span>
+                        <strong><i class="fa fa-copy"></i> ID: </strong>
+                        <span><a href ng-click="dialog.copyId(dialog.event.id)">{{dialog.event.id}}</a></span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-calendar"></i> Date: </strong>
+                        <span>{{dialog.event.date | showDate}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-certificate"></i> Type: </strong>
+                        <span>{{dialog.event.type}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-barcode"></i> Reference: </strong>
+                        <span>{{dialog.event.sourceRef}}</span>
+                    </span>
+                    <span class="ml-xxs">
+                        <strong><i class="fa fa-bullseye"></i> Source: </strong>
+                        <span>{{dialog.event.source}}</span>
+                    </span>
+                </div>
+                <div class="case-tags flexwrap mt-xxs">
+                    <strong><i class="fa fa-tags mr-xxxs"></i></strong>
+                    <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags.length === 0">None</strong>
+                    <span ng-repeat="tag in dialog.event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
+                </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Description
+                    </h4>
+                    <div class="description-pane">
+                        <div marked="dialog.event.description" class="markdown"></div>
+                    </div>
+                </div>
+
+                <div class="mt-xs" ng-if="dialog.event.description">
+                    <h4 class="vpad10 text-primary">
+                        Additional fields
+                    </h4>
+                    <div ng-include="'views/partials/alert/custom.fields.html'">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">
+                <h4 class="vpad10 text-primary">
+                    Observables ({{dialog.event.artifacts.length || 0}})
+                </h4>
+                <div class="mb-xs flexwrap" ng-if="dialog.dataTypes">
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
+                        ng-click="dialog.filterArtifacts('');"
+                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
+
+                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
+                        ng-repeat="(type, count) in dialog.dataTypes"
+                        ng-click="dialog.filterArtifacts(type)"
+                        ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width:20px;"></th>
+                            <th style="width:100px;">Type</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="attribute in dialog.pagination.data">
+                            <td>
+                                <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
+                            </td>
+                            <td>{{attribute.dataType}}</td>
+                            <td class="wrap">
+                              <div class="wrap" ng-if="attribute.dataType !== 'file'">
+                                  {{attribute.data | fang | ellipsis:250}}
+                              </div>
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
+                                  {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
+                              </div>
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
+                                  {{attribute.remoteAttachment.filename}}
+                              </div>
+                              <div class="case-tags flexwrap mt-xxs" ng-if="attribute.tags.length > 0">
+                                  <strong><i class="fa fa-tags mr-xxxs"></i></strong>
+                                  <span ng-repeat="tag in attribute.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
+                              </div>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center" ng-show="dialog.filteredArtifacts.length > dialog.pagination.pageSize">
+                    <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                        total-items="dialog.filteredArtifacts.length"
+                        items-per-page="dialog.pagination.pageSize"
+                        ng-change="dialog.loadPage()"
+                        ng-model="dialog.pagination.currentPage"></ul>
+                </div>
+            </div>
+
+            <div class="alert-similarity" ng-if="dialog.event.similarCases.length > 0">
+                <div class="mt-xs">
+                    <h4 class="vpad10 text-primary">
+                        Similar cases ({{dialog.event.similarCases.length}})
+                    </h4>
+                    <!-- <div>
+                        <pre>{{dialog.event.similarCases | json}}</pre>
+                    </div> -->
+                    <div ng-include="'views/partials/alert/event.similarity.html'"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="modal-footer text-left">
+    <button class="btn btn-default" ng-click="dialog.cancel()" type="button">Cancel</button>
+
+
+
+    <button class="btn btn-default" type="button"
+        ng-if="dialog.canMarkAsRead(dialog.event)"
+        ng-disabled="dialog.loading"
+        ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope"></i> Mark as read
+    </button>
+    <button class="btn btn-default" type="button"
+        ng-if="dialog.canMarkAsUnread(dialog.event)"
+        ng-disabled="dialog.loading"
+        ng-click="dialog.markAsRead(dialog.event)">
+        <i class="fa fa-envelope-open-o"></i> Mark as unread
+    </button>
+
+    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
+        <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
+    </button>
+
+    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.merge()">
+        <i class="fa fa-compress"></i> Merge into case
+    </button>
+
+    <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
+        <div class="form-group">
+            <label class="col-sm-4 control-label">Import alert as</label>
+            <div class="col-sm-8 input-group">
+                <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
+                    <option value="">Empty case</option>
+                </select>
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
+                </span>
+            </div>
+
+        </div>
+    </form>
+
+    <!-- <div class="btn-group pull-right dropup" ng-disabled="dialog.loading">
+        <button type="button" class="btn btn-primary">Import event</button>
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <span class="caret"></span>
+      </button>
+        <ul class="dropdown-menu">
+            <li ng-repeat="tpl in dialog.templates">
+                <a href>{{tpl}}</a>
+            </li>
+        </ul>
+    </div> -->
+
+</div>

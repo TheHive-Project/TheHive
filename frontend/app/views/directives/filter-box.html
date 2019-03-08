@@ -1,0 +1,15 @@
+<div class="filter-box">
+    <form ng-submit="filter()">
+        <div class="input-group">
+            <input type="text" class="form-control input-sm" ng-model="query" placeholder="Filter" size="50">
+            <span class="input-group-btn">
+                <button class="btn btn-default btn-sm" type="button" ng-click="clear()">
+                    <i class="text-danger glyphicon glyphicon-remove"></i>
+                </button>
+                <button class="btn btn-default btn-sm" type="submit" ng-click="filter()">
+                    <i class="text-default glyphicon glyphicon-search"></i>
+                </button>
+            </span>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,26 @@
+<div class="case-metrics">
+    <h4 class="vpad10 text-primary">
+        Metrics
+        <span uib-dropdown class="ml-m" ng-show="metricsAvailable">
+            <a href class="dropdown-toggle" uib-dropdown-toggle>
+                <i class="fa fa-plus"></i>
+            </a>
+            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+                <li ng-repeat="key in keys(allMetrics) | orderBy">
+                    <a ng-click="addMetric(allMetrics[key])">{{allMetrics[key].title}}</a>
+                </li>
+            </ul>
+        </span>
+    </h4>
+
+    <div ng-if="hasNoMetrics(caze)">
+        <em>No metrics have been set</em>
+    </div>
+
+    <dl class="dl-horizontal clear" ng-repeat="(k,v) in caze.metrics">
+        <dt class="pull-left" uib-tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title || k}}</dt>
+        <dd>
+            <updatable-simple-text input-type="number" on-update="updateField('metrics.' + k, newValue)" value="caze.metrics[k]"></updatable-simple-text>
+        </dd>
+    </dl>
+</div>
