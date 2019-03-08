@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
-import java.util.{List ⇒ JList}
+import scala.collection.JavaConverters._
+import scala.util.Success
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -10,9 +11,6 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
 import org.thp.thehive.models._
-
-import scala.collection.JavaConverters._
-import scala.util.Success
 
 @Singleton
 class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv)(implicit db: Database)
@@ -165,32 +163,31 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def richCase: ScalarSteps[RichCase] =
     ScalarSteps(
       raw
-        .project[Any]("case", "impactStatus", "resolutionStatus", "user", "organisation", "customFields")
-        .by()
-        .by(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold.traversal)
-        .by(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold.traversal)
-        .by(__[Vertex].outTo[CaseUser].values[String]("login").fold.traversal)
-        .by(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold.traversal)
-        .by(__[Vertex].outToE[CaseCustomField].inV().path.fold.traversal)
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
+            .and(By(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold)))
         .map {
-          case ValueMap(m) ⇒
-            val customFieldValues = m
-              .get[JList[Path]]("customFields")
-              .asScala
+          case (caze, impactStatus, resolutionStatus, user, organisation, customFields) ⇒
+            val customFieldValues = (customFields: java.util.List[Path]).asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case ccf :: cf :: Nil ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _                ⇒ throw InternalError("Not possible")
+                case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             ⇒ throw InternalError("Not possible")
               }
             RichCase(
-              m.get[Vertex]("case").as[Case],
-              atMostOneOf[String](m.get[JList[String]]("impactStatus")),
-              atMostOneOf[String](m.get[JList[String]]("resolutionStatus")),
-              atMostOneOf[String](m.get[JList[String]]("user")),
-              onlyOneOf[String](m.get[JList[String]]("organisation")),
+              caze.as[Case],
+              atMostOneOf[String](impactStatus),
+              atMostOneOf[String](resolutionStatus),
+              atMostOneOf[String](user),
+              onlyOneOf[String](organisation),
               customFieldValues
             )
-        })
+        }
+    )
 
   def customFields(name: Option[String] = None): ScalarSteps[CustomFieldWithValue] = {
     val ccfSteps: GremlinScala[Vertex] = raw
