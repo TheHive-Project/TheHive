@@ -9,13 +9,12 @@ import play.api.libs.ws.WSClient
 import play.api.test.{Helpers, PlaySpecification, TestServer}
 import play.api.{Configuration, Environment}
 
+import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.core.Fragments
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
 import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
 import org.thp.thehive.dto.v1._
-import org.thp.thehive.services.AuditedDatabase
 
 class FunctionalTest extends PlaySpecification {
 
@@ -65,7 +64,7 @@ class FunctionalTest extends PlaySpecification {
       |db.provider: neo4j
       |auth.provider: [local]
     """.stripMargin))
-  Fragments.foreach(Seq(janusGraphConfig, orientdbConfig /*, neo4jConfig*/ )) { dbConfig ⇒
+  Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig*/ /*, neo4jConfig*/ )) { dbConfig ⇒
     val serverPromise: Promise[TestServer] = Promise[TestServer]
     lazy val server: TestServer            = serverPromise.future.value.get.get
 
@@ -89,7 +88,10 @@ class FunctionalTest extends PlaySpecification {
             new play.api.libs.ws.ahc.AhcWSModule,
             new ScalligraphModule,
             new TheHiveModule(Environment.simple(), dbConfig),
-            new SimpleModule(bind[Database].to[AuditedDatabase])
+            new SimpleModule(
+              bind[AssetsMetadata].toProvider[AssetsMetadataProvider],
+              bind[AssetsConfiguration].toProvider[AssetsConfigurationProvider])
+//              bind[Database].to[AuditedDatabase])
           )
         val application = applicationBuilder
           .load(ScalligraphApplicationLoader.loadModules(applicationBuilder.loadModules))
@@ -153,7 +155,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "open",
-            user = Some("admin")
+            user = None
           )
 
           case1 must_=== expected
@@ -188,7 +190,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "open",
-            user = Some("admin"),
+            user = None,
             summary = Some("no comment"),
             customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", Some("HR")))
           )
@@ -284,7 +286,8 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "create a case in test organisation" in {
-          val asyncResp = client.`case`.create(InputCase("test case", "Case in test organisation", severity = Some(1), pap = Some(1)))
+          val asyncResp =
+            client.`case`.create(InputCase("test case", "Case in test organisation", severity = Some(1), pap = Some(1), user = Some("testAdmin")))
           case3 = await(asyncResp)
           val expected = OutputCase(
             _id = case3._id,

@@ -3,9 +3,8 @@ package org.thp.thehive.services
 import java.util.Date
 
 import play.api.test.PlaySpecification
-
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.{AppBuilder, BadRequestError}
 import org.thp.thehive.models._
 
@@ -16,7 +15,9 @@ class CaseSrvTest extends PlaySpecification {
     val app: AppBuilder = AppBuilder()
       .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
       .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
+      .bind[Schema, TheHiveSchema]
       .bindToProvider(dbProvider)
+      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
