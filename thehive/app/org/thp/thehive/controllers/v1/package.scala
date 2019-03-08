@@ -27,14 +27,14 @@ package object v1 {
       .transform
 
   implicit def toOutputUser(user: RichUser): Output[OutputUser] =
-    new Output[OutputUser](
+    Output[OutputUser](
       user
         .into[OutputUser]
         .withFieldComputed(_.permissions, _.permissions.map(_.name).toSet)
         .transform)
 
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
-    new Output[OutputCase](
+    Output[OutputCase](
       richCase
         .into[OutputCase]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
@@ -70,7 +70,7 @@ package object v1 {
         .transform
     }
 
-  def outputCaseProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+  def outputCaseProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
     // format: off
     PublicPropertyListBuilder[CaseSteps, Vertex]
       .property[String]("title").simple
@@ -104,13 +104,13 @@ package object v1 {
       .transform
 
   implicit def toOutputCaseTemplate(richCaseTemplate: RichCaseTemplate): Output[OutputCaseTemplate] =
-    new Output[OutputCaseTemplate](
+    Output[OutputCaseTemplate](
       richCaseTemplate
         .into[OutputCaseTemplate]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
         .transform)
 
-  def outputCaseTemplateProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+  def outputCaseTemplateProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
     // format: off
     PublicPropertyListBuilder[CaseTemplateSteps, Vertex]
       .property[String]("name").simple
@@ -143,7 +143,7 @@ package object v1 {
       .transform
 
   implicit def toOutputTask(task: Task with Entity): Output[OutputTask] =
-    new Output[OutputTask](
+    Output[OutputTask](
       task
         .asInstanceOf[Task]
         .into[OutputTask]
@@ -151,7 +151,7 @@ package object v1 {
         .transform
     )
 
-  def outputTaskProperties(implicit db: Database): List[PublicProperty[Vertex, _]] =
+  def outputTaskProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
     // format: off
     PublicPropertyListBuilder[TaskSteps, Vertex]
       .property[String]("title").simple
@@ -166,7 +166,7 @@ package object v1 {
   // format: on
 
   implicit def toOutputAudit(audit: RichAudit): Output[OutputAudit] =
-    new Output[OutputAudit](
+    Output[OutputAudit](
       audit
         .into[OutputAudit]
         .withFieldComputed(_.operation, _.operation.toString)
@@ -187,7 +187,7 @@ package object v1 {
     inputCustomFieldValue.name → inputCustomFieldValue.value
 
   implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
-    new Output[OutputCustomFieldValue](
+    Output[OutputCustomFieldValue](
       customFieldValue
         .into[OutputCustomFieldValue]
         .withFieldComputed(_.value, _.value.map(_.toString))
@@ -196,7 +196,7 @@ package object v1 {
     )
 
   implicit def toOutputCustomField(customField: CustomField with Entity): Output[OutputCustomField] =
-    new Output[OutputCustomField](
+    Output[OutputCustomField](
       customField
         .asInstanceOf[CustomField]
         .into[OutputCustomField]
@@ -205,7 +205,7 @@ package object v1 {
     )
 
   implicit def toOutputAlert(richAlert: RichAlert): Output[OutputAlert] =
-    new Output[OutputAlert](
+    Output[OutputAlert](
       richAlert
         .into[OutputAlert]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)

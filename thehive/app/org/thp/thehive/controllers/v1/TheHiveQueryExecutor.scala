@@ -14,7 +14,7 @@ case class GetCaseParams(id: String)
 @Singleton
 class TheHiveQueryExecutor @Inject()(caseSrv: CaseSrv, taskSrv: TaskSrv, implicit val db: Database) extends QueryExecutor {
 
-  override val publicProperties: List[PublicProperty[_ <: Element, _]] = outputCaseProperties
+  override val publicProperties: List[PublicProperty[_ <: Element, _, _]] = outputCaseProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",

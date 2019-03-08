@@ -23,7 +23,7 @@ case class RichObservable(
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
     extensions: Seq[KeyValue]) {
-  val `type`: String          = observable.`type`
+  val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex
   val tags: Seq[String]       = observable.tags
   val message: Option[String] = observable.message
   val tlp: Int                = observable.tlp

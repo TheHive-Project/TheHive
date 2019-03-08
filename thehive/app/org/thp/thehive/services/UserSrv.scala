@@ -29,14 +29,15 @@ class UserSrv @Inject()(implicit val db: Database) extends VertexSrv[User, UserS
     get(userId).availableFor(Some(authContext)).isDefined
 
   def getOrganisation(user: User with Entity)(implicit graph: Graph): Organisation with Entity =
-    get(user).organisation.headOption.getOrElse(throw InternalError(s"The user $user (${user._id}) has no organisation."))
+    get(user.login).organisation.headOption.getOrElse(throw InternalError(s"The user $user (${user._id}) has no organisation."))
 }
 
 @EntitySteps[User]
 class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[User, UserSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
-  def get(id: String): UserSteps = new UserSteps(raw.coalesce(_.has(Key("login") of id), _.has(Key("_id") of id)))
+  def get(id: String): UserSteps = //new UserSteps(raw.coalesce(_.has(Key("login") of id), _.has(Key("_id") of id)))
+    new UserSteps(raw.has(Key("login") of id)) // FIXME
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[UserOrganisation])
 

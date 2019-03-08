@@ -16,15 +16,18 @@ class Router @Inject()(
     taskCtrl: TaskCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
-    auditCtrl: AuditCtrl)
+    auditCtrl: AuditCtrl,
+    statusCtrl: StatusCtrl,
+    authenticationCtrl: AuthenticationCtrl)
     extends SimpleRouter {
 
   override def routes: Routes = {
 //    GET      /                                        controllers.Home.redirect
-//    GET      /status                              controllers.StatusCtrl.get
-//    GET      /health                              controllers.StatusCtrl.health
+    case GET(p"/status") ⇒ statusCtrl.get
+//    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-//    POST     /login                               controllers.AuthenticationCtrl.login()
+    case POST(p"/login") ⇒ authenticationCtrl.login()
+    case GET(p"/init")   ⇒ userCtrl.createInitialUser
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     case GET(p"/case")                  ⇒ caseCtrl.list
