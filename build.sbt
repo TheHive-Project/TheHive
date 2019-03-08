@@ -2,15 +2,18 @@ import Dependencies._
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(scalligraph, thehiveCore, thehiveDto, thehiveClient)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient)
+  .dependsOn(thehiveCore)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration)
   .settings(
     inThisBuild(
       List(
         organization := "org.thp",
         scalaVersion := "2.12.8",
-        resolvers += Resolver.mavenLocal,
-        resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven",
+        resolvers ++= Seq(
+          Resolver.mavenLocal,
+          "Oracle Released Java Packages" at "http://download.oracle.com/maven",
+          "TheHive project repository" at "https://dl.bintray.com/thehive-project/maven/"
+        ),
         scalacOptions ++= Seq(
           "-encoding",
           "UTF-8",
@@ -35,11 +38,25 @@ lazy val thehive = (project in file("."))
           "-Xprint-types"
         ),
         fork in Test := true,
-        javaOptions += "-Xmx1G",
+//        javaOptions += "-Xmx1G",
         addCompilerPlugin(macroParadise),
         scalafmtConfig := Some(file(".scalafmt.conf"))
       )),
-    name := "thehive"
+    name := "thehive",
+//    PlayKeys.externalizeResources := false
+    compile := {
+      scala.sys.process.Process(Seq("grunt", "wiredep"), baseDirectory.value / "frontend").!
+      (compile in Compile).value
+    },
+//    mappings in packageBin in Assets ++= {
+//      val dir = baseDirectory.value / "frontend" / "dist"
+//      dir ** AllPassFilter pair Path.rebase(dir, "frontend")
+//    },
+//    resourceManaged in Compile := baseDirectory.value / "frontend"
+//    resourceDirectories := Seq(baseDirectory.value / "frontend")
+//      mappings in Universal ++= directory(baseDirectory.value / "public")
+//    resourceDirectories in Compile += baseDirectory.value / "frontend",
+//    unmanagedResourceDirectories in Compile += baseDirectory.value / "frontend"
   )
 
 lazy val scalligraph = (project in file("ScalliGraph"))
@@ -56,6 +73,7 @@ lazy val thehiveCore = (project in file("thehive"))
     libraryDependencies ++= Seq(
       chimney,
       guice,
+      reflections,
       ws    % Test,
       specs % Test
     )
@@ -78,4 +96,20 @@ lazy val thehiveClient = (project in file("client"))
     libraryDependencies ++= Seq(
       ws
     )
+  )
+
+lazy val thehiveMigration = (project in file("migration"))
+  .dependsOn(scalligraph)
+  .dependsOn(thehiveCore)
+  .settings(
+    name := "thehive-migration",
+    libraryDependencies ++= Seq(
+      elastic4play,
+      ehcache,
+      specs % Test,
+    ),
+    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
+    fork := true,
+    javaOptions := Seq(/*"-Dlogback.debug=true", */"-Dlogger.file=../conf/migration-logback.xml"),
   )
