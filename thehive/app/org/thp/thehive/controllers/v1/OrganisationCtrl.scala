@@ -40,7 +40,7 @@ class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisatio
 
   def get(organisationId: String): Action[AnyContent] =
     apiMethod("get organisation")
-      .requires(Permissions.read) { implicit request ⇒
+      .requires(Permissions.read) { _ ⇒
         db.transaction { implicit graph ⇒
           val organisation = organisationSrv
             .getOrFail(organisationId)
@@ -51,7 +51,7 @@ class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisatio
 
   def list: Action[AnyContent] =
     apiMethod("list organisation")
-      .requires(Permissions.read) { implicit request ⇒
+      .requires(Permissions.read) { _ ⇒
         db.transaction { implicit graph ⇒
           val organisations = organisationSrv.initSteps.toList
             .map(OrganisationXfrm.toOutput)

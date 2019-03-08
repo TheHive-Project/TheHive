@@ -43,7 +43,7 @@ class ShareCtrl @Inject()(apiMethod: ApiMethod, db: Database, shareSrv: ShareSrv
 
   def get(shareId: String): Action[AnyContent] =
     apiMethod("get share")
-      .requires(Permissions.read) { implicit request ⇒
+      .requires(Permissions.read) { _ ⇒
         db.transaction { implicit graph ⇒
           val share = shareSrv
             .get(shareId)
@@ -57,7 +57,7 @@ class ShareCtrl @Inject()(apiMethod: ApiMethod, db: Database, shareSrv: ShareSrv
 
   def list: Action[AnyContent] =
     apiMethod("list share")
-      .requires(Permissions.read) { implicit request ⇒
+      .requires(Permissions.read) { _ ⇒
         db.transaction { implicit graph ⇒
           val shares = shareSrv.initSteps.richShare.toList
             .map(ShareXfrm.toOutput)

@@ -11,7 +11,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 class AuditCtrl @Inject()(apiMethod: ApiMethod, db: Database, auditSrv: AuditSrv) {
   def flow(): Action[AnyContent] =
     apiMethod("audit flow")
-      .requires() { implicit request ⇒
+      .requires() { _ ⇒
         db.transaction { implicit graph ⇒
           val audits = auditSrv.initSteps.list.toList.map(_.toJson)
           Results.Ok(JsArray(audits))

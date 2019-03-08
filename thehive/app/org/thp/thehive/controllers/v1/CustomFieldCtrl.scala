@@ -25,7 +25,7 @@ class CustomFieldCtrl @Inject()(apiMethod: ApiMethod, db: Database, customFieldS
 
   def list: Action[AnyContent] =
     apiMethod("list custom fields")
-      .requires(Permissions.read) { implicit request ⇒
+      .requires(Permissions.read) { _ ⇒
         db.transaction { implicit graph ⇒
           val customFields = customFieldSrv.initSteps
             .map(_.toJson)
