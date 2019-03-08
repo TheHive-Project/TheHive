@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import scala.concurrent.Future
+import scala.util.Success
 
 import play.api.libs.json.{JsString, Json}
 import play.api.mvc.RequestHeader
@@ -22,7 +22,7 @@ import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
 class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write), organisation = "cert")
   val authenticated: Authenticated = mock[Authenticated]
-  authenticated.getContext(any[RequestHeader]) returns Future.successful(dummyUserSrv.authContext)
+  authenticated.getContext(any[RequestHeader]) returns Success(dummyUserSrv.authContext)
   implicit val ee: ExecutionEnv = ExecutionEnv.fromGlobalExecutionContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒

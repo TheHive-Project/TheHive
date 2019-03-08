@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import scala.concurrent.Future
+import scala.util.Success
 
 import play.api.mvc.RequestHeader
 import play.api.test.PlaySpecification
@@ -9,15 +9,15 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.Authenticated
-import org.thp.scalligraph.{graphql, AppBuilder}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.{graphql, AppBuilder}
 import org.thp.thehive.models._
 import sangria.renderer.SchemaRenderer
 
 class GraphqlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read))
   val authenticated: Authenticated = mock[Authenticated]
-  authenticated.getContext(any[RequestHeader]) returns Future.successful(dummyUserSrv.authContext)
+  authenticated.getContext(any[RequestHeader]) returns Success(dummyUserSrv.authContext)
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
