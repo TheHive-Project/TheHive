@@ -1,8 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Date, List ⇒ JList}
-
-import scala.collection.JavaConverters._
+import java.util.Date
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -14,6 +12,8 @@ import org.thp.scalligraph.services.{EdgeSrv, _}
 import org.thp.scalligraph.{AuthorizationError, EntitySteps, FPath, InternalError}
 import org.thp.thehive.models._
 
+import scala.collection.JavaConverters._
+
 @Singleton
 class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseTemplateSrv: CaseTemplateSrv, taskSrv: TaskSrv, userSrv: UserSrv)(
     implicit db: Database)
@@ -24,7 +24,7 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
   val alertCaseSrv         = new EdgeSrv[AlertCase, Alert, Case]
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
 
-  def create(alert: Alert, organisation: Organisation with Entity, customFields: Map[String, Any], caseTemplate: Option[RichCaseTemplate])(
+  def create(alert: Alert, organisation: Organisation with Entity, customFields: Map[String, Option[Any]], caseTemplate: Option[RichCaseTemplate])(
       implicit graph: Graph,
       authContext: AuthContext): RichAlert = {
     val createdAlert = create(alert)
@@ -138,28 +138,27 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def richAlert: ScalarSteps[RichAlert] =
     ScalarSteps(
       raw
-        .project[Any]("alert", "user", "organisation", "customFields", "caseId", "caseTemplate")
-        .by()
-        .by(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold.traversal)
-        .by(__[Vertex].outToE[AlertCustomField].inV().path.fold.traversal)
-        .by(__[Vertex].outTo[AlertCase].values[String]("_id").fold.traversal)
-        .by(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold.traversal)
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
+            .and(By(__[Vertex].outTo[AlertCase].values[String]("_id").fold))
+            .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold)))
         .map {
-          case ValueMap(m) ⇒
-            val customFieldValues = m
-              .get[JList[Path]]("customFields")
-              .asScala
+          case (alert, organisation, customFields, caseId, caseTemplate) ⇒
+            val customFieldValues = (customFields: java.util.List[Path]).asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case ccf :: cf :: Nil ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[AlertCustomField])
-                case _                ⇒ throw InternalError("Not possible")
+                case List(acf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
+                case _             ⇒ throw InternalError("Not possible")
               }
             RichAlert(
-              m.get[Vertex]("alert").as[Alert],
-              onlyOneOf[String](m.get[JList[String]]("organisation")),
+              alert.as[Alert],
+              onlyOneOf[String](organisation),
               customFieldValues,
-              atMostOneOf[String](m.get[JList[String]]("caseId")),
-              atMostOneOf[String](m.get[JList[String]]("caseTemplate"))
+              atMostOneOf[String](caseId),
+              atMostOneOf[String](caseTemplate)
             )
-        })
+        }
+    )
 }
