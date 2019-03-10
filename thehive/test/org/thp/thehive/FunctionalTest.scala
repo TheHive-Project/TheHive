@@ -1,20 +1,21 @@
 package org.thp.thehive
 
 import scala.concurrent.{ExecutionContext, Promise}
-
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{bind, SimpleModule}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.test.{Helpers, PlaySpecification, TestServer}
 import play.api.{Configuration, Environment}
-
 import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.core.Fragments
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
 import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
 import org.thp.thehive.dto.v1._
+import org.thp.thehive.services.AuditedDatabase
 
 class FunctionalTest extends PlaySpecification {
 
@@ -64,7 +65,7 @@ class FunctionalTest extends PlaySpecification {
       |db.provider: neo4j
       |auth.provider: [local]
     """.stripMargin))
-  Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig*/ /*, neo4jConfig*/ )) { dbConfig ⇒
+  Fragments.foreach(Seq(janusGraphConfig, orientdbConfig /*, neo4jConfig*/ )) { dbConfig ⇒
     val serverPromise: Promise[TestServer] = Promise[TestServer]
     lazy val server: TestServer            = serverPromise.future.value.get.get
 
@@ -90,8 +91,10 @@ class FunctionalTest extends PlaySpecification {
             new TheHiveModule(Environment.simple(), dbConfig),
             new SimpleModule(
               bind[AssetsMetadata].toProvider[AssetsMetadataProvider],
-              bind[AssetsConfiguration].toProvider[AssetsConfigurationProvider])
-//              bind[Database].to[AuditedDatabase])
+              bind[AssetsConfiguration].toProvider[AssetsConfigurationProvider],
+              bind[StorageSrv].to[LocalFileSystemStorageSrv],
+              bind[Database].to[AuditedDatabase]
+            )
           )
         val application = applicationBuilder
           .load(ScalligraphApplicationLoader.loadModules(applicationBuilder.loadModules))
@@ -202,15 +205,15 @@ class FunctionalTest extends PlaySpecification {
           val asyncResp = client.audit.list
           await(asyncResp).map(StableAudit.apply) must contain(
             exactly(
-              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
-              StableAudit(_createdBy="system", operation="Creation", objType="Organisation",     summary=Map("Organisation"     → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ImpactStatus",     summary=Map("ImpactStatus"     → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="ResolutionStatus", summary=Map("ResolutionStatus" → Map("Creation" → 1))),
+//              StableAudit(_createdBy="system", operation="Creation", objType="Organisation",     summary=Map("Organisation"     → Map("Creation" → 1))),
               StableAudit(_createdBy="system", operation="Creation", objType="User",             summary=Map("User"             → Map("Update"   → 1, "Creation" → 1))),
               StableAudit(_createdBy="admin",  operation="Creation", objType="User",             summary=Map("User"             → Map("Update"   → 1, "Creation" → 1))),
               StableAudit(_createdBy="admin",  operation="Creation", objType="Case",             summary=Map("Case"             → Map("Creation" → 1))),

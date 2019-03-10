@@ -1,10 +1,8 @@
 package org.thp.thehive.services
 import java.util.{Date, UUID}
 
-import scala.reflect.runtime.{universe ⇒ ru}
-
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models.Model.Base
@@ -14,17 +12,20 @@ import org.thp.scalligraph.services.{EdgeSrv, ElementSrv}
 import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
 
-@Singleton
-class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], auditSrvProvider: Provider[AuditSrv]) extends Database {
-  implicit lazy val db: Database = originalDatabase.get().get
-  lazy val auditSrv: AuditSrv    = auditSrvProvider.get()
+import scala.reflect.runtime.{universe ⇒ ru}
 
-  override val idMapping: SingleMapping[UUID, String]            = db.idMapping
-  override val createdAtMapping: SingleMapping[Date, Date]       = db.createdAtMapping
-  override val createdByMapping: SingleMapping[String, String]   = db.createdByMapping
-  override val updatedAtMapping: OptionMapping[Date, Date]       = db.updatedAtMapping
-  override val updatedByMapping: OptionMapping[String, String]   = db.updatedByMapping
-  override val binaryMapping: SingleMapping[Array[Byte], String] = db.binaryMapping
+@Singleton
+class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], implicit val schema: Schema /*, auditSrvProvider: Provider[AuditSrv]*/ )
+    extends Database {
+  implicit lazy val db: Database = originalDatabase.get().get
+  lazy val auditSrv: AuditSrv    = new AuditSrv //auditSrvProvider.get()
+
+  override lazy val idMapping: SingleMapping[UUID, String]            = db.idMapping
+  override lazy val createdAtMapping: SingleMapping[Date, Date]       = db.createdAtMapping
+  override lazy val createdByMapping: SingleMapping[String, String]   = db.createdByMapping
+  override lazy val updatedAtMapping: OptionMapping[Date, Date]       = db.updatedAtMapping
+  override lazy val updatedByMapping: OptionMapping[String, String]   = db.updatedByMapping
+  override lazy val binaryMapping: SingleMapping[Array[Byte], String] = db.binaryMapping
 
   lazy val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
   def create(audit: Audit, entity: Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
@@ -130,5 +131,5 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], audi
   override def edgeStep(graph: Graph, model: Model): GremlinScala[Edge]                                 = db.edgeStep(graph, model)
   //  override def loadBinary(id: String)(implicit graph: Graph): InputStream                               = db.loadBinary(id)(graph)
 //  override def saveBinary(id: String, is: InputStream)(implicit graph: Graph): Vertex                   = db.saveBinary(id, is)(graph)
-  override val extraModels: Seq[Model] = db.extraModels
+  override lazy val extraModels: Seq[Model] = db.extraModels
 }

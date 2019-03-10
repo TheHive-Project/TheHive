@@ -2,28 +2,26 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import scala.util.Success
-
-import play.api.libs.json.{JsString, Json}
-import play.api.mvc.RequestHeader
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import akka.stream.Materializer
-import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.controllers.Authenticated
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, UserSrv}
+import play.api.libs.json.{JsString, Json}
+import play.api.mvc.RequestHeader
+import play.api.test.{FakeRequest, PlaySpecification}
+
+import scala.util.Success
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv                 = DummyUserSrv(permissions = Seq(Permissions.read, Permissions.write), organisation = "cert")
   val authenticated: Authenticated = mock[Authenticated]
   authenticated.getContext(any[RequestHeader]) returns Success(dummyUserSrv.authContext)
-  implicit val ee: ExecutionEnv = ExecutionEnv.fromGlobalExecutionContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
@@ -31,6 +29,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
       .bindToProvider(dbProvider)
       .bindInstance[Authenticated](authenticated)
+      .bind[StorageSrv, LocalFileSystemStorageSrv]
+      .bind[Schema, TheHiveSchema]
+      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
@@ -79,7 +80,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "open",
           summary = None,
-          user = Some(dummyUserSrv.authContext.userId),
+          user = None,
           customFields = Set.empty
         )
 
@@ -120,7 +121,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "open",
           summary = None,
-          user = Some(dummyUserSrv.authContext.userId),
+          user = None,
           customFields = Set(
             OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
             OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))

@@ -1,11 +1,11 @@
 package org.thp.thehive.services
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
@@ -16,6 +16,9 @@ class UserSrvTest extends PlaySpecification {
       .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
       .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
       .bindToProvider(dbProvider)
+      .bind[StorageSrv, LocalFileSystemStorageSrv]
+      .bind[Schema, TheHiveSchema]
+      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 

@@ -5,6 +5,7 @@ import java.util.Date
 import play.api.test.PlaySpecification
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, BadRequestError}
 import org.thp.thehive.models._
 
@@ -17,6 +18,7 @@ class CaseSrvTest extends PlaySpecification {
       .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
       .bind[Schema, TheHiveSchema]
       .bindToProvider(dbProvider)
+      .bind[StorageSrv, LocalFileSystemStorageSrv]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
