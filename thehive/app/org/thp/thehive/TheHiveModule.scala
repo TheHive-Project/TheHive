@@ -6,7 +6,8 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema, SchemaChecker}
-import org.thp.scalligraph.orientdb.OrientDatabase
+import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
+import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.services.LocalUserSrv
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
@@ -42,6 +43,12 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 //      case "neo4j"      ⇒ bind(classOf[Database]).to(classOf[Neo4jDatabase])
       case "orientdb" ⇒ bind(classOf[Database]).to(classOf[OrientDatabase])
       case other      ⇒ sys.error(s"Authentication provider [$other] is not recognized")
+    }
+
+    configuration.get[String]("storage.provider") match {
+      case "localfs" ⇒ bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+      case "database" ⇒ bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+      case "orientdb" ⇒ bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
     }
 
     val routerBindings = ScalaMultibinder.newSetBinder[play.api.routing.Router](binder)
