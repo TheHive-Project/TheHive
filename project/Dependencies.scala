@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  lazy val gremlinScala                   = "com.michaelpollmeier"     %% "gremlin-scala"              % "3.4.0.1-SNAPSHOT"
+  lazy val gremlinScala                   = "com.michaelpollmeier"     %% "gremlin-scala"              % "3.3.4.18"
   lazy val gremlinOrientdb                = "com.orientechnologies"    % "orientdb-gremlin"            % "3.1.0-M2"
   lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"             % "0.3.1"
   lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"       % "0.3.1"
@@ -16,7 +16,6 @@ object Dependencies {
   lazy val bouncyCastle                   = "org.bouncycastle"         % "bcprov-jdk15on"              % "1.58"
   lazy val neo4jGremlin                   = "org.apache.tinkerpop"     % "neo4j-gremlin"               % "3.3.4"
   lazy val neo4jTinkerpop                 = "org.neo4j"                % "neo4j-tinkerpop-api-impl"    % "0.7-3.2.3" exclude ("org.slf4j", "slf4j-nop")
-  lazy val arangodbTinkerpop              = "org.arangodb"             % "arangodb-tinkerpop-provider" % "2.0.1"
   lazy val apacheConfiguration            = "commons-configuration"    % "commons-configuration"       % "1.10"
   lazy val macroParadise                  = "org.scalamacros"          % "paradise"                    % "2.1.1" cross CrossVersion.full
   lazy val playLogback                    = "com.typesafe.play"        %% "play-logback"               % play.core.PlayVersion.current
