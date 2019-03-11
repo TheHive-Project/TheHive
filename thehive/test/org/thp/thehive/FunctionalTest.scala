@@ -45,24 +45,45 @@ class FunctionalTest extends PlaySpecification {
 
   val janusGraphConfig =
     Configuration(ConfigFactory.parseString("""
-      |db.provider: janusgraph
-      |storage.backend: inmemory
+      |db {
+      |  provider: janusgraph
+      |  storage.backend: inmemory
+      |}
+      |storage {
+      |  provider: localfs
+      |  localfs.location: /tmp
+      |}
       |auth.provider: [local]
     """.stripMargin))
 //  Configuration(ConfigFactory.parseString("""
-//      |db.provider: janusgraph
-//      |storage.backend: berkeleyje
-//      |storage.directory: /tmp/thehive-test.db
+//      |db {
+//      |  provider: janusgraph
+//      |  storage.backend: berkeleyje
+//      |  storage.directory: /tmp/thehive-test.db
+//      |}
+//      |storage {
+//      |  provider: localfs
+//      |  localfs.location: /tmp
+//      |}
 //      |auth.provider: [local]
 //    """.stripMargin))
 
   val orientdbConfig = Configuration(ConfigFactory.parseString("""
-     |db.provider: orientdb
-     |auth.provider: [local]
+      |db.provider: orientdb
+      |storage {
+      |  provider: localfs
+      |  localfs.location: /tmp
+      |}
+      |
+      |auth.provider: [local]
    """.stripMargin))
 
   val neo4jConfig = Configuration(ConfigFactory.parseString("""
       |db.provider: neo4j
+      |storage {
+      |  provider: localfs
+      |  localfs.location: /tmp
+      |}
       |auth.provider: [local]
     """.stripMargin))
   Fragments.foreach(Seq(janusGraphConfig, orientdbConfig /*, neo4jConfig*/ )) { dbConfig ⇒
