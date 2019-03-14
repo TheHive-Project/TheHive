@@ -65,7 +65,7 @@ case class AddTagToAlert(tag: String, status: ActionOperationStatus.Type = Actio
   override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToAlert = copy(status = newStatus, message = newMessage)
 }
 
-case class AddArtifactToCase(tag: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+case class AddArtifactToCase(data: String, dataType: String, dataMessage: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
   override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddArtifactToCase = copy(status = newStatus, message = newMessage)
 }
 
@@ -99,7 +99,7 @@ object ActionOperation {
       case "AddArtifactToCase" ⇒ for {
         data ← (json \ "data").validate[String]
         dataType ← (json \ "dataType").validate[String]
-        message ← (json \ "message").validate[String]
+        dataMessage ← (json \ "message").validate[String]
       } yield AddArtifactToCase(data, dataType, message)
       case other ⇒ JsError(s"Unknown operation $other")
     })
@@ -216,10 +216,10 @@ class ActionOperationSrv @Inject() (
               task ← findTaskEntity(entity)
               _ ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddArtifactToCase(data, dataType, message, _, _) ⇒
+          case AddArtifactToCase(data, dataType, dataMessage, _, _) ⇒
             for {
               initialCase ← findCaseEntity(entity)
-              artifact ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", message))
+              artifact ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
             }  yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AddTagToAlert(tag, _, _) =>
             entity match {
