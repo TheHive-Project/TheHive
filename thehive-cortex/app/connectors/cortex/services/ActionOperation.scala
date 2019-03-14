@@ -106,7 +106,7 @@ object ActionOperation {
         dataType ← (json \ "dataType").validate[String]
         dataMessage ← (json \ "message").validate[String]
       } yield AddArtifactToCase(data, dataType, dataMessage)
-      case "AssignCase" for {
+      case "AssignCase" ⇒ for {
         owner  ← (json \ "owner").validate[String]
       } yield AssignCase(owner)
       case other ⇒ JsError(s"Unknown operation $other")
