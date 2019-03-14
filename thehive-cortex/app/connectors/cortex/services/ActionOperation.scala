@@ -216,7 +216,7 @@ class ActionOperationSrv @Inject() (
               task ← findTaskEntity(entity)
               _ ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddArtifactToCase(data, dataType message, _, _) ⇒
+          case AddArtifactToCase(data, dataType, message, _, _) ⇒
             for {
               initialCase ← findCaseEntity(entity)
               artifact ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", message))
