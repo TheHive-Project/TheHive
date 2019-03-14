@@ -193,7 +193,7 @@ class ActionOperationSrv @Inject() (
               caze ← findCaseEntity(entity)
               _ ← taskSrv.create(caze, Fields(fields))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddCustomFields(name, tpe, value, _, _)
+          case AddCustomFields(name, tpe, value, _, _) ⇒
             for {
               initialCase ← findCaseEntity(entity)
               caze ← caseSrv.get(initialCase.id)
