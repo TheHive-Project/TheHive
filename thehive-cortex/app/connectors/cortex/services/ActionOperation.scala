@@ -100,7 +100,7 @@ object ActionOperation {
         data ← (json \ "data").validate[String]
         dataType ← (json \ "dataType").validate[String]
         dataMessage ← (json \ "message").validate[String]
-      } yield AddArtifactToCase(data, dataType, message)
+      } yield AddArtifactToCase(data, dataType, dataMessage)
       case other ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
@@ -112,7 +112,7 @@ object ActionOperation {
     case a: MarkAlertAsRead  ⇒ markAlertAsReadWrites.writes(a)
     case a: AddLogToTask     ⇒ addLogToTaskWrites.writes(a)
     case a: AddTagToAlert    ⇒ addTagToAlertWrites.writes(a)
-    case a: AddArtifactToCase ⇒ addArtifactToCaseWrites(a)
+    case a: AddArtifactToCase ⇒ addArtifactToCaseWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
