@@ -230,7 +230,7 @@ class ActionOperationSrv @Inject() (
               initialCase ← findCaseEntity(entity)
               artifact ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
             }  yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AssignCase(ower, _, _) ⇒
+          case AssignCase(owner, _, _) ⇒
             for {
               initialCase ← findCaseEntity(entity)
               caze ← caseSrv.get(initialCase.id)
