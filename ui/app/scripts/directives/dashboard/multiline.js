@@ -33,7 +33,7 @@
                     }
 
                     return s;
-                }
+                };
 
                 scope.buildSerie = function(serie, q, index) {
                     return {
@@ -166,7 +166,7 @@
                         };
 
                         scope.chart = chart;
-                    }, function(err) {
+                    }, function(/*err*/) {
                         scope.error = true;
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
