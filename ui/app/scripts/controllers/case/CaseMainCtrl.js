@@ -178,6 +178,20 @@
                     });
             }
 
+            $scope.caseReview = function() {
+                $scope.updateField('status', 'Review')
+                    .then(function() {
+                        NotificationSrv.log('The case #' + $scope.caze.caseId + ' has been set to Review', 'success');
+                    });
+            }
+
+            $scope.casePending = function() {
+                $scope.updateField('status', 'Pending')
+                    .then(function() {
+                        NotificationSrv.log('The case #' + $scope.caze.caseId + ' has been set to Pending', 'success');
+                    });
+            }
+
             // update a specific case field
             $scope.updateField = function(fieldName, newValue) {
                 var data = {};
