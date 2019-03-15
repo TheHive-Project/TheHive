@@ -93,6 +93,13 @@
             </a>
         </span>
 
+        <span class="ml-xxs pull-right" ng-if="1">
+            <a href ng-click="caseHold()" class="text-muted noline" uib-tooltip="Hold case">
+                <i class="text-muted fa fa-flag"></i>
+                Hold
+            </a>
+        </span>
+
         <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
             <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
                 <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>

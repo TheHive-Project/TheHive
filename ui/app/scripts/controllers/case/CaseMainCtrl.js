@@ -171,6 +171,13 @@
                 }
             };
 
+            $scope.caseHold = function() {
+                $scope.updateField('status', 'Hold')
+                    .then(function() {
+                          NotificationSrv.log('The case #' + $scope.caze.caseId + ' has been set to Hold', 'success');
+                    });
+            }
+
             // update a specific case field
             $scope.updateField = function(fieldName, newValue) {
                 var data = {};

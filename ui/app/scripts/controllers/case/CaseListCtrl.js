@@ -134,7 +134,10 @@
         this.getStatuses = function() {
             return $q.resolve([
                 {text: 'Open'},
-                {text: 'Resolved'}
+                {text: 'Resolved'},
+                {text: 'Hold'},
+                {text: 'Review'},
+                {text: 'Pending'}
             ]);
         };
 
