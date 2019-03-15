@@ -131,14 +131,28 @@
             this.filter();
         };
 
-        this.getStatuses = function() {
-            return $q.resolve([
+        this.getStatuses = function(query) {
+            var defer = $q.defer();
+
+            $q.resolve([
                 {text: 'Open'},
                 {text: 'Resolved'},
                 {text: 'Hold'},
                 {text: 'Review'},
                 {text: 'Pending'}
-            ]);
+            ]).then(function(response) {
+                var statuses = [];
+
+                statuses = _.filter(response, function(stat) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(stat.text);
+                });
+
+                defer.resolve(statuses);
+            });
+
+            return defer.promise;
+
         };
 
         this.getSeverities = function(query) {
