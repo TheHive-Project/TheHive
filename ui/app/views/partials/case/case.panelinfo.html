@@ -30,6 +30,9 @@
                 <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>
                 <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>)</span>
         </span>
+        <span ng-show="caze.status !== Open && caze.status !== Resolved" class="text-success">(
+                <span> Status <strong>{{caze.status}}</strong></span>)</span>
+        </span>
         <span class="ml-xxs text-danger" ng-show="links.length > 0">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
@@ -94,7 +97,7 @@
         </span>
 
         <span class="ml-xxs pull-right" ng-if="caze.status !== 'Hold'">
-            <a href ng-click="caseHold()" class="text-muted noline" uib-tooltip="Set case status to Hold">
+            <a href ng-class="case.status === 'Hold' ? blue : text-muted" ng-click="caseHold()" class="text-muted noline" uib-tooltip="Set case status to Hold">
                 <i class="text-muted fa fa-exclamation-circle"></i>
                 Hold
             </a>
@@ -103,14 +106,14 @@
         <span class="ml-xxs pull-right" ng-if="caze.status !== 'Pending'">
             <a href ng-click="casePending()" class="text-muted noline" uib-tooltip="Set case status to Pending">
                 <i class="text-muted fa fa-pause"></i>
-                Hold
+                Pending
             </a>
         </span>
 
         <span class="ml-xxs pull-right"  ng-if="caze.status !== 'Review'">
             <a href ng-click="caseReview()" class="text-muted noline" uib-tooltip="Set case status to Review">
                 <i class="text-muted fa fa-user-circle"></i>
-                Hold
+                Review
             </a>
         </span>
 
