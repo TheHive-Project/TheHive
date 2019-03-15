@@ -30,6 +30,9 @@
                 <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>
                 <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>)</span>
         </span>
+        <span ng-show="caze.status !== 'Resolved'" class="text-success">(
+                <span> Status <strong>{{caze.status}}</strong></span>)</span>
+        </span>
         <span class="ml-xxs text-danger" ng-show="links.length > 0">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
@@ -93,6 +96,10 @@
             </a>
         </span>
 
+        <span class="ml-xxs pull-right">
+            <span class="text-primary">|</span>
+        </span>
+
         <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
             <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
                 <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>
@@ -105,6 +112,49 @@
                 Unflag
             </a>
         </span>
+
+        <span class="ml-xxs pull-right" ng-if="caze.status !== 'Hold'">
+            <a href ng-click="caseHold()" class="text-muted noline" uib-tooltip="Set case status to Hold">
+                <i class="text-muted fa fa-pause" ng-class="SetHold" ng-mouseout="SetHold='text-muted'" ng-mouseover="SetHold='text-red'"></i>
+                Hold
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="caze.status === 'Hold'">
+            <a href ng-click="caseOpenFromOtherStatus()" class="text-red noline" uib-tooltip="Reopen Case">
+                <i class="text-red fa fa-pause"></i>
+                Hold
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="caze.status !== 'Pending'">
+            <a href ng-click="casePending()" class="text-muted noline" uib-tooltip="Set case status to Pending">
+                <i class="text-muted fa fa-exclamation-circle" ng-class="SetPending" ng-mouseout="SetPending='text-muted'" ng-mouseover="SetPending='text-red'"></i>
+                Pending
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right" ng-if="caze.status === 'Pending'">
+            <a href ng-click="caseOpenFromOtherStatus()" class="text-red noline" uib-tooltip="Reopen Case">
+                <i class="text-red fa fa-exclamation-circle"></i>
+                Pending
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right"  ng-if="caze.status !== 'Review'">
+            <a href ng-click="caseReview()" class="text-muted noline" uib-tooltip="Set case status to Review">
+                <i class="text-muted fa fa-user-circle" ng-class="SetReview" ng-mouseout="SetReview='text-muted'" ng-mouseover="SetReview='text-red'"></i>
+                Review
+            </a>
+        </span>
+
+        <span class="ml-xxs pull-right"  ng-if="caze.status === 'Review'">
+            <a href ng-click="caseOpenFromOtherStatus()" class="text-red noline" uib-tooltip="Reopen Case">
+                <i class="text-red fa fa-user-circle"></i>
+                Review
+            </a>
+        </span>
+
         <span class="ml-xxs pull-right" ng-hide="isCaseClosed()">
             <a href ng-click="openCloseDialog()" class="text-muted noline" uib-tooltip="Close case">
                 <i class="text-muted fa fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>

@@ -78,9 +78,14 @@
 
                                             </span>
                                         </div>
-                                        <div class="text-success" ng-show="currentCase.status !== 'Open'">
+                                        <div class="text-success" ng-show="currentCase.status === 'Resolved'">
                                             <small>
                                                 (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
+                                            </small>
+                                        </div>
+                                        <div class="text-success" ng-show="currentCase.status !== 'Open' && currentCase.status !== 'Resolved' ">
+                                            <small>
+                                                (Status: <strong>{{currentCase.status}}</strong>)
                                             </small>
                                         </div>
                                         <div class="text-danger" ng-if="currentCase.mergeFrom">
