@@ -96,16 +96,16 @@
             </a>
         </span>
 
-        <span class="ml-xxs pull-right" ng-if="caze.status !== 'Hold'">
-            <a href ng-click="caseHold()" ng-class="case.status === 'Hold' ? text-blue : text-muted" uib-tooltip="Set case status to Hold">
-                <i class="text-muted fa fa-exclamation-circle"></i>
+        <span class="ml-xxs pull-right" ng-if="1">
+            <a href ng-click="caseHold()" ng-class="caze.status === 'Hold' ? text-blue : text-muted" uib-tooltip="Set case status to Hold">
+                <i class="text-muted fa fa-pause"></i>
                 Hold
             </a>
         </span>
 
         <span class="ml-xxs pull-right" ng-if="caze.status !== 'Pending'">
             <a href ng-click="casePending()" class="text-muted noline" uib-tooltip="Set case status to Pending">
-                <i class="text-muted fa fa-pause"></i>
+                <i class="text-muted fa fa-exclamation-circle"></i>
                 Pending
             </a>
         </span>
@@ -135,7 +135,7 @@
                 Close
             </a>
         </span>
-        <span class="ml-xxs pull-right" ng-show="case.status !== 'Open'">
+        <span class="ml-xxs pull-right" ng-show="caze.status !== 'Open'">
             <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
                 <i class="text-success fa fa-check-circle"></i>
                 Reopen
