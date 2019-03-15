@@ -20,7 +20,7 @@ import org.elastic4play.services.{ FindSrv, SequenceSrv }
 
 object CaseStatus extends Enumeration with HiveEnumeration {
   type Type = Value
-  val Open, Resolved, Deleted = Value
+  val Open, Resolved, Pending, Hold, Review, Deleted = Value
 }
 
 object CaseResolutionStatus extends Enumeration with HiveEnumeration {
