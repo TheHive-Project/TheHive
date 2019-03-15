@@ -501,6 +501,14 @@
                     });
             };
 
+            this.filterByNewAndUpdated = function() {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue('status', 'New');
+                        self.addFilterValue('status', 'Updated');
+                    });
+            };
+
             this.filterBySeverity = function(numericSev) {
                 self.addFilterValue('severity', Severity.values[numericSev]);
             };

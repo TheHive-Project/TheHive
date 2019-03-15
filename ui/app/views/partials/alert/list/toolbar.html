@@ -43,11 +43,15 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
+                        <a ng-click="$vm.filterByNewAndUpdated()">New & Updated events({{alertEvents.Updated.count + alertEvents.New.count || 0}})</a>
+                    </li>
+                    <li>
                         <a ng-click="$vm.filterByStatus('New')">New events ({{alertEvents.New.count || 0}})</a>
                     </li>
                     <li>
                         <a ng-click="$vm.filterByStatus('Updated')">Updated events({{alertEvents.Updated.count || 0}})</a>
                     </li>
+
                 </ul>
             </div>
 
