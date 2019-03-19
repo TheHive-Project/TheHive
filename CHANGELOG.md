@@ -1,7 +1,14 @@
 # Change Log
 
-## [3.3.0-RC6](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC6) (2019-02-07)
+## [3.3.0](https://github.com/TheHive-Project/TheHive/tree/3.3.0) (2019-03-19)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC6...3.3.0)
+
+**Fixed bugs:**
+
+- Merge case by CaseID Broken [\#930](https://github.com/TheHive-Project/TheHive/issues/930)
+
+## [3.3.0-RC6](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC6) (2019-03-07)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC5...3.3.0-RC6)
 
 **Implemented enhancements:**

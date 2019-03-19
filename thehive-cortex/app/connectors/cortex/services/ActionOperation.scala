@@ -90,8 +90,8 @@ object ActionOperation {
         content ← (json \ "content").validate[String]
         owner ← (json \ "owner").validateOpt[String]
       } yield AddLogToTask(content, owner)
-      case "AddTagToAlert" => (json \ "tag").validate[String].map(tag ⇒ AddTagToAlert(tag))
-      case other ⇒ JsError(s"Unknown operation $other")
+      case "AddTagToAlert" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToAlert(tag))
+      case other           ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
@@ -205,7 +205,7 @@ class ActionOperationSrv @Inject() (
               task ← findTaskEntity(entity)
               _ ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddTagToAlert(tag, _, _) =>
+          case AddTagToAlert(tag, _, _) ⇒
             entity match {
               case initialAlert: Alert ⇒
                 for {
