@@ -1,8 +1,8 @@
 package models
 
 import java.util.Date
-import javax.inject.{ Inject, Provider, Singleton }
 
+import javax.inject.{ Inject, Provider, Singleton }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
@@ -12,6 +12,7 @@ import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 
+import akka.stream.scaladsl.Sink
 import akka.stream.{ IOResult, Materializer }
 import akka.{ Done, NotUsed }
 import models.JsonFormat.artifactStatusFormat
@@ -114,9 +115,11 @@ class ArtifactModel @Inject() (
   override def getStats(entity: BaseEntity): Future[JsObject] = {
     entity match {
       case artifact: Artifact ⇒
-        val (_, total) = artifactSrv.get.findSimilar(artifact, Some("0-0"), Nil)
-        total.failed.foreach(t ⇒ logger.error("Artifact.getStats error", t))
-        total.map { t ⇒ Json.obj("seen" → t) }
+        val (similarArtifacts, total) = artifactSrv.get.findSimilar(artifact, Some("0-1"), Seq("-ioc"))
+        for {
+          ioc ← similarArtifacts.runWith(Sink.headOption).map(_.fold(false)(_.ioc()))
+          t ← total
+        } yield Json.obj("seen" → t, "ioc" → ioc)
       case _ ⇒ Future.successful(JsObject.empty)
     }
   }

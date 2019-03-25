@@ -134,9 +134,10 @@ class MispSynchro @Inject() (
   }
 
   def synchronize(mispConnection: MispConnection, lastSyncDate: Option[Date])(implicit authContext: AuthContext): Source[Try[Alert], NotUsed] = {
-    logger.info(s"Synchronize MISP ${mispConnection.name} from $lastSyncDate")
+    val syncFrom = mispConnection.syncFrom(lastSyncDate.getOrElse(new Date(0)))
+    logger.info(s"Last synchronization of MISP ${mispConnection.name} is ${lastSyncDate.fold("Never")(_.toString)}, synchronize from $syncFrom")
     // get events that have been published after the last synchronization
-    mispSrv.getEventsFromDate(mispConnection, mispConnection.syncFrom(lastSyncDate.getOrElse(new Date(0))))
+    mispSrv.getEventsFromDate(mispConnection, syncFrom)
       // get related alert
       .mapAsyncUnordered(1) { event ⇒
         logger.trace(s"Looking for alert misp:${event.source}:${event.sourceRef}")

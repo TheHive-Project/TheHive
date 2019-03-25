@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardDonut', function(StatSrv, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
+    angular.module('theHiveDirectives').directive('dashboardDonut', function($q, StatSrv, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -81,8 +81,11 @@
                                     names: scope.options.names || {},
                                     colors: scope.options.colors || {},
                                     onclick: function(d) {
+                                        if(scope.mode === 'edit') {
+                                            return;
+                                        }
+
                                         var fieldDef = scope.entity.attributes[scope.options.field];
-                                        var fieldType = fieldDef.type;
 
                                         var data = {
                                             field: scope.options.field,
@@ -90,11 +93,14 @@
                                             value: GlobalSearchSrv.buildDefaultFilterValue(fieldDef, d)
                                         };
 
-                                        GlobalSearchSrv.saveSection(scope.options.entity, {
+                                        var filters = (scope.options.filters || []).concat([data]);
+
+                                        $q.resolve(GlobalSearchSrv.saveSection(scope.options.entity, {
                                             search: null,
-                                            filters: scope.options.filters.concat([data])
+                                            filters: filters
+                                        })).then(function() {
+                                            $state.go('app.search');
                                         });
-                                        $state.go('app.search');
                                     }
                                 },
                                 donut: {
@@ -107,7 +113,7 @@
                                 }
                             };
                         },
-                        function(err) {
+                        function(/*err*/) {
                             scope.error = true;
                             NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                         }

@@ -179,13 +179,16 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 resolve: {
                     templates: function(){
                         return $scope.templates;
-                    }
+                    },
+                    uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }]
                 }
             });
 
             modal.result.then(function(template) {
                 $scope.createNewCase(template);
-            })
+            });
         };
 
         $scope.aboutTheHive = function() {

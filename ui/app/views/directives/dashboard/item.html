@@ -13,11 +13,11 @@
             </a>
 
         </div>
-        <div class="box-tools pull-right" ng-if="mode === 'edit'">
+        <!-- <div class="box-tools pull-right" ng-if="mode === 'edit'">
             <button type="button" class="btn btn-box-tool" >
                 <i class="fa fa-save"></i> Save
             </button>
-        </div>
+        </div> -->
     </div>
     <div class="box-body" ng-switch="component.type">
         <dashboard-donut ng-switch-when="donut"
@@ -55,6 +55,14 @@
             refresh-on="{{refreshOn}}"
             resize-on="{{resizeOn}}"
             mode="mode"></dashboard-multiline>
+
+        <dashboard-text ng-switch-when="text"
+            entity="metadata[component.options.entity]"
+            options="component.options"
+            filter="filter"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"            
+            mode="mode"></dashboard-text>
 
         <dashboard-counter ng-switch-when="counter"
             entity="metadata[component.options.entity]"

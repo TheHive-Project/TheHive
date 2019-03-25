@@ -34,8 +34,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/login.html',
                 resolve: {
                     appConfig: function(VersionSrv) {
-                                 return VersionSrv.get();
-                              }
+                       return VersionSrv.get();
+                    }
                 },
                 params: {
                     autoLogin: false
@@ -76,6 +76,10 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     },
                     appLayout: function($q, $rootScope, AppLayoutSrv) {
                         AppLayoutSrv.init();
+                        return $q.resolve();
+                    },
+                    uiConfig: function($q, UiSettingsSrv) {
+                        UiSettingsSrv.all();
                         return $q.resolve();
                     }
                 }
@@ -215,6 +219,18 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
+            .state('app.administration.ui-settings', {
+                url: '/ui-settings',
+                templateUrl: 'views/partials/admin/ui-settings.html',
+                controller: 'AdminUiSettingsCtrl',
+                controllerAs: '$vm',
+                title: 'UI settings',
+                resolve: {
+                    uiConfig: function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }
+                }
+            })
             .state('app.case', {
                 abstract: true,
                 url: 'case/{caseId}',
@@ -263,6 +279,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/case/case.links.html',
                 controller: 'CaseLinksCtrl'
             })
+            .state('app.case.alerts', {
+                url: '/alerts',
+                templateUrl: 'views/partials/case/case.alerts.html',
+                controller: 'CaseAlertsCtrl',
+                resolve: {
+                    alerts: function($stateParams, CaseSrv) {
+                        return CaseSrv.alerts({range: 'all'}, {
+                            query: {
+                              case: $stateParams.caseId
+                            }
+                        }).$promise;
+                    }
+                }
+            })
             .state('app.case.tasks-item', {
                 url: '/tasks/{itemId}',
                 templateUrl: 'views/partials/case/case.tasks.item.html',
@@ -299,6 +329,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 resolve: {
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
+                    },
+                    artifact: function($q, $stateParams, CaseArtifactSrv, NotificationSrv) {
+                        var deferred = $q.defer();
+
+                        CaseArtifactSrv.api().get({
+                            'artifactId': $stateParams.itemId
+                        }).$promise.then(function(data) {
+                            deferred.resolve(data);
+                        }).catch(function(response) {
+                            deferred.reject(response);
+                            NotificationSrv.error('Observable Details', response.data, response.status);
+                        });
+
+                        return deferred.promise;
                     }
                 }
             })
@@ -433,7 +477,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
               var renderer = defaults.renderer;
               var linkRenderer = _.wrap(renderer.link, function(originalLink, href, title, text) {
                   var html = originalLink.call(renderer, href, title, text);
-                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ')
+                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ');
               });
 
               // Customize the link renderer

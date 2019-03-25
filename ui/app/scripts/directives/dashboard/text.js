@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardCounter', function($q, $http, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
+    angular.module('theHiveDirectives').directive('dashboardText', function($q, $http, $state, DashboardSrv, GlobalSearchSrv, NotificationSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -10,16 +10,18 @@
                 autoload: '=',
                 mode: '=',
                 refreshOn: '@',
+                resizeOn: '@',
                 metadata: '='
             },
-            templateUrl: 'views/directives/dashboard/counter/view.html',
-            link: function(scope) {
+            templateUrl: 'views/directives/dashboard/text/view.html',
+            link: function(scope, elem) {
+
                 scope.error = false;
                 scope.data = null;
                 scope.globalQuery = null;
 
                 scope.load = function() {
-                    if(!scope.entity) {
+                    if(!scope.options.series || scope.options.series.length === 0) {
                         scope.error = true;
                         return;
                     }
@@ -27,12 +29,11 @@
                     var query = DashboardSrv.buildChartQuery(scope.filter, scope.options.query);
                     scope.globalQuery = query;
 
-                    var statsPromise = $http.post('./api' + scope.entity.path + '/_stats', {
-                        query: query,
+                    var stats = {
                         stats: _.map(scope.options.series || [], function(serie, index) {
                             var s = {
                                 _agg: serie.agg,
-                                _name: 'agg_' + (index + 1),
+                                _name: serie.name || 'agg_' + (index + 1),
                                 _query: serie.query || {}
                             };
 
@@ -40,46 +41,47 @@
                                 s._field = serie.field;
                             }
 
-                            return s;
+                            return {
+                                model: serie.entity,
+                                query: query,
+                                stats: [s]
+                            };
                         })
-                    });
+                    };
+
+                    var statsPromise = $http.post('./api/_stats', stats);
 
                     statsPromise.then(function(response) {
                         scope.error = false;
-                        var data = response.data;
+                        scope.data = response.data;
 
-                        scope.data = _.map(scope.options.series || [], function(serie, index) {
-                            var name = 'agg_' + (index + 1);
-                            return {
-                                serie: serie,
-                                agg: serie.agg,
-                                name: name,
-                                label: serie.label,
-                                value: data[name] || 0
-                            };
+                        var template = scope.options.template;
+                        Object.keys(scope.data).forEach(function(key){
+                            var regex = new RegExp('{{' + key + '}}', 'gi');
+
+                            template = template.replace(regex, scope.data[key]);
                         });
+
+                        scope.content = template;
 
                     }, function(/*err*/) {
                         scope.error = true;
+
                         NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
                     });
                 };
 
-                scope.openSearch = function(item) {
-                    if(scope.mode === 'edit') {
-                        return;
+                scope.copyHTML = function() {
+                    var html = elem[0].querySelector('.widget-content').innerHTML;
+                    function listener(e) {
+                        e.clipboardData.setData('text/html', html);
+                        e.clipboardData.setData('text/plain', html);
+                        e.preventDefault();
                     }
-
-                    var filters = (scope.options.filters || []).concat(item.serie.filters || []);
-
-                    $q.resolve(GlobalSearchSrv.saveSection(scope.options.entity, {
-                        search: filters.length === 0 ? '*' : null,
-                        filters: filters
-                    })).then(function() {
-                        $state.go('app.search');
-                    });
-
-                };
+                    document.addEventListener('copy', listener);
+                    document.execCommand('copy');
+                    document.removeEventListener('copy', listener);
+                }
 
                 if (scope.autoload === true) {
                     scope.load();

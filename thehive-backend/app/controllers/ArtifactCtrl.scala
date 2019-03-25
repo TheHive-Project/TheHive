@@ -38,31 +38,35 @@ class ArtifactCtrl @Inject() (
   private[ArtifactCtrl] lazy val logger = Logger(getClass)
 
   // extract a file from the archive and make sure its size matches the header (to protect against zip bombs)
-  private def extractAndCheckSize(zipFile: ZipFile, header: FileHeader)(implicit authContext: AuthContext): FileInputValue = {
-    val file = tempSrv.newTemporaryFile(header.getFileName, "-fromZipFile")
+  private def extractAndCheckSize(zipFile: ZipFile, header: FileHeader)(implicit authContext: AuthContext): Option[FileInputValue] = {
+    val fileName = header.getFileName
+    if (fileName.contains('/')) None
+    else {
+      val file = tempSrv.newTemporaryFile(fileName, "-fromZipFile")
 
-    val input = zipFile.getInputStream(header)
-    val size = header.getUncompressedSize
-    val sizedInput: FilterInputStream = new FilterInputStream(input) {
-      var totalRead = 0
+      val input = zipFile.getInputStream(header)
+      val size = header.getUncompressedSize
+      val sizedInput: FilterInputStream = new FilterInputStream(input) {
+        var totalRead = 0
 
-      override def read(): Int = {
-        if (totalRead < size) {
-          totalRead += 1
-          super.read()
+        override def read(): Int = {
+          if (totalRead < size) {
+            totalRead += 1
+            super.read()
+          }
+          else throw BadRequestError("Error extracting file: output size doesn't match header")
         }
-        else throw BadRequestError("Error extracting file: output size doesn't match header")
       }
+      Files.delete(file)
+      val fileSize = Files.copy(sizedInput, file)
+      if (fileSize != size) {
+        file.toFile.delete()
+        throw InternalError("Error extracting file: output size doesn't match header")
+      }
+      input.close()
+      val contentType = Option(Files.probeContentType(file)).getOrElse("application/octet-stream")
+      Some(FileInputValue(header.getFileName, file, contentType))
     }
-    Files.delete(file)
-    val fileSize = Files.copy(sizedInput, file)
-    if (fileSize != size) {
-      file.toFile.delete()
-      throw InternalError("Error extracting file: output size doesn't match header")
-    }
-    input.close()
-    val contentType = Option(Files.probeContentType(file)).getOrElse("application/octet-stream")
-    FileInputValue(header.getFileName, file, contentType)
   }
 
   @Timed
@@ -91,7 +95,7 @@ class ArtifactCtrl @Inject() (
               }
 
               val multiFields = files.filterNot(_.isDirectory)
-                .map(extractAndCheckSize(zipFile, _))
+                .flatMap(extractAndCheckSize(zipFile, _))
                 .map { fiv ⇒
                   fields
                     .unset("isZip")

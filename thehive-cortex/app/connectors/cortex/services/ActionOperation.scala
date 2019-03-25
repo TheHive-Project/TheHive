@@ -61,6 +61,10 @@ case class AddLogToTask(content: String, owner: Option[String], status: ActionOp
   override def updateStatus(newStatus: Type, newMessage: String): ActionOperation = copy(status = newStatus, message = newMessage)
 }
 
+case class AddTagToAlert(tag: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToAlert = copy(status = newStatus, message = newMessage)
+}
+
 object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
   val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
@@ -69,6 +73,7 @@ object ActionOperation {
   val closeTaskWrites = Json.writes[CloseTask]
   val markAlertAsReadWrites = Json.writes[MarkAlertAsRead]
   val addLogToTaskWrites = Json.writes[AddLogToTask]
+  val addTagToAlertWrites = Json.writes[AddTagToAlert]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
@@ -85,7 +90,8 @@ object ActionOperation {
         content ← (json \ "content").validate[String]
         owner ← (json \ "owner").validateOpt[String]
       } yield AddLogToTask(content, owner)
-      case other ⇒ JsError(s"Unknown operation $other")
+      case "AddTagToAlert" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToAlert(tag))
+      case other           ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
     case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
@@ -95,6 +101,7 @@ object ActionOperation {
     case a: CloseTask        ⇒ closeTaskWrites.writes(a)
     case a: MarkAlertAsRead  ⇒ markAlertAsReadWrites.writes(a)
     case a: AddLogToTask     ⇒ addLogToTaskWrites.writes(a)
+    case a: AddTagToAlert    ⇒ addTagToAlertWrites.writes(a)
     case a                   ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
@@ -136,6 +143,18 @@ class ActionOperationSrv @Inject() (
         findSrv(model.parentModel, "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")), Some("0-1"), Nil)
           ._1.runWith(Sink.head).flatMap(findTaskEntity _)
       case _ ⇒ Future.failed(BadRequestError("Task not found"))
+    }
+  }
+
+  def findArtifactEntity(entity: BaseEntity): Future[Artifact] = {
+    import org.elastic4play.services.QueryDSL._
+
+    (entity, entity.model) match {
+      case (a: Artifact, _) ⇒ Future.successful(a)
+      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+        findSrv(model.parentModel, "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")), Some("0-1"), Nil)
+          ._1.runWith(Sink.head).flatMap(findArtifactEntity _)
+      case _ ⇒ Future.failed(BadRequestError("Artifact not found"))
     }
   }
 
@@ -186,6 +205,15 @@ class ActionOperationSrv @Inject() (
               task ← findTaskEntity(entity)
               _ ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          case AddTagToAlert(tag, _, _) ⇒
+            entity match {
+              case initialAlert: Alert ⇒
+                for {
+                  alert ← alertSrv.get(initialAlert.id)
+                  _ ← alertSrv.update(alert.id, Fields.empty.set("tags", Json.toJson((alert.tags() :+ tag).distinct)), ModifyConfig(retryOnConflict = 0, version = Some(alert.version)))
+                } yield operation.updateStatus(ActionOperationStatus.Success, "")
+              case _ ⇒ Future.failed(BadRequestError("Alert not found"))
+            }
           case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
         }
       }
