@@ -73,6 +73,10 @@ case class AssignCase(owner: String, status: ActionOperationStatus.Type = Action
   override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AssignCase = copy(status = newStatus, message = newMessage)
 }
 
+case class SetCaseTitle(title: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): SetCaseTitle = copy(status = newStatus, message = newMessage)
+}
+
 object ActionOperation {
   val addTagToCaseWrites = Json.writes[AddTagToCase]
   val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
@@ -84,6 +88,7 @@ object ActionOperation {
   val addTagToAlertWrites = Json.writes[AddTagToAlert]
   val addArtifactToCaseWrites = Json.writes[AddArtifactToCase]
   val assignCaseWrites = Json.writes[AssignCase]
+  val setCaseTitleWrites = Json.writes[SetCaseTitle]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](json ⇒
     (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
       case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
@@ -109,6 +114,9 @@ object ActionOperation {
       case "AssignCase" ⇒ for {
         owner  ← (json \ "owner").validate[String]
       } yield AssignCase(owner)
+      case "SetCaseTitle" ⇒ for {
+        title  ← (json \ "title").validate[String]
+      } yield SetCaseTitle(title)
       case other ⇒ JsError(s"Unknown operation $other")
     })
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
@@ -122,6 +130,7 @@ object ActionOperation {
     case a: AddTagToAlert     ⇒ addTagToAlertWrites.writes(a)
     case a: AddArtifactToCase ⇒ addArtifactToCaseWrites.writes(a)
     case a: AssignCase        ⇒ assignCaseWrites.writes(a)
+    case a: SetCaseTitle      ⇒ setCaseTitleWrites.writes(a)
     case a                    ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
@@ -235,6 +244,12 @@ class ActionOperationSrv @Inject() (
               initialCase ← findCaseEntity(entity)
               caze ← caseSrv.get(initialCase.id)
               _ ← caseSrv.update(caze, Fields.empty.set("owner", owner), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          case SetCaseTitle(title, _, _) ⇒
+            for {
+              initialCase ← findCaseEntity(entity)
+              caze ← caseSrv.get(initialCase.id)
+              _ ← caseSrv.update(caze, Fields.empty.set("title", title), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AddTagToAlert(tag, _, _) =>
             entity match {
