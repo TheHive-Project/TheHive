@@ -1,0 +1,22 @@
+[
+  {
+    "from": "alert1",
+    "to": "default"
+  },
+  {
+    "from": "alert2",
+    "to": "cert"
+  },
+  {
+    "from": "alert3",
+    "to": "cert"
+  },
+  {
+    "from": "alert4",
+    "to": "cert"
+  },
+  {
+    "from": "alert5",
+    "to": "cert"
+  }
+]

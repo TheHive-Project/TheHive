@@ -1,173 +1,173 @@
 package org.thp.thehive.controllers.v1
 
 import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
-import play.api.libs.json.Json
+import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.NotFoundError
+import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
-import org.thp.thehive.services.{OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
 
 @Singleton
 class UserCtrl @Inject()(
-    apiMethod: ApiMethod,
+    entryPoint: EntryPoint,
     db: Database,
     userSrv: UserSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
-    implicit val ec: ExecutionContext) {
+    profileSrv: ProfileSrv,
+    errorHandler: HttpErrorHandler,
+    implicit val ec: ExecutionContext)
+    extends UserConversion {
 
   def current: Action[AnyContent] =
-    apiMethod("current user")
-      .requires() { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          userSrv
-            .get(request.userId)
-            .richUser
-            .headOption()
-            .fold(Results.Unauthorized(Json.obj("type" → "AuthenticationError", "message" → "You are not authenticated"))) { user ⇒
-              Results.Ok(user.toJson)
-            }
-        }
+    entryPoint("current user").authenticated { implicit request ⇒
+      db.tryTransaction { implicit graph ⇒
+        userSrv
+          .get(request.userId)
+          .richUser(request.organisation)
+          .getOrFail()
+          .map(user ⇒ Results.Ok(user.toJson))
       }
+    }
 
   def create: Action[AnyContent] =
-    apiMethod("create user")
+    entryPoint("create user")
       .extract('user, FieldsParser[InputUser])
-      .requires(Permissions.admin) { implicit request ⇒
+      .authenticated { implicit request ⇒
         val inputUser: InputUser = request.body('user)
-        val richUser = db.transaction { implicit graph ⇒
-          val organisationName = inputUser.organisation.getOrElse(request.organisation)
-          val organisation     = organisationSrv.getOrFail(organisationName)
-          // TODO check if the requester can create a new user in that organisation
-          userSrv.create(inputUser, organisation)
-        }
-        inputUser.password.foreach(password ⇒ authSrv.setPassword(richUser._id, password))
-        Results.Created(richUser.toJson)
+        db.tryTransaction { implicit graph ⇒
+            val organisationName = inputUser.organisation.getOrElse(request.organisation)
+            for {
+              _            ← userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
+              organisation ← organisationSrv.getOrFail(organisationName)
+              profile      ← profileSrv.getOrFail(inputUser.profile)
+              user = userSrv.create(inputUser, organisation, profile)
+            } yield user
+          }
+          .map { user ⇒
+            inputUser.password.foreach(password ⇒ authSrv.setPassword(user._id, password))
+            Results.Created(user.toJson)
+          }
       }
 
   def get(userId: String): Action[AnyContent] =
-    apiMethod("get user")
-      .requires(Permissions.read) { _ ⇒
-        db.transaction { implicit graph ⇒
-          val user = userSrv
-            .get(userId)
-            .richUser
-            .headOption()
-            .getOrElse(throw NotFoundError(s"user $userId not found"))
-          Results.Ok(user.toJson)
-        }
+    entryPoint("get user").authenticated { request ⇒
+      db.tryTransaction { implicit graph ⇒
+        userSrv
+          .get(userId)
+          .richUser(request.organisation) // FIXME what if user is not in the same org ?
+          .getOrFail()
+          .map(user ⇒ Results.Ok(user.toJson))
       }
+    }
 
-  def list: Action[AnyContent] =
-    apiMethod("list user")
-      .requires(Permissions.read) { _ ⇒
-        db.transaction { implicit graph ⇒
-          val users = userSrv.initSteps.richUser
-            .map(_.toJson)
-            .toList
-          Results.Ok(Json.toJson(users))
-        }
-      }
+//  def list: Action[AnyContent] =
+//    entryPoint("list user")
+//      .extract('organisation, FieldsParser[String].optional.on("organisation"))
+//      .authenticated { request ⇒
+//        db.transaction { implicit graph ⇒
+//          val organisation = request.body('organisation).getOrElse(request.organisation)
+//          val users = userSrv.initSteps
+//            .richUser(organisation)
+//            .map(_.toJson)
+//            .toList
+//          Results.Ok(Json.toJson(users))
+//        }
+//      }
 
   def update(userId: String): Action[AnyContent] =
-    apiMethod("update user")
+    entryPoint("update user")
       .extract('user, UpdateFieldsParser[InputUser])
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
           userSrv.update(userId, request.body('user))
-          Results.NoContent
+          Success(Results.NoContent)
         }
       }
 
   def setPassword(userId: String): Action[AnyContent] =
-    apiMethod("set password")
+    entryPoint("set password")
       .extract('password, FieldsParser[String])
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (userSrv.isAvailableFor(userId, request.organisation))
-            authSrv
-              .setPassword(userId, request.body('password))
-              .map(_ ⇒ Results.NoContent)
-              .get
-          else
-            Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _ ← userSrv.current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+            _ ← authSrv.setPassword(userId, request.body('password))
+          } yield Results.NoContent
         }
       }
 
   def changePassword(userId: String): Action[AnyContent] =
-    apiMethod("change password")
+    entryPoint("change password")
       .extract('password, FieldsParser[String])
       .extract('currentPassword, FieldsParser[String])
-      .requires() { implicit request ⇒
+      .authenticated { implicit request ⇒
         if (userId == request.userId) {
-          db.transaction { _ ⇒
+          db.tryTransaction { _ ⇒
             authSrv
               .changePassword(userId, request.body('currentPassword), request.body('password))
               .map(_ ⇒ Results.NoContent)
-              .get
           }
-        } else Results.Unauthorized(s"You are not authorized to change password of $userId")
+        } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
 
   def getKey(userId: String): Action[AnyContent] =
-    apiMethod("get key")
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (userSrv.isAvailableFor(userId, request.organisation))
-            authSrv
+    entryPoint("get key")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _ ← userSrv.current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+            key ← authSrv
               .getKey(userId)
-              .map(Results.Ok(_))
-              .get
-          else
-            Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient")
+          } yield Results.Ok(key)
         }
       }
 
   def removeKey(userId: String): Action[AnyContent] =
-    apiMethod("remove key")
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (userSrv.isAvailableFor(userId, request.organisation))
-            authSrv
+    entryPoint("remove key")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _ ← userSrv.current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+            _ ← authSrv
               .removeKey(userId)
-              .map(_ ⇒ Results.NoContent)
-              .get
-          else
-            Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient")
+          } yield Results.NoContent
         }
       }
 
   def renewKey(userId: String): Action[AnyContent] =
-    apiMethod("renew key")
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (userSrv.isAvailableFor(userId, request.organisation))
-            authSrv
+    entryPoint("renew key")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _ ← userSrv.current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+            key ← authSrv
               .renewKey(userId)
-              .map(Results.Ok(_))
-              .get
-          else
-            Results.Unauthorized(s"User $userId doesn't exist or permission is insufficient")
+          } yield Results.Ok(key)
         }
-      }
-
-  def createInitialUser: Action[AnyContent] =
-    apiMethod("create initial user")
-      .requires() { implicit request ⇒
-        val user = db.transaction { implicit graph ⇒
-          val defaultOrganisation = organisationSrv.create(Organisation("default"))
-          userSrv.create(User("admin", "admin", None, Permissions.permissions, UserStatus.ok, None), defaultOrganisation)
-        }
-        authSrv
-          .setPassword(user._id, "admin")
-          .map(_ ⇒ Results.Ok)
-          .get
       }
 }

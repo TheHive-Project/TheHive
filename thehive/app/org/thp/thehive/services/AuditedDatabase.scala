@@ -1,6 +1,9 @@
 package org.thp.thehive.services
 import java.util.{Date, UUID}
 
+import scala.reflect.runtime.{universe ⇒ ru}
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
@@ -12,13 +15,10 @@ import org.thp.scalligraph.services.{EdgeSrv, ElementSrv}
 import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
 
-import scala.reflect.runtime.{universe ⇒ ru}
-
 @Singleton
-class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], implicit val schema: Schema /*, auditSrvProvider: Provider[AuditSrv]*/ )
-    extends Database {
+class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], implicit val schema: Schema) extends Database {
   implicit lazy val db: Database = originalDatabase.get().get
-  lazy val auditSrv: AuditSrv    = new AuditSrv //auditSrvProvider.get()
+  lazy val auditSrv: AuditSrv    = new AuditSrv
 
   override lazy val idMapping: SingleMapping[UUID, String]            = db.idMapping
   override lazy val createdAtMapping: SingleMapping[Date, Date]       = db.createdAtMapping
@@ -48,8 +48,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
       from: FROM with Entity,
       to: TO with Entity): E with Entity = db.createEdge(graph, authContext, model, e, from, to)
 
-  override def update(graph: Graph, authContext: AuthContext, model: Model, id: String, fields: Map[FPath, UpdateOps.Type]): Unit = {
-    val element = model.get(id)(db, graph)
+  override def update(graph: Graph, element: Element, authContext: AuthContext, model: Model, fields: Map[FPath, UpdateOps.Type]): Unit = {
     val updateFields = fields.map {
       case (FPath("password"), _) if model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
       case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
@@ -58,7 +57,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
         (field, oldValue.toString, value.toString)
     }.toSeq
 
-    db.update(graph, authContext, model, id, fields)
+    db.update(graph, element, authContext, model, fields)
 
     updateFields.foreach {
       case (field, oldValue, newValue) ⇒
@@ -68,6 +67,11 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
     }
   }
 
+  override def update(graph: Graph, authContext: AuthContext, model: Model, id: String, fields: Map[FPath, UpdateOps.Type]): Unit = {
+    val element = model.get(id)(db, graph)
+    update(graph, element, authContext, model, fields)
+  }
+
   override def update(
       graph: Graph,
       authContext: AuthContext,
@@ -75,7 +79,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
       id: String,
       properties: Seq[PublicProperty[_, _, _]],
       fields: Map[FPath, UpdateOps.Type]): Unit = {
-    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Any]]
+    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Element]]
 
     val updateFields: Seq[(String, String, String)] = fields.map {
       case (FPath("password"), _) if elementSrv.model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
@@ -83,7 +87,11 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
         properties
           .find(_.propertyName == field)
           .flatMap { prop ⇒
-            prop.get(Some(authContext)).headOption.asInstanceOf[Option[GremlinScala[Any] ⇒ GremlinScala[_]]]
+            prop
+              .asInstanceOf[PublicProperty[Element, _, _]]
+              .get(element, authContext)
+              .headOption
+              .asInstanceOf[Option[GremlinScala[Element] ⇒ GremlinScala[_]]]
           }
           .map(f ⇒ (field, f(element).toString, value.toString))
           .getOrElse(throw BadRequestError(s"Field $field not found"))
@@ -102,14 +110,15 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
 
   override def noTransaction[A](body: Graph ⇒ A): A                                                            = db.noTransaction(body)
   override def transaction[A](body: Graph ⇒ A): A                                                              = db.transaction(body)
+  override def tryTransaction[A](body: Graph ⇒ Try[A]): Try[A]                                                 = db.tryTransaction(body)
   override def version: Int                                                                                    = db.version
   override def setVersion(v: Int): Unit                                                                        = db.setVersion(v)
   override def getModel[E <: Product: ru.TypeTag]: Base[E]                                                     = db.getModel[E]
   override def getVertexModel[E <: Product: ru.TypeTag]: Model.Vertex[E]                                       = db.getVertexModel[E]
   override def getEdgeModel[E <: Product: ru.TypeTag, FROM <: Product, TO <: Product]: Model.Edge[E, FROM, TO] = db.getEdgeModel[E, FROM, TO]
-  override def createSchemaFrom(schemaObject: Schema)(implicit authContext: AuthContext): Unit                 = db.createSchemaFrom(schemaObject)(authContext)
-  override def createSchema(model: Model, models: Model*): Unit                                                = db.createSchema(model, models: _*)
-  override def createSchema(models: Seq[Model]): Unit                                                          = db.createSchema(models)
+  override def createSchemaFrom(schemaObject: Schema)(implicit authContext: AuthContext): Try[Unit]            = db.createSchemaFrom(schemaObject)(authContext)
+  override def createSchema(model: Model, models: Model*): Try[Unit]                                           = db.createSchema(model, models: _*)
+  override def createSchema(models: Seq[Model]): Try[Unit]                                                     = db.createSchema(models)
   override def drop(): Unit                                                                                    = db.drop()
 
   override def getSingleProperty[D, G](element: Element, key: String, mapping: SingleMapping[D, G]): D = db.getSingleProperty(element, key, mapping)

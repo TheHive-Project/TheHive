@@ -1,0 +1,13 @@
+[
+  {
+    "name": "analyst",
+    "permissions": [
+      "manageCase",
+      "manageAlert"
+    ]
+  },
+  {
+    "name": "read-only",
+    "permissions": []
+  }
+]

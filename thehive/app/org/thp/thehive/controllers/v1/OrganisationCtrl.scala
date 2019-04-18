@@ -1,71 +1,67 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.libs.json.Json
+import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
-import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
-import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationSrv
-
-object OrganisationXfrm {
-  def fromInput(inputOrganisation: InputOrganisation): Organisation =
-    inputOrganisation
-      .into[Organisation]
-      .transform
-
-  def toOutput(organisation: Organisation): OutputOrganisation =
-    organisation
-      .into[OutputOrganisation]
-      .transform
-}
+import org.thp.thehive.dto.v1.InputOrganisation
+import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.{OrganisationSrv, UserSrv}
 
 @Singleton
-class OrganisationCtrl @Inject()(apiMethod: ApiMethod, db: Database, organisationSrv: OrganisationSrv) {
+class OrganisationCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    organisationSrv: OrganisationSrv,
+    errorHandler: HttpErrorHandler,
+    userSrv: UserSrv)
+    extends OrganisationConversion {
 
   def create: Action[AnyContent] =
-    apiMethod("create organisation")
+    entryPoint("create organisation")
       .extract('organisation, FieldsParser[InputOrganisation])
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          val inputOrganisation: InputOrganisation = request.body('organisation)
-          val createdOrganisation                  = organisationSrv.create(OrganisationXfrm.fromInput(inputOrganisation))
-          val outputOrganisation                   = OrganisationXfrm.toOutput(createdOrganisation)
-          Results.Created(Json.toJson(outputOrganisation))
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _    ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+            user ← userSrv.current.getOrFail()
+            inputOrganisation: InputOrganisation = request.body('organisation)
+            organisation                         = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
+          } yield Results.Created(organisation.toJson)
         }
       }
 
   def get(organisationId: String): Action[AnyContent] =
-    apiMethod("get organisation")
-      .requires(Permissions.read) { _ ⇒
-        db.transaction { implicit graph ⇒
-          val organisation = organisationSrv
-            .getOrFail(organisationId)
-          val outputOrganisation = OrganisationXfrm.toOutput(organisation)
-          Results.Ok(Json.toJson(outputOrganisation))
-        }
+    entryPoint("get organisation").authenticated { implicit request ⇒
+      db.tryTransaction { implicit graph ⇒
+        userSrv.current.organisations.visibleOrganisations
+          .get(organisationId)
+          .getOrFail()
+          .map(organisation ⇒ Results.Ok(organisation.toJson))
       }
+    }
 
-  def list: Action[AnyContent] =
-    apiMethod("list organisation")
-      .requires(Permissions.read) { _ ⇒
-        db.transaction { implicit graph ⇒
-          val organisations = organisationSrv.initSteps.toList
-            .map(OrganisationXfrm.toOutput)
-          Results.Ok(Json.toJson(organisations))
-        }
-      }
+  //  def list: Action[AnyContent] =
+  //    entryPoint("list organisation")
+  //      .authenticated { _ ⇒
+  //        db.transaction { implicit graph ⇒
+  //          val organisations = organisationSrv.initSteps.toList
+  //            .map(toOutputOrganisation)
+  //          Results.Ok(Json.toJson(organisations))
+  //        }
+  //      }
 
   def update(organisationId: String): Action[AnyContent] =
-    apiMethod("update organisation")
+    entryPoint("update organisation")
       .extract('organisation, UpdateFieldsParser[InputOrganisation])
-      .requires(Permissions.admin) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          organisationSrv.update(organisationId, request.body('organisation))
-          Results.NoContent
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            _ ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+            _ = organisationSrv.update(organisationId, request.body('organisation))
+          } yield Results.NoContent
         }
       }
 }

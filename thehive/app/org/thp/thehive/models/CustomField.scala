@@ -2,6 +2,8 @@ package org.thp.thehive.models
 
 import java.util.Date
 
+import scala.util.{Failure, Success, Try}
+
 import play.api.libs.json.{JsNumber, Writes}
 
 import org.thp.scalligraph._
@@ -26,17 +28,14 @@ trait CustomFieldValue[C] { _: C ⇒
 }
 
 sealed abstract class CustomFieldType[T] {
-  def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C
+  def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C]
 
-  protected def setValueFailure(value: Any): Nothing =
-    throw BadRequestError(s"""Invalid value type for custom field.
-                             |  Expected: $name
-                             |  Found   : $value (${value.getClass})
-                           """.stripMargin)
+  protected def setValueFailure(value: Any): Failure[Nothing] =
+    Failure(BadRequestError(s"""Invalid value type for custom field.
+                               |  Expected: $name
+                               |  Found   : $value (${value.getClass})
+                             """.stripMargin))
   def getValue(ccf: CustomFieldValue[_]): Option[T]
-
-//  protected def getValueFailure(ccf: CustomFieldValue[_]): Nothing =
-//    throw InternalError(s"CaseCustomField $ccf is $name typed but don't have $name value")
 
   val name: String
   val writes: Writes[T]
@@ -44,8 +43,8 @@ sealed abstract class CustomFieldType[T] {
 }
 
 object CustomFieldString extends CustomFieldType[String] {
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C = value match {
-    case v: String ⇒ customFieldValue.setStringValue(v)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
+    case v: String ⇒ Success(customFieldValue.setStringValue(v))
     case _         ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
@@ -54,8 +53,8 @@ object CustomFieldString extends CustomFieldType[String] {
 }
 
 object CustomFieldBoolean extends CustomFieldType[Boolean] {
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C = value match {
-    case v: Boolean ⇒ customFieldValue.setBooleanValue(v)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
+    case v: Boolean ⇒ Success(customFieldValue.setBooleanValue(v))
     case _          ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
@@ -64,8 +63,8 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
 }
 
 object CustomFieldInteger extends CustomFieldType[Int] {
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C = value match {
-    case v: Int ⇒ customFieldValue.setIntegerValue(v)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
+    case v: Int ⇒ Success(customFieldValue.setIntegerValue(v))
     case _      ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
@@ -74,8 +73,8 @@ object CustomFieldInteger extends CustomFieldType[Int] {
 }
 
 object CustomFieldFloat extends CustomFieldType[Float] {
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C = value match {
-    case v: Float ⇒ customFieldValue.setFloatValue(v)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
+    case v: Float ⇒ Success(customFieldValue.setFloatValue(v))
     case _        ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Float] = ccf.floatValue
@@ -84,8 +83,8 @@ object CustomFieldFloat extends CustomFieldType[Float] {
 }
 
 object CustomFieldDate extends CustomFieldType[Date] {
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): C = value match {
-    case v: Date ⇒ customFieldValue.setDateValue(v)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
+    case v: Date ⇒ Success(customFieldValue.setDateValue(v))
     case _       ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue

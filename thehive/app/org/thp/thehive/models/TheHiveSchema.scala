@@ -6,12 +6,15 @@ import scala.reflect.runtime.{universe ⇒ ru}
 import play.api.Logger
 import play.api.inject.Injector
 
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{HasModel, InitialValue, Model, Schema}
 import org.thp.scalligraph.services.VertexSrv
+import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, RoleSrv, UserSrv}
 
 @Singleton
 class TheHiveSchema @Inject()(injector: Injector) extends Schema {
@@ -37,6 +40,7 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
         hasModel.model
       }
       .toSeq
+
   override lazy val initialValues: Seq[InitialValue[_]] =
     reflectionClasses
       .getSubTypesOf(classOf[VertexSrv[_, _]])
@@ -46,4 +50,13 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
       .flatMap[InitialValue[_], Seq[InitialValue[_]]] { vertexSrvClass ⇒
         injector.instanceOf(vertexSrvClass).getInitialValues
       }
+
+  override def init(implicit graph: Graph, authContext: AuthContext): Unit = {
+    for {
+      adminUser           ← injector.instanceOf[UserSrv].getOrFail("admin")
+      adminProfile        ← injector.instanceOf[ProfileSrv].getOrFail("admin")
+      defaultOrganisation ← injector.instanceOf[OrganisationSrv].getOrFail("default")
+    } yield injector.instanceOf[RoleSrv].create(adminUser, defaultOrganisation, adminProfile)
+    ()
+  }
 }

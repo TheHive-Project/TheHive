@@ -1,0 +1,18 @@
+[
+  {
+    "from": "user1-cert",
+    "to": "analyst"
+  },
+  {
+    "from": "user2-cert",
+    "to": "read-only"
+  },
+  {
+    "from": "user2-default",
+    "to": "admin"
+  },
+  {
+    "from": "user3-default",
+    "to": "admin"
+  }
+]

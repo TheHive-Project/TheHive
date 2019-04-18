@@ -11,13 +11,13 @@ import org.thp.thehive.models._
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
-  val logTaskSrv                                                                 = new EdgeSrv[LogTask, Log, Task]
+  val taskLogSrv                                                                 = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)
 
   def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Log with Entity = {
     val createdLog = create(log)
-    logTaskSrv.create(LogTask(), createdLog, task)
+    taskLogSrv.create(TaskLog(), task, createdLog)
     createdLog
   }
 

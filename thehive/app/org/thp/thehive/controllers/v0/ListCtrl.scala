@@ -1,24 +1,25 @@
 package org.thp.thehive.controllers.v0
+import scala.util.Success
+
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.ApiMethod
+import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class ListCtrl @Inject()(apiMethod: ApiMethod, db: Database, customFieldSrv: CustomFieldSrv) {
+class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) extends CustomFieldConversion {
   def list: Action[AnyContent] =
-    apiMethod("list")
-      .requires(Permissions.read) { _ ⇒
-        Results.Ok(Json.arr("list_artifactDataType", "case_metrics", "ui_settings"))
+    entryPoint("list")
+      .authenticated { _ ⇒
+        Success(Results.Ok(Json.arr("list_artifactDataType", "case_metrics", "ui_settings")))
       }
 
   def listItems(listName: String): Action[AnyContent] =
-    apiMethod("list list items")
-      .requires(Permissions.read) { _ ⇒
+    entryPoint("list list items")
+      .authenticated { _ ⇒
         val result = listName match {
           case "list_artifactDataType" ⇒
             Json.obj(
@@ -51,22 +52,22 @@ class ListCtrl @Inject()(apiMethod: ApiMethod, db: Database, customFieldSrv: Cus
             JsObject(cf)
           case _ ⇒ JsObject.empty
         }
-        Results.Ok(result)
+        Success(Results.Ok(result))
       }
 
-  def addItem(listName: String): Action[AnyContent] = apiMethod("add item to list") { _ ⇒
-    Results.Locked("")
+  def addItem(listName: String): Action[AnyContent] = entryPoint("add item to list") { _ ⇒
+    Success(Results.Locked(""))
   }
 
-  def deleteItem(itemId: String): Action[AnyContent] = apiMethod("delete list item") { _ ⇒
-    Results.Locked("")
+  def deleteItem(itemId: String): Action[AnyContent] = entryPoint("delete list item") { _ ⇒
+    Success(Results.Locked(""))
   }
 
-  def updateItem(itemId: String): Action[AnyContent] = apiMethod("update list item") { _ ⇒
-    Results.Locked("")
+  def updateItem(itemId: String): Action[AnyContent] = entryPoint("update list item") { _ ⇒
+    Success(Results.Locked(""))
   }
 
-  def itemExists(listName: String): Action[AnyContent] = apiMethod("check if item exist in list") { _ ⇒
-    Results.Locked("")
+  def itemExists(listName: String): Action[AnyContent] = entryPoint("check if item exist in list") { _ ⇒
+    Success(Results.Locked(""))
   }
 }

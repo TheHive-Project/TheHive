@@ -12,7 +12,6 @@ class Router @Inject()(
     caseTemplateCtrl: CaseTemplateCtrl,
     userCtrl: UserCtrl,
     organisationCtrl: OrganisationCtrl,
-    shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
@@ -22,12 +21,10 @@ class Router @Inject()(
     extends SimpleRouter {
 
   override def routes: Routes = {
-//    GET      /                                        controllers.Home.redirect
     case GET(p"/status") ⇒ statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
     case POST(p"/login") ⇒ authenticationCtrl.login()
-    case GET(p"/init")   ⇒ userCtrl.createInitialUser
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     case GET(p"/case")                  ⇒ caseCtrl.list
@@ -47,7 +44,7 @@ class Router @Inject()(
     case PATCH(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.update(caseTemplateId)
     //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
 
-    case GET(p"/user")           ⇒ userCtrl.list
+//    case GET(p"/user")           ⇒ userCtrl.list
     case POST(p"/user")          ⇒ userCtrl.create
     case GET(p"/user/current")   ⇒ userCtrl.current
     case GET(p"/user/$userId")   ⇒ userCtrl.get(userId)
@@ -59,15 +56,15 @@ class Router @Inject()(
     case DELETE(p"/user/$userId/key")           ⇒ userCtrl.removeKey(userId)
     case POST(p"/user/$userId/key/renew")       ⇒ userCtrl.renewKey(userId)
 
-    case GET(p"/organisation")                   ⇒ organisationCtrl.list
+//    case GET(p"/organisation")                   ⇒ organisationCtrl.list
     case POST(p"/organisation")                  ⇒ organisationCtrl.create
     case GET(p"/organisation/$organisationId")   ⇒ organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") ⇒ organisationCtrl.update(organisationId)
 
-    case GET(p"/share")            ⇒ shareCtrl.list
-    case POST(p"/share")           ⇒ shareCtrl.create
-    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
-    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
+//    case GET(p"/share")            ⇒ shareCtrl.list
+//    case POST(p"/share")           ⇒ shareCtrl.create
+//    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
+//    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
     case GET(p"/task")           ⇒ taskCtrl.list
     case POST(p"/task")          ⇒ taskCtrl.create
@@ -79,7 +76,7 @@ class Router @Inject()(
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
 
-    case GET(p"/alert")                    ⇒ alertCtrl.list
+//    case GET(p"/alert")                    ⇒ alertCtrl.list
     case POST(p"/alert")                   ⇒ alertCtrl.create
     case GET(p"/alert/$alertId")           ⇒ alertCtrl.get(alertId)
     case PATCH(p"/alert/$alertId")         ⇒ alertCtrl.update(alertId)

@@ -17,10 +17,10 @@ trait QueryCtrl {
       if (end <= offset) (offset, offset + 10)
       else (offset, end)
   }
-  val sortParser: FieldsParser[FSeq] = FieldsParser("sort-1") {
+  val sortParser: FieldsParser[FSeq] = FieldsParser("sort") {
     case (_, FAny(s)) ⇒ Good(s)
     case (_, FSeq(s)) ⇒ s.validatedBy(FieldsParser.string.apply)
-  }.map("sort-2") { a ⇒
+  }.map("sort") { a ⇒
     val fields = a.collect {
       case s if s(0) == '-'    ⇒ FObject(s.drop(1) → FString("decr"))
       case s if s(0) == '+'    ⇒ FObject(s.drop(1) → FString("incr"))
@@ -52,23 +52,21 @@ trait QueryCtrl {
         }
     }
 
-  def searchParser(initialStepName: String): FieldsParser[Query] =
-    searchParser(FObject("_name" → FString(initialStepName)))
-
-  def searchParser(initialStep: FObject): FieldsParser[Query] = {
-    val queryParser = FieldsParser[FObject].on("query").map("filter")(filter ⇒ Seq(initialStep, filter + ("_name" → FString("filter"))))
-//    val sortParser  = FieldsParser[FObject].optional.on("sort")
-    queryParser
+  def searchParser(initialStepName: String, paged: Boolean = true): FieldsParser[Query] =
+    FieldsParser[FObject]
+      .on("query")
+      .map("filter")(filter ⇒ Seq(FObject("_name" → FString(initialStepName)), filter + ("_name" → FString("filter"))))
       .andThen("sort")(sortParser.optional.on("sort")) {
         case (Some(sort), query) ⇒ query :+ FObject("_name" → FString("sort"), "_fields" → sort)
         case (_, query)          ⇒ query
       }
-      .andThen("range")(rangeParser.optional.on("range")) {
-        case (Some((from, to)), query) ⇒ query :+ FObject("_name" → FString("range"), "from" → FNumber(from), "to" → FNumber(to))
-        case (_, query)                ⇒ query :+ FObject("_name" → FString("range"), "from" → FNumber(0), "to"    → FNumber(10))
+      .andThen("page")(rangeParser.optional.on("range")) {
+        case (Some((from, to)), query) if to != Long.MaxValue ⇒
+          query :+ FObject("_name" → FString("page"), "from" → FNumber(from), "to" → FNumber(to))
+        case (Some(_), query)    ⇒ query :+ FObject("_name" → FString("toList"))
+        case (_, query) if paged ⇒ query :+ FObject("_name" → FString("page"), "from" → FNumber(0), "to" → FNumber(10))
+        case (_, query)          ⇒ query :+ FObject("_name" → FString("toList"))
       }
-      .map("query")(_ :+ FObject("_name" → FString("toList")))
       .map("query")(q ⇒ FSeq(q.toList))
       .flatMap("query")(queryExecutor.parser)
-  }
 }

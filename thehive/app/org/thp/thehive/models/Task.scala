@@ -8,14 +8,11 @@ object TaskStatus extends Enumeration {
   val waiting, inProgress, completed, cancel = Value
 }
 
-@EdgeEntity[Task, Case]
-case class TaskCase()
-
-@EdgeEntity[Task, CaseTemplate]
-case class TaskCaseTemplate()
-
 @EdgeEntity[Task, User]
 case class TaskUser()
+
+@EdgeEntity[Task, Log]
+case class TaskLog()
 
 @VertexEntity
 case class Task(

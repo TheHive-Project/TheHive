@@ -42,7 +42,7 @@ case class OutputAlert(
     flag: Boolean,
     tlp: Int,
     pap: Int,
-    status: String,
+    read: Boolean,
     follow: Boolean,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
     caseTemplate: Option[String] = None)

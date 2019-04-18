@@ -1,5 +1,6 @@
 import Dependencies._
 
+// format: off
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore)
@@ -43,21 +44,12 @@ lazy val thehive = (project in file("."))
         scalafmtConfig := Some(file(".scalafmt.conf"))
       )),
     name := "thehive",
-//    PlayKeys.externalizeResources := false
     compile := {
       scala.sys.process.Process(Seq("grunt", "wiredep"), baseDirectory.value / "frontend").!
       (compile in Compile).value
     },
-//    mappings in packageBin in Assets ++= {
-//      val dir = baseDirectory.value / "frontend" / "dist"
-//      dir ** AllPassFilter pair Path.rebase(dir, "frontend")
-//    },
-//    resourceManaged in Compile := baseDirectory.value / "frontend"
-//    resourceDirectories := Seq(baseDirectory.value / "frontend")
-//      mappings in Universal ++= directory(baseDirectory.value / "public")
-//    resourceDirectories in Compile += baseDirectory.value / "frontend",
-//    unmanagedResourceDirectories in Compile += baseDirectory.value / "frontend"
   )
+// format: on
 
 lazy val scalligraph = (project in file("ScalliGraph"))
   .settings(name := "scalligraph")
@@ -99,10 +91,12 @@ lazy val thehiveClient = (project in file("client"))
   )
 
 lazy val thehiveMigration = (project in file("migration"))
+  .enablePlugins(JavaAppPackaging)
   .dependsOn(scalligraph)
   .dependsOn(thehiveCore)
   .settings(
     name := "thehive-migration",
+    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     libraryDependencies ++= Seq(
       elastic4play,
       ehcache,
@@ -111,5 +105,5 @@ lazy val thehiveMigration = (project in file("migration"))
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
     fork := true,
-    javaOptions := Seq(/*"-Dlogback.debug=true", */"-Dlogger.file=../conf/migration-logback.xml"),
+    javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml"),
   )

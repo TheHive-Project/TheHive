@@ -12,11 +12,8 @@ case class ObservableAttachment()
 @EdgeEntity[Observable, Data]
 case class ObservableData()
 
-@EdgeEntity[Observable, Case]
-case class ObservableCase()
-
 @VertexEntity
-case class Observable(`type`: String, tags: Seq[String], message: Option[String], tlp: Int, pap: Int, ioc: Boolean, sighted: Boolean)
+case class Observable(`type`: String, tags: Seq[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
 
 case class RichObservable(
     observable: Observable with Entity,
@@ -27,7 +24,6 @@ case class RichObservable(
   val tags: Seq[String]       = observable.tags
   val message: Option[String] = observable.message
   val tlp: Int                = observable.tlp
-  val pap: Int                = observable.pap
   val ioc: Boolean            = observable.ioc
   val sighted: Boolean        = observable.sighted
 }

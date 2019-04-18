@@ -1,0 +1,18 @@
+[
+  {
+    "from": "user1-cert",
+    "to": "cert"
+  },
+  {
+    "from": "user2-cert",
+    "to": "cert"
+  },
+  {
+    "from": "user2-default",
+    "to": "default"
+  },
+  {
+    "from": "user3-default",
+    "to": "default"
+  }
+]

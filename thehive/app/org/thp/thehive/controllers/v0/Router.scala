@@ -12,14 +12,16 @@ class Router @Inject()(
     caseTemplateCtrl: CaseTemplateCtrl,
     userCtrl: UserCtrl,
     organisationCtrl: OrganisationCtrl,
-    shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
+    logCtrl: LogCtrl,
+    observableCtrl: ObservableCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
     authenticationCtrl: AuthenticationCtrl,
-    listCtrl: ListCtrl)
+    listCtrl: ListCtrl,
+    streamCtrl: StreamCtrl)
     extends SimpleRouter {
 
   override def routes: Routes = {
@@ -29,7 +31,6 @@ class Router @Inject()(
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
     case POST(p"/login") ⇒ authenticationCtrl.login()
-    case GET(p"/init")   ⇒ userCtrl.createInitialUser
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     /**/
@@ -43,7 +44,7 @@ class Router @Inject()(
 //    case PATCH(p"api/case/_bulk") ⇒                          caseCtrl.bulkUpdate()
     case POST(p"/case/_stats") ⇒ caseCtrl.stats()
 //    case DELETE(p"/case/$caseId/force") ⇒                  caseCtrl.realDelete(caseId)
-//    case GET(p"/case/$caseId/links") ⇒                  caseCtrl.linkedCases(caseId)
+    case GET(p"/case/$caseId/links") ⇒ caseCtrl.linkedCases(caseId)
 
     case GET(p"/case/template")                   ⇒ caseTemplateCtrl.list
     case POST(p"/case/template")                  ⇒ caseTemplateCtrl.create
@@ -76,17 +77,37 @@ class Router @Inject()(
     case GET(p"/organisation/$organisationId")   ⇒ organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") ⇒ organisationCtrl.update(organisationId)
 
-    case GET(p"/share")            ⇒ shareCtrl.list
-    case POST(p"/share")           ⇒ shareCtrl.create
-    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
-    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
+//    case GET(p"/share")            ⇒ shareCtrl.list
+//    case POST(p"/share")           ⇒ shareCtrl.create
+//    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
+//    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
     case GET(p"/case/task")           ⇒ taskCtrl.list
     case POST(p"/case/task")          ⇒ taskCtrl.create
     case GET(p"/case/task/$taskId")   ⇒ taskCtrl.get(taskId)
     case PATCH(p"/case/task/$taskId") ⇒ taskCtrl.update(taskId)
-    // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
+    case POST(p"/case/task/_search")  ⇒ taskCtrl.search
+    //case POST(p"/case/$caseId/task/_search") => taskCtrl.search
     case POST(p"/case/task/_stats") ⇒ taskCtrl.stats()
+
+//case GET(p"/case/task/$taskId/log") => logCtrl.findInTask(taskId)
+//case POST(p"/case/task/$taskId/log/_search") => logCtrl.findInTask(taskId)
+    case POST(p"/case/task/log/_search") ⇒ logCtrl.search()
+    case POST(p"/case/task/log/_stats")  ⇒ logCtrl.stats()
+    case POST(p"/case/task/$taskId/log") ⇒ logCtrl.create(taskId)
+//    case PATCH(p"/case/task/log/$logId") => logCtrl.update(logId)
+//    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId)
+//    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
+
+    case POST(p"/case/artifact/_search") ⇒ observableCtrl.search()
+//    case POST(p"/case/:caseId/artifact/_search")    ⇒ observableCtrl.findInCase(caseId)
+    case POST(p"/case/artifact/_stats")       ⇒ observableCtrl.stats()
+    case POST(p"/case/$caseId/artifact")      ⇒ observableCtrl.create(caseId)
+    case GET(p"/case/artifact/$observableId") ⇒ observableCtrl.get(observableId)
+//    case DELETE(p"/case/artifact/$observableId")      ⇒ observableCtrl.delete(observableId)
+//    case PATCH(p"/case/artifact/_bulk")             ⇒ observableCtrl.bulkUpdate()
+    case PATCH(p"/case/artifact/$observableId") ⇒ observableCtrl.update(observableId)
+//    case GET(p"/case/artifact/$observableId/similar") ⇒ observableCtrl.findSimilar(observableId)
 
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
@@ -100,8 +121,9 @@ class Router @Inject()(
     case POST(p"/alert/$alertId/follow")   ⇒ alertCtrl.followAlert(alertId)
     case POST(p"/alert/$alertId/unfollow") ⇒ alertCtrl.unfollowAlert(alertId)
     case POST(p"/alert/$alertId/case")     ⇒ alertCtrl.createCase(alertId)
+    case POST(p"/alert/_search")           ⇒ alertCtrl.search
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
-    //POST     /alert/_stats                        controllers.AlertCtrl.stats()
+    case POST(p"/alert/_stats") ⇒ alertCtrl.stats()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
@@ -111,29 +133,16 @@ class Router @Inject()(
 //    POST     /audit/_search                       controllers.AuditCtrl.find()
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
+    case POST(p"/stream")          ⇒ streamCtrl.create()
+    case GET(p"/stream/status")    ⇒ streamCtrl.status
+    case GET(p"/stream/$streamId") ⇒ streamCtrl.get(streamId)
+
   }
 }
 /*
 
-POST     /case/artifact/_search               controllers.ArtifactCtrl.find()
-POST     /case/:caseId/artifact/_search       controllers.ArtifactCtrl.findInCase(caseId)
-POST     /case/artifact/_stats                controllers.ArtifactCtrl.stats()
-POST     /case/:caseId/artifact               controllers.ArtifactCtrl.create(caseId)
-GET      /case/artifact/:artifactId           controllers.ArtifactCtrl.get(artifactId)
-DELETE   /case/artifact/:artifactId           controllers.ArtifactCtrl.delete(artifactId)
-PATCH    /case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
-PATCH    /case/artifact/:artifactId           controllers.ArtifactCtrl.update(artifactId)
-GET      /case/artifact/:artifactId/similar   controllers.ArtifactCtrl.findSimilar(artifactId)
 
 
-GET      /case/task/:taskId/log               controllers.LogCtrl.findInTask(taskId)
-POST     /case/task/:taskId/log/_search       controllers.LogCtrl.findInTask(taskId)
-POST     /case/task/log/_search               controllers.LogCtrl.find()
-POST     /case/task/log/_stats                controllers.LogCtrl.stats()
-POST     /case/task/:taskId/log               controllers.LogCtrl.create(taskId)
-PATCH    /case/task/log/:logId                controllers.LogCtrl.update(logId)
-DELETE   /case/task/log/:logId                controllers.LogCtrl.delete(logId)
-GET      /case/task/log/:logId                controllers.LogCtrl.get(logId)
 
 
 
@@ -153,9 +162,6 @@ POST     /list/:listName/_exists              org.elastic4play.controllers.DBLis
 
 
 
-POST     /stream                              controllers.StreamCtrl.create()
-GET      /stream/status                       controllers.StreamCtrl.status
-GET      /stream/:streamId                    controllers.StreamCtrl.get(streamId)
 
 GET      /describe/_all                       controllers.DescribeCtrl.describeAll
 GET      /describe/:modelName                 controllers.DescribeCtrl.describe(modelName)

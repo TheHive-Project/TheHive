@@ -1,22 +1,24 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
 import play.api.Configuration
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrv}
-import org.thp.scalligraph.controllers.ApiMethod
+import org.thp.scalligraph.controllers.EntryPoint
 
 @Singleton
-class StatusCtrl @Inject()(apiMethod: ApiMethod, configuration: Configuration, authSrv: AuthSrv) {
+class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def get: Action[AnyContent] =
-    apiMethod("status") { _ ⇒
-      Results.Ok(
-        Json.obj(
+    entryPoint("status") { _ ⇒
+      Success(
+        Results.Ok(Json.obj(
           "versions" → Json.obj(
             "Scalligraph" → getVersion(classOf[org.thp.scalligraph.ScalligraphApplicationLoader]),
             "TheHive"     → getVersion(classOf[org.thp.thehive.TheHiveModule]),
@@ -36,7 +38,7 @@ class StatusCtrl @Inject()(apiMethod: ApiMethod, configuration: Configuration, a
             "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
             "ssoAutoLogin" → JsBoolean(configuration.get[Boolean]("auth.sso.autologin"))
           )
-        ))
+        )))
     }
 
 }

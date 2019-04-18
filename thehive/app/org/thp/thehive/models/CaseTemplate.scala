@@ -2,8 +2,8 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @EdgeEntity[CaseTemplate, Organisation]
 case class CaseTemplateOrganisation()
@@ -39,7 +39,11 @@ case class CaseTemplate(
     pap: Option[Int],
     summary: Option[String])
 
-case class RichCaseTemplate(caseTemplate: CaseTemplate with Entity, organisation: String, customFields: Seq[CustomFieldWithValue]) {
+case class RichCaseTemplate(
+    caseTemplate: CaseTemplate with Entity,
+    organisation: String,
+    tasks: Seq[Task with Entity],
+    customFields: Seq[CustomFieldWithValue]) {
   val _id: String                 = caseTemplate._id
   val _createdBy: String          = caseTemplate._createdBy
   val _updatedBy: Option[String]  = caseTemplate._updatedBy

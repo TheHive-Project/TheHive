@@ -1,36 +1,78 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.Element
+import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
+
+import gremlin.scala.{Element, Graph, GremlinScala, StepLabel, Vertex}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.FieldsParser
-import org.thp.scalligraph.models.{Database, Entity}
+import org.scalactic.Accumulation._
+import org.scalactic.Good
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.{FSeq, Field, FieldsParser}
+import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
-import org.thp.thehive.dto.v0.{OutputCase, OutputTask}
-import org.thp.thehive.models.{RichCase, Task}
+import org.thp.scalligraph.services._
+import org.thp.thehive.dto.v0.{OutputAlert, OutputCase, OutputObservable, OutputTask}
+import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 case class GetCaseParams(id: String)
 case class RangeParams(from: Long, to: Long)
 
 @Singleton
-class TheHiveQueryExecutor @Inject()(caseSrv: CaseSrv, taskSrv: TaskSrv, implicit val db: Database) extends QueryExecutor {
+class TheHiveQueryExecutor @Inject()(
+    caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
+    observableSrv: ObservableSrv,
+    alertSrv: AlertSrv,
+    logSrv: LogSrv,
+    implicit val db: Database)
+    extends QueryExecutor
+    with CaseConversion
+    with TaskConversion
+    with AlertConversion
+    with ObservableConversion {
 
-  override val publicProperties: List[PublicProperty[_ <: Element, _, _]] = outputCaseProperties ++ outputTaskProperties
+  override val publicProperties: List[PublicProperty[_ <: Element, _, _]] =
+    caseProperties ++
+      outputTaskProperties ++
+      alertProperties ++
+      observableProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
       FieldsParser[GetCaseParams],
-      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).availableFor(authContext)),
-    Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).availableFor(authContext)),
+      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)),
+    Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).visible(authContext)),
     Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
-    Query.withParam[RangeParams, CaseSteps, CaseSteps](
+    Query.init[AlertSteps]("listAlert", (graph, _) ⇒ alertSrv.initSteps(graph)),
+    Query.init[ObservableSteps]("listObservable", (graph, _) ⇒ observableSrv.initSteps(graph)),
+    Query.init[LogSteps]("listLog", (graph, _) ⇒ logSrv.initSteps(graph)),
+    Query.withParam[RangeParams, CaseSteps, ResultWithTotalSize[RichCase]](
+      "page",
+      FieldsParser[RangeParams],
+      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to)),
+    Query.withParam[RangeParams, AlertSteps, AlertSteps](
       "range",
       FieldsParser[RangeParams],
-      (range, caseSteps, _) ⇒ caseSteps.range(range.from, range.to)),
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList),
+      (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)),
+    Query.withParam[RangeParams, TaskSteps, ResultWithTotalSize[Task with Entity]](
+      "page",
+      FieldsParser[RangeParams],
+      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to)),
+    Query.withParam[RangeParams, ObservableSteps, ResultWithTotalSize[Observable with Entity]](
+      "page",
+      FieldsParser[RangeParams],
+      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to)),
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
+    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) ⇒ alertSteps.richAlert.toList()),
+    Query[ObservableSteps, List[RichObservable]]("toList", (ovservableSteps, _) ⇒ ovservableSteps.richObservable.toList()),
     Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
+    new ParentFilterQuery(publicProperties),
     Query.output[RichCase, OutputCase],
-    Query.output[Task with Entity, OutputTask]
+    Query.output[Task with Entity, OutputTask],
+    Query.output[RichAlert, OutputAlert],
+    Query.output[RichObservable, OutputObservable]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)
@@ -42,4 +84,83 @@ class TheHiveQueryExecutor @Inject()(caseSrv: CaseSrv, taskSrv: TaskSrv, implici
 //    case t: Task with Entity ⇒ t.toJson
 //    case o                   ⇒ super.toOutput(o)
 //  }
+}
+
+object ParentIdFilter {
+  def unapply(field: Field): Option[(String, String)] =
+    FieldsParser.string
+      .on("_type")
+      .andThen("parentId")(FieldsParser.string.on("_id"))((_, _))
+      .apply(field)
+      .fold(Some(_), _ ⇒ None)
+}
+
+class ParentIdInputFilter(parentId: String) extends InputFilter {
+  override def apply[S <: ScalliSteps[_, _, _]](
+      publicProperties: List[PublicProperty[_ <: Element, _, _]],
+      stepType: ru.Type,
+      step: S,
+      authContext: AuthContext): S = {
+    val stepLabel   = StepLabel[Product with Entity]()
+    val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
+
+    implicit val db: Database = vertexSteps.db
+
+    val findParent =
+      if (stepType =:= ru.typeOf[TaskSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseTask]
+      else if (stepType =:= ru.typeOf[ObservableSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseObservable]
+      else if (stepType =:= ru.typeOf[LogSteps]) vertexSteps.as(stepLabel).raw.inTo[TaskLog]
+      else ???
+
+    vertexSteps
+      .newInstance(findParent.select(stepLabel).asInstanceOf[GremlinScala[Vertex]])
+      .asInstanceOf[S]
+  }
+}
+
+object ParentQueryFilter {
+  def unapply(field: Field): Option[(String, Field)] =
+    FieldsParser.string
+      .on("_type")
+      .map("parentQuery")(parentType ⇒ (parentType, field.get("_query")))
+      .apply(field)
+      .fold(Some(_), _ ⇒ None)
+}
+
+class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
+  override def apply[S <: ScalliSteps[_, _, _]](
+      publicProperties: List[PublicProperty[_ <: Element, _, _]],
+      stepType: ru.Type,
+      step: S,
+      authContext: AuthContext): S = {
+    val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
+
+    implicit val db: Database = vertexSteps.db
+    implicit val graph: Graph = vertexSteps.graph
+
+    val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] ⇒ ScalliSteps[_, _, _ <: AnyRef]) =
+      if (stepType =:= ru.typeOf[TaskSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[CaseTask]))
+      else if (stepType =:= ru.typeOf[ObservableSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[CaseObservable]))
+      else if (stepType =:= ru.typeOf[LogSteps]) ru.typeOf[TaskSteps] → ((s: GremlinScala[Vertex]) ⇒ new TaskSteps(s.inTo[TaskLog]))
+      else ???
+    vertexSteps
+      .where(s ⇒ parentFilter.apply(publicProperties, parentType, linkFn(s), authContext).raw)
+      .asInstanceOf[S]
+  }
+}
+
+class ParentFilterQuery(publicProperties: List[PublicProperty[_ <: Element, _, _]]) extends FilterQuery(publicProperties) {
+  override val paramParser: FieldsParser[InputFilter] = FieldsParser("parentIdFilter") {
+    case (path, FObjOne("_and", FSeq(fields)))                ⇒ fields.validatedBy(field ⇒ paramParser((path / "_and").toSeq, field)).map(and)
+    case (path, FObjOne("_or", FSeq(fields)))                 ⇒ fields.validatedBy(field ⇒ paramParser((path / "_or").toSeq, field)).map(or)
+    case (path, FObjOne("_not", field))                       ⇒ paramParser(path / "_not", field).map(not)
+    case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) ⇒ Good(new ParentIdInputFilter(parentId))
+    case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) ⇒
+      paramParser.apply(path, queryField).map(query ⇒ new ParentQueryInputFilter(query))
+  }.orElse(InputFilter.fieldsParser)
+  override val name: String                   = "filter"
+  override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[TaskSteps] || t <:< ru.typeOf[ObservableSteps] || t <:< ru.typeOf[LogSteps]
+  override def toType(t: ru.Type): ru.Type    = t
+  override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
+    inputFilter(publicProperties, rm.classSymbol(from.getClass).toType, from.asInstanceOf[ScalliSteps[_, _, _ <: AnyRef]], authContext)
 }

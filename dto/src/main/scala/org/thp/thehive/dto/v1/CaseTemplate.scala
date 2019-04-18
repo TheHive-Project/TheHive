@@ -2,8 +2,9 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json.{Json, OFormat, OWrites}
+
+import org.thp.scalligraph.controllers.WithParser
 
 case class InputCaseTemplate(
     name: String,
@@ -15,6 +16,7 @@ case class InputCaseTemplate(
     tlp: Option[Int] = None,
     pap: Option[Int] = None,
     summary: Option[String] = None,
+    tasks: Seq[InputTask] = Nil,
     @WithParser(InputCustomFieldValue.parser)
     customFieldValue: Seq[InputCustomFieldValue] = Nil)
 

@@ -1,5 +1,4 @@
 package org.thp.thehive.services
-import java.util.{List ⇒ JList}
 
 import scala.collection.JavaConverters._
 
@@ -17,7 +16,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   val observableKeyValueSrv   = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val observableCaseSrv       = new EdgeSrv[ObservableCase, Observable, Case]
+  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
@@ -36,7 +35,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
     extensions
       .map(keyValueSrv.create)
       .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
-    observableCaseSrv.create(ObservableCase(), createdObservable, `case`)
+    caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
     RichObservable(createdObservable, data, attachment, extensions)
   }
 }
@@ -47,19 +46,21 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   def richObservable: ScalarSteps[RichObservable] =
     ScalarSteps(
       raw
-        .project[Any]("observable", "data", "attachment", "extensions")
-        .by()
-        .by(__[Vertex].outTo[ObservableData].fold.traversal)
-        .by(__[Vertex].outTo[ObservableAttachment].fold.traversal)
-        .by(__[Vertex].outTo[ObservableKeyValue].fold.traversal)
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[ObservableData].fold.traversal))
+            .and(By(__[Vertex].outTo[ObservableAttachment].fold.traversal))
+            .and(By(__[Vertex].outTo[ObservableKeyValue].fold.traversal)))
         .map {
-          case ValueMap(m) ⇒
+          case (observable, data, attachment, extensions) ⇒
             RichObservable(
-              m.get[Vertex]("observable").as[Observable],
-              atMostOneOf[Vertex](m.get[JList[Vertex]]("data")).map(_.as[Data]),
-              atMostOneOf[Vertex](m.get[JList[Vertex]]("attachment")).map(_.as[Attachment]),
-              m.get[JList[Vertex]]("extensions").asScala.map(_.as[KeyValue]).toSeq
+              observable.as[Observable],
+              atMostOneOf[Vertex](data).map(_.as[Data]),
+              atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
+              extensions.asScala.map(_.as[KeyValue]).toSeq
             )
         }
     )
+
+  def cases: CaseSteps = new CaseSteps(raw.inTo[CaseObservable])
 }

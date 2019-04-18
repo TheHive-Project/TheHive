@@ -50,11 +50,11 @@ case class CaseUser()
 @EdgeEntity[Case, Observable]
 case class CaseObservable()
 
-@EdgeEntity[Case, Organisation]
-case class CaseOrganisation()
-
 @EdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
+
+@EdgeEntity[Case, Task]
+case class CaseTask()
 
 @VertexEntity
 @DefineIndex(IndexType.unique, "number")
@@ -77,7 +77,6 @@ case class RichCase(
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
-    organisation: String,
     customFields: Seq[CustomFieldWithValue]) {
   val _id: String                = `case`._id
   val _createdBy: String         = `case`._createdBy
@@ -104,7 +103,6 @@ object RichCase {
       caseImpactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      organisation: String,
       customFields: Seq[CustomFieldWithValue]): RichCase =
     `case`
       .asInstanceOf[Case]
@@ -112,7 +110,6 @@ object RichCase {
       .withFieldConst(_.`case`, `case`)
       .withFieldConst(_.impactStatus, caseImpactStatus)
       .withFieldConst(_.resolutionStatus, resolutionStatus)
-      .withFieldConst(_.organisation, organisation)
       .withFieldConst(_.user, user)
       .withFieldConst(_.customFields, customFields)
       .transform
@@ -138,7 +135,6 @@ object RichCase {
       impactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      organisation: String,
       customFields: Seq[CustomFieldWithValue]
   ): RichCase = {
     val `case` = new Case(number, title, description, severity, startDate, endDate, tags, flag, tlp, pap, status, summary) with Entity {
@@ -149,6 +145,6 @@ object RichCase {
       override val _createdAt: Date           = __createdAt
       override val _updatedAt: Option[Date]   = __updatedAt
     }
-    RichCase(`case`, impactStatus, resolutionStatus, user, organisation, customFields)
+    RichCase(`case`, impactStatus, resolutionStatus, user, customFields)
   }
 }

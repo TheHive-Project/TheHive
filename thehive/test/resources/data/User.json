@@ -1,16 +1,20 @@
 [
   {
     "id": "user1",
-    "login": "toom",
+    "login": "user1",
     "name": "Thomas",
-    "roles": ["read", "write", "alert"],
     "status": "ok"
   },
   {
     "id": "user2",
-    "login": "admin",
-    "name": "Admin",
-    "roles": ["read", "write", "admin", "alert"],
+    "login": "user2",
+    "name": "U",
+    "status": "ok"
+  },
+  {
+    "id": "user3",
+    "login": "user3",
+    "name": "only on default",
     "status": "ok"
   }
 ]

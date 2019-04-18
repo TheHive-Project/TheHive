@@ -1,0 +1,22 @@
+[
+  {
+    "from": "cert",
+    "to": "case1-cert"
+  },
+  {
+    "from": "cert",
+    "to": "case2-cert"
+  },
+  {
+    "from": "cert",
+    "to": "case3-cert"
+  },
+  {
+    "from": "default",
+    "to": "case3-default"
+  },
+  {
+    "from": "default",
+    "to": "case4-default"
+  }
+]

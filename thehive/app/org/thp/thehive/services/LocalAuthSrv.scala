@@ -2,6 +2,7 @@ package org.thp.thehive.services
 
 import scala.util.{Failure, Random, Success, Try}
 
+import play.api.Logger
 import play.api.mvc.RequestHeader
 
 import akka.stream.Materializer
@@ -10,7 +11,13 @@ import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, Hasher}
 import org.thp.thehive.models.User
-import play.api.Logger
+
+object LocalAuthSrv {
+  def hashPassword(password: String): String = {
+    val seed = Random.nextString(10).replace(',', '!')
+    seed + "," + Hasher("SHA-256").fromString(seed + password).head.toString
+  }
+}
 
 @Singleton
 class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv, implicit val mat: Materializer) extends AuthSrv {
@@ -31,30 +38,28 @@ class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Local
     }
 
   override def authenticate(username: String, password: String)(implicit request: RequestHeader): Try[AuthContext] =
-    db.transaction { implicit graph ⇒
+    db.tryTransaction { implicit graph ⇒
         userSrv
           .get(username)
-          .headOption()
+          .getOrFail()
       }
       .filter(user ⇒ doAuthenticate(user, password))
-      .map(user ⇒ localUserSrv.getFromUser(request, user))
+      .map(user ⇒ localUserSrv.getFromId(request, user.login))
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.transaction { implicit graph ⇒
+    db.tryTransaction { implicit graph ⇒
         userSrv
           .get(username)
-          .headOption()
+          .getOrFail()
       }
       .filter(user ⇒ doAuthenticate(user, oldPassword))
       .map(_ ⇒ setPassword(username, newPassword))
       .getOrElse(Failure(AuthorizationError("Authentication failure")))
 
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.transaction { implicit graph ⇒
-      val seed    = Random.nextString(10).replace(',', '!')
-      val newHash = seed + "," + Hasher("SHA-256").fromString(seed + newPassword).head.toString
-      userSrv.update(username, "password", Some(newHash))
+    db.tryTransaction { implicit graph ⇒
+      userSrv.update(username, "password", Some(LocalAuthSrv.hashPassword(newPassword)))
       Success(())
     }
 }

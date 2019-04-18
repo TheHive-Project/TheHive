@@ -1,19 +1,20 @@
 package org.thp.thehive.services
-import java.util.{UUID, List ⇒ JList}
 
-import gremlin.scala.{__, Edge, Element, Graph, GremlinScala, Key, Vertex}
+import java.util.UUID
+
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
+import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv: OrganisationSrv)(implicit db: Database)
+class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv: OrganisationSrv, taskSrv: TaskSrv)(implicit db: Database)
     extends VertexSrv[CaseTemplate, CaseTemplateSteps] {
 
   val caseTemplateCustomFieldSrv  = new EdgeSrv[CaseTemplateCustomField, CaseTemplate, CustomField]
@@ -22,30 +23,31 @@ class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv:
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
-  def create(caseTemplate: CaseTemplate, organisation: Organisation with Entity, customFields: Seq[(String, Option[Any])])(
+  def create(caseTemplate: CaseTemplate, organisation: Organisation with Entity, tasks: Seq[Task], customFields: Seq[(String, Option[Any])])(
       implicit graph: Graph,
-      authContext: AuthContext): RichCaseTemplate = {
+      authContext: AuthContext): Try[RichCaseTemplate] = {
 
     val createdCaseTemplate = create(caseTemplate)
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-    val cfs = customFields.map {
-      case (name, Some(value)) ⇒
-        val customField = customFieldSrv.getOrFail(name)
-        val caseTemplateCustomField =
-          caseTemplateCustomFieldSrv.create(customField.`type`.setValue(CaseTemplateCustomField(), value), createdCaseTemplate, customField)
-        CustomFieldWithValue(customField, caseTemplateCustomField)
-      case (name, None) ⇒
-        val customField             = customFieldSrv.getOrFail(name)
-        val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
-        CustomFieldWithValue(customField, caseTemplateCustomField)
-    }
-    RichCaseTemplate(createdCaseTemplate, organisation.name, cfs)
+    val createdTasks = tasks.map(taskSrv.create(_, createdCaseTemplate))
+    customFields
+      .toTry {
+        case (name, Some(value)) ⇒
+          for {
+            customField ← customFieldSrv.getOrFail(name)
+            ctcf        ← customField.`type`.setValue(CaseTemplateCustomField(), value)
+            caseTemplateCustomField = caseTemplateCustomFieldSrv.create(ctcf, createdCaseTemplate, customField)
+          } yield CustomFieldWithValue(customField, caseTemplateCustomField)
+        case (name, None) ⇒
+          customFieldSrv.getOrFail(name).map { customField ⇒
+            val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
+            CustomFieldWithValue(customField, caseTemplateCustomField)
+          }
+      }
+      .map { cfs ⇒
+        RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
+      }
   }
-
-  override def get(caseTemplateNameOrId: String)(implicit graph: Graph): CaseTemplateSteps =
-    Try(UUID.fromString(caseTemplateNameOrId))
-      .map(_ ⇒ initSteps.getById(caseTemplateNameOrId))
-      .getOrElse(initSteps.getByName(caseTemplateNameOrId))
 
   def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
     caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
@@ -58,15 +60,17 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     extends BaseVertexSteps[CaseTemplate, CaseTemplateSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
+  override def get(id: String): CaseTemplateSteps =
+    Try(UUID.fromString(id))
+      .map(_ ⇒ getById(id))
+      .getOrElse(getByName(id))
+
   def getById(id: String): CaseTemplateSteps = newInstance(raw.has(Key("_id") of id))
 
   def getByName(name: String): CaseTemplateSteps = newInstance(raw.has(Key("name") of name))
 
-  def availableFor(authContext: Option[AuthContext]): CaseTemplateSteps =
-    availableFor(authContext.getOrElse(throw AuthorizationError("access denied")).organisation)
-
-  def availableFor(organisation: String): CaseTemplateSteps =
-    newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].value("name").is(organisation)))
+  def available(implicit authContext: AuthContext): CaseTemplateSteps =
+    newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
 
   def customFields: ScalarSteps[CustomFieldWithValue] =
     ScalarSteps(
@@ -79,26 +83,28 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def richCaseTemplate: ScalarSteps[RichCaseTemplate] =
     ScalarSteps(
       raw
-        .project[Any]("caseTemplate", "organisation", "customFields")
-        .by()
-        .by(__[Vertex].outTo[CaseTemplateOrganisation].values[String]("name").fold.traversal)
-        .by(__[Vertex].outToE[CaseTemplateCustomField].inV().path.fold.traversal)
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseTemplateOrganisation].values[String]("name").fold.traversal))
+            .and(By(__[Vertex].outTo[CaseTemplateTask].fold.traversal))
+            .and(By(__[Vertex].outToE[CaseTemplateCustomField].inV().path.fold.traversal))
+        )
         .map {
-          case ValueMap(m) ⇒
-            val customFieldValues = m
-              .get[JList[Path]]("customFields")
-              .asScala
+          case (caseTemplate, organisation, tasks, customFields) ⇒
+            val customFieldValues = (customFields: java.util.List[Path]).asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case ccf :: cf :: Nil ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _                ⇒ throw InternalError("Not possible")
+                case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             ⇒ throw InternalError("Not possible")
               }
             RichCaseTemplate(
-              m.get[Vertex]("caseTemplate").as[CaseTemplate],
-              onlyOneOf[String](m.get[JList[String]]("organisation")),
+              caseTemplate.as[CaseTemplate],
+              onlyOneOf[String](organisation),
+              tasks.asScala.map(_.as[Task]),
               customFieldValues
             )
-        })
+        }
+    )
 
-  def tasks = new TaskSteps(raw.inTo[TaskCaseTemplate])
+  def tasks = new TaskSteps(raw.outTo[CaseTemplateTask])
 }

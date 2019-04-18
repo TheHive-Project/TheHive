@@ -46,7 +46,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     }
 
     configuration.get[String]("storage.provider") match {
-      case "localfs" ⇒ bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+      case "localfs"  ⇒ bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
       case "database" ⇒ bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
       case "orientdb" ⇒ bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
     }

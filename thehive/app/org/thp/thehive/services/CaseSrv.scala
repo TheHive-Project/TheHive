@@ -1,26 +1,35 @@
 package org.thp.thehive.services
 
+import java.util.{Set ⇒ JSet}
+
 import scala.collection.JavaConverters._
-import scala.util.Success
+import scala.util.{Success, Try}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P ⇒ JP}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{AuthorizationError, EntitySteps, InternalError}
+import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
 
 @Singleton
-class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organisationSrv: OrganisationSrv)(implicit db: Database)
+class CaseSrv @Inject()(
+    customFieldSrv: CustomFieldSrv,
+    userSrv: UserSrv,
+    profileSrv: ProfileSrv,
+    shareSrv: ShareSrv
+)(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
   val caseResolutionStatusSrv = new EdgeSrv[CaseResolutionStatus, Case, ResolutionStatus]
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
-  val caseOrganisationSrv     = new EdgeSrv[CaseOrganisation, Case, Organisation]
+  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
+  val caseTaskSrv             = new EdgeSrv[CaseTask, Case, Task]
+  val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
 
@@ -29,52 +38,53 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organi
       user: Option[User with Entity],
       organisation: Organisation with Entity,
       customFields: Map[String, Option[Any]],
-      caseTemplate: Option[RichCaseTemplate])(implicit graph: Graph, authContext: AuthContext): RichCase = {
+      caseTemplate: Option[RichCaseTemplate])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
     val createdCase = create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
     user.foreach(caseUserSrv.create(CaseUser(), createdCase, _))
-    caseOrganisationSrv.create(CaseOrganisation(), createdCase, organisation)
+    shareSrv.create(createdCase, organisation, profileSrv.admin)
     caseTemplate.foreach(ct ⇒ caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
 
-    val caseCustomFields = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap) ++ customFields
-    caseCustomFields.foreach {
-      case (name, Some(value)) ⇒
-        val cf = customFieldSrv.getOrFail(name)
-        caseCustomFieldSrv.create(cf.`type`.setValue(CaseCustomField(), value), createdCase, cf)
-      case (name, _) ⇒
-        val cf = customFieldSrv.getOrFail(name)
-        caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
-    }
-    RichCase(createdCase, None, None, user.map(_.login), organisation.name, get(createdCase).customFields().toList())
+    customFields.toSeq
+      .toTry {
+        case (name, Some(value)) ⇒
+          for {
+            cf  ← customFieldSrv.getOrFail(name)
+            ccf ← cf.`type`.setValue(CaseCustomField(), value)
+            alertCustomField = caseCustomFieldSrv.create(ccf, createdCase, cf)
+          } yield CustomFieldWithValue(cf, alertCustomField)
+        case (name, _) ⇒
+          customFieldSrv.getOrFail(name).map { cf ⇒
+            val alertCustomField = caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
+            CustomFieldWithValue(cf, alertCustomField)
+          }
+      }
+      .map { cfs ⇒
+        RichCase(createdCase, None, None, user.map(_.login), cfs)
+      }
   }
 
-  def isAvailableFor(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(caseIdOrNumber).availableFor(Some(authContext)).isDefined
+  def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
+    get(caseIdOrNumber).visible.isDefined
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
-  def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Unit =
-    setCustomField(`case`, customFieldSrv.getOrFail(customFieldName), value)
+  def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    customFieldSrv.getOrFail(customFieldName).flatMap(cf ⇒ setCustomField(`case`, cf, value))
 
   def setCustomField(`case`: Case with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
-      authContext: AuthContext): Unit =
+      authContext: AuthContext): Try[Unit] =
     getCustomField(`case`, customField.name) match {
-      case Some(cf) ⇒ caseCustomFieldSrv.update(cf.customFieldValue._id, cf.`type`.name + "Value", Some(value))
+      case Some(cf) ⇒ Success(caseCustomFieldSrv.update(cf.customFieldValue._id, cf.`type`.name + "Value", Some(value)))
       case None ⇒
-        val caseCustomField = customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value)
-        caseCustomFieldSrv.create(caseCustomField, `case`, customField)
-        ()
+        customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField ⇒
+          caseCustomFieldSrv.create(caseCustomField, `case`, customField)
+          ()
+        }
     }
 
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
     get(`case`).customFields(Some(customFieldName)).headOption()
-
-  override def get(caseIdOrNumber: String)(implicit graph: Graph): CaseSteps =
-    Success(caseIdOrNumber)
-      .filter(_.headOption.contains('#'))
-      .map(_.tail.toInt)
-      .map(initSteps.getCaseByNumber)
-      .getOrElse(steps(graph.V().has(Key("_id") of caseIdOrNumber)))
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
@@ -88,75 +98,79 @@ class CaseSrv @Inject()(customFieldSrv: CustomFieldSrv, userSrv: UserSrv, organi
       authContext: AuthContext): CaseResolutionStatus with Entity =
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
 
-  def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = {
-    val summaries         = cases.flatMap(_.summary)
-    val user              = userSrv.getOrFail(authContext.userId)
-    val organisation      = organisationSrv.getOrFail(authContext.organisation)
-    val taskCaseSrv       = new EdgeSrv[TaskCase, Task, Case]
-    val observableCaseSrv = new EdgeSrv[ObservableCase, Observable, Case]
-
-    val mergedCase = create(
-      Case(
-        nextCaseNumber,
-        cases.map(_.title).mkString(" / "),
-        cases.map(_.description).mkString("\n\n"),
-        cases.map(_.severity).max,
-        cases.map(_.startDate).min,
-        None,
-        cases.flatMap(_.tags).distinct,
-        cases.exists(_.flag),
-        cases.map(_.tlp).max,
-        cases.map(_.pap).max,
-        CaseStatus.open,
-        if (summaries.isEmpty) None else Some(summaries.mkString("\n\n"))
-      ))
-    caseUserSrv.create(CaseUser(), mergedCase, user)
-    caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
-    cases
-      .map(get)
-      .flatMap(_.customFields().toList())
-      .groupBy(_.name)
-      .foreach {
-        case (name, l) ⇒
-          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined ⇒ cfwv.value.get }
-          val cf     = customFieldSrv.getOrFail(name)
-          val caseCustomField =
-            if (values.size == 1) cf.`type`.setValue(CaseCustomField(), values.head)
-            else CaseCustomField()
-          caseCustomFieldSrv.create(caseCustomField, mergedCase, cf)
-      }
-
-    cases.foreach(mergedFromSrv.create(MergedFrom(), mergedCase, _))
-
-    cases
-      .map(get)
-      .flatMap(_.tasks.toList())
-      .foreach(task ⇒ taskCaseSrv.create(TaskCase(), task, mergedCase))
-
-    cases
-      .map(get)
-      .flatMap(_.observables.toList())
-      .foreach(observable ⇒ observableCaseSrv.create(ObservableCase(), observable, mergedCase))
-
-    get(mergedCase).richCase.head()
-  }
+  def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
+//  {
+//    val summaries         = cases.flatMap(_.summary)
+//    val user              = userSrv.getOrFail(authContext.userId)
+//    val organisation      = organisationSrv.getOrFail(authContext.organisation)
+//    val caseTaskSrv       = new EdgeSrv[CaseTask, Case, Task]
+//    val caseObservableSrv = new EdgeSrv[CaseObservable, Case, Observable]
+//
+//    val mergedCase = create(
+//      Case(
+//        nextCaseNumber,
+//        cases.map(_.title).mkString(" / "),
+//        cases.map(_.description).mkString("\n\n"),
+//        cases.map(_.severity).max,
+//        cases.map(_.startDate).min,
+//        None,
+//        cases.flatMap(_.tags).distinct,
+//        cases.exists(_.flag),
+//        cases.map(_.tlp).max,
+//        cases.map(_.pap).max,
+//        CaseStatus.open,
+//        if (summaries.isEmpty) None else Some(summaries.mkString("\n\n"))
+//      ))
+//    caseUserSrv.create(CaseUser(), mergedCase, user)
+//    caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
+//    cases
+//      .map(get)
+//      .flatMap(_.customFields().toList())
+//      .groupBy(_.name)
+//      .foreach {
+//        case (name, l) ⇒
+//          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined ⇒ cfwv.value.get }
+//          val cf     = customFieldSrv.getOrFail(name)
+//          val caseCustomField =
+//            if (values.size == 1) cf.`type`.setValue(CaseCustomField(), values.head)
+//            else CaseCustomField()
+//          caseCustomFieldSrv.create(caseCustomField, mergedCase, cf)
+//      }
+//
+//    cases.foreach(mergedFromSrv.create(MergedFrom(), mergedCase, _))
+//
+//    cases
+//      .map(get)
+//      .flatMap(_.tasks.toList())
+//      .foreach(task ⇒ caseTaskSrv.create(CaseTask(), task, mergedCase))
+//
+//    cases
+//      .map(get)
+//      .flatMap(_.observables.toList())
+//      .foreach(observable ⇒ observableCaseSrv.create(ObservableCase(), observable, mergedCase))
+//
+//    get(mergedCase).richCase.head()
+//  }
 }
 
 @EntitySteps[Case]
 class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Case, CaseSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
 
-  def getCaseById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
+  override def get(id: String): CaseSteps =
+    Success(id)
+      .filter(_.headOption.contains('#'))
+      .map(_.tail.toInt)
+      .map(getByNumber)
+      .getOrElse(getById(id))
 
-  def getCaseByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
+  def getById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
 
-  def availableFor(authContext: Option[AuthContext]): CaseSteps =
-    availableFor(authContext.getOrElse(throw AuthorizationError("access denied")).organisation)
+  def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  def availableFor(organisation: String): CaseSteps =
-    newInstance(
-      raw.filter(
-        _.or(_.outTo[CaseOrganisation].value("name").is(organisation), _.inTo[ShareCase].outTo[ShareOrganisation].value("name").is(organisation))))
+  def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
+    raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
+  )
 
   def getLast: CaseSteps = newInstance(raw.order(By(Key[Int]("number"), Order.decr)))
 
@@ -168,10 +182,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outTo[CaseOrganisation].values[String]("name").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold)))
         .map {
-          case (caze, impactStatus, resolutionStatus, user, organisation, customFields) ⇒
+          case (caze, impactStatus, resolutionStatus, user, customFields) ⇒
             val customFieldValues = (customFields: java.util.List[Path]).asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
@@ -183,7 +196,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
-              onlyOneOf[String](organisation),
               customFieldValues
             )
         }
@@ -200,9 +212,22 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField])))
   }
 
+  def linkedCases: CaseSteps = {
+    val label = StepLabel[JSet[Vertex]]()
+    new CaseSteps(
+      raw
+        .aggregate(label)
+        .outTo[CaseObservable]
+        .outTo[ObservableData]
+        .inTo[ObservableData]
+        .inTo[CaseObservable]
+        .where(JP.without(label.name))
+    )
+  }
+
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks = new TaskSteps(raw.inTo[TaskCase])
+  def tasks = new TaskSteps(raw.outTo[CaseTask])
 
-  def observables = new ObservableSteps(raw.inTo[ObservableCase])
+  def observables = new ObservableSteps(raw.outTo[CaseObservable])
 }

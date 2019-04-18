@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{FObject, FString, Field}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
@@ -12,6 +12,9 @@ class QueryTest extends PlaySpecification with Mockito with QueryCtrl {
   val queryExecutor = new TheHiveQueryExecutor(
     mock[CaseSrv],
     mock[TaskSrv],
+    mock[ObservableSrv],
+    mock[AlertSrv],
+    mock[LogSrv],
     mock[Database]
   )
 

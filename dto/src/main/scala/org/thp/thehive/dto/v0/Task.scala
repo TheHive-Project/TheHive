@@ -20,6 +20,8 @@ object InputTask {
 }
 
 case class OutputTask(
+    id: String,
+    _id: String,
     title: String,
     description: Option[String],
     status: String,

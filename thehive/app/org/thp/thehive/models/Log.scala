@@ -4,9 +4,6 @@ import java.util.Date
 
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
-@EdgeEntity[Log, Task]
-case class LogTask()
-
 @EdgeEntity[Log, Attachment]
 case class LogAttachment()
 

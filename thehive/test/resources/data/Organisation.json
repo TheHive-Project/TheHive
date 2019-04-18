@@ -1,9 +1,5 @@
 [
   {
-    "id": "default",
-    "name": "default"
-  },
-  {
     "id": "cert",
     "name": "cert"
   }

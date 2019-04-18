@@ -44,15 +44,15 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
       }
   }
 
-  def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
-    Client.logger.debug(s"Request GET $baseUrl")
-    ws.url(baseUrl)
-      .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
-      .get()
-      .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[Output]])
-        case Success(r)                          ⇒ Failure(ApplicationError(r))
-        case Failure(t)                          ⇒ throw t
-      }
-  }
+//  def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
+//    Client.logger.debug(s"Request GET $baseUrl")
+//    ws.url(baseUrl)
+//      .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
+//      .get()
+//      .transform {
+//        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[Output]])
+//        case Success(r)                          ⇒ Failure(ApplicationError(r))
+//        case Failure(t)                          ⇒ throw t
+//      }
+//  }
 }

@@ -1,139 +1,155 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.{ApiMethod, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.RichOptionTry
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v1.InputAlert
-import org.thp.thehive.models._
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
 
 @Singleton
-class AlertCtrl @Inject()(apiMethod: ApiMethod, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv) {
+class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv)
+    extends AlertConversion
+    with CaseConversion {
 
   def create: Action[AnyContent] =
-    apiMethod("create alert")
+    entryPoint("create alert")
       .extract('alert, FieldsParser[InputAlert])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
           val caseTemplateName: Option[String] = request.body('caseTemplate)
-          val caseTemplate = caseTemplateName
-            .map { ct ⇒
+          val inputAlert: InputAlert           = request.body('alert)
+          for {
+            caseTemplate ← caseTemplateName.map { ct ⇒
               caseTemplateSrv
                 .get(ct)
-                .availableFor(request.organisation)
+                .available
                 .richCaseTemplate
                 .getOrFail()
-            }
-          val inputAlert: InputAlert = request.body('alert)
-          val user                   = userSrv.getOrFail(request.userId)
-          val organisation           = userSrv.getOrganisation(user)
-          val customFields           = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          val richAlert              = alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
-          Results.Created(richAlert.toJson)
+            }.flip
+            organisation ← userSrv.current.organisations(Permissions.manageAlert).getOrFail()
+            customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
+            richAlert ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+          } yield Results.Created(richAlert.toJson)
         }
       }
 
   def get(alertId: String): Action[AnyContent] =
-    apiMethod("get alert")
-      .requires(Permissions.read) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          val richAlert = alertSrv
+    entryPoint("get alert")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
             .get(alertId)
-            .availableFor(request.organisation)
+            .visible
             .richAlert
-            .headOption
-            .getOrElse(throw NotFoundError(s"alert $alertId not found"))
-          if (richAlert.organisation != request.organisation)
-            throw NotFoundError(s"alert $alertId not found")
-          Results.Ok(richAlert.toJson)
+            .getOrFail()
+            .map(alert ⇒ Results.Ok(alert.toJson))
         }
       }
 
-  def list: Action[AnyContent] =
-    apiMethod("list alert")
-      .requires(Permissions.read) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          val alerts = alertSrv.initSteps
-            .availableFor(request.organisation)
-            .richAlert
-            .map(_.toJson)
-            .toList()
-          Results.Ok(Json.toJson(alerts))
-        }
-      }
+//  def list: Action[AnyContent] =
+//    entryPoint("list alert")
+//      .authenticated { implicit request ⇒
+//        db.tryTransaction { implicit graph ⇒
+//          val alerts = alertSrv.initSteps
+//            .availableFor(request.organisation)
+//            .richAlert
+//            .map(_.toJson)
+//            .toList()
+//          Success(Results.Ok(Json.toJson(alerts)))
+//        }
+//      }
 
   def update(alertId: String): Action[AnyContent] =
-    apiMethod("update alert")
+    entryPoint("update alert")
       .extract('alert, UpdateFieldsParser[InputAlert])
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (alertSrv.isAvailableFor(alertId)) {
-            alertSrv.update(alertId, request.body('alert))
-            Results.NoContent
-          } else Results.Unauthorized(s"Alert $alertId doesn't exist or permission is insufficient")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+            .map { _ ⇒
+              alertSrv.update(alertId, request.body('alert))
+              Results.NoContent
+            }
         }
       }
 
   def mergeWithCase(alertId: String, caseId: String) = ???
 
   def markAsRead(alertId: String): Action[AnyContent] =
-    apiMethod("mark alert as read")
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (alertSrv.isAvailableFor(alertId)) {
-            alertSrv.markAsRead(alertId)
-            Results.NoContent
-          } else Results.Unauthorized(s"Alert $alertId doesn't exist or permission is insufficient")
+    entryPoint("mark alert as read")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+            .map { _ ⇒
+              alertSrv.markAsRead(alertId)
+              Results.NoContent
+            }
         }
       }
 
   def markAsUnread(alertId: String): Action[AnyContent] =
-    apiMethod("mark alert as unread")
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (alertSrv.isAvailableFor(alertId)) {
-            alertSrv.markAsUnread(alertId)
-            Results.NoContent
-          } else Results.Unauthorized(s"Alert $alertId doesn't exist or permission is insufficient")
+    entryPoint("mark alert as unread")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+            .map { _ ⇒
+              alertSrv.markAsUnread(alertId)
+              Results.NoContent
+            }
         }
       }
 
   def createCase(alertId: String): Action[AnyContent] =
-    apiMethod("create case from alert")
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          val alert        = alertSrv.get(alertId).availableFor(request.organisation).richAlert.getOrFail()
-          val user         = userSrv.getOrFail(request.userId)
-          val organisation = userSrv.getOrganisation(user)
-          val richCase     = alertSrv.createCase(alert, Some(user), organisation)
-          Results.Created(richCase.toJson)
+    entryPoint("create case from alert")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          for {
+            (alert, organisation) ← alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
+            richCase              ← alertSrv.createCase(alert, None, organisation)
+          } yield Results.Created(richCase.toJson)
         }
       }
 
   def followAlert(alertId: String): Action[AnyContent] =
-    apiMethod("follow alert")
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (alertSrv.isAvailableFor(alertId)) {
-            alertSrv.followAlert(alertId)
-            Results.NoContent
-          } else Results.Unauthorized(s"Alert $alertId doesn't exist or permission is insufficient")
+    entryPoint("follow alert")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+            .map { _ ⇒
+              alertSrv.followAlert(alertId)
+              Results.NoContent
+            }
         }
       }
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
-    apiMethod("unfollow alert")
-      .requires(Permissions.write) { implicit request ⇒
-        db.transaction { implicit graph ⇒
-          if (alertSrv.isAvailableFor(alertId)) {
-            alertSrv.unfollowAlert(alertId)
-            Results.NoContent
-          } else Results.Unauthorized(s"Alert $alertId doesn't exist or permission is insufficient")
+    entryPoint("unfollow alert")
+      .authenticated { implicit request ⇒
+        db.tryTransaction { implicit graph ⇒
+          alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+            .map { _ ⇒
+              alertSrv.unfollowAlert(alertId)
+              Results.NoContent
+            }
         }
       }
 }
