@@ -13,10 +13,8 @@ import play.api.mvc.{Action, AnyContent, Results}
 class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditSrv) extends AuditConversion {
   def flow(): Action[AnyContent] =
     entryPoint("audit flow")
-      .authenticated { _ ⇒
-        db.tryTransaction { implicit graph ⇒
-          val audits = auditSrv.initSteps.list.toList.map(_.toJson)
-          Success(Results.Ok(JsArray(audits)))
-        }
+      .authTransaction(db) { _ ⇒ implicit graph ⇒
+        val audits = auditSrv.initSteps.list.toList.map(_.toJson)
+        Success(Results.Ok(JsArray(audits)))
       }
 }

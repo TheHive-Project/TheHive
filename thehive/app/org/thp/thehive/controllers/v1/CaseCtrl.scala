@@ -28,106 +28,94 @@ class CaseCtrl @Inject()(
     entryPoint("create case")
       .extract('case, FieldsParser[InputCase])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .authenticated { implicit request ⇒
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val caseTemplateName: Option[String] = request.body('caseTemplate)
         val inputCase: InputCase             = request.body('case)
-        db.tryTransaction { implicit graph ⇒
-          for {
-            organisation ← userSrv.current
-              .organisations(Permissions.manageCase)
-              .get(request.organisation)
+        for {
+          organisation ← userSrv.current
+            .organisations(Permissions.manageCase)
+            .get(request.organisation)
+            .getOrFail()
+          caseTemplate ← caseTemplateName.map { templateName ⇒
+            caseTemplateSrv
+              .get(templateName)
+              .available
+              .richCaseTemplate
               .getOrFail()
-            caseTemplate ← caseTemplateName.map { templateName ⇒
-              caseTemplateSrv
-                .get(templateName)
-                .available
-                .richCaseTemplate
-                .getOrFail()
-            }.flip
-            case0 = fromInputCase(inputCase, caseTemplate)
-            user ← inputCase.user.map { u ⇒
-              userSrv.current.organisations
-                .users(Permissions.manageCase)
-                .get(u)
-                .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
-            }.flip
+          }.flip
+          case0 = fromInputCase(inputCase, caseTemplate)
+          user ← inputCase.user.map { u ⇒
+            userSrv.current.organisations
+              .users(Permissions.manageCase)
+              .get(u)
+              .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
+          }.flip
 //            organisation ← organisationSrv.getOrFail(request.organisation)
-            customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap)
-            customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
-            richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
+          customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap)
+          customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
+          richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
 
-            _ = caseTemplate.foreach { ct ⇒
-              caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
-                taskSrv.create(task, richCase.`case`)
-              }
+          _ = caseTemplate.foreach { ct ⇒
+            caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
+              taskSrv.create(task, richCase.`case`)
             }
-          } yield Results.Created(richCase.toJson)
-        }
+          }
+        } yield Results.Created(richCase.toJson)
       }
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("get case")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          caseSrv
-            .get(caseIdOrNumber)
-            .visible
-            .richCase
-            .getOrFail()
-            .map(richCase ⇒ Results.Ok(richCase.toJson))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        caseSrv
+          .get(caseIdOrNumber)
+          .visible
+          .richCase
+          .getOrFail()
+          .map(richCase ⇒ Results.Ok(richCase.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list case")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          val cases = userSrv.current.organisations.cases.richCase
-            .map(_.toJson)
-            .toList()
-          Success(Results.Ok(Json.toJson(cases)))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val cases = userSrv.current.organisations.cases.richCase
+          .map(_.toJson)
+          .toList()
+        Success(Results.Ok(Json.toJson(cases)))
       }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
       .extract('case, UpdateFieldsParser[InputCase])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          if (caseSrv.isAvailable(caseIdOrNumber)) {
-            caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
-            Success(Results.NoContent)
-          } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        if (caseSrv.isAvailable(caseIdOrNumber)) {
+          caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
+          Success(Results.NoContent)
+        } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("delete case")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          if (caseSrv.isAvailable(caseIdOrNumber)) {
-            caseSrv.update(caseIdOrNumber, "status", "deleted")
-            Success(Results.NoContent)
-          } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        if (caseSrv.isAvailable(caseIdOrNumber)) {
+          caseSrv.update(caseIdOrNumber, "status", "deleted")
+          Success(Results.NoContent)
+        } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
     entryPoint("merge cases")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          caseIdsOrNumbers
-            .split(',')
-            .toSeq
-            .toTry(
-              caseSrv
-                .get(_)
-                .visible
-                .getOrFail())
-            .map { cases ⇒
-              val mergedCase = caseSrv.merge(cases)
-              Results.Ok(mergedCase.toJson)
-            }
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        caseIdsOrNumbers
+          .split(',')
+          .toSeq
+          .toTry(
+            caseSrv
+              .get(_)
+              .visible
+              .getOrFail())
+          .map { cases ⇒
+            val mergedCase = caseSrv.merge(cases)
+            Results.Ok(mergedCase.toJson)
+          }
       }
 }

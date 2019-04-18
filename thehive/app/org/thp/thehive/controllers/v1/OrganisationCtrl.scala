@@ -22,46 +22,39 @@ class OrganisationCtrl @Inject()(
   def create: Action[AnyContent] =
     entryPoint("create organisation")
       .extract('organisation, FieldsParser[InputOrganisation])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _    ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
-            user ← userSrv.current.getOrFail()
-            inputOrganisation: InputOrganisation = request.body('organisation)
-            organisation                         = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
-          } yield Results.Created(organisation.toJson)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _    ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+          user ← userSrv.current.getOrFail()
+          inputOrganisation: InputOrganisation = request.body('organisation)
+          organisation                         = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
+        } yield Results.Created(organisation.toJson)
       }
 
   def get(organisationId: String): Action[AnyContent] =
-    entryPoint("get organisation").authenticated { implicit request ⇒
-      db.tryTransaction { implicit graph ⇒
+    entryPoint("get organisation")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         userSrv.current.organisations.visibleOrganisations
           .get(organisationId)
           .getOrFail()
           .map(organisation ⇒ Results.Ok(organisation.toJson))
       }
-    }
 
   //  def list: Action[AnyContent] =
   //    entryPoint("list organisation")
-  //      .authenticated { _ ⇒
-  //        db.transaction { implicit graph ⇒
+  //      .authTransaction(db) { _ ⇒ implicit graph ⇒
   //          val organisations = organisationSrv.initSteps.toList
   //            .map(toOutputOrganisation)
   //          Results.Ok(Json.toJson(organisations))
   //        }
-  //      }
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
       .extract('organisation, UpdateFieldsParser[InputOrganisation])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _ ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
-            _ = organisationSrv.update(organisationId, request.body('organisation))
-          } yield Results.NoContent
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+          _ = organisationSrv.update(organisationId, request.body('organisation))
+        } yield Results.NoContent
       }
 }

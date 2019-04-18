@@ -28,15 +28,14 @@ class UserCtrl @Inject()(
     extends UserConversion {
 
   def current: Action[AnyContent] =
-    entryPoint("current user").authenticated { implicit request ⇒
-      db.tryTransaction { implicit graph ⇒
+    entryPoint("current user")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         userSrv
           .get(request.userId)
           .richUser(request.organisation)
           .getOrFail()
           .map(user ⇒ Results.Ok(user.toJson))
       }
-    }
 
   def create: Action[AnyContent] =
     entryPoint("create user")
@@ -59,21 +58,19 @@ class UserCtrl @Inject()(
       }
 
   def get(userId: String): Action[AnyContent] =
-    entryPoint("get user").authenticated { request ⇒
-      db.tryTransaction { implicit graph ⇒
+    entryPoint("get user")
+      .authTransaction(db) { request ⇒ implicit graph ⇒
         userSrv
           .get(userId)
           .richUser(request.organisation) // FIXME what if user is not in the same org ?
           .getOrFail()
           .map(user ⇒ Results.Ok(user.toJson))
       }
-    }
 
 //  def list: Action[AnyContent] =
 //    entryPoint("list user")
 //      .extract('organisation, FieldsParser[String].optional.on("organisation"))
-//      .authenticated { request ⇒
-//        db.transaction { implicit graph ⇒
+//      .authTransaction(db) { request ⇒ implicit graph ⇒
 //          val organisation = request.body('organisation).getOrElse(request.organisation)
 //          val users = userSrv.initSteps
 //            .richUser(organisation)
@@ -81,32 +78,27 @@ class UserCtrl @Inject()(
 //            .toList
 //          Results.Ok(Json.toJson(users))
 //        }
-//      }
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
       .extract('user, UpdateFieldsParser[InputUser])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          userSrv.update(userId, request.body('user))
-          Success(Results.NoContent)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        userSrv.update(userId, request.body('user))
+        Success(Results.NoContent)
       }
 
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
       .extract('password, FieldsParser[String])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _ ← userSrv.current
-              .organisations(Permissions.manageUser)
-              .users
-              .get(userId)
-              .existsOrFail()
-            _ ← authSrv.setPassword(userId, request.body('password))
-          } yield Results.NoContent
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv.current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .existsOrFail()
+          _ ← authSrv.setPassword(userId, request.body('password))
+        } yield Results.NoContent
       }
 
   def changePassword(userId: String): Action[AnyContent] =
@@ -125,49 +117,43 @@ class UserCtrl @Inject()(
 
   def getKey(userId: String): Action[AnyContent] =
     entryPoint("get key")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _ ← userSrv.current
-              .organisations(Permissions.manageUser)
-              .users
-              .get(userId)
-              .existsOrFail()
-            key ← authSrv
-              .getKey(userId)
-          } yield Results.Ok(key)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv.current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .existsOrFail()
+          key ← authSrv
+            .getKey(userId)
+        } yield Results.Ok(key)
       }
 
   def removeKey(userId: String): Action[AnyContent] =
     entryPoint("remove key")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _ ← userSrv.current
-              .organisations(Permissions.manageUser)
-              .users
-              .get(userId)
-              .existsOrFail()
-            _ ← authSrv
-              .removeKey(userId)
-          } yield Results.NoContent
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv.current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .existsOrFail()
+          _ ← authSrv
+            .removeKey(userId)
+        } yield Results.NoContent
       }
 
   def renewKey(userId: String): Action[AnyContent] =
     entryPoint("renew key")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            _ ← userSrv.current
-              .organisations(Permissions.manageUser)
-              .users
-              .get(userId)
-              .existsOrFail()
-            key ← authSrv
-              .renewKey(userId)
-          } yield Results.Ok(key)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv.current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .existsOrFail()
+          key ← authSrv
+            .renewKey(userId)
+        } yield Results.Ok(key)
       }
 }
