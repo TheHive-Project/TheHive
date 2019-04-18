@@ -2,14 +2,17 @@ package org.thp.thehive.migration
 import java.io.InputStream
 import java.util.{Date, UUID}
 
+import scala.util.Try
+
 import play.api.Logger
 import play.api.libs.json._
 
 import gremlin.scala._
-import org.thp.scalligraph.Hasher
+import org.apache.hadoop.ipc.RemoteException
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.StorageSrv
+import org.thp.scalligraph.{Hasher, Retry}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AttachmentSrv
 
@@ -74,14 +77,16 @@ trait Utils {
       hashers: Hasher,
       toDB: Database)(attachment: ElasticAttachment)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
 
-    def readStream[A](f: InputStream ⇒ A) = {
-      val is = elasticAttachmentSrv.stream(attachment.id)
-      try f(is)
-      finally is.close()
-    }
+    def readStream[A](f: InputStream ⇒ A) =
+      Retry(3, classOf[RemoteException]) {
+        val is = elasticAttachmentSrv.stream(attachment.id)
+        val r  = Try(f(is))
+        is.close()
+        r
+      }.get
 
     val hs   = readStream(hashers.fromInputStream)
-    val id   = hs.mkString("|") // TODO only one hash ?
+    val id   = hs.head.toString
     val data = readStream(storageSrv.saveBinary(id, _))
 
     val attach           = attachmentSrv.create(Attachment(attachment.name, attachment.size, attachment.contentType, hs))

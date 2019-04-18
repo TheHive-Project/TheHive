@@ -59,12 +59,13 @@ class AlertMigration @Inject()(
                 .asOpt[JsObject]
                 .fold(Seq.empty[(String, Option[Any])])(extractCustomFields)
                 .toMap
-              val richAlert = alertSrv.create(alert, organisation, customFields, caseTemplate)
-              (alertJs \ "caze")
-                .asOpt[String]
-                .flatMap(caseMigration.get)
-                .foreach(caze ⇒ alertSrv.alertCaseSrv.create(AlertCase(), richAlert.alert, caze))
-              auditMigration.importAudits("alert", (alertJs \ "_id").as[String], richAlert.alert, progress)
+              alertSrv.create(alert, organisation, customFields, caseTemplate).map { richAlert ⇒
+                (alertJs \ "caze")
+                  .asOpt[String]
+                  .flatMap(caseMigration.get)
+                  .foreach(caze ⇒ alertSrv.alertCaseSrv.create(AlertCase(), richAlert.alert, caze))
+                auditMigration.importAudits("alert", (alertJs \ "_id").as[String], richAlert.alert, progress)
+              }
             }
           }
         }

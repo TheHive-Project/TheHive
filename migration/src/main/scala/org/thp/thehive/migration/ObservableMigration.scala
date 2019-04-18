@@ -38,7 +38,7 @@ class ObservableMigration @Inject()(
 
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val observableCaseSrv       = new EdgeSrv[ObservableCase, Observable, Case]
+  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
   val hashers                 = Hasher(config.get[Seq[String]]("attachment.hash"): _*)
 
   implicit val artifactReads: Reads[Observable] =
@@ -46,7 +46,6 @@ class ObservableMigration @Inject()(
       (JsPath \ "tags").readWithDefault[Seq[String]](Nil) and
       (JsPath \ "message").readNullable[String] and
       (JsPath \ "tlp").readWithDefault[Int](2) and
-      (JsPath \ "pap").readWithDefault[Int](2) and
       (JsPath \ "ioc").readWithDefault[Boolean](false) and
       (JsPath \ "sighted").readWithDefault[Boolean](false))(Observable.apply _)
 
@@ -72,7 +71,7 @@ class ObservableMigration @Inject()(
                 val dataEntity = dataSrv.create(Data(data))
                 observableDataSrv.create(ObservableData(), createdObservable, dataEntity)
               }
-            observableCaseSrv.create(ObservableCase(), createdObservable, `case`)
+            caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
             auditMigration.importAudits("case_artifact", (artifactJs \ "_id").as[String], createdObservable, progress)
           }
         }

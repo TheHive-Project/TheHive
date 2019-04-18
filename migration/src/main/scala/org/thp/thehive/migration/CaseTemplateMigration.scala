@@ -44,11 +44,11 @@ class CaseTemplateMigration @Inject()(
   implicit val taskReads: Reads[Task] =
     ((JsPath \ "title").read[String] and
       (JsPath \ "description").readNullable[String] and
-      (JsPath \ "status").read[String].map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
-      (JsPath \ "flag").read[Boolean] and
+      (JsPath \ "status").readWithDefault[String]("waiting").map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
+      (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "startDate").readNullable[Date] and
       (JsPath \ "endDate").readNullable[Date] and
-      (JsPath \ "order").read[Int] and
+      (JsPath \ "order").readWithDefault[Int](0) and
       (JsPath \ "dueDate").readNullable[Date])(Task.apply _) // TODO add group:String in task
 
   def importCaseTemplateTask(caseTemplateTaskJs: JsObject, caseTemplate: CaseTemplate with Entity, progress: ProgressBar)(
@@ -69,6 +69,7 @@ class CaseTemplateMigration @Inject()(
           db.transaction { implicit graph ⇒
             progress.inc(extraMessage = (caseTemplateJs \ "name").asOpt[String].getOrElse("***"))
             val caseTemplate = caseTemplateJs.as[CaseTemplate]
+            val tasks        = (caseTemplateJs \ "tasks").as[Seq[Task]]
             val customFields = (caseTemplateJs \ "customFields")
               .asOpt[JsObject]
               .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
@@ -76,10 +77,11 @@ class CaseTemplateMigration @Inject()(
                 .asOpt[JsObject]
                 .fold(Seq.empty[(String, Option[Any])])(extractMetrics)
 
-            val richCaseTemplate = caseTemplateSrv.create(caseTemplate, organisation, customFields)
-            caseTemplateMap += caseTemplate.name → richCaseTemplate
-            (caseTemplateJs \ "tasks").asOpt[JsObject].foreach(importCaseTemplateTask(_, richCaseTemplate.caseTemplate, progress))
-            auditMigration.importAudits("caseTemplate", (caseTemplateJs \ "_id").as[String], richCaseTemplate.caseTemplate, progress)
+            caseTemplateSrv.create(caseTemplate, organisation, tasks, customFields).map { richCaseTemplate ⇒
+              caseTemplateMap += caseTemplate.name → richCaseTemplate
+              (caseTemplateJs \ "tasks").asOpt[JsObject].foreach(importCaseTemplateTask(_, richCaseTemplate.caseTemplate, progress))
+              auditMigration.importAudits("caseTemplate", (caseTemplateJs \ "_id").as[String], richCaseTemplate.caseTemplate, progress)
+            }
           }
         }
       }

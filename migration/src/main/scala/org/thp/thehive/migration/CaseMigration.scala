@@ -1,4 +1,5 @@
 package org.thp.thehive.migration
+import java.io.IOException
 import java.util.Date
 
 import scala.concurrent.duration.Duration
@@ -12,6 +13,7 @@ import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.ElasticDsl.{search, RichString}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.Retry
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.thehive.models.{Case, CaseStatus, Organisation}
 import org.thp.thehive.services.{CaseSrv, ImpactStatusSrv, ResolutionStatusSrv}
@@ -60,37 +62,43 @@ class CaseMigration @Inject()(
           val t1 = System.currentTimeMillis()
           var t2 = 0L
           catchError("case", caseJs, progress) {
-            db.transaction { implicit graph ⇒
-              userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
-                val customFields = ((caseJs \ "customFields")
-                  .asOpt[JsObject]
-                  .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
-                  (caseJs \ "metrics")
+            Retry(3, classOf[IOException]) {
+              db.tryTransaction { implicit graph ⇒
+                val r = userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+                  val customFields = ((caseJs \ "customFields")
                     .asOpt[JsObject]
-                    .fold(Seq.empty[(String, Option[Any])])(extractMetrics)).toMap
-                val richCase = caseSrv.create(
-                  caze,
-                  (caseJs \ "owner").asOpt[String].flatMap(userMigration.get).map(_.user),
-                  organisation,
-                  customFields,
-                  None // no case template
-                )
-                (caseJs \ "impactStatus")
-                  .asOpt[String]
-                  .flatMap(impactStatusSrv.get(_).headOption())
-                  .foreach(caseSrv.setImpactStatus(richCase.`case`, _))
-                (caseJs \ "resolutionStatus")
-                  .asOpt[String]
-                  .flatMap(resolutionStatusSrv.get(_).headOption())
-                  .foreach(caseSrv.setResolutionStatus(richCase.`case`, _))
-                caseMap += (caseJs \ "_id").as[String] → richCase._id
-                val caseId = (caseJs \ "_id").as[String]
-                auditMigration.importAudits("case", caseId, richCase.`case`, progress)
-                taskMigration.importTasks(caseId, richCase.`case`, progress)
-                observableMigration.importObservables(caseId, richCase.`case`, progress)
+                    .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
+                    (caseJs \ "metrics")
+                      .asOpt[JsObject]
+                      .fold(Seq.empty[(String, Option[Any])])(extractMetrics)).toMap
+                  caseSrv
+                    .create(
+                      caze,
+                      (caseJs \ "owner").asOpt[String].flatMap(userMigration.get).map(_.user),
+                      organisation,
+                      customFields,
+                      None // no case template
+                    )
+                    .map { richCase ⇒
+                      (caseJs \ "impactStatus")
+                        .asOpt[String]
+                        .flatMap(impactStatusSrv.get(_).headOption())
+                        .foreach(caseSrv.setImpactStatus(richCase.`case`, _))
+                      (caseJs \ "resolutionStatus")
+                        .asOpt[String]
+                        .flatMap(resolutionStatusSrv.get(_).headOption())
+                        .foreach(caseSrv.setResolutionStatus(richCase.`case`, _))
+                      val caseId = (caseJs \ "_id").as[String]
+                      caseMap += caseId → richCase._id
+                      auditMigration.importAudits("case", caseId, richCase.`case`, progress)
+                      taskMigration.importTasks(caseId, richCase.`case`, progress)
+                      observableMigration.importObservables(caseId, richCase.`case`, progress)
+                    }
+                }
+                t2 = System.currentTimeMillis()
+                r
               }
-              t2 = System.currentTimeMillis()
-            }
+            }.get
           }
           val t3 = System.currentTimeMillis()
           logger.info(s"Timing : ${t3 - t1}ms / ${t3 - t2}ms")

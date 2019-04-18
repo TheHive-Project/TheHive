@@ -4,6 +4,7 @@ import java.io.File
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -45,8 +46,10 @@ class Migration @Inject()(
   def migrate(): Unit =
     userMigration.withUser("init") { implicit authContext ⇒
       // create default organisation
-      val organisationName    = Organisation(config.get[String]("organisation.name"))
-      val defaultOrganisation = db.transaction(implicit graph ⇒ organisationSrv.create(organisationName))
+      val organisationName = config.get[String]("organisation.name")
+      val defaultOrganisation = Try(db.transaction(implicit graph ⇒ organisationSrv.create(Organisation(organisationName))))
+        .orElse(db.transaction(implicit graph ⇒ organisationSrv.getOrFail(organisationName)))
+        .get
       logger.info(s"organisation $organisationName created")
 
       Terminal { terminal ⇒
@@ -80,6 +83,7 @@ class MigrationModule(configuration: Configuration) extends ScalaModule {
 //    bind[Database].to[OrientDatabase]
 //    bind[Database].to[RemoteJanusDatabase]
     bind[StorageSrv].to[LocalFileSystemStorageSrv]
+//    bind[StorageSrv].to[HadoopStorageSrv]
     bind[Configuration].toInstance(configuration)
     bind[Environment].toInstance(Environment.simple())
     bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
@@ -92,6 +96,7 @@ class MigrationModule(configuration: Configuration) extends ScalaModule {
 
 object Start extends App {
   val config = new Configuration(ConfigFactory.parseFileAnySyntax(new File("conf/migration.conf"))) // TODO read filename from argument
+//  (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
   new GuiceApplicationBuilder()
     .loadConfig(config)
     .load(new MigrationModule(config), new EhCacheModule)
