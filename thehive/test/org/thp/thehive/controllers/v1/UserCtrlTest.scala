@@ -1,10 +1,12 @@
 package org.thp.thehive.controllers.v1
 
+import scala.util.{Success, Try}
+
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
+import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
@@ -23,7 +25,8 @@ object TestUser {
 }
 
 class DummyAuthSrv extends AuthSrv {
-  val name: String = "dummy"
+  val name: String                                                                                              = "dummy"
+  override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] = Success(())
 }
 class UserCtrlTest extends PlaySpecification with Mockito {
   val config: Configuration = Configuration.load(Environment.simple())

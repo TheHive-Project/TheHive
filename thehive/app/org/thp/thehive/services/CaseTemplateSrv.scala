@@ -4,11 +4,10 @@ import java.util.UUID
 
 import scala.collection.JavaConverters._
 import scala.util.Try
-
 import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
@@ -69,8 +68,18 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def getByName(name: String): CaseTemplateSteps = newInstance(raw.has(Key("name") of name))
 
-  def available(implicit authContext: AuthContext): CaseTemplateSteps =
+  def visible(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+
+  def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
+    newInstance(
+      raw.filter(
+        _.outTo[CaseTemplateOrganisation]
+          .inTo[RoleOrganisation]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+          .inTo[UserRole]
+          .has(Key("login") of authContext.userId)
+      ))
 
   def customFields: ScalarSteps[CustomFieldWithValue] =
     ScalarSteps(

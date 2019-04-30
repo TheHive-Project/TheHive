@@ -1,16 +1,17 @@
 package org.thp.thehive.controllers.v1
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.Failure
 
 import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
+import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
@@ -27,11 +28,12 @@ class UserCtrl @Inject()(
     implicit val ec: ExecutionContext)
     extends UserConversion {
 
+  lazy val userProperties: Seq[PublicProperty[_, _]] = userProperties(userSrv)
+
   def current: Action[AnyContent] =
     entryPoint("current user")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        userSrv
-          .get(request.userId)
+        userSrv.current
           .richUser(request.organisation)
           .getOrFail()
           .map(user ⇒ Results.Ok(user.toJson))
@@ -51,9 +53,11 @@ class UserCtrl @Inject()(
               user = userSrv.create(inputUser, organisation, profile)
             } yield user
           }
-          .map { user ⇒
-            inputUser.password.foreach(password ⇒ authSrv.setPassword(user._id, password))
-            Results.Created(user.toJson)
+          .flatMap { user ⇒
+            inputUser.password
+              .map(password ⇒ authSrv.setPassword(user._id, password))
+              .flip
+              .map(_ ⇒ Results.Created(user.toJson))
           }
       }
 
@@ -81,10 +85,13 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract('user, UpdateFieldsParser[InputUser])
+      .extract('user, FieldsParser.update("user", userProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        userSrv.update(userId, request.body('user))
-        Success(Results.NoContent)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('user)
+        userSrv // Authorisation is managed in public properties
+          .get(userId)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def setPassword(userId: String): Action[AnyContent] =

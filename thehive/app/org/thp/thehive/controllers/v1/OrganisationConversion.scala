@@ -6,6 +6,9 @@ import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.Organisation
 import scala.language.implicitConversions
 
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.services.OrganisationSteps
+
 trait OrganisationConversion {
   implicit def fromInputOrganisation(inputOrganisation: InputOrganisation): Organisation =
     inputOrganisation
@@ -18,4 +21,9 @@ trait OrganisationConversion {
         .into[OutputOrganisation]
         .transform
     )
+
+  val organisationProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[OrganisationSteps]
+      .property[String]("name")(_.simple.updatable)
+      .build
 }

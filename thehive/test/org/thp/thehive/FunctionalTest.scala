@@ -20,6 +20,7 @@ import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
 import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
 import org.thp.thehive.controllers.v1.{TestCase, TestUser}
 import org.thp.thehive.dto.v1._
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AuditedDatabase, UserSrv}
 
 case class TestTask(
@@ -233,7 +234,6 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "list audit" in {
-//          // format: off
 //          val asyncResp = client.audit.list
 //          await(asyncResp).map(StableAudit.apply) must contain(
 //            exactly(
@@ -252,7 +252,6 @@ class FunctionalTest extends PlaySpecification {
 //              StableAudit(_createdBy="admin",  operation="Creation", objType="CustomField",      summary=Map("CustomField"      → Map("Creation" → 1))),
 //              StableAudit(_createdBy="admin",  operation="Creation", objType="Case",             summary=Map("Case"             → Map("Creation" → 1)))
 //            ))
-//          // format: on
           pending
         }
 
@@ -312,12 +311,7 @@ class FunctionalTest extends PlaySpecification {
           val asyncResp =
             client.user.create(InputUser("testAdmin", "Admin user in test organisation", Some("secret"), "admin", Some("test")))
           user3 = TestUser(await(asyncResp))
-          val expected = TestUser(
-            "testAdmin",
-            "Admin user in test organisation",
-            "admin",
-            Set("manageCase", "manageAlert", "manageUser", "manageOrganisation"),
-            "test")
+          val expected = TestUser("testAdmin", "Admin user in test organisation", "admin", Permissions.all.map(_.toString), "test")
           user3 must_== expected
         }
       }

@@ -7,5 +7,7 @@ object Permissions {
   val manageAlert: Permission        = Permission("manageAlert")
   val manageUser: Permission         = Permission("manageUser")
   val manageOrganisation: Permission = Permission("manageOrganisation")
-  val all: Set[Permission]           = Set(manageCase, manageAlert, manageUser, manageOrganisation)
+  val manageCaseTemplate: Permission = Permission("manageCaseTemplate")
+  val manageTask: Permission         = Permission("manageTask")
+  val all: Set[Permission]           = Set(manageCase, manageAlert, manageUser, manageOrganisation, manageCaseTemplate)
 }

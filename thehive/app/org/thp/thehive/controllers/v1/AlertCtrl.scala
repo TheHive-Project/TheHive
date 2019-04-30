@@ -4,8 +4,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v1.InputAlert
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
@@ -26,7 +27,7 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
           caseTemplate ← caseTemplateName.map { ct ⇒
             caseTemplateSrv
               .get(ct)
-              .available
+              .visible
               .richCaseTemplate
               .getOrFail()
           }.flip
@@ -60,16 +61,14 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract('alert, UpdateFieldsParser[InputAlert])
+      .extract('alert, FieldsParser.update("alertUpdate", alertProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
         alertSrv
           .get(alertId)
           .can(Permissions.manageAlert)
-          .existsOrFail()
-          .map { _ ⇒
-            alertSrv.update(alertId, request.body('alert))
-            Results.NoContent
-          }
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def mergeWithCase(alertId: String, caseId: String) = ???

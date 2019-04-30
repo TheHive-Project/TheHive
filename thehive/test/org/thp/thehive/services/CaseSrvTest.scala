@@ -119,28 +119,28 @@ class CaseSrvTest extends PlaySpecification {
 
       "merge two cases" in db.transaction { implicit graph ⇒
         pending
-//        Seq("#2", "#3").toTry(caseSrv.getOrFail) must beSuccessfulTry.withValue { cases: Seq[Case with Entity] ⇒
-//          val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.initialAuthContext)
-//
-//          mergedCase.title must_=== "case#2 / case#3"
-//          mergedCase.description must_=== "description of case #2\n\ndescription of case #3"
-//          mergedCase.severity must_=== 2
-//          mergedCase.startDate must_=== new Date(1531667370000L)
-//          mergedCase.endDate must beNone
-//          mergedCase.tags must_=== Nil
-//          mergedCase.flag must_=== false
-//          mergedCase.tlp must_=== 2
-//          mergedCase.pap must_=== 2
-//          mergedCase.status must_=== CaseStatus.open
-//          mergedCase.summary must beNone
-//          mergedCase.impactStatus must beNone
-//          mergedCase.user must beSome("test")
-//          mergedCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
-//            allOf[(String, String, Option[Any])](
-//              ("boolean1", "boolean", Some(true)),
-//              ("string1", "string", Some("string1 custom field"))
-//            ))
-//        }
+      //        Seq("#2", "#3").toTry(caseSrv.getOrFail) must beSuccessfulTry.withValue { cases: Seq[Case with Entity] ⇒
+      //          val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.initialAuthContext)
+      //
+      //          mergedCase.title must_=== "case#2 / case#3"
+      //          mergedCase.description must_=== "description of case #2\n\ndescription of case #3"
+      //          mergedCase.severity must_=== 2
+      //          mergedCase.startDate must_=== new Date(1531667370000L)
+      //          mergedCase.endDate must beNone
+      //          mergedCase.tags must_=== Nil
+      //          mergedCase.flag must_=== false
+      //          mergedCase.tlp must_=== 2
+      //          mergedCase.pap must_=== 2
+      //          mergedCase.status must_=== CaseStatus.open
+      //          mergedCase.summary must beNone
+      //          mergedCase.impactStatus must beNone
+      //          mergedCase.user must beSome("test")
+      //          mergedCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
+      //            allOf[(String, String, Option[Any])](
+      //              ("boolean1", "boolean", Some(true)),
+      //              ("string1", "string", Some("string1 custom field"))
+      //            ))
+      //        }
       }
 
       "add custom field with wrong type" in db.transaction { implicit graph ⇒
@@ -160,6 +160,13 @@ class CaseSrvTest extends PlaySpecification {
         caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity ⇒
           caseSrv.setCustomField(`case`, "boolean1", false)(graph, dummyUserSrv.initialAuthContext) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
+        }
+      }
+
+      "update case title" in db.transaction { implicit graph ⇒
+        caseSrv.get("#4").update("title" → "new title")(dummyUserSrv.initialAuthContext)
+        caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity ⇒
+          `case`.title must_=== "new title"
         }
       }
     }

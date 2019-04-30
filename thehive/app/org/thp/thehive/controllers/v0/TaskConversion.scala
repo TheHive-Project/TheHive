@@ -1,17 +1,16 @@
 package org.thp.thehive.controllers.v0
 import java.util.Date
 
-import gremlin.scala.Vertex
+import scala.language.implicitConversions
+
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.PublicProperty.readonly
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.TaskSteps
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.services._
-import scala.language.implicitConversions
 
 trait TaskConversion {
   implicit def fromInputTask(inputTask: InputTask): Task =
@@ -32,18 +31,16 @@ trait TaskConversion {
         .transform
     )
 
-  def outputTaskProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
-    // format: off
-    PublicPropertyListBuilder[TaskSteps, Vertex]
-      .property[String]("title").simple
-      .property[Option[String]]("description").simple
-      .property[String]("status").simple
-      .property[Boolean]("flag").simple
-      .property[Option[Date]]("startDate").simple
-      .property[Option[Date]]("endDate").simple
-      .property[Int]("order").simple
-      .property[Option[Date]]("dueDate").simple
-      .property[Option[String]]("owner").derived(_.outTo[TaskUser].value("login"))(readonly)
+  val taskProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[TaskSteps]
+      .property[String]("title")(_.simple.updatable)
+      .property[Option[String]]("description")(_.simple.updatable)
+      .property[String]("status")(_.simple.updatable)
+      .property[Boolean]("flag")(_.simple.updatable)
+      .property[Option[Date]]("startDate")(_.simple.updatable)
+      .property[Option[Date]]("endDate")(_.simple.updatable)
+      .property[Int]("order")(_.simple.updatable)
+      .property[Option[Date]]("dueDate")(_.simple.updatable)
+      .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).readonly)
       .build
-  // format: on
 }

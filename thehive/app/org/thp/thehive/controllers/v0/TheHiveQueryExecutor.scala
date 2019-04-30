@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
 
-import gremlin.scala.{Element, Graph, GremlinScala, StepLabel, Vertex}
+import gremlin.scala.{Graph, GremlinScala, StepLabel, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -33,9 +33,9 @@ class TheHiveQueryExecutor @Inject()(
     with AlertConversion
     with ObservableConversion {
 
-  override val publicProperties: List[PublicProperty[_ <: Element, _, _]] =
+  override val publicProperties: List[PublicProperty[_, _]] =
     caseProperties ++
-      outputTaskProperties ++
+      taskProperties ++
       alertProperties ++
       observableProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
@@ -97,16 +97,14 @@ object ParentIdFilter {
 
 class ParentIdInputFilter(parentId: String) extends InputFilter {
   override def apply[S <: ScalliSteps[_, _, _]](
-      publicProperties: List[PublicProperty[_ <: Element, _, _]],
+      publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext): S = {
     val stepLabel   = StepLabel[Product with Entity]()
     val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
 
-    implicit val db: Database = vertexSteps.db
-
-    val findParent =
+    val findParent: GremlinScala[Vertex] =
       if (stepType =:= ru.typeOf[TaskSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseTask]
       else if (stepType =:= ru.typeOf[ObservableSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseObservable]
       else if (stepType =:= ru.typeOf[LogSteps]) vertexSteps.as(stepLabel).raw.inTo[TaskLog]
@@ -129,7 +127,7 @@ object ParentQueryFilter {
 
 class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
   override def apply[S <: ScalliSteps[_, _, _]](
-      publicProperties: List[PublicProperty[_ <: Element, _, _]],
+      publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext): S = {
@@ -149,11 +147,13 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
   }
 }
 
-class ParentFilterQuery(publicProperties: List[PublicProperty[_ <: Element, _, _]]) extends FilterQuery(publicProperties) {
+class ParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
   override val paramParser: FieldsParser[InputFilter] = FieldsParser("parentIdFilter") {
-    case (path, FObjOne("_and", FSeq(fields)))                ⇒ fields.validatedBy(field ⇒ paramParser((path / "_and").toSeq, field)).map(and)
-    case (path, FObjOne("_or", FSeq(fields)))                 ⇒ fields.validatedBy(field ⇒ paramParser((path / "_or").toSeq, field)).map(or)
-    case (path, FObjOne("_not", field))                       ⇒ paramParser(path / "_not", field).map(not)
+    case (path, FObjOne("_and", FSeq(fields))) ⇒
+      fields.zipWithIndex.validatedBy { case (field, index) ⇒ paramParser((path :/ "_and").toSeq(index), field) }.map(and)
+    case (path, FObjOne("_or", FSeq(fields))) ⇒
+      fields.zipWithIndex.validatedBy { case (field, index) ⇒ paramParser((path :/ "_or").toSeq(index), field) }.map(or)
+    case (path, FObjOne("_not", field))                       ⇒ paramParser(path :/ "_not", field).map(not)
     case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) ⇒ Good(new ParentIdInputFilter(parentId))
     case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) ⇒
       paramParser.apply(path, queryField).map(query ⇒ new ParentQueryInputFilter(query))

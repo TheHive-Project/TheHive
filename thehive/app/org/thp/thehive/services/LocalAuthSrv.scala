@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Random, Try}
 
 import play.api.Logger
 import play.api.mvc.RequestHeader
@@ -59,7 +59,6 @@ class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Local
 
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
     db.tryTransaction { implicit graph ⇒
-      userSrv.update(username, "password", Some(LocalAuthSrv.hashPassword(newPassword)))
-      Success(())
+      userSrv.get(username).update("password" → Some(LocalAuthSrv.hashPassword(newPassword)))
     }
 }

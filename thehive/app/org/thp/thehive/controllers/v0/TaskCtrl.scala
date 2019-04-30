@@ -1,17 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
-import org.thp.scalligraph.query.Query
+import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputTask
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
 
 @Singleton
@@ -62,14 +62,14 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract('task, UpdateFieldsParser[InputTask])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          if (taskSrv.isAvailableFor(taskId)) {
-            taskSrv.update(taskId, outputTaskProperties(db), request.body('task))
-            Success(Results.NoContent)
-          } else Failure(AuthorizationError(s"Task $taskId doesn't exist or permission is insufficient"))
-        }
+      .extract('task, FieldsParser.update("task", taskProperties))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
+        taskSrv
+          .get(taskId)
+          .can(Permissions.manageTask)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def stats(): Action[AnyContent] = {

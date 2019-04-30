@@ -35,7 +35,7 @@ object InputCustomFieldValue {
           case (name, FNull)            ⇒ Good(InputCustomFieldValue(name, None))
           case (name, other) ⇒
             Bad(One(
-              InvalidFormatAttributeError(name, "CustomFieldValue", Seq("field: string", "field: number", "field: boolean", "field: string"), other)))
+              InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: string"), other)))
         }
         .map(_.toSeq)
   }

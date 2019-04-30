@@ -8,7 +8,7 @@ import scala.util.{Success, Try}
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P ⇒ JP}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
@@ -75,7 +75,7 @@ class CaseSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext): Try[Unit] =
     getCustomField(`case`, customField.name) match {
-      case Some(cf) ⇒ Success(caseCustomFieldSrv.update(cf.customFieldValue._id, cf.`type`.name + "Value", Some(value)))
+      case Some(cf) ⇒ caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
       case None ⇒
         customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField ⇒
           caseCustomFieldSrv.create(caseCustomField, `case`, customField)
@@ -171,6 +171,18 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
     raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
   )
+
+  def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
+    newInstance(
+      raw.filter(
+        _.inTo[ShareCase]
+          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .inTo[OrganisationShare]
+          .inTo[RoleOrganisation]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+          .inTo[UserRole]
+          .has(Key("login") of authContext.userId)
+      ))
 
   def getLast: CaseSteps = newInstance(raw.order(By(Key[Int]("number"), Order.decr)))
 

@@ -7,10 +7,11 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
@@ -42,20 +43,25 @@ class UserCtrl @Inject()(
     entryPoint("create user")
       .extract('user, FieldsParser[InputUser])
       .authenticated { implicit request ⇒
+        val inputUser: InputUser = request.body('user)
         db.tryTransaction { implicit graph ⇒
-          val inputUser: InputUser = request.body('user)
-          val organisationName     = inputUser.organisation.getOrElse(request.organisation)
-          for {
-            organisation ← organisationSrv.getOrFail(organisationName)
-            profile ← if (inputUser.roles.contains("admin")) profileSrv.getOrFail("admin")
-            else if (inputUser.roles.contains("write")) profileSrv.getOrFail("analyst")
-            else if (inputUser.roles.contains("read")) profileSrv.getOrFail("read-only")
-            else ???
-            // TODO check if the requester can create a new user in that organisation
-            richUser = userSrv.create(inputUser, organisation, profile)
-            _        = inputUser.password.foreach(password ⇒ authSrv.setPassword(richUser._id, password))
-          } yield Results.Created(richUser.toJson)
-        }
+            val organisationName = inputUser.organisation.getOrElse(request.organisation)
+            for {
+              _            ← userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
+              organisation ← organisationSrv.getOrFail(organisationName)
+              profile ← if (inputUser.roles.contains("admin")) profileSrv.getOrFail("admin")
+              else if (inputUser.roles.contains("write")) profileSrv.getOrFail("analyst")
+              else if (inputUser.roles.contains("read")) profileSrv.getOrFail("read-only")
+              else ???
+              user = userSrv.create(inputUser, organisation, profile)
+            } yield user
+          }
+          .flatMap { user ⇒
+            inputUser.password
+              .map(password ⇒ authSrv.setPassword(user._id, password))
+              .flip
+              .map(_ ⇒ Results.Created(user.toJson))
+          }
       }
 
   def get(userId: String): Action[AnyContent] =
@@ -88,12 +94,13 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract('user, UpdateFieldsParser[InputUser])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          userSrv.update(userId, request.body('user))
-          Success(Results.NoContent)
-        }
+      .extract('user, FieldsParser.update("user", userProperties(userSrv)))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('user)
+        userSrv // Authorisation is managed in public properties
+          .get(userId)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def setPassword(userId: String): Action[AnyContent] =

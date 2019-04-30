@@ -1,11 +1,9 @@
 package org.thp.thehive.controllers.v1
 
-import gremlin.scala.Element
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.FieldsParser
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query._
-import org.thp.thehive.dto.v1.{OutputCase, OutputOrganisation, OutputTask, OutputUser}
 import org.thp.thehive.dto.v1.{OutputCase, OutputOrganisation, OutputTask, OutputUser}
 import org.thp.thehive.models.{Organisation, RichCase, RichUser, Task}
 import org.thp.thehive.services._
@@ -25,7 +23,7 @@ class TheHiveQueryExecutor @Inject()(
     with UserConversion
     with OrganisationConversion {
 
-  override val publicProperties: List[PublicProperty[_ <: Element, _, _]] = outputCaseProperties
+  override val publicProperties: List[PublicProperty[_, _]] = caseProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",

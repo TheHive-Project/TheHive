@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
@@ -43,11 +43,25 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
 class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
+  @deprecated("", "")
   def availableFor(authContext: AuthContext): TaskSteps =
     availableFor(authContext.organisation)
 
+  @deprecated("", "")
   def availableFor(organisation: String): TaskSteps = ???
 //    newInstance(raw.as("x").where(x ⇒ new CaseSteps(x.inTo[CaseTask]).availableFor(organisation).raw))
+
+  def can(permission: Permission)(implicit authContext: AuthContext): TaskSteps =
+    newInstance(
+      raw.filter(
+        _.inTo[ShareTask]
+          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .inTo[OrganisationShare]
+          .inTo[RoleOrganisation]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+          .inTo[UserRole]
+          .has(Key("login") of authContext.userId)
+      ))
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 

@@ -6,9 +6,11 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v0.InputCaseTemplate
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
 
 @Singleton
@@ -36,7 +38,7 @@ class CaseTemplateCtrl @Inject()(entryPoint: EntryPoint, db: Database, caseTempl
         db.tryTransaction { implicit graph ⇒
           caseTemplateSrv
             .get(caseTemplateNameOrId)
-            .available
+            .visible
             .richCaseTemplate
             .getOrFail()
             .map(richCaseTemplate ⇒ Results.Ok(richCaseTemplate.toJson))
@@ -47,7 +49,7 @@ class CaseTemplateCtrl @Inject()(entryPoint: EntryPoint, db: Database, caseTempl
     entryPoint("list case template")
       .authenticated { implicit request ⇒
         db.tryTransaction { implicit graph ⇒
-          val caseTemplates = caseTemplateSrv.initSteps.available.richCaseTemplate
+          val caseTemplates = caseTemplateSrv.initSteps.visible.richCaseTemplate
             .map(_.toJson)
             .toList()
           Success(Results.Ok(Json.toJson(caseTemplates)))
@@ -56,12 +58,14 @@ class CaseTemplateCtrl @Inject()(entryPoint: EntryPoint, db: Database, caseTempl
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract('caseTemplate, UpdateFieldsParser[InputCaseTemplate])
-      .authenticated { implicit request ⇒ // FIXME check organization
-        db.tryTransaction { implicit graph ⇒
-          caseTemplateSrv.update(caseTemplateNameOrId, caseTemplateProperties(db), request.body('caseTemplate))
-          Success(Results.NoContent)
-        }
+      .extract('caseTemplate, FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('caseTemplate)
+        caseTemplateSrv
+          .get(caseTemplateNameOrId)
+          .can(Permissions.manageCaseTemplate)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def search: Action[AnyContent] = list

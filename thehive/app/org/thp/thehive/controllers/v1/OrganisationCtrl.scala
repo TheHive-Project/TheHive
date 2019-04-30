@@ -4,8 +4,9 @@ import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v1.InputOrganisation
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{OrganisationSrv, UserSrv}
@@ -26,8 +27,8 @@ class OrganisationCtrl @Inject()(
         for {
           _    ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
           user ← userSrv.current.getOrFail()
-          inputOrganisation: InputOrganisation = request.body('organisation)
-          organisation                         = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
+          inputOrganisation = request.body('organisation)
+          organisation      = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
         } yield Results.Created(organisation.toJson)
       }
 
@@ -50,11 +51,13 @@ class OrganisationCtrl @Inject()(
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
-      .extract('organisation, UpdateFieldsParser[InputOrganisation])
+      .extract('organisation, FieldsParser.update("organisation", organisationProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        for {
-          _ ← userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
-          _ = organisationSrv.update(organisationId, request.body('organisation))
-        } yield Results.NoContent
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
+        userSrv.current
+          .organisations(Permissions.manageOrganisation)
+          .get(organisationId)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 }

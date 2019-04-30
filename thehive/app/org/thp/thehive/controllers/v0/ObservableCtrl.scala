@@ -10,7 +10,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
 import org.thp.scalligraph.query.Query
-import org.thp.thehive.dto.v0.{InputObservable, InputTask}
+import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
@@ -68,18 +68,18 @@ class ObservableCtrl @Inject()(
 //        }
 //      }
 
-  def update(taskId: String): Action[AnyContent] =
-    entryPoint("update task")
-      .extract('task, UpdateFieldsParser[InputTask])
-      .authenticated { _ ⇒
-        db.transaction { _ ⇒
-//          if (observableSrv.isAvailableFor(taskId)) {
-//            observableSrv.update(taskId, outputTaskProperties(db), request.body('task))
-//            Results.NoContent
-//          } else Results.Unauthorized(s"Task $taskId doesn't exist or permission is insufficient")
-          ???
-        }
-      }
+//  def update(taskId: String): Action[AnyContent] =
+//    entryPoint("update task")
+//      .extract('task, UpdateFieldsParser[InputTask])
+//      .authenticated { _ ⇒
+//        db.transaction { _ ⇒
+////          if (observableSrv.isAvailableFor(taskId)) {
+////            observableSrv.update(taskId, outputTaskProperties(db), request.body('task))
+////            Results.NoContent
+////          } else Results.Unauthorized(s"Task $taskId doesn't exist or permission is insufficient")
+//          ???
+//        }
+//      }
 
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")

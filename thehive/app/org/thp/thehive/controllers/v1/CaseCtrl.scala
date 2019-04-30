@@ -1,14 +1,12 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.{AuthorizationError, NotFoundError, RichOptionTry, RichSeq}
+import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.{NotFoundError, RichOptionTry, RichSeq}
 import org.thp.thehive.dto.v1.InputCase
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
@@ -39,7 +37,7 @@ class CaseCtrl @Inject()(
           caseTemplate ← caseTemplateName.map { templateName ⇒
             caseTemplateSrv
               .get(templateName)
-              .available
+              .visible
               .richCaseTemplate
               .getOrFail()
           }.flip
@@ -74,32 +72,35 @@ class CaseCtrl @Inject()(
           .map(richCase ⇒ Results.Ok(richCase.toJson))
       }
 
-  def list: Action[AnyContent] =
-    entryPoint("list case")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val cases = userSrv.current.organisations.cases.richCase
-          .map(_.toJson)
-          .toList()
-        Success(Results.Ok(Json.toJson(cases)))
-      }
+//  def list: Action[AnyContent] =
+//    entryPoint("list case")
+//      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+//        val cases = userSrv.current.organisations.cases.richCase
+//          .map(_.toJson)
+//          .toList()
+//        Success(Results.Ok(Json.toJson(cases)))
+//      }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, UpdateFieldsParser[InputCase])
+      .extract('case, FieldsParser.update("case", caseProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        if (caseSrv.isAvailable(caseIdOrNumber)) {
-          caseSrv.update(caseIdOrNumber, outputCaseProperties(db), request.body('case))
-          Success(Results.NoContent)
-        } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
+        caseSrv
+          .get(caseIdOrNumber)
+          .can(Permissions.manageCase)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("delete case")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        if (caseSrv.isAvailable(caseIdOrNumber)) {
-          caseSrv.update(caseIdOrNumber, "status", "deleted")
-          Success(Results.NoContent)
-        } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
+        caseSrv
+          .get(caseIdOrNumber)
+          .can(Permissions.manageCase)
+          .update("status" → "deleted")
+          .map(_ ⇒ Results.NoContent)
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =

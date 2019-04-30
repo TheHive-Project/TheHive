@@ -6,9 +6,11 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v1.InputCaseTemplate
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, UserSrv}
 
 @Singleton
@@ -40,7 +42,7 @@ class CaseTemplateCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         caseTemplateSrv
           .get(caseTemplateNameOrId)
-          .available
+          .visible
           .richCaseTemplate
           .getOrFail()
           .map(richCaseTemplate ⇒ Results.Ok(richCaseTemplate.toJson))
@@ -49,7 +51,7 @@ class CaseTemplateCtrl @Inject()(
   def list: Action[AnyContent] =
     entryPoint("list case template")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val caseTemplates = caseTemplateSrv.initSteps.available.richCaseTemplate
+        val caseTemplates = caseTemplateSrv.initSteps.visible.richCaseTemplate
           .map(_.toJson)
           .toList()
         Success(Results.Ok(Json.toJson(caseTemplates)))
@@ -57,9 +59,13 @@ class CaseTemplateCtrl @Inject()(
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract('caseTemplate, UpdateFieldsParser[InputCaseTemplate])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒ // FIXME check organization
-        caseTemplateSrv.update(caseTemplateNameOrId, outputCaseTemplateProperties(db), request.body('caseTemplate))
-        Success(Results.NoContent)
+      .extract('caseTemplate, FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('caseTemplate)
+        caseTemplateSrv
+          .get(caseTemplateNameOrId)
+          .can(Permissions.manageCaseTemplate)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 }

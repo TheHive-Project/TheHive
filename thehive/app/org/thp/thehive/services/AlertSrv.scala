@@ -9,10 +9,9 @@ import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.{EdgeSrv, _}
-import org.thp.scalligraph.{EntitySteps, FPath, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
 import shapeless.HNil
 
@@ -52,35 +51,35 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
       }
   }
 
-  def setCustomField(`alert`: Alert with Entity, customFieldName: String, value: Any)(
+  def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
       implicit graph: Graph,
       authContext: AuthContext): Try[AlertCustomField with Entity] =
     for {
       cf  ← customFieldSrv.getOrFail(customFieldName)
-      acf ← setCustomField(`alert`, cf, value)
+      acf ← setCustomField(alert, cf, value)
     } yield acf
 
   // FIXME add or update
   // TODO do like caseSrv.setCustomField
-  def setCustomField(`alert`: Alert with Entity, customField: CustomField with Entity, value: Any)(
+  def setCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
       authContext: AuthContext): Try[AlertCustomField with Entity] =
     customField.`type`
       .asInstanceOf[CustomFieldType[Any]]
       .setValue(AlertCustomField(), value)
-      .map(alertCustomField ⇒ alertCustomFieldSrv.create(alertCustomField, `alert`, customField))
+      .map(alertCustomField ⇒ alertCustomFieldSrv.create(alertCustomField, alert, customField))
 
-  def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Unit =
-    db.update(graph, authContext, Model.vertex[Alert], alertId, Map(FPath("read") → UpdateOps.SetAttribute(false)))
+  def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(alertId).update("read" → false)
 
-  def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Unit =
-    db.update(graph, authContext, Model.vertex[Alert], alertId, Map(FPath("read") → UpdateOps.SetAttribute(true)))
+  def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(alertId).update("read" → true)
 
-  def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Unit =
-    db.update(graph, authContext, Model.vertex[Alert], alertId, Map(FPath("follow") → UpdateOps.SetAttribute(true)))
+  def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(alertId).update("follow" → true)
 
-  def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Unit =
-    db.update(graph, authContext, Model.vertex[Alert], alertId, Map(FPath("read") → UpdateOps.SetAttribute(false)))
+  def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(alertId).update("follow" → false)
 
   def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
       implicit graph: Graph,
@@ -128,7 +127,7 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
       alert ← getOrFail(alertId)
       case0 ← caseSrv.getOrFail(caseId)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      _           = caseSrv.update(caseId, "description", description)
+      _           = caseSrv.get(caseId).update("description" → description)
       _           = importObservables(alert, case0)
     } yield ()
 

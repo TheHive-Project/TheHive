@@ -1,17 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.Vertex
+import scala.language.implicitConversions
+
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PublicProperty.readonly
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{CaseCustomField, CaseTemplate, RichCaseTemplate}
 import org.thp.thehive.services.CaseTemplateSteps
-
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.services._
-import scala.language.implicitConversions
 
 trait CaseTemplateConversion extends TaskConversion with CustomFieldConversion {
 
@@ -36,28 +33,27 @@ trait CaseTemplateConversion extends TaskConversion with CustomFieldConversion {
         .withFieldComputed(_.task, _.tasks.map(toOutputTask(_).toOutput))
         .transform)
 
-  def caseTemplateProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
-    // format: off
-    PublicPropertyListBuilder[CaseTemplateSteps, Vertex]
-      .property[String]("name").simple
-      .property[Option[String]]("titlePrefix").simple
-      .property[Option[String]]("description").simple
-      .property[Option[Int]]("severity").simple
-      .property[Set[String]]("tags").simple
-      .property[Boolean]("flag").simple
-      .property[Option[Int]]("tlp").simple
-      .property[Option[Int]]("pap").simple
-      .property[Option[String]]("summary").simple
-      .property[String]("user").simple
-      .property[String]("customFieldName").derived(_.outTo[CaseCustomField].value("name"))(readonly)
-      .property[String]("customFieldDescription").derived(_.outTo[CaseCustomField].value("description"))(readonly)
-      .property[String]("customFieldType").derived(_.outTo[CaseCustomField].value("type"))(readonly)
-      .property[String]("customFieldValue").derived(
-      _.outToE[CaseCustomField].value("stringValue"),
-      _.outToE[CaseCustomField].value("booleanValue"),
-      _.outToE[CaseCustomField].value("integerValue"),
-      _.outToE[CaseCustomField].value("floatValue"),
-      _.outToE[CaseCustomField].value("dateValue"))(readonly)
+  val caseTemplateProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[CaseTemplateSteps]
+      .property[String]("name")(_.simple.updatable)
+      .property[Option[String]]("titlePrefix")(_.simple.updatable)
+      .property[Option[String]]("description")(_.simple.updatable)
+      .property[Option[Int]]("severity")(_.simple.updatable)
+      .property[Set[String]]("tags")(_.simple.updatable)
+      .property[Boolean]("flag")(_.simple.updatable)
+      .property[Option[Int]]("tlp")(_.simple.updatable)
+      .property[Option[Int]]("pap")(_.simple.updatable)
+      .property[Option[String]]("summary")(_.simple.updatable)
+      .property[String]("user")(_.simple.updatable)
+      .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
+      .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
+      .property[String]("customFieldType")(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
+      .property[String]("customFieldValue")(_.derived(
+        _.outToE[CaseCustomField].value[Any]("stringValue"),
+        _.outToE[CaseCustomField].value[Any]("booleanValue"),
+        _.outToE[CaseCustomField].value[Any]("integerValue"),
+        _.outToE[CaseCustomField].value[Any]("floatValue"),
+        _.outToE[CaseCustomField].value[Any]("dateValue")
+      ).readonly)
       .build
-  // format: on
 }

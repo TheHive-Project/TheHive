@@ -1,4 +1,5 @@
 package org.thp.thehive.services
+
 import java.util.{Date, UUID}
 
 import scala.reflect.runtime.{universe ⇒ ru}
@@ -6,13 +7,11 @@ import scala.util.Try
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.ParentProvider
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.UpdateOps
 import org.thp.scalligraph.models.Model.Base
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.PublicProperty
-import org.thp.scalligraph.services.{EdgeSrv, ElementSrv}
-import org.thp.scalligraph.{BadRequestError, FPath, ParentProvider}
+import org.thp.scalligraph.services.EdgeSrv
 import org.thp.thehive.models.{Audit, AuditableAction, Audited}
 
 @Singleton
@@ -48,65 +47,71 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
       from: FROM with Entity,
       to: TO with Entity): E with Entity = db.createEdge(graph, authContext, model, e, from, to)
 
-  override def update(graph: Graph, element: Element, authContext: AuthContext, model: Model, fields: Map[FPath, UpdateOps.Type]): Unit = {
-    val updateFields = fields.map {
-      case (FPath("password"), _) if model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
-      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
-        val mapping  = model.fields(field)
-        val oldValue = db.getProperty(element, field, mapping)
-        (field, oldValue.toString, value.toString)
-    }.toSeq
-
-    db.update(graph, element, authContext, model, fields)
-
-    updateFields.foreach {
-      case (field, oldValue, newValue) ⇒
-        create(
-          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
-          model.toDomain(element.asInstanceOf[model.ElementType]))(graph, authContext)
-    }
-  }
-
-  override def update(graph: Graph, authContext: AuthContext, model: Model, id: String, fields: Map[FPath, UpdateOps.Type]): Unit = {
-    val element = model.get(id)(db, graph)
-    update(graph, element, authContext, model, fields)
-  }
-
   override def update(
+      elementTraversal: GremlinScala[_ <: Element],
+      fields: Seq[(String, Any)],
+      model: Model,
       graph: Graph,
-      authContext: AuthContext,
-      elementSrv: ElementSrv[_, _],
-      id: String,
-      properties: Seq[PublicProperty[_, _, _]],
-      fields: Map[FPath, UpdateOps.Type]): Unit = {
-    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Element]]
+      authContext: AuthContext): Try[Unit] =
+    db.update(elementTraversal, fields, model, graph, authContext) // TODO
 
-    val updateFields: Seq[(String, String, String)] = fields.map {
-      case (FPath("password"), _) if elementSrv.model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
-      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
-        properties
-          .find(_.propertyName == field)
-          .flatMap { prop ⇒
-            prop
-              .asInstanceOf[PublicProperty[Element, _, _]]
-              .get(element, authContext)
-              .headOption
-              .asInstanceOf[Option[GremlinScala[Element] ⇒ GremlinScala[_]]]
-          }
-          .map(f ⇒ (field, f(element).toString, value.toString))
-          .getOrElse(throw BadRequestError(s"Field $field not found"))
-    }.toSeq
+  //  override def update(graph: Graph, element: Element, authContext: AuthContext, model: Model, fields: Map[FPath, UpdateOps.Type]): Try[Unit] = {
+//    val updateFields = fields.map {
+//      case (FPath("password"), _) if model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
+//      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
+//        val mapping  = model.fields(field)
+//        val oldValue = db.getProperty(element, field, mapping)
+//        (field, oldValue.toString, value.toString)
+//    }.toSeq
+//
+//    db.update(graph, element, authContext, model, fields)
+//
+//    updateFields.foreach {
+//      case (field, oldValue, newValue) ⇒
+//        create(
+//          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
+//          model.toDomain(element.asInstanceOf[model.ElementType]))(graph, authContext)
+//    }
+//    Success(()) // FIXME
+//  }
 
-    db.update(graph, authContext, elementSrv, id, properties, fields)
 
-    updateFields.foreach {
-      case (field, oldValue, newValue) ⇒
-        create(
-          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
-          elementSrv.model.toDomain(element.asInstanceOf[elementSrv.model.ElementType])
-        )(graph, authContext)
-    }
-  }
+//  override def update(
+//      graph: Graph,
+//      authContext: AuthContext,
+//      elementSrv: ElementSrv[_, _],
+//      id: String,
+//      properties: Seq[PublicProperty[_, _, _]],
+//      fields: Map[FPath, UpdateOps.Type]): Try[Unit] = {
+//    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Element]]
+//
+//    val updateFields: Seq[(String, String, String)] = fields.map {
+//      case (FPath("password"), _) if elementSrv.model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
+//      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
+//        properties
+//          .find(_.propertyName == field)
+//          .flatMap { prop ⇒
+//            prop
+//              .asInstanceOf[PublicProperty[Element, _, _]]
+//              .get(element, authContext)
+//              .headOption
+//              .asInstanceOf[Option[GremlinScala[Element] ⇒ GremlinScala[_]]]
+//          }
+//          .map(f ⇒ (field, f(element).toString, value.toString))
+//          .getOrElse(throw BadRequestError(s"Field $field not found"))
+//    }.toSeq
+//
+//    db.update(graph, authContext, elementSrv, id, properties, fields)
+//
+//    updateFields.foreach {
+//      case (field, oldValue, newValue) ⇒
+//        create(
+//          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
+//          elementSrv.model.toDomain(element.asInstanceOf[elementSrv.model.ElementType])
+//        )(graph, authContext)
+//    }
+//    Success(()) // FIXME
+//  }
 
   override def noTransaction[A](body: Graph ⇒ A): A                                                            = db.noTransaction(body)
   override def transaction[A](body: Graph ⇒ A): A                                                              = db.transaction(body)
@@ -138,7 +143,5 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
   override def setProperty[D](element: Element, key: String, value: D, mapping: Mapping[D, _, _]): Unit = db.setProperty(element, key, value, mapping)
   override def vertexStep(graph: Graph, model: Model): GremlinScala[Vertex]                             = db.vertexStep(graph, model)
   override def edgeStep(graph: Graph, model: Model): GremlinScala[Edge]                                 = db.edgeStep(graph, model)
-  //  override def loadBinary(id: String)(implicit graph: Graph): InputStream                               = db.loadBinary(id)(graph)
-//  override def saveBinary(id: String, is: InputStream)(implicit graph: Graph): Vertex                   = db.saveBinary(id, is)(graph)
   override lazy val extraModels: Seq[Model] = db.extraModels
 }

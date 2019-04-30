@@ -1,19 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success, Try}
-
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.RichSeq
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.{Database, Entity, ResultWithTotalSize}
+import org.thp.scalligraph.query.{PropertyUpdater, Query}
+import org.thp.thehive.dto.v0.InputCase
+import org.thp.thehive.models.{Permissions, RichCaseTemplate, User}
+import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, ResultWithTotalSize}
-import org.thp.scalligraph.query.Query
-import org.thp.scalligraph.{AuthorizationError, RichSeq}
-import org.thp.thehive.dto.v0.InputCase
-import org.thp.thehive.models.{RichCaseTemplate, User}
-import org.thp.thehive.services._
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -42,7 +40,7 @@ class CaseCtrl @Inject()(
               .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName ⇒
                 caseTemplateSrv
                   .get(templateName)
-                  .available
+                  .visible
                   .richCaseTemplate
                   .getOrFail()
                   .map(Some.apply)
@@ -124,24 +122,25 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, UpdateFieldsParser[InputCase])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          if (caseSrv.isAvailable(caseIdOrNumber)) {
-            caseSrv.update(caseIdOrNumber, caseProperties(db), request.body('case))
-            Success(Results.NoContent)
-          } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
-        }
+      .extract('case, FieldsParser.update("case", caseProperties))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
+        caseSrv
+          .get(caseIdOrNumber)
+          .can(Permissions.manageCase)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("delete case")
       .authenticated { implicit request ⇒
         db.tryTransaction { implicit graph ⇒
-          if (caseSrv.isAvailable(caseIdOrNumber)) {
-            caseSrv.update(caseIdOrNumber, "status", "deleted")
-            Success(Results.NoContent)
-          } else Failure(AuthorizationError(s"Case $caseIdOrNumber doesn't exist or permission is insufficient"))
+          caseSrv
+            .get(caseIdOrNumber)
+            .can(Permissions.manageCase)
+            .update("status" → "deleted")
+            .map(_ ⇒ Results.NoContent)
         }
       }
 

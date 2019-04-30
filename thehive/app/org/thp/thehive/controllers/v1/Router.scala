@@ -27,7 +27,7 @@ class Router @Inject()(
     case POST(p"/login") ⇒ authenticationCtrl.login()
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
-    case GET(p"/case")                  ⇒ caseCtrl.list
+//    case GET(p"/case")                  ⇒ caseCtrl.list
     case POST(p"/case")                 ⇒ caseCtrl.create
     case GET(p"/case/$caseId")          ⇒ caseCtrl.get(caseId)
     case PATCH(p"/case/$caseId")        ⇒ caseCtrl.update(caseId)

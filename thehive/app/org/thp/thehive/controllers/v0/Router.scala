@@ -106,7 +106,7 @@ class Router @Inject()(
     case GET(p"/case/artifact/$observableId") ⇒ observableCtrl.get(observableId)
 //    case DELETE(p"/case/artifact/$observableId")      ⇒ observableCtrl.delete(observableId)
 //    case PATCH(p"/case/artifact/_bulk")             ⇒ observableCtrl.bulkUpdate()
-    case PATCH(p"/case/artifact/$observableId") ⇒ observableCtrl.update(observableId)
+//    case PATCH(p"/case/artifact/$observableId") ⇒ observableCtrl.update(observableId)
 //    case GET(p"/case/artifact/$observableId/similar") ⇒ observableCtrl.findSimilar(observableId)
 
     case GET(p"/customField")  ⇒ customFieldCtrl.list

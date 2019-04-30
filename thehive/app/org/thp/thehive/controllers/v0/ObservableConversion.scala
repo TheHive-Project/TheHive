@@ -2,18 +2,17 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import gremlin.scala.{Key, Vertex}
+import scala.language.implicitConversions
+
+import gremlin.scala.Key
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PublicProperty.readonly
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models.{Observable, ObservableData, RichObservable}
 import org.thp.thehive.services.ObservableSteps
-
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.services._
-import scala.language.implicitConversions
 
 trait ObservableConversion {
   implicit def fromInputObservable(inputObservable: InputObservable): Observable =
@@ -41,19 +40,16 @@ trait ObservableConversion {
         .withFieldComputed(_.data, _.data.map(_.data))
         .transform)
 
-  def observableProperties(implicit db: Database): List[PublicProperty[Vertex, _, _]] =
-    // format: off
-    PublicPropertyListBuilder[ObservableSteps, Vertex]
-      .property[String]("status").derived(_.constant("Ok"))(readonly)
-      .property[Date]("startDate").derived(_.value(Key[Date]("_createdAt")))(readonly)
-      .property[Boolean]("ioc").simple
-      .property[Boolean]("sighted").simple
-      .property[Seq[String]]("tags").simple
-      .property[String]("message").simple
-      .property[String]("dataType").rename("type")
-      .property[Option[String]]("data").derived(_.outTo[ObservableData].value(Key[String]("data")))(readonly)
+  def observableProperties(implicit db: Database): List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[ObservableSteps]
+      .property[String]("status")(_.derived(_.constant("Ok")).readonly)
+      .property[Date]("startDate")(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
+      .property[Boolean]("ioc")(_.simple.updatable)
+      .property[Boolean]("sighted")(_.simple.updatable)
+      .property[Seq[String]]("tags")(_.simple.updatable)
+      .property[String]("message")(_.simple.updatable)
+      .property[String]("dataType")(_.rename("type").updatable)
+      .property[Option[String]]("data")(_.derived(_.outTo[ObservableData].value(Key[String]("data"))).readonly)
       // TODO add attachment ?
       .build
-  // format: on
-
 }
