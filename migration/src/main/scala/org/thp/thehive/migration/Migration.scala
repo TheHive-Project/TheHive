@@ -39,7 +39,8 @@ class Migration @Inject()(
     caseTemplateMigration: CaseTemplateMigration,
     caseMigration: CaseMigration,
     alertMigration: AlertMigration,
-    system: ActorSystem) {
+    system: ActorSystem
+) {
 
   lazy val logger = Logger(getClass)
 

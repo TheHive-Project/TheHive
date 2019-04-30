@@ -13,7 +13,8 @@ case class InputTask(
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
     order: Option[Int] = None,
-    dueDate: Option[Date] = None)
+    dueDate: Option[Date] = None
+)
 
 object InputTask {
   implicit val writes: OWrites[InputTask] = Json.writes[InputTask]
@@ -27,7 +28,8 @@ case class OutputTask(
     startDate: Option[Date],
     endDate: Option[Date],
     order: Int,
-    dueDate: Option[Date])
+    dueDate: Option[Date]
+)
 
 object OutputTask {
   implicit val format: OFormat[OutputTask] = Json.format[OutputTask]

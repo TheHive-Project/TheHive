@@ -15,7 +15,8 @@ case class InputObservable(
     tlp: Option[Int] = None,
     tags: Seq[String] = Nil,
     ioc: Option[Boolean] = None,
-    sighted: Option[Boolean] = None)
+    sighted: Option[Boolean] = None
+)
 
 object InputObservable {
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]

@@ -41,13 +41,13 @@ lazy val thehive = (project in file("."))
         fork in Test := true,
 //        javaOptions += "-Xmx1G",
         addCompilerPlugin(macroParadise),
-        scalafmtConfig := Some(file(".scalafmt.conf"))
+        scalafmtConfig := file(".scalafmt.conf")
       )),
     name := "thehive",
     compile := {
       scala.sys.process.Process(Seq("grunt", "wiredep"), baseDirectory.value / "frontend").!
       (compile in Compile).value
-    },
+    }
   )
 // format: on
 
@@ -100,10 +100,10 @@ lazy val thehiveMigration = (project in file("migration"))
     libraryDependencies ++= Seq(
       elastic4play,
       ehcache,
-      specs % Test,
+      specs % Test
     ),
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
     fork := true,
-    javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml"),
+    javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml")
   )

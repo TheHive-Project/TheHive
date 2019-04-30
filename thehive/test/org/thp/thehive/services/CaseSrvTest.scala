@@ -6,7 +6,7 @@ import play.api.test.PlaySpecification
 
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{DatabaseBuilder ⇒ _, _}
+import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
 

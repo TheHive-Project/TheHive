@@ -24,6 +24,7 @@ object OutputCustomField {
 case class InputCustomFieldValue(name: String, value: Option[Any])
 
 object InputCustomFieldValue {
+
   val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
     case (_, FObject(fields)) ⇒
       fields
@@ -34,8 +35,11 @@ object InputCustomFieldValue {
           case (name, FAny(value :: _)) ⇒ Good(InputCustomFieldValue(name, Some(value)))
           case (name, FNull)            ⇒ Good(InputCustomFieldValue(name, None))
           case (name, other) ⇒
-            Bad(One(
-              InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: string"), other)))
+            Bad(
+              One(
+                InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: string"), other)
+              )
+            )
         }
         .map(_.toSeq)
   }

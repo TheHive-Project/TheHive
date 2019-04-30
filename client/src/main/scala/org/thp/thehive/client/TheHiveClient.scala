@@ -10,6 +10,7 @@ import play.api.libs.ws.{WSAuthScheme, WSClient}
 import org.thp.thehive.dto.v1._
 
 class UserClient(baseUrl: String)(implicit ws: WSClient) extends BaseClient[InputUser, OutputUser](s"$baseUrl/api/v1/user") {
+
   def createInitial(user: InputUser)(implicit ec: ExecutionContext): Future[OutputUser] = {
     val body = Json.toJson(user)
     Client.logger.debug(s"Request POST $baseUrl/api/v1/user\n${Json.prettyPrint(body)}")
@@ -31,7 +32,9 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
 //  val share        = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
   val task  = new BaseClient[InputTask, OutputTask](s"$baseUrl/api/v1/task")
   val alert = new BaseClient[InputAlert, OutputAlert](s"$baseUrl/api/v1/alert")
+
   object audit {
+
     def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[OutputAudit]] = {
       Client.logger.debug(s"Request GET $baseUrl")
       ws.url(s"$baseUrl/api/v1/audit")
@@ -44,6 +47,7 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
         }
     }
   }
+
   def query(q: JsObject*)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
     ws.url(s"$baseUrl/api/v1/query")
       .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)

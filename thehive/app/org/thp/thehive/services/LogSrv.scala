@@ -27,9 +27,10 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv)(implicit db: Database) exte
     attachment
   }
 
-  def addAttachment(log: Log with Entity, attachment: Attachment with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext): LogAttachment with Entity =
+  def addAttachment(
+      log: Log with Entity,
+      attachment: Attachment with Entity
+  )(implicit graph: Graph, authContext: AuthContext): LogAttachment with Entity =
     logAttachmentSrv.create(LogAttachment(), log, attachment)
 }
 

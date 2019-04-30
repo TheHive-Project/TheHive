@@ -18,7 +18,8 @@ case class InputCaseTemplate(
     summary: Option[String] = None,
     tasks: Seq[InputTask] = Nil,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil)
+    customFieldValue: Seq[InputCustomFieldValue] = Nil
+)
 
 object InputCaseTemplate {
   implicit val writes: OWrites[InputCaseTemplate] = Json.writes[InputCaseTemplate]
@@ -39,7 +40,8 @@ case class OutputCaseTemplate(
     tlp: Option[Int],
     pap: Option[Int],
     summary: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty)
+    customFields: Set[OutputCustomFieldValue] = Set.empty
+)
 
 object OutputCaseTemplate {
   implicit val format: OFormat[OutputCaseTemplate] = Json.format[OutputCaseTemplate]

@@ -33,7 +33,8 @@ case class OutputAudit(
     oldValue: Option[String],
     newValue: Option[String],
     obj: OutputEntity,
-    summary: Map[String, Map[String, Int]])
+    summary: Map[String, Map[String, Int]]
+)
 
 object OutputAudit {
   implicit val format: OFormat[OutputAudit] = Json.format[OutputAudit]

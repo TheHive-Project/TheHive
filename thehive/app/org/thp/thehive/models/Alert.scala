@@ -12,8 +12,8 @@ case class AlertCustomField(
     booleanValue: Option[Boolean] = None,
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
-    dateValue: Option[Date] = None)
-    extends CustomFieldValue[AlertCustomField] {
+    dateValue: Option[Date] = None
+) extends CustomFieldValue[AlertCustomField] {
   override def setStringValue(value: String): AlertCustomField   = copy(stringValue = Some(value))
   override def setBooleanValue(value: Boolean): AlertCustomField = copy(booleanValue = Some(value))
   override def setIntegerValue(value: Int): AlertCustomField     = copy(integerValue = Some(value))
@@ -49,14 +49,16 @@ case class Alert(
     tlp: Int,
     pap: Int,
     read: Boolean,
-    follow: Boolean)
+    follow: Boolean
+)
 
 case class RichAlert(
     alert: Alert with Entity,
     organisation: String,
     customFields: Seq[CustomFieldWithValue],
     caseId: Option[String],
-    caseTemplate: Option[String]) {
+    caseTemplate: Option[String]
+) {
   val _id: String                = alert._id
   val _createdAt: Date           = alert._createdAt
   val _createdBy: String         = alert._createdBy
@@ -79,12 +81,14 @@ case class RichAlert(
 }
 
 object RichAlert {
+
   def apply(
       alert: Alert with Entity,
       organisation: String,
       customFields: Seq[CustomFieldWithValue],
       caseId: Option[String],
-      caseTemplate: Option[String]): RichAlert =
+      caseTemplate: Option[String]
+  ): RichAlert =
     alert
       .asInstanceOf[Alert]
       .into[RichAlert]

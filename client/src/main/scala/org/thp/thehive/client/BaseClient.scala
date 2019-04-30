@@ -9,6 +9,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient, WSResponse}
 
 case class ApplicationError(status: Int, body: JsValue) extends Exception(s"ApplicationError($status):\n${Json.prettyPrint(body)}")
+
 object ApplicationError {
   def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" → r.body)))
 }
@@ -19,6 +20,7 @@ object Client {
 }
 
 class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSClient) {
+
   def create(input: Input)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     val body = Json.toJson(input)
     Client.logger.debug(s"Request POST $baseUrl\n${Json.prettyPrint(body)}")

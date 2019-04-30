@@ -20,7 +20,8 @@ case class InputCase(
     summary: Option[String] = None,
     user: Option[String] = None,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil)
+    customFieldValue: Seq[InputCustomFieldValue] = Nil
+)
 
 object InputCase {
   implicit val writes: OWrites[InputCase] = Json.writes[InputCase]

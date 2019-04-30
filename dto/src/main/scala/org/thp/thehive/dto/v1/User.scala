@@ -20,7 +20,8 @@ case class OutputUser(
     name: String,
     profile: String,
     permissions: Set[String],
-    organisation: String)
+    organisation: String
+)
 
 object OutputUser {
   implicit val format: OFormat[OutputUser] = Json.format[OutputUser]

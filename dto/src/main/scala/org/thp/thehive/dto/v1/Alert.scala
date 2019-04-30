@@ -19,7 +19,8 @@ case class InputAlert(
     tlp: Option[Int] = None,
     pap: Option[Int] = None,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil)
+    customFieldValue: Seq[InputCustomFieldValue] = Nil
+)
 
 object InputAlert {
   implicit val writes: OWrites[InputAlert] = Json.writes[InputAlert]
@@ -45,7 +46,8 @@ case class OutputAlert(
     read: Boolean,
     follow: Boolean,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
-    caseTemplate: Option[String] = None)
+    caseTemplate: Option[String] = None
+)
 
 object OutputAlert {
   implicit val format: OFormat[OutputAlert] = Json.format[OutputAlert]

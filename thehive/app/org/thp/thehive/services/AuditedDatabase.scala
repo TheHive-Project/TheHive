@@ -27,6 +27,7 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
   override lazy val binaryMapping: SingleMapping[Array[Byte], String] = db.binaryMapping
 
   lazy val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
+
   def create(audit: Audit, entity: Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
     val createdAudit = auditSrv.create(audit)
     edgeSrv.create(Audited(), createdAudit, entity)
@@ -45,14 +46,16 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
       model: Model.Edge[E, FROM, TO],
       e: E,
       from: FROM with Entity,
-      to: TO with Entity): E with Entity = db.createEdge(graph, authContext, model, e, from, to)
+      to: TO with Entity
+  ): E with Entity = db.createEdge(graph, authContext, model, e, from, to)
 
   override def update(
       elementTraversal: GremlinScala[_ <: Element],
       fields: Seq[(String, Any)],
       model: Model,
       graph: Graph,
-      authContext: AuthContext): Try[Unit] =
+      authContext: AuthContext
+  ): Try[Unit] =
     db.update(elementTraversal, fields, model, graph, authContext) // TODO
 
   //  override def update(graph: Graph, element: Element, authContext: AuthContext, model: Model, fields: Map[FPath, UpdateOps.Type]): Try[Unit] = {
@@ -74,7 +77,6 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
 //    }
 //    Success(()) // FIXME
 //  }
-
 
 //  override def update(
 //      graph: Graph,
@@ -143,5 +145,5 @@ class AuditedDatabase @Inject()(originalDatabase: ParentProvider[Database], impl
   override def setProperty[D](element: Element, key: String, value: D, mapping: Mapping[D, _, _]): Unit = db.setProperty(element, key, value, mapping)
   override def vertexStep(graph: Graph, model: Model): GremlinScala[Vertex]                             = db.vertexStep(graph, model)
   override def edgeStep(graph: Graph, model: Model): GremlinScala[Edge]                                 = db.edgeStep(graph, model)
-  override lazy val extraModels: Seq[Model] = db.extraModels
+  override lazy val extraModels: Seq[Model]                                                             = db.extraModels
 }
