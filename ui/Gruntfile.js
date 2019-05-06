@@ -7,8 +7,7 @@ module.exports = function(grunt) {
     // Automatically load required Grunt tasks
     require('jit-grunt')(grunt, {
         useminPrepare: 'grunt-usemin',
-        ngtemplates: 'grunt-angular-templates',
-        cdnify: 'grunt-google-cdn'
+        ngtemplates: 'grunt-angular-templates'
     });
 
     grunt.loadNpmTasks('grunt-connect-proxy');
@@ -345,13 +344,6 @@ module.exports = function(grunt) {
                     src: '*.js',
                     dest: '.tmp/concat/scripts'
                 }]
-            }
-        },
-
-        // Replace Google CDN references
-        cdnify: {
-            dist: {
-                html: ['<%= yeoman.dist %>/*.html']
             }
         },
 
