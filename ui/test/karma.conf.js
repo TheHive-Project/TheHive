@@ -22,8 +22,6 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       // bower:js
-      'bower_components/es5-shim/es5-shim.js',
-      'bower_components/jquery/dist/jquery.js',
       'bower_components/angular/angular.js',
       'bower_components/angular-animate/angular-animate.js',
       'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
@@ -38,6 +36,7 @@ module.exports = function(config) {
       'bower_components/angular-timer/dist/angular-timer.js',
       'bower_components/angular-touch/angular-touch.js',
       'bower_components/angular-ui-router/release/angular-ui-router.js',
+      'bower_components/jquery/dist/jquery.js',
       'bower_components/bootstrap/dist/js/bootstrap.js',
       'bower_components/bootstrap-sass-official/assets/javascripts/bootstrap.js',
       'bower_components/dropzone/dist/min/dropzone.min.js',
@@ -50,6 +49,7 @@ module.exports = function(config) {
       'bower_components/angular-messages/angular-messages.js',
       'bower_components/ng-file-upload/ng-file-upload.js',
       'bower_components/ng-file-upload-shim/ng-file-upload-shim.js',
+      'bower_components/es5-shim/es5-shim.js',
       'bower_components/es6-shim/es6-shim.js',
       'bower_components/angular-clipboard/angular-clipboard.js',
       'bower_components/angular-local-storage/dist/angular-local-storage.js',

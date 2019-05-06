@@ -64,8 +64,6 @@
 
     <!-- build:js(.) scripts/vendor.js -->
     <!-- bower:js -->
-    <script src="bower_components/es5-shim/es5-shim.js"></script>
-    <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/angular/angular.js"></script>
     <script src="bower_components/angular-animate/angular-animate.js"></script>
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
@@ -80,6 +78,7 @@
     <script src="bower_components/angular-timer/dist/angular-timer.js"></script>
     <script src="bower_components/angular-touch/angular-touch.js"></script>
     <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+    <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
     <script src="bower_components/bootstrap-sass-official/assets/javascripts/bootstrap.js"></script>
     <script src="bower_components/dropzone/dist/min/dropzone.min.js"></script>
@@ -92,6 +91,7 @@
     <script src="bower_components/angular-messages/angular-messages.js"></script>
     <script src="bower_components/ng-file-upload/ng-file-upload.js"></script>
     <script src="bower_components/ng-file-upload-shim/ng-file-upload-shim.js"></script>
+    <script src="bower_components/es5-shim/es5-shim.js"></script>
     <script src="bower_components/es6-shim/es6-shim.js"></script>
     <script src="bower_components/angular-clipboard/angular-clipboard.js"></script>
     <script src="bower_components/angular-local-storage/dist/angular-local-storage.js"></script>
@@ -101,6 +101,7 @@
     <script src="bower_components/angular-marked/dist/angular-marked.js"></script>
     <script src="bower_components/bootstrap-markdown/js/bootstrap-markdown.js"></script>
     <script src="bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js"></script>
+    <script src="bower_components/angular-ui-ace/ui-ace.js"></script>
     <script src="bower_components/angular-page-loader/dist/angular-page-loader.js"></script>
     <script src="bower_components/angular-images-resizer/angular-images-resizer.js"></script>
     <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
@@ -131,13 +132,6 @@
     <script src="scripts/components/header.component.js"></script>
     <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/controllers/AboutCtrl.js"></script>
-    <script src="scripts/controllers/AuthenticationCtrl.js"></script>
-    <script src="scripts/controllers/LiveCtrl.js"></script>
-    <script src="scripts/controllers/MainPageCtrl.js"></script>
-    <script src="scripts/controllers/MigrationCtrl.js"></script>
-    <script src="scripts/controllers/RootCtrl.js"></script>
-    <script src="scripts/controllers/SearchCtrl.js"></script>
-    <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldDialogCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
@@ -150,6 +144,7 @@
     <script src="scripts/controllers/alert/AlertEventCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertListCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertStatsCtrl.js"></script>
+    <script src="scripts/controllers/AuthenticationCtrl.js"></script>
     <script src="scripts/controllers/case/CaseAlertsCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCloseModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
@@ -172,9 +167,15 @@
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
     <script src="scripts/controllers/cortex/ResponderActionDialogCtrl.js"></script>
-    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
     <script src="scripts/controllers/dashboard/DashboardsCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
+    <script src="scripts/controllers/LiveCtrl.js"></script>
+    <script src="scripts/controllers/MainPageCtrl.js"></script>
+    <script src="scripts/controllers/MigrationCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/RootCtrl.js"></script>
+    <script src="scripts/controllers/SearchCtrl.js"></script>
+    <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/directives/affixer.js"></script>
     <script src="scripts/directives/auto-focus.js"></script>
     <script src="scripts/directives/charts/c3Chart.js"></script>
@@ -240,10 +241,10 @@
     <script src="scripts/services/AuthenticationSrv.js"></script>
     <script src="scripts/services/CaseArtifactSrv.js"></script>
     <script src="scripts/services/CaseSrv.js"></script>
+    <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/CaseTabsSrv.js"></script>
     <script src="scripts/services/CaseTaskSrv.js"></script>
     <script src="scripts/services/CaseTemplate.js"></script>
-    <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/ChartSrv.js"></script>
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
@@ -265,8 +266,8 @@
     <script src="scripts/services/QueryBuilderSrv.js"></script>
     <script src="scripts/services/ReportTemplateSrv.js"></script>
     <script src="scripts/services/SearchSrv.js"></script>
-    <script src="scripts/services/StatSrv.js"></script>
     <script src="scripts/services/StatisticSrv.js"></script>
+    <script src="scripts/services/StatSrv.js"></script>
     <script src="scripts/services/StreamSrv.js"></script>
     <script src="scripts/services/StreamStatSrv.js"></script>
     <script src="scripts/services/TagSrv.js"></script>
