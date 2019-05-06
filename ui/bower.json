@@ -3,16 +3,15 @@
   "version": "3.3.0",
   "license": "AGPL-3.0",
   "dependencies": {
-    "angular": "1.5.8",
-    "angular-animate": "1.5.8",
+    "angular": "1.7.8",
+    "angular-animate": "1.7.8",
     "angular-bootstrap": "2.5.0",
-    "angular-cookies": "1.5.8",
-    "angular-json-human": "~1.2.1",
+    "angular-cookies": "1.7.8",
     "angular-moment": "~0.10.3",
-    "angular-resource": "1.5.8",
-    "angular-sanitize": "1.5.8",
+    "angular-resource": "1.7.8",
+    "angular-sanitize": "1.7.8",
     "angular-timer": "~1.3.4",
-    "angular-touch": "1.5.8",
+    "angular-touch": "1.7.8",
     "angular-ui-router": "~0.3.1",
     "animate.css": "~3.5.2",
     "bootstrap": "~3.3.7",
@@ -30,14 +29,13 @@
     "angular-ui-notification": "0.3.6",
     "c3": "~0.4.11",
     "css-spaces": "~0.3.5",
-    "angular-messages": "1.5.8",
+    "angular-messages": "1.7.8",
     "ng-file-upload-shim": "^12.2.5",
     "ng-file-upload": "^12.2.5",
     "es5-shim": "^4.5.9",
     "es6-shim": "^0.35.1",
     "angular-clipboard": "^1.5.0",
     "angular-local-storage": "^0.4.0",
-    "myforce-angularjs-dropdown-multiselect": "^1.10.2",
     "angular-markdown-editor-ghiscoding": "1.1.5",
     "angular-highlightjs": "^0.6.2",
     "highlight.js.origin": "^9.7.0",
@@ -55,10 +53,10 @@
     "js-url": "^2.5.2"
   },
   "devDependencies": {
-    "angular-mocks": "1.5.8"
+    "angular-mocks": "1.7.8"
   },
   "resolutions": {
-    "angular": "1.5.8",
+    "angular": "1.7.8",
     "moment": "~2.14.1",
     "jquery": "~3.1.0"
   }
