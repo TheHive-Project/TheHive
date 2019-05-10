@@ -45,11 +45,11 @@
                 $scope.migrating = true;
                 $http.post('./api/maintenance/migrate', {}, {
                     timeout: 10 * 60 * 60 * 1000 // 10 minutes
-                }).success(function() {
+                }).then(function(/*response*/) {
                     console.log('Migration started');
-                }).error(function(response) {
-                    if (angular.isObject(response)) {
-                        NotificationSrv.error('UserMgmtCtrl', response.data, response.status);
+                }).catch(function(err) {
+                    if (angular.isObject(err)) {
+                        NotificationSrv.error('UserMgmtCtrl', err.data, err.status);
                     } else {
                       console.log("Migration timeout");
                     }
@@ -59,7 +59,7 @@
             $scope.createInitialUser = function() {
                 console.log("createInitialUser");
                 UserSrv.save({
-                    'login': angular.lowercase($scope.newUser.login),
+                    'login': $scope.newUser.login.toLowerCase(),
                     'name': $scope.newUser.name,
                     'password': $scope.newUser.password,
                     'roles': ['read', 'write', 'admin']

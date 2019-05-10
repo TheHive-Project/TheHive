@@ -83,11 +83,13 @@ angular.module('thehive', [
                     currentUser: function($q, $state, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function(err, status) {
-                            return deferred.resolve(status === 520 ? status : null);
-                        });
+                          })
+                          .catch( function(err) {
+                            return deferred.resolve(err.status === 520 ? err.status : null);
+                          });
 
                         return deferred.promise;
                     },
@@ -149,16 +151,17 @@ angular.module('thehive', [
                     currentUser: function($q, $state, $timeout, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function( /*err, status*/ ) {
-
+                          })
+                          .catch( function(/*err*/) {
                             $timeout(function() {
                                 $state.go('login');
                             });
 
                             return deferred.reject();
-                        });
+                          });
 
                         return deferred.promise;
                     },
