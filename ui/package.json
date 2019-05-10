@@ -12,7 +12,6 @@
     "homepage": "https://thehive-project.org/",
     "dependencies": {},
     "devDependencies": {
-        "lodash": "^4.17.11",
         "autoprefixer": "^9.5.1",
         "grunt": "^1.0.4",
         "grunt-angular-templates": "^1.1.0",
@@ -42,7 +41,8 @@
         "jshint-stylish": "^2.2.1",
         "karma-jasmine": "2.0.1",
         "karma-phantomjs-launcher": "1.0.4",
-        "serve-static": "^1.13.2",
+        "lodash": "^4.17.11",
+        "serve-static": "^1.14.0",
         "time-grunt": "^2.0.0"
     },
     "engines": {
