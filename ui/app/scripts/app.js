@@ -40,7 +40,7 @@ angular.module('thehive', [
     })
     .config(function($compileProvider) {
         'use strict';
-        $compileProvider.debugInfoEnabled(false);
+        $compileProvider.debugInfoEnabled(false);        
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
