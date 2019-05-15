@@ -131,11 +131,11 @@ class CaseSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
     for {
       taskStats ← taskSrv.stats(and(
-        "_parent" ~= id,
+        withParent("case", id),
         "status" in ("Waiting", "InProgress", "Completed")), Seq(groupByField("status", selectCount)))
       artifactStats ← findSrv(
         artifactModel,
-        and("_parent" ~= id, "status" ~= "Ok"),
+        and(withParent("case", id), "status" ~= "Ok"),
         groupByField("status", selectCount))
     } yield Json.obj(("tasks", taskStats), ("artifacts", artifactStats))
   }
