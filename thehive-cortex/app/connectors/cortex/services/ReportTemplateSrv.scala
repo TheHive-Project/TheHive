@@ -1,8 +1,8 @@
 package connectors.cortex.services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 import akka.NotUsed
@@ -11,14 +11,14 @@ import play.api.Logger
 import play.api.libs.json.JsObject
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{ Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv }
-import connectors.cortex.models.{ ReportTemplate, ReportTemplateModel }
+import org.elastic4play.services.{Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv}
+import connectors.cortex.models.{ReportTemplate, ReportTemplateModel}
 import services.ArtifactSrv
 
 import org.elastic4play.database.ModifyConfig
 
 @Singleton
-class ReportTemplateSrv @Inject() (
+class ReportTemplateSrv @Inject()(
     reportTemplateModel: ReportTemplateModel,
     createSrv: CreateSrv,
     artifactSrv: ArtifactSrv,
@@ -26,7 +26,8 @@ class ReportTemplateSrv @Inject() (
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext) {
+    implicit val ec: ExecutionContext
+) {
 
   private[ReportTemplateSrv] lazy val logger = Logger(getClass)
 
