@@ -98,7 +98,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "try to get a case" in {
-        val request = FakeRequest("GET", s"/api/v/case/#1")
+        val request = FakeRequest("GET", s"/api/v0/case/#1")
           .withHeaders("user" → "user1")
         val result     = caseCtrl.get("#145")(request)
 
@@ -123,6 +123,45 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "open",
+          owner = Some("user1"),
+          stats = Json.obj()
+        ))
+
+        resultCase.toString shouldEqual expected.toString
+      }
+
+      "update a case properly" in {
+        val request = FakeRequest("PATCH", s"/api/v0/case/#1")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.obj(
+            "title"  → "new title",
+            "flag"   → false,
+            "tlp"    → 2,
+            "pap"    → 1,
+            "status" → "resolved"
+          ))
+        val result = caseCtrl.update("#1")(request)
+        status(result) must_=== 200
+        val resultCase = contentAsJson(result)
+        val resultCaseOutput = resultCase.as[OutputCase]
+
+        val expected = Json.toJson(OutputCase(
+          _id = resultCaseOutput._id,
+          id = resultCaseOutput.id,
+          createdBy = "admin",
+          updatedBy = Some("user1"),
+          createdAt = resultCaseOutput.createdAt,
+          updatedAt = resultCaseOutput.updatedAt,
+          _type = "case",
+          caseId = resultCaseOutput.caseId,
+          title = "new title",
+          description = "description of case #1",
+          severity = 2,
+          startDate = new Date(1531667370000L),
+          flag = false,
+          tlp = 2,
+          pap = 1,
+          status = "resolved",
           owner = Some("user1"),
           stats = Json.obj()
         ))

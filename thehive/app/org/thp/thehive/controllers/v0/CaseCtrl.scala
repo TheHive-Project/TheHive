@@ -129,7 +129,14 @@ class CaseCtrl @Inject()(
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
           .updateProperties(propertyUpdaters)
-          .map(_ ⇒ Results.NoContent)
+          .flatMap(_ ⇒ {
+            caseSrv
+              .get(caseIdOrNumber)
+              .visible
+              .richCase
+              .getOrFail()
+              .map(richCase ⇒ Results.Ok(richCase.toJson))
+          })
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
