@@ -20,40 +20,37 @@ class CaseTemplateCtrl @Inject()(entryPoint: EntryPoint, db: Database, caseTempl
   def create: Action[AnyContent] =
     entryPoint("create case template")
       .extract('caseTemplate, FieldsParser[InputCaseTemplate])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          val inputCaseTemplate: InputCaseTemplate = request.body('caseTemplate)
-          for {
-            organisation ← organisationSrv.getOrFail(request.organisation)
-            tasks        = inputCaseTemplate.tasks.map(fromInputTask)
-            customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
-            richCaseTemplate ← caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
-          } yield Results.Created(richCaseTemplate.toJson)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val inputCaseTemplate: InputCaseTemplate = request.body('caseTemplate)
+        for {
+          organisation ← organisationSrv.getOrFail(request.organisation)
+          tasks        = inputCaseTemplate.tasks.map(fromInputTask)
+          customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
+          richCaseTemplate ← caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
+        } yield Results.Created(richCaseTemplate.toJson)
       }
 
   def get(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("get case template")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          caseTemplateSrv
-            .get(caseTemplateNameOrId)
-            .visible
-            .richCaseTemplate
-            .getOrFail()
-            .map(richCaseTemplate ⇒ Results.Ok(richCaseTemplate.toJson))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        caseTemplateSrv
+          .get(caseTemplateNameOrId)
+          .visible
+          .richCaseTemplate
+          .getOrFail()
+          .map(richCaseTemplate ⇒ Results.Ok(richCaseTemplate.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list case template")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          val caseTemplates = caseTemplateSrv.initSteps.visible.richCaseTemplate
-            .map(_.toJson)
-            .toList()
-          Success(Results.Ok(Json.toJson(caseTemplates)))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val caseTemplates = caseTemplateSrv
+          .initSteps
+          .visible
+          .richCaseTemplate
+          .map(_.toJson)
+          .toList()
+        Success(Results.Ok(Json.toJson(caseTemplates)))
       }
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =

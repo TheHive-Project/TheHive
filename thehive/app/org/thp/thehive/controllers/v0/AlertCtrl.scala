@@ -23,8 +23,8 @@ class AlertCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     errorHandler: HttpErrorHandler,
-    val queryExecutor: TheHiveQueryExecutor)
-    extends QueryCtrl
+    val queryExecutor: TheHiveQueryExecutor
+) extends QueryCtrl
     with CaseConversion
     with CustomFieldConversion
     with AlertConversion {
@@ -35,48 +35,45 @@ class AlertCtrl @Inject()(
     entryPoint("create alert")
       .extract('alert, FieldsParser[InputAlert])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          val caseTemplateName: Option[String] = request.body('caseTemplate)
-          for {
-            caseTemplate ← caseTemplateName.fold[Try[Option[RichCaseTemplate]]](Success(None)) { ct ⇒
-              caseTemplateSrv
-                .get(ct)
-                .visible
-                .richCaseTemplate
-                .getOrFail()
-                .map(Some(_))
-            }
-            inputAlert: InputAlert = request.body('alert)
-            user         ← userSrv.getOrFail(request.userId)
-            organisation ← userSrv.getOrganisation(user)
-            customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-            richAlert ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
-          } yield Results.Created(richAlert.toJson)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val caseTemplateName: Option[String] = request.body('caseTemplate)
+        for {
+          caseTemplate ← caseTemplateName.fold[Try[Option[RichCaseTemplate]]](Success(None)) { ct ⇒
+            caseTemplateSrv
+              .get(ct)
+              .visible
+              .richCaseTemplate
+              .getOrFail()
+              .map(Some(_))
+          }
+          inputAlert: InputAlert = request.body('alert)
+          user         ← userSrv.getOrFail(request.userId)
+          organisation ← userSrv.getOrganisation(user)
+          customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
+          richAlert ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+        } yield Results.Created(richAlert.toJson)
       }
 
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          alertSrv
-            .get(alertId)
-            .visible
-            .richAlert
-            .getOrFail()
-            .map(alert ⇒ Results.Ok(alert.toJson))
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        alertSrv
+          .get(alertId)
+          .visible
+          .richAlert
+          .getOrFail()
+          .map(alert ⇒ Results.Ok(alert.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list alert")
-      .authenticated { implicit request ⇒
-        val alerts = db.transaction { implicit graph ⇒
-          alertSrv.initSteps.visible.richAlert
-            .map(_.toJson)
-            .toList()
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val alerts = alertSrv
+          .initSteps
+          .visible
+          .richAlert
+          .map(_.toJson)
+          .toList()
         Success(Results.Ok(Json.toJson(alerts)))
       }
 
@@ -96,86 +93,72 @@ class AlertCtrl @Inject()(
 
   def markAsRead(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as read")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .existsOrFail()
-            .map { _ ⇒
-              alertSrv.markAsRead(alertId)
-              Results.NoContent
-            }
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        alertSrv
+          .get(alertId)
+          .can(Permissions.manageAlert)
+          .existsOrFail()
+          .map { _ ⇒
+            alertSrv.markAsRead(alertId)
+            Results.NoContent
+          }
       }
 
   def markAsUnread(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as unread")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .existsOrFail()
-            .map { _ ⇒
-              alertSrv.markAsUnread(alertId)
-              Results.NoContent
-            }
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        alertSrv
+          .get(alertId)
+          .can(Permissions.manageAlert)
+          .existsOrFail()
+          .map { _ ⇒
+            alertSrv.markAsUnread(alertId)
+            Results.NoContent
+          }
       }
 
   def createCase(alertId: String): Action[AnyContent] =
     entryPoint("create case from alert")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          for {
-            (alert, organisation) ← alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
-            richCase              ← alertSrv.createCase(alert, None, organisation)
-          } yield Results.Created(richCase.toJson)
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          (alert, organisation) ← alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
+          richCase              ← alertSrv.createCase(alert, None, organisation)
+        } yield Results.Created(richCase.toJson)
       }
 
   def followAlert(alertId: String): Action[AnyContent] =
     entryPoint("follow alert")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .existsOrFail()
-            .map { _ ⇒
-              alertSrv.followAlert(alertId)
-              Results.NoContent
-            }
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        alertSrv
+          .get(alertId)
+          .can(Permissions.manageAlert)
+          .existsOrFail()
+          .map { _ ⇒
+            alertSrv.followAlert(alertId)
+            Results.NoContent
+          }
       }
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
     entryPoint("unfollow alert")
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .existsOrFail()
-            .map { _ ⇒
-              alertSrv.unfollowAlert(alertId)
-              Results.NoContent
-            }
-        }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        alertSrv
+          .get(alertId)
+          .can(Permissions.manageAlert)
+          .existsOrFail()
+          .map { _ ⇒
+            alertSrv.unfollowAlert(alertId)
+            Results.NoContent
+          }
       }
 
   def stats: Action[AnyContent] =
     entryPoint("alert stats")
       .extract('query, statsParser("listAlert"))
-      .authenticated { implicit request ⇒
+      .authTransaction(db) { implicit request ⇒ graph ⇒
         val queries: Seq[Query] = request.body('query)
         val results = queries
-          .map { query ⇒
-            db.transaction { graph ⇒
-              queryExecutor.execute(query, graph, request.authContext).toJson
-            }
-          }
+          .map(query ⇒ queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
             case (acc, o: JsObject) ⇒ acc ++ o
             case (acc, r) ⇒
@@ -188,11 +171,9 @@ class AlertCtrl @Inject()(
   def search: Action[AnyContent] =
     entryPoint("search alert")
       .extract('query, searchParser("listAlert"))
-      .authenticated { implicit request ⇒
+      .authTransaction(db) { implicit request ⇒ graph ⇒
         val query: Query = request.body('query)
-        val result = db.transaction { graph ⇒
-          queryExecutor.execute(query, graph, request.authContext)
-        }
+        val result       = queryExecutor.execute(query, graph, request.authContext)
         Success(Results.Ok((result.toJson \ "result").as[JsValue]).withHeaders("X-Total" → "100"))
       }
 }

@@ -20,8 +20,8 @@ class ObservableCtrl @Inject()(
     db: Database,
     observableSrv: ObservableSrv,
     caseSrv: CaseSrv,
-    val queryExecutor: TheHiveQueryExecutor)
-    extends QueryCtrl
+    val queryExecutor: TheHiveQueryExecutor
+) extends QueryCtrl
     with ObservableConversion {
 
   lazy val logger = Logger(getClass)
@@ -29,30 +29,26 @@ class ObservableCtrl @Inject()(
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
       .extract('artifact, FieldsParser[InputObservable])
-      .authenticated { implicit request ⇒
-        db.tryTransaction { implicit graph ⇒
-          val inputObservable: InputObservable = request.body('artifact)
-          caseSrv.getOrFail(caseId).map { `case` ⇒
-            val dataOrFile: Either[Data, FFile] = inputObservable.data.map(Data.apply).toLeft(inputObservable.attachment.get)
-            val createdObservable               = observableSrv.create(inputObservable, dataOrFile, Nil, `case`)
-            Results.Created(createdObservable.toJson)
-          }
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val inputObservable: InputObservable = request.body('artifact)
+        caseSrv.getOrFail(caseId).map { `case` ⇒
+          val dataOrFile: Either[Data, FFile] = inputObservable.data.map(Data.apply).toLeft(inputObservable.attachment.get)
+          val createdObservable               = observableSrv.create(inputObservable, dataOrFile, Nil, `case`)
+          Results.Created(createdObservable.toJson)
         }
       }
 
   def get(observableId: String): Action[AnyContent] =
     entryPoint("get observable")
-      .authenticated { _ ⇒
-        db.tryTransaction { implicit graph ⇒
-          observableSrv
-            .get(observableId)
-            //            .availableFor(request.organisation)
-            .richObservable
-            .getOrFail()
-            .map { observable ⇒
-              Results.Ok(observable.toJson)
-            }
-        }
+      .authTransaction(db) { _ ⇒ implicit graph ⇒
+        observableSrv
+          .get(observableId)
+          //            .availableFor(request.organisation)
+          .richObservable
+          .getOrFail()
+          .map { observable ⇒
+            Results.Ok(observable.toJson)
+          }
       }
 
 //  def list: Action[AnyContent] =
@@ -85,14 +81,10 @@ class ObservableCtrl @Inject()(
     val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")
     entryPoint("stats task")
       .extract('query, parser)
-      .authenticated { implicit request ⇒
+      .authTransaction(db) { implicit request ⇒ graph ⇒
         val queries: Seq[Query] = request.body('query)
         val results = queries
-          .map { query ⇒
-            db.transaction { graph ⇒
-              queryExecutor.execute(query, graph, request.authContext).toJson
-            }
-          }
+          .map(query ⇒ queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
             case (acc, o: JsObject) ⇒ acc ++ o
             case (acc, r) ⇒
@@ -106,12 +98,10 @@ class ObservableCtrl @Inject()(
   def search: Action[AnyContent] =
     entryPoint("search case")
       .extract('query, searchParser("listObservable", paged = false))
-      .authenticated { implicit request ⇒
+      .authTransaction(db) { implicit request ⇒ graph ⇒
         val query: Query = request.body('query)
-        val result = db.transaction { graph ⇒
-          queryExecutor.execute(query, graph, request.authContext)
-        }
-        val resp = (result.toJson \ "result").as[JsArray]
+        val result       = queryExecutor.execute(query, graph, request.authContext)
+        val resp         = (result.toJson \ "result").as[JsArray]
         result.toOutput match {
           case ResultWithTotalSize(_, size) ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → size.toString))
           case _                            ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → resp.value.size.toString))

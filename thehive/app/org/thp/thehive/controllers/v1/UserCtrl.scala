@@ -25,15 +25,16 @@ class UserCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,
     errorHandler: HttpErrorHandler,
-    implicit val ec: ExecutionContext)
-    extends UserConversion {
+    implicit val ec: ExecutionContext
+) extends UserConversion {
 
   lazy val userProperties: Seq[PublicProperty[_, _]] = userProperties(userSrv)
 
   def current: Action[AnyContent] =
     entryPoint("current user")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        userSrv.current
+        userSrv
+          .current
           .richUser(request.organisation)
           .getOrFail()
           .map(user ⇒ Results.Ok(user.toJson))
@@ -42,7 +43,7 @@ class UserCtrl @Inject()(
   def create: Action[AnyContent] =
     entryPoint("create user")
       .extract('user, FieldsParser[InputUser])
-      .authenticated { implicit request ⇒
+      .auth { implicit request ⇒
         val inputUser: InputUser = request.body('user)
         db.tryTransaction { implicit graph ⇒
             val organisationName = inputUser.organisation.getOrElse(request.organisation)
@@ -54,7 +55,8 @@ class UserCtrl @Inject()(
             } yield user
           }
           .flatMap { user ⇒
-            inputUser.password
+            inputUser
+              .password
               .map(password ⇒ authSrv.setPassword(user._id, password))
               .flip
               .map(_ ⇒ Results.Created(user.toJson))
@@ -99,7 +101,8 @@ class UserCtrl @Inject()(
       .extract('password, FieldsParser[String])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         for {
-          _ ← userSrv.current
+          _ ← userSrv
+            .current
             .organisations(Permissions.manageUser)
             .users
             .get(userId)
@@ -112,13 +115,11 @@ class UserCtrl @Inject()(
     entryPoint("change password")
       .extract('password, FieldsParser[String])
       .extract('currentPassword, FieldsParser[String])
-      .authenticated { implicit request ⇒
+      .auth { implicit request ⇒
         if (userId == request.userId) {
-          db.tryTransaction { _ ⇒
-            authSrv
-              .changePassword(userId, request.body('currentPassword), request.body('password))
-              .map(_ ⇒ Results.NoContent)
-          }
+          authSrv
+            .changePassword(userId, request.body('currentPassword), request.body('password))
+            .map(_ ⇒ Results.NoContent)
         } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
 
@@ -126,7 +127,8 @@ class UserCtrl @Inject()(
     entryPoint("get key")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         for {
-          _ ← userSrv.current
+          _ ← userSrv
+            .current
             .organisations(Permissions.manageUser)
             .users
             .get(userId)
@@ -140,7 +142,8 @@ class UserCtrl @Inject()(
     entryPoint("remove key")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         for {
-          _ ← userSrv.current
+          _ ← userSrv
+            .current
             .organisations(Permissions.manageUser)
             .users
             .get(userId)
@@ -154,7 +157,8 @@ class UserCtrl @Inject()(
     entryPoint("renew key")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         for {
-          _ ← userSrv.current
+          _ ← userSrv
+            .current
             .organisations(Permissions.manageUser)
             .users
             .get(userId)

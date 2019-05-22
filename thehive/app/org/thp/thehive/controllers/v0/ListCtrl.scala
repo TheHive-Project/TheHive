@@ -11,15 +11,16 @@ import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
 class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) extends CustomFieldConversion {
+
   def list: Action[AnyContent] =
     entryPoint("list")
-      .authenticated { _ ⇒
+      .auth { _ ⇒
         Success(Results.Ok(Json.arr("list_artifactDataType", "case_metrics", "ui_settings")))
       }
 
   def listItems(listName: String): Action[AnyContent] =
     entryPoint("list list items")
-      .authenticated { _ ⇒
+      .auth { _ ⇒
         val result = listName match {
           case "list_artifactDataType" ⇒
             Json.obj(
