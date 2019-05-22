@@ -8,6 +8,7 @@ import org.thp.scalligraph.query.{Query, QueryExecutor}
 
 trait QueryCtrl {
   val queryExecutor: QueryExecutor
+
   val rangeParser: FieldsParser[(Long, Long)] = FieldsParser.string.map("range") {
     case "all" ⇒ (0, Long.MaxValue)
     case r ⇒
@@ -17,6 +18,7 @@ trait QueryCtrl {
       if (end <= offset) (offset, offset + 10)
       else (offset, end)
   }
+
   val sortParser: FieldsParser[FSeq] = FieldsParser("sort") {
     case (_, FAny(s)) ⇒ Good(s)
     case (_, FSeq(s)) ⇒ s.validatedBy(FieldsParser.string.apply)
@@ -35,7 +37,7 @@ trait QueryCtrl {
   def statsParser(initialStep: FObject): FieldsParser[Seq[Query]] =
     FieldsParser[Seq[Query]]("query") {
       case (_, obj: FObject) ⇒
-        val filter = FObject.parser(obj.get("query")).map(_ + ("_name" → FString("filter")))
+        val filter = FObject.parser.optional(obj.get("query")).map(_.getOrElse(FObject("_any" → FUndefined)) + ("_name" → FString("filter")))
         val stats  = FSeq.parser(obj.get("stats")).flatMap(_.values.validatedBy(FObject.parser.apply))
         withGood(filter, stats)((goodFilter, goodStats) ⇒ goodStats.map(s ⇒ FSeq(initialStep, goodFilter, s + ("_name" → FString("aggregation")))))
           .flatMap(s ⇒ s.validatedBy(queryExecutor.parser.apply))
