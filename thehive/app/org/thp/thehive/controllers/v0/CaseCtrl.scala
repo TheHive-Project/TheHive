@@ -11,6 +11,7 @@ import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
+
 import scala.util.{Success, Try}
 
 @Singleton
