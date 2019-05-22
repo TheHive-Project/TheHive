@@ -2,15 +2,13 @@ package org.thp.thehive.controllers.v0
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
-
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
+import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
@@ -24,8 +22,10 @@ class UserCtrl @Inject()(
     profileSrv: ProfileSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
-    implicit val ec: ExecutionContext
-) extends UserConversion {
+    implicit val ec: ExecutionContext,
+    val queryExecutor: TheHiveQueryExecutor
+) extends UserConversion
+    with QueryCtrl {
 
   def current: Action[AnyContent] =
     entryPoint("current user")
@@ -172,5 +172,18 @@ class UserCtrl @Inject()(
           key ← authSrv
             .renewKey(userId)
         } yield Results.Ok(key)
+      }
+
+  def search: Action[AnyContent] =
+    entryPoint("search user")
+      .extract('query, searchParser("listUser"))
+      .authTransaction(db) { implicit request ⇒ graph ⇒
+        val query: Query = request.body('query)
+        val result       = queryExecutor.execute(query, graph, request.authContext)
+        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
+        result.toOutput match {
+          case ResultWithTotalSize(_, size) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
+          case _                            ⇒ Success(resp)
+        }
       }
 }

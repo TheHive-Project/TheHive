@@ -26,8 +26,9 @@ class TheHiveQueryExecutor @Inject()(
     observableSrv: ObservableSrv,
     alertSrv: AlertSrv,
     logSrv: LogSrv,
-    implicit val db: Database)
-    extends QueryExecutor
+    organisationSrv: OrganisationSrv,
+    implicit val db: Database
+) extends QueryExecutor
     with CaseConversion
     with TaskConversion
     with AlertConversion
@@ -42,8 +43,10 @@ class TheHiveQueryExecutor @Inject()(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
       FieldsParser[GetCaseParams],
-      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)),
+      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)
+    ),
     Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).visible(authContext)),
+    Query.init[UserSteps]("listUser", (graph, authContext) ⇒ organisationSrv.get(authContext.organisation)(graph).users),
     Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
     Query.init[AlertSteps]("listAlert", (graph, _) ⇒ alertSrv.initSteps(graph)),
     Query.init[ObservableSteps]("listObservable", (graph, _) ⇒ observableSrv.initSteps(graph)),
@@ -51,19 +54,23 @@ class TheHiveQueryExecutor @Inject()(
     Query.withParam[RangeParams, CaseSteps, ResultWithTotalSize[RichCase]](
       "page",
       FieldsParser[RangeParams],
-      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to)),
+      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to)
+    ),
     Query.withParam[RangeParams, AlertSteps, AlertSteps](
       "range",
       FieldsParser[RangeParams],
-      (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)),
+      (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)
+    ),
     Query.withParam[RangeParams, TaskSteps, ResultWithTotalSize[Task with Entity]](
       "page",
       FieldsParser[RangeParams],
-      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to)),
+      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to)
+    ),
     Query.withParam[RangeParams, ObservableSteps, ResultWithTotalSize[Observable with Entity]](
       "page",
       FieldsParser[RangeParams],
-      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to)),
+      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to)
+    ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) ⇒ alertSteps.richAlert.toList()),
     Query[ObservableSteps, List[RichObservable]]("toList", (ovservableSteps, _) ⇒ ovservableSteps.richObservable.toList()),
@@ -87,8 +94,10 @@ class TheHiveQueryExecutor @Inject()(
 }
 
 object ParentIdFilter {
+
   def unapply(field: Field): Option[(String, String)] =
-    FieldsParser.string
+    FieldsParser
+      .string
       .on("_type")
       .andThen("parentId")(FieldsParser.string.on("_id"))((_, _))
       .apply(field)
@@ -100,7 +109,8 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
-      authContext: AuthContext): S = {
+      authContext: AuthContext
+  ): S = {
     val stepLabel   = StepLabel[Product with Entity]()
     val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
 
@@ -117,8 +127,10 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
 }
 
 object ParentQueryFilter {
+
   def unapply(field: Field): Option[(String, Field)] =
-    FieldsParser.string
+    FieldsParser
+      .string
       .on("_type")
       .map("parentQuery")(parentType ⇒ (parentType, field.get("_query")))
       .apply(field)
@@ -130,7 +142,8 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
-      authContext: AuthContext): S = {
+      authContext: AuthContext
+  ): S = {
     val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
 
     implicit val db: Database = vertexSteps.db

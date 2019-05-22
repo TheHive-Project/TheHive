@@ -17,6 +17,7 @@ object UserSrv {
   val initUserPassword: String = "secret"
 
 }
+
 @Singleton
 class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
 
@@ -25,11 +26,13 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   override val initialValues: Seq[User] = Seq(
-    User(UserSrv.initUser, "Default admin user", None, UserStatus.ok, Some(LocalAuthSrv.hashPassword(UserSrv.initUserPassword))))
+    User(UserSrv.initUser, "Default admin user", None, UserStatus.ok, Some(LocalAuthSrv.hashPassword(UserSrv.initUserPassword)))
+  )
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
-      authContext: AuthContext): RichUser = {
+      authContext: AuthContext
+  ): RichUser = {
     val createdUser = create(user)
     roleSrv.create(createdUser, organisation, profile)
     RichUser(createdUser, profile.name, profile.permissions, organisation.name)
@@ -38,7 +41,8 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 
   def getOrganisation(user: User with Entity)(implicit graph: Graph): Try[Organisation with Entity] =
-    get(user.login).organisations
+    get(user.login)
+      .organisations
       .headOption()
       .fold[Try[Organisation with Entity]](Failure(InternalError(s"The user $user (${user._id}) has no organisation.")))(Success.apply)
 
@@ -54,6 +58,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     Try(UUID.fromString(id))
       .map(_ ⇒ getById(id))
       .getOrElse(getByLogin(id))
+
+  def visible(implicit authContext: AuthContext): UserSteps = newInstance(
+    raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
+  )
 
   def getById(id: String): UserSteps = new UserSteps(raw.has(Key("_id") of id))
 
@@ -80,18 +88,21 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           _.apply(By(__.value[String]("login")))
             .and(By(__.value[String]("name")))
             .and(By(__.out("UserRole").out("RoleOrganisation").value[String]("name")))
-            .and(By(__.out("UserRole").out("RoleProfile"))))
+            .and(By(__.out("UserRole").out("RoleProfile")))
+        )
         .map {
           case (userId, userName, organisationName, profile) ⇒
             AuthContextImpl(userId, userName, organisationName, requestId, profile.as[Profile].permissions)
-        })
+        }
+    )
 
   def richUser(organisation: String): ScalarSteps[RichUser] =
     new ScalarSteps[RichUser](
       raw
         .project(
           _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold())))
+            .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
+        )
         .collect {
           case (user, profiles) if profiles.size() == 1 ⇒
             val profile = profiles.get(0).as[Profile]

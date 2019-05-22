@@ -21,8 +21,8 @@ class Router @Inject()(
     statusCtrl: StatusCtrl,
     authenticationCtrl: AuthenticationCtrl,
     listCtrl: ListCtrl,
-    streamCtrl: StreamCtrl)
-    extends SimpleRouter {
+    streamCtrl: StreamCtrl
+) extends SimpleRouter {
 
   override def routes: Routes = {
 
@@ -64,6 +64,7 @@ class Router @Inject()(
     case GET(p"/user/$userId/key")              ⇒ userCtrl.getKey(userId)
     case DELETE(p"/user/$userId/key")           ⇒ userCtrl.removeKey(userId)
     case POST(p"/user/$userId/key/renew")       ⇒ userCtrl.renewKey(userId)
+    case POST(p"/user/_search")                 ⇒ userCtrl.search
 
     case GET(p"/list")                    ⇒ listCtrl.list()
     case DELETE(p"/list/$itemId")         ⇒ listCtrl.deleteItem(itemId)
