@@ -52,7 +52,7 @@ class UserCtrl @Inject() (
       else if (request.body.contains("key")) {
         Future.failed(AuthorizationError("You must use dedicated API (renewKey, removeKey) to update key"))
       }
-      else if (request.body.contains("role") && !request.authContext.roles.contains(Roles.admin)) {
+      else if (request.body.contains("roles") && !request.authContext.roles.contains(Roles.admin)) {
         Future.failed(AuthorizationError("You are not permitted to change user role"))
       }
       else if (request.body.contains("status") && !request.authContext.roles.contains(Roles.admin)) {
