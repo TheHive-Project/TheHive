@@ -25,7 +25,7 @@ class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration,
             "Play"        → getVersion(classOf[AbstractController])
           ),
           "connectors" → JsObject.empty,
-          "health"     → Json.obj("elasticsearch" → "UNKNOWN"), // FIXME
+          "health"     → Json.obj("elasticsearch" → "UNKNOWN"),
           "config" → Json.obj(
             "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
             "authType" → (authSrv match {
