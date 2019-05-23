@@ -16,6 +16,7 @@ class QueryTest extends PlaySpecification with Mockito with QueryCtrl {
     mock[AlertSrv],
     mock[LogSrv],
     mock[OrganisationSrv],
+    mock[UserSrv],
     mock[Database]
   )
 

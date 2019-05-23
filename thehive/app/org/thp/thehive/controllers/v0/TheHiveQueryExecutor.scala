@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
-
 import gremlin.scala.{Graph, GremlinScala, StepLabel, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -12,9 +10,11 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services._
-import org.thp.thehive.dto.v0.{OutputAlert, OutputCase, OutputObservable, OutputTask}
+import org.thp.thehive.dto.v0.{OutputAlert, OutputCase, OutputObservable, OutputTask, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 case class GetCaseParams(id: String)
 case class RangeParams(from: Long, to: Long)
@@ -27,18 +27,21 @@ class TheHiveQueryExecutor @Inject()(
     alertSrv: AlertSrv,
     logSrv: LogSrv,
     organisationSrv: OrganisationSrv,
+    userSrv: UserSrv,
     implicit val db: Database
 ) extends QueryExecutor
     with CaseConversion
     with TaskConversion
     with AlertConversion
-    with ObservableConversion {
+    with ObservableConversion
+    with UserConversion {
 
   override val publicProperties: List[PublicProperty[_, _]] =
     caseProperties ++
       taskProperties ++
       alertProperties ++
-      observableProperties
+      observableProperties ++
+      userProperties(userSrv)
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
@@ -72,14 +75,16 @@ class TheHiveQueryExecutor @Inject()(
       (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to)
     ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
+    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).toList()),
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) ⇒ alertSteps.richAlert.toList()),
-    Query[ObservableSteps, List[RichObservable]]("toList", (ovservableSteps, _) ⇒ ovservableSteps.richObservable.toList()),
+    Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) ⇒ observableSteps.richObservable.toList()),
     Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
     new ParentFilterQuery(publicProperties),
     Query.output[RichCase, OutputCase],
     Query.output[Task with Entity, OutputTask],
     Query.output[RichAlert, OutputAlert],
-    Query.output[RichObservable, OutputObservable]
+    Query.output[RichObservable, OutputObservable],
+    Query.output[RichUser, OutputUser]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)
