@@ -2,7 +2,6 @@ package models
 
 import java.nio.file.{ Files, Path }
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ ExecutionContext, Future }
@@ -16,38 +15,39 @@ import play.api.{ Configuration, Environment, Logger }
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
+import javax.inject.{ Inject, Singleton }
 import services.{ AlertSrv, DashboardSrv }
 
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services._
+import org.elastic4play.services.{ IndexType, _ }
 import org.elastic4play.utils.Hasher
 
 case class UpdateMispAlertArtifact() extends EventMessage
 
 @Singleton
 class Migration(
-    mispCaseTemplate: Option[String],
-    mainHash: String,
-    extraHashes: Seq[String],
-    datastoreName: String,
-    dblists: DBLists,
-    eventSrv: EventSrv,
-    dashboardSrv: DashboardSrv,
-    userSrv: UserSrv,
-    environment: Environment,
-    implicit val ec: ExecutionContext,
-    implicit val materializer: Materializer) extends MigrationOperations {
+                 mispCaseTemplate: Option[String],
+                 mainHash: String,
+                 extraHashes: Seq[String],
+                 datastoreName: String,
+                 dblists: DBLists,
+                 eventSrv: EventSrv,
+                 dashboardSrv: DashboardSrv,
+                 userSrv: UserSrv,
+                 environment: Environment,
+                 implicit val ec: ExecutionContext,
+                 implicit val materializer: Materializer) extends MigrationOperations {
   @Inject() def this(
-      configuration: Configuration,
-      dblists: DBLists,
-      eventSrv: EventSrv,
-      dashboardSrv: DashboardSrv,
-      userSrv: UserSrv,
-      environment: Environment,
-      ec: ExecutionContext,
-      materializer: Materializer) = {
+                      configuration: Configuration,
+                      dblists: DBLists,
+                      eventSrv: EventSrv,
+                      dashboardSrv: DashboardSrv,
+                      userSrv: UserSrv,
+                      environment: Environment,
+                      ec: ExecutionContext,
+                      materializer: Materializer) = {
     this(
       configuration.getOptional[String]("misp.caseTemplate"),
       configuration.get[String]("datastore.hash.main"),
@@ -82,7 +82,7 @@ class Migration(
           .map(_ ⇒ ())
           .recover {
             case _: ConflictError ⇒
-            case error            ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
+            case error ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
           }
       }
       .map(_ ⇒ ())
@@ -121,6 +121,8 @@ class Migration(
       .andThen { case _ ⇒ addDashboards(version + 1) }
 
   }
+
+  override def indexType(version: Int): IndexType.Value = if (version > 14) IndexType.indexWithoutMappingTypes else IndexType.indexWithMappingTypes
 
   override val operations: PartialFunction[DatabaseState, Seq[Operation]] = {
     case DatabaseState(version) if version < 7 ⇒ Nil
@@ -167,7 +169,7 @@ class Migration(
               case "tlp:white" ⇒ 0L
               case "tlp:green" ⇒ 1L
               case "tlp:amber" ⇒ 2L
-              case "tlp:red"   ⇒ 3L
+              case "tlp:red" ⇒ 3L
             }
             .getOrElse(2L)
           val source = (misp \ "serverId").asOpt[String].getOrElse("<null>")
@@ -192,13 +194,14 @@ class Migration(
               "follow" → (misp \ "follow").as[JsBoolean])
         },
         removeEntity("audit")(o ⇒ (o \ "objectType").asOpt[String].contains("alert")))
-    case ds @ DatabaseState(9) ⇒
+    case ds@DatabaseState(9) ⇒
       object Base64 {
         def unapply(data: String): Option[Array[Byte]] = Try(java.util.Base64.getDecoder.decode(data)).toOption
       }
 
       // store attachment id and check to prevent document already exists error
       var dataIds = Set.empty[String]
+
       def containsOrAdd(id: String) = {
         dataIds.synchronized {
           if (dataIds.contains(id)) true
@@ -236,7 +239,7 @@ class Migration(
                     (artifact \ "data").asOpt[String]
                       .collect {
                         // get attachment encoded in data field
-                        case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
+                        case AlertSrv.dataExtractor(filename, contentType, data@Base64(rawData)) ⇒
                           val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
                           ds.getEntity(datastoreName, s"${attachmentId}_0")
                             .map(_ ⇒ Nil)
@@ -270,7 +273,7 @@ class Migration(
         mapAttribute("alert", "status") {
           case JsString("Update") ⇒ JsString("Updated")
           case JsString("Ignore") ⇒ JsString("Ignored")
-          case other              ⇒ other
+          case other ⇒ other
         },
         // Fix double encode of metrics
         mapEntity("dblist") {
@@ -300,7 +303,7 @@ class Migration(
           caseTemplate - "metricNames" + ("metrics" → metrics)
         },
         addAttribute("case_artifact", "sighted" → JsFalse))
-    case ds @ DatabaseState(12) ⇒
+    case ds@DatabaseState(12) ⇒
       Seq(
         // Remove alert artifacts in audit trail
         mapEntity("audit") {
@@ -341,6 +344,15 @@ class Migration(
         addAttribute("alert", "customFields" → JsObject.empty),
         addAttribute("case_task", "group" → JsString("default")),
         addAttribute("case", "pap" → JsNumber(2)))
+    case DatabaseState(14) ⇒ Seq(
+      mapEntity("sequence") { seq =>
+        val oldId = (seq \ "_id").as[String]
+        val counter = (seq \ "counter").as[JsNumber]
+        seq - "counter" - "_routing" +
+          ("_id" -> JsString("sequence_" + oldId)) +
+          ("sequenceCounter" -> counter)
+      }
+    )
   }
 
   private def generateAlertId(alert: JsObject): String = {

@@ -53,6 +53,6 @@ class WebHooks(
       .getOrElse(Future.successful(JsObject.empty))
       .map(o ⇒ obj + ("object" → o))
       .fallbackTo(Future.successful(obj))
-      .map(o ⇒ webhooks.foreach(_.send(o)))
+      .foreach(o ⇒ webhooks.foreach(_.send(o)))
   }
 }

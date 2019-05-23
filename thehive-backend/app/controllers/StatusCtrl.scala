@@ -9,7 +9,7 @@ import play.api.Configuration
 import play.api.libs.json.{ JsBoolean, JsObject, JsString, Json }
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponents }
-import com.sksamuel.elastic4s.ElasticDsl
+import com.sksamuel.elastic4s.http.ElasticDsl
 import connectors.Connector
 import models.HealthStatus
 import org.elastic4play.Timed
@@ -37,7 +37,7 @@ class StatusCtrl @Inject() (
         "Elastic4Play" → getVersion(classOf[Timed]),
         "Play" → getVersion(classOf[AbstractController]),
         "Elastic4s" → getVersion(classOf[ElasticDsl]),
-        "ElasticSearch" → getVersion(classOf[org.elasticsearch.Build])),
+        "ElasticSearch" → getVersion(classOf[org.elasticsearch.client.Node])),
       "connectors" → JsObject(connectors.map(c ⇒ c.name → c.status).toSeq),
       "health" → Json.obj("elasticsearch" → clusterStatusName),
       "config" → Json.obj(

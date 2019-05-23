@@ -3,20 +3,21 @@ package services
 import javax.inject.Inject
 
 import scala.concurrent.Future
-import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 import play.api.Logger
 import play.api.libs.json.JsObject
 
-import akka.actor.{ Actor, ActorRef, Cancellable, PoisonPill, actorRef2Scala }
+import akka.actor.{actorRef2Scala, Actor, ActorRef, Cancellable, PoisonPill}
 import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.{ Publish, Subscribe, Unsubscribe }
-import services.StreamActor.{ StreamMessages, Submit }
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
+import services.StreamActor.{StreamMessages, Submit}
 
 import org.elastic4play.services._
 import org.elastic4play.utils.Instance
 
 trait StreamActorMessage extends Serializable
+
 object StreamActor {
   /* Ask messages, wait if there is no ready messages */
   case object GetOperations extends StreamActorMessage
@@ -36,14 +37,12 @@ object StreamActor {
   * This actor receive message generated locally and when aggregation is finished (http request is over) send the message
   * to global stream actor.
   */
-class LocalStreamActor @Inject() (
-    eventSrv: EventSrv,
-    auxSrv: AuxSrv) extends Actor {
+class LocalStreamActor @Inject()(eventSrv: EventSrv, auxSrv: AuxSrv) extends Actor {
 
   import context.dispatcher
 
   private lazy val logger = Logger(s"${getClass.getName}.$self")
-  private val mediator = DistributedPubSub(context.system).mediator
+  private val mediator    = DistributedPubSub(context.system).mediator
 
   override def preStart(): Unit = {
     eventSrv.subscribe(self, classOf[EventMessage])
@@ -51,17 +50,20 @@ class LocalStreamActor @Inject() (
   }
 
   object NormalizedOperation {
+
     def unapply(msg: Any): Option[AuditOperation] =
       msg match {
-        case ao: AuditOperation ⇒ ao.entity.model match {
-          case am: AuditedModel ⇒ Some(ao.copy(details = am.selectAuditedAttributes(ao.details)))
-          case _                ⇒ None
-        }
+        case ao: AuditOperation ⇒
+          ao.entity.model match {
+            case am: AuditedModel ⇒ Some(ao.copy(details = am.selectAuditedAttributes(ao.details)))
+            case _                ⇒ None
+          }
         case _ ⇒ None
       }
   }
 
   object RequestStart {
+
     def unapply(msg: Any): Option[String] = msg match {
       case RequestProcessStart(request)           ⇒ Some(Instance.getRequestId(request))
       case InternalRequestProcessStart(requestId) ⇒ Some(requestId)
@@ -70,6 +72,7 @@ class LocalStreamActor @Inject() (
   }
 
   object RequestEnd {
+
     def unapply(msg: Any): Option[String] = msg match {
       case RequestProcessEnd(request, _)        ⇒ Some(Instance.getRequestId(request))
       case InternalRequestProcessEnd(requestId) ⇒ Some(requestId)
@@ -99,7 +102,7 @@ class LocalStreamActor @Inject() (
       messages.get(requestId) match {
         case None ⇒
           logger.debug("Operation that comes after the end of request, send it to stream actor")
-          AggregatedAuditMessage(auxSrv, operation).toJson.map(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
+          AggregatedAuditMessage(auxSrv, operation).toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
         case Some(None) ⇒
           logger.debug("First operation of the request, creating operation group")
           context.become(receive(messages + (requestId → Some(AggregatedAuditMessage(auxSrv, operation))), None))
@@ -136,16 +139,14 @@ class LocalStreamActor @Inject() (
   }
 }
 
-class StreamActor(
-    cacheExpiration: FiniteDuration,
-    refresh: FiniteDuration) extends Actor {
+class StreamActor(cacheExpiration: FiniteDuration, refresh: FiniteDuration) extends Actor {
 
   import context.dispatcher
   import services.StreamActor._
 
-  private lazy val logger = Logger(s"${getClass.getName}.$self")
+  private lazy val logger             = Logger(s"${getClass.getName}.$self")
   private var killCancel: Cancellable = context.system.scheduler.scheduleOnce(cacheExpiration, self, PoisonPill)
-  private val mediator = DistributedPubSub(context.system).mediator
+  private val mediator                = DistributedPubSub(context.system).mediator
 
   /**
     * renew global timer and rearm it
