@@ -68,7 +68,7 @@ trait CaseConversion extends CustomFieldConversion {
       .property[Int]("severity")(_.simple.updatable)
       .property[Date]("startDate")(_.simple.updatable)
       .property[Option[Date]]("endDate")(_.simple.updatable)
-      .property[Set[String]]("tags")(_.simple.updatable)
+      .property[Seq[String]]("tags")(_.simple.updatable)
       .property[Boolean]("flag")(_.simple.updatable)
       .property[Int]("tlp")(_.simple.updatable)
       .property[Int]("pap")(_.simple.updatable)
