@@ -148,7 +148,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               "flag"   → false,
               "tlp"    → 2,
               "pap"    → 1,
-              "status" → "resolved"
+              "status" → "resolved",
+              "tags"   → List("tag1")
             )
           )
         val result = caseCtrl.update("#1")(request)
@@ -175,7 +176,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
             pap = 1,
             status = "resolved",
             owner = Some("user1"),
-            stats = Json.obj()
+            stats = Json.obj(),
+            tags = Set("tag1")
           )
         )
 

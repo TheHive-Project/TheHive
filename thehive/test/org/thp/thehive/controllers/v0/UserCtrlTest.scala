@@ -8,6 +8,7 @@ import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.Json
@@ -17,7 +18,7 @@ import play.api.{Configuration, Environment}
 class UserCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
-  val authSrv: AuthSrv = mock[AuthSrv]
+  val authSrv: AuthSrv      = mock[AuthSrv]
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
@@ -43,16 +44,22 @@ class UserCtrlTest extends PlaySpecification with Mockito {
     s"[$name] user controller" should {
 
       "search users" in {
-        val request = FakeRequest("POST", "/api/v0/user/_search")
+        val request = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
           .withJsonBody(Json.parse("""{"query": {"_and": [{"status": "Ok"}]}}"""))
           .withHeaders("user" → "user1")
 
-        val result      = userCtrl.search(request)
+        val result = userCtrl.search(request)
         status(result) must_=== 200
 
         val resultUsers = contentAsJson(result)
+        val expected = Json.toJson(
+          Seq(
+            OutputUser(id = "user1", login = "user1", name = "Thomas", organisation = "cert", roles = Set()),
+            OutputUser(id = "user2", login = "user2", name = "U", organisation = "cert", roles = Set())
+          )
+        )
 
-        1 shouldEqual 1
+        resultUsers.toString shouldEqual expected.toString
       }
     }
   }
