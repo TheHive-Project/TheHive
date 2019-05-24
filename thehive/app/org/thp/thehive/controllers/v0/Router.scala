@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v0
 
+import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -84,7 +83,7 @@ class Router @Inject()(
 //    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
     case GET(p"/case/task")           ⇒ taskCtrl.list
-    case POST(p"/case/task")          ⇒ taskCtrl.create
+    case POST(p"/case/$caseId/task")  ⇒ taskCtrl.create(caseId)
     case GET(p"/case/task/$taskId")   ⇒ taskCtrl.get(taskId)
     case PATCH(p"/case/task/$taskId") ⇒ taskCtrl.update(taskId)
     case POST(p"/case/task/_search")  ⇒ taskCtrl.search

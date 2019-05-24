@@ -30,6 +30,7 @@ class TaskMigration @Inject()(
 
   implicit val taskReads: Reads[Task] =
     ((JsPath \ "title").read[String] and
+      (JsPath \ "group").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
       (JsPath \ "status").readWithDefault[String]("completed").map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
       (JsPath \ "flag").read[Boolean] and

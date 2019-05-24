@@ -7,6 +7,7 @@ import play.api.libs.json.{Json, OFormat, OWrites}
 case class InputTask(
     caseId: String,
     title: String,
+    group: Option[String] = None,
     description: Option[String] = None,
     status: Option[String] = None,
     flag: Boolean = false,
@@ -22,6 +23,7 @@ object InputTask {
 
 case class OutputTask(
     title: String,
+    group: Option[String],
     description: Option[String],
     status: String,
     flag: Boolean,

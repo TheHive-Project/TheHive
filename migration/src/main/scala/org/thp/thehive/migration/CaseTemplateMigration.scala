@@ -43,6 +43,7 @@ class CaseTemplateMigration @Inject()(
 
   implicit val taskReads: Reads[Task] =
     ((JsPath \ "title").read[String] and
+      (JsPath \ "group").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
       (JsPath \ "status").readWithDefault[String]("waiting").map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and

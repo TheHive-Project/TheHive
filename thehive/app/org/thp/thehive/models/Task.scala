@@ -17,6 +17,7 @@ case class TaskLog()
 @VertexEntity
 case class Task(
     title: String,
+    group: Option[String],
     description: Option[String],
     status: TaskStatus.Value,
     flag: Boolean,
