@@ -42,7 +42,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
     s"[$name] task controller" should {
 
       "create a new task for an existing case" in {
-        val request = FakeRequest("POST", "/api/case/case2/task?flag=true")
+        val request = FakeRequest("POST", "/api/case/#1/task?flag=true")
           .withJsonBody(
             Json
               .parse(
@@ -54,9 +54,9 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
                 }"""
               )
           )
-          .withHeaders("user" → "user2")
+          .withHeaders("user" → "user1")
 
-        val result           = taskCtrl.create("case2")(request)
+        val result           = taskCtrl.create("#1")(request)
         val resultTask       = contentAsJson(result)
         status(result) shouldEqual 201
 
