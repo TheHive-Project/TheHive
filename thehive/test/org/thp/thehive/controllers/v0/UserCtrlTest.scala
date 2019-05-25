@@ -52,14 +52,13 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         status(result) must_=== 200
 
         val resultUsers = contentAsJson(result)
-        val expected = Json.toJson(
+        val expected =
           Seq(
-            OutputUser(id = "user1", login = "user1", name = "Thomas", organisation = "cert", roles = Set()),
-            OutputUser(id = "user2", login = "user2", name = "U", organisation = "cert", roles = Set())
+            OutputUser(id = "user1", login = "user1", name = "Thomas", organisation = "cert", roles = Set("read", "write", "alert")),
+            OutputUser(id = "user2", login = "user2", name = "U", organisation = "cert", roles = Set("read"))
           )
-        )
 
-        resultUsers.toString shouldEqual expected.toString
+        resultUsers.as[Seq[OutputUser]] shouldEqual expected
       }
     }
   }
