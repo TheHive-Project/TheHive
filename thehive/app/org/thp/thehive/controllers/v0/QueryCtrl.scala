@@ -63,11 +63,10 @@ trait QueryCtrl {
         case (_, query)          ⇒ query
       }
       .andThen("page")(rangeParser.optional.on("range")) {
-        case (Some((from, to)), query) if to != Long.MaxValue ⇒
-          query :+ FObject("_name" → FString("page"), "from" → FNumber(from), "to" → FNumber(to))
-        case (Some(_), query)    ⇒ query :+ FObject("_name" → FString("toList"))
-        case (_, query) if paged ⇒ query :+ FObject("_name" → FString("page"), "from" → FNumber(0), "to" → FNumber(10))
-        case (_, query)          ⇒ query :+ FObject("_name" → FString("toList"))
+        case (Some((from, to)), query) ⇒
+          query :+ FObject("_name" → FString("page"), "from" → FNumber(from), "to" → FNumber(to), "withSize" → FBoolean(true))
+        case (_, query) ⇒
+          query :+ FObject("_name" → FString("page"), "from" → FNumber(0), "to" → FNumber(10), "withSize" → FBoolean(true))
       }
       .map("query")(q ⇒ FSeq(q.toList))
       .flatMap("query")(queryExecutor.parser)

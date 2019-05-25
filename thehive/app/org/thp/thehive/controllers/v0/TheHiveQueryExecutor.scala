@@ -17,7 +17,7 @@ import org.thp.thehive.services._
 import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
 
 case class GetCaseParams(id: String)
-case class RangeParams(from: Long, to: Long)
+case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(
@@ -54,25 +54,25 @@ class TheHiveQueryExecutor @Inject()(
     Query.init[AlertSteps]("listAlert", (graph, _) ⇒ alertSrv.initSteps(graph)),
     Query.init[ObservableSteps]("listObservable", (graph, _) ⇒ observableSrv.initSteps(graph)),
     Query.init[LogSteps]("listLog", (graph, _) ⇒ logSrv.initSteps(graph)),
-    Query.withParam[RangeParams, CaseSteps, ResultWithTotalSize[RichCase]](
+    Query.withParam[RangeParams, CaseSteps, PagedResult[RichCase]](
       "page",
       FieldsParser[RangeParams],
-      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to)
+      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query.withParam[RangeParams, AlertSteps, AlertSteps](
       "range",
       FieldsParser[RangeParams],
       (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)
     ),
-    Query.withParam[RangeParams, TaskSteps, ResultWithTotalSize[Task with Entity]](
+    Query.withParam[RangeParams, TaskSteps, PagedResult[Task with Entity]](
       "page",
       FieldsParser[RangeParams],
-      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to)
+      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, ObservableSteps, ResultWithTotalSize[Observable with Entity]](
+    Query.withParam[RangeParams, ObservableSteps, PagedResult[Observable with Entity]](
       "page",
       FieldsParser[RangeParams],
-      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to)
+      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).toList()),

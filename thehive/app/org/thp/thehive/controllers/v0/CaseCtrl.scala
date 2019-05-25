@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, ResultWithTotalSize}
+import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputCase
 import org.thp.thehive.models.{Permissions, RichCaseTemplate, User}
@@ -91,8 +91,8 @@ class CaseCtrl @Inject()(
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
-          case ResultWithTotalSize(_, size) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
-          case _                            ⇒ Success(resp)
+          case PagedResult(_, Some(size)) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
+          case _                          ⇒ Success(resp)
         }
       }
 

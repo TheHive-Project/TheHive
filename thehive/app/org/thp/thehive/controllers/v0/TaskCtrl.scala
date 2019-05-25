@@ -1,18 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
+import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv, val queryExecutor: TheHiveQueryExecutor)
@@ -93,8 +92,8 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
-          case ResultWithTotalSize(_, size) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
-          case _                            ⇒ Success(resp)
+          case PagedResult(_, Some(size)) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
+          case _                          ⇒ Success(resp)
         }
       }
 }

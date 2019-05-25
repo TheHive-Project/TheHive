@@ -210,6 +210,59 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         TestCase(resultCaseOutput) shouldEqual expected
       }
 
+      "search cases" in {
+        val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
+          .withHeaders("user" → "user3")
+          .withJsonBody(
+            Json.parse("""{"query":{"_any":"*"}}""")
+          )
+        val result = caseCtrl.search()(request)
+        status(result) must_=== 200
+        header("X-Total", result) must beSome("2")
+        val resultCases = contentAsJson(result).as[Seq[OutputCase]].map(TestCase.apply)
+
+        val case3 = TestCase(
+          caseId = 3,
+          title = "case#3",
+          description = "description of case #3",
+          severity = 2,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 2,
+          pap = 2,
+          status = "open",
+          tags = Set.empty,
+          summary = None,
+          owner = Some("user1"),
+          customFields = Set(
+            OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", Some("true")),
+            OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
+          ),
+          stats = Json.obj()
+        )
+
+        val case4 = TestCase(
+          caseId = 4,
+          title = "case#4",
+          description = "description of case #4",
+          severity = 3,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 3,
+          pap = 3,
+          status = "open",
+          tags = Set.empty,
+          summary = None,
+          owner = Some("user1"),
+          customFields = Set.empty,
+          stats = Json.obj()
+        )
+
+        resultCases must contain(exactly(case3, case4))
+      }
+
       "get and aggregate properly case stats" in {
         val request = FakeRequest("POST", s"/api/v0/case/_stats")
           .withHeaders("user" → "user1")

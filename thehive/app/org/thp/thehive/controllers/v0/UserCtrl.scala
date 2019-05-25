@@ -1,18 +1,19 @@
 package org.thp.thehive.controllers.v0
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
+import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject()(
@@ -182,8 +183,8 @@ class UserCtrl @Inject()(
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
-          case ResultWithTotalSize(_, size) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
-          case _                            ⇒ Success(resp)
+          case PagedResult(_, Some(size)) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
+          case _                          ⇒ Success(resp)
         }
       }
 }

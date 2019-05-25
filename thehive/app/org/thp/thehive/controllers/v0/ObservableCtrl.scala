@@ -1,18 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, ResultWithTotalSize}
+import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.Query
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -103,8 +102,8 @@ class ObservableCtrl @Inject()(
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = (result.toJson \ "result").as[JsArray]
         result.toOutput match {
-          case ResultWithTotalSize(_, size) ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → size.toString))
-          case _                            ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → resp.value.size.toString))
+          case PagedResult(_, Some(size)) ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → size.toString))
+          case _                          ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → resp.value.size.toString))
         }
       }
 }
