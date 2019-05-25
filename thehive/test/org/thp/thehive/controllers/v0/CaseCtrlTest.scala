@@ -209,10 +209,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val result = caseCtrl.stats()(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result)
-        val expected   = Json.parse("""{"count":3}""".stripMargin)
+        val expected   = Json.parse("""{"tag1":{"count":1},"count":3}""")
 
-        resultCase.toString shouldEqual expected.toString
-      }.pendingUntilFixed("Remove empty string values from aggregation results")
+        resultCase shouldEqual expected
+      }
     }
   }
 }
