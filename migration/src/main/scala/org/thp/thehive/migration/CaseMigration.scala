@@ -31,8 +31,8 @@ class CaseMigration @Inject()(
     auditMigration: AuditMigration,
     dbFind: DBFind,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
 
   private var caseMap: Map[String, String] = Map.empty[String, String]
 

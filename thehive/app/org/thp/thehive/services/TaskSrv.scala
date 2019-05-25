@@ -61,7 +61,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
           .inTo[UserRole]
           .has(Key("login") of authContext.userId)
-      ))
+      )
+    )
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 

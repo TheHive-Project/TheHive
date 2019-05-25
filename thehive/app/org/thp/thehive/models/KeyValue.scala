@@ -15,4 +15,5 @@ case class KeyValue(
     integer: Option[Int],
     float: Option[Float],
     boolean: Option[Boolean],
-    date: Option[Date])
+    date: Option[Date]
+)

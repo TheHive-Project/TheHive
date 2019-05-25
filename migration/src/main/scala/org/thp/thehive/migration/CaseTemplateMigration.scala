@@ -26,8 +26,8 @@ class CaseTemplateMigration @Inject()(
     taskSrv: TaskSrv,
     customFieldSrv: CustomFieldSrv,
     auditMigration: AuditMigration,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
   private var caseTemplateMap: Map[String, RichCaseTemplate] = Map.empty[String, RichCaseTemplate]
 
   implicit val caseTemplateReads: Reads[CaseTemplate] =
@@ -54,7 +54,8 @@ class CaseTemplateMigration @Inject()(
 
   def importCaseTemplateTask(caseTemplateTaskJs: JsObject, caseTemplate: CaseTemplate with Entity, progress: ProgressBar)(
       implicit graph: Graph,
-      authContext: AuthContext): Unit =
+      authContext: AuthContext
+  ): Unit =
     catchError("caseTemplateTask", caseTemplateTaskJs, progress) {
       caseTemplateTaskJs.as[Seq[Task]].foreach { task ⇒
         taskSrv.create(task, caseTemplate)

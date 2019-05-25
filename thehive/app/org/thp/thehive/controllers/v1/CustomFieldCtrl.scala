@@ -26,7 +26,8 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
   def list: Action[AnyContent] =
     entryPoint("list custom fields")
       .authTransaction(db) { _ ⇒ implicit graph ⇒
-        val customFields = customFieldSrv.initSteps
+        val customFields = customFieldSrv
+          .initSteps
           .map(_.toJson)
           .toList()
         Success(Results.Ok(Json.toJson(customFields)))

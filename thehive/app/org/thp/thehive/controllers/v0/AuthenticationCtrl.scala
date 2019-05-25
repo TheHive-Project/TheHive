@@ -19,7 +19,8 @@ class AuthenticationCtrl @Inject()(
     authSrv: AuthSrv,
     userSrv: UserSrv,
     db: Database,
-    implicit val ec: ExecutionContext) {
+    implicit val ec: ExecutionContext
+) {
 
   def login: Action[AnyContent] =
     entryPoint("login")

@@ -22,7 +22,8 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
 
   def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
       implicit graph: Graph,
-      authContext: AuthContext): RichObservable = {
+      authContext: AuthContext
+  ): RichObservable = {
     val createdObservable = create(observable)
     val (data, attachment) = dataOrFile match {
       case Left(data0) ⇒
@@ -50,7 +51,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[ObservableData].fold.traversal))
             .and(By(__[Vertex].outTo[ObservableAttachment].fold.traversal))
-            .and(By(__[Vertex].outTo[ObservableKeyValue].fold.traversal)))
+            .and(By(__[Vertex].outTo[ObservableKeyValue].fold.traversal))
+        )
         .map {
           case (observable, data, attachment, extensions) ⇒
             RichObservable(

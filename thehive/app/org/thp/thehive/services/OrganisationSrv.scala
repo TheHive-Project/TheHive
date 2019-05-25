@@ -20,6 +20,7 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
 
   override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
+
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Organisation with Entity = {
     val createdOrganisation = create(organisation)
     roleSrv.create(user, createdOrganisation, profileSrv.admin)

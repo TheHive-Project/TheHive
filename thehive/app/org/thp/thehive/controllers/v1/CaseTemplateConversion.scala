@@ -22,7 +22,8 @@ trait CaseTemplateConversion extends CustomFieldConversion {
       richCaseTemplate
         .into[OutputCaseTemplate]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
-        .transform)
+        .transform
+    )
 
   val caseTemplateProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
@@ -39,12 +40,14 @@ trait CaseTemplateConversion extends CustomFieldConversion {
       .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
       .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
       .property[String]("customFieldType")(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property[String]("customFieldValue")(_.derived(
-        _.outToE[CaseCustomField].value[String]("stringValue"),
-        _.outToE[CaseCustomField].value[String]("booleanValue"),
-        _.outToE[CaseCustomField].value[String]("integerValue"),
-        _.outToE[CaseCustomField].value[String]("floatValue"),
-        _.outToE[CaseCustomField].value[String]("dateValue")
-      ).readonly)
+      .property[String]("customFieldValue")(
+        _.derived(
+          _.outToE[CaseCustomField].value[String]("stringValue"),
+          _.outToE[CaseCustomField].value[String]("booleanValue"),
+          _.outToE[CaseCustomField].value[String]("integerValue"),
+          _.outToE[CaseCustomField].value[String]("floatValue"),
+          _.outToE[CaseCustomField].value[String]("dateValue")
+        ).readonly
+      )
       .build
 }

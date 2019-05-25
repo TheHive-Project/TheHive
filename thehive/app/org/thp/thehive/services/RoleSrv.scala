@@ -19,7 +19,8 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
 
   def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
-      authContext: AuthContext): Role with Entity = {
+      authContext: AuthContext
+  ): Role with Entity = {
     val createdRole = create(Role())
     roleOrganisationSrv.create(RoleOrganisation(), createdRole, organisation)
     userRoleSrv.create(UserRole(), user, createdRole)

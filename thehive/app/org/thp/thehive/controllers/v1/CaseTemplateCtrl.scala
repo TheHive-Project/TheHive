@@ -19,8 +19,8 @@ class CaseTemplateCtrl @Inject()(
     db: Database,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv)
-    extends CaseTemplateConversion
+    organisationSrv: OrganisationSrv
+) extends CaseTemplateConversion
     with TaskConversion
     with CustomFieldConversion {
 
@@ -51,7 +51,10 @@ class CaseTemplateCtrl @Inject()(
   def list: Action[AnyContent] =
     entryPoint("list case template")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val caseTemplates = caseTemplateSrv.initSteps.visible.richCaseTemplate
+        val caseTemplates = caseTemplateSrv
+          .initSteps
+          .visible
+          .richCaseTemplate
           .map(_.toJson)
           .toList()
         Success(Results.Ok(Json.toJson(caseTemplates)))

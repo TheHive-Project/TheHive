@@ -17,8 +17,8 @@ class Router @Inject()(
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
-    authenticationCtrl: AuthenticationCtrl)
-    extends SimpleRouter {
+    authenticationCtrl: AuthenticationCtrl
+) extends SimpleRouter {
 
   override def routes: Routes = {
     case GET(p"/status") ⇒ statusCtrl.get

@@ -13,6 +13,7 @@ import org.thp.scalligraph.{AuthenticationError, AuthorizationError, Hasher}
 import org.thp.thehive.models.User
 
 object LocalAuthSrv {
+
   def hashPassword(password: String): String = {
     val seed = Random.nextString(10).replace(',', '!')
     seed + "," + Hasher("SHA-256").fromString(seed + password).head.toString

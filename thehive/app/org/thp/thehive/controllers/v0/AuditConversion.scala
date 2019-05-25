@@ -19,10 +19,13 @@ trait AuditConversion {
         .withFieldComputed(_.obj, a ⇒ OutputEntity(a.obj))
         .withFieldComputed(
           _.summary,
-          _.summary.mapValues(opCount ⇒
-            opCount.map {
-              case (op, count) ⇒ op.toString → count
-          }))
+          _.summary.mapValues(
+            opCount ⇒
+              opCount.map {
+                case (op, count) ⇒ op.toString → count
+              }
+          )
+        )
         .transform
     )
 }

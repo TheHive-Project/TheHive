@@ -33,8 +33,8 @@ class ObservableMigration @Inject()(
     dataSrv: DataSrv,
     elasticAttachmentSrv: ElasticAttachmentSrv,
     fromFind: DBFind,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
 
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
@@ -53,7 +53,8 @@ class ObservableMigration @Inject()(
     val done = fromFind(Some("all"), Nil)(
       index ⇒
         search(index / "case_artifact")
-          .query(hasParentQuery("case", idsQuery(caseId), score = false)))._1
+          .query(hasParentQuery("case", idsQuery(caseId), score = false))
+    )._1
       .map { artifactJs ⇒
         catchError("Artifact", artifactJs, progress) {
           userMigration.withUser((artifactJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒

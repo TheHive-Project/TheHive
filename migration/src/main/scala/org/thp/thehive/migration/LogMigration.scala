@@ -33,8 +33,8 @@ class LogMigration @Inject()(
     attachmentSrv: AttachmentSrv,
     storageSrv: StorageSrv,
     elasticAttachmentSrv: ElasticAttachmentSrv,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
   val hashers = Hasher(config.get[Seq[String]]("attachment.hash"): _*)
 
   implicit val logReads: Reads[Log] =
@@ -46,7 +46,8 @@ class LogMigration @Inject()(
     val done = fromFind(Some("all"), Nil)(
       index ⇒
         search(index / "case_task_log")
-          .query(hasParentQuery("case_task", idsQuery(taskId), score = false)))._1
+          .query(hasParentQuery("case_task", idsQuery(taskId), score = false))
+    )._1
       .map { logJs ⇒
         catchError("Log", logJs, progress) {
           userMigration.withUser((logJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒

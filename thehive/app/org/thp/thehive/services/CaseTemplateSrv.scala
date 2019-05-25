@@ -1,9 +1,7 @@
 package org.thp.thehive.services
 
-import java.util.UUID
+import java.util.{UUID, List ⇒ JList}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
 import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -12,6 +10,9 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarStep
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv: OrganisationSrv, taskSrv: TaskSrv)(implicit db: Database)
     extends VertexSrv[CaseTemplate, CaseTemplateSteps] {
@@ -24,7 +25,8 @@ class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv:
 
   def create(caseTemplate: CaseTemplate, organisation: Organisation with Entity, tasks: Seq[Task], customFields: Seq[(String, Option[Any])])(
       implicit graph: Graph,
-      authContext: AuthContext): Try[RichCaseTemplate] = {
+      authContext: AuthContext
+  ): Try[RichCaseTemplate] = {
 
     val createdCaseTemplate = create(caseTemplate)
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
@@ -79,7 +81,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
           .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
           .inTo[UserRole]
           .has(Key("login") of authContext.userId)
-      ))
+      )
+    )
 
   def customFields: ScalarSteps[CustomFieldWithValue] =
     ScalarSteps(
@@ -87,7 +90,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         .outToE[CaseTemplateCustomField]
         .inV()
         .path
-        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseTemplateCustomField])))
+        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseTemplateCustomField]))
+    )
 
   def richCaseTemplate: ScalarSteps[RichCaseTemplate] =
     ScalarSteps(
@@ -100,7 +104,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         )
         .map {
           case (caseTemplate, organisation, tasks, customFields) ⇒
-            val customFieldValues = (customFields: java.util.List[Path]).asScala
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
                 case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])

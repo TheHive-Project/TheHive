@@ -16,8 +16,8 @@ class TheHiveQueryExecutor @Inject()(
     taskSrv: TaskSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
-    implicit val db: Database)
-    extends QueryExecutor
+    implicit val db: Database
+) extends QueryExecutor
     with CaseConversion
     with TaskConversion
     with UserConversion
@@ -28,7 +28,8 @@ class TheHiveQueryExecutor @Inject()(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
       FieldsParser[GetCaseParams],
-      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)),
+      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)
+    ),
     Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).visible(authContext)),
     Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
     Query.init[UserSteps]("listUser", (graph, _) ⇒ userSrv.initSteps(graph)),

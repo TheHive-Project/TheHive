@@ -5,6 +5,7 @@ import java.util.Date
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.auth.{User ⇒ ScalligraphUser}
 
 object UserStatus extends Enumeration {
   val ok, locked = Value
@@ -15,8 +16,7 @@ case class UserRole()
 
 @DefineIndex(IndexType.unique, "login")
 @VertexEntity
-case class User(login: String, name: String, apikey: Option[String], status: UserStatus.Value, password: Option[String])
-    extends org.thp.scalligraph.auth.User {
+case class User(login: String, name: String, apikey: Option[String], status: UserStatus.Value, password: Option[String]) extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
 }

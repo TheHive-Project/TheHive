@@ -14,7 +14,7 @@ import org.thp.thehive.dto.v0.{OutputAlert, OutputCase, OutputObservable, Output
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
+import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
 
 case class GetCaseParams(id: String)
 case class RangeParams(from: Long, to: Long)

@@ -27,8 +27,10 @@ trait AlertConversion extends CustomFieldConversion {
               case (None, false) ⇒ "New"
               case (_, true)     ⇒ "Imported"
               case (_, false)    ⇒ "Updated"
-          })
-        .transform)
+            }
+        )
+        .transform
+    )
 
   implicit def fromInputAlert(inputAlert: InputAlert): Alert =
     inputAlert
@@ -58,25 +60,32 @@ trait AlertConversion extends CustomFieldConversion {
       .property[Int]("pap")(_.simple.updatable)
       .property[Boolean]("read")(_.simple.updatable)
       .property[Boolean]("follow")(_.simple.updatable)
-      .property[String]("status")(_.derived(_.project(_.apply(By(Key[Boolean]("read")))
-        .and(By(__[Vertex].outToE[AlertCase].limit(1).count())))
-        .map {
-          case (true, caseCount) if caseCount == 0  ⇒ "Ignored"
-          case (true, caseCount) if caseCount == 1  ⇒ "New"
-          case (false, caseCount) if caseCount == 0 ⇒ "Ignored"
-          case (false, caseCount) if caseCount == 1 ⇒ "Imported"
-        }).readonly)
+      .property[String]("status")(
+        _.derived(
+          _.project(
+            _.apply(By(Key[Boolean]("read")))
+              .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
+          ).map {
+            case (true, caseCount) if caseCount == 0  ⇒ "Ignored"
+            case (true, caseCount) if caseCount == 1  ⇒ "New"
+            case (false, caseCount) if caseCount == 0 ⇒ "Ignored"
+            case (false, caseCount) if caseCount == 1 ⇒ "Imported"
+          }
+        ).readonly
+      )
       .property[Option[String]]("summary")(_.simple.updatable)
       .property[String]("user")(_.simple.updatable)
       .property[String]("customFieldName")(_.derived(_.outTo[AlertCustomField].value[String]("name")).readonly)
       .property[String]("customFieldDescription")(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
       .property[String]("customFieldType")(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
-      .property[String]("customFieldValue")(_.derived(
-        _.outToE[AlertCustomField].value[Any]("stringValue"),
-        _.outToE[AlertCustomField].value[Any]("booleanValue"),
-        _.outToE[AlertCustomField].value[Any]("integerValue"),
-        _.outToE[AlertCustomField].value[Any]("floatValue"),
-        _.outToE[AlertCustomField].value[Any]("dateValue")
-      ).readonly)
+      .property[String]("customFieldValue")(
+        _.derived(
+          _.outToE[AlertCustomField].value[Any]("stringValue"),
+          _.outToE[AlertCustomField].value[Any]("booleanValue"),
+          _.outToE[AlertCustomField].value[Any]("integerValue"),
+          _.outToE[AlertCustomField].value[Any]("floatValue"),
+          _.outToE[AlertCustomField].value[Any]("dateValue")
+        ).readonly
+      )
       .build
 }

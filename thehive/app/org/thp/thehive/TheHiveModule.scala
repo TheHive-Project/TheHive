@@ -11,13 +11,13 @@ import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageS
 import org.thp.thehive.services.LocalUserSrv
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import play.api.{Configuration, Environment, Logger}
-
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
 import org.thp.thehive.controllers.v1.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.LocalAuthSrv
+import play.api.routing.{Router ⇒ PlayRouter}
+import play.api.{Configuration, Environment, Logger}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
   lazy val logger = Logger(getClass)
@@ -51,7 +51,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
       case "orientdb" ⇒ bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
     }
 
-    val routerBindings = ScalaMultibinder.newSetBinder[play.api.routing.Router](binder)
+    val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)
     routerBindings.addBinding.toProvider[TheHiveRouter] // TODO check if provider is ok
     val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutor]

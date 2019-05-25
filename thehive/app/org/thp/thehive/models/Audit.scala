@@ -15,7 +15,8 @@ case class Audit(
     requestId: String,
     attributeName: Option[String],
     oldValue: Option[String],
-    newValue: Option[String])
+    newValue: Option[String]
+)
 
 case class RichAudit(
     _id: String,
@@ -31,6 +32,7 @@ case class RichAudit(
 )
 
 object RichAudit {
+
   def apply(audit: Audit with Entity, obj: Entity, summary: Map[String, Map[AuditableAction.Value, Int]]): RichAudit =
     new RichAudit(
       audit._id,
@@ -42,7 +44,8 @@ object RichAudit {
       audit.oldValue,
       audit.newValue,
       obj,
-      summary)
+      summary
+    )
 }
 
 case class Audited()

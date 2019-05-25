@@ -17,8 +17,8 @@ import shapeless.HNil
 
 @Singleton
 class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseTemplateSrv: CaseTemplateSrv, taskSrv: TaskSrv, userSrv: UserSrv)(
-    implicit db: Database)
-    extends VertexSrv[Alert, AlertSteps] {
+    implicit db: Database
+) extends VertexSrv[Alert, AlertSteps] {
 
   val alertCustomFieldSrv  = new EdgeSrv[AlertCustomField, Alert, CustomField]
   val alertOrganisationSrv = new EdgeSrv[AlertOrganisation, Alert, Organisation]
@@ -28,11 +28,13 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
 
   def create(alert: Alert, organisation: Organisation with Entity, customFields: Map[String, Option[Any]], caseTemplate: Option[RichCaseTemplate])(
       implicit graph: Graph,
-      authContext: AuthContext): Try[RichAlert] = {
+      authContext: AuthContext
+  ): Try[RichAlert] = {
     val createdAlert = create(alert)
     alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
     caseTemplate.foreach(ct ⇒ alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
-    customFields.toSeq
+    customFields
+      .toSeq
       .toTry {
         case (name, Some(value)) ⇒
           for {
@@ -53,7 +55,8 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
 
   def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
       implicit graph: Graph,
-      authContext: AuthContext): Try[AlertCustomField with Entity] =
+      authContext: AuthContext
+  ): Try[AlertCustomField with Entity] =
     for {
       cf  ← customFieldSrv.getOrFail(customFieldName)
       acf ← setCustomField(alert, cf, value)
@@ -63,8 +66,10 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
   // TODO do like caseSrv.setCustomField
   def setCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
-      authContext: AuthContext): Try[AlertCustomField with Entity] =
-    customField.`type`
+      authContext: AuthContext
+  ): Try[AlertCustomField with Entity] =
+    customField
+      .`type`
       .asInstanceOf[CustomFieldType[Any]]
       .setValue(AlertCustomField(), value)
       .map(alertCustomField ⇒ alertCustomFieldSrv.create(alertCustomField, alert, customField))
@@ -83,10 +88,12 @@ class AlertSrv @Inject()(caseSrv: CaseSrv, customFieldSrv: CustomFieldSrv, caseT
 
   def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
       implicit graph: Graph,
-      authContext: AuthContext): Try[RichCase] =
+      authContext: AuthContext
+  ): Try[RichCase] =
     for {
 
-      caseTemplate ← alert.caseTemplate
+      caseTemplate ← alert
+        .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
         .flip
       customField = caseTemplate
@@ -155,7 +162,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .inTo[RoleOrganisation]
         .has(Key("permissions") of permission)
         .inTo[UserRole]
-        .has(Key("login") of authContext.userId))
+        .has(Key("login") of authContext.userId)
+    )
   )
 
   def alertUserOrganisation(permission: Permission)(implicit authContext: AuthContext): ScalarSteps[(RichAlert, Organisation with Entity)] = {
@@ -197,7 +205,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             atMostOneOf(resultMap.getValue(caseIdLabel)),
             atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
           ) → organisation
-        })
+        }
+    )
   }
 
   def richAlert: ScalarSteps[RichAlert] =
@@ -208,10 +217,12 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .and(By(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold))
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].values[String]("_id").fold))
-            .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold)))
+            .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+        )
         .map {
           case (alert, organisation, customFields, caseId, caseTemplate) ⇒
-            val customFieldValues = (customFields: java.util.List[Path]).asScala
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
                 case List(acf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])

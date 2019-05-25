@@ -34,6 +34,8 @@ class StreamCtrl @Inject()(entryPoint: EntryPoint, implicit val ec: ExecutionCon
           Json.obj(
             "remaining" → 3600,
             "warning"   → false
-          )))
+          )
+        )
+      )
     }
 }

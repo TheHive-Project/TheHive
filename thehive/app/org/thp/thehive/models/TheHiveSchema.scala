@@ -27,7 +27,8 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
       .forPackages("org.thp.thehive.models")
       .addClassLoader(getClass.getClassLoader)
       .setExpandSuperTypes(true)
-      .setScanners(new SubTypesScanner(false)))
+      .setScanners(new SubTypesScanner(false))
+  )
 
   override lazy val modelList: Seq[Model] =
     reflectionClasses

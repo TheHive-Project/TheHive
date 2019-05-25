@@ -24,8 +24,8 @@ class AuditMigration @Inject()(
     userMigration: UserMigration,
     dbFind: DBFind,
     implicit val db: Database,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
 
   lazy val edgeSrv: EdgeSrv[Audited, Audit, Product] = new EdgeSrv[Audited, Audit, Product]
 
@@ -51,7 +51,8 @@ class AuditMigration @Inject()(
           auditReads().reads(json).map(Seq(_))
         else {
           type Errors = Seq[(JsPath, Seq[JsonValidationError])]
-          details.fields
+          details
+            .fields
             .foldLeft[Either[Errors, Seq[Audit]]](Right(Nil)) {
               case (acc, (attribute, newValue)) ⇒
                 (acc, auditReads(Some(attribute), Some(newValue.toString)).reads(json)) match {
@@ -67,8 +68,9 @@ class AuditMigration @Inject()(
   }
 
   def importAudits(objectType: String, objectId: String, entity: Entity, progress: ProgressBar)(implicit graph: Graph): Unit = {
-    val done = dbFind(Some("all"), Nil)(index ⇒
-      search(index / "audit").query(boolQuery().must(termQuery("objectType", objectType), termQuery("objectId", objectId))))._1
+    val done = dbFind(Some("all"), Nil)(
+      index ⇒ search(index / "audit").query(boolQuery().must(termQuery("objectType", objectType), termQuery("objectId", objectId)))
+    )._1
       .map { auditJs ⇒
         catchError("audit", auditJs, progress) {
           userMigration.withUser((auditJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒

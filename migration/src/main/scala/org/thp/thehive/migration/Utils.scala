@@ -22,6 +22,7 @@ trait Utils {
   val logger: Logger = Logger(getClass)
 
   implicit class StringIndenter(s: String) {
+
     def indent(count: Int = 4): String = {
       val ind = " " * count
       ind + s.replaceAll("\n", "\n" + ind)
@@ -75,7 +76,8 @@ trait Utils {
       storageSrv: StorageSrv,
       elasticAttachmentSrv: ElasticAttachmentSrv,
       hashers: Hasher,
-      toDB: Database)(attachment: ElasticAttachment)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
+      toDB: Database
+  )(attachment: ElasticAttachment)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
 
     def readStream[A](f: InputStream ⇒ A) =
       Retry(3, classOf[RemoteException]) {

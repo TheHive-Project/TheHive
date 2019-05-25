@@ -24,4 +24,5 @@ case class Task(
     startDate: Option[Date],
     endDate: Option[Date],
     order: Int,
-    dueDate: Option[Date])
+    dueDate: Option[Date]
+)

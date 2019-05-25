@@ -42,7 +42,8 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
   def list: Action[AnyContent] =
     entryPoint("list task")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val tasks = taskSrv.initSteps
+        val tasks = taskSrv
+          .initSteps
           .availableFor(request.organisation)
           .toList()
           .map(_.toJson)

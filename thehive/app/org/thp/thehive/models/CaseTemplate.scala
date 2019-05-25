@@ -14,8 +14,8 @@ case class CaseTemplateCustomField(
     booleanValue: Option[Boolean] = None,
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
-    dateValue: Option[Date] = None)
-    extends CustomFieldValue[CaseTemplateCustomField] {
+    dateValue: Option[Date] = None
+) extends CustomFieldValue[CaseTemplateCustomField] {
   override def setStringValue(value: String): CaseTemplateCustomField   = copy(stringValue = Some(value))
   override def setBooleanValue(value: Boolean): CaseTemplateCustomField = copy(booleanValue = Some(value))
   override def setIntegerValue(value: Int): CaseTemplateCustomField     = copy(integerValue = Some(value))
@@ -37,13 +37,15 @@ case class CaseTemplate(
     flag: Boolean,
     tlp: Option[Int],
     pap: Option[Int],
-    summary: Option[String])
+    summary: Option[String]
+)
 
 case class RichCaseTemplate(
     caseTemplate: CaseTemplate with Entity,
     organisation: String,
     tasks: Seq[Task with Entity],
-    customFields: Seq[CustomFieldWithValue]) {
+    customFields: Seq[CustomFieldWithValue]
+) {
   val _id: String                 = caseTemplate._id
   val _createdBy: String          = caseTemplate._createdBy
   val _updatedBy: Option[String]  = caseTemplate._updatedBy

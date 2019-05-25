@@ -38,7 +38,8 @@ trait ObservableConversion {
         .withFieldComputed(_.dataType, _.observable.`type`)
         .withFieldComputed(_.startDate, _.observable._createdAt)
         .withFieldComputed(_.data, _.data.map(_.data))
-        .transform)
+        .transform
+    )
 
   def observableProperties(implicit db: Database): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ObservableSteps]

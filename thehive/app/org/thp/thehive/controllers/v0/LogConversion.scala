@@ -27,7 +27,8 @@ trait LogConversion {
         .withFieldComputed(_.startDate, _._createdAt)
         .withFieldComputed(_.owner, _._createdBy)
         .withFieldConst(_.status, "Ok")
-        .transform)
+        .transform
+    )
 
   implicit def fromInputLog(inputLog: InputLog): Log =
     inputLog

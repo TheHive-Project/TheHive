@@ -26,8 +26,8 @@ class UserMigration @Inject()(
     userSrv: UserSrv,
     userDB: UserDB,
     profileSrv: ProfileSrv,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
   private var userMap: Map[String, RichUser] = Map.empty[String, RichUser]
   val defaultOrganisation: String            = config.get[String]("organisation.name")
 

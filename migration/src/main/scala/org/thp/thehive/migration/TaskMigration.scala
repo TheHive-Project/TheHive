@@ -25,8 +25,8 @@ class TaskMigration @Inject()(
     logMigration: LogMigration,
     auditMigration: AuditMigration,
     fromFind: DBFind,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
 
   implicit val taskReads: Reads[Task] =
     ((JsPath \ "title").read[String] and
@@ -43,7 +43,8 @@ class TaskMigration @Inject()(
     val done = fromFind(Some("all"), Nil)(
       index ⇒
         search(index / "case_task")
-          .query(hasParentQuery("case", idsQuery(caseId), score = false)))._1
+          .query(hasParentQuery("case", idsQuery(caseId), score = false))
+    )._1
       .map { taskJs ⇒
         catchError("Task", taskJs, progress) {
           userMigration.withUser((taskJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒

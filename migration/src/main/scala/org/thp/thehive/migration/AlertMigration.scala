@@ -25,8 +25,8 @@ class AlertMigration @Inject()(
     caseTemplateMigration: CaseTemplateMigration,
     caseMigration: CaseMigration,
     auditMigration: AuditMigration,
-    implicit val mat: Materializer)
-    extends Utils {
+    implicit val mat: Materializer
+) extends Utils {
 
   implicit val alertReads: Reads[Alert] =
     ((JsPath \ "type").read[String] and

@@ -21,7 +21,8 @@ class TheHiveRouter @Inject()(routerV0: v0.Router, routerV1: v1.Router, assets: 
         routerV0.withPrefix("/api/").routes orElse { // default version
         case GET(p"/")       ⇒ actionBuilder(Results.PermanentRedirect("/index.html"))
         case GET(p"/$file*") ⇒ assets.at(file)
-      })
+      }
+    )
 }
 
 @ProvidedBy(classOf[AssetProvider])

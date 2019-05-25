@@ -19,8 +19,8 @@ class CaseCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv)
-    extends CaseConversion {
+    organisationSrv: OrganisationSrv
+) extends CaseConversion {
 
   def create: Action[AnyContent] =
     entryPoint("create case")
@@ -30,7 +30,8 @@ class CaseCtrl @Inject()(
         val caseTemplateName: Option[String] = request.body('caseTemplate)
         val inputCase: InputCase             = request.body('case)
         for {
-          organisation ← userSrv.current
+          organisation ← userSrv
+            .current
             .organisations(Permissions.manageCase)
             .get(request.organisation)
             .getOrFail()
@@ -42,12 +43,17 @@ class CaseCtrl @Inject()(
               .getOrFail()
           }.flip
           case0 = fromInputCase(inputCase, caseTemplate)
-          user ← inputCase.user.map { u ⇒
-            userSrv.current.organisations
-              .users(Permissions.manageCase)
-              .get(u)
-              .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
-          }.flip
+          user ← inputCase
+            .user
+            .map { u ⇒
+              userSrv
+                .current
+                .organisations
+                .users(Permissions.manageCase)
+                .get(u)
+                .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
+            }
+            .flip
 //            organisation ← organisationSrv.getOrFail(request.organisation)
           customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap)
           customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
@@ -113,7 +119,8 @@ class CaseCtrl @Inject()(
             caseSrv
               .get(_)
               .visible
-              .getOrFail())
+              .getOrFail()
+          )
           .map { cases ⇒
             val mergedCase = caseSrv.merge(cases)
             Results.Ok(mergedCase.toJson)

@@ -19,7 +19,8 @@ case class RichObservable(
     observable: Observable with Entity,
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
-    extensions: Seq[KeyValue]) {
+    extensions: Seq[KeyValue]
+) {
   val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex
   val tags: Seq[String]       = observable.tags
   val message: Option[String] = observable.message
@@ -27,5 +28,6 @@ case class RichObservable(
   val ioc: Boolean            = observable.ioc
   val sighted: Boolean        = observable.sighted
 }
+
 @VertexEntity
 case class Data(data: String)

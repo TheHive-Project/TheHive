@@ -1,9 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Set ⇒ JSet}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
+import java.util.{List ⇒ JList, Set ⇒ JSet}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -13,6 +10,9 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -38,13 +38,15 @@ class CaseSrv @Inject()(
       user: Option[User with Entity],
       organisation: Organisation with Entity,
       customFields: Map[String, Option[Any]],
-      caseTemplate: Option[RichCaseTemplate])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
+      caseTemplate: Option[RichCaseTemplate]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
     val createdCase = create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
     user.foreach(caseUserSrv.create(CaseUser(), createdCase, _))
     shareSrv.create(createdCase, organisation, profileSrv.admin)
     caseTemplate.foreach(ct ⇒ caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
 
-    customFields.toSeq
+    customFields
+      .toSeq
       .toTry {
         case (name, Some(value)) ⇒
           for {
@@ -73,7 +75,8 @@ class CaseSrv @Inject()(
 
   def setCustomField(`case`: Case with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
-      authContext: AuthContext): Try[Unit] =
+      authContext: AuthContext
+  ): Try[Unit] =
     getCustomField(`case`, customField.name) match {
       case Some(cf) ⇒ caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
       case None ⇒
@@ -88,14 +91,16 @@ class CaseSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
-  def setImpactStatus(`case`: Case with Entity, impactStatus: ImpactStatus with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext): CaseImpactStatus with Entity =
+  def setImpactStatus(
+      `case`: Case with Entity,
+      impactStatus: ImpactStatus with Entity
+  )(implicit graph: Graph, authContext: AuthContext): CaseImpactStatus with Entity =
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
 
-  def setResolutionStatus(`case`: Case with Entity, resolutionStatus: ResolutionStatus with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext): CaseResolutionStatus with Entity =
+  def setResolutionStatus(
+      `case`: Case with Entity,
+      resolutionStatus: ResolutionStatus with Entity
+  )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity =
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
@@ -182,7 +187,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
           .inTo[UserRole]
           .has(Key("login") of authContext.userId)
-      ))
+      )
+    )
 
   def getLast: CaseSteps = newInstance(raw.order(By(Key[Int]("number"), Order.decr)))
 
@@ -194,10 +200,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold)))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+        )
         .map {
           case (caze, impactStatus, resolutionStatus, user, customFields) ⇒
-            val customFieldValues = (customFields: java.util.List[Path]).asScala
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
                 case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
@@ -221,7 +229,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       name
         .fold[GremlinScala[Vertex]](ccfSteps)(n ⇒ ccfSteps.has(Key("name") of n))
         .path
-        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField])))
+        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
+    )
   }
 
   def linkedCases: CaseSteps = {

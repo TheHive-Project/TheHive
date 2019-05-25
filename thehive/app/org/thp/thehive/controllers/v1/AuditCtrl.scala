@@ -11,6 +11,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditSrv) extends AuditConversion {
+
   def flow(): Action[AnyContent] =
     entryPoint("audit flow")
       .authTransaction(db) { _ ⇒ implicit graph ⇒

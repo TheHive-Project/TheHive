@@ -35,8 +35,8 @@ case class CaseCustomField(
     booleanValue: Option[Boolean] = None,
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
-    dateValue: Option[Date] = None)
-    extends CustomFieldValue[CaseCustomField] {
+    dateValue: Option[Date] = None
+) extends CustomFieldValue[CaseCustomField] {
   override def setStringValue(value: String): CaseCustomField   = copy(stringValue = Some(value))
   override def setBooleanValue(value: Boolean): CaseCustomField = copy(booleanValue = Some(value))
   override def setIntegerValue(value: Int): CaseCustomField     = copy(integerValue = Some(value))
@@ -70,14 +70,16 @@ case class Case(
     tlp: Int,
     pap: Int,
     status: CaseStatus.Value,
-    summary: Option[String])
+    summary: Option[String]
+)
 
 case class RichCase(
     `case`: Case with Entity,
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
-    customFields: Seq[CustomFieldWithValue]) {
+    customFields: Seq[CustomFieldWithValue]
+) {
   val _id: String                = `case`._id
   val _createdBy: String         = `case`._createdBy
   val _updatedBy: Option[String] = `case`._updatedBy
@@ -98,12 +100,14 @@ case class RichCase(
 }
 
 object RichCase {
+
   def apply(
       `case`: Case with Entity,
       caseImpactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      customFields: Seq[CustomFieldWithValue]): RichCase =
+      customFields: Seq[CustomFieldWithValue]
+  ): RichCase =
     `case`
       .asInstanceOf[Case]
       .into[RichCase]

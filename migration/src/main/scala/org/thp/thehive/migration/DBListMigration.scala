@@ -42,17 +42,16 @@ class DBListMigration @Inject()(customFieldSrv: CustomFieldSrv, dbFind: DBFind, 
               valueStr ← (dblist \ "value").asOpt[String]
               createdBy = (dblist \ "createdBy").asOpt[String].getOrElse("init")
               value     = Json.parse(valueStr)
-            } yield
-              userMigration.withUser(createdBy) { implicit authContext ⇒
-                tpe match {
-                  case "case_metrics" | "custom_fields" ⇒
-                    progress.inc(extraMessage = (value \ "name").asOpt[String].getOrElse("***"))
-                    customFieldSrv.create(value.as[CustomField])
-                  case "list_artifactDataType" ⇒
-                    progress.inc()
-                  // TODO ?
-                }
+            } yield userMigration.withUser(createdBy) { implicit authContext ⇒
+              tpe match {
+                case "case_metrics" | "custom_fields" ⇒
+                  progress.inc(extraMessage = (value \ "name").asOpt[String].getOrElse("***"))
+                  customFieldSrv.create(value.as[CustomField])
+                case "list_artifactDataType" ⇒
+                  progress.inc()
+                // TODO ?
               }
+            }
             ()
           }
         }

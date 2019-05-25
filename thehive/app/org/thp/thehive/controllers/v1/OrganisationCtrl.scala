@@ -17,8 +17,8 @@ class OrganisationCtrl @Inject()(
     db: Database,
     organisationSrv: OrganisationSrv,
     errorHandler: HttpErrorHandler,
-    userSrv: UserSrv)
-    extends OrganisationConversion {
+    userSrv: UserSrv
+) extends OrganisationConversion {
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")
@@ -35,7 +35,10 @@ class OrganisationCtrl @Inject()(
   def get(organisationId: String): Action[AnyContent] =
     entryPoint("get organisation")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        userSrv.current.organisations.visibleOrganisations
+        userSrv
+          .current
+          .organisations
+          .visibleOrganisations
           .get(organisationId)
           .getOrFail()
           .map(organisation ⇒ Results.Ok(organisation.toJson))
@@ -54,7 +57,8 @@ class OrganisationCtrl @Inject()(
       .extract('organisation, FieldsParser.update("organisation", organisationProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
-        userSrv.current
+        userSrv
+          .current
           .organisations(Permissions.manageOrganisation)
           .get(organisationId)
           .updateProperties(propertyUpdaters)
