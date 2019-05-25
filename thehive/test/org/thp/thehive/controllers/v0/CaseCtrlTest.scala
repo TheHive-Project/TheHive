@@ -13,9 +13,49 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0.{InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue}
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
+
+case class TestCase(
+    caseId: Int,
+    title: String,
+    description: String,
+    severity: Int,
+    startDate: Date,
+    endDate: Option[Date] = None,
+    tags: Set[String] = Set.empty,
+    flag: Boolean,
+    tlp: Int,
+    pap: Int,
+    status: String,
+    summary: Option[String] = None,
+    owner: Option[String],
+    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    stats: JsValue
+)
+
+object TestCase {
+
+  def apply(outputCase: OutputCase): TestCase =
+    TestCase(
+      outputCase.caseId,
+      outputCase.title,
+      outputCase.description,
+      outputCase.severity,
+      outputCase.startDate,
+      outputCase.endDate,
+      outputCase.tags,
+      outputCase.flag,
+      outputCase.tlp,
+      outputCase.pap,
+      outputCase.status,
+      outputCase.summary,
+      outputCase.owner,
+      outputCase.customFields,
+      outputCase.stats
+    )
+}
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -78,65 +118,57 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val result           = caseCtrl.create(request)
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
-        val expected = Json.toJson(
-          OutputCase(
-            _id = resultCaseOutput._id,
-            id = resultCaseOutput.id,
-            createdBy = "user1",
-            createdAt = resultCaseOutput.createdAt,
-            _type = "case",
-            caseId = resultCaseOutput.caseId,
-            title = "[SPAM] case title (create case test)",
-            description = "case description (create case test)",
-            severity = 2,
-            startDate = now,
-            tags = Set("spam", "src:mail", "tag1", "tag2"),
-            flag = false,
-            tlp = 1,
-            pap = 3,
-            status = "open",
-            owner = None,
-            customFields = outputCustomFields,
-            stats = Json.obj()
-          )
+        val expected = TestCase(
+          caseId = resultCaseOutput.caseId,
+          title = "[SPAM] case title (create case test)",
+          description = "case description (create case test)",
+          severity = 2,
+          startDate = now,
+          endDate = None,
+          flag = false,
+          tlp = 1,
+          pap = 3,
+          status = "open",
+          tags = Set("spam", "src:mail", "tag1", "tag2"),
+          summary = None,
+          owner = None,
+          customFields = outputCustomFields,
+          stats = Json.obj()
         )
 
-        resultCase.toString shouldEqual expected.toString
+        TestCase(resultCaseOutput) shouldEqual expected
       }
 
       "try to get a case" in {
-        val request = FakeRequest("GET", s"/api/v0/case/#1")
+        val request = FakeRequest("GET", s"/api/v0/case/#2")
           .withHeaders("user" → "user1")
         val result = caseCtrl.get("#145")(request)
 
         status(result) shouldEqual 404
 
-        val result2          = caseCtrl.get("#1")(request)
+        val result2          = caseCtrl.get("#2")(request)
         val resultCase       = contentAsJson(result2)
         val resultCaseOutput = resultCase.as[OutputCase]
 
-        val expected = Json.toJson(
-          OutputCase(
-            _id = resultCaseOutput._id,
-            id = resultCaseOutput.id,
-            createdBy = "admin",
-            createdAt = resultCaseOutput.createdAt,
-            _type = "case",
-            caseId = resultCaseOutput.caseId,
-            title = "case#1",
-            description = "description of case #1",
-            severity = 2,
-            startDate = new Date(1531667370000L),
-            flag = false,
-            tlp = 2,
-            pap = 2,
-            status = "open",
-            owner = Some("user1"),
-            stats = Json.obj()
-          )
+        val expected = TestCase(
+          caseId = 2,
+          title = "case#2",
+          description = "description of case #2",
+          severity = 2,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 2,
+          pap = 2,
+          status = "open",
+          tags = Set.empty,
+          summary = None,
+          owner = Some("user2"),
+          customFields = Set.empty,
+          stats = Json.obj()
         )
 
-        resultCase.toString shouldEqual expected.toString
+        TestCase(resultCaseOutput) must_=== expected
       }
 
       "update a case properly" in {
@@ -157,31 +189,25 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
 
-        val expected = Json.toJson(
-          OutputCase(
-            _id = resultCaseOutput._id,
-            id = resultCaseOutput.id,
-            createdBy = "admin",
-            updatedBy = Some("user1"),
-            createdAt = resultCaseOutput.createdAt,
-            updatedAt = resultCaseOutput.updatedAt,
-            _type = "case",
-            caseId = resultCaseOutput.caseId,
-            title = "new title",
-            description = "description of case #1",
-            severity = 2,
-            startDate = new Date(1531667370000L),
-            flag = false,
-            tlp = 2,
-            pap = 1,
-            status = "resolved",
-            owner = Some("user1"),
-            stats = Json.obj(),
-            tags = Set("tag1")
-          )
+        val expected = TestCase(
+          caseId = 1,
+          title = "new title",
+          description = "description of case #1",
+          severity = 2,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 2,
+          pap = 1,
+          status = "resolved",
+          tags = Set("tag1"),
+          summary = None,
+          owner = Some("user1"),
+          customFields = Set.empty,
+          stats = Json.obj()
         )
 
-        resultCase.toString shouldEqual expected.toString
+        TestCase(resultCaseOutput) shouldEqual expected
       }
 
       "get and aggregate properly case stats" in {
