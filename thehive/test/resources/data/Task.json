@@ -1,0 +1,20 @@
+[
+  {
+    "id": "task1",
+    "title": "case 1 task",
+    "group": "group1",
+    "description": "description task 1",
+    "status": "waiting",
+    "flag": false,
+    "order": 0
+  },
+  {
+    "id": "task2",
+    "title": "case 2 task",
+    "group": "group1",
+    "description": "description task 2",
+    "status": "waiting",
+    "flag": true,
+    "order": 1
+  }
+]

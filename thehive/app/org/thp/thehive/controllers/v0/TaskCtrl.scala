@@ -36,7 +36,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         taskSrv
           .get(taskId)
-          .availableFor(request.organisation)
+          .visible
           .getOrFail()
           .map { task ⇒
             Results.Ok(task.toJson)
@@ -48,7 +48,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val tasks = taskSrv
           .initSteps
-          .availableFor(request.organisation)
+          .visible
           .toList()
           .map(_.toJson)
         Success(Results.Ok(Json.toJson(tasks)))
