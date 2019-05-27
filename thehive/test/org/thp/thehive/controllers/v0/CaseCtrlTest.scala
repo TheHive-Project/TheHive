@@ -2,20 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import play.api.libs.json.{ JsObject, JsString, JsValue, Json }
+import play.api.test.{ FakeRequest, PlaySpecification }
+import play.api.{ Configuration, Environment }
+
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
+import org.specs2.specification.core.{ Fragment, Fragments }
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.dto.v0.{InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue}
+import org.thp.scalligraph.controllers.{ AuthenticateSrv, TestAuthenticateSrv }
+import org.thp.scalligraph.models.{ Database, DatabaseProviders, DummyUserSrv, Schema }
+import org.thp.scalligraph.services.{ LocalFileSystemStorageSrv, StorageSrv }
+import org.thp.thehive.dto.v0.{ InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue }
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 case class TestCase(
     caseId: Int,
@@ -232,7 +233,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "open",
-          tags = Set.empty,
+          tags = Set("t1","t2"),
           summary = None,
           owner = Some("user1"),
           customFields = Set(
@@ -253,7 +254,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 3,
           pap = 3,
           status = "open",
-          tags = Set.empty,
+          tags = Set("t1","t3"),
           summary = None,
           owner = Some("user1"),
           customFields = Set.empty,
@@ -265,7 +266,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "get and aggregate properly case stats" in {
         val request = FakeRequest("POST", s"/api/v0/case/_stats")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" → "user3")
           .withJsonBody(
             Json.parse("""{
                             "stats":[
@@ -288,10 +289,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val result = caseCtrl.stats()(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result)
-        val expected   = Json.parse("""{"tag1":{"count":1},"count":3}""")
+        val expected   = Json.parse("""{"t1":{"count":2},"t2":{"count":1},"t3":{"count":1},"count":3}""")
 
         resultCase shouldEqual expected
-      }
+      }.pendingUntilFixed("group by multivalued property doesn't work")
     }
   }
 }

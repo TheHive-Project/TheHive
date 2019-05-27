@@ -33,7 +33,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "open"
+    "status": "open",
+    "tags": ["t1", "t2"]
   },
   {
     "id": "case4",
@@ -45,6 +46,7 @@
     "flag": false,
     "tlp": 3,
     "pap": 3,
-    "status": "open"
+    "status": "open",
+    "tags": ["t1", "t3"]
   }
 ]
