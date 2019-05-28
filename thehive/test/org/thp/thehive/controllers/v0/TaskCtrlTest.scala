@@ -51,8 +51,9 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         list.length shouldEqual 2
 
-        val request    = FakeRequest("GET", s"/api/case/task/${list.last.id}").withHeaders("user" → "user1")
-        val result     = taskCtrl.get(list.last.id)(request)
+        val t1 = list.find(_.title == "case 1 task").get
+        val request    = FakeRequest("GET", s"/api/case/task/${t1.id}").withHeaders("user" → "user1")
+        val result     = taskCtrl.get(t1.id)(request)
         val resultTask = contentAsJson(result)
 
         status(result) shouldEqual 200
@@ -115,6 +116,11 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         )
 
         resultTask.toString shouldEqual expected.toString
+
+        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" → "user1")
+        val resultGet  = taskCtrl.get(resultTaskOutput.id)(requestGet)
+
+        status(resultGet) shouldEqual 200
       }
     }
   }
