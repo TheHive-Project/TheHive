@@ -10,7 +10,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services._
-import org.thp.thehive.dto.v0.{OutputAlert, OutputCase, OutputObservable, OutputTask, OutputUser}
+import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 
@@ -50,7 +50,7 @@ class TheHiveQueryExecutor @Inject()(
     ),
     Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).visible(authContext)),
     Query.init[UserSteps]("listUser", (graph, authContext) ⇒ organisationSrv.get(authContext.organisation)(graph).users),
-    Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
+    Query.init[TaskSteps]("listTask", (graph, authContext) ⇒ taskSrv.initSteps(graph).visible(authContext)),
     Query.init[AlertSteps]("listAlert", (graph, _) ⇒ alertSrv.initSteps(graph)),
     Query.init[ObservableSteps]("listObservable", (graph, _) ⇒ observableSrv.initSteps(graph)),
     Query.init[LogSteps]("listLog", (graph, _) ⇒ logSrv.initSteps(graph)),
@@ -125,7 +125,7 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
     val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
 
     val findParent: GremlinScala[Vertex] =
-      if (stepType =:= ru.typeOf[TaskSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseTask]
+      if (stepType =:= ru.typeOf[TaskSteps]) vertexSteps.as(stepLabel).raw.inTo[ShareTask].outTo[ShareCase]
       else if (stepType =:= ru.typeOf[ObservableSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseObservable]
       else if (stepType =:= ru.typeOf[LogSteps]) vertexSteps.as(stepLabel).raw.inTo[TaskLog]
       else ???
@@ -160,7 +160,7 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
     implicit val graph: Graph = vertexSteps.graph
 
     val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] ⇒ ScalliSteps[_, _, _ <: AnyRef]) =
-      if (stepType =:= ru.typeOf[TaskSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[CaseTask]))
+      if (stepType =:= ru.typeOf[TaskSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareTask].outTo[ShareCase]))
       else if (stepType =:= ru.typeOf[ObservableSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[CaseObservable]))
       else if (stepType =:= ru.typeOf[LogSteps]) ru.typeOf[TaskSteps] → ((s: GremlinScala[Vertex]) ⇒ new TaskSteps(s.inTo[TaskLog]))
       else ???

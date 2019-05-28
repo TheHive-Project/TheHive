@@ -10,7 +10,6 @@ import org.thp.thehive.models._
 
 @Singleton
 class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv)(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
-  val caseTaskSrv         = new EdgeSrv[CaseTask, Case, Task]
   val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
