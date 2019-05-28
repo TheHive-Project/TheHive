@@ -53,9 +53,6 @@ case class CaseObservable()
 @EdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
 
-@EdgeEntity[Case, Task]
-case class CaseTask()
-
 @VertexEntity
 @DefineIndex(IndexType.unique, "number")
 case class Case(

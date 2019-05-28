@@ -28,7 +28,6 @@ class CaseSrv @Inject()(
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
   val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
-  val caseTaskSrv             = new EdgeSrv[CaseTask, Case, Task]
   val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
@@ -255,7 +254,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks = new TaskSteps(raw.outTo[CaseTask])
+  def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
   def observables = new ObservableSteps(raw.outTo[CaseObservable])
 }
