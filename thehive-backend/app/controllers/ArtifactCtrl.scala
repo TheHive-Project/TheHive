@@ -28,6 +28,7 @@ class ArtifactCtrl @Inject()(
     artifactSrv: ArtifactSrv,
     auxSrv: AuxSrv,
     tempSrv: TempSrv,
+    attachmentSrv: AttachmentSrv,
     authenticated: Authenticated,
     renderer: Renderer,
     components: ControllerComponents,
@@ -82,7 +83,7 @@ class ArtifactCtrl @Inject()(
 
       fields
         .get("attachment")
-        .collect {
+        .flatMap {
           case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
             val zipFile                = new ZipFile(filepath.toFile)
             val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
@@ -105,9 +106,24 @@ class ArtifactCtrl @Inject()(
                   .set("dataType", "file")
                   .set("attachment", fiv)
               }
-            artifactSrv
+            val x = Some(artifactSrv
               .create(caseId, multiFields)
-              .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
+              .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult)))
+            x
+          case JsonInputValue(attachment) =>
+            val x = for {
+              attachmentId <- (attachment \ "id").asOpt[String]
+              name <- (attachment \ "name").asOpt[String]
+              contentType <- (attachment \ "contentType").asOpt[String]
+            } yield {
+              for {
+                hashes <- attachmentSrv.getHashes(attachmentId)
+                size <- attachmentSrv.getSize(attachmentId)
+              aiv = AttachmentInputValue(name, hashes, size.toLong, contentType, attachmentId)
+              artifact <- artifactSrv.create(caseId, fields.set("attachment", aiv))
+              } yield renderer.toOutput(CREATED, artifact)
+            }
+          x
         }
         .getOrElse {
           artifactSrv
