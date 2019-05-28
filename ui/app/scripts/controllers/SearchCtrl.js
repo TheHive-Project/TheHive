@@ -14,30 +14,31 @@
                 {name: 'audit', label: 'Audit Logs', icon: 'glyphicon glyphicon-list-alt'}
             ];
 
-            $scope.baseFilter = {
-                _and: [
-                  {
-                      _not: {
-                          'status': 'Deleted'
-                      }
-                  },
-                  {
-                    _not: {
-                        '_in': {
-                            '_field': '_type',
-                            '_values': ['dashboard', 'data', 'user', 'analyzer', 'caseTemplate', 'reportTemplate', 'action']
-                        }
-                    }
-                  }
-                ]
-            };
-
             $scope.getUserInfo = UserInfoSrv;
             $scope.config = GlobalSearchSrv.restore();
 
             $scope.openEntity = EntitySrv.open;
             $scope.isImage = function(contentType) {
                 return angular.isString(contentType) && contentType.indexOf('image') === 0;
+            };
+
+            $scope.buildBaseFilter = function(entityName) {
+                var statusCriterion = {
+                    _not: {
+                        'status': 'Deleted'
+                    }
+                };
+
+                var typeCriterion = {
+                  _not: {
+                      '_in': {
+                          '_field': '_type',
+                          '_values': ['dashboard', 'data', 'user', 'analyzer', 'caseTemplate', 'reportTemplate', 'action']
+                      }
+                  }
+                };
+
+                return entityName === 'all' ? {_and: [statusCriterion, typeCriterion]} : statusCriterion;
             };
 
             $scope.importAlert = function(event) {
@@ -136,7 +137,7 @@
 
                         $scope.searchResults = PSearchSrv(undefined, entityName === 'all' ? 'any' : $scope.metadata[entityName].path, {
                             filter: query,
-                            baseFilter: $scope.baseFilter,
+                            baseFilter: $scope.buildBaseFilter(entityName),
                             nparent: 10,
                             nstats: entityName === 'audit',
                             skipStream: true
