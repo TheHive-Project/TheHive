@@ -1,15 +1,15 @@
 package controllers
 
 import java.io.FilterInputStream
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-import play.api.{Configuration, Logger}
 import play.api.http.Status
-import play.api.libs.json.JsArray
+import play.api.libs.json.{JsArray, JsValue}
 import play.api.mvc._
+import play.api.{Configuration, Logger}
 
 import javax.inject.{Inject, Singleton}
 import models.Roles
@@ -21,7 +21,7 @@ import org.elastic4play.controllers._
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
 import org.elastic4play.services._
-import org.elastic4play.{BadRequestError, InternalError, Timed}
+import org.elastic4play.{BadRequestError, InternalError, InvalidFormatAttributeError, Timed}
 
 @Singleton
 class ArtifactCtrl @Inject()(
@@ -70,6 +70,45 @@ class ArtifactCtrl @Inject()(
     }
   }
 
+  private def getFieldsFromZipFile(caseId: String, fields: Fields, filepath: Path)(implicit authContext: AuthContext): Seq[Fields] = {
+    val zipFile                = new ZipFile(filepath.toFile)
+    val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
+
+    if (zipFile.isEncrypted) {
+      val pw = fields
+        .getString("zipPassword")
+        .filterNot(_.isEmpty)
+        .getOrElse(configuration.get[String]("datastore.attachment.password"))
+      zipFile.setPassword(pw)
+    }
+
+    /*val multiFields = */
+    files
+      .filterNot(_.isDirectory)
+      .flatMap(extractAndCheckSize(zipFile, _))
+      .map { fiv ⇒
+        fields
+          .unset("isZip")
+          .unset("zipPassword")
+          .set("dataType", "file")
+          .set("attachment", fiv)
+      }
+  }
+
+  def getFieldsFromAttachment(fields: Fields, attachment: JsValue): Future[Seq[Fields]] = {
+    val artifactFields = for {
+      attachmentId ← (attachment \ "id").asOpt[String]
+      name         ← (attachment \ "name").asOpt[String]
+      contentType  ← (attachment \ "contentType").asOpt[String]
+    } yield {
+      for {
+        hashes ← attachmentSrv.getHashes(attachmentId)
+        size   ← attachmentSrv.getSize(attachmentId)
+      } yield fields.set("attachment", AttachmentInputValue(name, hashes, size.toLong, contentType, attachmentId))
+    }
+    artifactFields.fold[Future[Seq[Fields]]](Future.successful(Nil))(_.map(f ⇒ Seq(f)))
+  }
+
   @Timed
   def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     val fields = request.body
@@ -80,50 +119,20 @@ class ArtifactCtrl @Inject()(
       .filterNot(_.isEmpty)
     // if data is not multivalued, use simple API (not bulk API)
     if (data.isEmpty) {
-
       fields
         .get("attachment")
-        .flatMap {
+        .map {
           case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
-            val zipFile                = new ZipFile(filepath.toFile)
-            val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
-
-            if (zipFile.isEncrypted) {
-              val pw = fields
-                .getString("zipPassword")
-                .filterNot(_.isEmpty)
-                .getOrElse(configuration.get[String]("datastore.attachment.password"))
-              zipFile.setPassword(pw)
-            }
-
-            val multiFields = files
-              .filterNot(_.isDirectory)
-              .flatMap(extractAndCheckSize(zipFile, _))
-              .map { fiv ⇒
-                fields
-                  .unset("isZip")
-                  .unset("zipPassword")
-                  .set("dataType", "file")
-                  .set("attachment", fiv)
-              }
-            val x = Some(artifactSrv
-              .create(caseId, multiFields)
-              .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult)))
-            x
-          case JsonInputValue(attachment) =>
-            val x = for {
-              attachmentId <- (attachment \ "id").asOpt[String]
-              name <- (attachment \ "name").asOpt[String]
-              contentType <- (attachment \ "contentType").asOpt[String]
-            } yield {
-              for {
-                hashes <- attachmentSrv.getHashes(attachmentId)
-                size <- attachmentSrv.getSize(attachmentId)
-              aiv = AttachmentInputValue(name, hashes, size.toLong, contentType, attachmentId)
-              artifact <- artifactSrv.create(caseId, fields.set("attachment", aiv))
-              } yield renderer.toOutput(CREATED, artifact)
-            }
-          x
+            Future.successful(getFieldsFromZipFile(caseId, fields, filepath))
+          case JsonInputValue(JsArray(attachments)) ⇒
+            Future.traverse(attachments)(attachment ⇒ getFieldsFromAttachment(fields, attachment)).map(_.flatten)
+          case JsonInputValue(attachment) ⇒ getFieldsFromAttachment(fields, attachment)
+          case other                      ⇒ Future.failed(InvalidFormatAttributeError("attachment", "attachment/file", other))
+        }
+        .map { fields ⇒
+          fields
+            .flatMap(f ⇒ artifactSrv.create(caseId, f))
+            .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
         }
         .getOrElse {
           artifactSrv
