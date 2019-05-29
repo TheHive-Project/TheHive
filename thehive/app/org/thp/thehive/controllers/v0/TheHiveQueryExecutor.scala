@@ -96,7 +96,8 @@ class TheHiveQueryExecutor @Inject()(
     Query.output[Task with Entity, OutputTask],
     Query.output[RichAlert, OutputAlert],
     Query.output[RichObservable, OutputObservable],
-    Query.output[RichUser, OutputUser]
+    Query.output[RichUser, OutputUser],
+    Query.output[Log with Entity, OutputLog]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)
