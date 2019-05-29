@@ -8,7 +8,7 @@
 
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
-        <button class="btn btn-primary pull-right" ng-show="step ==='error'" ng-click="copyToClipboard()" type="button"><i class="fa fa-copy"></i> Copy to clipboard</button>        
+        <button class="btn btn-primary pull-right" ng-show="step ==='error'" ng-click="copyToClipboard()" type="button"><i class="fa fa-copy"></i> Copy to clipboard</button>
         <button class="btn btn-primary pull-right" ng-show="step ==='form'" ng-disabled="observableForm.$invalid || pendingAsync" type="submit"><i class="fa fa-plus"></i> Create observable(s)</button>
     </div>
 </form>

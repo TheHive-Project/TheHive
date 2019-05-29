@@ -74,6 +74,22 @@
                     ].join('\n');
 
                     _.each(toImport, function(list, key) {
+                        var params = {
+                            dataType: key,
+                            single: list.length === 1,
+                            ioc: false,
+                            sighted: false,
+                            tlp: 2,
+                            message: message,
+                            tags: [{text: 'src:' + $scope.analyzer}]
+                        };
+
+                        if(key === 'file') {
+                            params.attachment = _.pluck(list, 'attachment');
+                            params.isUpload = false;
+                        } else {
+                            params.data = _.pluck(list, 'data').join('\n');
+                        }
 
                         var modal = $uibModal.open({
                             animation: 'true',
@@ -82,20 +98,7 @@
                             size: 'lg',
                             resolve: {
                                 params: function() {
-                                    return {
-                                        dataType: key,
-                                        single: list.length === 1,
-                                        ioc: false,
-                                        sighted: false,
-                                        data: _.pluck(list, 'data').join('\n'),
-                                        tlp: 2,
-                                        message: message,
-                                        tags: [],
-                                        tagNames: ''
-                                    };
-                                },
-                                tags: function() {
-                                    return [{text: 'src:' + $scope.analyzer}];
+                                    return params;
                                 }
                             }
                         });
