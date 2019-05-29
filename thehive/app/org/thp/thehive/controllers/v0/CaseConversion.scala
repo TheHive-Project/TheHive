@@ -2,10 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.language.implicitConversions
-
-import play.api.libs.json.JsObject
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
@@ -13,6 +9,9 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseSteps
+import play.api.libs.json.JsObject
+
+import scala.language.implicitConversions
 
 trait CaseConversion extends CustomFieldConversion {
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
@@ -45,23 +44,6 @@ trait CaseConversion extends CustomFieldConversion {
       .withFieldConst(_.number, 0)
       .transform
 
-  def fromInputCase(inputCase: InputCase, caseTemplate: Option[RichCaseTemplate]): Case =
-    caseTemplate.fold(fromInputCase(inputCase)) { ct ⇒
-      inputCase
-        .into[Case]
-        .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)
-        .withFieldComputed(_.severity, _.severity.orElse(ct.severity).getOrElse(2))
-        .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
-        .withFieldComputed(_.flag, _.flag.getOrElse(ct.flag))
-        .withFieldComputed(_.tlp, _.tlp.orElse(ct.tlp).getOrElse(2))
-        .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))
-        .withFieldComputed(_.tags, _.tags ++ ct.tags)
-        .withFieldConst(_.summary, ct.summary)
-        .withFieldConst(_.status, CaseStatus.open)
-        .withFieldConst(_.number, 0)
-        .transform
-    }
-
   val caseProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
       .property[String]("title")(_.simple.updatable)
@@ -73,7 +55,7 @@ trait CaseConversion extends CustomFieldConversion {
       .property[Boolean]("flag")(_.simple.updatable)
       .property[Int]("tlp")(_.simple.updatable)
       .property[Int]("pap")(_.simple.updatable)
-      .property[String]("status")(_.simple.updatable)
+      .property[String]("status")(_.derived(_.value[String]("status").map(_.capitalize)).readonly)
       .property[Option[String]]("summary")(_.simple.updatable)
       .property[String]("user")(_.simple.updatable)
       .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
@@ -90,4 +72,21 @@ trait CaseConversion extends CustomFieldConversion {
         ).readonly
       )
       .build
+
+  def fromInputCase(inputCase: InputCase, caseTemplate: Option[RichCaseTemplate]): Case =
+    caseTemplate.fold(fromInputCase(inputCase)) { ct ⇒
+      inputCase
+        .into[Case]
+        .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)
+        .withFieldComputed(_.severity, _.severity.orElse(ct.severity).getOrElse(2))
+        .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
+        .withFieldComputed(_.flag, _.flag.getOrElse(ct.flag))
+        .withFieldComputed(_.tlp, _.tlp.orElse(ct.tlp).getOrElse(2))
+        .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))
+        .withFieldComputed(_.tags, _.tags ++ ct.tags)
+        .withFieldConst(_.summary, ct.summary)
+        .withFieldConst(_.status, CaseStatus.open)
+        .withFieldConst(_.number, 0)
+        .transform
+    }
 }
