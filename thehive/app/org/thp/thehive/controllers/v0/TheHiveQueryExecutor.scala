@@ -34,14 +34,16 @@ class TheHiveQueryExecutor @Inject()(
     with TaskConversion
     with AlertConversion
     with ObservableConversion
-    with UserConversion {
+    with UserConversion
+    with LogConversion {
 
   override val publicProperties: List[PublicProperty[_, _]] =
     caseProperties ++
       taskProperties ++
       alertProperties ++
       observableProperties ++
-      userProperties(userSrv)
+      userProperties(userSrv) ++
+      logProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
@@ -63,6 +65,11 @@ class TheHiveQueryExecutor @Inject()(
       "range",
       FieldsParser[RangeParams],
       (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)
+    ),
+    Query.withParam[RangeParams, LogSteps, PagedResult[Log with Entity]](
+      "page",
+      FieldsParser[RangeParams],
+      (range, logSteps, _) ⇒ logSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query.withParam[RangeParams, TaskSteps, PagedResult[Task with Entity]](
       "page",
