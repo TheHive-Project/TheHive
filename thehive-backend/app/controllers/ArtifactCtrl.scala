@@ -124,6 +124,7 @@ class ArtifactCtrl @Inject()(
         .map {
           case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
             Future.successful(getFieldsFromZipFile(caseId, fields, filepath))
+          case _: FileInputValue ⇒ Future.successful(Seq(fields))
           case JsonInputValue(JsArray(attachments)) ⇒
             Future.traverse(attachments)(attachment ⇒ getFieldsFromAttachment(fields, attachment)).map(_.flatten)
           case JsonInputValue(attachment) ⇒ getFieldsFromAttachment(fields, attachment)
