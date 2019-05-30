@@ -52,10 +52,6 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
       .extract('query, searchParser("listLog", paged = false))
       .authTransaction(db) { implicit request ⇒ graph ⇒
         val query: Query = request.body('query)
-
-        val test = logSrv.initSteps(graph).tt.getOrFail()
-
-
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = (result.toJson \ "result").as[JsArray]
         result.toOutput match {

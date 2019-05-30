@@ -39,7 +39,5 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
 
   override def newInstance(raw: GremlinScala[Vertex]): LogSteps = new LogSteps(raw)
 
-  val task = new TaskSteps(raw.in("TaskLog"))
-
-  def tt = newInstance(raw.has(Key("_label") of "Log"))
+  def task = new TaskSteps(raw.in("TaskLog"))
 }
