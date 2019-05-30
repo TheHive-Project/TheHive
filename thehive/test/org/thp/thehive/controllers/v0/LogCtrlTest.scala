@@ -73,14 +73,14 @@ class LogCtrlTest extends PlaySpecification with Mockito {
           id = log.id,
           createdBy = "user1",
           createdAt = log.createdAt,
-          _type = "",
+          _type = "case_task_log",
           message = "log 1\n\n### yeahyeahyeahs",
           startDate = log.createdAt,
           status = "Ok",
           owner = "user1"
         )
 
-        logJson.toString shouldEqual Json.toJson(expected).toString
+        logJson.toString shouldEqual Json.toJson(Seq(expected)).toString
       }
     }
   }
