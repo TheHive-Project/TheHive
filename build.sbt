@@ -4,10 +4,10 @@ import Dependencies._
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration, thehiveFrontend)
   .settings(
     inThisBuild(
-      List(
+      Seq(
         organization := "org.thp",
         scalaVersion := "2.12.8",
         resolvers ++= Seq(
@@ -44,9 +44,9 @@ lazy val thehive = (project in file("."))
         scalafmtConfig := file(".scalafmt.conf")
       )),
     name := "thehive",
-    compile := {
-      scala.sys.process.Process(Seq("grunt", "wiredep"), baseDirectory.value / "frontend").!
-      (compile in Compile).value
+    Compile / run := {
+      (thehiveFrontend / gruntDev).value
+      (Compile / run).evaluated
     }
   )
 // format: on
@@ -106,4 +106,62 @@ lazy val thehiveMigration = (project in file("migration"))
     resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
     fork := true,
     javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml")
+  )
+
+lazy val npm        = taskKey[Unit]("Install npm dependencies")
+lazy val bower      = taskKey[Unit]("Install bower dependencies")
+lazy val gruntDev   = taskKey[Unit]("Inject bower dependencies in index.html")
+lazy val gruntBuild = taskKey[Seq[(File, String)]]("Build frontend files")
+
+lazy val thehiveFrontend = (project in file("frontend"))
+  .settings(
+    name := "thehive-frontend",
+    npm :=
+      FileBuilder(
+        label = "npm",
+        inputFiles = baseDirectory.value / "package.json",
+        outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
+        command = baseDirectory.value → "npm install",
+        streams = streams.value
+      ),
+    bower := FileBuilder(
+      label = "bower",
+      inputFiles = baseDirectory.value / "bower.json",
+      outputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
+      command = baseDirectory.value → "bower install",
+      streams = streams.value
+    ),
+    gruntDev := {
+      npm.value
+      bower.value
+      FileBuilder(
+        label = "grunt",
+        inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
+        outputFiles = baseDirectory.value / "app" / "index.html",
+        command = baseDirectory.value → "grunt wiredep",
+        streams = streams.value
+      )
+    },
+    gruntBuild := {
+      npm.value
+      bower.value
+      val dist = baseDirectory.value / "dist"
+      val outputFiles = FileBuilder(
+        label = "grunt",
+        inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
+        outputFiles = dist ** AllPassFilter,
+        command = baseDirectory.value → "grunt build",
+        streams = streams.value
+      )
+      for {
+        file        ← outputFiles.toSeq
+        rebasedFile ← sbt.Path.rebase(dist, "frontend")(file)
+      } yield file → rebasedFile
+    },
+    Compile / packageBin / mappings := gruntBuild.value,
+    cleanFiles ++= Seq(
+      baseDirectory.value / "dist",
+      baseDirectory.value / "bower_components",
+      baseDirectory.value / "node_modules"
+    )
   )
