@@ -41,7 +41,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
     s"[$name] log controller" should {
 
-      "be able to create and retrieve a log" in {
+      "be able to create, retrieve and patch a log" in {
         val tList = tasksList(app)
         val task  = tList.find(_.title == "case 1 task").get
         val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
@@ -58,7 +58,25 @@ class LogCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
-
+                   "_and":[
+                      {
+                         "_and":[
+                            {
+                               "_parent":{
+                                  "_type":"case_task",
+                                  "_query":{
+                                     "_id":"${task.id}"
+                                  }
+                               }
+                            },
+                            {
+                               "_not":{
+                                  "status":"Deleted"
+                               }
+                            }
+                         ]
+                      }
+                   ]
                 }
              }
             """.stripMargin))
@@ -81,6 +99,18 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         )
 
         logJson.toString shouldEqual Json.toJson(Seq(expected)).toString
+
+        val requestPatch = FakeRequest("PATCH", s"/api/case/task/log/${log.id}")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse(s"""
+              {
+                "message":"yeah",
+                "deleted": true
+             }
+            """.stripMargin))
+        val resultPatch = logCtrl.update(log.id)(requestPatch)
+
+        status(resultPatch) shouldEqual 204
       }
     }
   }
