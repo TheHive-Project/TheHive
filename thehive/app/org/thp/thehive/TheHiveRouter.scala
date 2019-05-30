@@ -42,7 +42,7 @@ class AssetProvider @Inject()(environment: Environment, assets: Assets, extAsset
       extAssets.at("frontend/app", name)
   }
 
-  def prodResolver: String ⇒ Action[AnyContent] = name ⇒ assets.at("frontend", name)
+  def prodResolver: String ⇒ Action[AnyContent] = name ⇒ assets.at("/frontend", name)
 
   override def get(): AssetGetter = environment.mode match {
     case Mode.Dev ⇒ new AssetGetter(devResolver)
