@@ -11,7 +11,7 @@ import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
 @Singleton
 class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, taskSrv: TaskSrv, val queryExecutor: TheHiveQueryExecutor)
@@ -43,6 +43,13 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
           .get(logId)
           .can(Permissions.manageTask)
           .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
+      }
+
+  def delete(logId: String): Action[AnyContent] =
+    entryPoint("update log")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        Try(logSrv.initSteps.remove(logId))
           .map(_ ⇒ Results.NoContent)
       }
 

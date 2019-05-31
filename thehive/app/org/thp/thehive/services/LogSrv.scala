@@ -54,4 +54,9 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     )
 
   override def newInstance(raw: GremlinScala[Vertex]): LogSteps = new LogSteps(raw)
+
+  def remove(id: String): Unit = {
+    raw.has(Key("_id") of id).drop().iterate()
+    ()
+  }
 }
