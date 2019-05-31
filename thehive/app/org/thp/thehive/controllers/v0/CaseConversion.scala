@@ -55,7 +55,7 @@ trait CaseConversion extends CustomFieldConversion {
       .property[Boolean]("flag")(_.simple.updatable)
       .property[Int]("tlp")(_.simple.updatable)
       .property[Int]("pap")(_.simple.updatable)
-      .property[String]("status")(_.derived(_.value[String]("status").map(_.capitalize)).readonly)
+      .property[String]("status")(_.simple.updatable)
       .property[Option[String]]("summary")(_.simple.updatable)
       .property[String]("user")(_.simple.updatable)
       .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
