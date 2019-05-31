@@ -112,6 +112,58 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
         status(resultPatch) shouldEqual 204
       }
+
+      "be able to create and remove a log" in {
+        val tList = tasksList(app)
+        val task  = tList.find(_.title == "case 1 task").get
+
+        val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse(s"""
+              {
+                "query":{
+                   "_and":[
+                      {
+                         "_and":[
+                            {
+                               "_parent":{
+                                  "_type":"case_task",
+                                  "_query":{
+                                     "_id":"${task.id}"
+                                  }
+                               }
+                            },
+                            {
+                               "_not":{
+                                  "status":"Deleted"
+                               }
+                            }
+                         ]
+                      }
+                   ]
+                }
+             }
+            """.stripMargin))
+        val resultSearch = logCtrl.search(requestSearch)
+
+        status(resultSearch) shouldEqual 200
+
+        val logJson = contentAsJson(resultSearch)
+        val log     = logJson.as[Seq[OutputLog]].head
+
+        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" → "user1")
+        val resultDelete = logCtrl.delete(log.id)(requestDelete)
+
+        status(resultDelete) shouldEqual 204
+
+        val resultSearch2 = logCtrl.search(requestSearch)
+
+        status(resultSearch2) shouldEqual 200
+
+        val emptyList = contentAsJson(resultSearch2)
+
+        emptyList.as[Seq[OutputLog]].size shouldEqual 0
+      }
     }
   }
 
