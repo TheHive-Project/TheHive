@@ -3,7 +3,8 @@
     "name": "analyst",
     "permissions": [
       "manageCase",
-      "manageAlert"
+      "manageAlert",
+      "manageTask"
     ]
   },
   {

@@ -165,7 +165,7 @@ class FunctionalTest extends PlaySpecification {
         "create new user" in {
           val asyncResp = client.user.create(InputUser("toom", "Thomas", Some("secret"), "analyst"))
           user2 = TestUser(await(asyncResp))
-          val expected = TestUser("toom", "Thomas", "analyst", Set("manageAlert", "manageCase"), "default")
+          val expected = TestUser("toom", "Thomas", "analyst", Set("manageAlert", "manageCase", "manageTask"), "default")
           user2 must_=== expected
         }
 

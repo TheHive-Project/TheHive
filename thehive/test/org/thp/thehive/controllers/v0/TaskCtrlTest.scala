@@ -8,10 +8,10 @@ import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.dto.v0.{InputTask, OutputTask}
+import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
@@ -41,6 +41,58 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
     s"[$name] task controller" should {
 
+      "list available tasks and get one task" in {
+        val list = tasksList(taskCtrl)
+
+        list.length shouldEqual 2
+
+        val t1         = list.find(_.title == "case 1 task").get
+        val request    = FakeRequest("GET", s"/api/case/task/${t1.id}").withHeaders("user" → "user1")
+        val result     = taskCtrl.get(t1.id)(request)
+        val resultTask = contentAsJson(result)
+
+        status(result) shouldEqual 200
+
+        val resultTaskOutput = resultTask.as[OutputTask]
+        val expected = Json.toJson(
+          OutputTask(
+            _id = resultTaskOutput._id,
+            id = resultTaskOutput.id,
+            title = "case 1 task",
+            description = Some("description task 1"),
+            startDate = None,
+            flag = false,
+            status = "waiting",
+            order = resultTaskOutput.order,
+            group = Some("group1"),
+            endDate = None,
+            dueDate = None
+          )
+        )
+
+        resultTask.toString shouldEqual expected.toString
+      }
+
+      "patch a task" in {
+        val list = tasksList(taskCtrl)
+
+        list.length shouldEqual 2
+
+        val t1 = list.find(_.title == "case 1 task").get
+        val request = FakeRequest("PATCH", s"/api/case/task/${t1.id}")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse("""{"owner": "user1", "title": "new title task 1", "status": "inProgress"}"""))
+        val result = taskCtrl.update(t1.id)(request)
+
+        status(result) shouldEqual 204
+
+        val newList  = tasksList(taskCtrl)
+        val expected = newList.find(_.title == "new title task 1")
+
+        expected must beSome[OutputTask]
+        expected.get.status shouldEqual "inProgress"
+      }
+
       "create a new task for an existing case" in {
         val request = FakeRequest("POST", "/api/case/#1/task?flag=true")
           .withJsonBody(
@@ -56,8 +108,9 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           )
           .withHeaders("user" → "user1")
 
-        val result           = taskCtrl.create("#1")(request)
-        val resultTask       = contentAsJson(result)
+        val result     = taskCtrl.create("#1")(request)
+        val resultTask = contentAsJson(result)
+
         status(result) shouldEqual 201
 
         val resultTaskOutput = resultTask.as[OutputTask]
@@ -70,7 +123,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
             startDate = None,
             flag = true,
             status = "waiting",
-            order = resultTaskOutput.order,
+            order = 0,
             group = Some("group1"),
             endDate = None,
             dueDate = None
@@ -78,7 +131,21 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         )
 
         resultTask.toString shouldEqual expected.toString
+
+        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" → "user1")
+        val resultGet  = taskCtrl.get(resultTaskOutput.id)(requestGet)
+
+        status(resultGet) shouldEqual 200
       }
     }
+  }
+
+  def tasksList(taskCtrl: TaskCtrl): Seq[OutputTask] = {
+    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
+    val resultList  = taskCtrl.list(requestList)
+
+    status(resultList) shouldEqual 200
+
+    contentAsJson(resultList).as[Seq[OutputTask]]
   }
 }

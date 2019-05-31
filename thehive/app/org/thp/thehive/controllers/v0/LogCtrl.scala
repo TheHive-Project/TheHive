@@ -3,14 +3,15 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.Query
+import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputLog
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{LogSrv, TaskSrv}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
 @Singleton
 class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, taskSrv: TaskSrv, val queryExecutor: TheHiveQueryExecutor)
@@ -23,10 +24,33 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
       .extract('log, FieldsParser[InputLog])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputLog: InputLog = request.body('log)
-        taskSrv.getOrFail(taskId).map { task ⇒
-          val createdObservable = logSrv.create(inputLog, task)
-          Results.Created(createdObservable.toJson)
-        }
+        taskSrv
+          .get(taskId)
+          .can(Permissions.manageTask)
+          .getOrFail()
+          .map { task ⇒
+            val createdObservable = logSrv.create(inputLog, task)
+            Results.Created(createdObservable.toJson)
+          }
+      }
+
+  def update(logId: String): Action[AnyContent] =
+    entryPoint("update log")
+      .extract('log, FieldsParser.update("log", logProperties))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('log)
+        logSrv
+          .get(logId)
+          .can(Permissions.manageTask)
+          .updateProperties(propertyUpdaters)
+          .map(_ ⇒ Results.NoContent)
+      }
+
+  def delete(logId: String): Action[AnyContent] =
+    entryPoint("update log")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        Try(logSrv.initSteps.remove(logId))
+          .map(_ ⇒ Results.NoContent)
       }
 
   def stats(): Action[AnyContent] = {

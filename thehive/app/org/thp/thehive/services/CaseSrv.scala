@@ -28,7 +28,6 @@ class CaseSrv @Inject()(
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
   val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
-  val caseTaskSrv             = new EdgeSrv[CaseTask, Case, Task]
   val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
@@ -65,10 +64,10 @@ class CaseSrv @Inject()(
       }
   }
 
+  def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(caseIdOrNumber).visible.isDefined
-
-  def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
   def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     customFieldSrv.getOrFail(customFieldName).flatMap(cf ⇒ setCustomField(`case`, cf, value))
@@ -160,8 +159,6 @@ class CaseSrv @Inject()(
 
 @EntitySteps[Case]
 class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Case, CaseSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
-
   override def get(id: String): CaseSteps =
     Success(id)
       .filter(_.headOption.contains('#'))
@@ -176,6 +173,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
     raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
   )
+
+  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
     newInstance(
@@ -233,6 +232,13 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   }
 
+  def getOrganisationShare(id: String)(implicit authContext: AuthContext): ShareSteps = new ShareSteps(
+    raw
+      .has(Key("_id") of id)
+      .inTo[ShareCase]
+      .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+  )
+
   def linkedCases: CaseSteps = {
     val label = StepLabel[JSet[Vertex]]()
     new CaseSteps(
@@ -248,7 +254,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks = new TaskSteps(raw.outTo[CaseTask])
+  def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
   def observables = new ObservableSteps(raw.outTo[CaseObservable])
 }

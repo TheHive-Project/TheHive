@@ -9,8 +9,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
 @Singleton
-class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
-  val caseTaskSrv         = new EdgeSrv[CaseTask, Case, Task]
+class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv)(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
   val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
@@ -19,7 +18,13 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
 
   def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Task with Entity = {
     val createdTask = create(task)
-    caseTaskSrv.create(CaseTask(), `case`, createdTask)
+
+    caseSrv
+      .initSteps
+      .getOrganisationShare(`case`._id)
+      .getOrFail()
+      .map(s ⇒ shareSrv.shareTaskSrv.create(ShareTask(), s, createdTask))
+
     createdTask
   }
 
@@ -30,7 +35,7 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
   }
 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(taskId).availableFor(authContext).isDefined
+    get(taskId).visible(authContext).isDefined
 
   def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
     get(task).unassign()
@@ -41,11 +46,16 @@ class TaskSrv @Inject()(implicit db: Database) extends VertexSrv[Task, TaskSteps
 
 @EntitySteps[Task]
 class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
-  @deprecated("", "")
-  def availableFor(authContext: AuthContext): TaskSteps =
-    availableFor(authContext.organisation)
+  def visible(implicit authContext: AuthContext): TaskSteps = newInstance(
+    raw.filter(
+      _.inTo[ShareTask]
+        .inTo[OrganisationShare]
+        .has(Key("name") of authContext.organisation)
+    )
+  )
+
+  override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
   @deprecated("", "")
   def availableFor(organisation: String): TaskSteps = ???

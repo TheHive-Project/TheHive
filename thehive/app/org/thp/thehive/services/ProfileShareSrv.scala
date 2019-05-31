@@ -13,15 +13,14 @@ import scala.util.Try
 
 @Singleton
 class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
+  lazy val admin: Profile with Entity = db.tryTransaction(graph ⇒ getOrFail("admin")(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     Profile("admin", Permissions.all),
-    Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert)),
+    Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask)),
     Profile("read-only", Set.empty)
   )
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ProfileSteps = new ProfileSteps(raw)
-
-  lazy val admin: Profile with Entity = db.tryTransaction(graph ⇒ getOrFail("admin")(graph)).get
 }
 
 @EntitySteps[Profile]

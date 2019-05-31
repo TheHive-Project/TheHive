@@ -95,8 +95,8 @@ class Router @Inject()(
     case POST(p"/case/task/log/_search") ⇒ logCtrl.search()
     case POST(p"/case/task/log/_stats")  ⇒ logCtrl.stats()
     case POST(p"/case/task/$taskId/log") ⇒ logCtrl.create(taskId)
-//    case PATCH(p"/case/task/log/$logId") => logCtrl.update(logId)
-//    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId)
+    case PATCH(p"/case/task/log/$logId") ⇒ logCtrl.update(logId)
+    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId)
 //    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
 
     case POST(p"/case/artifact/_search") ⇒ observableCtrl.search()
@@ -127,8 +127,8 @@ class Router @Inject()(
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
-    case GET(p"/audit") ⇒ auditCtrl.flow()
-//      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+    case GET(p"/audit")                                                 ⇒ auditCtrl.flow(None, None)
+    case GET(p"/flow" ? q_o"rootId=$rootId" & q_o"count=${int(count)}") ⇒ auditCtrl.flow(rootId, count)
 //    GET      /audit                               controllers.AuditCtrl.find()
 //    POST     /audit/_search                       controllers.AuditCtrl.find()
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats()
