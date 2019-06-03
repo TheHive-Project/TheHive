@@ -5,7 +5,7 @@ import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.InputCase
+import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models.{Permissions, RichCaseTemplate, User}
 import org.thp.thehive.services._
 import play.api.Logger
@@ -25,16 +25,19 @@ class CaseCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     val queryExecutor: TheHiveQueryExecutor
 ) extends QueryCtrl
-    with CaseConversion {
+    with CaseConversion with TaskConversion {
 
   lazy val logger = Logger(getClass)
 
   def create: Action[AnyContent] =
     entryPoint("create case")
       .extract('case, FieldsParser[InputCase])
+      .extract('tasks, FieldsParser[InputTask].sequence.on("tasks"))
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val caseTemplateName: Option[String] = request.body('caseTemplate)
+        val inputCase: InputCase       = request.body('case)
+        val inputTasks: Seq[InputTask] = request.body('tasks)
         for {
           caseTemplate ← caseTemplateName
             .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName ⇒
@@ -45,13 +48,13 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          inputCase: InputCase = request.body('case)
-          case0                = fromInputCase(inputCase, caseTemplate)
           user         ← inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u ⇒ userSrv.getOrFail(u).map(Some.apply))
           organisation ← organisationSrv.getOrFail(request.organisation)
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
+          case0                      <- Success(fromInputCase(inputCase, caseTemplate))
           richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
 
+          _ = inputTasks.map(t => taskSrv.create(fromInputTask(t), richCase.`case`))
           _ = caseTemplate.foreach { ct ⇒
             caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
               taskSrv.create(task, richCase.`case`)

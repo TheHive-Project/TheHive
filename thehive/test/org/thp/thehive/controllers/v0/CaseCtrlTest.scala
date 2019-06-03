@@ -2,19 +2,18 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{ JsObject, JsString, JsValue, Json }
-import play.api.test.{ FakeRequest, PlaySpecification }
-import play.api.{ Configuration, Environment }
-
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
-import org.specs2.specification.core.{ Fragment, Fragments }
+import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
-import org.thp.scalligraph.controllers.{ AuthenticateSrv, TestAuthenticateSrv }
-import org.thp.scalligraph.models.{ Database, DatabaseProviders, DummyUserSrv, Schema }
-import org.thp.scalligraph.services.{ LocalFileSystemStorageSrv, StorageSrv }
-import org.thp.thehive.dto.v0.{ InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue }
+import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.thehive.dto.v0.{InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue, OutputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
 
@@ -138,6 +137,48 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         )
 
         TestCase(resultCaseOutput) shouldEqual expected
+      }
+
+      "create a new case from scratch" in {
+        val now = new Date()
+
+        val request = FakeRequest("POST", "/api/v0/case")
+          .withJsonBody(
+            Json
+              .parse(
+                """{
+                     "status":"Open",
+                     "severity":2,
+                     "tlp":2,
+                     "pap":2,
+                     "title":"test 6",
+                     "description":"desc ok",
+                     "tags":[],
+                     "tasks":[
+                        {
+                           "title":"task x",
+                           "flag":false,
+                           "status":"waiting"
+                        }
+                     ]
+                  }"""
+              )
+              .as[JsObject]
+          )
+          .withHeaders("user" → "user1")
+
+        val result           = caseCtrl.create(request)
+
+        status(result) shouldEqual 201
+
+        val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
+        val resultList  = app.instanceOf[TaskCtrl].list(requestList)
+
+        status(resultList) shouldEqual 200
+
+        val tasksList = contentAsJson(resultList).as[Seq[OutputTask]]
+
+        tasksList.find(_.title == "task x") shouldNotEqual None
       }
 
       "try to get a case" in {
@@ -269,6 +310,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" → "user3")
           .withJsonBody(
             Json.parse("""{
+                            "query": {},
                             "stats":[
                                {
                                   "_agg":"field",
