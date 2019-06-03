@@ -82,15 +82,33 @@ case class AddTagToAlert(tag: String, status: ActionOperationStatus.Type = Actio
   override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddTagToAlert = copy(status = newStatus, message = newMessage)
 }
 
+case class AddArtifactToCase(
+    data: String,
+    dataType: String,
+    dataMessage: String,
+    status: ActionOperationStatus.Type = ActionOperationStatus.Waiting,
+    message: String = ""
+) extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AddArtifactToCase =
+    copy(status = newStatus, message = newMessage)
+}
+
+case class AssignCase(owner: String, status: ActionOperationStatus.Type = ActionOperationStatus.Waiting, message: String = "")
+    extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Type, newMessage: String): AssignCase = copy(status = newStatus, message = newMessage)
+}
+
 object ActionOperation {
-  val addTagToCaseWrites     = Json.writes[AddTagToCase]
-  val addTagToArtifactWrites = Json.writes[AddTagToArtifact]
-  val createTaskWrites       = Json.writes[CreateTask]
-  val addCustomFieldsWrites  = Json.writes[AddCustomFields]
-  val closeTaskWrites        = Json.writes[CloseTask]
-  val markAlertAsReadWrites  = Json.writes[MarkAlertAsRead]
-  val addLogToTaskWrites     = Json.writes[AddLogToTask]
-  val addTagToAlertWrites    = Json.writes[AddTagToAlert]
+  val addTagToCaseWrites      = Json.writes[AddTagToCase]
+  val addTagToArtifactWrites  = Json.writes[AddTagToArtifact]
+  val createTaskWrites        = Json.writes[CreateTask]
+  val addCustomFieldsWrites   = Json.writes[AddCustomFields]
+  val closeTaskWrites         = Json.writes[CloseTask]
+  val markAlertAsReadWrites   = Json.writes[MarkAlertAsRead]
+  val addLogToTaskWrites      = Json.writes[AddLogToTask]
+  val addTagToAlertWrites     = Json.writes[AddTagToAlert]
+  val addArtifactToCaseWrites = Json.writes[AddArtifactToCase]
+  val assignCaseWrites        = Json.writes[AssignCase]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](
     json ⇒
       (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
@@ -110,20 +128,32 @@ object ActionOperation {
             content ← (json \ "content").validate[String]
             owner   ← (json \ "owner").validateOpt[String]
           } yield AddLogToTask(content, owner)
+        case "AddArtifactToCase" ⇒
+          for {
+            data        ← (json \ "data").validate[String]
+            dataType    ← (json \ "dataType").validate[String]
+            dataMessage ← (json \ "message").validate[String]
+          } yield AddArtifactToCase(data, dataType, dataMessage)
+        case "AssignCase" ⇒
+          for {
+            owner ← (json \ "owner").validate[String]
+          } yield AssignCase(owner)
         case "AddTagToAlert" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToAlert(tag))
         case other           ⇒ JsError(s"Unknown operation $other")
       }
   )
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
-    case a: AddTagToCase     ⇒ addTagToCaseWrites.writes(a)
-    case a: AddTagToArtifact ⇒ addTagToArtifactWrites.writes(a)
-    case a: CreateTask       ⇒ createTaskWrites.writes(a)
-    case a: AddCustomFields  ⇒ addCustomFieldsWrites.writes(a)
-    case a: CloseTask        ⇒ closeTaskWrites.writes(a)
-    case a: MarkAlertAsRead  ⇒ markAlertAsReadWrites.writes(a)
-    case a: AddLogToTask     ⇒ addLogToTaskWrites.writes(a)
-    case a: AddTagToAlert    ⇒ addTagToAlertWrites.writes(a)
-    case a                   ⇒ Json.obj("unsupported operation" → a.toString)
+    case a: AddTagToCase      ⇒ addTagToCaseWrites.writes(a)
+    case a: AddTagToArtifact  ⇒ addTagToArtifactWrites.writes(a)
+    case a: CreateTask        ⇒ createTaskWrites.writes(a)
+    case a: AddCustomFields   ⇒ addCustomFieldsWrites.writes(a)
+    case a: CloseTask         ⇒ closeTaskWrites.writes(a)
+    case a: MarkAlertAsRead   ⇒ markAlertAsReadWrites.writes(a)
+    case a: AddLogToTask      ⇒ addLogToTaskWrites.writes(a)
+    case a: AddTagToAlert     ⇒ addTagToAlertWrites.writes(a)
+    case a: AddArtifactToCase ⇒ addArtifactToCaseWrites.writes(a)
+    case a: AssignCase        ⇒ assignCaseWrites.writes(a)
+    case a                    ⇒ Json.obj("unsupported operation" → a.toString)
   }
 }
 
@@ -261,6 +291,17 @@ class ActionOperationSrv @Inject()(
               task ← findTaskEntity(entity)
               _    ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          case AddArtifactToCase(data, dataType, dataMessage, _, _) ⇒
+            for {
+              initialCase ← findCaseEntity(entity)
+              artifact    ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
+          case AssignCase(owner, _, _) ⇒
+            for {
+              initialCase ← findCaseEntity(entity)
+              caze        ← caseSrv.get(initialCase.id)
+              _           ← caseSrv.update(caze, Fields.empty.set("owner", owner), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+            } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AddTagToAlert(tag, _, _) ⇒
             entity match {
               case initialAlert: Alert ⇒
@@ -277,9 +318,9 @@ class ActionOperationSrv @Inject()(
           case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
         }
       }.recover {
-          case error ⇒
-            logger.error("Operation execution fails", error)
-            operation.updateStatus(ActionOperationStatus.Failure, error.getMessage)
-        }
+        case error ⇒
+          logger.error("Operation execution fails", error)
+          operation.updateStatus(ActionOperationStatus.Failure, error.getMessage)
+      }
     } else Future.successful(operation)
 }
