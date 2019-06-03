@@ -1,20 +1,22 @@
 package org.thp.thehive.migration
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.ElasticDsl.{boolQuery, search, termQuery, RichString}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.elastic4play.database.DBFind
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EdgeSrv
 import org.thp.thehive.models.{Audit, Audited}
-import org.thp.thehive.services.{AuditSrv, EventSrv}
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import org.thp.thehive.services.AuditSrv
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import org.elastic4play.database.DBFind
 
 @Singleton
 class AuditMigration @Inject()(

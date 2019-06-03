@@ -40,9 +40,11 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('log)
         logSrv
-          .get(logId)
-          .can(Permissions.manageTask)
-          .updateProperties(propertyUpdaters)
+          .update(
+            _.get(logId)
+              .can(Permissions.manageTask),
+            propertyUpdaters
+          )
           .map(_ ⇒ Results.NoContent)
       }
 
