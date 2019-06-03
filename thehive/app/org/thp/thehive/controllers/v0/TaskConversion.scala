@@ -2,6 +2,9 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.language.implicitConversions
+import scala.util.{Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
@@ -10,9 +13,13 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Task, TaskStatus, TaskUser}
-import org.thp.thehive.services.TaskSteps
+import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
+import org.thp.scalligraph.RichOptionTry
 
 trait TaskConversion {
+  val taskSrv: TaskSrv
+  val userSrv: UserSrv
+
   implicit def fromInputTask(inputTask: InputTask): Task =
     inputTask
       .into[Task]
@@ -41,6 +48,18 @@ trait TaskConversion {
       .property[Option[Date]]("endDate")(_.simple.updatable)
       .property[Int]("order")(_.simple.updatable)
       .property[Option[Date]]("dueDate")(_.simple.updatable)
-      .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).readonly)
+      .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
+        (_, _, login: Option[String], vertex, _, graph, authContext) ⇒
+          for {
+            task ← taskSrv.get(vertex)(graph).getOrFail()
+            user ← login.map(userSrv.get(_)(graph).getOrFail()).flip
+          } yield user match {
+            case Some(u) ⇒
+              taskSrv.assign(task, u)(graph, authContext)
+              Json.obj("owner" → u.login)
+            case None ⇒
+              Json.obj("owner" → JsNull)
+          }
+      })
       .build
 }
