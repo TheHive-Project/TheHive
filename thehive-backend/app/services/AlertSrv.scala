@@ -255,7 +255,10 @@ class AlertSrv(
           _ ← setCase(alert, caze)
         } yield ()
       }
-      .map(_ ⇒ caze)
+      .flatMap { _ ⇒ // then merge all tags
+        val newTags = (caze.tags() ++ alerts.flatMap(_.tags())).distinct.map(JsString.apply)
+        caseSrv.update(caze, Fields.empty.set("tags", JsArray(newTags)))
+      }
 
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     val artifactsFields = alert

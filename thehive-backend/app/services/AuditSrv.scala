@@ -66,13 +66,13 @@ class AuditSrv @Inject()(
         and("requestId" ~= audit.requestId(), "objectType" in (streamableEntities: _*)),
         groupByField("objectType", groupByField("operation", selectCount))
       ).map { json ⇒
-          json.collectValues {
-            case objectType: JsObject ⇒
-              objectType.collectValues {
-                case operation: JsObject ⇒ (operation \ "count").as[JsValue]
-              }
-          }
+        json.collectValues {
+          case objectType: JsObject ⇒
+            objectType.collectValues {
+              case operation: JsObject ⇒ (operation \ "count").as[JsValue]
+            }
         }
+      }
       val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, withStats = false, removeUnaudited = true)
 
       for {
