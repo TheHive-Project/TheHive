@@ -95,8 +95,7 @@ class UserCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('user)
         userSrv // Authorisation is managed in public properties
-          .get(userId)
-          .updateProperties(propertyUpdaters)
+          .update(_.get(userId), propertyUpdaters)
           .map(_ ⇒ Results.NoContent)
       }
 

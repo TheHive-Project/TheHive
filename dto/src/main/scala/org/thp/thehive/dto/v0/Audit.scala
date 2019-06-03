@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 import org.thp.scalligraph.models.Entity
 
@@ -23,19 +23,47 @@ object OutputEntity {
 
 case class OutputAudit(
     _id: String,
+    id: String,
     _createdBy: String,
-    _updatedBy: Option[String] = None,
+//    _updatedBy: Option[String] = None, // can't be set
     _createdAt: Date,
-    _updatedAt: Option[Date] = None,
+//    _updatedAt: Option[Date] = None, // can't be set
+    base: Boolean = true, // always true
+    details: JsObject,
+    objectId: String,
+    objectType: String,
     operation: String,
     requestId: String,
-    attributeName: Option[String],
-    oldValue: Option[String],
-    newValue: Option[String],
-    obj: OutputEntity,
+    rootId: String,
+    startDate: Date,
+    `object`: Option[OutputEntity],
     summary: Map[String, Map[String, Int]]
 )
 
 object OutputAudit {
   implicit val format: OFormat[OutputAudit] = Json.format[OutputAudit]
 }
+
+/*
+{
+ "base": {
+  base: true
+    createdAt/By
+    details: ** updated fields **
+    id
+    object: { _ with parent _}
+    objectId
+    objectType:
+    operation:
+    requestId:
+    rootId:
+    startDate:
+    _id
+    _parent
+    _routing
+    _type: audit
+    _version
+ }
+ "summary": { objectType: { operation: count}}
+}
+ */

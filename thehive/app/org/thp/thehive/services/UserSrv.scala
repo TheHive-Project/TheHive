@@ -54,6 +54,8 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
 class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[User, UserSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
+  def current(authContext: AuthContext): UserSteps = get(authContext.userId)
+
   override def get(id: String): UserSteps =
     Try(UUID.fromString(id))
       .map(_ ⇒ getById(id))

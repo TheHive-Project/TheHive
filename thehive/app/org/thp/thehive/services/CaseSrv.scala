@@ -7,9 +7,11 @@ import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P ⇒ JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
@@ -19,7 +21,8 @@ class CaseSrv @Inject()(
     customFieldSrv: CustomFieldSrv,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
-    shareSrv: ShareSrv
+    shareSrv: ShareSrv,
+    auditSrv: AuditSrv
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -44,25 +47,35 @@ class CaseSrv @Inject()(
     shareSrv.create(createdCase, organisation, profileSrv.admin)
     caseTemplate.foreach(ct ⇒ caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
 
-    customFields
-      .toSeq
-      .toTry {
-        case (name, Some(value)) ⇒
-          for {
-            cf  ← customFieldSrv.getOrFail(name)
-            ccf ← cf.`type`.setValue(CaseCustomField(), value)
-            alertCustomField = caseCustomFieldSrv.create(ccf, createdCase, cf)
-          } yield CustomFieldWithValue(cf, alertCustomField)
-        case (name, _) ⇒
-          customFieldSrv.getOrFail(name).map { cf ⇒
-            val alertCustomField = caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
-            CustomFieldWithValue(cf, alertCustomField)
-          }
-      }
-      .map { cfs ⇒
-        RichCase(createdCase, None, None, user.map(_.login), cfs)
-      }
+    for {
+      _ ← auditSrv.createCase(createdCase)
+      cfs ← customFields
+        .toSeq
+        .toTry {
+          case (name, Some(value)) ⇒
+            for {
+              cf  ← customFieldSrv.getOrFail(name)
+              ccf ← cf.`type`.setValue(CaseCustomField(), value)
+              alertCustomField = caseCustomFieldSrv.create(ccf, createdCase, cf)
+            } yield CustomFieldWithValue(cf, alertCustomField)
+          case (name, _) ⇒
+            customFieldSrv.getOrFail(name).map { cf ⇒
+              val alertCustomField = caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
+              CustomFieldWithValue(cf, alertCustomField)
+            }
+        }
+    } yield RichCase(createdCase, None, None, user.map(_.login), cfs)
   }
+
+  override def update(
+      steps: CaseSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] =
+    for {
+      (caseSteps, updatedFields) ← super.update(steps, propertyUpdaters)
+      case0                      ← caseSteps.clone.getOrFail()
+      _                          ← auditSrv.updateCase(case0, updatedFields)
+    } yield (caseSteps, updatedFields)
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
@@ -76,14 +89,17 @@ class CaseSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
-    getCustomField(`case`, customField.name) match {
-      case Some(cf) ⇒ caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
-      case None ⇒
-        customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField ⇒
-          caseCustomFieldSrv.create(caseCustomField, `case`, customField)
-          ()
-        }
-    }
+    for {
+      _ ← getCustomField(`case`, customField.name) match {
+        case Some(cf) ⇒ caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
+        case None ⇒
+          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField ⇒
+            caseCustomFieldSrv.create(caseCustomField, `case`, customField)
+            ()
+          }
+      }
+      _ ← auditSrv.updateCase(`case`, Json.obj(s"customField.${customField.name}" → value.toString))
+    } yield ()
 
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
     get(`case`).customFields(Some(customFieldName)).headOption()
@@ -93,14 +109,18 @@ class CaseSrv @Inject()(
   def setImpactStatus(
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): CaseImpactStatus with Entity =
+  )(implicit graph: Graph, authContext: AuthContext): CaseImpactStatus with Entity = {
+    auditSrv.updateCase(`case`, Json.obj("impactStatus" → impactStatus.value))
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
+  }
 
   def setResolutionStatus(
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity =
+  )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity = {
+    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" → resolutionStatus.value))
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
+  }
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
 //  {

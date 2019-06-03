@@ -2,26 +2,24 @@ package org.thp.thehive
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Promise}
-
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.{bind, SimpleModule}
-import play.api.libs.json._
-import play.api.libs.ws.WSClient
-import play.api.test.{Helpers, PlaySpecification, TestServer}
-import play.api.{Configuration, Environment}
-
 import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.core.Fragments
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
 import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
 import org.thp.thehive.controllers.v1.{TestCase, TestUser}
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{AuditedDatabase, UserSrv}
+import org.thp.thehive.services.UserSrv
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.{SimpleModule, bind}
+import play.api.libs.json._
+import play.api.libs.ws.WSClient
+import play.api.test.{Helpers, PlaySpecification, TestServer}
+import play.api.{Configuration, Environment}
+
+import scala.concurrent.{ExecutionContext, Promise}
 
 case class TestTask(
     title: String,
@@ -132,7 +130,7 @@ class FunctionalTest extends PlaySpecification {
               bind[AssetsMetadata].toProvider[AssetsMetadataProvider],
               bind[AssetsConfiguration].toProvider[AssetsConfigurationProvider],
               bind[StorageSrv].to[LocalFileSystemStorageSrv],
-              bind[Database].to[AuditedDatabase]
+//              bind[Database].to[AuditedDatabase]
             )
           )
         val application = applicationBuilder

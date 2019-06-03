@@ -4,13 +4,13 @@ import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv, UserSrv}
+import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AbstractController
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}

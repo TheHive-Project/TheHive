@@ -56,9 +56,11 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
         taskSrv
-          .get(taskId)
-          .can(Permissions.manageTask)
-          .updateProperties(propertyUpdaters)
+          .update(
+            _.get(taskId)
+              .can(Permissions.manageTask),
+            propertyUpdaters
+          )
           .map(_ ⇒ Results.NoContent)
       }
 }

@@ -65,9 +65,11 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
         alertSrv
-          .get(alertId)
-          .can(Permissions.manageAlert)
-          .updateProperties(propertyUpdaters)
+          .update(
+            _.get(alertId)
+              .can(Permissions.manageAlert),
+            propertyUpdaters
+          )
           .map(_ ⇒ Results.NoContent)
       }
 

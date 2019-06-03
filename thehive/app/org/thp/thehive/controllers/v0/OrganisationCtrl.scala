@@ -53,11 +53,14 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
       .extract('organisation, FieldsParser.update("organisation", organisationProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
-        userSrv
-          .current
-          .organisations(Permissions.manageOrganisation)
-          .get(organisationId)
-          .updateProperties(propertyUpdaters)
+        organisationSrv
+          .update(
+            userSrv
+              .current
+              .organisations(Permissions.manageOrganisation)
+              .get(organisationId),
+            propertyUpdaters
+          )
           .map(_ ⇒ Results.NoContent)
       }
 }

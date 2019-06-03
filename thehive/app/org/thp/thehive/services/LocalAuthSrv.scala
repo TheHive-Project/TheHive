@@ -60,6 +60,9 @@ class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Local
 
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
     db.tryTransaction { implicit graph ⇒
-      userSrv.get(username).update("password" → Some(LocalAuthSrv.hashPassword(newPassword)))
+      userSrv
+        .get(username)
+        .update("password" → Some(LocalAuthSrv.hashPassword(newPassword)))
+        .map(_ ⇒ ())
     }
 }

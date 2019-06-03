@@ -31,7 +31,7 @@ case class OutputAudit(
     attributeName: Option[String],
     oldValue: Option[String],
     newValue: Option[String],
-    obj: OutputEntity,
+    obj: Option[OutputEntity],
     summary: Map[String, Map[String, Int]]
 )
 

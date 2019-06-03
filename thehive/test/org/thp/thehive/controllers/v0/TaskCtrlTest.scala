@@ -110,7 +110,6 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         val result     = taskCtrl.create("#1")(request)
         val resultTask = contentAsJson(result)
-
         status(result) shouldEqual 201
 
         val resultTaskOutput = resultTask.as[OutputTask]

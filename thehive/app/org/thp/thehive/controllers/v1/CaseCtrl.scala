@@ -19,7 +19,8 @@ class CaseCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    auditSrv: AuditSrv
 ) extends CaseConversion {
 
   def create: Action[AnyContent] =
@@ -93,9 +94,7 @@ class CaseCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
         caseSrv
-          .get(caseIdOrNumber)
-          .can(Permissions.manageCase)
-          .updateProperties(propertyUpdaters)
+          .update(_.get(caseIdOrNumber).can(Permissions.manageCase), propertyUpdaters)
           .map(_ ⇒ Results.NoContent)
       }
 

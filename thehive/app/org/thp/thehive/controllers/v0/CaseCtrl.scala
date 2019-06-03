@@ -11,7 +11,6 @@ import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.{Success, Try}
 
 @Singleton
@@ -121,17 +120,18 @@ class CaseCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
         caseSrv
-          .get(caseIdOrNumber)
-          .can(Permissions.manageCase)
-          .updateProperties(propertyUpdaters)
-          .flatMap(_ ⇒ {
-            caseSrv
-              .get(caseIdOrNumber)
-              .visible
-              .richCase
-              .getOrFail()
-              .map(richCase ⇒ Results.Ok(richCase.toJson))
-          })
+          .update(
+            _.get(caseIdOrNumber)
+              .can(Permissions.manageCase),
+            propertyUpdaters
+          )
+          .flatMap {
+            case (caseSteps, _) ⇒
+              caseSteps
+                .richCase
+                .getOrFail()
+                .map(richCase ⇒ Results.Ok(richCase.toJson))
+          }
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =

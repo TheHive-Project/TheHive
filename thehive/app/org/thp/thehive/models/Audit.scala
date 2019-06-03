@@ -1,50 +1,47 @@
 package org.thp.thehive.models
+
 import java.util.Date
 
 import gremlin.scala.{Edge, Graph, Vertex}
-import org.thp.scalligraph.VertexEntity
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.thehive.services.EventMessage
 
-object AuditableAction extends Enumeration {
-  val Update, Creation, Delete, Get = Value
-}
+@EdgeEntity[Audit, User]
+case class AuditUser()
 
 @VertexEntity
 case class Audit(
-    operation: AuditableAction.Value,
     requestId: String,
-    attributeName: Option[String],
-    oldValue: Option[String],
-    newValue: Option[String]
+    action: String,
+    objectId: Option[String],
+    objectType: Option[String],
+    details: Option[String]
 )
 
 case class RichAudit(
     _id: String,
     _createdAt: Date,
     _createdBy: String,
-    operation: AuditableAction.Value,
+    action: String,
     requestId: String,
-    attributeName: Option[String],
-    oldValue: Option[String],
-    newValue: Option[String],
-    obj: Entity,
-    summary: Map[String, Map[AuditableAction.Value, Int]]
-)
+    details: Option[String],
+    context: Entity,
+    `object`: Option[Entity]
+) extends EventMessage
 
 object RichAudit {
 
-  def apply(audit: Audit with Entity, obj: Entity, summary: Map[String, Map[AuditableAction.Value, Int]]): RichAudit =
+  def apply(audit: Audit with Entity, context: Entity, `object`: Option[Entity]): RichAudit =
     new RichAudit(
       audit._id,
       audit._createdAt,
       audit._createdBy,
-      audit.operation,
+      audit.action,
       audit.requestId,
-      audit.attributeName,
-      audit.oldValue,
-      audit.newValue,
-      obj,
-      summary
+      audit.details,
+      context,
+      `object`
     )
 }
 
@@ -69,5 +66,28 @@ object Audited extends HasEdgeModel[Audited, Audit, Product] {
       override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.dateMapping.optional)
     }
     override def create(e: Audited, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
+  }
+}
+case class AuditContext()
+
+object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
+
+  override val model: Model.Edge[AuditContext, Audit, Product] = new EdgeModel[Audit, Product] { thisModel ⇒
+    override type E = AuditContext
+    override val label: String                                = "Audited"
+    override val fromLabel: String                            = "Audit"
+    override val toLabel: String                              = ""
+    override val indexes: Seq[(IndexType.Value, Seq[String])] = Nil
+
+    override val fields: Map[String, Mapping[_, _, _]] = Map.empty
+    override def toDomain(element: Edge)(implicit db: Database): AuditContext with Entity = new AuditContext with Entity {
+      override val _id: String                = element.value[String]("_id")
+      override val _model: Model              = thisModel
+      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.stringMapping)
+      override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.stringMapping.optional)
+      override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.dateMapping)
+      override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.dateMapping.optional)
+    }
+    override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
   }
 }

@@ -66,9 +66,11 @@ class CaseTemplateCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('caseTemplate)
         caseTemplateSrv
-          .get(caseTemplateNameOrId)
-          .can(Permissions.manageCaseTemplate)
-          .updateProperties(propertyUpdaters)
+          .update(
+            _.get(caseTemplateNameOrId)
+              .can(Permissions.manageCaseTemplate),
+            propertyUpdaters
+          )
           .map(_ ⇒ Results.NoContent)
       }
 }

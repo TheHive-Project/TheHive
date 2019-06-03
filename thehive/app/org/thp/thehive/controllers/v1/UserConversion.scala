@@ -2,13 +2,13 @@ package org.thp.thehive.controllers.v1
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.{Output, UnsupportedAttributeError}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User, UserStatus}
 import org.thp.thehive.services.{UserSrv, UserSteps}
+import play.api.libs.json.Json
 
 trait UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -52,8 +52,10 @@ trait UserConversion {
         isCurrentUser
           .orElse(isUserAdmin)
           .flatMap {
-            case _ if path.isEmpty ⇒ Success(db.setProperty(vertex, "name", value, prop.mapping))
-            case _                 ⇒ Failure(UnsupportedAttributeError(s"name.$path"))
+            case _ if path.isEmpty ⇒
+              db.setProperty(vertex, "name", value, prop.mapping)
+              Success(Json.obj("name" → value))
+            case _ ⇒ Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
       .property[String]("apikey")(_.simple.readonly)
@@ -65,8 +67,10 @@ trait UserConversion {
           .get(vertex)
           .existsOrFail()
           .flatMap {
-            case _ if path.isEmpty ⇒ Success(db.setProperty(vertex, "status", value.toString, prop.mapping))
-            case _                 ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
+            case _ if path.isEmpty ⇒
+              db.setProperty(vertex, "status", value.toString, prop.mapping)
+              Success(Json.obj("status" → value))
+            case _ ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
           }
       })
       .build
