@@ -1,10 +1,10 @@
 package connectors.cortex.models
 
+import play.api.libs.json.JsObject
+
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-
-import play.api.libs.json.JsObject
 
 sealed abstract class CortexArtifact(attributes: JsObject)
 case class FileArtifact(data: Source[ByteString, NotUsed], attributes: JsObject) extends CortexArtifact(attributes)

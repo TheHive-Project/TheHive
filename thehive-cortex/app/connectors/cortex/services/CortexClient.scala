@@ -1,20 +1,20 @@
 package connectors.cortex.services
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-import play.api.{ Configuration, Logger }
+import play.api.{Configuration, Logger}
 import play.api.http.HeaderNames
-import play.api.libs.json.{ JsObject, JsValue, Json }
-import play.api.libs.ws.{ WSAuthScheme, WSRequest, WSResponse }
-import play.api.mvc.MultipartFormData.{ DataPart, FilePart }
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.ws.{WSAuthScheme, WSRequest, WSResponse}
+import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import connectors.cortex.models.JsonFormat._
 import connectors.cortex.models._
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import models.HealthStatus
 import services.CustomWSAPI
 
@@ -202,7 +202,6 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
         case _    ⇒ HealthStatus.Ok
       }
 
-  def getAttachment(id: String)(implicit ec: ExecutionContext): Future[Source[ByteString, _]] = {
+  def getAttachment(id: String)(implicit ec: ExecutionContext): Future[Source[ByteString, _]] =
     request(s"api/datastore/$id", _.get, _.bodyAsSource)
-  }
 }

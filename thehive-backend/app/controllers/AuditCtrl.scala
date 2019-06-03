@@ -1,6 +1,6 @@
 package controllers
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 import play.api.http.Status
@@ -9,20 +9,22 @@ import play.api.mvc._
 import models.Roles
 import services.AuditSrv
 
-import org.elastic4play.{ BadRequestError, Timed }
-import org.elastic4play.controllers.{ Authenticated, Fields, FieldsBodyParser, Renderer }
-import org.elastic4play.services.{ Agg, AuxSrv, QueryDSL, QueryDef }
-import org.elastic4play.services.JsonFormat.{ aggReads, queryReads }
+import org.elastic4play.{BadRequestError, Timed}
+import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser, Renderer}
+import org.elastic4play.services.{Agg, AuxSrv, QueryDSL, QueryDef}
+import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
 
 @Singleton
-class AuditCtrl @Inject() (
+class AuditCtrl @Inject()(
     auditSrv: AuditSrv,
     auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
     components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends AbstractController(components) with Status {
+    implicit val ec: ExecutionContext
+) extends AbstractController(components)
+    with Status {
 
   /**
     * Return audit logs. For each item, include ancestor entities
@@ -35,10 +37,10 @@ class AuditCtrl @Inject() (
 
   @Timed
   def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
-    val range = request.body.getString("range")
-    val sort = request.body.getStrings("sort").getOrElse(Nil)
-    val nparent = request.body.getLong("nparent").getOrElse(0L).toInt
+    val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
+    val range     = request.body.getString("range")
+    val sort      = request.body.getStrings("sort").getOrElse(Nil)
+    val nparent   = request.body.getLong("nparent").getOrElse(0L).toInt
     val withStats = request.body.getBoolean("nstats").getOrElse(false)
 
     val (alerts, total) = auditSrv.find(query, range, sort)
@@ -48,10 +50,15 @@ class AuditCtrl @Inject() (
 
   @Timed
   def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    val query = request.body.getValue("query")
+    val query = request
+      .body
+      .getValue("query")
       .fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
-    val aggs = request.body.getValue("stats")
-      .getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
+    val aggs = request
+      .body
+      .getValue("stats")
+      .getOrElse(throw BadRequestError("Parameter \"stats\" is missing"))
+      .as[Seq[Agg]]
     auditSrv.stats(query, aggs).map(s ⇒ Ok(s))
   }
 

@@ -1,8 +1,8 @@
 package services
 
-import javax.inject.{ Inject, Provider, Singleton }
+import javax.inject.{Inject, Provider, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 import play.api.Logger
@@ -11,7 +11,7 @@ import play.api.libs.json._
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import models._
 
 import org.elastic4play.controllers.Fields
@@ -19,7 +19,7 @@ import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
-class CaseSrv @Inject() (
+class CaseSrv @Inject()(
     caseModel: CaseModel,
     artifactModel: ArtifactModel,
     taskSrv: TaskSrv,
@@ -32,9 +32,10 @@ class CaseSrv @Inject() (
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) {
+    implicit val mat: Materializer
+) {
 
-  private lazy val alertSrv = alertSrvProvider.get
+  private lazy val alertSrv        = alertSrvProvider.get
   private[CaseSrv] lazy val logger = Logger(getClass)
 
   def applyTemplate(template: CaseTemplate, originalFields: Fields): Fields = {
@@ -43,8 +44,8 @@ class CaseSrv @Inject() (
       case _             ⇒ JsObject.empty
     }
 
-    val metrics = originalFields.getValue("metrics").fold(JsObject.empty)(_.as[JsObject]) deepMerge template.metrics().as[JsObject]
-    val tags = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
+    val metrics      = originalFields.getValue("metrics").fold(JsObject.empty)(_.as[JsObject]) deepMerge template.metrics().as[JsObject]
+    val tags         = (originalFields.getStrings("tags").getOrElse(Nil) ++ template.tags()).distinct
     val customFields = getJsObjectOrEmpty(template.customFields()) ++ getJsObjectOrEmpty(originalFields.getValue("customFields"))
 
     originalFields
@@ -72,7 +73,8 @@ class CaseSrv @Inject() (
         val taskFields = fields.getValues("tasks").collect {
           case task: JsObject ⇒ Fields(task)
         } ++ template.map(_.tasks().map(Fields(_))).getOrElse(Nil)
-        taskSrv.create(caze, taskFields)
+        taskSrv
+          .create(caze, taskFields)
           .map(_ ⇒ caze)
       }
   }
@@ -92,51 +94,56 @@ class CaseSrv @Inject() (
   def update(caze: Case, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Case] =
     updateSrv(caze, fields, modifyConfig)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Seq[Try[Case]]] = {
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
+      implicit authContext: AuthContext
+  ): Future[Seq[Try[Case]]] =
     updateSrv[CaseModel, Case](caseModel, ids, fields, modifyConfig)
-  }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Case] =
     deleteSrv[CaseModel, Case](caseModel, id)
 
-  def realDelete(id: String)(implicit authContext: AuthContext): Future[Unit] = {
+  def realDelete(id: String)(implicit authContext: AuthContext): Future[Unit] =
     get(id).flatMap(realDelete)
-  }
 
   def realDelete(caze: Case)(implicit authContext: AuthContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
     for {
-      _ ← taskSrv.find(withParent(caze), Some("all"), Nil)._1
+      _ ← taskSrv
+        .find(withParent(caze), Some("all"), Nil)
+        ._1
         .mapAsync(1)(taskSrv.realDelete)
         .runWith(Sink.ignore)
-      _ ← artifactSrv.find(withParent(caze), Some("all"), Nil)._1
+      _ ← artifactSrv
+        .find(withParent(caze), Some("all"), Nil)
+        ._1
         .mapAsync(1)(artifactSrv.realDelete)
         .runWith(Sink.ignore)
-      _ ← auditSrv.findFor(caze, Some("all"), Nil)._1
+      _ ← auditSrv
+        .findFor(caze, Some("all"), Nil)
+        ._1
         .mapAsync(1)(auditSrv.realDelete)
         .runWith(Sink.ignore)
-      _ = alertSrv.find("case" ~= caze.id, Some("all"), Nil)._1
+      _ = alertSrv
+        .find("case" ~= caze.id, Some("all"), Nil)
+        ._1
         .mapAsync(1)(alertSrv.unsetCase(_))
       _ ← deleteSrv.realDelete(caze)
     } yield ()
   }
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Case, NotUsed], Future[Long]) = {
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Case, NotUsed], Future[Long]) =
     findSrv[CaseModel, Case](caseModel, queryDef, range, sortBy)
-  }
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(caseModel, queryDef, aggs: _*)
 
   def getStats(id: String): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     for {
-      taskStats ← taskSrv.stats(and(
-        withParent("case", id),
-        "status" in ("Waiting", "InProgress", "Completed")), Seq(groupByField("status", selectCount)))
-      artifactStats ← findSrv(
-        artifactModel,
-        and(withParent("case", id), "status" ~= "Ok"),
-        groupByField("status", selectCount))
+      taskStats ← taskSrv.stats(
+        and(withParent("case", id), "status" in ("Waiting", "InProgress", "Completed")),
+        Seq(groupByField("status", selectCount))
+      )
+      artifactStats ← findSrv(artifactModel, and(withParent("case", id), "status" ~= "Ok"), groupByField("status", selectCount))
     } yield Json.obj(("tasks", taskStats), ("artifacts", artifactStats))
   }
 
@@ -144,16 +151,15 @@ class CaseSrv @Inject() (
     import org.elastic4play.services.QueryDSL._
     findSrv[ArtifactModel, Artifact](
       artifactModel,
-      and(
-        parent("case", and(
-          withId(id),
-          "status" ~!= CaseStatus.Deleted,
-          "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
-        "status" ~= "Ok"), Some("all"), Nil)
-      ._1
-      .flatMapConcat { artifact ⇒ artifactSrv.findSimilar(artifact, Some("all"), Nil)._1 }
+      and(parent("case", and(withId(id), "status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)), "status" ~= "Ok"),
+      Some("all"),
+      Nil
+    )._1
+      .flatMapConcat { artifact ⇒
+        artifactSrv.findSimilar(artifact, Some("all"), Nil)._1
+      }
       .fold(Map.empty[String, List[Artifact]]) { (similarCases, artifact) ⇒
-        val caseId = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
+        val caseId       = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
         val artifactList = artifact :: similarCases.getOrElse(caseId, Nil)
         similarCases + (caseId → artifactList)
       }

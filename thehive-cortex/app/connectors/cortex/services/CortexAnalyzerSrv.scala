@@ -260,14 +260,15 @@ class CortexAnalyzerSrv @Inject()(
       val fiv = FileInputValue(
         (artifact \ "attachment" \ "name").asOpt[String].getOrElse("noname"),
         file,
-        (artifact \ "attachment" \ "contentType").asOpt[String].getOrElse("application/octet-stream"))
+        (artifact \ "attachment" \ "contentType").asOpt[String].getOrElse("application/octet-stream")
+      )
       cortex
         .getAttachment(id)
         .flatMap(src ⇒ src.runWith(FileIO.toPath(file)))
         .flatMap(ioResult ⇒ Future.fromTry(ioResult.status))
         .flatMap(_ ⇒ attachmentSrv.save(fiv))
         .andThen { case _ ⇒ Files.delete(file) }
-        .map(a ⇒ Some(artifact +  ("attachment" -> Json.toJson(a))))
+        .map(a ⇒ Some(artifact + ("attachment" → Json.toJson(a))))
         .recover { case _ ⇒ None }
     }
 
@@ -295,7 +296,7 @@ class CortexAnalyzerSrv @Inject()(
                     (artifact \ "attachment" \ "id").asOpt[String].map { id ⇒
                       downloadAndSaveAttachment(artifact, id)
                         .andThen {
-                          case attachmentArtifact => logger.debug(s"Download attachment $artifact => $attachmentArtifact")
+                          case attachmentArtifact ⇒ logger.debug(s"Download attachment $artifact => $attachmentArtifact")
                         }
                     }
                   case _ ⇒ Some(Future.successful(Some(artifact)))
