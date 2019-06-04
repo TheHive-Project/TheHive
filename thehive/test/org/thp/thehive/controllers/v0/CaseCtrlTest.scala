@@ -313,10 +313,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val result = caseCtrl.stats()(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result)
-        val expected   = Json.parse("""{"t1":{"count":2},"t2":{"count":1},"t3":{"count":1},"count":3}""")
+        val expected   = Json.parse("""{"t1":{"count":2},"t2":{"count":1},"t3":{"count":1},"count":2}""")
 
         resultCase shouldEqual expected
-      }.pendingUntilFixed("group by multivalued property doesn't work")
+      }
 
       "assign a case to an user" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#4")
