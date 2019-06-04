@@ -19,12 +19,13 @@ class CaseCtrl @Inject()(
     db: Database,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    taskSrv: TaskSrv,
-    userSrv: UserSrv,
+    val taskSrv: TaskSrv,
+    val userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     val queryExecutor: TheHiveQueryExecutor
 ) extends QueryCtrl
-    with CaseConversion with TaskConversion {
+    with CaseConversion
+    with TaskConversion {
 
   lazy val logger = Logger(getClass)
 
@@ -35,8 +36,8 @@ class CaseCtrl @Inject()(
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val caseTemplateName: Option[String] = request.body('caseTemplate)
-        val inputCase: InputCase       = request.body('case)
-        val inputTasks: Seq[InputTask] = request.body('tasks)
+        val inputCase: InputCase             = request.body('case)
+        val inputTasks: Seq[InputTask]       = request.body('tasks)
         for {
           caseTemplate ← caseTemplateName
             .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName ⇒
@@ -50,10 +51,10 @@ class CaseCtrl @Inject()(
           user         ← inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u ⇒ userSrv.getOrFail(u).map(Some.apply))
           organisation ← organisationSrv.getOrFail(request.organisation)
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
-          case0                      <- Success(fromInputCase(inputCase, caseTemplate))
+          case0    ← Success(fromInputCase(inputCase, caseTemplate))
           richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
 
-          _ = inputTasks.map(t => taskSrv.create(fromInputTask(t), richCase.`case`))
+          _ = inputTasks.map(t ⇒ taskSrv.create(fromInputTask(t), richCase.`case`))
           _ = caseTemplate.foreach { ct ⇒
             caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
               taskSrv.create(task, richCase.`case`)

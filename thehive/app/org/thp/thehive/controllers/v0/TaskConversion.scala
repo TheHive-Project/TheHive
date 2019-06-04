@@ -2,19 +2,17 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.language.implicitConversions
-import scala.util.{Success, Try}
 
-import play.api.libs.json.{JsNull, JsObject, Json}
+import play.api.libs.json.{JsNull, Json}
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
+import org.thp.scalligraph.{Output, RichOptionTry}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
-import org.thp.scalligraph.RichOptionTry
 
 trait TaskConversion {
   val taskSrv: TaskSrv

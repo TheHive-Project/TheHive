@@ -17,8 +17,12 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
     entryPoint("audit flow")
       .authTransaction(db) { _ ⇒ implicit graph ⇒
         val audits = auditSrv.initSteps.list.toList.map(_.toJson)
-        Success(Results.Ok(JsArray(
-          if (count.isDefined) audits.take(count.get) else audits
-        )))
+        Success(
+          Results.Ok(
+            JsArray(
+              if (count.isDefined) audits.take(count.get) else audits
+            )
+          )
+        )
       }
 }

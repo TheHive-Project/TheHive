@@ -6,16 +6,21 @@ import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.Success
 
 @Singleton
-class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv, val queryExecutor: TheHiveQueryExecutor)
-    extends QueryCtrl
+class TaskCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    val taskSrv: TaskSrv,
+    caseSrv: CaseSrv,
+    val userSrv: UserSrv,
+    val queryExecutor: TheHiveQueryExecutor
+) extends QueryCtrl
     with TaskConversion {
 
   lazy val logger = Logger(getClass)

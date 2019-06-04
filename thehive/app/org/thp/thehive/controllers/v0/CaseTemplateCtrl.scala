@@ -11,11 +11,17 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v0.InputCaseTemplate
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
+import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, TaskSrv, UserSrv}
 
 @Singleton
-class CaseTemplateCtrl @Inject()(entryPoint: EntryPoint, db: Database, caseTemplateSrv: CaseTemplateSrv, organisationSrv: OrganisationSrv)
-    extends CaseTemplateConversion {
+class CaseTemplateCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    caseTemplateSrv: CaseTemplateSrv,
+    organisationSrv: OrganisationSrv,
+    val userSrv: UserSrv,
+    val taskSrv: TaskSrv
+) extends CaseTemplateConversion {
 
   def create: Action[AnyContent] =
     entryPoint("create case template")

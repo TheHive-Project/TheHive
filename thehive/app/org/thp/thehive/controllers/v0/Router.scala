@@ -92,11 +92,11 @@ class Router @Inject()(
 
 //case GET(p"/case/task/$taskId/log") => logCtrl.findInTask(taskId)
 //case POST(p"/case/task/$taskId/log/_search") => logCtrl.findInTask(taskId)
-    case POST(p"/case/task/log/_search") ⇒ logCtrl.search()
-    case POST(p"/case/task/log/_stats")  ⇒ logCtrl.stats()
-    case POST(p"/case/task/$taskId/log") ⇒ logCtrl.create(taskId)
-    case PATCH(p"/case/task/log/$logId") ⇒ logCtrl.update(logId)
-    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId)
+    case POST(p"/case/task/log/_search")  ⇒ logCtrl.search()
+    case POST(p"/case/task/log/_stats")   ⇒ logCtrl.stats()
+    case POST(p"/case/task/$taskId/log")  ⇒ logCtrl.create(taskId)
+    case PATCH(p"/case/task/log/$logId")  ⇒ logCtrl.update(logId)
+    case DELETE(p"/case/task/log/$logId") ⇒ logCtrl.delete(logId)
 //    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
 
     case POST(p"/case/artifact/_search") ⇒ observableCtrl.search()

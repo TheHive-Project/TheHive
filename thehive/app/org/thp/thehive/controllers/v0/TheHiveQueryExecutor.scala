@@ -22,12 +22,12 @@ case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 @Singleton
 class TheHiveQueryExecutor @Inject()(
     caseSrv: CaseSrv,
-    taskSrv: TaskSrv,
+    val taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     alertSrv: AlertSrv,
     logSrv: LogSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv,
+    val userSrv: UserSrv,
     implicit val db: Database
 ) extends QueryExecutor
     with CaseConversion
