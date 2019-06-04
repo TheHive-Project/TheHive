@@ -60,7 +60,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           owner = Some("user1"),
           startDate = None,
           flag = false,
-          status = "waiting",
+          status = "Waiting",
           order = 0,
           group = Some("group1"),
           endDate = None,
@@ -77,7 +77,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val task2 = t2.get
         val request = FakeRequest("PATCH", s"/api/case/task/${task2.id}")
           .withHeaders("user" → "user1")
-          .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1", "status": "inProgress"}"""))
+          .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1", "status": "InProgress"}"""))
         val result = taskCtrl.update(task2.id)(request)
 
         status(result) shouldEqual 204
@@ -101,6 +101,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val newList = tasksList(taskCtrl)
         val newTask = newList.find(_.title == "new title task 2")
         newTask must beSome(expected)
+        expected must beSome[OutputTask]
       }
 
       "create a new task for an existing case" in {
@@ -112,7 +113,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
                     "title": "case 1 task",
                     "group": "group1",
                     "description": "description task 1",
-                    "status": "waiting"
+                    "status": "Waiting"
                 }"""
               )
           )
@@ -170,7 +171,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
             owner = None,
             startDate = None,
             flag = true,
-            status = "waiting",
+            status = "Waiting",
             order = 0,
             group = Some("group1"),
             endDate = None,

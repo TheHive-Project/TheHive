@@ -4,7 +4,7 @@
     "title": "case 1 task 1",
     "group": "group1",
     "description": "description task 1",
-    "status": "waiting",
+    "status": "Waiting",
     "flag": false,
     "order": 0
   },
@@ -13,7 +13,7 @@
     "title": "case 1 task 2",
     "group": "group1",
     "description": "description task 2",
-    "status": "waiting",
+    "status": "Waiting",
     "flag": true,
     "order": 1
   },

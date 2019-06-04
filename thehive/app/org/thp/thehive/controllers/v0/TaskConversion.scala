@@ -21,7 +21,7 @@ trait TaskConversion {
   implicit def fromInputTask(inputTask: InputTask): Task =
     inputTask
       .into[Task]
-      .withFieldComputed(_.status, _.status.fold(TaskStatus.waiting)(TaskStatus.withName))
+      .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(TaskStatus.withName))
       .withFieldComputed(_.order, _.order.getOrElse(0))
       .transform
 

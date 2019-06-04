@@ -6,7 +6,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.models.Entity
 
 object TaskStatus extends Enumeration {
-  val waiting, inProgress, completed, cancel = Value
+  val Waiting, InProgress, Completed, Cancel = Value
 }
 
 @EdgeEntity[Task, User]
