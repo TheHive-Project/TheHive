@@ -71,10 +71,10 @@ class TheHiveQueryExecutor @Inject()(
       FieldsParser[RangeParams],
       (range, logSteps, _) ⇒ logSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, TaskSteps, PagedResult[Task with Entity]](
+    Query.withParam[RangeParams, TaskSteps, PagedResult[RichTask]](
       "page",
       FieldsParser[RangeParams],
-      (range, taskSteps, _) ⇒ taskSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+      (range, taskSteps, _) ⇒ taskSteps.richTask.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query.withParam[RangeParams, UserSteps, PagedResult[RichUser]](
       "page",
@@ -87,6 +87,7 @@ class TheHiveQueryExecutor @Inject()(
       (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
+    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) ⇒ taskSteps.richTask.toList()),
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).toList()),
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) ⇒ alertSteps.richAlert.toList()),
     Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) ⇒ observableSteps.richObservable.toList()),
