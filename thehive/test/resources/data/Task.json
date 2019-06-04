@@ -22,7 +22,7 @@
     "title": "case 3 task 1",
     "group": "group1",
     "description": "description task 3",
-    "status": "waiting",
+    "status": "Waiting",
     "flag": true,
     "order": 0
   }

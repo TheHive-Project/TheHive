@@ -91,7 +91,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
             owner = Some("user1"),
             startDate = None,
             flag = true,
-            status = "inProgress",
+            status = "InProgress",
             order = 1,
             group = Some("group1"),
             endDate = None,
@@ -101,7 +101,6 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val newList = tasksList(taskCtrl)
         val newTask = newList.find(_.title == "new title task 2")
         newTask must beSome(expected)
-        expected must beSome[OutputTask]
       }
 
       "create a new task for an existing case" in {
@@ -132,7 +131,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           owner = None, // FIXME
           startDate = None,
           flag = true,
-          status = "waiting",
+          status = "Waiting",
           order = 0,
           group = Some("group1"),
           endDate = None,

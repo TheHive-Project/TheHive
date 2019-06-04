@@ -156,7 +156,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                         {
                            "title":"task x",
                            "flag":false,
-                           "status":"waiting"
+                           "status":"Waiting"
                         }
                      ]
                   }"""
@@ -283,26 +283,6 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         )
 
         resultCases must contain(exactly(case3))
-
-        val case4 = TestCase(
-          caseId = 4,
-          title = "case#4",
-          description = "description of case #4",
-          severity = 3,
-          startDate = new Date(1531667370000L),
-          endDate = None,
-          flag = false,
-          tlp = 3,
-          pap = 3,
-          status = "Open",
-          tags = Set("t1","t3"),
-          summary = None,
-          owner = Some("user1"),
-          customFields = Set.empty,
-          stats = Json.obj()
-        )
-
-        resultCases must contain(exactly(case3, case4))
       }
 
       "get and aggregate properly case stats" in {
@@ -355,7 +335,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 3,
           pap = 3,
-          status = "open",
+          status = "Open",
           tags = Set("t1", "t3"),
           summary = None,
           owner = Some("user2"),
