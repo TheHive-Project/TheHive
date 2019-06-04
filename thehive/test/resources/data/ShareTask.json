@@ -6,5 +6,9 @@
   {
     "from": "case1-cert",
     "to": "task2"
+  },
+  {
+    "from": "case3-cert",
+    "to": "task3"
   }
 ]

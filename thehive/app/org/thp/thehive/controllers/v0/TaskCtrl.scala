@@ -5,7 +5,7 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -30,10 +30,13 @@ class TaskCtrl @Inject()(
       .extract('task, FieldsParser[InputTask])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputTask: InputTask = request.body('task)
-        caseSrv.getOrFail(caseId).map { `case` ⇒
-          val createdTask = taskSrv.create(inputTask, `case`)
-          Results.Created(createdTask.toJson)
-        }
+        for {
+          case0 ← caseSrv.getOrFail(caseId)
+          createdTask = taskSrv.create(inputTask, case0)
+          owner ← inputTask.owner.map(userSrv.getOrFail).flip
+          _        = owner.foreach(taskSrv.assign(createdTask, _))
+          richTask = RichTask(createdTask, owner.map(_.login))
+        } yield Results.Created(richTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =
@@ -42,6 +45,7 @@ class TaskCtrl @Inject()(
         taskSrv
           .get(taskId)
           .visible
+          .richTask
           .getOrFail()
           .map { task ⇒
             Results.Ok(task.toJson)
@@ -54,6 +58,7 @@ class TaskCtrl @Inject()(
         val tasks = taskSrv
           .initSteps
           .visible
+          .richTask
           .toList()
           .map(_.toJson)
         Success(Results.Ok(Json.toJson(tasks)))

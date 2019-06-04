@@ -6,12 +6,12 @@ import scala.language.implicitConversions
 import play.api.libs.json.{JsNull, Json}
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.{Output, RichOptionTry}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.{Output, RichOptionTry}
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
-import org.thp.thehive.models.{Task, TaskStatus, TaskUser}
+import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
 
 trait TaskConversion {
@@ -25,13 +25,13 @@ trait TaskConversion {
       .withFieldComputed(_.order, _.order.getOrElse(0))
       .transform
 
-  implicit def toOutputTask(task: Task with Entity): Output[OutputTask] =
+  def toOutputTask(task: Task with Entity): Output[OutputTask] = toOutputTask(RichTask(task, None))
+
+  implicit def toOutputTask(richTask: RichTask): Output[OutputTask] =
     Output[OutputTask](
-      task
-        .asInstanceOf[Task]
+      richTask
         .into[OutputTask]
-        .withFieldConst(_.id, task._id)
-        .withFieldConst(_._id, task._id)
+        .withFieldConst(_.id, richTask._id)
         .withFieldComputed(_.status, _.status.toString)
         .transform
     )
@@ -56,6 +56,7 @@ trait TaskConversion {
               taskSrv.assign(task, u)(graph, authContext)
               Json.obj("owner" → u.login)
             case None ⇒
+              taskSrv.unassign(task)(graph, authContext)
               Json.obj("owner" → JsNull)
           }
       })

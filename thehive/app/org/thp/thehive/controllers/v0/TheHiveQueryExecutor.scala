@@ -93,7 +93,7 @@ class TheHiveQueryExecutor @Inject()(
     Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
     new ParentFilterQuery(publicProperties),
     Query.output[RichCase, OutputCase],
-    Query.output[Task with Entity, OutputTask],
+    Query.output[RichTask, OutputTask],
     Query.output[RichAlert, OutputAlert],
     Query.output[RichObservable, OutputObservable],
     Query.output[RichUser, OutputUser],

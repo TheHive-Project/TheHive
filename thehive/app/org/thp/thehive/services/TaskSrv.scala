@@ -4,7 +4,7 @@ import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
@@ -42,6 +42,9 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv)(implicit db: Datab
     taskUserSrv.create(TaskUser(), task, user)
     ()
   }
+
+  def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit =
+    get(task).unassign()
 }
 
 @EntitySteps[Task]
@@ -78,6 +81,23 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def user = new UserSteps(raw.outTo[TaskUser])
 
+  def richTask: ScalarSteps[RichTask] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
+        )
+        .map {
+          case (task, user) ⇒
+            RichTask(
+              task.as[Task],
+              atMostOneOf[String](user)
+            )
+        }
+    )
+
+  @deprecated("must not be used because it doesn't generate audit log")
   def unassign(): Unit = {
     raw.outToE[TaskUser].drop().iterate()
     ()

@@ -43,7 +43,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create, retrieve and patch a log" in {
         val tList = tasksList(app)
-        val task  = tList.find(_.title == "case 1 task").get
+        val task  = tList.find(_.title == "case 1 task 1").get
         val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
           .withHeaders("user" → "user1")
           .withJsonBody(Json.parse("""
@@ -115,7 +115,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and remove a log" in {
         val tList = tasksList(app)
-        val task  = tList.find(_.title == "case 1 task").get
+        val task  = tList.find(_.title == "case 1 task 1").get
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
           .withHeaders("user" → "user1")
@@ -152,7 +152,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val log     = logJson.as[Seq[OutputLog]].head
 
         val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" → "user1")
-        val resultDelete = logCtrl.delete(log.id)(requestDelete)
+        val resultDelete  = logCtrl.delete(log.id)(requestDelete)
 
         status(resultDelete) shouldEqual 204
 
