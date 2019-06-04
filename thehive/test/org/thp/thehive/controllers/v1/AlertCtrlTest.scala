@@ -33,7 +33,9 @@ case class TestAlert(
     read: Boolean,
     follow: Boolean
 )
+
 object TestAlert {
+
   def apply(alert: OutputAlert): TestAlert =
     TestAlert(
       alert.`type`,
@@ -118,8 +120,10 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "create an alert with a case template" in {
         val request = FakeRequest("POST", "/api/v1/alert")
-          .withJsonBody(Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", "new alert", "test alert"))
-            + ("caseTemplate" → JsString("spam")))
+          .withJsonBody(
+            Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", "new alert", "test alert"))
+              + ("caseTemplate" → JsString("spam"))
+          )
           .withHeaders("user" → "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 201

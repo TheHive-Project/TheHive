@@ -35,6 +35,7 @@ case class TestCase(
 )
 
 object TestCase {
+
   def apply(outputCase: OutputCase): TestCase =
     TestCase(
       outputCase.title,
@@ -93,16 +94,20 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       "create a new case" in {
         val now = new Date()
         val request = FakeRequest("POST", "/api/v1/case")
-          .withJsonBody(Json.toJson(InputCase(
-            title = "case title (create case test)",
-            description = "case description (create case test)",
-            severity = Some(2),
-            startDate = Some(now),
-            tags = Seq("tag1", "tag2"),
-            flag = Some(false),
-            tlp = Some(1),
-            pap = Some(3)
-          )))
+          .withJsonBody(
+            Json.toJson(
+              InputCase(
+                title = "case title (create case test)",
+                description = "case description (create case test)",
+                severity = Some(2),
+                startDate = Some(now),
+                tags = Seq("tag1", "tag2"),
+                flag = Some(false),
+                tlp = Some(1),
+                pap = Some(3)
+              )
+            )
+          )
           .withHeaders("user" → "admin")
         val result     = caseCtrl.create(request)
         val resultCase = contentAsJson(result).as[OutputCase]
@@ -128,16 +133,20 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       "create a new case using a template" in {
         val now = new Date()
         val request = FakeRequest("POST", "/api/v1/case")
-          .withJsonBody(Json.toJsObject(InputCase(
-            title = "case title (create case test with template)",
-            description = "case description (create case test with template)",
-            severity = None,
-            startDate = Some(now),
-            tags = Seq("tag1", "tag2"),
-            flag = Some(false),
-            tlp = Some(1),
-            pap = Some(3)
-          )) + ("caseTemplate" → JsString("spam")))
+          .withJsonBody(
+            Json.toJsObject(
+              InputCase(
+                title = "case title (create case test with template)",
+                description = "case description (create case test with template)",
+                severity = None,
+                startDate = Some(now),
+                tags = Seq("tag1", "tag2"),
+                flag = Some(false),
+                tlp = Some(1),
+                pap = Some(3)
+              )
+            ) + ("caseTemplate" → JsString("spam"))
+          )
           .withHeaders("user" → "user1")
         val result = caseCtrl.create(request)
         status(result) must_=== 201

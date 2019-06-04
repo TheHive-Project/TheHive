@@ -6,7 +6,8 @@ import play.api.test.PlaySpecification
 
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
+import org.thp.scalligraph.auth.{UserSrv ⇒ SUserSrv}
+import org.thp.scalligraph.models.{DatabaseBuilder ⇒ _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
 
@@ -15,7 +16,7 @@ class CaseSrvTest extends PlaySpecification {
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
-      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
+      .bindInstance[SUserSrv](dummyUserSrv)
       .bind[Schema, TheHiveSchema]
       .bindToProvider(dbProvider)
       .bind[StorageSrv, LocalFileSystemStorageSrv]
@@ -114,7 +115,8 @@ class CaseSrvTest extends PlaySpecification {
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),
             ("string1", "string", Some("string1 custom field"))
-          ))
+          )
+        )
       }
 
       "merge two cases" in db.transaction { implicit graph ⇒

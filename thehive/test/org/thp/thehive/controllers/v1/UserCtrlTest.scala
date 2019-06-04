@@ -20,6 +20,7 @@ import play.api.{Configuration, Environment}
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
 object TestUser {
+
   def apply(user: OutputUser): TestUser =
     TestUser(user.login, user.name, user.profile, user.permissions, user.organisation)
 }
@@ -28,6 +29,7 @@ class DummyAuthSrv extends AuthSrv {
   val name: String                                                                                              = "dummy"
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] = Success(())
 }
+
 class UserCtrlTest extends PlaySpecification with Mockito {
   val config: Configuration = Configuration.load(Environment.simple())
 
@@ -81,7 +83,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
                 password = Some("azerty"),
                 profile = "read-only",
                 organisation = Some("default")
-              )))
+              )
+            )
+          )
           .withHeaders("user" → "admin")
         val result = userCtrl.create(request)
         status(result) must_=== 201
@@ -107,7 +111,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
                 password = Some("azerty"),
                 profile = "analyst",
                 organisation = Some("cert")
-              )))
+              )
+            )
+          )
           .withHeaders("user" → "user2")
         val result = userCtrl.create(request)
         status(result) must_=== 403

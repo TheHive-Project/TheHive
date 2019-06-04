@@ -1,11 +1,13 @@
 package org.thp.thehive.services
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.thehive.models._
+
 import play.api.test.PlaySpecification
+
+import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.auth.{AuthContext, UserSrv ⇒ SUserSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.thehive.models._
 
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
@@ -13,7 +15,7 @@ class UserSrvTest extends PlaySpecification {
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
     val app: AppBuilder = AppBuilder()
-      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
+      .bindInstance[SUserSrv](dummyUserSrv)
       .bindToProvider(dbProvider)
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]

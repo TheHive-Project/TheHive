@@ -2,6 +2,18 @@ package org.thp.thehive
 
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Promise}
+
+import play.api.i18n.{I18nModule ⇒ PlayI18nModule}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.{SimpleModule, bind, BuiltinModule ⇒ PlayBuiltinModule}
+import play.api.libs.json._
+import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.{AhcWSModule ⇒ PlayAhcWSModule}
+import play.api.mvc.{CookiesModule ⇒ PlayCookiesModule}
+import play.api.test.{Helpers, PlaySpecification, TestServer}
+import play.api.{Configuration, Environment}
+
 import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.core.Fragments
@@ -12,14 +24,6 @@ import org.thp.thehive.controllers.v1.{TestCase, TestUser}
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.UserSrv
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.{SimpleModule, bind}
-import play.api.libs.json._
-import play.api.libs.ws.WSClient
-import play.api.test.{Helpers, PlaySpecification, TestServer}
-import play.api.{Configuration, Environment}
-
-import scala.concurrent.{ExecutionContext, Promise}
 
 case class TestTask(
     title: String,
@@ -29,9 +33,11 @@ case class TestTask(
     startDate: Option[Date],
     endDate: Option[Date],
     order: Int,
-    dueDate: Option[Date])
+    dueDate: Option[Date]
+)
 
 object TestTask {
+
   def apply(task: OutputTask): TestTask =
     TestTask(task.title, task.description, task.status, task.flag, task.startDate, task.endDate, task.order, task.dueDate)
 }
@@ -64,15 +70,15 @@ class FunctionalTest extends PlaySpecification {
 
   val janusGraphConfig =
     Configuration(ConfigFactory.parseString("""
-      |db {
-      |  provider: janusgraph
-      |  storage.backend: inmemory
-      |}
-      |storage {
-      |  provider: localfs
-      |  localfs.location: /tmp
-      |}
-      |auth.provider: [local]
+                                              |db {
+                                              |  provider: janusgraph
+                                              |  storage.backend: inmemory
+                                              |}
+                                              |storage {
+                                              |  provider: localfs
+                                              |  localfs.location: /tmp
+                                              |}
+                                              |auth.provider: [local]
     """.stripMargin))
 //  Configuration(ConfigFactory.parseString("""
 //      |db {
@@ -88,22 +94,22 @@ class FunctionalTest extends PlaySpecification {
 //    """.stripMargin))
 
   val orientdbConfig = Configuration(ConfigFactory.parseString("""
-      |db.provider: orientdb
-      |storage {
-      |  provider: localfs
-      |  localfs.location: /tmp
-      |}
-      |
-      |auth.provider: [local]
+                                                                 |db.provider: orientdb
+                                                                 |storage {
+                                                                 |  provider: localfs
+                                                                 |  localfs.location: /tmp
+                                                                 |}
+                                                                 |
+                                                                 |auth.provider: [local]
    """.stripMargin))
 
   val neo4jConfig = Configuration(ConfigFactory.parseString("""
-      |db.provider: neo4j
-      |storage {
-      |  provider: localfs
-      |  localfs.location: /tmp
-      |}
-      |auth.provider: [local]
+                                                              |db.provider: neo4j
+                                                              |storage {
+                                                              |  provider: localfs
+                                                              |  localfs.location: /tmp
+                                                              |}
+                                                              |auth.provider: [local]
     """.stripMargin))
   Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig , neo4jConfig*/ )) { dbConfig ⇒
     val serverPromise: Promise[TestServer] = Promise[TestServer]
@@ -120,16 +126,16 @@ class FunctionalTest extends PlaySpecification {
         val applicationBuilder = GuiceApplicationBuilder()
           .configure(dbConfig)
           .load(
-            new play.api.inject.BuiltinModule,
-            new play.api.i18n.I18nModule,
-            new play.api.mvc.CookiesModule,
-            new play.api.libs.ws.ahc.AhcWSModule,
+            new PlayBuiltinModule,
+            new PlayI18nModule,
+            new PlayCookiesModule,
+            new PlayAhcWSModule,
             new ScalligraphModule,
             new TheHiveModule(Environment.simple(), dbConfig),
             new SimpleModule(
               bind[AssetsMetadata].toProvider[AssetsMetadataProvider],
               bind[AssetsConfiguration].toProvider[AssetsConfigurationProvider],
-              bind[StorageSrv].to[LocalFileSystemStorageSrv],
+              bind[StorageSrv].to[LocalFileSystemStorageSrv]
 //              bind[Database].to[AuditedDatabase]
             )
           )
@@ -204,14 +210,17 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "create a case with custom fields" in {
-          val asyncResp = client.`case`.create(
-            InputCase(
-              title = "Second case",
-              description = "This case contains status, summary and custom fields",
-              status = Some("resolved"),
-              summary = Some("no comment"),
-              customFieldValue = Seq(InputCustomFieldValue("businessUnit", Some("HR")))
-            ))
+          val asyncResp = client
+            .`case`
+            .create(
+              InputCase(
+                title = "Second case",
+                description = "This case contains status, summary and custom fields",
+                status = Some("resolved"),
+                summary = Some("no comment"),
+                customFieldValue = Seq(InputCustomFieldValue("businessUnit", Some("HR")))
+              )
+            )
           val outputCase = await(asyncResp)
           case2Id = outputCase._id
           case2 = TestCase(outputCase)
@@ -259,7 +268,8 @@ class FunctionalTest extends PlaySpecification {
             Json.obj(
               "_name" → "filter",
               "_and" → Json
-                .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))),
+                .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))
+            ),
             Json.obj("_name" → "toList")
           )
           val cases = (await(asyncResp) \ "result").as[Seq[OutputCase]].map(TestCase.apply)
@@ -277,7 +287,8 @@ class FunctionalTest extends PlaySpecification {
             startDate = None,
             endDate = None,
             order = 0,
-            dueDate = None)
+            dueDate = None
+          )
           task1 must_=== expected
         }
 

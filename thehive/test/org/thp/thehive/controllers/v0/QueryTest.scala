@@ -23,25 +23,25 @@ class QueryTest extends PlaySpecification with Mockito with QueryCtrl {
   "Controller" should {
     "parse stats query" in {
       val input = Json.parse("""
-          | {
-          |   "query": {
-          |     "_and": [{
-          |       "_in": {
-          |         "_field": "status",
-          |         "_values": ["waiting", "inProgress"]
-          |       }
-          |     }, {
-          |       "owner": "admin"
-          |     }]
-          |   },
-          |   "stats": [{
-          |     "_agg": "field",
-          |     "_field": "status",
-          |     "_select": [{ "_agg": "count"}]
-          |   }, {
-          |     "_agg": "count"
-          |   }]
-          | }
+                               | {
+                               |   "query": {
+                               |     "_and": [{
+                               |       "_in": {
+                               |         "_field": "status",
+                               |         "_values": ["waiting", "inProgress"]
+                               |       }
+                               |     }, {
+                               |       "owner": "admin"
+                               |     }]
+                               |   },
+                               |   "stats": [{
+                               |     "_agg": "field",
+                               |     "_field": "status",
+                               |     "_select": [{ "_agg": "count"}]
+                               |   }, {
+                               |     "_agg": "count"
+                               |   }]
+                               | }
         """.stripMargin)
 
       val queryOrError = statsParser(FObject("_name" → FString("listTask")))(Field(input)).map(x ⇒ x)
