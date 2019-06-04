@@ -28,7 +28,7 @@ class Router @Inject()(
     /**/
     case GET(p"/status") ⇒ statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
-//    GET      /logout                              controllers.AuthenticationCtrl.logout()
+    case GET(p"/logout") ⇒ authenticationCtrl.logout()
     case POST(p"/login") ⇒ authenticationCtrl.login()
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 

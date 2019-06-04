@@ -1,15 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import scala.concurrent.ExecutionContext
-
-import play.api.Configuration
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.UserSrv
+import play.api.Configuration
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class AuthenticationCtrl @Inject()(
@@ -21,6 +20,10 @@ class AuthenticationCtrl @Inject()(
     db: Database,
     implicit val ec: ExecutionContext
 ) {
+
+  def logout: Action[AnyContent] = Action {
+    Results.Ok.withNewSession
+  }
 
   def login: Action[AnyContent] =
     entryPoint("login")
