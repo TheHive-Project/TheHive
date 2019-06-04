@@ -196,7 +196,7 @@ class FunctionalTest extends PlaySpecification {
             flag = false,
             tlp = 2,
             pap = 2,
-            status = "open",
+            status = "Open",
             user = None
           )
 
@@ -232,7 +232,7 @@ class FunctionalTest extends PlaySpecification {
             flag = false,
             tlp = 2,
             pap = 2,
-            status = "open",
+            status = "Open",
             user = None,
             summary = Some("no comment"),
             customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", Some("HR")))
@@ -346,7 +346,7 @@ class FunctionalTest extends PlaySpecification {
             flag = false,
             tlp = 2,
             pap = 1,
-            status = "open",
+            status = "Open",
             user = Some("testAdmin")
           )
 

@@ -146,7 +146,7 @@ class AlertSrv @Inject()(
         flag = alert.flag,
         tlp = alert.tlp,
         pap = alert.pap,
-        status = CaseStatus.open,
+        status = CaseStatus.Open,
         summary = None
       )
 

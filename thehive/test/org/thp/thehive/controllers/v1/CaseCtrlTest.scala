@@ -121,7 +121,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 1,
           pap = 3,
-          status = "open",
+          status = "Open",
           summary = None,
           user = None,
           customFields = Set.empty
@@ -161,7 +161,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 1,
           pap = 3,
-          status = "open",
+          status = "Open",
           summary = None,
           user = None,
           customFields = Set(
@@ -188,7 +188,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 2,
           pap = 2,
-          status = "open",
+          status = "Open",
           user = Some("user1")
         )
 

@@ -7,7 +7,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 
 object CaseStatus extends Enumeration {
-  val open, resolved, deleted, duplicated = Value
+  val Open, Resolved, Deleted, Duplicated = Value
 }
 
 @VertexEntity

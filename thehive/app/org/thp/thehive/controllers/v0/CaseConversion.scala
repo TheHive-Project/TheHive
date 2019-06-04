@@ -42,7 +42,7 @@ trait CaseConversion extends CustomFieldConversion {
       .withFieldComputed(_.flag, _.flag.getOrElse(false))
       .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
       .withFieldComputed(_.pap, _.pap.getOrElse(2))
-      .withFieldConst(_.status, CaseStatus.open)
+      .withFieldConst(_.status, CaseStatus.Open)
       .withFieldConst(_.number, 0)
       .transform
 
@@ -100,7 +100,7 @@ trait CaseConversion extends CustomFieldConversion {
         .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))
         .withFieldComputed(_.tags, _.tags ++ ct.tags)
         .withFieldConst(_.summary, ct.summary)
-        .withFieldConst(_.status, CaseStatus.open)
+        .withFieldConst(_.status, CaseStatus.Open)
         .withFieldConst(_.number, 0)
         .transform
     }

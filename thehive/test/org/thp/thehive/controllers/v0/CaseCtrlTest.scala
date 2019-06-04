@@ -128,7 +128,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 1,
           pap = 3,
-          status = "open",
+          status = "Open",
           tags = Set("spam", "src:mail", "tag1", "tag2"),
           summary = None,
           owner = None,
@@ -140,8 +140,6 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "create a new case from scratch" in {
-        val now = new Date()
-
         val request = FakeRequest("POST", "/api/v0/case")
           .withJsonBody(
             Json
@@ -202,7 +200,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 2,
           pap = 2,
-          status = "open",
+          status = "Open",
           tags = Set.empty,
           summary = None,
           owner = Some("user2"),
@@ -222,7 +220,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               "flag"   → false,
               "tlp"    → 2,
               "pap"    → 1,
-              "status" → "resolved",
+              "status" → "Resolved",
               "tags"   → List("tag1")
             )
           )
@@ -241,7 +239,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 2,
           pap = 1,
-          status = "resolved",
+          status = "Resolved",
           tags = Set("tag1"),
           summary = None,
           owner = Some("user1"),
@@ -273,8 +271,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           flag = false,
           tlp = 2,
           pap = 2,
-          status = "open",
-          tags = Set("t1", "t2"),
+          status = "Open",
+          tags = Set("t1","t2"),
           summary = None,
           owner = Some("user1"),
           customFields = Set(
@@ -285,6 +283,26 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         )
 
         resultCases must contain(exactly(case3))
+
+        val case4 = TestCase(
+          caseId = 4,
+          title = "case#4",
+          description = "description of case #4",
+          severity = 3,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 3,
+          pap = 3,
+          status = "Open",
+          tags = Set("t1","t3"),
+          summary = None,
+          owner = Some("user1"),
+          customFields = Set.empty,
+          stats = Json.obj()
+        )
+
+        resultCases must contain(exactly(case3, case4))
       }
 
       "get and aggregate properly case stats" in {

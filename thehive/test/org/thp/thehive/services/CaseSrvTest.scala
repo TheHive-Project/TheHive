@@ -57,7 +57,7 @@ class CaseSrvTest extends PlaySpecification {
           flag = false,
           tlp = 2,
           pap = 2,
-          status = CaseStatus.open,
+          status = CaseStatus.Open,
           summary = None,
           impactStatus = None,
           resolutionStatus = None,
@@ -84,7 +84,7 @@ class CaseSrvTest extends PlaySpecification {
           flag = false,
           tlp = 2,
           pap = 2,
-          status = CaseStatus.open,
+          status = CaseStatus.Open,
           summary = None,
           impactStatus = Some("NoImpact"),
           resolutionStatus = None,
@@ -106,7 +106,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.flag must_=== false
         richCase.tlp must_=== 2
         richCase.pap must_=== 2
-        richCase.status must_=== CaseStatus.open
+        richCase.status must_=== CaseStatus.Open
         richCase.summary must beNone
         richCase.impactStatus must beNone
         richCase.user must beSome("user1")
@@ -133,7 +133,7 @@ class CaseSrvTest extends PlaySpecification {
       //          mergedCase.flag must_=== false
       //          mergedCase.tlp must_=== 2
       //          mergedCase.pap must_=== 2
-      //          mergedCase.status must_=== CaseStatus.open
+      //          mergedCase.status must_=== CaseStatus.Open
       //          mergedCase.summary must beNone
       //          mergedCase.impactStatus must beNone
       //          mergedCase.user must beSome("test")
