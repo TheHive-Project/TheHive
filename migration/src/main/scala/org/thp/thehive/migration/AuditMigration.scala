@@ -40,7 +40,7 @@ class AuditMigration @Inject()(
       (JsPath \ "requestId").read[String] and
       Reads.pure(attribute) and
       Reads.pure(None) and
-      Reads.pure(newValue))(Audit.apply _)
+      Reads.pure(newValue))(Audit.apply(_, _, _, _, _))
 
   implicit val multiAuditReads: Reads[Seq[Audit]] = Reads { json ⇒
     (json \ "details")

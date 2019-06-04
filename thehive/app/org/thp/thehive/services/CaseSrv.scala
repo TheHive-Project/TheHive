@@ -11,8 +11,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
-
+import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
@@ -122,14 +121,17 @@ class CaseSrv @Inject()(
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
   }
 
-  def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
-    get(`case`).unassign()
-    caseUserSrv.create(CaseUser(), `case`, user)
-    ()
-  }
+  def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    auditSrv.updateCase(`case`, Json.obj("owner" → user.login)).map { _ ⇒
+      get(`case`).unassign()
+      caseUserSrv.create(CaseUser(), `case`, user)
+      ()
+    }
 
-  def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Unit =
-    get(`case`).unassign()
+  def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    auditSrv.updateCase(`case`, Json.obj("owner" → JsNull)).map { _ ⇒
+      get(`case`).unassign()
+    }
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
 //  {
@@ -268,7 +270,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
   )
 
-  @deprecated("must not be used because it doesn't generate audit log")
+  // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
     raw.outToE[CaseUser].drop().iterate()
     ()

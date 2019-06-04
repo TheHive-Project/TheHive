@@ -14,7 +14,12 @@ import org.thp.thehive.models._
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv: OrganisationSrv, taskSrv: TaskSrv)(implicit db: Database)
+class CaseTemplateSrv @Inject()(
+    customFieldSrv: CustomFieldSrv,
+    organisationSrv: OrganisationSrv,
+    taskSrv: TaskSrv,
+    auditSrv: AuditSrv
+)(implicit db: Database)
     extends VertexSrv[CaseTemplate, CaseTemplateSteps] {
 
   val caseTemplateCustomFieldSrv  = new EdgeSrv[CaseTemplateCustomField, CaseTemplate, CustomField]
@@ -31,29 +36,32 @@ class CaseTemplateSrv @Inject()(customFieldSrv: CustomFieldSrv, organisationSrv:
     val createdCaseTemplate = create(caseTemplate)
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
     val createdTasks = tasks.map(taskSrv.create(_, createdCaseTemplate))
-    customFields
-      .toTry {
-        case (name, Some(value)) ⇒
-          for {
-            customField ← customFieldSrv.getOrFail(name)
-            ctcf        ← customField.`type`.setValue(CaseTemplateCustomField(), value)
-            caseTemplateCustomField = caseTemplateCustomFieldSrv.create(ctcf, createdCaseTemplate, customField)
-          } yield CustomFieldWithValue(customField, caseTemplateCustomField)
-        case (name, None) ⇒
-          customFieldSrv.getOrFail(name).map { customField ⇒
-            val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
-            CustomFieldWithValue(customField, caseTemplateCustomField)
-          }
-      }
-      .map { cfs ⇒
-        RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
-      }
+    for {
+      cfs ← customFields
+        .toTry {
+          case (name, Some(value)) ⇒
+            for {
+              customField ← customFieldSrv.getOrFail(name)
+              ctcf        ← customField.`type`.setValue(CaseTemplateCustomField(), value)
+              caseTemplateCustomField = caseTemplateCustomFieldSrv.create(ctcf, createdCaseTemplate, customField)
+            } yield CustomFieldWithValue(customField, caseTemplateCustomField)
+          case (name, None) ⇒
+            customFieldSrv.getOrFail(name).map { customField ⇒
+              val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
+              CustomFieldWithValue(customField, caseTemplateCustomField)
+            }
+        }
+      _ ← auditSrv.createCaseTemplate(createdCaseTemplate)
+    } yield RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
   }
 
-  def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
-    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
-    ()
-  }
+//  def addTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
+//    for {
+//      createdTask ← taskSrv.create
+//    } auditSrv.addTaskToCaseTemplate(caseTemplate, task)
+//    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
+//    ()
+//  }
 }
 
 @EntitySteps[CaseTemplate]

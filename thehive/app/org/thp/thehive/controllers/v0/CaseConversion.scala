@@ -64,14 +64,11 @@ trait CaseConversion extends CustomFieldConversion {
           for {
             case0 ← caseSrv.get(vertex)(graph).getOrFail()
             user  ← login.map(userSrv.get(_)(graph).getOrFail()).flip
-          } yield user match {
-            case Some(u) ⇒
-              caseSrv.assign(case0, u)(graph, authContext)
-              Json.obj("owner" → u.login)
-            case None ⇒
-              caseSrv.unassign(case0)(graph, authContext)
-              Json.obj("owner" → JsNull)
-          }
+            _ ← user match {
+              case Some(u) ⇒ caseSrv.assign(case0, u)(graph, authContext)
+              case None    ⇒ caseSrv.unassign(case0)(graph, authContext)
+            }
+          } yield Json.obj("owner" → user.map(_.login))
       })
       .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
       .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)

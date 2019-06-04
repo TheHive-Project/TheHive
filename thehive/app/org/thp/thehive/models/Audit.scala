@@ -3,6 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import gremlin.scala.{Edge, Graph, Vertex}
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import org.thp.thehive.services.EventMessage
@@ -18,6 +19,12 @@ case class Audit(
     objectType: Option[String],
     details: Option[String]
 )
+
+object Audit {
+
+  def apply(action: String, entity: Entity, details: Option[String] = None)(implicit authContext: AuthContext): Audit =
+    Audit(authContext.requestId, action, Some(entity._id), Some(entity._model.label), details)
+}
 
 case class RichAudit(
     _id: String,

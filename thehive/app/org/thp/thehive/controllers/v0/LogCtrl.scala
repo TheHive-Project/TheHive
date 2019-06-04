@@ -24,14 +24,13 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
       .extract('log, FieldsParser[InputLog])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputLog: InputLog = request.body('log)
-        taskSrv
-          .get(taskId)
-          .can(Permissions.manageTask)
-          .getOrFail()
-          .map { task ⇒
-            val createdObservable = logSrv.create(inputLog, task)
-            Results.Created(createdObservable.toJson)
-          }
+        for {
+          task ← taskSrv
+            .get(taskId)
+            .can(Permissions.manageTask)
+            .getOrFail()
+          createdObservable ← logSrv.create(inputLog, task)
+        } yield Results.Created(createdObservable.toJson)
       }
 
   def update(logId: String): Action[AnyContent] =
@@ -51,7 +50,7 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
   def delete(logId: String): Action[AnyContent] =
     entryPoint("update log")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        Try(logSrv.initSteps.remove(logId))
+        Try(logSrv.initSteps.remove(logId)) // FIXME use service instead of step in order to generate audit log
           .map(_ ⇒ Results.NoContent)
       }
 

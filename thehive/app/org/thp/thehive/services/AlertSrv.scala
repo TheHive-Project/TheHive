@@ -165,6 +165,7 @@ class AlertSrv @Inject()(
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     // TODO add observables
+    // TODO add audit
     for {
       alert ← getOrFail(alertId)
       case0 ← caseSrv.getOrFail(caseId)

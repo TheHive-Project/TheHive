@@ -53,12 +53,13 @@ class LogMigration @Inject()(
           userMigration.withUser((logJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
             val log = logJs.as[Log]
 //            logger.info(s"Importing log ${task.title} / ${log.message}")
-            val createdLog = logSrv.create(log, task)
-            auditMigration.importAudits("case_task_log", (logJs \ "_id").as[String], createdLog, progress)
-            (logJs \ "attachment")
-              .asOpt[ElasticAttachment]
-              .map(saveAttachment(attachmentSrv, storageSrv, elasticAttachmentSrv, hashers, toDB)(_))
-              .foreach(logSrv.addAttachment(createdLog, _))
+            logSrv.create(log, task).map { createdLog ⇒
+              auditMigration.importAudits("case_task_log", (logJs \ "_id").as[String], createdLog, progress)
+              (logJs \ "attachment")
+                .asOpt[ElasticAttachment]
+                .map(saveAttachment(attachmentSrv, storageSrv, elasticAttachmentSrv, hashers, toDB)(_))
+                .foreach(logSrv.addAttachment(createdLog, _))
+            }
           }
         }
       }

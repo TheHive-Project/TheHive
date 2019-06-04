@@ -49,17 +49,25 @@ class AuditSrv @Inject()(
     }
 
   def createCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit(authContext.requestId, "createCase", Some(`case`._id), Some("Case"), None), `case`, Some(`case`))
+    create(Audit("createCase", `case`), `case`, Some(`case`))
 
   def updateCase(`case`: Case with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit(authContext.requestId, "updateCase", Some(`case`._id), Some("Case"), Some(details.toString)), `case`, Some(`case`))
+    create(Audit("updateCase", `case`, Some(details.toString)), `case`, Some(`case`))
 
   def createAlert(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit(authContext.requestId, "createCase", Some(alert._id), Some("Alert"), None), alert, Some(alert))
+    create(Audit("createAlert", alert), alert, Some(alert))
 
   def updateAlert(alert: Alert with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit(authContext.requestId, "updateAlert", Some(alert._id), Some("Alert"), Some(details.toString)), alert, Some(alert))
+    create(Audit("updateAlert", alert, Some(details.toString)), alert, Some(alert))
 
+  def createCaseTemplate(caseTemplate: CaseTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("createCaseTemplate", caseTemplate), caseTemplate, Some(caseTemplate))
+
+  def createLog(log: Log with Entity, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("createLog", log), task, Some(log))
+
+  def updateLog(log: Log with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("updateLog", log, Some(details.toString)), log, Some(log))
 }
 
 @EntitySteps[Audit]

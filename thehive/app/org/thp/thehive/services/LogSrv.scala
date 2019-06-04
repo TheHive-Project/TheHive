@@ -1,5 +1,9 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
+import play.api.libs.json.Json
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -10,28 +14,27 @@ import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.models._
 
 @Singleton
-class LogSrv @Inject()(attachmentSrv: AttachmentSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
+class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
   val taskLogSrv                                                                 = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)
 
-  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Log with Entity = {
+  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] = {
     val createdLog = create(log)
     taskLogSrv.create(TaskLog(), task, createdLog)
-    createdLog
+    auditSrv.createLog(createdLog, task).map(_ ⇒ createdLog)
   }
 
-  def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
-    val attachment = attachmentSrv.create(file)
-    addAttachment(log, attachment)
-    attachment
-  }
+  def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
+    addAttachment(log, attachmentSrv.create(file))
 
   def addAttachment(
       log: Log with Entity,
       attachment: Attachment with Entity
-  )(implicit graph: Graph, authContext: AuthContext): LogAttachment with Entity =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
     logAttachmentSrv.create(LogAttachment(), log, attachment)
+    auditSrv.updateLog(log, Json.obj("attachment" → attachment.name)).map(_ ⇒ attachment)
+  }
 }
 
 @EntitySteps[Log]
