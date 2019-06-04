@@ -167,7 +167,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           )
           .withHeaders("user" → "user1")
 
-        val result           = caseCtrl.create(request)
+        val result = caseCtrl.create(request)
 
         status(result) shouldEqual 201
 
@@ -256,11 +256,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
           .withHeaders("user" → "user3")
           .withJsonBody(
-            Json.parse("""{"query":{"_any":"*"}}""")
+            Json.parse("""{"query":{"severity":2}}""")
           )
         val result = caseCtrl.search()(request)
         status(result) must_=== 200
-        header("X-Total", result) must beSome("2")
+        header("X-Total", result) must beSome("1")
         val resultCases = contentAsJson(result).as[Seq[OutputCase]].map(TestCase.apply)
 
         val case3 = TestCase(
@@ -274,7 +274,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "open",
-          tags = Set("t1","t2"),
+          tags = Set("t1", "t2"),
           summary = None,
           owner = Some("user1"),
           customFields = Set(
@@ -284,25 +284,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           stats = Json.obj()
         )
 
-        val case4 = TestCase(
-          caseId = 4,
-          title = "case#4",
-          description = "description of case #4",
-          severity = 3,
-          startDate = new Date(1531667370000L),
-          endDate = None,
-          flag = false,
-          tlp = 3,
-          pap = 3,
-          status = "open",
-          tags = Set("t1","t3"),
-          summary = None,
-          owner = Some("user1"),
-          customFields = Set.empty,
-          stats = Json.obj()
-        )
-
-        resultCases must contain(exactly(case3, case4))
+        resultCases must contain(exactly(case3))
       }
 
       "get and aggregate properly case stats" in {
@@ -335,6 +317,36 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
         resultCase shouldEqual expected
       }.pendingUntilFixed("group by multivalued property doesn't work")
+
+      "assign a case to an user" in {
+        val request = FakeRequest("PATCH", s"/api/v0/case/#4")
+          .withHeaders("user" → "user2")
+          .withJsonBody(Json.obj("owner" → "user2"))
+        val result = caseCtrl.update("#4")(request)
+        status(result) must_=== 200
+        val resultCase       = contentAsJson(result)
+        val resultCaseOutput = resultCase.as[OutputCase]
+
+        val expected = TestCase(
+          caseId = 4,
+          title = "case#4",
+          description = "description of case #4",
+          severity = 3,
+          startDate = new Date(1531667370000L),
+          endDate = None,
+          flag = false,
+          tlp = 3,
+          pap = 3,
+          status = "open",
+          tags = Set("t1", "t3"),
+          summary = None,
+          owner = Some("user2"),
+          customFields = Set.empty,
+          stats = Json.obj()
+        )
+
+        TestCase(resultCaseOutput) shouldEqual expected
+      }
     }
   }
 }

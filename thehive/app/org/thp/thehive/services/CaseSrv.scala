@@ -73,7 +73,7 @@ class CaseSrv @Inject()(
   )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] =
     for {
       (caseSteps, updatedFields) ← super.update(steps, propertyUpdaters)
-      case0                      ← caseSteps.clone.getOrFail()
+      case0                      ← caseSteps.clone().getOrFail()
       _                          ← auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
 
@@ -121,6 +121,15 @@ class CaseSrv @Inject()(
     auditSrv.updateCase(`case`, Json.obj("resolutionStatus" → resolutionStatus.value))
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
   }
+
+  def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
+    get(`case`).unassign()
+    caseUserSrv.create(CaseUser(), `case`, user)
+    ()
+  }
+
+  def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Unit =
+    get(`case`).unassign()
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
 //  {
@@ -258,6 +267,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .inTo[ShareCase]
       .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
   )
+
+  @deprecated("must not be used because it doesn't generate audit log")
+  def unassign(): Unit = {
+    raw.outToE[CaseUser].drop().iterate()
+    ()
+  }
 
   def linkedCases: CaseSteps = {
     val label = StepLabel[JSet[Vertex]]()

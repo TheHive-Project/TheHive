@@ -10,9 +10,5 @@
   {
     "from": "case3",
     "to": "user1"
-  },
-  {
-    "from": "case4",
-    "to": "user1"
   }
 ]

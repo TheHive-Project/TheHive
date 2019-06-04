@@ -21,7 +21,7 @@ case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(
-    caseSrv: CaseSrv,
+    val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     alertSrv: AlertSrv,

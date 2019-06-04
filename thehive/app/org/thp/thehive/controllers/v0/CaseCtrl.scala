@@ -17,7 +17,7 @@ import scala.util.{Success, Try}
 class CaseCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
-    caseSrv: CaseSrv,
+    val caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,

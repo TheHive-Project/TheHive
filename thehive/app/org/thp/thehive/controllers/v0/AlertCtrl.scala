@@ -13,7 +13,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputAlert
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
-import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, CaseTemplateSrv, UserSrv}
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -21,7 +21,8 @@ class AlertCtrl @Inject()(
     db: Database,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    userSrv: UserSrv,
+    val userSrv: UserSrv,
+    val caseSrv: CaseSrv,
     errorHandler: HttpErrorHandler,
     val queryExecutor: TheHiveQueryExecutor
 ) extends QueryCtrl

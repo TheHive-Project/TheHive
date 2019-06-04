@@ -8,12 +8,14 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseSteps
-import play.api.libs.json.JsObject
-
+import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
+import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.language.implicitConversions
 
 trait CaseConversion extends CustomFieldConversion {
+  val caseSrv: CaseSrv
+  val userSrv: UserSrv
+
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
     Output[OutputCase](
       richCase
@@ -57,7 +59,20 @@ trait CaseConversion extends CustomFieldConversion {
       .property[Int]("pap")(_.simple.updatable)
       .property[String]("status")(_.simple.updatable)
       .property[Option[String]]("summary")(_.simple.updatable)
-      .property[String]("user")(_.simple.updatable)
+      .property[Option[String]]("owner")(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
+        (_, _, login: Option[String], vertex, _, graph, authContext) ⇒
+          for {
+            case0 ← caseSrv.get(vertex)(graph).getOrFail()
+            user  ← login.map(userSrv.get(_)(graph).getOrFail()).flip
+          } yield user match {
+            case Some(u) ⇒
+              caseSrv.assign(case0, u)(graph, authContext)
+              Json.obj("owner" → u.login)
+            case None ⇒
+              caseSrv.unassign(case0)(graph, authContext)
+              Json.obj("owner" → JsNull)
+          }
+      })
       .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
       .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
       .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
