@@ -272,7 +272,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "Open",
-          tags = Set("t1","t2"),
+          tags = Set("t1", "t2"),
           summary = None,
           owner = Some("user1"),
           customFields = Set(

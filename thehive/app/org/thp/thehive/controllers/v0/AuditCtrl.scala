@@ -15,14 +15,14 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
   // TODO deal with rootId and double check the purpose of count
   def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
-        val audits = auditSrv.initSteps.list.toList.map(_.toJson)
-        Success(
-          Results.Ok(
-            JsArray(
-              if (count.isDefined) audits.take(count.get) else audits
-            )
-          )
-        )
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val audits = rootId
+          .fold(auditSrv.initSteps)(rid ⇒ auditSrv.initSteps.forContext(rid))
+          .visible
+          .range(0, count.getOrElse(10))
+          .richAudit
+          .toList
+          .map(_.toJson)
+        Success(Results.Ok(JsArray(audits.take(count.getOrElse(10)))))
       }
 }

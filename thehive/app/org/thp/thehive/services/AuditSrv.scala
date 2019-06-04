@@ -67,6 +67,7 @@ class AuditSrv @Inject()(
     create(Audit("createLog", log), task, Some(log))
 
   def updateLog(log: Log with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    // FIXME find the related task and use it as context
     create(Audit("updateLog", log, Some(details.toString)), log, Some(log))
 }
 
@@ -75,35 +76,65 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
 
   override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
-  def list: GremlinScala[RichAudit] =
-    raw
-      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
-      .value[String]("requestId")
-      .dedup()
-      .map(requestId ⇒ richAudit(requestId))
+//  def list: GremlinScala[RichAudit] =
+//    raw
+//      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
+//      .value[String]("requestId")
+//      .dedup()
+//      .map(requestId ⇒ richAudit(requestId))
 
-  def richAudit(requestId: String): RichAudit = {
-    val auditList = graph
-      .V()
-      .has("Audit", Key[String]("requestId"), requestId)
-      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
-      .project[Any]("audit", "object")
-      .by()
-      .by(__[Vertex].outTo[Audited].traversal)
-      .map {
-        case ValueMap(m) ⇒
-          val audit = m.get[Vertex]("audit").as[Audit]
-          val obj   = m.get[Vertex]("object").asEntity
-          audit → obj
-      }
-      .toList
+  def richAudit: ScalarSteps[RichAudit] =
+//    RichAudit(audit: Audit with Entity, context: Entity, `object`: Option[Entity]): RichAudit =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AuditContext]))
+            .and(By(__[Vertex].outTo[Audited].fold()))
+        )
+        .map {
+          case (audit, context, obj) ⇒
+            RichAudit(audit.as[Audit], context.as[Product], atMostOneOf[Vertex](obj).map(_.as[Product]))
+        }
+    )
 
-    val summary = auditList
-      .groupBy(_._2._model.label)
-      .mapValues(_.groupBy(_._1.action).mapValues(_.size))
-//    RichAudit(auditList.head._1, auditList.head._2, summary)
-    ???
-  }
+//    val auditList = graph
+//      .V()
+//      .has("Audit", Key[String]("requestId"), requestId)
+//      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
+//      .project[Any]("audit", "object")
+//      .by()
+//      .by(__[Vertex].outTo[Audited].traversal)
+//      .map {
+//        case ValueMap(m) ⇒
+//          val audit = m.get[Vertex]("audit").as[Audit]
+//          val obj   = m.get[Vertex]("object").asEntity
+//          audit → obj
+//      }
+//      .toList
+//
+//    val summary = auditList
+//      .groupBy(_._2._model.label)
+//      .mapValues(_.groupBy(_._1.action).mapValues(_.size))
+////    RichAudit(auditList.head._1, auditList.head._2, summary)
+//    ???
+
+  def forContext(contextId: String): AuditSteps = newInstance(raw.filter(_.outTo[AuditContext].has(Key("_id") of contextId)))
+
+  def visible(implicit authContext: AuthContext): AuditSteps = newInstance(
+    raw.filter(
+      _.outTo[AuditContext]
+        .coalesce(                                   // find organisation
+          _.inTo[ShareCase].inTo[OrganisationShare], // case
+          _.inTo[ShareTask].inTo[OrganisationShare], // task
+          _.inTo[ShareObservable].inTo[OrganisationShare],
+          _.outTo[AlertOrganisation]
+        )
+        .inTo[RoleOrganisation]
+        .inTo[UserRole]
+        .has(Key("login") of authContext.userId)
+    )
+  )
 
   def getObject: Option[Entity] =
     raw.outTo[Audited].headOption().flatMap { v ⇒
