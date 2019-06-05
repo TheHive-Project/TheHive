@@ -1,14 +1,16 @@
 package org.thp.thehive.dto.v0
 import java.util.Date
 
+import org.scalactic.Accumulation._
+import org.scalactic.Good
+import org.thp.scalligraph.controllers._
 import play.api.libs.json.{Json, OFormat, Writes}
-
-import org.thp.scalligraph.controllers.FFile
 
 case class InputObservable(
     //caseId: String,
     dataType: String,
-    data: Option[String] = None,
+    @WithParser(InputObservable.fp)
+    data: Seq[String] = Nil,
     message: Option[String] = None,
     startDate: Option[Date] = None,
     attachment: Option[FFile] = None,
@@ -20,6 +22,12 @@ case class InputObservable(
 
 object InputObservable {
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]
+
+  val fp: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
+    case (_, FString(s)) ⇒ Good(Seq(s))
+    case (_, FAny(s))    ⇒ Good(s)
+    case (_, FSeq(a))    ⇒ a.validatedBy(FieldsParser.string(_))
+  }
 }
 
 case class OutputObservable(

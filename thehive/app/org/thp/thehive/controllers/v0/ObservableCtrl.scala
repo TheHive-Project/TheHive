@@ -8,7 +8,7 @@ import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -30,11 +30,16 @@ class ObservableCtrl @Inject()(
       .extract('artifact, FieldsParser[InputObservable])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputObservable: InputObservable = request.body('artifact)
-        caseSrv.getOrFail(caseId).map { `case` ⇒
-          val dataOrFile: Either[Data, FFile] = inputObservable.data.map(Data.apply).toLeft(inputObservable.attachment.get)
-          val createdObservable               = observableSrv.create(inputObservable, dataOrFile, Nil, `case`)
-          Results.Created(createdObservable.toJson)
-        }
+        caseSrv
+          .get(caseId)
+          .can(Permissions.manageCase)
+          .getOrFail()
+          .map { `case` ⇒
+            val createdObservables = inputObservable.data.map(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, `case`)) ++
+              inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, Right(a), Nil, `case`)).toSeq
+
+            Results.Created(Json.toJson(createdObservables.map(_.toJson)))
+          }
       }
 
   def get(observableId: String): Action[AnyContent] =

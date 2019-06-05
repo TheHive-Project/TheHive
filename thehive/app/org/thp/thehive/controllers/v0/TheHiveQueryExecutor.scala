@@ -81,10 +81,10 @@ class TheHiveQueryExecutor @Inject()(
       FieldsParser[RangeParams],
       (range, userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, ObservableSteps, PagedResult[Observable with Entity]](
+    Query.withParam[RangeParams, ObservableSteps, PagedResult[RichObservable]](
       "page",
       FieldsParser[RangeParams],
-      (range, observableSteps, _) ⇒ observableSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+      (range, observableSteps, _) ⇒ observableSteps.richObservable.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
     Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) ⇒ taskSteps.richTask.toList()),
