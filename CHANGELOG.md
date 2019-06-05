@@ -1,5 +1,38 @@
 # Change Log
 
+## [3.4.0-4C1](https://github.com/TheHive-Project/TheHive/tree/HEAD)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.1...3.4.0-4C1)()
+
+**Implemented enhancements:**
+
+- Allow to import file from Cortex report [\#982](https://github.com/TheHive-Project/TheHive/issues/982)
+- Remove metrics module [\#975](https://github.com/TheHive-Project/TheHive/issues/975)
+- Upgrade frontend libraries [\#966](https://github.com/TheHive-Project/TheHive/issues/966)
+- Cortex AddArtifactToCase AssignCase [\#922](https://github.com/TheHive-Project/TheHive/issues/922)
+- Communication to ElasticSearch via HTTP API 9200 [\#913](https://github.com/TheHive-Project/TheHive/issues/913)
+- Add Cortex AssignCase [\#924](https://github.com/TheHive-Project/TheHive/pull/924) ([zpriddy](https://github.com/zpriddy))
+- Support Elasticsearch 6.x clusters [\#623](https://github.com/TheHive-Project/TheHive/issues/623)
+
+**Fixed bugs:**
+
+- Donut dashboard metric values are not transformed to searches [\#972](https://github.com/TheHive-Project/TheHive/issues/972)
+- Bulk merge of alerts does not merge the tags [\#994](https://github.com/TheHive-Project/TheHive/issues/994)
+- Java 11 build crash [\#990](https://github.com/TheHive-Project/TheHive/issues/990)
+- Failure to load datatypes [\#988](https://github.com/TheHive-Project/TheHive/issues/988)
+- Fix search page base filter [\#983](https://github.com/TheHive-Project/TheHive/issues/983)
+- Authentication Error when using Hive API \(Patch\) [\#951](https://github.com/TheHive-Project/TheHive/issues/951)
+
+**Closed issues:**
+
+- bintray repo for deb packages not signed [\#976](https://github.com/TheHive-Project/TheHive/issues/976)
+- Set alert to status "Ignored" via API does not work [\#955](https://github.com/TheHive-Project/TheHive/issues/955)
+
+**Merged pull requests:**
+
+- Scalligraph [\#980](https://github.com/TheHive-Project/TheHive/pull/980) ([BillOTei](https://github.com/BillOTei))
+- Add 'My open cases' and 'New & Updated alerts' to quick filters [\#925](https://github.com/TheHive-Project/TheHive/pull/925) ([zpriddy](https://github.com/zpriddy))
+
 ## [3.3.1](https://github.com/TheHive-Project/TheHive/tree/3.3.1) (2019-05-22)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0...3.3.1)
 
