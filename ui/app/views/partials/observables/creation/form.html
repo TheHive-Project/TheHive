@@ -7,7 +7,7 @@
             <button type="button" class="btn btn-default" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
-                <li ng-repeat="type in types">
+                <li ng-repeat="type in types track by $index">
                     <a ng-click="selectDataType(type)">{{type}}</a>
                 </li>
             </ul>
