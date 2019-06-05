@@ -1,8 +1,9 @@
 {
   "name": "thehive",
-  "version": "3.3.1",
+  "version": "3.4.0-RC1",
   "license": "AGPL-3.0",
   "dependencies": {
+    "jquery": "^3.4.1",
     "angular": "1.7.8",
     "angular-animate": "1.7.8",
     "angular-bootstrap": "2.5.0",
@@ -18,7 +19,6 @@
     "bootstrap-sass-official": "^3",
     "dropzone": "~4.3.0",
     "font-awesome": "fontawesome#^4.7.0",
-    "jquery": "^3.4.1",
     "moment": "^2.24.0",
     "ng-csv": "~0.3.6",
     "ng-tags-input": "^3.2.0",

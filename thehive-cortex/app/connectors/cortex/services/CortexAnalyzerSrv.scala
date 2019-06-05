@@ -197,6 +197,7 @@ class CortexAnalyzerSrv @Inject()(
     import org.elastic4play.services.QueryDSL._
     def findArtifactId(caze: Case, dataType: String, data: Option[String], attachmentId: Option[String]) = {
       val criteria: Seq[QueryDef] = Seq(
+        "status" ~= "Ok",
         "dataType" ~= dataType,
         withParent(caze)
       ) ++ data.map("data" ~= _) ++ attachmentId.map("attachment.id" ~= _)
