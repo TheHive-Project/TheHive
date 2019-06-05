@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.language.implicitConversions
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Entity
@@ -10,6 +9,8 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.Log
 import org.thp.thehive.services.LogSteps
+
+import scala.language.implicitConversions
 
 trait LogConversion {
 
@@ -44,5 +45,6 @@ trait LogConversion {
       .property[Boolean]("deleted")(_.simple.updatable)
       .property[Date]("startDate")(_.rename("date").readonly)
       .property[String]("status")(_.simple.readonly)
+      .property[String]("attachment")(_.derived(_.out("LogAttachment").value[String]("id")).readonly)
       .build
 }
