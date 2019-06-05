@@ -1,0 +1,17 @@
+<div class="form-group">
+    <label>Title</label>
+    <input type="text" class="form-control" placeholder="Ex: Summary" ng-model="component.options.title">
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="form-group">
+            <label>Template</label>
+            <textarea class="content-box" name="template"
+              placeholder="Close summary" markdown-editor="{
+                'fullscreen': {enable: false},
+                'iconlibrary': 'fa',
+                addExtraButtons: true,
+                resize: 'vertical'}" rows="6" ng-model="component.options.template" required></textarea>
+        </div>
+    </div>
+</div>
