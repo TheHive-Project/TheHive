@@ -282,7 +282,7 @@ class FunctionalTest extends PlaySpecification {
           val expected = TestTask(
             title = "identification",
             description = None,
-            status = "waiting",
+            status = "Waiting",
             flag = false,
             startDate = None,
             endDate = None,
