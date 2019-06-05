@@ -10,8 +10,9 @@ import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.Success
+
+import org.scalactic.Good
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -24,6 +25,14 @@ class ObservableCtrl @Inject()(
     with ObservableConversion {
 
   lazy val logger = Logger(getClass)
+
+  import org.scalactic.Accumulation._
+
+  val fp = FieldsParser[Seq[String]]("observable.data") {
+    case (_, FString(s)) ⇒ Good(Seq(s))
+    case (_, FAny(s))    ⇒ Good(s)
+    case (_, FSeq(a))    ⇒ a.validatedBy(FieldsParser.string(_))
+  }
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")

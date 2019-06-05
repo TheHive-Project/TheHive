@@ -14,8 +14,14 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
 
   def flow(): Action[AnyContent] =
     entryPoint("audit flow")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
-        val audits = auditSrv.initSteps.list.toList.map(_.toJson)
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val audits = auditSrv
+          .initSteps
+          .visible
+          .range(0, 10)
+          .richAudit
+          .toList()
+          .map(_.toJson)
         Success(Results.Ok(JsArray(audits)))
       }
 }

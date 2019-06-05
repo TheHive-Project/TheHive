@@ -1,17 +1,16 @@
 package org.thp.thehive.services
-import java.util.Date
+
+import scala.util.Try
+
+import play.api.libs.json.JsObject
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-
-import scala.util.Try
 
 @Singleton
 class AuditSrv @Inject()(
@@ -27,8 +26,6 @@ class AuditSrv @Inject()(
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] =
     get(audit).getObject
-
-  //  def create(audit: Audit, context: Entity, `object`: Option[Entity]): Try[RichAudit] = ???
 
   def create(
       audit: Audit,
@@ -76,15 +73,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
 
   override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
-//  def list: GremlinScala[RichAudit] =
-//    raw
-//      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
-//      .value[String]("requestId")
-//      .dedup()
-//      .map(requestId ⇒ richAudit(requestId))
-
   def richAudit: ScalarSteps[RichAudit] =
-//    RichAudit(audit: Audit with Entity, context: Entity, `object`: Option[Entity]): RichAudit =
     ScalarSteps(
       raw
         .project(
@@ -94,30 +83,36 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         )
         .map {
           case (audit, context, obj) ⇒
-            RichAudit(audit.as[Audit], context.as[Product], atMostOneOf[Vertex](obj).map(_.as[Product]))
+            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
         }
     )
 
-//    val auditList = graph
-//      .V()
-//      .has("Audit", Key[String]("requestId"), requestId)
-//      .order(By(Key[Date]("_createdAt"), Order.incr)) // Order.asc is not recognized by org.janusgraph.graphdb.internal.Order.convert
-//      .project[Any]("audit", "object")
-//      .by()
-//      .by(__[Vertex].outTo[Audited].traversal)
-//      .map {
-//        case ValueMap(m) ⇒
-//          val audit = m.get[Vertex]("audit").as[Audit]
-//          val obj   = m.get[Vertex]("object").asEntity
-//          audit → obj
-//      }
-//      .toList
-//
-//    val summary = auditList
-//      .groupBy(_._2._model.label)
-//      .mapValues(_.groupBy(_._1.action).mapValues(_.size))
-////    RichAudit(auditList.head._1, auditList.head._2, summary)
-//    ???
+  def richAuditWithCustomObjectRenderer(
+      entityToJson: String ⇒ GremlinScala[Vertex] ⇒ GremlinScala[JsObject]
+  ): ScalarSteps[(RichAudit, JsObject)] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AuditContext]))
+            .and(By(__[Vertex].outTo[Audited].fold()))
+            .and(
+              By(
+                __[Vertex]
+                  .outTo[Audited]
+                  .choose[Label, JsObject](
+                    on = _.label(),
+                    BranchCase("Case", entityToJson("Case")),
+                    BranchCase("Task", entityToJson("Task"))
+                  )
+              )
+            )
+        )
+        .map {
+          case (audit, context, obj, objectJson) ⇒
+            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) → objectJson
+        }
+    )
 
   def forContext(contextId: String): AuditSteps = newInstance(raw.filter(_.outTo[AuditContext].has(Key("_id") of contextId)))
 

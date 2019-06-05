@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, Json, OFormat}
+import play.api.libs.json._
 
 import org.thp.scalligraph.models.Entity
 
@@ -24,9 +24,9 @@ object OutputEntity {
 case class OutputAudit(
     _id: String,
     id: String,
-    _createdBy: String,
+    createdBy: String,
 //    _updatedBy: Option[String] = None, // can't be set
-    _createdAt: Date,
+    createdAt: Date,
 //    _updatedAt: Option[Date] = None, // can't be set
     base: Boolean = true, // always true
     details: JsObject,
@@ -41,7 +41,19 @@ case class OutputAudit(
 )
 
 object OutputAudit {
-  implicit val format: OFormat[OutputAudit] = Json.format[OutputAudit]
+
+  val auditWrites: OWrites[OutputAudit] = Json.writes[OutputAudit].transform { js: JsObject ⇒
+    Json.obj("base" → (js - "summary"), "summary" → (js \ "summary").asOpt[JsObject])
+  }
+
+  val auditReads: Reads[OutputAudit] = Reads[OutputAudit] { js ⇒
+    for {
+      base    ← (js \ "base").validate[JsObject]
+      summary ← (js \ "summary").validate[JsObject]
+      audit   ← Json.reads[OutputAudit].reads(base ++ summary)
+    } yield audit
+  }
+  implicit val format: OFormat[OutputAudit] = OFormat(auditReads, auditWrites)
 }
 
 /*

@@ -81,7 +81,7 @@ object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
 
   override val model: Model.Edge[AuditContext, Audit, Product] = new EdgeModel[Audit, Product] { thisModel ⇒
     override type E = AuditContext
-    override val label: String                                = "Audited"
+    override val label: String                                = "AuditContext"
     override val fromLabel: String                            = "Audit"
     override val toLabel: String                              = ""
     override val indexes: Seq[(IndexType.Value, Seq[String])] = Nil

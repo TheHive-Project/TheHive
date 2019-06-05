@@ -2,6 +2,10 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.language.implicitConversions
+
+import play.api.libs.json.{JsObject, Json}
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
@@ -9,8 +13,6 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
-import play.api.libs.json.{JsNull, JsObject, Json}
-import scala.language.implicitConversions
 
 trait CaseConversion extends CustomFieldConversion {
   val caseSrv: CaseSrv
