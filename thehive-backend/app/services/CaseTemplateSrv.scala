@@ -1,13 +1,13 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
-import models.{ CaseTemplate, CaseTemplateModel }
+import akka.stream.scaladsl.{Sink, Source}
+import models.{CaseTemplate, CaseTemplateModel}
 
 import org.elastic4play.NotFoundError
 import org.elastic4play.controllers.Fields
@@ -15,7 +15,7 @@ import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services._
 
 @Singleton
-class CaseTemplateSrv @Inject() (
+class CaseTemplateSrv @Inject()(
     caseTemplateModel: CaseTemplateModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
@@ -23,7 +23,8 @@ class CaseTemplateSrv @Inject() (
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) {
+    implicit val mat: Materializer
+) {
 
   def create(fields: Fields)(implicit authContext: AuthContext): Future[CaseTemplate] =
     createSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, fields)
@@ -48,7 +49,6 @@ class CaseTemplateSrv @Inject() (
   def delete(id: String)(implicit authContext: AuthContext): Future[Unit] =
     deleteSrv.realDelete[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[CaseTemplate, NotUsed], Future[Long]) = {
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[CaseTemplate, NotUsed], Future[Long]) =
     findSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, queryDef, range, sortBy)
-  }
 }

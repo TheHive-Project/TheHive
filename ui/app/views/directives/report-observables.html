@@ -37,13 +37,24 @@
                 <tr ng-repeat="observable in pagination.data | orderBy:'id':true |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
-                    <td><input type="checkbox" ng-model="observable.selected" ng-click="selectObservable(observable)" ng-disabled="observable.id"></td>
+                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="observable.id"></td>
                     <td>
                         <span uib-tooltip="Observable already id" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.id" class="glyphicon glyphicon-eye-open"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">
-                        {{observable.data | fang | ellipsis:250}}
+                        <div ng-switch="observable.dataType" uib-tooltip="{{observable.message}}" tooltip-placement="top-left">
+                            <span ng-switch-when="file">{{observable.attachment.name | fang}}</span>
+                            <span ng-switch-default>{{observable.data | fang | ellipsis:250}}</span>
+                        </div>
+                        <div class="case-tags flexwrap mt-xxs">
+                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                            <strong class="text-muted mr-xxxs" ng-if="!observable.tags || observable.tags.length === 0">None</strong>
+                            <span class="label label-primary mb-xxxs mr-xxxs pointer"
+                                ng-repeat="tag in observable.tags track by $index">
+                                {{tag}}
+                            </span>
+                        </div>
                     </td>
                     <td class="wrap">
                         <a ng-if="observable.id" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.id})"><i class="fa fa-search"></i> View</a>

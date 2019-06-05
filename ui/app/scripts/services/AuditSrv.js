@@ -13,7 +13,9 @@
                         'rootId': rootId,
                         'count': max
                     }
-                }).success(function(data) {
+                }).then(function(response) {
+                    var data = response.data;
+                    
                     angular.forEach(data, function(d) {
                         ret.push(d);
                     });
@@ -47,7 +49,7 @@
                     };
 
                     StreamSrv.addListener(eventConfig);
-                }).error(function(data, status) {
+                }).catch(function(data, status) {
                     NotificationSrv.error('AuditSrv', data, status);
                 });
                 return ret;

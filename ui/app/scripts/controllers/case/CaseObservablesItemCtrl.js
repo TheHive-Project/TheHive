@@ -48,7 +48,7 @@
                 CaseTabsSrv.activateTab(observableName);
             }, 0);
 
-            $scope.initScope = function (artifact) {                
+            $scope.initScope = function (artifact) {
 
                 // Get analyzers available for the observable's datatype
                 AnalyzerSrv.forDataType(artifact.dataType)

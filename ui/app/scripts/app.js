@@ -3,15 +3,35 @@ angular.module('theHiveServices', []);
 angular.module('theHiveFilters', []);
 angular.module('theHiveDirectives', []);
 
-angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router', 'ui.sortable',
-        'theHiveControllers', 'theHiveServices', 'theHiveFilters',
-        'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput',
-        // 'btford.markdown',
-        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
-        'LocalStorageModule',
-        'angular-markdown-editor',
-        'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
-        'dndLists', 'colorpicker.module'
+angular.module('thehive', [
+    'ngAnimate',
+    'ngMessages',
+    'ngSanitize',
+    'ui.bootstrap',
+    'ui.router',
+    'ui.sortable',
+    'timer',
+    'angularMoment',
+    'ngCsv',
+    'ngTagsInput',
+    'ngResource',
+    'ui-notification',
+    'angular-clipboard',
+    'LocalStorageModule',
+    'angular-markdown-editor',
+    'hc.marked',
+    'hljs',
+    'ui.ace',
+    'angular-page-loader',
+    'naif.base64',
+    'images-resizer',
+    'duScroll',
+    'dndLists',
+    'colorpicker.module',
+    'theHiveControllers',
+    'theHiveServices',
+    'theHiveFilters',
+    'theHiveDirectives'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -20,7 +40,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
     })
     .config(function($compileProvider) {
         'use strict';
-        $compileProvider.debugInfoEnabled(false);
+        $compileProvider.debugInfoEnabled(false);        
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
@@ -63,11 +83,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     currentUser: function($q, $state, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function(err, status) {
-                            return deferred.resolve(status === 520 ? status : null);
-                        });
+                          })
+                          .catch( function(err) {
+                            return deferred.resolve(err.status === 520 ? err.status : null);
+                          });
 
                         return deferred.promise;
                     },
@@ -129,16 +151,17 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     currentUser: function($q, $state, $timeout, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function( /*err, status*/ ) {
-
+                          })
+                          .catch( function(/*err*/) {
                             $timeout(function() {
                                 $state.go('login');
                             });
 
                             return deferred.reject();
-                        });
+                          });
 
                         return deferred.promise;
                     },

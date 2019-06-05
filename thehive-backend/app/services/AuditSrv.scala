@@ -1,30 +1,29 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.Logger
-import play.api.libs.json.{ JsObject, JsValue, Json }
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import org.elastic4play.database.DBRemove
 import akka.NotUsed
 import akka.actor.Actor
 import akka.stream.scaladsl.Source
-import models.{ Audit, AuditModel }
+import models.{Audit, AuditModel}
 
 import org.elastic4play.controllers.Fields
-import org.elastic4play.models.{ Attribute, BaseEntity, BaseModelDef }
+import org.elastic4play.models.{Attribute, BaseEntity, BaseModelDef}
 import org.elastic4play.services._
-import org.elastic4play.utils.{ Instance, RichJson }
+import org.elastic4play.utils.{Instance, RichJson}
 
 trait AuditedModel { self: BaseModelDef ⇒
   def attributes: Seq[Attribute[_]]
 
   lazy val auditedAttributes: Map[String, Attribute[_]] =
-    attributes
-      .collect { case a if !a.isUnaudited ⇒ a.attributeName → a }
-      .toMap
+    attributes.collect { case a if !a.isUnaudited ⇒ a.attributeName → a }.toMap
+
   def selectAuditedAttributes(attrs: JsObject) = JsObject {
     attrs.fields.flatMap {
       case (attrName, value) ⇒
@@ -38,13 +37,14 @@ trait AuditedModel { self: BaseModelDef ⇒
 }
 
 @Singleton
-class AuditSrv @Inject() (
+class AuditSrv @Inject()(
     auditModel: AuditModel,
     modelSrv: ModelSrv,
     auxSrv: AuxSrv,
     dBRemove: DBRemove,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext) {
+    implicit val ec: ExecutionContext
+) {
 
   private[AuditSrv] lazy val logger = Logger(getClass)
 
@@ -61,31 +61,33 @@ class AuditSrv @Inject() (
     }
     val (src, total) = findSrv[AuditModel, Audit](auditModel, filter, Some(s"0-$count"), Seq("-startDate"))
     val entities = src.mapAsync(5) { audit ⇒
-      val fSummary = findSrv(auditModel, and("requestId" ~= audit.requestId(), "objectType" in (streamableEntities: _*)), groupByField("objectType", groupByField("operation", selectCount)))
-        .map { json ⇒
-          json.collectValues {
-            case objectType: JsObject ⇒ objectType.collectValues {
+      val fSummary = findSrv(
+        auditModel,
+        and("requestId" ~= audit.requestId(), "objectType" in (streamableEntities: _*)),
+        groupByField("objectType", groupByField("operation", selectCount))
+      ).map { json ⇒
+        json.collectValues {
+          case objectType: JsObject ⇒
+            objectType.collectValues {
               case operation: JsObject ⇒ (operation \ "count").as[JsValue]
             }
-          }
         }
+      }
       val fObj = auxSrv.apply(audit.objectType(), audit.objectId(), 10, withStats = false, removeUnaudited = true)
 
       for {
         summary ← fSummary
-        obj ← fObj
+        obj     ← fObj
       } yield JsObject(Seq("base" → (audit.toJson + ("object" → obj)), "summary" → summary))
     }
     (entities, total)
   }
 
-  def realDelete(audit: Audit): Future[Unit] = {
+  def realDelete(audit: Audit): Future[Unit] =
     dBRemove(audit).map(_ ⇒ ())
-  }
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Audit, NotUsed], Future[Long]) = {
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Audit, NotUsed], Future[Long]) =
     findSrv[AuditModel, Audit](auditModel, queryDef, range, sortBy)
-  }
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(auditModel, queryDef, aggs: _*)
 
@@ -96,17 +98,13 @@ class AuditSrv @Inject() (
 }
 
 @Singleton
-class AuditActor @Inject() (
-    auditModel: AuditModel,
-    createSrv: CreateSrv,
-    eventSrv: EventSrv,
-    webHooks: WebHooks,
-    implicit val ec: ExecutionContext) extends Actor {
+class AuditActor @Inject()(auditModel: AuditModel, createSrv: CreateSrv, eventSrv: EventSrv, webHooks: WebHooks, implicit val ec: ExecutionContext)
+    extends Actor {
 
   object EntityExtractor {
     def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
   }
-  var currentRequestIds = Set.empty[String]
+  var currentRequestIds               = Set.empty[String]
   private[AuditActor] lazy val logger = Logger(getClass)
 
   override def preStart(): Unit = {
@@ -125,17 +123,19 @@ class AuditActor @Inject() (
     case AuditOperation(EntityExtractor(model: AuditedModel, id, routing), action, details, authContext, date) ⇒
       val requestId = authContext.requestId
       val audit = Json.obj(
-        "operation" → action,
-        "details" → model.selectAuditedAttributes(details),
+        "operation"  → action,
+        "details"    → model.selectAuditedAttributes(details),
         "objectType" → model.modelName,
-        "objectId" → id,
-        "base" → !currentRequestIds.contains(requestId),
-        "startDate" → date,
-        "rootId" → routing,
-        "requestId" → requestId)
+        "objectId"   → id,
+        "base"       → !currentRequestIds.contains(requestId),
+        "startDate"  → date,
+        "rootId"     → routing,
+        "requestId"  → requestId
+      )
 
       createSrv[AuditModel, Audit](auditModel, Fields(audit))(authContext)
-        .failed.foreach(t ⇒ logger.error("Audit error", t))
+        .failed
+        .foreach(t ⇒ logger.error("Audit error", t))
       currentRequestIds = currentRequestIds + requestId
 
       webHooks.send(audit)

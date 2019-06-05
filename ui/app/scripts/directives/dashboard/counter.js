@@ -59,9 +59,9 @@
                             };
                         });
 
-                    }, function(/*err*/) {
+                    }, function(err) {
                         scope.error = true;
-                        NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
+                        NotificationSrv.error('dashboardBar', 'Failed to fetch data, please edit the widget definition', err.status);
                     });
                 };
 

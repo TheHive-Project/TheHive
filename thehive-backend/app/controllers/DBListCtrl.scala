@@ -1,25 +1,26 @@
 package org.elastic4play.controllers
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
-import play.api.libs.json.{ JsValue, Json }
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 
 import models.Roles
 
 import org.elastic4play.services.DBLists
-import org.elastic4play.{ MissingAttributeError, Timed }
+import org.elastic4play.{MissingAttributeError, Timed}
 
 @Singleton
-class DBListCtrl @Inject() (
+class DBListCtrl @Inject()(
     dblists: DBLists,
     authenticated: Authenticated,
     renderer: Renderer,
     components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
-    implicit val ec: ExecutionContext) extends AbstractController(components) {
+    implicit val ec: ExecutionContext
+) extends AbstractController(components) {
 
   @Timed("controllers.DBListCtrl.list")
   def list: Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
@@ -31,7 +32,8 @@ class DBListCtrl @Inject() (
   @Timed("controllers.DBListCtrl.listItems")
   def listItems(listName: String): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
     val (src, _) = dblists(listName).getItems[JsValue]
-    val items = src.map { case (id, value) ⇒ s""""$id":$value""" }
+    val items = src
+      .map { case (id, value) ⇒ s""""$id":$value""" }
       .intersperse("{", ",", "}")
     Ok.chunked(items).as("application/json")
   }
@@ -54,11 +56,13 @@ class DBListCtrl @Inject() (
 
   @Timed("controllers.DBListCtrl.udpateItem")
   def updateItem(itemId: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
-    request.body.getValue("value")
+    request
+      .body
+      .getValue("value")
       .map { value ⇒
         for {
-          item ← dblists.getItem(itemId)
-          _ ← dblists.deleteItem(item)
+          item    ← dblists.getItem(itemId)
+          _       ← dblists.deleteItem(item)
           newItem ← dblists(item.dblist).addItem(value)
         } yield renderer.toOutput(OK, newItem.id)
       }
@@ -67,7 +71,7 @@ class DBListCtrl @Inject() (
 
   @Timed("controllers.DBListCtrl.itemExists")
   def itemExists(listName: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    val itemKey = request.body.getString("key").getOrElse(throw MissingAttributeError("Parameter key is missing"))
+    val itemKey   = request.body.getString("key").getOrElse(throw MissingAttributeError("Parameter key is missing"))
     val itemValue = request.body.getValue("value").getOrElse(throw MissingAttributeError("Parameter value is missing"))
     dblists(listName).exists(itemKey, itemValue).map(r ⇒ Ok(Json.obj("found" → r)))
   }
