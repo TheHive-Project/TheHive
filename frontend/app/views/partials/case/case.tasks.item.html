@@ -30,19 +30,19 @@
             </a>
 
             <a href ng-click="startTask(task)">
-                <span ng-show="task.status == 'waiting'" class="action-button text-primary">
+                <span ng-show="task.status == 'Waiting'" class="action-button text-primary">
                     <i class="fa fa-play"></i> Start
                 </span>
             </a>
 
             <a href ng-click="openTask(task)">
-                <span ng-show="task.status == 'completed'" class="action-button text-success">
+                <span ng-show="task.status == 'Completed'" class="action-button text-success">
                     <i class="fa fa-check-circle"></i> Reopen
                 </span>
             </a>
 
             <a href ng-click="closeTask(task)">
-                <span ng-show="task.status == 'inProgress'" class="action-button text-muted">
+                <span ng-show="task.status == 'InProgress'" class="action-button text-muted">
                     <i class="fa fa-check-circle-o"></i> Close
                 </span>
             </a>
@@ -80,24 +80,24 @@
             <dd><updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/></dd>
         </dl>
 
-        <dl class="dl-horizontal" ng-show="task.status == 'completed'">
+        <dl class="dl-horizontal" ng-show="task.status == 'Completed'">
             <dt class="pull-left">Close date</dt>
             <dd>
                 <span ng-bind="task.endDate | showDate"></span>
             </dd>
         </dl>
 
-        <dl class="dl-horizontal" ng-class="{'completed': 'text-success', 'inProgress': 'text-warning'}[task.status]">
+        <dl class="dl-horizontal" ng-class="{'Completed': 'text-success', 'InProgress': 'text-warning'}[task.status]">
             <dt class="pull-left">Duration</dt>
-            <dd ng-show="task.status === 'completed'">
+            <dd ng-show="task.status === 'Completed'">
                 Closed after <em ng-bind="(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'"></em>
             </dd>
-            <dd ng-show="task.status === 'inProgress'">
+            <dd ng-show="task.status === 'InProgress'">
                 Started <em am-time-ago="task.startDate"></em>
             </dd>
         </dl>
 
-        <dl class="dl-horizontal" ng-show="task.status !== 'completed'">
+        <dl class="dl-horizontal" ng-show="task.status !== 'Completed'">
             <dt class="pull-left">Status
             </dt>
             <dd>

@@ -3,15 +3,35 @@ angular.module('theHiveServices', []);
 angular.module('theHiveFilters', []);
 angular.module('theHiveDirectives', []);
 
-angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstrap', 'ui.router', 'ui.sortable',
-        'theHiveControllers', 'theHiveServices', 'theHiveFilters',
-        'theHiveDirectives', 'yaru22.jsonHuman', 'timer', 'angularMoment', 'ngCsv', 'ngTagsInput',
-        // 'btford.markdown',
-        'ngResource', 'ui-notification', 'angularjs-dropdown-multiselect', 'angular-clipboard',
-        'LocalStorageModule',
-        'angular-markdown-editor',
-        'hc.marked', 'hljs', 'ui.ace', 'angular-page-loader', 'naif.base64', 'images-resizer', 'duScroll',
-        'dndLists', 'colorpicker.module'
+angular.module('thehive', [
+    'ngAnimate',
+    'ngMessages',
+    'ngSanitize',
+    'ui.bootstrap',
+    'ui.router',
+    'ui.sortable',
+    'timer',
+    'angularMoment',
+    'ngCsv',
+    'ngTagsInput',
+    'ngResource',
+    'ui-notification',
+    'angular-clipboard',
+    'LocalStorageModule',
+    'angular-markdown-editor',
+    'hc.marked',
+    'hljs',
+    'ui.ace',
+    'angular-page-loader',
+    'naif.base64',
+    'images-resizer',
+    'duScroll',
+    'dndLists',
+    'colorpicker.module',
+    'theHiveControllers',
+    'theHiveServices',
+    'theHiveFilters',
+    'theHiveDirectives'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -20,7 +40,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
     })
     .config(function($compileProvider) {
         'use strict';
-        $compileProvider.debugInfoEnabled(false);
+        $compileProvider.debugInfoEnabled(false);        
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
@@ -34,8 +54,8 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/login.html',
                 resolve: {
                     appConfig: function(VersionSrv) {
-                                 return VersionSrv.get();
-                              }
+                       return VersionSrv.get();
+                    }
                 },
                 params: {
                     autoLogin: false
@@ -63,11 +83,13 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     currentUser: function($q, $state, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function(err, status) {
-                            return deferred.resolve(status === 520 ? status : null);
-                        });
+                          })
+                          .catch( function(err) {
+                            return deferred.resolve(err.status === 520 ? err.status : null);
+                          });
 
                         return deferred.promise;
                     },
@@ -76,6 +98,10 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     },
                     appLayout: function($q, $rootScope, AppLayoutSrv) {
                         AppLayoutSrv.init();
+                        return $q.resolve();
+                    },
+                    uiConfig: function($q, UiSettingsSrv) {
+                        UiSettingsSrv.all();
                         return $q.resolve();
                     }
                 }
@@ -125,16 +151,17 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                     currentUser: function($q, $state, $timeout, AuthenticationSrv) {
                         var deferred = $q.defer();
 
-                        AuthenticationSrv.current(function(userData) {
+                        AuthenticationSrv.current()
+                          .then(function(userData) {
                             return deferred.resolve(userData);
-                        }, function( /*err, status*/ ) {
-
+                          })
+                          .catch( function(/*err*/) {
                             $timeout(function() {
                                 $state.go('login');
                             });
 
                             return deferred.reject();
-                        });
+                          });
 
                         return deferred.promise;
                     },
@@ -215,6 +242,18 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 controller: 'AdminObservablesCtrl',
                 title: 'Observable administration'
             })
+            .state('app.administration.ui-settings', {
+                url: '/ui-settings',
+                templateUrl: 'views/partials/admin/ui-settings.html',
+                controller: 'AdminUiSettingsCtrl',
+                controllerAs: '$vm',
+                title: 'UI settings',
+                resolve: {
+                    uiConfig: function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }
+                }
+            })
             .state('app.case', {
                 abstract: true,
                 url: 'case/{caseId}',
@@ -263,6 +302,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 templateUrl: 'views/partials/case/case.links.html',
                 controller: 'CaseLinksCtrl'
             })
+            .state('app.case.alerts', {
+                url: '/alerts',
+                templateUrl: 'views/partials/case/case.alerts.html',
+                controller: 'CaseAlertsCtrl',
+                resolve: {
+                    alerts: function($stateParams, CaseSrv) {
+                        return CaseSrv.alerts({range: 'all'}, {
+                            query: {
+                              case: $stateParams.caseId
+                            }
+                        }).$promise;
+                    }
+                }
+            })
             .state('app.case.tasks-item', {
                 url: '/tasks/{itemId}',
                 templateUrl: 'views/partials/case/case.tasks.item.html',
@@ -299,6 +352,20 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
                 resolve: {
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
+                    },
+                    artifact: function($q, $stateParams, CaseArtifactSrv, NotificationSrv) {
+                        var deferred = $q.defer();
+
+                        CaseArtifactSrv.api().get({
+                            'artifactId': $stateParams.itemId
+                        }).$promise.then(function(data) {
+                            deferred.resolve(data);
+                        }).catch(function(response) {
+                            deferred.reject(response);
+                            NotificationSrv.error('Observable Details', response.data, response.status);
+                        });
+
+                        return deferred.promise;
                     }
                 }
             })
@@ -433,7 +500,7 @@ angular.module('thehive', ['ngAnimate', 'ngMessages', 'ngSanitize', 'ui.bootstra
               var renderer = defaults.renderer;
               var linkRenderer = _.wrap(renderer.link, function(originalLink, href, title, text) {
                   var html = originalLink.call(renderer, href, title, text);
-                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ')
+                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ');
               });
 
               // Customize the link renderer

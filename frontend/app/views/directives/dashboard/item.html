@@ -1,7 +1,7 @@
 <div class="box box-primary">
     <div class="box-header with-border">
         <h3 class="box-title">
-            <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>{{component.options.title || 'No title'}} {{mode}}
+            <i class="mr-xxs fa" ng-class="typeClasses[component.type]"></i>{{component.options.title || 'No title'}}
         </h3>
 
         <div class="box-tools pull-right">
@@ -55,6 +55,14 @@
             refresh-on="{{refreshOn}}"
             resize-on="{{resizeOn}}"
             mode="mode"></dashboard-multiline>
+
+        <dashboard-text ng-switch-when="text"
+            entity="metadata[component.options.entity]"
+            options="component.options"
+            filter="filter"
+            autoload="autoload"
+            refresh-on="{{refreshOn}}"            
+            mode="mode"></dashboard-text>
 
         <dashboard-counter ng-switch-when="counter"
             entity="metadata[component.options.entity]"

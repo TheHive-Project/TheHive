@@ -25,7 +25,7 @@
             $scope.initNewUser();
 
             $scope.addUser = function(user) {
-                user.login = angular.lowercase(user.login);
+                user.login = user.login.toLowerCase();
                 if ($scope.apiKey) {
                     user['with-key'] = true;
                 }

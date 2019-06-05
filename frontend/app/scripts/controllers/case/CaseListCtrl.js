@@ -199,6 +199,21 @@
                 });
         };
 
+        this.filterMyOpenCases = function() {
+            this.uiSrv.clearFilters()
+                .then(function(){
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.uiSrv.activeFilters.owner = {
+                        value: [{
+                            text: currentUser.id,
+                            label: currentUser.name
+                        }]
+                    };
+                    self.filter();
+                    self.addFilterValue('status', 'Open');
+                });
+        };
+
         this.filterByStatus = function(status) {
             this.uiSrv.clearFilters()
                 .then(function(){

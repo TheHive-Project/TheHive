@@ -74,7 +74,8 @@
             donut: 'fa-pie-chart',
             line: 'fa-line-chart',
             multiline: 'fa-area-chart',
-            counter: 'fa-calculator'
+            counter: 'fa-calculator',
+            text: 'fa-file'
         };
 
         this.sortOptions = [{
@@ -110,6 +111,14 @@
                 type: 'multiline',
                 options: {
                     title: null,
+                    entity: null
+                }
+            },
+            {
+                type: 'text',
+                options: {
+                    title: null,
+                    template: null,
                     entity: null
                 }
             },
@@ -234,6 +243,7 @@
         this.hasMinimalConfiguration = function(component) {
             switch (component.type) {
                 case 'multiline':
+                case 'text':
                     return component.options.series.length === _.without(_.pluck(component.options.series, 'entity'), undefined).length;
                 default:
                     return !!component.options.entity;

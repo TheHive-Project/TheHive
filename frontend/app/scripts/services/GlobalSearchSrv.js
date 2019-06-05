@@ -18,7 +18,7 @@
             var cfg = this.restore();
 
             return cfg[entity] || {};
-        }
+        };
 
         this.restore = function() {
             return localStorageService.get('search-section') || {
@@ -51,15 +51,17 @@
         };
 
         this.buildDefaultFilterValue = function(fieldDef, value) {
-            if(fieldDef.type === 'user' || fieldDef.values.length > 0) {
+            if(fieldDef.name === 'tags' || fieldDef.type === 'user' || fieldDef.values.length > 0) {
                 return {
                     operator: 'any',
                     list: [{text: value.id, label:value.name}]
-                }
+                };
             } else {
                 switch(fieldDef.type) {
                     case 'number':
-                        return Number.parseInt(value.id);
+                        return {
+                            value: Number.parseInt(value.id) 
+                        };
                     case 'boolean':
                         return value.id === 'true';
                     default:

@@ -87,19 +87,19 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="attribute in dialog.pagination.data">
+                        <tr ng-repeat="attribute in dialog.pagination.data" class="clickable">
                             <td>
                                 <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
                             </td>
                             <td>{{attribute.dataType}}</td>
                             <td class="wrap">
-                              <div class="wrap" ng-if="attribute.dataType !== 'file'">
+                              <div class="wrap" ng-if="attribute.dataType !== 'file'" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
                                   {{attribute.data | fang | ellipsis:250}}
                               </div>
-                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment">
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
                                   {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
                               </div>
-                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment">
+                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
                                   {{attribute.remoteAttachment.filename}}
                               </div>
                               <div class="case-tags flexwrap mt-xxs" ng-if="attribute.tags.length > 0">
@@ -166,10 +166,10 @@
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">
                 <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
-                    <option value="">Empty case</option>
+                    <option value="" ng-if="dialog.templates.length === 0 || !!!dialog.hideEmptyCaseButton">Empty case</option>
                 </select>
                 <span class="input-group-btn">
-                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading">Yes, Import</button>
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)">Yes, Import</button>
                 </span>
             </div>
 

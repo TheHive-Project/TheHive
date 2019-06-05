@@ -13,7 +13,7 @@
                                   callback(appConfig);
                               }
                           });
-                    }, 60000);                    
+                    }, 60000);
                 },
                 get: function(force) {
                     var deferred = $q.defer();
@@ -40,6 +40,20 @@
                     } catch (err) {
                         return false;
                     }
+                },
+
+                mispUrls: function() {
+                    var urls = {};
+                    var misp = cache.connectors.misp;
+
+                    if(!misp) {
+                        return {};
+                    }
+
+                    (misp.servers || []).forEach(function(item) {
+                        urls[item.name] = item.url;
+                    });                    
+                    return urls;
                 }
             };
 

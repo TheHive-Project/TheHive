@@ -25,7 +25,7 @@
                 }, {
                     '_in': {
                         '_field': 'status',
-                        '_values': ['waiting', 'inProgress']
+                        '_values': ['Waiting', 'InProgress']
                     }
                 }]
             }, 'case_task', 'all');

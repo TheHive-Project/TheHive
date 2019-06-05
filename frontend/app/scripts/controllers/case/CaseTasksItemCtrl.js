@@ -129,8 +129,8 @@
             };
 
             $scope.closeTask = function () {
-                $scope.task.status = 'completed';
-                $scope.updateField('status', 'completed');
+                $scope.task.status = 'Completed';
+                $scope.updateField('status', 'Completed');
 
                 CaseTabsSrv.removeTab($scope.tabName);
                 $state.go('app.case.tasks', {
@@ -139,8 +139,8 @@
             };
 
             $scope.openTask = function() {
-                $scope.task.status = 'inProgress';
-                $scope.updateField('status', 'inProgress');
+                $scope.task.status = 'InProgress';
+                $scope.updateField('status', 'InProgress');
             };
 
             $scope.startTask = function() {
@@ -149,7 +149,7 @@
                 CaseTaskSrv.update({
                     'taskId': taskId
                 }, {
-                    'status': 'inProgress'
+                    'status': 'InProgress'
                 }, function(data) {
                     $scope.task = data;
                 }, function(response) {
@@ -178,7 +178,7 @@
                 TaskLogSrv.save({
                     'taskId': $scope.task.id
                 }, $scope.newLog, function () {
-                    if($scope.task.status === 'waiting') {
+                    if($scope.task.status === 'Waiting') {
                         // Reload the task
                         $scope.reloadTask();
                     }

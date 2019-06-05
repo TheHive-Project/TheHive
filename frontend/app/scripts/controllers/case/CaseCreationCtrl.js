@@ -83,7 +83,7 @@
                         return {
                             title: task,
                             flag: false,
-                            status: 'waiting'
+                            status: 'Waiting'
                         };
                     });
                 }

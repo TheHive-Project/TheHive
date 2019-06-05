@@ -1,8 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity) {
+        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
+
+            self.urls = VersionSrv.mispUrls();
 
             self.list = [];
             self.selection = [];
@@ -313,6 +315,10 @@
                 CaseTemplateSrv.list()
                   .then(function(templates) {
 
+                      if(!templates || templates.length === 0) {
+                          return $q.resolve(undefined);
+                      }
+
                       // Open template selection dialog
                       var modal = $uibModal.open({
                           templateUrl: 'views/partials/case/case.templates.selector.html',
@@ -322,7 +328,10 @@
                           resolve: {
                               templates: function(){
                                   return templates;
-                              }
+                              },
+                              uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
+                                  return UiSettingsSrv.all();
+                              }]
                           }
                       });
 
@@ -489,6 +498,14 @@
                 self.filtering.clearFilters()
                     .then(function(){
                         self.addFilterValue('status', status);
+                    });
+            };
+
+            this.filterByNewAndUpdated = function() {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue('status', 'New');
+                        self.addFilterValue('status', 'Updated');
                     });
             };
 

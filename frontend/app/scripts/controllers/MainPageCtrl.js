@@ -17,7 +17,7 @@
                         '_and': [{
                             '_in': {
                                 '_field': 'status',
-                                '_values': ['waiting', 'inProgress']
+                                '_values': ['Waiting', 'InProgress']
                             }
                         }, {
                             'owner': $scope.currentUser.id
@@ -33,7 +33,7 @@
                 $scope.list = PSearchSrv(undefined, 'case_task', {
                     scope: $scope,
                     baseFilter: {
-                        'status': 'waiting'
+                        'status': 'Waiting'
                     },
                     sort: '-startDate',
                     nparent: 1
@@ -46,13 +46,13 @@
             $scope.getUserInfo = UserInfoSrv;
 
             $scope.openWTask = function(task) {
-                if (task.status === 'waiting') {
+                if (task.status === 'Waiting') {
                     CaseTaskSrv.update({
                         'taskId': task.id
                     }, {
-                        'status': 'inProgress'
+                        'status': 'InProgress'
                     }, function(data) {
-                        if (data.status === 'inProgress') {
+                        if (data.status === 'InProgress') {
                             $scope.openEntity(task);
                         }
                     }, function(response) {

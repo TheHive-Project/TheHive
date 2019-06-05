@@ -70,10 +70,10 @@
             </dd>
         </dl>
 
-        <dl class="dl-horizontal clear">
-            <dt class="pull-left">Labels</dt>
+        <dl class="dl-horizontal">
+            <dt class="pull-left">Tags</dt>
             <dd>
-                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))"></updatable-tags>
+                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))" source="getTags"></updatable-tags>
             </dd>
         </dl>
 
@@ -91,6 +91,7 @@
         <table ng-if="similarArtifacts.length > 0" class="table table-hover">
             <thead>
                 <tr>
+                    <th width="10">IOC</th>
                     <th>TLP</th>
                     <th>Case</th>
                     <th>Date added</th>
@@ -98,10 +99,16 @@
             </thead>
             <tbody>
                 <tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
+                    <td align="center">
+                        <span class="clickable fa"
+                          ng-class="{true: 'fa-star', false: 'fa-star-o'}[a.ioc]"
+                          tooltip-popup-delay="500"
+                          tooltip-placement="bottom"></span>
+                    </td>
                     <td>
                         <tlp value="a.tlp"></tlp>
                     </td>
-                    <td>[{{a.dataType}}]: {{a.data}}<br> #{{a.case.caseId}} - {{a.case.title}}
+                    <td>[{{a.dataType}}]: {{a.data || a.attachment.name}}<br> #{{a.case.caseId}} - {{a.case.title}}
                     </td>
                     <td>{{a.startDate | showDate}}</td>
                 </tr>

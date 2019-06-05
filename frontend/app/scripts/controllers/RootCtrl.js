@@ -60,7 +60,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     {
                         '_in': {
                             '_field': 'status',
-                            '_values': ['waiting', 'inProgress']
+                            '_values': ['Waiting', 'InProgress']
                         }
                     },
                     {
@@ -77,7 +77,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             scope: $scope,
             rootId: 'any',
             query: {
-                'status': 'waiting'
+                'status': 'Waiting'
             },
             result: {},
             objectType: 'case_task',
@@ -179,13 +179,16 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 resolve: {
                     templates: function(){
                         return $scope.templates;
-                    }
+                    },
+                    uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }]
                 }
             });
 
             modal.result.then(function(template) {
                 $scope.createNewCase(template);
-            })
+            });
         };
 
         $scope.aboutTheHive = function() {

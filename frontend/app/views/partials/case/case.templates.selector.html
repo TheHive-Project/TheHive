@@ -2,15 +2,15 @@
     <h3 class="modal-title">Create new Case</h3>
 </div>
 <div class="modal-body">
-    <div class="mv-xs">
+    <div class="mv-xs" ng-if="!!!dialog.state.hideEmptyCaseButton">
       <button class="btn btn-block btn-primary btn-lg" ng-click="dialog.next()">
           Empty Case
       </button>
+
+      <p class="mv-m text-separator text-muted">OR</p>
     </div>
 
-    <p class="mv-m text-separator text-muted">OR</p>
-
-    <div class="box box-primary">
+    <div class="box box-default">
       <div class="box-header">
         <h3 class="box-title">Select a template</h3>
         <div class="box-tools pull-right">

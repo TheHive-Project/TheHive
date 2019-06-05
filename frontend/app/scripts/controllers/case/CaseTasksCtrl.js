@@ -14,7 +14,7 @@
             showGrouped: !!AppLayoutSrv.layout.groupTasks
         };
         $scope.newTask = {
-            status: 'waiting'
+            status: 'Waiting'
         };
         $scope.taskResponders = null;
         $scope.collapseOptions = {};
@@ -136,8 +136,8 @@
 
         // open task tab with its details
         $scope.startTask = function(task) {
-            if (task.status === 'waiting') {
-                $scope.updateTaskStatus(task.id, 'inProgress')
+            if (task.status === 'Waiting') {
+                $scope.updateTaskStatus(task.id, 'InProgress')
                     .then($scope.showTask);
             } else {
                 $scope.showTask(task);
@@ -145,15 +145,15 @@
         };
 
         $scope.openTask = function(task) {
-            if (task.status === 'completed') {
-                $scope.updateTaskStatus(task.id, 'inProgress')
+            if (task.status === 'Completed') {
+                $scope.updateTaskStatus(task.id, 'InProgress')
                     .then($scope.showTask);
             }
         };
 
         $scope.closeTask = function(task) {
-            if (task.status === 'inProgress') {
-                $scope.updateTaskStatus(task.id, 'completed');
+            if (task.status === 'InProgress') {
+                $scope.updateTaskStatus(task.id, 'Completed');
             }
         };
 
