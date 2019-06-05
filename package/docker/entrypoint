@@ -18,7 +18,7 @@ function usage {
 		--no-config		| do not try to configure TheHive (add secret and elasticsearch)
 		--no-config-secret	| do not add random secret to configuration
 		--no-config-es		| do not add elasticsearch hosts to configuration
-		--es-hosts <esconfig>	| use this string to configure elasticsearch hosts (format: ["host1:9300","host2:9300"])
+		--es-uri <uri>		| use this string to configure elasticsearch hosts (format: http(s)://host:port,host:port(/prefix)?querystring)
 		--es-hostname <host>	| resolve this hostname to find elasticseach instances
 		--secret <secret>	| secret to secure sessions
 		--cortex-proto <proto>	| define protocol to connect to Cortex (default: http)
@@ -38,7 +38,9 @@ do
 		"--no-config-secret")	CONFIG_SECRET=0;;
 		"--secret")		shift; SECRET=$1;;
 		"--no-config-es")	CONFIG_ES=0;;
-		"--es-hosts")		shift; ES_HOSTS=$1;;
+		"--es-hosts")		echo "--es-hosts is deprecated, please use --es-uri"
+					usage;;
+		"--es-uri")		shift; ES_URI=$1;;
 		"--es-hostname")	shift; ES_HOSTNAME=$1;;
 		"--no-config-cortex")	CONFIG_CORTEX=0;;
 		"--cortex-proto")	shift; CORTEX_PROTO=$1;;
@@ -67,12 +69,12 @@ then
 
 	if test $CONFIG_ES = 1
 	then
-		if test -z "$ES_HOSTS"
+		if test -z "$ES_URI"
 		then
 			function join_es_hosts {
-				echo -n "[\"$1"
+				echo -n $1:9200
 				shift
-				printf "%s:9300\"]" "${@/#/:9300\",\"}"
+				printf "%s," "${@/#/:9200}"
 			}
 
 			ES=$(getent ahostsv4 $ES_HOSTNAME | awk '{ print $1 }' | sort -u)
@@ -80,13 +82,13 @@ then
 			then
 				echo "Warning automatic elasticsearch host config fails"
 			else
-				ES_HOSTS=$(join_es_hosts $ES)
+				ES_URI=http://$(join_es_hosts $ES)
 			fi
 		fi
-		if test -n "$ES_HOSTS"
+		if test -n "$ES_URI"
 		then
-			echo Using elasticsearch host: $ES_HOSTS
-			echo search.host=$ES_HOSTS >> $CONFIG_FILE
+			echo Using elasticsearch uri: $ES_URI
+			echo search.uri=\"$ES_URI\" >> $CONFIG_FILE
 		else
 			echo elasticsearch host not configured
 		fi
