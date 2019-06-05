@@ -30,7 +30,6 @@
 
 **Merged pull requests:**
 
-- Scalligraph [\#980](https://github.com/TheHive-Project/TheHive/pull/980) ([BillOTei](https://github.com/BillOTei))
 - Add 'My open cases' and 'New & Updated alerts' to quick filters [\#925](https://github.com/TheHive-Project/TheHive/pull/925) ([zpriddy](https://github.com/zpriddy))
 
 ## [3.3.1](https://github.com/TheHive-Project/TheHive/tree/3.3.1) (2019-05-22)
