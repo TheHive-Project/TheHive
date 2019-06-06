@@ -84,7 +84,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and search 2 observables with data array" in {
         val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" → "user2")
+          .withHeaders("user" → "user3")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",

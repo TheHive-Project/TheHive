@@ -3,16 +3,15 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.Query
+import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-import scala.util.Success
 
-import org.scalactic.Good
+import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -36,10 +35,12 @@ class ObservableCtrl @Inject()(
           .can(Permissions.manageCase)
           .getOrFail()
           .map { `case` ⇒
-            val createdObservables = inputObservable.data.map(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, `case`)) ++
+            val createdObservableTries = inputObservable.data.map(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, `case`)) ++
               inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, Right(a), Nil, `case`)).toSeq
 
-            Results.Created(Json.toJson(createdObservables.map(_.toJson)))
+            Results.Created(
+              Json.toJson(createdObservableTries.map(_.get.toJson))
+            )
           }
       }
 
@@ -69,22 +70,22 @@ class ObservableCtrl @Inject()(
 //        }
 //      }
 
-//  def update(taskId: String): Action[AnyContent] =
-//    entryPoint("update task")
-//      .extract('task, UpdateFieldsParser[InputTask])
-//      .authenticated { _ ⇒
-//        db.transaction { _ ⇒
-////          if (observableSrv.isAvailableFor(taskId)) {
-////            observableSrv.update(taskId, outputTaskProperties(db), request.body('task))
-////            Results.NoContent
-////          } else Results.Unauthorized(s"Task $taskId doesn't exist or permission is insufficient")
-//          ???
-//        }
-//      }
+  def update(obsId: String): Action[AnyContent] =
+    entryPoint("update observable")
+      .extract('observable, FieldsParser.update("observable", observableProperties(db)))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('observable)
+        observableSrv
+          .update(
+            _.get(obsId).can(Permissions.manageCase),
+            propertyUpdaters
+          )
+          .map(_ ⇒ Results.NoContent)
+      }
 
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")
-    entryPoint("stats task")
+    entryPoint("stats observable")
       .extract('query, parser)
       .authTransaction(db) { implicit request ⇒ graph ⇒
         val queries: Seq[Query] = request.body('query)

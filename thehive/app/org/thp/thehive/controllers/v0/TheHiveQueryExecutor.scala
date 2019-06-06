@@ -135,7 +135,7 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
 
     val findParent: GremlinScala[Vertex] =
       if (stepType =:= ru.typeOf[TaskSteps]) vertexSteps.as(stepLabel).raw.inTo[ShareTask].outTo[ShareCase]
-      else if (stepType =:= ru.typeOf[ObservableSteps]) vertexSteps.as(stepLabel).raw.inTo[CaseObservable]
+      else if (stepType =:= ru.typeOf[ObservableSteps]) vertexSteps.as(stepLabel).raw.inTo[ShareObservable].outTo[ShareCase]
       else if (stepType =:= ru.typeOf[LogSteps]) vertexSteps.as(stepLabel).raw.inTo[TaskLog]
       else ???
 
@@ -170,7 +170,7 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
 
     val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] ⇒ ScalliSteps[_, _, _ <: AnyRef]) =
       if (stepType =:= ru.typeOf[TaskSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareTask].outTo[ShareCase]))
-      else if (stepType =:= ru.typeOf[ObservableSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[CaseObservable]))
+      else if (stepType =:= ru.typeOf[ObservableSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareObservable].outTo[ShareCase]))
       else if (stepType =:= ru.typeOf[LogSteps]) ru.typeOf[TaskSteps] → ((s: GremlinScala[Vertex]) ⇒ new TaskSteps(s.inTo[TaskLog]))
       else ???
     vertexSteps

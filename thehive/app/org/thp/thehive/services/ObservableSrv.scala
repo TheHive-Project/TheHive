@@ -1,29 +1,30 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-
 import gremlin.scala.{KeyValue ⇒ _, _}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
 @Singleton
-class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attachmentSrv: AttachmentSrv)(implicit db: Database)
-    extends VertexSrv[Observable, ObservableSteps] {
+class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attachmentSrv: AttachmentSrv, caseSrv: CaseSrv, shareSrv: ShareSrv)(
+    implicit db: Database
+) extends VertexSrv[Observable, ObservableSteps] {
   val observableKeyValueSrv   = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
   def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): RichObservable = {
+  ): Try[RichObservable] = {
     val createdObservable = create(observable)
     val (data, attachment) = dataOrFile match {
       case Left(data0) ⇒
@@ -36,12 +37,31 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
     extensions
       .map(keyValueSrv.create)
       .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
-    caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
-    RichObservable(createdObservable, data, attachment, extensions)
+
+    for {
+      share ← caseSrv
+        .initSteps
+        .getOrganisationShare(`case`._id)
+        .getOrFail()
+      _ = shareSrv.shareObservableSrv.create(ShareObservable(), share, createdObservable)
+    } yield RichObservable(createdObservable, data, attachment, extensions)
   }
 }
 
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
+  def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
+    newInstance(
+      raw.filter(
+        _.inTo[ShareObservable]
+          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .inTo[OrganisationShare]
+          .inTo[RoleOrganisation]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+          .inTo[UserRole]
+          .has(Key("login") of authContext.userId)
+      )
+    )
+
   override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
 
   def richObservable: ScalarSteps[RichObservable] =
@@ -64,5 +84,5 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
         }
     )
 
-  def cases: CaseSteps = new CaseSteps(raw.inTo[CaseObservable])
+  def cases: CaseSteps = new CaseSteps(raw.inTo[ShareObservable].outTo[ShareCase])
 }

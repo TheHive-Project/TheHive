@@ -47,9 +47,6 @@ case class CaseCustomField(
 @EdgeEntity[Case, User]
 case class CaseUser()
 
-@EdgeEntity[Case, Observable]
-case class CaseObservable()
-
 @EdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
 

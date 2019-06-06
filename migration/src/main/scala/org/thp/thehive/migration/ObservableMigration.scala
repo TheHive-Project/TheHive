@@ -1,25 +1,23 @@
 package org.thp.thehive.migration
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-
-import play.api.Configuration
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.ElasticDsl.{hasParentQuery, idsQuery, search, RichString}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.elastic4play.database.DBFind
+import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
 import org.thp.scalligraph.Hasher
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, StorageSrv}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AttachmentSrv, DataSrv, ObservableSrv}
+import org.thp.thehive.services._
+import play.api.Configuration
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Reads}
 
-import org.elastic4play.database.DBFind
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 @Singleton
 class ObservableMigration @Inject()(
@@ -33,12 +31,13 @@ class ObservableMigration @Inject()(
     dataSrv: DataSrv,
     elasticAttachmentSrv: ElasticAttachmentSrv,
     fromFind: DBFind,
+    shareSrv: ShareSrv,
+    caseSrv: CaseSrv,
     implicit val mat: Materializer
 ) extends Utils {
 
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
   val hashers                 = Hasher(config.get[Seq[String]]("attachment.hash"): _*)
 
   implicit val artifactReads: Reads[Observable] =
@@ -72,7 +71,13 @@ class ObservableMigration @Inject()(
                 val dataEntity = dataSrv.create(Data(data))
                 observableDataSrv.create(ObservableData(), createdObservable, dataEntity)
               }
-            caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
+
+            caseSrv
+              .initSteps
+              .getOrganisationShare(`case`._id)
+              .getOrFail()
+              .foreach(s ⇒ shareSrv.shareObservableSrv.create(ShareObservable(), s, createdObservable))
+
             auditMigration.importAudits("case_artifact", (artifactJs \ "_id").as[String], createdObservable, progress)
           }
         }

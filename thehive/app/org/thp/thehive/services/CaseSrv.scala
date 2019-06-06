@@ -29,7 +29,6 @@ class CaseSrv @Inject()(
   val caseResolutionStatusSrv = new EdgeSrv[CaseResolutionStatus, Case, ResolutionStatus]
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
-  val caseObservableSrv       = new EdgeSrv[CaseObservable, Case, Observable]
   val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
@@ -139,7 +138,7 @@ class CaseSrv @Inject()(
 //    val user              = userSrv.getOrFail(authContext.userId)
 //    val organisation      = organisationSrv.getOrFail(authContext.organisation)
 //    val caseTaskSrv       = new EdgeSrv[CaseTask, Case, Task]
-//    val caseObservableSrv = new EdgeSrv[CaseObservable, Case, Observable]
+//    val caseObservableSrv = new EdgeSrv[CaseObservable, Case, Observable] nop
 //
 //    val mergedCase = create(
 //      Case(
@@ -281,10 +280,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     new CaseSteps(
       raw
         .aggregate(label)
-        .outTo[CaseObservable]
+        .inTo[ShareCase]
+        .outTo[ShareObservable]
         .outTo[ObservableData]
         .inTo[ObservableData]
-        .inTo[CaseObservable]
+        .inTo[ShareObservable]
+        .outTo[ShareCase]
         .where(JP.without(label.name))
     )
   }
@@ -293,5 +294,5 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
-  def observables = new ObservableSteps(raw.outTo[CaseObservable])
+  def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
 }
