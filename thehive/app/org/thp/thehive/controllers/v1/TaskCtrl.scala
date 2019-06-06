@@ -21,12 +21,10 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
       .extract('task, FieldsParser[InputTask])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputTask: InputTask = request.body('task)
-        caseSrv
-          .getOrFail(inputTask.caseId)
-          .map { `case` ⇒
-            val createdTask = taskSrv.create(inputTask, `case`)
-            Results.Created(createdTask.toJson)
-          }
+        for {
+          case0       ← caseSrv.getOrFail(inputTask.caseId)
+          createdTask ← taskSrv.create(inputTask, case0)
+        } yield Results.Created(createdTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =

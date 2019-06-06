@@ -10,7 +10,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
-import org.thp.thehive.models.{ShareCase, ShareTask}
+import org.thp.thehive.models.{ShareCase, ShareTask, TaskLog}
 import org.thp.thehive.services._
 
 @Singleton
@@ -23,7 +23,8 @@ class AuditCtrl @Inject()(
     implicit val db: Database
 ) extends AuditConversion
     with CaseConversion
-    with TaskConversion {
+    with TaskConversion
+    with LogConversion {
 
   private def caseToJson(implicit graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
     new CaseSteps(_).richCase.map[JsObject](_.toJson.as[JsObject]).raw
@@ -34,6 +35,14 @@ class AuditCtrl @Inject()(
         .and(By(caseToJson(graph)(__[Vertex].inTo[ShareTask].outTo[ShareCase])))
     ).map {
       case (task, case0) ⇒ task + ("case" → case0)
+    }
+
+  private def logToJson(implicit graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+    _.project(
+      _.apply(By(new LogSteps(__[Vertex]).map[JsObject](_.toJson.as[JsObject]).raw))
+        .and(By(taskToJson(graph)(__[Vertex].inTo[TaskLog])))
+    ).map {
+      case (log, task) ⇒ log + ("case_task" → task)
     }
 
   def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] =
@@ -47,6 +56,7 @@ class AuditCtrl @Inject()(
           .richAuditWithCustomObjectRenderer {
             case "Case" ⇒ caseToJson
             case "Task" ⇒ taskToJson
+            case "Log"  ⇒ logToJson
             case _      ⇒ _.constant(JsObject.empty)
           }
           .toList()

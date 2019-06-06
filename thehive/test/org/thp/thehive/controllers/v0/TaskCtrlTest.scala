@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import java.util.Date
+
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -14,6 +16,36 @@ import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
+
+case class TestTask(
+    title: String,
+    group: Option[String] = None,
+    description: Option[String] = None,
+    owner: Option[String] = None,
+    status: String,
+    flag: Boolean = false,
+    startDate: Option[Date] = None,
+    endDate: Option[Date] = None,
+    order: Int = 0,
+    dueDate: Option[Date] = None
+)
+
+object TestTask {
+
+  def apply(outputTask: OutputTask): TestTask =
+    TestTask(
+      outputTask.title,
+      outputTask.group,
+      outputTask.description,
+      outputTask.owner,
+      outputTask.status,
+      outputTask.flag,
+      outputTask.startDate,
+      outputTask.endDate,
+      outputTask.order,
+      outputTask.dueDate
+    )
+}
 
 class TaskCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -52,22 +84,18 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 200
 
-        val expected = OutputTask(
-          _id = task1.id,
-          id = task1.id,
+        val expected = TestTask(
           title = "case 1 task 1",
           description = Some("description task 1"),
           owner = Some("user1"),
           startDate = None,
-          flag = false,
           status = "Waiting",
-          order = 0,
           group = Some("group1"),
           endDate = None,
           dueDate = None
         )
 
-        resultTask.as[OutputTask] must_=== expected
+        TestTask(resultTask.as[OutputTask]) must_=== expected
       }
 
       "patch a task" in {
@@ -82,24 +110,21 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 204
 
-        val expected =
-          OutputTask(
-            _id = task2.id,
-            id = task2.id,
-            title = "new title task 2",
-            description = Some("description task 2"),
-            owner = Some("user1"),
-            startDate = None,
-            flag = true,
-            status = "InProgress",
-            order = 1,
-            group = Some("group1"),
-            endDate = None,
-            dueDate = None
-          )
+        val expected = TestTask(
+          title = "new title task 2",
+          description = Some("description task 2"),
+          owner = Some("user1"),
+          startDate = None,
+          flag = true,
+          status = "InProgress",
+          order = 1,
+          group = Some("group1"),
+          endDate = None,
+          dueDate = None
+        )
 
         val newList = tasksList(taskCtrl)
-        val newTask = newList.find(_.title == "new title task 2")
+        val newTask = newList.find(_.title == "new title task 2").map(TestTask.apply)
         newTask must beSome(expected)
       }
 
@@ -123,22 +148,19 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         status(result) shouldEqual 201
 
         val resultTaskOutput = resultTask.as[OutputTask]
-        val expected = OutputTask(
-          _id = resultTaskOutput._id,
-          id = resultTaskOutput.id,
+        val expected = TestTask(
           title = "case 1 task",
           description = Some("description task 1"),
           owner = None, // FIXME
           startDate = None,
           flag = true,
           status = "Waiting",
-          order = 0,
           group = Some("group1"),
           endDate = None,
           dueDate = None
         )
 
-        resultTaskOutput must_=== expected
+        TestTask(resultTaskOutput) must_=== expected
 
         val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" → "user1")
         val resultGet  = taskCtrl.get(resultTaskOutput.id)(requestGet)
@@ -159,23 +181,19 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         status(result) shouldEqual 204
 
         val newList = tasksList(taskCtrl)
-        val newTask = newList.find(_.title == "case 3 task 1")
+        val newTask = newList.find(_.title == "case 3 task 1").map(TestTask.apply)
 
-        val expected =
-          OutputTask(
-            _id = task3.id,
-            id = task3.id,
-            title = "case 3 task 1",
-            description = Some("description task 3"),
-            owner = None,
-            startDate = None,
-            flag = true,
-            status = "Waiting",
-            order = 0,
-            group = Some("group1"),
-            endDate = None,
-            dueDate = None
-          )
+        val expected = TestTask(
+          title = "case 3 task 1",
+          description = Some("description task 3"),
+          owner = None,
+          startDate = None,
+          flag = true,
+          status = "Waiting",
+          group = Some("group1"),
+          endDate = None,
+          dueDate = None
+        )
 
         newTask must beSome(expected)
 

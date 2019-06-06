@@ -50,10 +50,11 @@ class TaskMigration @Inject()(
           userMigration.withUser((taskJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
             val task = taskJs.as[Task]
 //            logger.info(s"Importing task #${`case`.number} ${task.title}")
-            val taskEntity = taskSrv.create(task, `case`)
-            (taskJs \ "owner").asOpt[String].flatMap(userMigration.get).foreach(owner ⇒ taskSrv.assign(taskEntity, owner.user))
-            auditMigration.importAudits("case_task", (taskJs \ "_id").as[String], taskEntity, progress)
-            logMigration.importLogs((taskJs \ "_id").as[String], taskEntity, progress)
+            taskSrv.create(task, `case`).foreach { taskEntity ⇒
+              (taskJs \ "owner").asOpt[String].flatMap(userMigration.get).foreach(owner ⇒ taskSrv.assign(taskEntity, owner.user))
+              auditMigration.importAudits("case_task", (taskJs \ "_id").as[String], taskEntity, progress)
+              logMigration.importLogs((taskJs \ "_id").as[String], taskEntity, progress)
+            }
           }
         }
       }

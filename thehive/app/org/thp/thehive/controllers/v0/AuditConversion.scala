@@ -19,6 +19,7 @@ trait AuditConversion {
     case "createCaseTemplate" ⇒ "Creation"
     case "createLog"          ⇒ "Creation"
     case "updateLog"          ⇒ "Update"
+    case "createTask"         ⇒ "Creation"
     case _                    ⇒ ???
   }
 

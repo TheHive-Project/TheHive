@@ -60,11 +60,13 @@ class CaseCtrl @Inject()(
           customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
           richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
 
-          _ = caseTemplate.foreach { ct ⇒
-            caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
-              taskSrv.create(task, richCase.`case`)
-            }
-          }
+          _ = caseTemplate.map { ct ⇒
+            caseTemplateSrv
+              .get(ct.caseTemplate)
+              .tasks
+              .toList()
+              .toTry(task ⇒ taskSrv.create(task, richCase.`case`))
+          }.flip
         } yield Results.Created(richCase.toJson)
       }
 
