@@ -27,6 +27,7 @@ object InputObservable {
     case (_, FString(s)) ⇒ Good(Seq(s))
     case (_, FAny(s))    ⇒ Good(s)
     case (_, FSeq(a))    ⇒ a.validatedBy(FieldsParser.string(_))
+    case (_, FUndefined) ⇒ Good(Nil)
   }
 }
 
