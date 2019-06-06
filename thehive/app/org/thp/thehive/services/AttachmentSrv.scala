@@ -2,16 +2,16 @@ package org.thp.thehive.services
 
 import java.io.InputStream
 import java.nio.file.Files
-import java.util.UUID
 
 import scala.concurrent.Future
+import scala.util.Try
 
 import play.api.Configuration
 
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
-import gremlin.scala.{Graph, GremlinScala, Key, Vertex, _}
+import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
@@ -25,21 +25,16 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     extends VertexSrv[Attachment, AttachmentSteps] {
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AttachmentSteps = new AttachmentSteps(raw)
-//  val edgeSrv = new EdgeSrv[Unit, Attachment, ]
-  //lass EdgeSrv[E <: Product: ru.TypeTag, FROM <: Product: ru.TypeTag, TO <: Product: ru.TypeTag]
 
   val hashers = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
 
-  def create(file: FFile)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
-    val hs   = hashers.fromPath(file.filepath)
-    val id   = hs.mkString("|") // TODO only one hash ?
-    val is   = Files.newInputStream(file.filepath)
-    val data = storageSrv.saveBinary(id, is)
+  def create(file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
+    val hs     = hashers.fromPath(file.filepath)
+    val id     = hs.head.toString
+    val is     = Files.newInputStream(file.filepath)
+    val result = storageSrv.saveBinary(id, is).map(_ ⇒ create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
     is.close()
-    val attachment       = create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs))
-    val attachmentVertex = graph.V().has(Key("_id") of attachment._id).head()
-    attachmentVertex.addEdge("nextChunk", data, "_id", UUID.randomUUID().toString)
-    attachment
+    result
   }
 
   def source(attachment: Attachment with Entity)(implicit graph: Graph): Source[ByteString, Future[IOResult]] =

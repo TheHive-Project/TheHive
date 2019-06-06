@@ -4,6 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.Query
+import org.thp.scalligraph._
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
@@ -31,16 +32,15 @@ class ObservableCtrl @Inject()(
       .extract('artifact, FieldsParser[InputObservable])
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputObservable: InputObservable = request.body('artifact)
-        caseSrv
-          .get(caseId)
-          .can(Permissions.manageCase)
-          .getOrFail()
-          .map { `case` ⇒
-            val createdObservables = inputObservable.data.map(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, `case`)) ++
-              inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, Right(a), Nil, `case`)).toSeq
-
-            Results.Created(Json.toJson(createdObservables.map(_.toJson)))
-          }
+        for {
+          case0 ← caseSrv
+            .get(caseId)
+            .can(Permissions.manageCase)
+            .getOrFail()
+          observablesWithData      ← inputObservable.data.toTry(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, case0))
+          observableWithAttachment ← inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, Right(a), Nil, case0)).flip
+          createdObservables = observablesWithData ++ observableWithAttachment
+        } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))
       }
 
   def get(observableId: String): Action[AnyContent] =

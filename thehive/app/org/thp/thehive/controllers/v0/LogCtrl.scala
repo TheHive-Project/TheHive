@@ -5,12 +5,11 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputLog
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, TaskSrv}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.{Success, Try}
 
 @Singleton
@@ -29,8 +28,10 @@ class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, ta
             .get(taskId)
             .can(Permissions.manageTask)
             .getOrFail()
-          createdObservable ← logSrv.create(inputLog, task)
-        } yield Results.Created(createdObservable.toJson)
+          createdLog ← logSrv.create(inputLog, task)
+          attachment ← inputLog.attachment.map(logSrv.addAttachment(createdLog, _)).flip
+          richLog = RichLog(createdLog, attachment.toList)
+        } yield Results.Created(richLog.toJson)
       }
 
   def update(logId: String): Action[AnyContent] =

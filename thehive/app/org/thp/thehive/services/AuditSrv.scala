@@ -106,7 +106,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
                   .choose[Label, JsObject](
                     on = _.label(),
                     BranchCase("Case", entityToJson("Case")),
-                    BranchCase("Task", entityToJson("Task"))
+                    BranchCase("Task", entityToJson("Task")),
+                    BranchCase("Log", entityToJson("Log"))
                   )
               )
             )

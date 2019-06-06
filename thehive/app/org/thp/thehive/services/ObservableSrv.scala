@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 import gremlin.scala.{KeyValue ⇒ _, _}
 import javax.inject.{Inject, Singleton}
@@ -23,21 +24,25 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): RichObservable = {
+  ): Try[RichObservable] = {
     val createdObservable = create(observable)
-    val (data, attachment) = dataOrFile match {
+    (dataOrFile match {
       case Left(data0) ⇒
         observableDataSrv.create(ObservableData(), createdObservable, dataSrv.create(data0))
-        Some(dataSrv.create(data0)) → None
+        Success(Some(dataSrv.create(data0)) → None)
       case Right(file) ⇒
-        observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachmentSrv.create(file))
-        None → Some(attachmentSrv.create(file))
+        attachmentSrv.create(file).map { attachment ⇒
+          observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+          None → Some(attachment)
+        }
+    }).map {
+      case (data, attachment) ⇒
+        extensions
+          .map(keyValueSrv.create)
+          .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+        caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
+        RichObservable(createdObservable, data, attachment, extensions)
     }
-    extensions
-      .map(keyValueSrv.create)
-      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
-    caseObservableSrv.create(CaseObservable(), `case`, createdObservable)
-    RichObservable(createdObservable, data, attachment, extensions)
   }
 }
 
@@ -59,7 +64,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               observable.as[Observable],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              extensions.asScala.map(_.as[KeyValue]).toSeq
+              extensions.asScala.map(_.as[KeyValue])
             )
         }
     )

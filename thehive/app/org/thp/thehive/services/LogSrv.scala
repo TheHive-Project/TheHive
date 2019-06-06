@@ -3,14 +3,14 @@ package org.thp.thehive.services
 import scala.util.Try
 
 import play.api.libs.json.Json
-
+import scala.collection.JavaConverters._
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
-import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
 @Singleton
@@ -26,7 +26,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
   }
 
   def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
-    addAttachment(log, attachmentSrv.create(file))
+    attachmentSrv.create(file).flatMap(addAttachment(log, _))
 
   def addAttachment(
       log: Log with Entity,
@@ -62,4 +62,20 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     raw.has(Key("_id") of id).drop().iterate()
     ()
   }
+
+  def richLog: ScalarSteps[RichLog] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[LogAttachment].fold))
+        )
+        .map {
+          case (log, attachments) ⇒
+            RichLog(
+              log.as[Log],
+              attachments.asScala.map(_.as[Attachment])
+            )
+        }
+    )
 }

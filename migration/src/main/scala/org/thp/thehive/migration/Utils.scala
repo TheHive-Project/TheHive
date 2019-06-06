@@ -1,6 +1,6 @@
 package org.thp.thehive.migration
 import java.io.InputStream
-import java.util.{Date, UUID}
+import java.util.Date
 
 import scala.util.Try
 
@@ -91,9 +91,9 @@ trait Utils {
     val id   = hs.head.toString
     val data = readStream(storageSrv.saveBinary(id, _))
 
-    val attach           = attachmentSrv.create(Attachment(attachment.name, attachment.size, attachment.contentType, hs))
+    val attach           = attachmentSrv.create(Attachment(attachment.name, attachment.size, attachment.contentType, hs, id))
     val attachmentVertex = graph.V().has(Key("_id") of attach._id).head()
-    attachmentVertex.addEdge("nextChunk", data, "_id", UUID.randomUUID().toString)
+//    attachmentVertex.addEdge("nextChunk", data, "_id", UUID.randomUUID().toString) // FIXME
     attach
   }
 }
