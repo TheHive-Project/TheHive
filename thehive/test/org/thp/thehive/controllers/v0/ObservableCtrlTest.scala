@@ -73,6 +73,13 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         resObservable.sighted must beFalse
         resObservable.ioc must beFalse
         resObservable.dataType shouldEqual "autonomous-system"
+
+        val requestGet = FakeRequest("GET", s"/api/case/artifact/${resObservable._id}")
+          .withHeaders("user" → "user1")
+        val resultGet = observableCtrl.get(resObservable._id)(requestGet)
+
+        status(resultGet) shouldEqual 200
+        contentAsJson(resultGet).as[OutputObservable].tags shouldEqual Seq("tagfile")
       }
 
       "be able to create and search 2 observables with data array" in {

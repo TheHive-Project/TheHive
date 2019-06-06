@@ -26,14 +26,6 @@ class ObservableCtrl @Inject()(
 
   lazy val logger = Logger(getClass)
 
-  import org.scalactic.Accumulation._
-
-  val fp = FieldsParser[Seq[String]]("observable.data") {
-    case (_, FString(s)) ⇒ Good(Seq(s))
-    case (_, FAny(s))    ⇒ Good(s)
-    case (_, FSeq(a))    ⇒ a.validatedBy(FieldsParser.string(_))
-  }
-
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
       .extract('artifact, FieldsParser[InputObservable])
