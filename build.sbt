@@ -158,6 +158,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         rebasedFile ← sbt.Path.rebase(dist, "frontend")(file)
       } yield file → rebasedFile
     },
+    Compile / resourceDirectory := baseDirectory.value / "app",
     Compile / packageBin / mappings := gruntBuild.value,
     cleanFiles ++= Seq(
       baseDirectory.value / "dist",
