@@ -8,24 +8,26 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarStep
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+import scala.util.Try
+
 @Singleton
-class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv)(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
+class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
   val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
-  def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Task with Entity = {
+  def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
     val createdTask = create(task)
-
-    caseSrv
-      .initSteps
-      .getOrganisationShare(`case`._id)
-      .getOrFail()
-      .map(s ⇒ shareSrv.shareTaskSrv.create(ShareTask(), s, createdTask))
-
-    createdTask
+    for {
+      share ← caseSrv
+        .initSteps
+        .getOrganisationShare(`case`._id)
+        .getOrFail()
+      _ = shareSrv.shareTaskSrv.create(ShareTask(), share, createdTask)
+      _ ← auditSrv.createTask(createdTask, `case`)
+    } yield createdTask
   }
 
   def create(task: Task, caseTemplate: CaseTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Task with Entity = {

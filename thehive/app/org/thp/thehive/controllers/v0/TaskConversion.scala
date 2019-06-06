@@ -33,6 +33,11 @@ trait TaskConversion {
         .into[OutputTask]
         .withFieldConst(_.id, richTask._id)
         .withFieldComputed(_.status, _.status.toString)
+        .withFieldConst(_._type, "case_task")
+        .withFieldRenamed(_._updatedAt, _.updatedAt)
+        .withFieldRenamed(_._updatedBy, _.updatedBy)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._createdBy, _.createdBy)
         .transform
     )
 

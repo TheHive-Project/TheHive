@@ -2,8 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List ⇒ JList}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -15,6 +13,9 @@ import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichOptionTry,
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class AlertSrv @Inject()(
@@ -152,11 +153,13 @@ class AlertSrv @Inject()(
 
       createdCase ← caseSrv.create(case0, user, organisation, customField, caseTemplate)
 
-      _ = caseTemplate.foreach { ct ⇒
-        caseTemplateSrv.get(ct.caseTemplate).tasks.toList().foreach { task ⇒
-          taskSrv.create(task, createdCase.`case`)
-        }
-      }
+      _ ← caseTemplate.map { ct ⇒
+        caseTemplateSrv
+          .get(ct.caseTemplate)
+          .tasks
+          .toList()
+          .toTry(task ⇒ taskSrv.create(task, createdCase.`case`))
+      }.flip
 
       _ = importObservables(alert.alert, createdCase.`case`)
       _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)

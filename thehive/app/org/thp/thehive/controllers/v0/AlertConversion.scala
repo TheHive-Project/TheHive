@@ -87,5 +87,6 @@ trait AlertConversion extends CustomFieldConversion {
           _.outToE[AlertCustomField].value[Any]("dateValue")
         ).readonly
       )
+      .property[String]("case")(_.derived(_.outTo[AlertCase].value[String]("_id")).readonly)
       .build
 }

@@ -66,6 +66,9 @@ class AuditSrv @Inject()(
   def updateLog(log: Log with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     // FIXME find the related task and use it as context
     create(Audit("updateLog", log, Some(details.toString)), log, Some(log))
+
+  def createTask(task: Task with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("createTask", task), `case`, Some(task))
 }
 
 @EntitySteps[Audit]

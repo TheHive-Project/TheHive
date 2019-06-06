@@ -31,9 +31,9 @@ class TaskCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputTask: InputTask = request.body('task)
         for {
-          case0 ← caseSrv.getOrFail(caseId)
-          createdTask = taskSrv.create(inputTask, case0)
-          owner ← inputTask.owner.map(userSrv.getOrFail).flip
+          case0       ← caseSrv.getOrFail(caseId)
+          createdTask ← taskSrv.create(inputTask, case0)
+          owner       ← inputTask.owner.map(userSrv.getOrFail).flip
           _        = owner.foreach(taskSrv.assign(createdTask, _))
           richTask = RichTask(createdTask, owner.map(_.login))
         } yield Results.Created(richTask.toJson)
