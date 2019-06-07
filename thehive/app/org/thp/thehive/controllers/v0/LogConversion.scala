@@ -2,21 +2,20 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.thehive.dto.v0.{InputLog, OutputLog}
-import org.thp.thehive.models.Log
-import org.thp.thehive.services.LogSteps
-
 import scala.language.implicitConversions
 
-trait LogConversion {
+import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.Output
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.dto.v0.{InputLog, OutputLog}
+import org.thp.thehive.models.{Log, RichLog}
+import org.thp.thehive.services.LogSteps
 
-  implicit def toOutputLog(log: Log with Entity): Output[OutputLog] =
+trait LogConversion extends AttachmentConversion {
+
+  implicit def toOutputLog(richLog: RichLog): Output[OutputLog] =
     Output[OutputLog](
-      log
+      richLog
         .into[OutputLog]
         .withFieldConst(_._type, "case_task_log")
         .withFieldComputed(_.id, _._id)
@@ -28,7 +27,8 @@ trait LogConversion {
         .withFieldComputed(_.message, _.message)
         .withFieldComputed(_.startDate, _._createdAt)
         .withFieldComputed(_.owner, _._createdBy)
-        .withFieldConst(_.status, "Ok")
+        .withFieldComputed(_.status, l ⇒ if (l.deleted) "Deleted" else "Ok")
+        .withFieldComputed(_.attachment, _.attachments.headOption.map(toOutputAttachment(_).toOutput))
         .transform
     )
 

@@ -66,10 +66,10 @@ class TheHiveQueryExecutor @Inject()(
       FieldsParser[RangeParams],
       (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)
     ),
-    Query.withParam[RangeParams, LogSteps, PagedResult[Log with Entity]](
+    Query.withParam[RangeParams, LogSteps, PagedResult[RichLog]](
       "page",
       FieldsParser[RangeParams],
-      (range, logSteps, _) ⇒ logSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+      (range, logSteps, _) ⇒ logSteps.richLog.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
     Query.withParam[RangeParams, TaskSteps, PagedResult[RichTask]](
       "page",
@@ -98,7 +98,7 @@ class TheHiveQueryExecutor @Inject()(
     Query.output[RichAlert, OutputAlert],
     Query.output[RichObservable, OutputObservable],
     Query.output[RichUser, OutputUser],
-    Query.output[Log with Entity, OutputLog]
+    Query.output[RichLog, OutputLog]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)

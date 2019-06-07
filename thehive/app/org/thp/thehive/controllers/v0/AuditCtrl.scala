@@ -39,7 +39,7 @@ class AuditCtrl @Inject()(
 
   private def logToJson(implicit graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
     _.project(
-      _.apply(By(new LogSteps(__[Vertex]).map[JsObject](_.toJson.as[JsObject]).raw))
+      _.apply(By(new LogSteps(__[Vertex]).richLog.map[JsObject](_.toJson.as[JsObject]).raw))
         .and(By(taskToJson(graph)(__[Vertex].inTo[TaskLog])))
     ).map {
       case (log, task) ⇒ log + ("case_task" → task)

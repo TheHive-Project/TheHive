@@ -20,7 +20,8 @@ class Router @Inject()(
     statusCtrl: StatusCtrl,
     authenticationCtrl: AuthenticationCtrl,
     listCtrl: ListCtrl,
-    streamCtrl: StreamCtrl
+    streamCtrl: StreamCtrl,
+    attachmentCtrl: AttachmentCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -137,6 +138,9 @@ class Router @Inject()(
     case GET(p"/stream/status")    ⇒ streamCtrl.status
     case GET(p"/stream/$streamId") ⇒ streamCtrl.get(streamId)
 
+    case GET(p"/datastore/$id" ? q_o"name=$name")    ⇒ attachmentCtrl.download(id, name)
+    case GET(p"/datastorezip/$id" ? q_o"name=$name") ⇒ attachmentCtrl.downloadZip(id, name)
+
   }
 }
 /*
@@ -146,8 +150,6 @@ class Router @Inject()(
 
 
 
-GET      /datastore/:hash                     controllers.AttachmentCtrl.download(hash, name: Option[String])
-GET      /datastorezip/:hash                  controllers.AttachmentCtrl.downloadZip(hash, name: Option[String])
 
 POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
 #POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash

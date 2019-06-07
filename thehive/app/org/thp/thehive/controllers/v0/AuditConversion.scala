@@ -26,6 +26,7 @@ trait AuditConversion {
   def objectTypeMapper(objectType: String): String = objectType match {
 //    case "Case" =>"case"
     case "Task" ⇒ "case_task"
+    case "Log"  ⇒ "case_task_log"
     case other  ⇒ other.toLowerCase()
   }
 

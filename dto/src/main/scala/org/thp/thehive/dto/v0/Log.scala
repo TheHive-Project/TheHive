@@ -17,7 +17,7 @@ case class OutputLog(
     _type: String,
     message: String,
     startDate: Date,
-//                     attachment: TODO ??
+    attachment: Option[OutputAttachment] = None,
     status: String,
     owner: String
 )

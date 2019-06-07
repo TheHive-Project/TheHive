@@ -1,5 +1,8 @@
 package org.thp.thehive.services
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
 import gremlin.scala.{KeyValue ⇒ _, _}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -22,29 +25,33 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
   def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext
+    implicit graph: Graph,
+    authContext: AuthContext
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
-    val (data, attachment) = dataOrFile match {
+    (dataOrFile match {
       case Left(data0) ⇒
         observableDataSrv.create(ObservableData(), createdObservable, dataSrv.create(data0))
-        Some(dataSrv.create(data0)) → None
+        Success(Some(dataSrv.create(data0)) → None)
       case Right(file) ⇒
-        observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachmentSrv.create(file))
-        None → Some(attachmentSrv.create(file))
-    }
-    extensions
-      .map(keyValueSrv.create)
-      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+        attachmentSrv.create(file).map { attachment ⇒
+          observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+          None → Some(attachment)
+        }
+    }).flatMap {
+      case (data, attachment) ⇒
+        extensions
+          .map(keyValueSrv.create)
+          .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
 
-    for {
-      share ← caseSrv
-        .initSteps
-        .getOrganisationShare(`case`._id)
-        .getOrFail()
-      _ = shareSrv.shareObservableSrv.create(ShareObservable(), share, createdObservable)
-    } yield RichObservable(createdObservable, data, attachment, extensions)
+        for {
+          share ← caseSrv
+            .initSteps
+            .getOrganisationShare(`case`._id)
+            .getOrFail()
+          _ = shareSrv.shareObservableSrv.create(ShareObservable(), share, createdObservable)
+        } yield RichObservable(createdObservable, data, attachment, extensions)
+    }
   }
 }
 
@@ -79,7 +86,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               observable.as[Observable],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              extensions.asScala.map(_.as[KeyValue]).toSeq
+              extensions.asScala.map(_.as[KeyValue])
             )
         }
     )

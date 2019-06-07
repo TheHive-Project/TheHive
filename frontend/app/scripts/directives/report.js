@@ -15,7 +15,7 @@
                     .then(function (tmpl) {
                         scope.element.append($compile(tmpl)(scope));
                     }, function (/*response*/) {
-                        $templateRequest('./views/reports/' + scope.reportType + '.html', true)
+                        $templateRequest('views/reports/' + scope.reportType + '.html', true)
                             .then(function (tmpl) {
                                 scope.element.append($compile(tmpl)(scope));
                             });
