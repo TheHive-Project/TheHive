@@ -1,8 +1,5 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
 import gremlin.scala.{KeyValue ⇒ _, _}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -12,7 +9,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
 import scala.collection.JavaConverters._
-import scala.util.Try
+import scala.util.{Success, Try}
 
 @Singleton
 class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attachmentSrv: AttachmentSrv, caseSrv: CaseSrv, shareSrv: ShareSrv)(
@@ -25,8 +22,8 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
   def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
-    implicit graph: Graph,
-    authContext: AuthContext
+      implicit graph: Graph,
+      authContext: AuthContext
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
     (dataOrFile match {
@@ -56,6 +53,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
 }
 
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
+
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
     newInstance(
       raw.filter(
