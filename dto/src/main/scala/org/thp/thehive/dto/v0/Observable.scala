@@ -46,7 +46,8 @@ case class OutputObservable(
     tlp: Int,
     tags: Seq[String],
     ioc: Boolean,
-    sighted: Boolean
+    sighted: Boolean,
+    message: Option[String]
 )
 
 //RichObservable(

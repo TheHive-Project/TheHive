@@ -12,7 +12,7 @@ import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -54,19 +54,6 @@ class ObservableCtrl @Inject()(
             Results.Ok(observable.toJson)
           }
       }
-
-//  def list: Action[AnyContent] =
-//    entryPoint("list task")
-//      .authenticated { implicit request ⇒
-//        db.transaction { implicit graph ⇒
-//          val observables = observableSrv.initSteps
-////            .availableFor(request.organisation)
-//              .richObservable
-//            .toList()
-//            .map(_.toJson)
-//          Results.Ok(Json.toJson(observables))
-//        }
-//      }
 
   def update(obsId: String): Action[AnyContent] =
     entryPoint("update observable")
@@ -110,5 +97,36 @@ class ObservableCtrl @Inject()(
           case PagedResult(_, Some(size)) ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → size.toString))
           case _                          ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → resp.value.size.toString))
         }
+      }
+
+  def findSimilar(obsId: String): Action[AnyContent] =
+    entryPoint("find similar")
+      .authTransaction(db) { implicit request ⇒ graph ⇒
+        val observables = observableSrv
+          .get(obsId)(graph)
+          .similar(obsId)
+          .richObservable
+          .toList()
+
+        Success(Results.Ok(Json.toJson(observables.map(_.toJson))))
+      }
+
+  def bulkUpdate: Action[AnyContent] =
+    entryPoint("bulk update")
+      .extract('input, FieldsParser.update("observable", observableProperties(db)))
+      .extract('ids, FieldsParser.seq[String].on("ids"))
+      .authTransaction(db) { implicit request ⇒ graph ⇒
+        val properties: Seq[PropertyUpdater] = request.body('input)
+        val ids: Seq[String]                 = request.body('ids)
+        val res = Try(
+          ids.map(
+            obsId ⇒
+              observableSrv
+                .update(_.get(obsId).can(Permissions.manageCase), properties)(graph, request.authContext)
+                .get
+          )
+        )
+
+        res.map(_ ⇒ Results.NoContent)
       }
 }

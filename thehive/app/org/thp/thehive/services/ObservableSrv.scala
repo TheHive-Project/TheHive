@@ -67,8 +67,6 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       )
     )
 
-  override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
-
   def richObservable: ScalarSteps[RichObservable] =
     ScalarSteps(
       raw
@@ -90,4 +88,19 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
     )
 
   def cases: CaseSteps = new CaseSteps(raw.inTo[ShareObservable].outTo[ShareCase])
+
+  override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
+
+  def similar(id: String): ObservableSteps = newInstance(
+    raw
+      .unionFlat(
+        _.outTo[ObservableData]
+          .inTo[ObservableData]
+          .hasNot(Key("_id") of id),
+        _.outTo[ObservableAttachment]
+          .inTo[ObservableAttachment]
+          .hasNot(Key("_id") of id)
+      )
+      .dedup
+  )
 }

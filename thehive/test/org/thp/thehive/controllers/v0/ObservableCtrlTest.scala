@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Path
+import java.util.UUID
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -169,6 +170,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         val result = observableCtrl.create("#1")(request)
 
         status(result) shouldEqual 201
+        FakeTemporaryFile.unapply(tempFile) must beSome(tempFile.path.toString)
 
         val resObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
@@ -183,6 +185,42 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         status(resultGet) shouldEqual 200
         contentAsJson(resultGet).as[OutputObservable].tags shouldEqual Seq("tagfile")
       }
+
+      "be able to update and bulk update observables" in {
+        val request = FakeRequest("POST", s"/api/case/#1/artifact")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse("""
+              {
+                "dataType":"autonomous-system",
+                "ioc":false,
+                "sighted":false,
+                "tlp":2,
+                "message":"love exciting and new",
+                "tags":["tagfile"],
+                "data":"test\ntest2"
+              }
+            """.stripMargin))
+        val result = observableCtrl.create("#1")(request)
+
+        status(result) shouldEqual 201
+
+        val resObservable = contentAsJson(result).as[Seq[OutputObservable]].head
+        val requestUp = FakeRequest("PATCH", s"/api/case/artifact/${resObservable._id}")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse("""
+              {
+                "dataType":"domain",
+                "ioc":true,
+                "sighted":true,
+                "tlp":1,
+                "message":"love exciting and new edited",
+                "tags":["tagfileUp"]
+              }
+            """.stripMargin))
+        val resultUp = observableCtrl.update(resObservable._id)(requestUp)
+
+        status(resultUp) shouldEqual 204
+      }
     }
   }
 }
@@ -196,11 +234,19 @@ case class FakeTemporaryFile(name: String) extends Files.TemporaryFile {
 }
 
 object FakeTemporaryFile {
+
   def apply(): Files.TemporaryFile = {
     val file = new File("/tmp/test.txt")
     val bw   = new BufferedWriter(new FileWriter(file))
-    bw.write("hello")
+    bw.write(s"hello ${UUID.randomUUID()}")
     bw.close()
     FakeTemporaryFile(file.getAbsolutePath)
+  }
+
+  def unapply(arg: Files.TemporaryFile): Option[String] = {
+    val f = new File(arg.path.toString)
+    if (f.exists()) f.delete()
+
+    Some(arg.path.toString)
   }
 }
