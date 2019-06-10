@@ -396,6 +396,21 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
         TestCase(resultCaseOutput) shouldEqual expected
       }
+
+      "force delete a case" in {
+        val request = FakeRequest("GET", s"/api/v0/case/#1")
+          .withHeaders("user" → "user1")
+        val result = caseCtrl.get("#1")(request)
+
+        status(result) shouldEqual 200
+
+        val requestDel = FakeRequest("DELETE", s"/api/v0/case/#1/force")
+          .withHeaders("user" → "user1")
+        val resultDel = caseCtrl.realDelete("#1")(requestDel)
+
+        status(resultDel) shouldEqual 204
+        status(caseCtrl.get("#1")(request)) shouldEqual 404
+      }
     }
   }
 }

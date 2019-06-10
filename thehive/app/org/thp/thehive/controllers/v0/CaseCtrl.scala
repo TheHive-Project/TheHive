@@ -23,7 +23,8 @@ class CaseCtrl @Inject()(
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
-    val queryExecutor: TheHiveQueryExecutor
+    val queryExecutor: TheHiveQueryExecutor,
+    auditSrv: AuditSrv
 ) extends QueryCtrl
     with CaseConversion
     with TaskConversion {
@@ -173,6 +174,19 @@ class CaseCtrl @Inject()(
           .can(Permissions.manageCase)
           .update("status" → "deleted")
           .map(_ ⇒ Results.NoContent)
+      }
+
+  def realDelete(caseIdOrNumber: String): Action[AnyContent] =
+    entryPoint("delete case")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        for {
+          c ← caseSrv
+            .get(caseIdOrNumber)
+            .can(Permissions.manageCase)
+            .getOrFail()
+          _ ← Try(caseSrv.initSteps.remove(c._id))
+//          _ ← auditSrv.forceDeleteCase(c)
+        } yield Results.NoContent
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =

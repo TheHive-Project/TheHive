@@ -295,4 +295,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
   def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
+
+  def remove(id: String): Unit = {
+    newInstance(raw.has(Key("_id") of id).drop().iterate())
+    ()
+  }
 }

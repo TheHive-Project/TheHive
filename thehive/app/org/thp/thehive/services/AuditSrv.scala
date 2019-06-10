@@ -29,23 +29,9 @@ class AuditSrv @Inject()(
   def createCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("createCase", `case`), `case`, Some(`case`))
 
-  def create(
-      audit: Audit,
-      context: Entity,
-      `object`: Option[Entity]
-  )(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[RichAudit] =
-    userSrv.current.getOrFail().map { user ⇒
-      val createdAudit = create(audit)
-      auditUserSrv.create(AuditUser(), createdAudit, user)
-      auditContextSrv.create(AuditContext(), createdAudit, context)
-      `object`.map(auditedSrv.create(Audited(), createdAudit, _))
-      val richAudit = RichAudit(createdAudit, context, `object`)
-      db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(richAudit))
-      richAudit
-    }
+  def forceDeleteCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    // TODO check how to handle case for deletion
+    create(Audit("forceDeleteCase", `case`), `case`, Some(`case`))
 
   def updateCase(`case`: Case with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("updateCase", `case`, Some(details.toString)), `case`, Some(`case`))
@@ -69,8 +55,26 @@ class AuditSrv @Inject()(
   def createTask(task: Task with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("createTask", task), `case`, Some(task))
 
+  def create(
+      audit: Audit,
+      context: Entity,
+      `object`: Option[Entity]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichAudit] =
+    userSrv.current.getOrFail().map { user ⇒
+      val createdAudit = create(audit)
+      auditUserSrv.create(AuditUser(), createdAudit, user)
+      auditContextSrv.create(AuditContext(), createdAudit, context)
+      `object`.map(auditedSrv.create(Audited(), createdAudit, _))
+      val richAudit = RichAudit(createdAudit, context, `object`)
+      db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(richAudit))
+      richAudit
+    }
+
   def deleteObservable(observable: Observable with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    // TODO check hox to handle audit for deletion
+    // TODO check how to handle audit for deletion
     create(Audit("deleteObservable", observable, Some(details.toString)), observable, Some(observable))
 }
 
