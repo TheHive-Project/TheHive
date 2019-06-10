@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, ObservableSrv}
+import org.thp.thehive.services.{AuditSrv, CaseSrv, ObservableSrv}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -20,6 +20,7 @@ class ObservableCtrl @Inject()(
     db: Database,
     observableSrv: ObservableSrv,
     caseSrv: CaseSrv,
+    auditSrv: AuditSrv,
     val queryExecutor: TheHiveQueryExecutor
 ) extends QueryCtrl
     with ObservableConversion {
@@ -128,5 +129,19 @@ class ObservableCtrl @Inject()(
         )
 
         res.map(_ ⇒ Results.NoContent)
+      }
+
+  def delete(obsId: String): Action[AnyContent] =
+    entryPoint("delete")
+      .authTransaction(db) { implicit request ⇒ graph ⇒
+        val obsStep = observableSrv
+          .get(obsId)(graph)
+          .can(Permissions.manageCase)
+        for {
+          obs ← obsStep
+            .getOrFail()
+          _ ← Try(observableSrv.initSteps(graph).remove(obs._id))
+//          _ ← auditSrv.deleteObservable(obs, Json.obj("id" → obs._id, "type" → obs.`type`, "message" → obs.message))(graph, request.authContext)
+        } yield Results.NoContent
       }
 }

@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -11,6 +7,9 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.util.Try
 
 @Singleton
 class AuditSrv @Inject()(
@@ -26,6 +25,9 @@ class AuditSrv @Inject()(
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] =
     get(audit).getObject
+
+  def createCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("createCase", `case`), `case`, Some(`case`))
 
   def create(
       audit: Audit,
@@ -44,9 +46,6 @@ class AuditSrv @Inject()(
       db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(richAudit))
       richAudit
     }
-
-  def createCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createCase", `case`), `case`, Some(`case`))
 
   def updateCase(`case`: Case with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("updateCase", `case`, Some(details.toString)), `case`, Some(`case`))
@@ -69,12 +68,14 @@ class AuditSrv @Inject()(
 
   def createTask(task: Task with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("createTask", task), `case`, Some(task))
+
+  def deleteObservable(observable: Observable with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    // TODO check hox to handle audit for deletion
+    create(Audit("deleteObservable", observable, Some(details.toString)), observable, Some(observable))
 }
 
 @EntitySteps[Audit]
 class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schema, graph: Graph) extends BaseVertexSteps[Audit, AuditSteps](raw) {
-
-  override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
   def richAudit: ScalarSteps[RichAudit] =
     ScalarSteps(
@@ -119,6 +120,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
 
   def forContext(contextId: String): AuditSteps = newInstance(raw.filter(_.outTo[AuditContext].has(Key("_id") of contextId)))
+
+  override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
   def visible(implicit authContext: AuthContext): AuditSteps = newInstance(
     raw.filter(

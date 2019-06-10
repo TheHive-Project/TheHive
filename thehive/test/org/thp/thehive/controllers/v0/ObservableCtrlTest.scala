@@ -50,24 +50,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     s"[$name] observable controller" should {
 
       "be able to create an observable with string data" in {
-        val request = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" → "user1")
-          .withJsonBody(Json.parse("""
-              {
-                "dataType":"autonomous-system",
-                "ioc":false,
-                "sighted":false,
-                "tlp":2,
-                "message":"love exciting and new",
-                "tags":["tagfile"],
-                "data":"test\ntest2"
-              }
-            """.stripMargin))
-        val result = observableCtrl.create("#1")(request)
-
-        status(result) shouldEqual 201
-
-        val resObservable = contentAsJson(result).as[Seq[OutputObservable]].head
+        val resObservable = createDummyObservable(observableCtrl)
 
         resObservable.data must beSome[String]
         resObservable.data.get shouldEqual "test\ntest2"
@@ -175,24 +158,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       }
 
       "be able to update and bulk update observables" in {
-        val request = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" → "user1")
-          .withJsonBody(Json.parse("""
-              {
-                "dataType":"autonomous-system",
-                "ioc":false,
-                "sighted":false,
-                "tlp":2,
-                "message":"love exciting and new",
-                "tags":["tagfile"],
-                "data":"test\ntest2"
-              }
-            """.stripMargin))
-        val result = observableCtrl.create("#1")(request)
-
-        status(result) shouldEqual 201
-
-        val resObservable = contentAsJson(result).as[Seq[OutputObservable]].head
+        val resObservable = createDummyObservable(observableCtrl)
         val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
           .withHeaders("user" → "user1")
           .withJsonBody(Json.parse(s"""
@@ -208,7 +174,6 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         val resultUp = observableCtrl.bulkUpdate(requestUp)
 
         status(resultUp) shouldEqual 204
-        Thread.sleep(3000) // FIXME this makes the GET request work somehow...
         val resObsUpdated = getObservable(resObservable._id, observableCtrl)
 
         resObsUpdated.tags shouldEqual Seq("tagfileUp")
@@ -216,6 +181,15 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         resObsUpdated.tlp shouldEqual 1
         resObsUpdated.ioc must beTrue
         resObsUpdated.sighted must beTrue
+      }
+
+      "delete an observable" in {
+        val resObservable = createDummyObservable(observableCtrl)
+        val requestDelete = FakeRequest("DELETE", s"/api/case/artifact/${resObservable._id}")
+          .withHeaders("user" → "user1")
+        val resultDelete = observableCtrl.bulkUpdate(requestDelete)
+
+        status(resultDelete) shouldEqual 204
       }
     }
   }
@@ -228,6 +202,29 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     status(resultGet) shouldEqual 200
 
     contentAsJson(resultGet).as[OutputObservable]
+  }
+
+  def createDummyObservable(observableCtrl: ObservableCtrl): OutputObservable = {
+    val request = FakeRequest("POST", s"/api/case/#1/artifact")
+      .withHeaders("user" → "user1")
+      .withJsonBody(Json.parse("""
+              {
+                "dataType":"autonomous-system",
+                "ioc":false,
+                "sighted":false,
+                "tlp":2,
+                "message":"love exciting and new",
+                "tags":["tagfile"],
+                "data":"test\ntest2"
+              }
+            """.stripMargin))
+    val result = observableCtrl.create("#1")(request)
+
+    status(result) shouldEqual 201
+
+    Thread.sleep(4000) // FIXME for some reasons this makes the GET request work, somehow...
+
+    contentAsJson(result).as[Seq[OutputObservable]].head
   }
 }
 
