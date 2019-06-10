@@ -11,6 +11,7 @@ import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
+
 import scala.util.{Success, Try}
 
 @Singleton
@@ -135,6 +136,33 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(richCase ⇒ Results.Ok(richCase.toJson))
           }
+      }
+
+  def bulkUpdate: Action[AnyContent] =
+    entryPoint("update case")
+      .extract('case, FieldsParser.update("case", caseProperties))
+      .extract('idsOrNumbers, FieldsParser.seq[String].on("ids"))
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
+        val idsOrNumbers: Seq[String]              = request.body('idsOrNumbers)
+        val updatedCases = idsOrNumbers.map(
+          caseIdOrNumber ⇒
+            caseSrv
+              .update(
+                _.get(caseIdOrNumber),
+//                  .can(Permissions.manageCase),
+                propertyUpdaters
+              )
+              .flatMap {
+                case (caseSteps, _) ⇒
+                  caseSteps
+                    .richCase
+                    .getOrFail()
+              }
+        )
+
+        Try(updatedCases.map(_.get))
+          .map(r ⇒ Results.Ok(Json.toJson(r.map(_.toJson))))
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =

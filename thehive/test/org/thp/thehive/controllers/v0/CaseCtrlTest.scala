@@ -2,9 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -13,9 +10,12 @@ import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.dto.v0.{InputCase, InputCustomFieldValue, OutputCase, OutputCustomFieldValue, OutputTask}
+import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 case class TestCase(
     caseId: Int,
@@ -250,6 +250,56 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         TestCase(resultCaseOutput) shouldEqual expected
       }
 
+      "update a bulk of cases properly" in {
+        val request = FakeRequest("PATCH", s"/api/v0/case/_bulk")
+          .withHeaders("user" → "user2")
+          .withJsonBody(
+            Json.obj(
+              "ids"    → List("#4", "#2"),
+              "title"  → "new title edited",
+              "flag"   → true,
+              "tlp"    → 3,
+              "pap"    → 2,
+              "status" → "Open",
+              "tags"   → List("tag2")
+            )
+          )
+        val result = caseCtrl.bulkUpdate(request)
+        status(result) must_=== 200
+        val resultCase       = contentAsJson(result)
+        val resultCaseOutput = resultCase.as[List[OutputCase]]
+
+        resultCaseOutput.length shouldEqual 2
+
+        val requestGet = FakeRequest("GET", s"/api/v0/case/#4")
+          .withHeaders("user" → "user2")
+        val resultGet = caseCtrl.get("#4")(requestGet)
+
+        status(resultGet) shouldEqual 200
+
+        val resultCaseGet4 = contentAsJson(resultGet).as[OutputCase]
+
+        resultCaseGet4.title shouldEqual "new title edited"
+        resultCaseGet4.flag must beTrue
+        resultCaseGet4.tlp shouldEqual 3
+        resultCaseGet4.pap shouldEqual 2
+        resultCaseGet4.status shouldEqual "Open"
+        resultCaseGet4.tags shouldEqual Set("tag2")
+
+        val resultGet2 = caseCtrl.get("#2")(requestGet)
+
+        status(resultGet2) shouldEqual 200
+
+        val resultCaseGet2 = contentAsJson(resultGet).as[OutputCase]
+
+        resultCaseGet2.title shouldEqual "new title edited"
+        resultCaseGet2.flag must beTrue
+        resultCaseGet2.tlp shouldEqual 3
+        resultCaseGet2.pap shouldEqual 2
+        resultCaseGet2.status shouldEqual "Open"
+        resultCaseGet2.tags shouldEqual Set("tag2")
+      }
+
       "search cases" in {
         val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
           .withHeaders("user" → "user3")
@@ -311,9 +361,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val result = caseCtrl.stats()(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result)
-        val expected   = Json.parse("""{"t1":{"count":2},"t2":{"count":1},"t3":{"count":1},"count":2}""")
 
-        resultCase shouldEqual expected
+        resultCase("count").as[Int] shouldEqual 2
+        (resultCase \ "t1" \ "count").get.as[Int] shouldEqual 1
+        (resultCase \ "t2" \ "count").get.as[Int] shouldEqual 1
       }
 
       "assign a case to an user" in {

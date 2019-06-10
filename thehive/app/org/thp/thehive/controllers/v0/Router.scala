@@ -41,8 +41,8 @@ class Router @Inject()(
     case POST(p"/case/_merge/$caseIds") ⇒ caseCtrl.merge(caseIds)
     case DELETE(p"/case/$caseId")       ⇒ caseCtrl.delete(caseId)
     case POST(p"/case/_search")         ⇒ caseCtrl.search
-//    case PATCH(p"api/case/_bulk") ⇒                          caseCtrl.bulkUpdate()
-    case POST(p"/case/_stats") ⇒ caseCtrl.stats()
+    case PATCH(p"api/case/_bulk")       ⇒ caseCtrl.bulkUpdate()
+    case POST(p"/case/_stats")          ⇒ caseCtrl.stats()
 //    case DELETE(p"/case/$caseId/force") ⇒                  caseCtrl.realDelete(caseId)
     case GET(p"/case/$caseId/links") ⇒ caseCtrl.linkedCases(caseId)
 
