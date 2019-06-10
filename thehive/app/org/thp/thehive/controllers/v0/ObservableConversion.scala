@@ -49,6 +49,7 @@ trait ObservableConversion {
       .property[Boolean]("sighted")(_.simple.updatable)
       .property[Seq[String]]("tags")(_.simple.updatable)
       .property[String]("message")(_.simple.updatable)
+      .property[Int]("tlp")(_.simple.updatable)
       .property[String]("dataType")(_.rename("type").updatable)
       .property[Option[String]]("data")(_.derived(_.outTo[ObservableData].value(Key[String]("data"))).readonly)
       // TODO add attachment ?

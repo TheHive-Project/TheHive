@@ -74,13 +74,6 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         resObservable.sighted must beFalse
         resObservable.ioc must beFalse
         resObservable.dataType shouldEqual "autonomous-system"
-
-        val requestGet = FakeRequest("GET", s"/api/case/artifact/${resObservable._id}")
-          .withHeaders("user" → "user1")
-        val resultGet = observableCtrl.get(resObservable._id)(requestGet)
-
-        status(resultGet) shouldEqual 200
-        contentAsJson(resultGet).as[OutputObservable].tags shouldEqual Seq("tagfile")
       }
 
       "be able to create and search 2 observables with data array" in {
@@ -178,12 +171,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         resObservables.head.data.get shouldEqual "test\ntest2"
         resObservables.last.data must beNone
 
-        val requestGet = FakeRequest("GET", s"/api/case/artifact/${resObservables.head._id}")
-          .withHeaders("user" → "user1")
-        val resultGet = observableCtrl.get(resObservables.head._id)(requestGet)
-
-        status(resultGet) shouldEqual 200
-        contentAsJson(resultGet).as[OutputObservable].tags shouldEqual Seq("tagfile")
+        getObservable(resObservables.head._id, observableCtrl).tags shouldEqual Seq("tagfile")
       }
 
       "be able to update and bulk update observables" in {
@@ -205,11 +193,11 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         status(result) shouldEqual 201
 
         val resObservable = contentAsJson(result).as[Seq[OutputObservable]].head
-        val requestUp = FakeRequest("PATCH", s"/api/case/artifact/${resObservable._id}")
+        val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
           .withHeaders("user" → "user1")
-          .withJsonBody(Json.parse("""
+          .withJsonBody(Json.parse(s"""
               {
-                "dataType":"domain",
+                "ids":["${resObservable._id}"],
                 "ioc":true,
                 "sighted":true,
                 "tlp":1,
@@ -217,11 +205,29 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "tags":["tagfileUp"]
               }
             """.stripMargin))
-        val resultUp = observableCtrl.update(resObservable._id)(requestUp)
+        val resultUp = observableCtrl.bulkUpdate(requestUp)
 
         status(resultUp) shouldEqual 204
+        Thread.sleep(3000) // FIXME this makes the GET request work somehow...
+        val resObsUpdated = getObservable(resObservable._id, observableCtrl)
+
+        resObsUpdated.tags shouldEqual Seq("tagfileUp")
+        resObsUpdated.message must beSome("love exciting and new edited")
+        resObsUpdated.tlp shouldEqual 1
+        resObsUpdated.ioc must beTrue
+        resObsUpdated.sighted must beTrue
       }
     }
+  }
+
+  def getObservable(id: String, observableCtrl: ObservableCtrl): OutputObservable = {
+    val requestGet = FakeRequest("GET", s"/api/case/artifact/$id")
+      .withHeaders("user" → "user1")
+    val resultGet = observableCtrl.get(id)(requestGet)
+
+    status(resultGet) shouldEqual 200
+
+    contentAsJson(resultGet).as[OutputObservable]
   }
 }
 
