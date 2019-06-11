@@ -26,7 +26,13 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   override val initialValues: Seq[User] = Seq(
-    User(UserSrv.initUser, "Default admin user", None, UserStatus.ok, Some(LocalAuthSrv.hashPassword(UserSrv.initUserPassword)))
+    User(
+      login = UserSrv.initUser,
+      name = "Default admin user",
+      apikey = None,
+      locked = false,
+      password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
+    )
   )
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
@@ -69,6 +75,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getByLogin(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
+  def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
+
   def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
 
   def organisations(requiredPermission: String): OrganisationSteps = new OrganisationSteps(
@@ -83,17 +91,31 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 //  def availableFor(organisation: String): UserSteps = ???
 //  newInstance(raw.filter(_.outTo[UserOrganisation].value("name").is(organisation)))
 
-  def getAuthContext(requestId: String): ScalarSteps[AuthContext] =
+  def getAuthContext(requestId: String, organisation: Option[String]): ScalarSteps[AuthContext] = {
+    val organisationName = organisation
+      .orElse(
+        raw
+          .clone()
+          .outTo[UserRole]
+          .outTo[RoleOrganisation]
+          .value[String]("name")
+          .headOption()
+      )
+      .getOrElse("default")
+    getAuthContext(requestId, organisationName)
+  }
+
+  def getAuthContext(requestId: String, organisationName: String): ScalarSteps[AuthContext] =
     ScalarSteps(
       raw
+        .has(Key("locked") of false)
         .project(
           _.apply(By(__.value[String]("login")))
             .and(By(__.value[String]("name")))
-            .and(By(__.out("UserRole").out("RoleOrganisation").value[String]("name")))
-            .and(By(__.out("UserRole").out("RoleProfile")))
+            .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisationName)).outTo[RoleProfile]))
         )
         .map {
-          case (userId, userName, organisationName, profile) ⇒
+          case (userId, userName, profile) ⇒
             AuthContextImpl(userId, userName, organisationName, requestId, profile.as[Profile].permissions)
         }
     )

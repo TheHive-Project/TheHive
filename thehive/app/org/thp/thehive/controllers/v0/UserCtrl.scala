@@ -1,5 +1,11 @@
 package org.thp.thehive.controllers.v0
 
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.JsValue
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -9,11 +15,6 @@ import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject()(
@@ -76,19 +77,6 @@ class UserCtrl @Inject()(
           }
       }
 
-  def list: Action[AnyContent] =
-    entryPoint("list user")
-      .extract('organisation, FieldsParser[String].optional.on("organisation"))
-      .authTransaction(db) { request ⇒ implicit graph ⇒
-        val organisation = request.body('organisation).getOrElse(request.organisation)
-        val users = userSrv
-          .initSteps
-          .richUser(organisation)
-          .map(_.toJson)
-          .toList
-        Success(Results.Ok(Json.toJson(users)))
-      }
-
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
       .extract('user, FieldsParser.update("user", userProperties(userSrv)))
@@ -96,20 +84,23 @@ class UserCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('user)
         userSrv // Authorisation is managed in public properties
           .update(_.get(userId), propertyUpdaters)
-          .map(_ ⇒ Results.NoContent)
+          .flatMap { case (user, _) ⇒ user.richUser(request.organisation).getOrFail() }
+          .map(user ⇒ Results.Ok(user.toJson))
       }
 
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
-      .extract('password, FieldsParser[String])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .extract('password, FieldsParser[String].on("password"))
+      .auth { implicit request ⇒
         for {
-          _ ← userSrv
-            .current
-            .organisations(Permissions.manageUser)
-            .users
-            .get(userId)
-            .existsOrFail()
+          _ ← db.tryTransaction { implicit graph ⇒
+            userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+          }
           _ ← authSrv
             .setPassword(userId, request.body('password))
         } yield Results.NoContent
@@ -129,14 +120,16 @@ class UserCtrl @Inject()(
 
   def getKey(userId: String): Action[AnyContent] =
     entryPoint("get key")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .auth { implicit request ⇒
         for {
-          _ ← userSrv
-            .current
-            .organisations(Permissions.manageUser)
-            .users
-            .get(userId)
-            .existsOrFail()
+          _ ← db.tryTransaction { implicit graph ⇒
+            userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+          }
           key ← authSrv
             .getKey(userId)
         } yield Results.Ok(key)
@@ -144,31 +137,34 @@ class UserCtrl @Inject()(
 
   def removeKey(userId: String): Action[AnyContent] =
     entryPoint("remove key")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val isGranted = userSrv
-          .current
-          .organisations(Permissions.manageUser)
-          .users
-          .get(userId)
-          .exists()
-        if (isGranted)
-          authSrv
+      .auth { implicit request ⇒
+        for {
+          _ ← db.tryTransaction { implicit graph ⇒
+            userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .getOrFail()
+          }
+          _ ← authSrv
             .removeKey(userId)
-            .map(_ ⇒ Results.NoContent)
-        else
-          Failure(AuthorizationError(s"User $userId doesn't exist or permission is insufficient"))
+        } yield Results.NoContent
+//          Failure(AuthorizationError(s"User $userId doesn't exist or permission is insufficient"))
       }
 
   def renewKey(userId: String): Action[AnyContent] =
     entryPoint("renew key")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .auth { implicit request ⇒
         for {
-          _ ← userSrv
-            .current
-            .organisations(Permissions.manageUser)
-            .users
-            .get(userId)
-            .existsOrFail()
+          _ ← db.tryTransaction { implicit graph ⇒
+            userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
+              .get(userId)
+              .existsOrFail()
+          }
           key ← authSrv
             .renewKey(userId)
         } yield Results.Ok(key)

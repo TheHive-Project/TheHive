@@ -8,7 +8,15 @@ object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]
 }
 
-case class OutputUser(id: String, login: String, name: String, roles: Set[String], organisation: String)
+case class OutputUser(
+    id: String,
+    login: String,
+    name: String,
+    roles: Set[String],
+    organisation: String,
+    hasKey: Option[Boolean] = None,
+    status: String = "Ok"
+)
 
 object OutputUser {
   implicit val format: OFormat[OutputUser] = Json.format[OutputUser]

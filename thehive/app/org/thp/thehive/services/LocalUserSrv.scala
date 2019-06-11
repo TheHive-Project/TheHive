@@ -1,24 +1,25 @@
 package org.thp.thehive.services
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.mvc.RequestHeader
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv ⇒ ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{AuthenticationError, Instance}
 import org.thp.thehive.models.Permissions
-import play.api.mvc.RequestHeader
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends ScalligraphUserSrv {
 
-  override def getFromId(request: RequestHeader, userId: String): Try[AuthContext] =
+  override def getFromId(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
     db.tryTransaction { implicit graph ⇒
       userSrv
         .initSteps
         .get(userId)
-        .getAuthContext(Instance.getRequestId(request))
-        .getOrFail()
+        .getAuthContext(Instance.getRequestId(request), organisationName)
+        .orFail(AuthenticationError("Authentication failure"))
     }
 
   override def getInitialUser(request: RequestHeader): Try[AuthContext] =

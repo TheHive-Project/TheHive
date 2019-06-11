@@ -36,13 +36,13 @@ class UserSrvTest extends PlaySpecification {
 
       "create and get an user by his id" in db.transaction { implicit graph ⇒
         val user =
-          userSrv.create(User(login = "getByIdTest", name = "test user (getById)", apikey = None, status = UserStatus.ok, password = None))
+          userSrv.create(User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None))
         userSrv.getOrFail(user._id) must beSuccessfulTry(user)
       }
 
       "create and get an user by his login" in db.transaction { implicit graph ⇒
         val user =
-          userSrv.create(User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, status = UserStatus.ok, password = None))
+          userSrv.create(User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None))
         userSrv.getOrFail(user.login) must beSuccessfulTry(user)
       }
     }

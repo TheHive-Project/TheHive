@@ -2,5 +2,6 @@
   {"id": "user1-cert"},
   {"id": "user2-cert"},
   {"id": "user2-default"},
-  {"id": "user3-default"}
+  {"id": "user3-default"},
+  {"id": "user4-cert"}
 ]

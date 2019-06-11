@@ -2,14 +2,19 @@ package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
+
+import play.api.libs.json.Json
+
+import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
-import org.thp.scalligraph.{Output, UnsupportedAttributeError}
+import org.thp.scalligraph.controllers.FString
+import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.{InvalidFormatAttributeError, Output, UnsupportedAttributeError}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
-import org.thp.thehive.models.{Permissions, RichUser, User, UserStatus}
+import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
-import play.api.libs.json.Json
 
 trait UserConversion {
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
@@ -28,16 +33,20 @@ trait UserConversion {
       .withFieldComputed(_.id, _.login)
       .withFieldConst(_.apikey, None)
       .withFieldConst(_.password, None)
-      .withFieldConst(_.status, UserStatus.ok)
+      .withFieldConst(_.locked, false)
 //    .withFieldRenamed(_.roles, _.permissions)
       .transform
 
-  implicit def toOutputUser(user: RichUser): Output[OutputUser] =
+  implicit def toOutputUser(user: RichUser): Output[OutputUser] = toOutputUser(user, true)
+
+  def toOutputUser(user: RichUser, withKeyInfo: Boolean): Output[OutputUser] =
     Output[OutputUser](
       user
         .into[OutputUser]
         .withFieldComputed(_.roles, u ⇒ permissions2Roles(u.permissions))
         .withFieldRenamed(_.login, _.id)
+        .withFieldComputed(_.hasKey, u ⇒ if (withKeyInfo) Some(u.apikey.isDefined) else None)
+        .withFieldComputed(_.status, u ⇒ if (u.locked) "Locked" else "Ok")
         .transform
     )
 
@@ -69,20 +78,26 @@ trait UserConversion {
           }
       })
       .property[String]("apikey")(_.simple.readonly)
-      .property[String]("status")(_.derived(_.value[String]("status").map(_.capitalize)).custom[UserStatus.Value] {
-        (prop, path, value, vertex, db, graph, authContext) ⇒
-          userSrv
-            .current(graph, authContext)
-            .organisations(Permissions.manageUser)
-            .users
-            .get(vertex)
-            .existsOrFail()
-            .flatMap {
-              case _ if path.isEmpty ⇒
-                db.setProperty(vertex, "status", value.toString, prop.mapping)
-                Success(Json.obj("status" → value))
-              case _ ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
-            }
-      })
+      .property[String]("status")(
+        _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
+          .custom[String] { (_, path, value, vertex, db, graph, authContext) ⇒
+            userSrv
+              .current(graph, authContext)
+              .organisations(Permissions.manageUser)
+              .users
+              .get(vertex)
+              .existsOrFail()
+              .flatMap {
+                case _ if path.nonEmpty ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
+                case _ if value == "Ok" ⇒
+                  db.setProperty(vertex, "locked", false, UniMapping.booleanMapping)
+                  Success(Json.obj("status" → value))
+                case _ if value == "Locked" ⇒
+                  db.setProperty(vertex, "locked", true, UniMapping.booleanMapping)
+                  Success(Json.obj("status" → value))
+                case _ ⇒ Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
+              }
+          }
+      )
       .build
 }
