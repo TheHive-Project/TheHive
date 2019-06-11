@@ -3,18 +3,26 @@
     "id": "user1",
     "login": "user1",
     "name": "Thomas",
-    "status": "ok"
+    "locked": false
   },
   {
     "id": "user2",
     "login": "user2",
     "name": "U",
-    "status": "ok"
+    "locked": false
   },
   {
     "id": "user3",
     "login": "user3",
     "name": "only on default",
-    "status": "ok"
+    "locked": false,
+    "password": "*random*seed*,d57cb64654764ab43edfc76a0a84e4e2fda867e761ab5a82859b00ad8412b2a1"
+  },
+  {
+    "id": "user4",
+    "login": "user4",
+    "name": "admin of cert",
+    "locked": true,
+    "apikey": "azertyazerty"
   }
 ]

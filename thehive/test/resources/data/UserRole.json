@@ -14,5 +14,9 @@
   {
     "from": "user3",
     "to": "user3-default"
+  },
+  {
+    "from": "user4",
+    "to": "user4-cert"
   }
 ]

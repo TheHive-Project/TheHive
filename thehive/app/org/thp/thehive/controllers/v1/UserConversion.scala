@@ -6,7 +6,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.{Output, UnsupportedAttributeError}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
-import org.thp.thehive.models.{Permissions, RichUser, User, UserStatus}
+import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 import play.api.libs.json.Json
 
@@ -17,7 +17,7 @@ trait UserConversion {
       .withFieldComputed(_.id, _.login)
       .withFieldConst(_.apikey, None)
       .withFieldConst(_.password, None)
-      .withFieldConst(_.status, UserStatus.ok)
+      .withFieldConst(_.locked, false)
       //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unkown permissions are ignored
       .transform
 
@@ -59,7 +59,7 @@ trait UserConversion {
           }
       })
       .property[String]("apikey")(_.simple.readonly)
-      .property[String]("status")(_.simple.custom[UserStatus.Value] { (prop, path, value, vertex, db, graph, authContext) ⇒
+      .property[Boolean]("locked")(_.simple.custom[Boolean] { (prop, path, value, vertex, db, graph, authContext) ⇒
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)
@@ -68,8 +68,8 @@ trait UserConversion {
           .existsOrFail()
           .flatMap {
             case _ if path.isEmpty ⇒
-              db.setProperty(vertex, "status", value.toString, prop.mapping)
-              Success(Json.obj("status" → value))
+              db.setProperty(vertex, "locked", value, prop.mapping)
+              Success(Json.obj("locked" → value))
             case _ ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
           }
       })

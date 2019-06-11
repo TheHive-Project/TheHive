@@ -35,7 +35,10 @@ class UserMigration @Inject()(
     ((JsPath \ "_id").read[String] and
       (JsPath \ "name").read[String] and
       (JsPath \ "key").readNullable[String] and
-      (JsPath \ "status").readWithDefault[String]("ok").map(_.toLowerCase).map(UserStatus.withName) and
+      (JsPath \ "status").readWithDefault[String]("ok").map {
+        case "Locked" ⇒ true
+        case _        ⇒ false
+      } and
       (JsPath \ "password").readNullable[String])(User.apply _)
 
   def importUsers(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database, authContext: AuthContext): Unit = {
