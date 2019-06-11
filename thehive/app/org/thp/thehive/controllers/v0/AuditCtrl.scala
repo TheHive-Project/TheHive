@@ -45,12 +45,12 @@ class AuditCtrl @Inject()(
       case (log, task) ⇒ log + ("case_task" → task)
     }
 
-  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] =
+  def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val audits = rootId
+        val audits = caseId
           .filterNot(_ == "any")
-          .fold(auditSrv.initSteps)(rid ⇒ auditSrv.initSteps.forContext(rid))
+          .fold(auditSrv.initSteps)(rid ⇒ auditSrv.initSteps.forCase(rid))
           .visible
           .range(0, count.getOrElse(10).toLong)
           .richAuditWithCustomObjectRenderer {

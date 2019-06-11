@@ -123,7 +123,16 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         }
     )
 
-  def forContext(contextId: String): AuditSteps = newInstance(raw.filter(_.outTo[AuditContext].has(Key("_id") of contextId)))
+  def forCase(caseId: String): AuditSteps =
+    newInstance(
+      raw.filter(
+        _.outTo[AuditContext]
+          .in()
+          .hasLabel("Share")
+          .outTo[ShareCase]
+          .has(Key("_id") of caseId)
+      )
+    )
 
   override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
