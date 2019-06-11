@@ -13,4 +13,9 @@ class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSte
 
 class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Data, DataSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): DataSteps = new DataSteps(raw)
+
+  def remove(): Unit = {
+    raw.drop().iterate()
+    ()
+  }
 }

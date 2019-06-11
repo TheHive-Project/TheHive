@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
-import play.api.libs.json.Json
-import scala.collection.JavaConverters._
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -12,6 +8,10 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
@@ -35,12 +35,25 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     logAttachmentSrv.create(LogAttachment(), log, attachment)
     auditSrv.updateLog(log, Json.obj("attachment" → attachment.name)).map(_ ⇒ attachment)
   }
+
+  def cascadeRemove(log: Log with Entity)(implicit graph: Graph): Try[Unit] =
+    for {
+      _ ← Try(
+        get(log)
+          .attachments
+          .toList()
+          .foreach(a ⇒ attachmentSrv.get(a.attachmentId).remove())
+      )
+      r ← Try(get(log).remove())
+    } yield r
 }
 
 @EntitySteps[Log]
 class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Log, LogSteps](raw) {
 
   def task = new TaskSteps(raw.in("TaskLog"))
+
+  def attachments = new AttachmentSteps(raw.outTo[LogAttachment])
 
   def can(permission: Permission)(implicit authContext: AuthContext): LogSteps =
     newInstance(
@@ -58,9 +71,13 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
 
   override def newInstance(raw: GremlinScala[Vertex]): LogSteps = new LogSteps(raw)
 
+  def remove(): Unit = {
+    raw.drop().iterate()
+    ()
+  }
+
   def remove(id: String): Unit = {
     raw.has(Key("_id") of id).drop().iterate()
-    ()
   }
 
   def richLog: ScalarSteps[RichLog] =
