@@ -184,8 +184,8 @@ class CaseCtrl @Inject()(
             .get(caseIdOrNumber)
             .can(Permissions.manageCase)
             .getOrFail()
-          _ ← Try(caseSrv.initSteps.remove(c._id))
-//          _ ← auditSrv.forceDeleteCase(c)
+          _ ← caseSrv.cascadeRemove(c)
+//          _ ← auditSrv.forceDeleteCase(c) TODO
         } yield Results.NoContent
       }
 

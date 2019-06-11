@@ -51,6 +51,14 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
         } yield RichObservable(createdObservable, data, attachment, extensions)
     }
   }
+
+  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =
+    for {
+      _ ← Try(get(observable).data.remove())
+      _ ← Try(get(observable).attachments.remove())
+      _ ← Try(get(observable).keyValues.remove())
+      r ← Try(get(observable).remove())
+    } yield r
 }
 
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
@@ -67,6 +75,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
           .has(Key("login") of authContext.userId)
       )
     )
+
+  override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
 
   def richObservable: ScalarSteps[RichObservable] =
     ScalarSteps(
@@ -90,8 +100,6 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
 
   def cases: CaseSteps = new CaseSteps(raw.inTo[ShareObservable].outTo[ShareCase])
 
-  override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
-
   def similar(id: String): ObservableSteps = newInstance(
     raw
       .unionFlat(
@@ -105,8 +113,16 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       .dedup
   )
 
-  def remove(id: String): Unit = {
-    raw.has(Key("_id") of id).drop().iterate()
+  def remove(): Unit = {
+    raw.drop().iterate()
     ()
   }
+
+  def remove(id: String): Unit = {
+    raw.has(Key("_id") of id).drop().iterate()
+  }
+
+  def data        = new DataSteps(raw.outTo[ObservableData])
+  def attachments = new AttachmentSteps(raw.outTo[ObservableAttachment])
+  def keyValues   = new KeyValueSteps(raw.outTo[ObservableKeyValue])
 }

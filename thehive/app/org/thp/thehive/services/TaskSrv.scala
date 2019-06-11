@@ -11,7 +11,8 @@ import org.thp.thehive.models._
 import scala.util.Try
 
 @Singleton
-class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Task, TaskSteps] {
+class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
+    extends VertexSrv[Task, TaskSteps] {
   val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
@@ -47,6 +48,12 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
 
   def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit =
     get(task).unassign()
+
+  def cascadeRemove(task: Task with Entity)(implicit graph: Graph): Try[Unit] =
+    for {
+      _ ← Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
+      r ← Try(get(task).remove())
+    } yield r
 }
 
 @EntitySteps[Task]
@@ -102,6 +109,11 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   @deprecated("must not be used because it doesn't generate audit log")
   def unassign(): Unit = {
     raw.outToE[TaskUser].drop().iterate()
+    ()
+  }
+
+  def remove(): Unit = {
+    raw.drop().iterate()
     ()
   }
 }

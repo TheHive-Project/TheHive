@@ -12,6 +12,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
+
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
@@ -21,7 +22,7 @@ class CaseSrv @Inject()(
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
-    auditSrv: AuditSrv
+    auditSrv: AuditSrv,
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -65,6 +66,8 @@ class CaseSrv @Inject()(
     } yield RichCase(createdCase, None, None, user.map(_.login), cfs)
   }
 
+  def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+
   override def update(
       steps: CaseSteps,
       propertyUpdaters: Seq[PropertyUpdater]
@@ -75,7 +78,17 @@ class CaseSrv @Inject()(
       _                          ← auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
 
-  def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] =
+    for {
+      _ ← Try(get(`case`).tasks.logs.attachments.remove())
+      _ ← Try(get(`case`).tasks.logs.remove())
+      _ ← Try(get(`case`).tasks.remove())
+      _ ← Try(get(`case`).observables.keyValues.remove())
+      _ ← Try(get(`case`).observables.attachments.remove())
+      _ ← Try(get(`case`).observables.data.remove())
+      _ ← Try(get(`case`).observables.remove())
+      r ← Try(get(`case`).remove())
+    } yield r
 
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(caseIdOrNumber).visible.isDefined
@@ -296,8 +309,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
 
-  def remove(id: String): Unit = {
-    newInstance(raw.has(Key("_id") of id).drop().iterate())
+  def remove(): Unit = {
+    newInstance(raw.drop().iterate())
     ()
   }
 }
