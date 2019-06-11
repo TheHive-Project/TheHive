@@ -12,7 +12,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, Hasher}
 import org.thp.thehive.models.User
 
-object LocalAuthSrv {
+object LocalPasswordAuthSrv {
 
   def hashPassword(password: String): String = {
     val seed = Random.nextString(10).replace(',', '!')
@@ -21,7 +21,7 @@ object LocalAuthSrv {
 }
 
 @Singleton
-class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv, implicit val mat: Materializer) extends AuthSrv {
+class LocalPasswordAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv, implicit val mat: Materializer) extends AuthSrv {
 
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
@@ -38,14 +38,14 @@ class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Local
         false
     }
 
-  override def authenticate(username: String, password: String)(implicit request: RequestHeader): Try[AuthContext] =
+  override def authenticate(username: String, password: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
     db.tryTransaction { implicit graph ⇒
         userSrv
           .get(username)
           .getOrFail()
       }
       .filter(user ⇒ doAuthenticate(user, password))
-      .map(user ⇒ localUserSrv.getFromId(request, user.login))
+      .map(user ⇒ localUserSrv.getFromId(request, user.login, organisation))
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
@@ -62,7 +62,7 @@ class LocalAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Local
     db.tryTransaction { implicit graph ⇒
       userSrv
         .get(username)
-        .update("password" → Some(LocalAuthSrv.hashPassword(newPassword)))
+        .update("password" → Some(LocalPasswordAuthSrv.hashPassword(newPassword)))
         .map(_ ⇒ ())
     }
 }

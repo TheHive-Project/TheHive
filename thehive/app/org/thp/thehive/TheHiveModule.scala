@@ -8,14 +8,14 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema, SchemaChecker}
 import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.services.LocalUserSrv
+import org.thp.thehive.services.{LocalKeyAuthSrv, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
 import org.thp.thehive.controllers.v1.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchema
-import org.thp.thehive.services.LocalAuthSrv
+import org.thp.thehive.services.LocalPasswordAuthSrv
 import play.api.routing.{Router ⇒ PlayRouter}
 import play.api.{Configuration, Environment, Logger}
 
@@ -34,7 +34,8 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
       .foreach {
         case "ad"    ⇒ authBindings.addBinding.to[ADAuthSrv]
         case "ldap"  ⇒ authBindings.addBinding.to[LdapAuthSrv]
-        case "local" ⇒ authBindings.addBinding.to[LocalAuthSrv]
+        case "local" ⇒ authBindings.addBinding.to[LocalPasswordAuthSrv]
+        case "key"   ⇒ authBindings.addBinding.to[LocalKeyAuthSrv]
         case other   ⇒ logger.error(s"Authentication provider [$other] is not recognized")
       }
 
