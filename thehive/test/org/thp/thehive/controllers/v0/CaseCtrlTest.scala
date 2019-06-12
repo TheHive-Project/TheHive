@@ -386,13 +386,27 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 200
 
+        tasksList(app.instanceOf[TaskCtrl]).length shouldEqual 3
+
         val requestDel = FakeRequest("DELETE", s"/api/v0/case/#1/force")
           .withHeaders("user" → "user1")
         val resultDel = caseCtrl.realDelete("#1")(requestDel)
 
         status(resultDel) shouldEqual 204
         status(caseCtrl.get("#1")(request)) shouldEqual 404
+
+        // task x created here + task 3
+        tasksList(app.instanceOf[TaskCtrl]).length shouldEqual 2
       }
     }
+  }
+
+  def tasksList(taskCtrl: TaskCtrl): Seq[OutputTask] = {
+    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
+    val resultList  = taskCtrl.list(requestList)
+
+    status(resultList) shouldEqual 200
+
+    contentAsJson(resultList).as[Seq[OutputTask]]
   }
 }

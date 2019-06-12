@@ -30,5 +30,6 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def notShared: DataSteps = newInstance(raw.filter(_.inTo[ObservableData].limit(2).count().is(P.lte(1))))
 
   override def newInstance(raw: GremlinScala[Vertex]): DataSteps = new DataSteps(raw)
-  def getByData(data: String): DataSteps                         = newInstance(raw.has(Key("data") of data))
+
+  def getByData(data: String): DataSteps = newInstance(raw.has(Key("data") of data))
 }
