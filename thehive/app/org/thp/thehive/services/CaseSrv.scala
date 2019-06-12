@@ -84,6 +84,8 @@ class CaseSrv @Inject()(
       .data
       .notShared
 
+    println(get(`case`).tasks.toList().map(_.title), "lllllllllllllllllllllllllllllll")
+
     for {
       _ ← Try(get(`case`).tasks.logs.attachments.remove())
       _ ← Try(get(`case`).tasks.logs.remove())
