@@ -17,12 +17,12 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Entity, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
 import org.thp.thehive.dto.v0.{OutputCase, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.LocalUserSrv
+import org.thp.thehive.services.{DataSrv, LocalUserSrv}
 
 class ObservableCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -113,7 +113,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
         val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
         val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-          .withHeaders("user" → "user2")
+          .withHeaders("user" → "user2", "X-Organisation" → "default")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -205,7 +205,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "message":"love exciting and new edited",
                 "tags":["tagfileUp"]
               }
-            """.stripMargin))
+            """))
         val resultUp = observableCtrl.bulkUpdate(requestUp)
 
         status(resultUp) shouldEqual 204
@@ -216,6 +216,36 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         resObsUpdated.map(_.message) must contain(beSome("love exciting and new edited")).forall
         resObsUpdated.map(_.ioc) must contain(beTrue).forall
         resObsUpdated.map(_.sighted) must contain(beTrue).forall
+      }
+
+      "create 2 observables with the same data" in {
+        val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse("""
+              {
+                "dataType":"hostname",
+                "message":"here",
+                "data":"localhost"
+              }
+            """))
+        val result1 = observableCtrl.create("#1")(request1)
+        status(result1) must beEqualTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result1)}")
+
+        getData("localhost", app) must have size 1
+
+        val request2 = FakeRequest("POST", s"/api/case/#3/artifact")
+          .withHeaders("user" → "user1")
+          .withJsonBody(Json.parse("""
+              {
+                "dataType":"domain",
+                "message":"good place",
+                "data":"localhost"
+              }
+            """))
+        val result2 = observableCtrl.create("#3")(request2)
+        status(result2) must equalTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result2)}")
+
+        getData("localhost", app) must have size 1
       }
 
       "delete an observable" in {
@@ -236,7 +266,6 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     val resultGet = observableCtrl.get(id)(requestGet)
 
     status(resultGet) shouldEqual 200
-
     contentAsJson(resultGet).as[OutputObservable]
   }
 
@@ -258,6 +287,14 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
     status(result) shouldEqual 201
     contentAsJson(result).as[Seq[OutputObservable]]
+  }
+
+  def getData(data: String, app: AppBuilder): List[Data with Entity] = {
+    val dataSrv: DataSrv = app.instanceOf[DataSrv]
+    val db: Database     = app.instanceOf[Database]
+    db.transaction { implicit graph ⇒
+      dataSrv.initSteps.getByData(data).toList()
+    }
   }
 }
 
