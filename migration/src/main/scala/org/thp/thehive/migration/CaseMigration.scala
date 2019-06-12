@@ -43,7 +43,7 @@ class CaseMigration @Inject()(
       (JsPath \ "severity").read[Int] and
       (JsPath \ "startDate").read[Date] and
       (JsPath \ "endDate").readNullable[Date] and
-      (JsPath \ "tags").readWithDefault[Seq[String]](Nil) and
+      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "flag").read[Boolean] and
       (JsPath \ "tlp").read[Int] and
       (JsPath \ "pap").read[Int] and

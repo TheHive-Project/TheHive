@@ -35,7 +35,7 @@ class CaseTemplateMigration @Inject()(
       (JsPath \ "titlePrefix").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
       (JsPath \ "severity").readNullable[Int] and
-      (JsPath \ "tags").readWithDefault[Seq[String]](Nil) and
+      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "tlp").readNullable[Int] and
       Reads.pure(None) and // pap

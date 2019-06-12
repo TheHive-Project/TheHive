@@ -37,7 +37,7 @@ class AlertMigration @Inject()(
       (JsPath \ "severity").read[Int] and
       (JsPath \ "date").read[Date] and
       (JsPath \ "lastSyncDate").read[Date] and
-      (JsPath \ "tags").readWithDefault[Seq[String]](Nil) and
+      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "tlp").read[Int] and
       Reads.pure(2) and                                                               // pap

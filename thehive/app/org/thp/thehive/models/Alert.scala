@@ -44,7 +44,7 @@ case class Alert(
     severity: Int,
     date: Date,
     lastSyncDate: Date,
-    tags: Seq[String],
+    tags: Set[String],
     flag: Boolean,
     tlp: Int,
     pap: Int,
@@ -72,7 +72,7 @@ case class RichAlert(
   val severity: Int              = alert.severity
   val date: Date                 = alert.date
   val lastSyncDate: Date         = alert.lastSyncDate
-  val tags: Seq[String]          = alert.tags
+  val tags: Set[String]          = alert.tags
   val flag: Boolean              = alert.flag
   val tlp: Int                   = alert.tlp
   val pap: Int                   = alert.pap

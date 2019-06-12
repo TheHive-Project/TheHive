@@ -42,7 +42,7 @@ class ObservableMigration @Inject()(
 
   implicit val artifactReads: Reads[Observable] =
     ((JsPath \ "dataType").read[String] and
-      (JsPath \ "tags").readWithDefault[Seq[String]](Nil) and
+      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "message").readNullable[String] and
       (JsPath \ "tlp").readWithDefault[Int](2) and
       (JsPath \ "ioc").readWithDefault[Boolean](false) and
