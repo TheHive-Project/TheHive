@@ -82,9 +82,7 @@ class CaseSrv @Inject()(
     val dataToRemove = get(`case`)
       .observables
       .data
-      .notShared
-
-    println(get(`case`).tasks.toList().map(_.title), "lllllllllllllllllllllllllllllll")
+      .notShared(`case`._id)
 
     for {
       _ ← Try(get(`case`).tasks.logs.attachments.remove())

@@ -27,7 +27,16 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def observables = new ObservableSteps(raw.inTo[ObservableData])
 
-  def notShared: DataSteps = newInstance(raw.filter(_.inTo[ObservableData].limit(2).count().is(P.lte(1))))
+  def notShared(caseId: String): DataSteps = newInstance(
+    raw.filter(
+      _.inTo[ObservableData]
+        .inTo[ShareObservable]
+        .outTo[ShareCase]
+        .hasNot(Key("_id") of caseId)
+        .count()
+        .is(P.eq(0))
+    )
+  )
 
   def getByData(data: String): DataSteps = newInstance(raw.has(Key("data") of data))
 
