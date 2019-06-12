@@ -27,9 +27,10 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
     (dataOrFile match {
-      case Left(data0) ⇒
-        observableDataSrv.create(ObservableData(), createdObservable, dataSrv.create(data0))
-        Success(Some(dataSrv.create(data0)) → None)
+      case Left(dataValue) ⇒
+        val data = dataSrv.create(dataValue)
+        observableDataSrv.create(ObservableData(), createdObservable, data)
+        Success(Some(data) → None)
       case Right(file) ⇒
         attachmentSrv.create(file).map { attachment ⇒
           observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
@@ -72,9 +73,9 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       raw
         .project(
           _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[ObservableData].fold.traversal))
-            .and(By(__[Vertex].outTo[ObservableAttachment].fold.traversal))
-            .and(By(__[Vertex].outTo[ObservableKeyValue].fold.traversal))
+            .and(By(__[Vertex].outTo[ObservableData].fold))
+            .and(By(__[Vertex].outTo[ObservableAttachment].fold))
+            .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
         )
         .map {
           case (observable, data, attachment, extensions) ⇒
@@ -104,5 +105,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       .dedup
   )
 
-  def remove(id: String): Unit = newInstance(raw.has(Key("_id") of id).drop().iterate())
+  def remove(id: String): Unit = {
+    raw.has(Key("_id") of id).drop().iterate()
+    ()
+  }
 }
