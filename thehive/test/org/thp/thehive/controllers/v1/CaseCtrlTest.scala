@@ -101,7 +101,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 description = "case description (create case test)",
                 severity = Some(2),
                 startDate = Some(now),
-                tags = Seq("tag1", "tag2"),
+                tags = Set("tag1", "tag2"),
                 flag = Some(false),
                 tlp = Some(1),
                 pap = Some(3)
@@ -140,7 +140,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 description = "case description (create case test with template)",
                 severity = None,
                 startDate = Some(now),
-                tags = Seq("tag1", "tag2"),
+                tags = Set("tag1", "tag2"),
                 flag = Some(false),
                 tlp = Some(1),
                 pap = Some(3)

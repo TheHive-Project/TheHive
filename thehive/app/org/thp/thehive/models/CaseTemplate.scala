@@ -33,7 +33,7 @@ case class CaseTemplate(
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int],
-    tags: Seq[String],
+    tags: Set[String],
     flag: Boolean,
     tlp: Option[Int],
     pap: Option[Int],
@@ -55,7 +55,7 @@ case class RichCaseTemplate(
   val titlePrefix: Option[String] = caseTemplate.titlePrefix
   val description: Option[String] = caseTemplate.description
   val severity: Option[Int]       = caseTemplate.severity
-  val tags: Seq[String]           = caseTemplate.tags
+  val tags: Set[String]           = caseTemplate.tags
   val flag: Boolean               = caseTemplate.flag
   val tlp: Option[Int]            = caseTemplate.tlp
   val pap: Option[Int]            = caseTemplate.pap

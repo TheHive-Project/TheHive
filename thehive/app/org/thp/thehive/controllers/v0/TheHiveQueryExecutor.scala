@@ -170,7 +170,8 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
 
     val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] ⇒ ScalliSteps[_, _, _ <: AnyRef]) =
       if (stepType =:= ru.typeOf[TaskSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareTask].outTo[ShareCase]))
-      else if (stepType =:= ru.typeOf[ObservableSteps]) ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareObservable].outTo[ShareCase]))
+      else if (stepType =:= ru.typeOf[ObservableSteps])
+        ru.typeOf[CaseSteps] → ((s: GremlinScala[Vertex]) ⇒ new CaseSteps(s.inTo[ShareObservable].outTo[ShareCase]))
       else if (stepType =:= ru.typeOf[LogSteps]) ru.typeOf[TaskSteps] → ((s: GremlinScala[Vertex]) ⇒ new TaskSteps(s.inTo[TaskLog]))
       else ???
     vertexSteps

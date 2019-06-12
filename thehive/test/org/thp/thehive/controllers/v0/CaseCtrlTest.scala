@@ -104,7 +104,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                   description = "case description (create case test)",
                   severity = Some(2),
                   startDate = Some(now),
-                  tags = Seq("tag1", "tag2"),
+                  tags = Set("tag1", "tag2"),
                   flag = Some(false),
                   tlp = Some(1),
                   pap = Some(3),
@@ -376,25 +376,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
 
-        val expected = TestCase(
-          caseId = 4,
-          title = "case#4",
-          description = "description of case #4",
-          severity = 3,
-          startDate = new Date(1531667370000L),
-          endDate = None,
-          flag = false,
-          tlp = 3,
-          pap = 3,
-          status = "Open",
-          tags = Set("t1", "t3"),
-          summary = None,
-          owner = Some("user2"),
-          customFields = Set.empty,
-          stats = Json.obj()
-        )
-
-        TestCase(resultCaseOutput) shouldEqual expected
+        resultCaseOutput.owner should beSome("user2")
       }
 
       "force delete a case" in {

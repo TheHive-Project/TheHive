@@ -10,7 +10,7 @@ trait AttachmentConversion {
     Output[OutputAttachment](
       attachment
         .into[OutputAttachment]
-        .withFieldComputed(_.hashes, _.hashes.map(_.toString))
+        .withFieldComputed(_.hashes, _.hashes.map(_.toString).sortBy(_.length)(Ordering.Int.reverse))
         .withFieldComputed(_.id, _.attachmentId)
         .transform
     )

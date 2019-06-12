@@ -59,7 +59,7 @@ case class Case(
     severity: Int,
     startDate: Date,
     endDate: Option[Date],
-    tags: Seq[String],
+    tags: Set[String],
     flag: Boolean,
     tlp: Int,
     pap: Int,
@@ -85,7 +85,7 @@ case class RichCase(
   val severity: Int              = `case`.severity
   val startDate: Date            = `case`.startDate
   val endDate: Option[Date]      = `case`.endDate
-  val tags: Seq[String]          = `case`.tags
+  val tags: Set[String]          = `case`.tags
   val flag: Boolean              = `case`.flag
   val tlp: Int                   = `case`.tlp
   val pap: Int                   = `case`.pap
@@ -124,7 +124,7 @@ object RichCase {
       severity: Int,
       startDate: Date,
       endDate: Option[Date],
-      tags: Seq[String],
+      tags: Set[String],
       flag: Boolean,
       tlp: Int,
       pap: Int,

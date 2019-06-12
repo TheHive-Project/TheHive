@@ -11,7 +11,7 @@ case class InputCase(
     severity: Option[Int] = None,
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
-    tags: Seq[String] = Nil,
+    tags: Set[String] = Set.empty,
     flag: Option[Boolean] = None,
     tlp: Option[Int] = None,
     pap: Option[Int] = None,

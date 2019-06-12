@@ -14,7 +14,7 @@ import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models.{Observable, ObservableData, RichObservable}
 import org.thp.thehive.services.ObservableSteps
 
-trait ObservableConversion {
+trait ObservableConversion extends AttachmentConversion {
   implicit def fromInputObservable(inputObservable: InputObservable): Observable =
     inputObservable
       .into[Observable]
@@ -38,6 +38,7 @@ trait ObservableConversion {
         .withFieldComputed(_.dataType, _.observable.`type`)
         .withFieldComputed(_.startDate, _.observable._createdAt)
         .withFieldComputed(_.data, _.data.map(_.data))
+        .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
         .transform
     )
 
@@ -47,7 +48,7 @@ trait ObservableConversion {
       .property[Date]("startDate")(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
       .property[Boolean]("ioc")(_.simple.updatable)
       .property[Boolean]("sighted")(_.simple.updatable)
-      .property[Seq[String]]("tags")(_.simple.updatable)
+      .property[Set[String]]("tags")(_.simple.updatable)
       .property[String]("message")(_.simple.updatable)
       .property[Int]("tlp")(_.simple.updatable)
       .property[String]("dataType")(_.rename("type").updatable)
