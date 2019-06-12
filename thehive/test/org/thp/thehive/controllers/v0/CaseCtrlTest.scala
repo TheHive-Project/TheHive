@@ -252,10 +252,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "update a bulk of cases properly" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/_bulk")
-          .withHeaders("user" → "user2")
+          .withHeaders("user" → "user1")
           .withJsonBody(
             Json.obj(
-              "ids"    → List("#4", "#2"),
+              "ids"    → List("#1", "#2"),
               "title"  → "new title edited",
               "flag"   → true,
               "tlp"    → 3,
@@ -271,9 +271,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
         resultCaseOutput.length shouldEqual 2
 
-        val requestGet = FakeRequest("GET", s"/api/v0/case/#4")
+        val requestGet = FakeRequest("GET", s"/api/v0/case/#1")
           .withHeaders("user" → "user2")
-        val resultGet = caseCtrl.get("#4")(requestGet)
+        val resultGet = caseCtrl.get("#1")(requestGet)
 
         status(resultGet) shouldEqual 200
 
@@ -284,7 +284,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCaseGet4.tlp shouldEqual 3
         resultCaseGet4.pap shouldEqual 2
         resultCaseGet4.status shouldEqual "Open"
-        resultCaseGet4.tags shouldEqual Set("tag2")
+        resultCaseGet4.tags shouldEqual Set("tag2", "tag1")
 
         val resultGet2 = caseCtrl.get("#2")(requestGet)
 
@@ -297,18 +297,18 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCaseGet2.tlp shouldEqual 3
         resultCaseGet2.pap shouldEqual 2
         resultCaseGet2.status shouldEqual "Open"
-        resultCaseGet2.tags shouldEqual Set("tag2")
+        resultCaseGet2.tags shouldEqual Set("tag2", "tag1")
       }
 
       "search cases" in {
         val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
-          .withHeaders("user" → "user3")
+          .withHeaders("user" → "user1")
           .withJsonBody(
             Json.parse("""{"query":{"severity":2}}""")
           )
         val result = caseCtrl.search()(request)
         status(result) must_=== 200
-        header("X-Total", result) must beSome("1")
+        header("X-Total", result) must beSome("3")
         val resultCases = contentAsJson(result).as[Seq[OutputCase]].map(TestCase.apply)
 
         val case3 = TestCase(
@@ -332,7 +332,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           stats = Json.obj()
         )
 
-        resultCases must contain(exactly(case3))
+        resultCases must contain(case3)
       }
 
       "get and aggregate properly case stats" in {
@@ -363,7 +363,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultCase = contentAsJson(result)
 
         resultCase("count").as[Int] shouldEqual 2
-        (resultCase \ "t1" \ "count").get.as[Int] shouldEqual 1
+        (resultCase \ "t1" \ "count").get.as[Int] shouldEqual 2
         (resultCase \ "t2" \ "count").get.as[Int] shouldEqual 1
       }
 

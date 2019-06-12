@@ -120,6 +120,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
 
   def remove(id: String): Unit = {
     raw.has(Key("_id") of id).drop().iterate()
+    ()
   }
 
   def data        = new DataSteps(raw.outTo[ObservableData])

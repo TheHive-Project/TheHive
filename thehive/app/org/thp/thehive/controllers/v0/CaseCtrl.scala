@@ -150,8 +150,7 @@ class CaseCtrl @Inject()(
           caseIdOrNumber ⇒
             caseSrv
               .update(
-                _.get(caseIdOrNumber),
-//                  .can(Permissions.manageCase),
+                _.get(caseIdOrNumber).can(Permissions.manageCase),
                 propertyUpdaters
               )
               .flatMap {

@@ -53,4 +53,9 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 
   def `case`: CaseSteps = new CaseSteps(raw.outTo[ShareCase])
+
+  def remove(): Unit = {
+    raw.drop().iterate()
+    ()
+  }
 }

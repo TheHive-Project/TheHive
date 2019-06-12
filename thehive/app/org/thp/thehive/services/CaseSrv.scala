@@ -78,17 +78,24 @@ class CaseSrv @Inject()(
       _                          ← auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
 
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] =
+  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] = {
+    val dataToRemove = get(`case`)
+      .observables
+      .data
+      .notShared
+
     for {
       _ ← Try(get(`case`).tasks.logs.attachments.remove())
       _ ← Try(get(`case`).tasks.logs.remove())
       _ ← Try(get(`case`).tasks.remove())
       _ ← Try(get(`case`).observables.keyValues.remove())
       _ ← Try(get(`case`).observables.attachments.remove())
-      _ ← Try(get(`case`).observables.data.remove())
+      _ ← Try(dataToRemove.remove())
       _ ← Try(get(`case`).observables.remove())
+      _ ← Try(get(`case`).share.remove())
       r ← Try(get(`case`).remove())
     } yield r
+  }
 
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(caseIdOrNumber).visible.isDefined
@@ -308,6 +315,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
   def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
+
+  def share = new ShareSteps(raw.inTo[ShareCase])
 
   def remove(): Unit = {
     newInstance(raw.drop().iterate())
