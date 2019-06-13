@@ -77,6 +77,14 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
         resultJson.toString shouldEqual expectedJson.toString
       }
 
+      "be healthy" in {
+        val request = FakeRequest("GET", s"/api/v0/health")
+          .withHeaders("user" → "user1")
+        val result = statusCtrl.health(request)
+
+        status(result) shouldEqual 200
+        contentAsString(result) shouldEqual "Ok"
+      }
     }
   }
 }
