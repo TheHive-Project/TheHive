@@ -3,8 +3,8 @@ import Dependencies._
 // format: off
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(thehiveCore)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration, thehiveFrontend)
+  .dependsOn(thehiveCore, thehiveCortex)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration, thehiveFrontend, thehiveCortex)
   .settings(
     inThisBuild(
       Seq(
@@ -65,26 +65,43 @@ lazy val thehiveCore = (project in file("thehive"))
     libraryDependencies ++= Seq(
       chimney,
       guice,
-      reflections,
       ws    % Test,
       specs % Test
     )
   )
 
+lazy val thehiveCortex = (project in file("cortex/connector"))
+  .dependsOn(thehiveCore)
+  .dependsOn(cortexClient)
+  .settings(
+    name := "thehive-cortex"
+  )
+
 lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
   .settings(
-    name := "thehive-dto",
-    libraryDependencies ++= Seq(
-      chimney
-    )
+    name := "thehive-dto"
   )
 
 lazy val thehiveClient = (project in file("client"))
-  .dependsOn(scalligraph)
   .dependsOn(thehiveDto)
   .settings(
     name := "thehive-client",
+    libraryDependencies ++= Seq(
+      ws
+    )
+  )
+
+lazy val cortexDto = (project in file("cortex/dto"))
+  .dependsOn(scalligraph)
+  .settings(
+    name := "cortex-dto"
+  )
+
+lazy val cortexClient = (project in file("cortex/client"))
+  .dependsOn(cortexDto)
+  .settings(
+    name := "cortex-client",
     libraryDependencies ++= Seq(
       ws
     )
