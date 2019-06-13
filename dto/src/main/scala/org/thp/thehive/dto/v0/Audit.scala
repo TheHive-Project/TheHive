@@ -55,27 +55,3 @@ object OutputAudit {
   }
   implicit val format: OFormat[OutputAudit] = OFormat(auditReads, auditWrites)
 }
-
-/*
-{
- "base": {
-  base: true
-    createdAt/By
-    details: ** updated fields **
-    id
-    object: { _ with parent _}
-    objectId
-    objectType:
-    operation:
-    requestId:
-    rootId:
-    startDate:
-    _id
-    _parent
-    _routing
-    _type: audit
-    _version
- }
- "summary": { objectType: { operation: count}}
-}
- */

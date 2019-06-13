@@ -15,7 +15,7 @@ import scala.util.Try
 class AuditSrv @Inject()(
     userSrv: UserSrv,
     eventSrv: EventSrv
-)(implicit db: Database, schema: Schema)
+)(implicit db: Database, schema: TheHiveSchema)
     extends VertexSrv[Audit, AuditSteps] {
   val auditUserSrv    = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv      = new EdgeSrv[Audited, Audit, Product]
