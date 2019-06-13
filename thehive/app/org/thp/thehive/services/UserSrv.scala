@@ -3,10 +3,9 @@ package org.thp.thehive.services
 import java.util.UUID
 
 import scala.util.{Failure, Success, Try}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError}
@@ -69,6 +68,17 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def visible(implicit authContext: AuthContext): UserSteps = newInstance(
     raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
+  )
+
+  def can(permission: Permission)(implicit authContext: AuthContext): UserSteps = newInstance(
+    raw
+      .outTo[UserRole]
+      .outTo[RoleOrganisation]
+      .has(Key("name") of authContext.organisation)
+      .inTo[RoleOrganisation]
+      .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+      .inTo[UserRole]
+      .has(Key("login") of authContext.userId)
   )
 
   def getById(id: String): UserSteps = new UserSteps(raw.has(Key("_id") of id))

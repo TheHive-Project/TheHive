@@ -55,6 +55,9 @@ class AuditSrv @Inject()(
   def createTask(task: Task with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
     create(Audit("createTask", task), `case`, Some(task))
 
+  def deleteUser(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
+    create(Audit("deleteUser", user), user, Some(user))
+
   def create(
       audit: Audit,
       context: Entity,

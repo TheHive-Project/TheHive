@@ -144,6 +144,27 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         authenticateSrv.getAuthContext(keyAuthRequest) must beSuccessfulTry
       }
+
+      "remove a user" in {
+        val request = FakeRequest("DELETE", "/api/v0/user/user3")
+          .withHeaders("user" → "user2", "X-Organisation" → "default")
+
+        val result = userCtrl.delete("user3")(request)
+
+        status(result) must beEqualTo(204)
+
+        val requestGet = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
+          .withJsonBody(Json.parse("""{"query": {"_and": [{"_not": {"_is": {"login": "user4"}}}]}}"""))
+          .withHeaders("user" → "user2", "X-Organisation" → "default")
+
+        val resultGet = userCtrl.search(requestGet)
+
+        status(resultGet) must_=== 200
+
+        val resultUser = contentAsJson(resultGet).as[Seq[OutputUser]].find(_.login == "user3").get
+
+        resultUser.status must beEqualTo("Locked")
+      }
     }
   }
 }
