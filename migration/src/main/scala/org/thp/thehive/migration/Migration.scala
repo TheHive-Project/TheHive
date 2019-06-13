@@ -19,9 +19,10 @@ import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.scalligraph.auth.{UserSrv ⇒ UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Schema, SchemaChecker}
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models._
+import org.thp.thehive.models.{SchemaUpdater ⇒ TheHiveSchemaUpdater, _}
+// import org.thp.thehive.connector.cortex.models.{SchemaUpdater ⇒ CortexSchemaUpdater} // TODO add cortex schema
 import org.thp.thehive.services._
 
 import org.elastic4play.models.BaseModelDef
@@ -90,7 +91,7 @@ class MigrationModule(configuration: Configuration) extends ScalaModule {
     bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
     bind[Schema].to[TheHiveSchema]
     bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
-    bind[SchemaChecker].asEagerSingleton()
+    bind[TheHiveSchemaUpdater].asEagerSingleton()
     ()
   }
 }

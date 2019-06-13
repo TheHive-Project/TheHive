@@ -1,23 +1,24 @@
 package org.thp.thehive
 
 import com.google.inject.AbstractModule
-import com.google.inject.name.Names
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Schema, SchemaChecker}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.thehive.models.SchemaUpdater
 import org.thp.thehive.services.{LocalKeyAuthSrv, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
-import org.thp.thehive.controllers.v1.TheHiveQueryExecutor
-import org.thp.thehive.models.TheHiveSchema
-import org.thp.thehive.services.LocalPasswordAuthSrv
 import play.api.routing.{Router ⇒ PlayRouter}
 import play.api.{Configuration, Environment, Logger}
+
+import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
+import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor ⇒ TheHiveQueryExecutorV0}
+import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor ⇒ TheHiveQueryExecutorV1}
+import org.thp.thehive.services.LocalPasswordAuthSrv
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
   lazy val logger = Logger(getClass)
@@ -53,14 +54,12 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     }
 
     val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)
-    routerBindings.addBinding.toProvider[TheHiveRouter] // TODO check if provider is ok
+    routerBindings.addBinding.toProvider[TheHiveRouter]
     val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
-    queryExecutorBindings.addBinding.to[TheHiveQueryExecutor]
+    queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV0]
+    queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
 
-    bind(classOf[Schema]).to(classOf[TheHiveSchema])
-
-    bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
-    bind(classOf[SchemaChecker]).asEagerSingleton()
+    bind(classOf[SchemaUpdater]).asEagerSingleton()
     ()
   }
 }
