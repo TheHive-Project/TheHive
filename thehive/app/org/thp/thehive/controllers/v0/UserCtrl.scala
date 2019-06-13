@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.JsValue
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -14,7 +8,12 @@ import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
-import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
+import org.thp.thehive.services.{AuditSrv, OrganisationSrv, ProfileSrv, UserSrv}
+import play.api.libs.json.JsValue
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject()(
@@ -25,7 +24,8 @@ class UserCtrl @Inject()(
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     implicit val ec: ExecutionContext,
-    val queryExecutor: TheHiveQueryExecutor
+    val queryExecutor: TheHiveQueryExecutor,
+    auditSrv: AuditSrv
 ) extends UserConversion
     with QueryCtrl {
 
@@ -63,6 +63,21 @@ class UserCtrl @Inject()(
               .flip
               .map(_ ⇒ Results.Created(user.toJson))
           }
+      }
+
+  def delete(userId: String): Action[AnyContent] =
+    entryPoint("delete user")
+      .authTransaction(db) { request ⇒ implicit graph ⇒
+        for {
+          _ ← userSrv
+            .current(graph, request.authContext)
+            .can(Permissions.manageUser)(request.authContext)
+            .getOrFail()
+          u ← userSrv
+            .get(userId)
+            .update("locked" → true)(request.authContext)
+          _ ← auditSrv.deleteUser(u)(graph, request.authContext)
+        } yield Results.NoContent
       }
 
   def get(userId: String): Action[AnyContent] =

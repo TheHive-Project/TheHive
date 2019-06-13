@@ -53,12 +53,12 @@ class Router @Inject()(
     case POST(p"/case/template/_search")          ⇒ caseTemplateCtrl.search
     //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
 
-    case GET(p"/user")           ⇒ userCtrl.search
-    case POST(p"/user")          ⇒ userCtrl.create
-    case GET(p"/user/current")   ⇒ userCtrl.current
-    case GET(p"/user/$userId")   ⇒ userCtrl.get(userId)
-    case PATCH(p"/user/$userId") ⇒ userCtrl.update(userId)
-    //    case DELETE(p"/user/$userId") =>                         userCtrl.delete(userId)
+    case GET(p"/user")                          ⇒ userCtrl.search
+    case POST(p"/user")                         ⇒ userCtrl.create
+    case GET(p"/user/current")                  ⇒ userCtrl.current
+    case GET(p"/user/$userId")                  ⇒ userCtrl.get(userId)
+    case PATCH(p"/user/$userId")                ⇒ userCtrl.update(userId)
+    case DELETE(p"/user/$userId")               ⇒ userCtrl.delete(userId)
     case POST(p"/user/$userId/password/set")    ⇒ userCtrl.setPassword(userId)
     case POST(p"/user/$userId/password/change") ⇒ userCtrl.changePassword(userId)
     case GET(p"/user/$userId/key")              ⇒ userCtrl.getKey(userId)
