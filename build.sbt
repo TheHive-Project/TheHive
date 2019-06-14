@@ -103,7 +103,8 @@ lazy val cortexClient = (project in file("cortex/client"))
   .settings(
     name := "cortex-client",
     libraryDependencies ++= Seq(
-      ws
+      ws,
+      specs % Test
     )
   )
 
