@@ -3,11 +3,12 @@ package org.thp.cortex.client
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.ConfigFactory
+import org.specs2.mock.Mockito
 import org.specs2.specification.core.Fragments
 import org.thp.cortex.dto.v0.OutputAnalyzer
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.JsArray
+import play.api.libs.json.Json
 import play.api.mvc.{Action, Results}
 import play.api.routing.Router
 import play.api.routing.sird._
@@ -16,7 +17,7 @@ import play.api.test.{PlaySpecification, WithServer}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-class CortexClientTest extends PlaySpecification {
+class CortexClientTest extends PlaySpecification with Mockito {
 
   sequential
 
@@ -35,11 +36,18 @@ class CortexClientTest extends PlaySpecification {
 
   Fragments.foreach(Seq(janusGraphConfig)) { dbConfig ⇒
     s"[${dbConfig.get[String]("db.provider")}] CortexClient" should {
+      val outputAnalyzer = OutputAnalyzer(
+        id = "test",
+        name = "test",
+        version = "test",
+        description = "test",
+        dataTypeList = List("test")
+      )
       lazy val app = GuiceApplicationBuilder()
         .router(Router.from {
           case play.api.routing.sird.GET(p"/api/analyzer") ⇒
             Action {
-              Results.Ok(JsArray.empty)
+              Results.Ok(Json.toJson(Seq(outputAnalyzer)))
             }
         })
         .build()
@@ -49,13 +57,17 @@ class CortexClientTest extends PlaySpecification {
       implicit lazy val auth: Authentication = PasswordAuthentication("test", "test")
       implicit lazy val system: ActorSystem  = app.actorSystem
       implicit lazy val mat: Materializer    = app.materializer
+      val mockLogger = mock[Logger]
 
-      lazy val client = new CortexClient(s"http://127.0.0.1:3333", 3.seconds, 3)
+      lazy val client = new CortexClient("test", s"http://127.0.0.1:3333", 3.seconds, 3) {
+        override lazy val logger: Logger = mockLogger
+      }
 
-      "handle requests properly" in new WithServer(app, port = 3333) {
-          val analyzers: Seq[OutputAnalyzer] = await(client.listAnalyser)
+      "handle get analyzers properly" in new WithServer(app, port = 3333) {
+        val analyzers: Seq[OutputAnalyzer] = await(client.listAnalyser)
 
-          analyzers.length shouldEqual 1
+        analyzers.length shouldEqual 1
+        analyzers shouldEqual Seq(outputAnalyzer)
       }
     }
   }
