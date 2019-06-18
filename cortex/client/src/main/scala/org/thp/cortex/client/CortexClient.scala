@@ -3,6 +3,7 @@ package org.thp.cortex.client
 import akka.actor.ActorSystem
 import akka.pattern.after
 import akka.stream.Materializer
+import org.thp.cortex.dto.client.{InputCortexAnalyzer, OutputCortexAnalyzer}
 import org.thp.cortex.dto.v0._
 import play.api.Logger
 
@@ -17,7 +18,7 @@ class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, 
     mat: Materializer
 ) {
   lazy val job      = new BaseClient[InputArtifact, OutputJob](s"$baseUrl/api/job")
-  lazy val analyser = new BaseClient[InputAnalyzer, OutputAnalyzer](s"$baseUrl/api/analyzer")
+  lazy val analyser = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$baseUrl/api/analyzer")
   lazy val logger   = Logger(getClass)
 
   /**
@@ -40,5 +41,5 @@ class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, 
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputAnalyzer]] = retry()(analyser.list, "listAnalyzer")
+  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = retry()(analyser.list, "listAnalyzer")
 }

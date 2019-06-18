@@ -74,7 +74,10 @@ lazy val thehiveCortex = (project in file("cortex/connector"))
   .dependsOn(thehiveCore)
   .dependsOn(cortexClient)
   .settings(
-    name := "thehive-cortex"
+    name := "thehive-cortex",
+    libraryDependencies ++= Seq(
+      specs % Test
+    )
   )
 
 lazy val thehiveDto = (project in file("dto"))
@@ -95,7 +98,10 @@ lazy val thehiveClient = (project in file("client"))
 lazy val cortexDto = (project in file("cortex/dto"))
   .dependsOn(scalligraph)
   .settings(
-    name := "cortex-dto"
+    name := "cortex-dto",
+    libraryDependencies ++= Seq(
+      chimney
+    )
   )
 
 lazy val cortexClient = (project in file("cortex/client"))
