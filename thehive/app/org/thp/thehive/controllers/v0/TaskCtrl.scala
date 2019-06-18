@@ -1,5 +1,11 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
@@ -7,10 +13,6 @@ import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-import scala.util.Success
 
 @Singleton
 class TaskCtrl @Inject()(
@@ -50,18 +52,6 @@ class TaskCtrl @Inject()(
           .map { task ⇒
             Results.Ok(task.toJson)
           }
-      }
-
-  def list: Action[AnyContent] =
-    entryPoint("list task")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val tasks = taskSrv
-          .initSteps
-          .visible
-          .richTask
-          .toList()
-          .map(_.toJson)
-        Success(Results.Ok(Json.toJson(tasks)))
       }
 
   def update(taskId: String): Action[AnyContent] =

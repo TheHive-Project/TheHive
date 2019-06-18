@@ -34,12 +34,8 @@ class AssetProvider @Inject()(environment: Environment, assets: Assets, extAsset
   lazy val logger = Logger(getClass)
 
   val devResolver: String ⇒ Action[AnyContent] = {
-    case name if name.startsWith("bower_components") ⇒
-      logger.info(s"get asset $name")
-      extAssets.at("frontend", name)
-    case name ⇒
-      logger.info(s"get asset $name")
-      extAssets.at("frontend/app", name)
+    case name if name.startsWith("bower_components") ⇒ extAssets.at("frontend", name)
+    case name                                        ⇒ extAssets.at("frontend/app", name)
   }
 
   def prodResolver: String ⇒ Action[AnyContent] = name ⇒ assets.at("/frontend", name)

@@ -16,6 +16,7 @@ import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
+import io.scalaland.chimney.dsl._
 
 case class TestTask(
     title: String,
@@ -33,18 +34,7 @@ case class TestTask(
 object TestTask {
 
   def apply(outputTask: OutputTask): TestTask =
-    TestTask(
-      outputTask.title,
-      outputTask.group,
-      outputTask.description,
-      outputTask.owner,
-      outputTask.status,
-      outputTask.flag,
-      outputTask.startDate,
-      outputTask.endDate,
-      outputTask.order,
-      outputTask.dueDate
-    )
+    outputTask.into[TestTask].transform
 }
 
 class TaskCtrlTest extends PlaySpecification with Mockito {
@@ -203,9 +193,9 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
   def tasksList(taskCtrl: TaskCtrl): Seq[OutputTask] = {
     val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
-    val resultList  = taskCtrl.list(requestList)
+    val resultList  = taskCtrl.search(requestList)
 
-    status(resultList) shouldEqual 200
+    status(resultList) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(resultList)}")
 
     contentAsJson(resultList).as[Seq[OutputTask]]
   }

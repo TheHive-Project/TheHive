@@ -67,16 +67,16 @@ class UserCtrl @Inject()(
 
   def delete(userId: String): Action[AnyContent] =
     entryPoint("delete user")
-      .authTransaction(db) { request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         for {
           _ ← userSrv
-            .current(graph, request.authContext)
-            .can(Permissions.manageUser)(request.authContext)
+            .current
+            .can(Permissions.manageUser)
             .getOrFail()
           u ← userSrv
             .get(userId)
-            .update("locked" → true)(request.authContext)
-          _ ← auditSrv.deleteUser(u)(graph, request.authContext)
+            .update("locked" → true)
+          _ ← auditSrv.deleteUser(u)
         } yield Results.NoContent
       }
 

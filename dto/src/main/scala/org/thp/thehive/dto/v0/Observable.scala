@@ -50,19 +50,6 @@ case class OutputObservable(
     message: Option[String]
 )
 
-//RichObservable(
-//observable: Observable with Entity,
-//data: Option[Data with Entity],
-//attachment: Option[Attachment with Entity],
-//extensions: Seq[KeyValue]) {
-//val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex
-//val tags: Seq[String]       = observable.tags
-//val message: Option[String] = observable.message
-//val tlp: Int                = observable.tlp
-//val ioc: Boolean            = observable.ioc
-//val sighted: Boolean        = observable.sighted
-//}
-
 object OutputObservable {
   implicit val format: OFormat[OutputObservable] = Json.format[OutputObservable]
 }

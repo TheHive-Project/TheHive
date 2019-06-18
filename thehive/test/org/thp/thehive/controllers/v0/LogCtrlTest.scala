@@ -170,7 +170,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
   def tasksList(app: AppBuilder): Seq[OutputTask] = {
     val taskCtrl    = app.instanceOf[TaskCtrl]
     val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
-    val resultList  = taskCtrl.list(requestList)
+    val resultList  = taskCtrl.search(requestList)
 
     status(resultList) shouldEqual 200
 
