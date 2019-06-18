@@ -37,6 +37,8 @@ class TheHiveQueryExecutor @Inject()(
     with UserConversion
     with LogConversion {
 
+  override val version: (Int, Int) = 0 → 0
+
   override val publicProperties: List[PublicProperty[_, _]] =
     caseProperties ++
       taskProperties ++
