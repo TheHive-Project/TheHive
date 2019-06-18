@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import java.util.Date
+
 import scala.language.implicitConversions
 
 import io.scalaland.chimney.dsl._
@@ -17,7 +19,10 @@ trait CustomFieldConversion {
     Output[OutputCustomFieldValue](
       customFieldValue
         .into[OutputCustomFieldValue]
-        .withFieldComputed(_.value, _.value.map(_.toString))
+        .withFieldComputed(_.value, _.value.map {
+          case d: Date ⇒ d.getTime.toString
+          case other   ⇒ other.toString
+        })
         .withFieldComputed(_.tpe, _.typeName)
         .transform
     )

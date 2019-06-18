@@ -50,6 +50,8 @@ object InputCustomFieldValue {
       case InputCustomFieldValue(name, Some(s: String))  ⇒ name → JsString(s)
       case InputCustomFieldValue(name, Some(l: Long))    ⇒ name → JsNumber(l)
       case InputCustomFieldValue(name, Some(d: Double))  ⇒ name → JsNumber(d)
+      case InputCustomFieldValue(name, Some(i: Integer)) ⇒ name → JsNumber(i.toLong)
+      case InputCustomFieldValue(name, Some(f: Float))   ⇒ name → JsNumber(f.toDouble)
       case InputCustomFieldValue(name, Some(b: Boolean)) ⇒ name → JsBoolean(b)
       case InputCustomFieldValue(name, Some(d: Date))    ⇒ name → JsNumber(d.getTime)
       case InputCustomFieldValue(name, None)             ⇒ name → JsNull

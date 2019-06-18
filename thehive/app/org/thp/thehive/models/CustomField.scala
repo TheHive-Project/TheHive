@@ -74,8 +74,8 @@ object CustomFieldInteger extends CustomFieldType[Int] {
 
 object CustomFieldFloat extends CustomFieldType[Float] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case v: Float ⇒ Success(customFieldValue.setFloatValue(v))
-    case _        ⇒ setValueFailure(value)
+    case n: Number ⇒ Success(customFieldValue.setFloatValue(n.floatValue()))
+    case _         ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Float] = ccf.floatValue
   override val name: String                                      = "float"
@@ -84,8 +84,9 @@ object CustomFieldFloat extends CustomFieldType[Float] {
 
 object CustomFieldDate extends CustomFieldType[Date] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case v: Date ⇒ Success(customFieldValue.setDateValue(v))
-    case _       ⇒ setValueFailure(value)
+    case n: Number ⇒ Success(customFieldValue.setDateValue(new Date(n.longValue())))
+    case v: Date   ⇒ Success(customFieldValue.setDateValue(v))
+    case _         ⇒ setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
   override val name: String                                     = "date"
