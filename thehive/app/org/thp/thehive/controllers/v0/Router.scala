@@ -1,9 +1,10 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -34,7 +35,7 @@ class Router @Inject()(
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     /**/
-    case GET(p"/case")                  ⇒ caseCtrl.list
+    case GET(p"/case")                  ⇒ caseCtrl.search
     case POST(p"/case")                 ⇒ caseCtrl.create
     case GET(p"/case/$caseId")          ⇒ caseCtrl.get(caseId)
     case PATCH(p"/case/$caseId")        ⇒ caseCtrl.update(caseId)
@@ -46,7 +47,7 @@ class Router @Inject()(
     case DELETE(p"/case/$caseId/force") ⇒ caseCtrl.realDelete(caseId)
     case GET(p"/case/$caseId/links")    ⇒ caseCtrl.linkedCases(caseId)
 
-    case GET(p"/case/template")                   ⇒ caseTemplateCtrl.list
+    case GET(p"/case/template")                   ⇒ caseTemplateCtrl.search
     case POST(p"/case/template")                  ⇒ caseTemplateCtrl.create
     case GET(p"/case/template/$caseTemplateId")   ⇒ caseTemplateCtrl.get(caseTemplateId)
     case PATCH(p"/case/template/$caseTemplateId") ⇒ caseTemplateCtrl.update(caseTemplateId)
@@ -83,7 +84,7 @@ class Router @Inject()(
 //    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
 //    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
-    case GET(p"/case/task")           ⇒ taskCtrl.list
+    case GET(p"/case/task")           ⇒ taskCtrl.search
     case POST(p"/case/$caseId/task")  ⇒ taskCtrl.create(caseId)
     case GET(p"/case/task/$taskId")   ⇒ taskCtrl.get(taskId)
     case PATCH(p"/case/task/$taskId") ⇒ taskCtrl.update(taskId)
@@ -113,16 +114,16 @@ class Router @Inject()(
     case GET(p"/customField")  ⇒ customFieldCtrl.list
     case POST(p"/customField") ⇒ customFieldCtrl.create
 
-    case GET(p"/alert")                    ⇒ alertCtrl.list
-    case POST(p"/alert")                   ⇒ alertCtrl.create
-    case GET(p"/alert/$alertId")           ⇒ alertCtrl.get(alertId)
-    case PATCH(p"/alert/$alertId")         ⇒ alertCtrl.update(alertId)
-    case POST(p"/alert/$alertId/read")     ⇒ alertCtrl.markAsRead(alertId)
-    case POST(p"/alert/$alertId/unread")   ⇒ alertCtrl.markAsUnread(alertId)
-    case POST(p"/alert/$alertId/follow")   ⇒ alertCtrl.followAlert(alertId)
-    case POST(p"/alert/$alertId/unfollow") ⇒ alertCtrl.unfollowAlert(alertId)
-    case POST(p"/alert/$alertId/case")     ⇒ alertCtrl.createCase(alertId)
-    case POST(p"/alert/_search")           ⇒ alertCtrl.search
+    case GET(p"/alert")                        ⇒ alertCtrl.search
+    case POST(p"/alert")                       ⇒ alertCtrl.create
+    case GET(p"/alert/$alertId")               ⇒ alertCtrl.get(alertId)
+    case PATCH(p"/alert/$alertId")             ⇒ alertCtrl.update(alertId)
+    case POST(p"/alert/$alertId/markAsRead")   ⇒ alertCtrl.markAsRead(alertId)
+    case POST(p"/alert/$alertId/markAsUnread") ⇒ alertCtrl.markAsUnread(alertId)
+    case POST(p"/alert/$alertId/follow")       ⇒ alertCtrl.followAlert(alertId)
+    case POST(p"/alert/$alertId/unfollow")     ⇒ alertCtrl.unfollowAlert(alertId)
+    case POST(p"/alert/$alertId/createCase")   ⇒ alertCtrl.createCase(alertId)
+    case POST(p"/alert/_search")               ⇒ alertCtrl.search
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
     case POST(p"/alert/_stats") ⇒ alertCtrl.stats()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)

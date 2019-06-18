@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
+
 import gremlin.scala.{Graph, GremlinScala, StepLabel, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -13,8 +15,6 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-
-import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
 
 case class GetCaseParams(id: String)
 case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
@@ -88,6 +88,17 @@ class TheHiveQueryExecutor @Inject()(
       FieldsParser[RangeParams],
       (range, observableSteps, _) ⇒ observableSteps.richObservable.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
+    Query.withParam[RangeParams, AlertSteps, PagedResult[(RichAlert, List[RichObservable])]](
+      "page",
+      FieldsParser[RangeParams],
+      (range, alertSteps, _) ⇒
+        alertSteps
+          .richAlert
+          .page(range.from, range.to, range.withSize.getOrElse(false))
+          .map { richAlert ⇒
+            richAlert → alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList()
+          }
+    ),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
     Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) ⇒ taskSteps.richTask.toList()),
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).toList()),
@@ -100,7 +111,8 @@ class TheHiveQueryExecutor @Inject()(
     Query.output[RichAlert, OutputAlert],
     Query.output[RichObservable, OutputObservable],
     Query.output[RichUser, OutputUser],
-    Query.output[RichLog, OutputLog]
+    Query.output[RichLog, OutputLog],
+    Query.output[(RichAlert, Seq[RichObservable]), OutputAlert]
   )
 
 //  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)

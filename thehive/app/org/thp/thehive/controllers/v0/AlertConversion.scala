@@ -10,15 +10,16 @@ import org.thp.scalligraph.Output
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
-import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, RichAlert}
+import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, RichAlert, RichObservable}
 import org.thp.thehive.services.AlertSteps
 
-trait AlertConversion extends CustomFieldConversion {
+trait AlertConversion extends CustomFieldConversion with ObservableConversion {
   implicit def toOutputAlert(richAlert: RichAlert): Output[OutputAlert] =
     Output[OutputAlert](
       richAlert
         .into[OutputAlert]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldRenamed(_._id, _.id)
         .withFieldComputed(
           _.status,
           alert ⇒
@@ -29,6 +30,27 @@ trait AlertConversion extends CustomFieldConversion {
               case (_, false)    ⇒ "Updated"
             }
         )
+        .transform
+    )
+
+  implicit def toOutputAlertWithObservables(richAlertWithObservables: (RichAlert, Seq[RichObservable])): Output[OutputAlert] =
+    Output[OutputAlert](
+      richAlertWithObservables
+        ._1
+        .into[OutputAlert]
+        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldRenamed(_._id, _.id)
+        .withFieldComputed(
+          _.status,
+          alert ⇒
+            (alert.caseId, alert.read) match {
+              case (None, true)  ⇒ "Ignored"
+              case (None, false) ⇒ "New"
+              case (_, true)     ⇒ "Imported"
+              case (_, false)    ⇒ "Updated"
+            }
+        )
+        .withFieldConst(_.artifacts, richAlertWithObservables._2.map(toOutputObservable(_).toOutput))
         .transform
     )
 

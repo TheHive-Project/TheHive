@@ -4,6 +4,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.thehive.dto.v0.OutputAttachment
 import org.thp.thehive.models.Attachment
+import scala.language.implicitConversions
 
 trait AttachmentConversion {
   implicit def toOutputAttachment(attachment: Attachment): Output[OutputAttachment] =

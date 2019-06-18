@@ -1,19 +1,24 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Success, Try}
+import java.util.Base64
+
+import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
 import play.api.http.HttpErrorHandler
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph._
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
+import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.InputAlert
-import org.thp.thehive.models.{Permissions, RichCaseTemplate}
-import org.thp.thehive.services.{AlertSrv, CaseSrv, CaseTemplateSrv, UserSrv}
+import org.thp.thehive.dto.v0.{InputAlert, InputObservable}
+import org.thp.thehive.models.{Alert, Permissions, RichCaseTemplate, RichObservable}
+import org.thp.thehive.services._
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -21,6 +26,8 @@ class AlertCtrl @Inject()(
     db: Database,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    observableSrv: ObservableSrv,
+    attachmentSrv: AttachmentSrv,
     val userSrv: UserSrv,
     val caseSrv: CaseSrv,
     errorHandler: HttpErrorHandler,
@@ -28,7 +35,8 @@ class AlertCtrl @Inject()(
 ) extends QueryCtrl
     with CaseConversion
     with CustomFieldConversion
-    with AlertConversion {
+    with AlertConversion
+    with ObservableConversion {
 
   lazy val logger = Logger(getClass)
 
@@ -36,8 +44,11 @@ class AlertCtrl @Inject()(
     entryPoint("create alert")
       .extract('alert, FieldsParser[InputAlert])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
+      .extract('observables, FieldsParser[InputObservable].sequence.on("artifacts"))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val caseTemplateName: Option[String] = request.body('caseTemplate)
+        val caseTemplateName: Option[String]  = request.body('caseTemplate)
+        val inputAlert: InputAlert            = request.body('alert)
+        val observables: Seq[InputObservable] = request.body('observables)
         for {
           caseTemplate ← caseTemplateName.fold[Try[Option[RichCaseTemplate]]](Success(None)) { ct ⇒
             caseTemplateSrv
@@ -47,13 +58,38 @@ class AlertCtrl @Inject()(
               .getOrFail()
               .map(Some(_))
           }
-          inputAlert: InputAlert = request.body('alert)
+
           user         ← userSrv.getOrFail(request.userId)
           organisation ← userSrv.getOrganisation(user)
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          richAlert ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
-        } yield Results.Created(richAlert.toJson)
+          _               ← userSrv.current.can(Permissions.manageAlert).existsOrFail()
+          richAlert       ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+          richObservables ← observables.toTry(observable ⇒ importObservable(richAlert.alert, observable))
+        } yield Results.Created((richAlert → richObservables.flatten).toJson)
       }
+
+  private def importObservable(alert: Alert with Entity, observable: InputObservable)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Seq[RichObservable]] = {
+    val createdObservables = observable.dataType match {
+      case "file" ⇒
+        observable.data.map(_.split(';')).toTry {
+          case Array(filename, contentType, value) ⇒
+            val data = Base64.getDecoder.decode(value)
+            attachmentSrv
+              .create(filename, contentType, data)
+              .flatMap(attachment ⇒ observableSrv.create(observable, attachment, Nil))
+          case data ⇒
+            Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+        }
+      case _ ⇒ observable.data.toTry(d ⇒ observableSrv.create(observable, d, Nil))
+    }
+    createdObservables.map(_.map { richObservable ⇒
+      alertSrv.addObservable(alert, richObservable.observable)
+      richObservable
+    })
+  }
 
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")
@@ -63,19 +99,9 @@ class AlertCtrl @Inject()(
           .visible
           .richAlert
           .getOrFail()
-          .map(alert ⇒ Results.Ok(alert.toJson))
-      }
-
-  def list: Action[AnyContent] =
-    entryPoint("list alert")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val alerts = alertSrv
-          .initSteps
-          .visible
-          .richAlert
-          .map(_.toJson)
-          .toList()
-        Success(Results.Ok(Json.toJson(alerts)))
+          .map { richAlert ⇒
+            Results.Ok((richAlert → alertSrv.get(richAlert.alert).observables.richObservable.toList()).toJson)
+          }
       }
 
   def update(alertId: String): Action[AnyContent] =
@@ -85,7 +111,13 @@ class AlertCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
         alertSrv
           .update(_.get(alertId).can(Permissions.manageAlert), propertyUpdaters)
-          .map(_ ⇒ Results.NoContent)
+          .flatMap {
+            case (alertSteps, _) ⇒
+              alertSteps
+                .richAlert
+                .getOrFail()
+                .map(richAlert ⇒ Results.Ok((richAlert → alertSrv.get(richAlert.alert).observables.richObservable.toList()).toJson))
+          }
       }
 
   def mergeWithCase(alertId: String, caseId: String) = ???
@@ -173,6 +205,10 @@ class AlertCtrl @Inject()(
       .authTransaction(db) { implicit request ⇒ graph ⇒
         val query: Query = request.body('query)
         val result       = queryExecutor.execute(query, graph, request.authContext)
-        Success(Results.Ok((result.toJson \ "result").as[JsValue]).withHeaders("X-Total" → "100"))
+        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
+        result.toOutput match {
+          case PagedResult(_, Some(size)) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
+          case _                          ⇒ Success(resp)
+        }
       }
 }

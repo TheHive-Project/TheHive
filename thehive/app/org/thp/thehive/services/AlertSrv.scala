@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.{Date, List ⇒ JList}
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -11,17 +16,14 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, _}
 import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 @Singleton
 class AlertSrv @Inject()(
     caseSrv: CaseSrv,
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    observableSrv: ObservableSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
     auditSrv: AuditSrv
@@ -71,6 +73,12 @@ class AlertSrv @Inject()(
       alert                       ← alertSteps.clone().getOrFail()
       _                           ← auditSrv.updateAlert(alert, updatedFields)
     } yield (alertSteps, updatedFields)
+
+  def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): AlertObservable with Entity =
+    alertObservableSrv.create(AlertObservable(), alert, observable)
 
   def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
       implicit graph: Graph,
@@ -157,17 +165,17 @@ class AlertSrv @Inject()(
         caseTemplateSrv
           .get(ct.caseTemplate)
           .tasks
-          .toList()
+          .toIterator
           .toTry(task ⇒ taskSrv.create(task, createdCase.`case`))
       }.flip
 
       _ = importObservables(alert.alert, createdCase.`case`)
       _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+      _ ← markAsRead(alert._id)
       _ ← auditSrv.createCase(createdCase.`case`)
     } yield createdCase
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    // TODO add observables
     // TODO add audit
     for {
       alert ← getOrFail(alertId)
@@ -177,9 +185,13 @@ class AlertSrv @Inject()(
       _           = importObservables(alert, case0)
     } yield ()
 
-  def importObservables(alert: Alert with Entity, `case`: Case with Entity) = {
-    // TODO add observables
-  }
+  def importObservables(alert: Alert with Entity, `case`: Case with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Seq[ShareObservable]] =
+    get(alert).observables.toIterator.toTry { observable ⇒
+      caseSrv.addObservable(`case`, observableSrv.create(observable))
+    }
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
 }
@@ -187,6 +199,22 @@ class AlertSrv @Inject()(
 @EntitySteps[Alert]
 class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Alert, AlertSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): AlertSteps = new AlertSteps(raw)
+
+  override def get(id: String): AlertSteps =
+    id.split(';') match {
+      case Array(tpe, source, sourceRef) ⇒ getBySourceId(tpe, source, sourceRef)
+      case _                             ⇒ getById(id)
+    }
+
+  def getById(id: String): AlertSteps = newInstance(raw.has(Key("_id") of id))
+
+  def getBySourceId(`type`: String, source: String, sourceRef: String): AlertSteps =
+    newInstance(
+      raw
+        .has(Key("type") of `type`)
+        .has(Key("source") of source)
+        .has(Key("sourceRef") of sourceRef)
+    )
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[AlertOrganisation])
 
@@ -197,9 +225,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps = newInstance(
     raw.filter(
       _.outTo[AlertOrganisation]
-        .inTo[OrganisationShare]
         .inTo[RoleOrganisation]
-        .has(Key("permissions") of permission)
+        .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
         .inTo[UserRole]
         .has(Key("login") of authContext.userId)
     )
@@ -217,9 +244,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .`match`(
           _.as(alertLabel).out("AlertOrganisation").as(organisationLabel),
           _.as(organisationLabel)
-            .inTo[OrganisationShare]
             .inTo[RoleOrganisation]
-            .has(Key("permissions") of permission)
+            .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
             .inTo[UserRole]
             .has(Key("login") of authContext.userId),
           _.as(alertLabel).outToE[AlertCustomField].inV().path.fold.as(customFieldLabel),
@@ -259,6 +285,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField]))
     )
   }
+
+  def observables: ObservableSteps = new ObservableSteps(raw.outTo[AlertObservable])
 
   def richAlert: ScalarSteps[RichAlert] =
     ScalarSteps(

@@ -36,6 +36,15 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     result
   }
 
+  def create(filename: String, contentType: String, data: Array[Byte])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Attachment with Entity] = {
+    val hs = hashers.fromBinary(data)
+    val id = hs.head.toString
+    storageSrv.saveBinary(id, data).map(_ ⇒ create(Attachment(filename, data.length.toLong, contentType, hs, id)))
+  }
+
   def source(attachment: Attachment with Entity)(implicit graph: Graph): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() ⇒ stream(attachment))
 

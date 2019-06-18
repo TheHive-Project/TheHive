@@ -14,7 +14,7 @@ case class InputAlert(
     description: String,
     severity: Option[Int] = None,
     date: Date = new Date,
-    tags: Seq[String] = Nil,
+    tags: Set[String] = Set.empty,
     flag: Option[Boolean] = None,
     tlp: Option[Int] = None,
     pap: Option[Int] = None,
@@ -28,6 +28,7 @@ object InputAlert {
 
 case class OutputAlert(
     _id: String,
+    id: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,
@@ -46,7 +47,8 @@ case class OutputAlert(
     status: String,
     follow: Boolean,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
-    caseTemplate: Option[String] = None
+    caseTemplate: Option[String] = None,
+    artifacts: Seq[OutputObservable] = Nil
 )
 
 object OutputAlert {
