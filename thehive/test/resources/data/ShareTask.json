@@ -10,5 +10,13 @@
   {
     "from": "case3-cert",
     "to": "task3"
+  },
+  {
+    "from": "case4-default",
+    "to": "task4"
+  },
+  {
+    "from": "case4-default",
+    "to": "task5"
   }
 ]

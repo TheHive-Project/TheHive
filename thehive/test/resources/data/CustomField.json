@@ -10,7 +10,7 @@
     "type": "boolean"
   },
   {
-    "name": "integer",
+    "name": "integer1",
     "description": "integer custom field",
     "type": "integer"
   },

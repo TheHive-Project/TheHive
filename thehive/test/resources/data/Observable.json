@@ -1,0 +1,9 @@
+[{
+  "id": "h.fr",
+  "type": "domain",
+  "tags": ["testDomain"],
+  "message": "Some weird domain",
+  "tlp": 3,
+  "ioc": true,
+  "sighted": false
+}]
