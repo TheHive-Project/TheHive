@@ -56,6 +56,7 @@ trait QueryCtrl {
 
   def searchParser(initialStepName: String, paged: Boolean = true): FieldsParser[Query] =
     FieldsParser[FObject]
+      .optional
       .on("query")
       .map("filter")(filter ⇒ Seq(FObject("_name" → FString(initialStepName)), filter + ("_name" → FString("filter"))))
       .andThen("sort")(sortParser.optional.on("sort")) {
