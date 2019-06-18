@@ -1,5 +1,9 @@
 import Dependencies._
 
+lazy val scala212               = "2.12.8"
+lazy val scala213               = "2.13.0"
+lazy val supportedScalaVersions = List(scala212) //, scala213)
+
 // format: off
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
@@ -10,6 +14,7 @@ lazy val thehive = (project in file("."))
       Seq(
         organization := "org.thp",
         scalaVersion := "2.12.8",
+        crossScalaVersions := supportedScalaVersions,
         resolvers ++= Seq(
           Resolver.mavenLocal,
           "Oracle Released Java Packages" at "http://download.oracle.com/maven",
@@ -38,12 +43,24 @@ lazy val thehive = (project in file("."))
           "-Xlog-free-terms",
           "-Xprint-types"
         ),
+        scalacOptions ++= {
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, n)) if n >= 13 ⇒ "-Ymacro-annotations" :: Nil
+            case _ ⇒ Nil
+          }
+        },
+        libraryDependencies ++= {
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, n)) if n >= 13 ⇒ Nil
+            case _ ⇒ compilerPlugin(macroParadise) :: Nil
+          }
+        },
         fork in Test := true,
 //        javaOptions += "-Xmx1G",
-        addCompilerPlugin(macroParadise),
         scalafmtConfig := file(".scalafmt.conf")
       )),
     name := "thehive",
+    crossScalaVersions := Nil,
     Compile / run := {
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated

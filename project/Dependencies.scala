@@ -7,7 +7,7 @@ object Dependencies {
   lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"    % "0.3.1"
   lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"         % "0.3.1"
   lazy val hbaseClient                    = "org.apache.hbase"         % "hbase-shaded-client"      % "1.4.9" exclude ("org.slf4j", "slf4j-log4j12")
-  lazy val scalactic                      = "org.scalactic"            %% "scalactic"               % "3.0.5"
+  lazy val scalactic                      = "org.scalactic"            %% "scalactic"               % "3.0.8"
   lazy val specs                          = "com.typesafe.play"        %% "play-specs2"             % play.core.PlayVersion.current
   lazy val scalaGuice                     = "net.codingwell"           %% "scala-guice"             % "4.2.2"
   lazy val sangria                        = "org.sangria-graphql"      %% "sangria"                 % "1.4.2"
