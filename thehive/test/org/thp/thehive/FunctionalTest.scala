@@ -174,9 +174,10 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "list users" in {
-          val asyncResp = client.query(Json.obj("_name" → "listUser"), Json.obj("_name" → "toList"))
-          val users     = (await(asyncResp) \ "result").as[Seq[OutputUser]].map(TestUser.apply)
-          users must contain(exactly(adminUser, user2))
+          val resonse = await(client.query(Json.obj("_name" → "listUser"), Json.obj("_name" → "toList")))
+          val users   = (resonse \ "result").asOpt[Seq[OutputUser]]
+          users must beSome.updateMessage(s ⇒ s"$s\n$resonse")
+          users.get.map(TestUser.apply) must contain(exactly(adminUser, user2))
         }
 
         "return an authentication error if password is wrong" in {
