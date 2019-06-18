@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.io.File
 import java.nio.file.{Path, Files ⇒ JFiles}
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
@@ -20,9 +20,27 @@ import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Entity, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
-import org.thp.thehive.dto.v0.{OutputCase, OutputObservable}
+import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{DataSrv, LocalUserSrv}
+import io.scalaland.chimney.dsl._
+
+case class TestObservable(
+    dataType: String,
+    data: Option[String] = None,
+    attachment: Option[OutputAttachment] = None,
+    tlp: Int = 2,
+    tags: Set[String] = Set.empty,
+    ioc: Boolean = false,
+    sighted: Boolean = false,
+    message: Option[String] = None
+)
+
+object TestObservable {
+
+  def apply(outputObservable: OutputObservable): TestObservable =
+    outputObservable.into[TestObservable].transform
+}
 
 class ObservableCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)

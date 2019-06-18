@@ -18,38 +18,41 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   val observableKeyValueSrv   = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
   val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
+  val alertObservableSrv      = new EdgeSrv[AlertObservable, Alert, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
-  def create(observable: Observable, dataOrFile: Either[Data, FFile], extensions: Seq[KeyValue], `case`: Case with Entity)(
+  def create(observable: Observable, file: FFile, extensions: Seq[KeyValue])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    attachmentSrv.create(file).flatMap { attachment ⇒
+      create(observable, attachment, extensions)
+    }
+
+  def create(observable: Observable, attachment: Attachment with Entity, extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
-    (dataOrFile match {
-      case Left(dataValue) ⇒
-        val data = dataSrv.create(dataValue)
-        observableDataSrv.create(ObservableData(), createdObservable, data)
-        Success(Some(data) → None)
-      case Right(file) ⇒
-        attachmentSrv.create(file).map { attachment ⇒
-          observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
-          None → Some(attachment)
-        }
-    }).flatMap {
-      case (data, attachment) ⇒
-        extensions
-          .map(keyValueSrv.create)
-          .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+    observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+    extensions
+      .map(keyValueSrv.create)
+      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+    Success(RichObservable(createdObservable, None, Some(attachment), extensions))
+  }
 
-        for {
-          share ← caseSrv
-            .initSteps
-            .getOrganisationShare(`case`._id)
-            .getOrFail()
-          _ = shareSrv.shareObservableSrv.create(ShareObservable(), share, createdObservable)
-        } yield RichObservable(createdObservable, data, attachment, extensions)
-    }
+  def create(observable: Observable, dataValue: String, extensions: Seq[KeyValue])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] = {
+    val createdObservable = create(observable)
+    val data              = dataSrv.create(Data(dataValue))
+    observableDataSrv.create(ObservableData(), createdObservable, data)
+    extensions
+      .map(keyValueSrv.create)
+      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+    Success(RichObservable(createdObservable, Some(data), None, extensions))
   }
 
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =

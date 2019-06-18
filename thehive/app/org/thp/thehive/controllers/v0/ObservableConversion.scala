@@ -7,7 +7,6 @@ import scala.language.implicitConversions
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
@@ -42,7 +41,7 @@ trait ObservableConversion extends AttachmentConversion {
         .transform
     )
 
-  def observableProperties(implicit db: Database): List[PublicProperty[_, _]] =
+  val observableProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ObservableSteps]
       .property[String]("status")(_.derived(_.constant("Ok")).readonly)
       .property[Date]("startDate")(_.derived(_.value(Key[Date]("_createdAt"))).readonly)

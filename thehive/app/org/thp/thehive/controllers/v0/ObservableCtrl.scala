@@ -38,9 +38,11 @@ class ObservableCtrl @Inject()(
             .get(caseId)
             .can(Permissions.manageCase)
             .getOrFail()
-          observablesWithData      ← inputObservable.data.toTry(i ⇒ observableSrv.create(inputObservable, Left(Data(i)), Nil, case0))
-          observableWithAttachment ← inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, Right(a), Nil, case0)).flip
-          createdObservables = observablesWithData ++ observableWithAttachment
+          observablesWithData      ← inputObservable.data.toTry(d ⇒ observableSrv.create(inputObservable, d, Nil))
+          observableWithAttachment ← inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, a, Nil)).flip
+          createdObservables ← (observablesWithData ++ observableWithAttachment).toTry { richObservables ⇒
+            caseSrv.addObservable(case0, richObservables.observable).map(_ ⇒ richObservables)
+          }
         } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))
       }
 
@@ -59,7 +61,7 @@ class ObservableCtrl @Inject()(
 
   def update(obsId: String): Action[AnyContent] =
     entryPoint("update observable")
-      .extract('observable, FieldsParser.update("observable", observableProperties(db)))
+      .extract('observable, FieldsParser.update("observable", observableProperties))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('observable)
         observableSrv
@@ -115,7 +117,7 @@ class ObservableCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("bulk update")
-      .extract('input, FieldsParser.update("observable", observableProperties(db)))
+      .extract('input, FieldsParser.update("observable", observableProperties))
       .extract('ids, FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request ⇒ graph ⇒
         val properties: Seq[PropertyUpdater] = request.body('input)
