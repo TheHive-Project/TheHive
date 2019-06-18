@@ -12,6 +12,7 @@ object InputAnalyzer {
   implicit val format: OFormat[InputAnalyzer] = Json.format[InputAnalyzer]
 }
 
+// FIXME add another model for output on client side or not?
 case class OutputAnalyzer(
     id: String,
     name: String,
