@@ -29,9 +29,9 @@ class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, 
     * @tparam T the return type
     * @return
     */
-  def retry[T](n: Int = maxRetryOnError, delay: FiniteDuration = refreshDelay)(f: ⇒ Future[T], name: String): Future[T] = f recoverWith {
+  def retry[T](n: Int = maxRetryOnError, delay: FiniteDuration = refreshDelay)(f: ⇒ Future[T], callName: String): Future[T] = f recoverWith {
     case e if n > 1 ⇒
-      logger.warn(s"CortexClient $name failed (${e.getMessage}) for $name at attempt $n, retrying in $delay")
+      logger.warn(s"CortexClient $name failed (${e.getMessage}) for $callName at attempt $n, retrying in $delay")
       after(delay, system.scheduler)(retry(n - 1)(f, name))
   }
 
