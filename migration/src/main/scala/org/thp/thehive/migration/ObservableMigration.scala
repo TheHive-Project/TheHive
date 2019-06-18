@@ -1,23 +1,25 @@
 package org.thp.thehive.migration
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+import play.api.Configuration
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Reads}
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.ElasticDsl.{hasParentQuery, idsQuery, search, RichString}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.elastic4play.database.DBFind
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
 import org.thp.scalligraph.Hasher
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, StorageSrv}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Configuration
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import org.elastic4play.database.DBFind
+import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
 
 @Singleton
 class ObservableMigration @Inject()(

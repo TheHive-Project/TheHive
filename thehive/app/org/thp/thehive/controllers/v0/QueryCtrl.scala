@@ -58,7 +58,10 @@ trait QueryCtrl {
     FieldsParser[FObject]
       .optional
       .on("query")
-      .map("filter")(filter ⇒ Seq(FObject("_name" → FString(initialStepName)), filter + ("_name" → FString("filter"))))
+      .map("filter") {
+        case Some(filter) ⇒ Seq(FObject("_name" → FString(initialStepName)), filter + ("_name" → FString("filter")))
+        case None         ⇒ Seq(FObject("_name" → FString(initialStepName)))
+      }
       .andThen("sort")(sortParser.optional.on("sort")) {
         case (Some(sort), query) ⇒ query :+ FObject("_name" → FString("sort"), "_fields" → sort)
         case (_, query)          ⇒ query
