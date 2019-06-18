@@ -6,12 +6,11 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{PropertyUpdater, Query}
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
-import org.thp.thehive.models.{Permissions, RichCaseTemplate, User}
+import org.thp.thehive.models.{CustomFieldWithValue, Permissions, RichCaseTemplate, User}
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.{Success, Try}
 
 @Singleton
@@ -50,11 +49,15 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          user         ← inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u ⇒ userSrv.getOrFail(u).map(Some.apply))
+          caseTemplateCustomFields = caseTemplate
+            .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
+            .map(cf ⇒ cf.name → cf.value)
+            .toMap
           organisation ← organisationSrv.getOrFail(request.organisation)
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
+          user     ← inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u ⇒ userSrv.getOrFail(u).map(Some.apply))
           case0    ← Success(fromInputCase(inputCase, caseTemplate))
-          richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
+          richCase ← caseSrv.create(case0, user, organisation, caseTemplateCustomFields ++ customFields, caseTemplate)
 
           _ ← inputTasks.toTry(t ⇒ taskSrv.create(fromInputTask(t), richCase.`case`))
           _ ← caseTemplate.map { ct ⇒
@@ -76,18 +79,6 @@ class CaseCtrl @Inject()(
           .richCase
           .getOrFail()
           .map(richCase ⇒ Results.Ok(richCase.toJson))
-      }
-
-  def list: Action[AnyContent] =
-    entryPoint("list case")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val cases = caseSrv
-          .initSteps
-          .visible
-          .richCase
-          .map(_.toJson)
-          .toList()
-        Success(Results.Ok(Json.toJson(cases)))
       }
 
   def search: Action[AnyContent] =

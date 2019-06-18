@@ -22,7 +22,7 @@ class CaseSrv @Inject()(
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
-    auditSrv: AuditSrv,
+    auditSrv: AuditSrv
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -32,6 +32,7 @@ class CaseSrv @Inject()(
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
   val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
+  val shareObservableSrv      = new EdgeSrv[ShareObservable, Share, Observable]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
 
   def create(
@@ -77,6 +78,15 @@ class CaseSrv @Inject()(
       case0                      ← caseSteps.clone().getOrFail()
       _                          ← auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
+
+  def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[ShareObservable] =
+    initSteps
+      .getOrganisationShare(`case`._id)
+      .getOrFail()
+      .map(share ⇒ shareObservableSrv.create(ShareObservable(), share, observable))
 
   def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] = {
     val dataToRemove = get(`case`)
