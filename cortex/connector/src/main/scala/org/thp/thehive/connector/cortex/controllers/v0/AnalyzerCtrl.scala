@@ -3,7 +3,6 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.CortexConfig
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.services.AnalyzerSrv
@@ -18,7 +17,6 @@ class AnalyzerCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     analyzerSrv: AnalyzerSrv,
-    cortexConfig: CortexConfig,
     val queryExecutor: CortexQueryExecutor,
     implicit val system: ActorSystem,
     mat: Materializer

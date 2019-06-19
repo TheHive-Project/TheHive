@@ -28,5 +28,9 @@ object OutputAnalyzer {
 }
 
 trait AnalyzerConversion {
-  def toOutputAnalyzer(a: OutputCortexAnalyzer): OutputAnalyzer = a.into[OutputAnalyzer].transform
+
+  def toOutputAnalyzer(a: OutputCortexAnalyzer): OutputAnalyzer =
+    a.into[OutputAnalyzer]
+      .withFieldComputed(_.cortexIds, _.cortexIds.getOrElse(Nil))
+      .transform
 }

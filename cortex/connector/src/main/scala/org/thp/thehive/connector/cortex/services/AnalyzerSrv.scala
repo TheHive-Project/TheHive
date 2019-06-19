@@ -25,7 +25,9 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Executi
         analysers
           .groupBy(_.name)
           .values
-          .map(_.reduceLeft((a1, a2) ⇒ a1.copy(cortexIds = a1.cortexIds ::: a2.cortexIds)))
+          .map(_.reduceLeft((a1, a2) ⇒
+            a1.copy(cortexIds = Some(a1.cortexIds.getOrElse(Nil) ::: a2.cortexIds.getOrElse(Nil)))
+          ))
           .map(toOutputAnalyzer)
           .toSeq
       }

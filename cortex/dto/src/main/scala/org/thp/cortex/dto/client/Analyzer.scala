@@ -18,7 +18,7 @@ case class OutputCortexAnalyzer(
     version: String,
     description: String,
     dataTypeList: Seq[String],
-    cortexIds: List[String] = Nil
+    cortexIds: Option[List[String]] = None
 )
 
 object OutputCortexAnalyzer {
