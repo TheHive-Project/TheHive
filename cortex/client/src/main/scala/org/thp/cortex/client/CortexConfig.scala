@@ -20,8 +20,7 @@ case class CortexConfig(instances: Seq[CortexClient]) {
   @Inject
   def this(configuration: Configuration, globalWS: CustomWSAPI)(
       implicit system: ActorSystem,
-      ec: ExecutionContext,
-      mat: Materializer
+      ec: ExecutionContext
   ) = this(CortexConfig.getInstances(configuration, globalWS))
 }
 
@@ -39,8 +38,7 @@ object CortexConfig {
     */
   def getInstances(configuration: Configuration, globalWS: CustomWSAPI)(
       implicit system: ActorSystem,
-      ec: ExecutionContext,
-      mat: Materializer
+      ec: ExecutionContext
   ): Seq[CortexClient] =
     for {
       cfg ← configuration.getOptional[Configuration]("cortex").toSeq
@@ -60,8 +58,7 @@ object CortexConfig {
     */
   def getCortexClient(configuration: Configuration, ws: CustomWSAPI)(
       implicit system: ActorSystem,
-      ec: ExecutionContext,
-      mat: Materializer
+      ec: ExecutionContext
   ): Option[CortexClient] = {
     val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
 
@@ -83,7 +80,7 @@ object CortexConfig {
             url,
             configuration.getOptional[FiniteDuration]("refreshDelay").getOrElse(1 minute),
             configuration.getOptional[Int]("maxRetryOnError").getOrElse(3)
-          )(ws, auth, system, ec, mat)
+          )(ws, auth, system, ec)
       )
   }
 }

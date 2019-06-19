@@ -14,8 +14,7 @@ class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, 
     implicit ws: CustomWSAPI,
     auth: Authentication,
     system: ActorSystem,
-    ec: ExecutionContext,
-    mat: Materializer
+    ec: ExecutionContext
 ) {
   lazy val job      = new BaseClient[InputArtifact, OutputJob](s"$baseUrl/api/job")
   lazy val analyser = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$baseUrl/api/analyzer")
