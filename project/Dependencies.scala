@@ -20,6 +20,7 @@ object Dependencies {
   lazy val macroParadise                  = "org.scalamacros"          % "paradise"                 % "2.1.1" cross CrossVersion.full
   lazy val playLogback                    = "com.typesafe.play"        %% "play-logback"            % play.core.PlayVersion.current
   lazy val playGuice                      = "com.typesafe.play"        %% "play-guice"              % play.core.PlayVersion.current
+  lazy val playFilters                    = "com.typesafe.play"        %% "filters-helpers"         % play.core.PlayVersion.current
   lazy val chimney                        = "io.scalaland"             %% "chimney"                 % "0.3.0"
   lazy val elastic4play                   = "org.thehive-project"      %% "elastic4play"            % "1.10.0" /*exclude ("org.apache.logging.log4j", "log4j-core") exclude("org.apache.logging.log4j", "log4j-api") exclude("org.apache.logging.log4j", "log4j-1.2-api") */
   lazy val log4jOverSlf4j                 = "org.slf4j"                % "log4j-over-slf4j"         % "1.7.25"
