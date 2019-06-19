@@ -8,6 +8,7 @@ import play.api.{Environment, Logger, Mode}
 import _root_.controllers.{Assets, ExternalAssets}
 import com.google.inject.ProvidedBy
 import javax.inject.{Inject, Provider, Singleton}
+import org.thp.scalligraph.DebugRouter
 import org.thp.thehive.controllers.{v0, v1}
 
 @Singleton
@@ -15,14 +16,12 @@ class TheHiveRouter @Inject()(routerV0: v0.Router, routerV1: v1.Router, assets: 
     extends Provider[Router] {
 
   lazy val logger = Logger(getClass)
-  lazy val get: Router =
-    SimpleRouter(
-      routerV1.withPrefix("/api/v1/").routes orElse
-        routerV0.withPrefix("/api/").routes orElse { // default version
-        case GET(p"/")       ⇒ actionBuilder(Results.PermanentRedirect("/index.html"))
-        case GET(p"/$file*") ⇒ assets.at(file)
-      }
-    )
+  lazy val get: Router = routerV1.withPrefix("/api/v1/") orElse
+    routerV0.withPrefix("/api/") orElse // default version
+    SimpleRouter {
+      case GET(p"/")                                   ⇒ actionBuilder(Results.PermanentRedirect("/index.html"))
+      case GET(p"/$file*") if !file.startsWith("api/") ⇒ assets.at(file)
+    }
 }
 
 @ProvidedBy(classOf[AssetProvider])
