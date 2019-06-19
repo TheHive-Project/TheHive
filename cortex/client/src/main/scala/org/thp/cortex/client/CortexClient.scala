@@ -2,7 +2,6 @@ package org.thp.cortex.client
 
 import akka.actor.ActorSystem
 import akka.pattern.after
-import akka.stream.Materializer
 import org.thp.cortex.dto.client.{InputCortexAnalyzer, OutputCortexAnalyzer}
 import org.thp.cortex.dto.v0._
 import play.api.Logger
@@ -10,7 +9,7 @@ import play.api.Logger
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
+class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
     implicit ws: CustomWSAPI,
     auth: Authentication,
     system: ActorSystem,
@@ -40,5 +39,5 @@ class CortexClient(name: String, baseUrl: String, refreshDelay: FiniteDuration, 
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = retry()(analyser.list, "listAnalyzer")
+  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = analyser.list
 }
