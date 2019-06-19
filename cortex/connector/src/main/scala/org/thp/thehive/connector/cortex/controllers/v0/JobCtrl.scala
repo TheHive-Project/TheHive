@@ -2,13 +2,12 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import scala.util.Success
 
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.Query
+import org.thp.scalligraph.models.Database
 import org.thp.thehive.controllers.v0.QueryCtrl
 
 @Singleton

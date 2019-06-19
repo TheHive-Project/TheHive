@@ -1,18 +1,15 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import play.api.{ Configuration, Environment }
+
 import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.dto.v0.OutputAnalyzer
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
+import org.thp.scalligraph.controllers.AuthenticateSrv
+import org.thp.scalligraph.models.{ Database, Schema }
+import org.thp.scalligraph.services.{ LocalFileSystemStorageSrv, StorageSrv }
+import org.thp.thehive.models.{ Permissions, TheHiveSchema }
 import org.thp.thehive.services.LocalUserSrv
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 class AnalyzerCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
