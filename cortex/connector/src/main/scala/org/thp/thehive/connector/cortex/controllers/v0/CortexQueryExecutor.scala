@@ -9,6 +9,7 @@ class CortexQueryExecutor @Inject()(
     implicit val db: Database
 ) extends QueryExecutor {
 
+  override val version: (Int, Int)                          = 0 → 0
   override val publicProperties: List[PublicProperty[_, _]] = Nil
 
   override val queries: Seq[ParamQuery[_]] = Nil
