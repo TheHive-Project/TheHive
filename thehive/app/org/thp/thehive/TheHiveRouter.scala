@@ -8,7 +8,6 @@ import play.api.{Environment, Logger, Mode}
 import _root_.controllers.{Assets, ExternalAssets}
 import com.google.inject.ProvidedBy
 import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.DebugRouter
 import org.thp.thehive.controllers.{v0, v1}
 
 @Singleton

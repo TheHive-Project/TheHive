@@ -1,7 +1,6 @@
 package org.thp.cortex.client
 
 import akka.actor.ActorSystem
-import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 
