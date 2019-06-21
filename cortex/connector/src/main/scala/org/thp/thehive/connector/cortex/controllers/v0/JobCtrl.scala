@@ -4,6 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.Query
+import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.QueryCtrl
 import play.api.libs.json.JsValue
 import play.api.mvc.{Action, AnyContent, Results}
@@ -11,7 +12,21 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
 @Singleton
-class JobCtrl @Inject()(entryPoint: EntryPoint, db: Database, val queryExecutor: CortexQueryExecutor) extends QueryCtrl {
+class JobCtrl @Inject()(entryPoint: EntryPoint, db: Database, val queryExecutor: CortexQueryExecutor, val jobSrv: JobSrv)
+    extends QueryCtrl
+    with JobConversion {
+
+  def get(jobId: String): Action[AnyContent] =
+    entryPoint("get job")
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+        jobSrv
+          .get(jobId)
+          .visible
+          .getOrFail()
+          .map { job ⇒
+            Results.Ok(job.toJson)
+          }
+      }
 
   def search: Action[AnyContent] =
     entryPoint("search job")
