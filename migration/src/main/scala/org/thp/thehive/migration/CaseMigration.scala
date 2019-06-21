@@ -62,43 +62,46 @@ class CaseMigration @Inject()(
           val t1 = System.currentTimeMillis()
           var t2 = 0L
           catchError("case", caseJs, progress) {
-            Retry(3, classOf[IOException]) {
-              db.tryTransaction { implicit graph ⇒
-                val r = userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
-                  val customFields = ((caseJs \ "customFields")
-                    .asOpt[JsObject]
-                    .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
-                    (caseJs \ "metrics")
+            Retry(3)
+              .on[IOException]
+              .withTry {
+                db.tryTransaction { implicit graph ⇒
+                  val r = userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+                    val customFields = ((caseJs \ "customFields")
                       .asOpt[JsObject]
-                      .fold(Seq.empty[(String, Option[Any])])(extractMetrics)).toMap
-                  caseSrv
-                    .create(
-                      caze,
-                      (caseJs \ "owner").asOpt[String].flatMap(userMigration.get).map(_.user),
-                      organisation,
-                      customFields,
-                      None // no case template
-                    )
-                    .map { richCase ⇒
-                      (caseJs \ "impactStatus")
-                        .asOpt[String]
-                        .flatMap(impactStatusSrv.get(_).headOption())
-                        .foreach(caseSrv.setImpactStatus(richCase.`case`, _))
-                      (caseJs \ "resolutionStatus")
-                        .asOpt[String]
-                        .flatMap(resolutionStatusSrv.get(_).headOption())
-                        .foreach(caseSrv.setResolutionStatus(richCase.`case`, _))
-                      val caseId = (caseJs \ "_id").as[String]
-                      caseMap += caseId → richCase._id
-                      auditMigration.importAudits("case", caseId, richCase.`case`, progress)
-                      taskMigration.importTasks(caseId, richCase.`case`, progress)
-                      observableMigration.importObservables(caseId, richCase.`case`, progress)
-                    }
+                      .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
+                      (caseJs \ "metrics")
+                        .asOpt[JsObject]
+                        .fold(Seq.empty[(String, Option[Any])])(extractMetrics)).toMap
+                    caseSrv
+                      .create(
+                        caze,
+                        (caseJs \ "owner").asOpt[String].flatMap(userMigration.get).map(_.user),
+                        organisation,
+                        customFields,
+                        None // no case template
+                      )
+                      .map { richCase ⇒
+                        (caseJs \ "impactStatus")
+                          .asOpt[String]
+                          .flatMap(impactStatusSrv.get(_).headOption())
+                          .foreach(caseSrv.setImpactStatus(richCase.`case`, _))
+                        (caseJs \ "resolutionStatus")
+                          .asOpt[String]
+                          .flatMap(resolutionStatusSrv.get(_).headOption())
+                          .foreach(caseSrv.setResolutionStatus(richCase.`case`, _))
+                        val caseId = (caseJs \ "_id").as[String]
+                        caseMap += caseId → richCase._id
+                        auditMigration.importAudits("case", caseId, richCase.`case`, progress)
+                        taskMigration.importTasks(caseId, richCase.`case`, progress)
+                        observableMigration.importObservables(caseId, richCase.`case`, progress)
+                      }
+                  }
+                  t2 = System.currentTimeMillis()
+                  r
                 }
-                t2 = System.currentTimeMillis()
-                r
               }
-            }.get
+              .get
           }
           val t3 = System.currentTimeMillis()
           logger.info(s"Timing : ${t3 - t1}ms / ${t3 - t2}ms")
