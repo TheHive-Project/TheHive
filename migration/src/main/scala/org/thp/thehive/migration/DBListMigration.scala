@@ -1,4 +1,5 @@
 package org.thp.thehive.migration
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

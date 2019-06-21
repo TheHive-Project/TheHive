@@ -1,12 +1,13 @@
 package org.thp.cortex.client
 
-import akka.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import play.api.Configuration
+
+import akka.actor.ActorSystem
+import javax.inject.{Inject, Singleton}
 
 /**
   * Injected CortexConfig containing all client instances

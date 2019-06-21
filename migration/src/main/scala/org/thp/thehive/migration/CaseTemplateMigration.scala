@@ -1,4 +1,5 @@
 package org.thp.thehive.migration
+
 import java.util.Date
 
 import scala.concurrent.Await
