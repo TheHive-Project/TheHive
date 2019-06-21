@@ -80,12 +80,15 @@ trait Utils {
   )(attachment: ElasticAttachment)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
 
     def readStream[A](f: InputStream ⇒ A) =
-      Retry(3, classOf[RemoteException]) {
-        val is = elasticAttachmentSrv.stream(attachment.id)
-        val r  = Try(f(is))
-        is.close()
-        r
-      }.get
+      Retry(3)
+        .on[RemoteException]
+        .withTry {
+          val is = elasticAttachmentSrv.stream(attachment.id)
+          val r  = Try(f(is))
+          is.close()
+          r
+        }
+        .get
 
     val hs   = readStream(hashers.fromInputStream)
     val id   = hs.head.toString
