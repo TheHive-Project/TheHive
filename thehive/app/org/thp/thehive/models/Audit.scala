@@ -6,7 +6,6 @@ import gremlin.scala.{Edge, Graph, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
-import org.thp.thehive.services.EventMessage
 
 @EdgeEntity[Audit, User]
 case class AuditUser()
@@ -35,7 +34,7 @@ case class RichAudit(
     details: Option[String],
     context: Entity,
     `object`: Option[Entity]
-) extends EventMessage
+)
 
 object RichAudit {
 

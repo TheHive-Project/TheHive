@@ -82,6 +82,8 @@ lazy val thehiveCore = (project in file("thehive"))
     libraryDependencies ++= Seq(
       chimney,
       guice,
+      akkaCluster,
+      akkaClusterTools,
       ws    % Test,
       specs % Test
     )

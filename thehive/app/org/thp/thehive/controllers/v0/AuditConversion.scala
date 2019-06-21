@@ -4,12 +4,16 @@ import scala.language.implicitConversions
 
 import play.api.libs.json.{JsObject, Json}
 
+import gremlin.scala.{__, By, Graph, GremlinScala, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.RichAudit
+import org.thp.thehive.models.{RichAudit, ShareCase, ShareTask, TaskLog}
+import org.thp.thehive.services.{CaseSteps, LogSteps, TaskSteps}
 
-trait AuditConversion {
+trait AuditConversion extends CaseConversion with TaskConversion with LogConversion {
 
   def actionToOperation(action: String): String = action match {
     case "createCase"         ⇒ "Creation"
@@ -20,7 +24,7 @@ trait AuditConversion {
     case "createLog"          ⇒ "Creation"
     case "updateLog"          ⇒ "Update"
     case "createTask"         ⇒ "Creation"
-    case _                    ⇒ ???
+    case _                    ⇒ "Unknown"
   }
 
   def objectTypeMapper(objectType: String): String = objectType match {
@@ -48,4 +52,31 @@ trait AuditConversion {
         .withFieldComputed(_.summary, a ⇒ Map(objectTypeMapper(a.`object`.getOrElse(a.context)._model.label) → Map(a.action → 1)))
         .transform
     )
+
+  def caseToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
+    new CaseSteps(_).richCase.map[(String, JsObject)](c ⇒ c._id → c.toJson.as[JsObject]).raw
+
+  def taskToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
+    _.project(
+      _.apply(By(new TaskSteps(__[Vertex]).richTask.map[JsObject](_.toJson.as[JsObject]).raw))
+        .and(By(caseToJson(db, graph)(__[Vertex].inTo[ShareTask].outTo[ShareCase])))
+    ).map {
+      case (task, (rootId, case0)) ⇒ rootId → (task + ("case" → case0))
+    }
+
+  def logToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
+    _.project(
+      _.apply(By(new LogSteps(__[Vertex]).richLog.map[JsObject](_.toJson.as[JsObject]).raw))
+        .and(By(taskToJson(db, graph)(__[Vertex].inTo[TaskLog])))
+    ).map {
+      case (log, (rootId, task)) ⇒ rootId → (log + ("case_task" → task))
+    }
+
+  def auditRenderer(label: String)(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
+    label match {
+      case "Case" ⇒ caseToJson
+      case "Task" ⇒ taskToJson
+      case "Log"  ⇒ logToJson
+      case _      ⇒ _.constant("" → JsObject.empty)
+    }
 }

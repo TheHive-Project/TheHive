@@ -1,5 +1,9 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
+import play.api.libs.json.JsObject
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -7,9 +11,6 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-
-import scala.util.Try
 
 @Singleton
 class AuditSrv @Inject()(
@@ -22,6 +23,8 @@ class AuditSrv @Inject()(
   val auditContextSrv = new EdgeSrv[AuditContext, Audit, Product]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
+
+  def get(auditIds: Seq[String])(implicit graph: Graph): AuditSteps = initSteps.has(Key[String]("_id"), P.within(auditIds))
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] =
     get(audit).getObject
@@ -72,7 +75,7 @@ class AuditSrv @Inject()(
       auditContextSrv.create(AuditContext(), createdAudit, context)
       `object`.map(auditedSrv.create(Audited(), createdAudit, _))
       val richAudit = RichAudit(createdAudit, context, `object`)
-      db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(richAudit))
+      db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(AuditStreamMessage(richAudit._id)))
       richAudit
     }
 
@@ -98,9 +101,9 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         }
     )
 
-  def richAuditWithCustomObjectRenderer(
-      entityToJson: String ⇒ GremlinScala[Vertex] ⇒ GremlinScala[JsObject]
-  ): ScalarSteps[(RichAudit, JsObject)] =
+  def richAuditWithCustomObjectRenderer[A](
+      entityToJson: String ⇒ GremlinScala[Vertex] ⇒ GremlinScala[A]
+  ): ScalarSteps[(RichAudit, A)] =
     ScalarSteps(
       raw
         .project(
@@ -111,7 +114,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
               By(
                 __[Vertex]
                   .outTo[Audited]
-                  .choose[Label, JsObject](
+                  .choose[Label, A](
                     on = _.label(),
                     BranchCase("Case", entityToJson("Case")),
                     BranchCase("Task", entityToJson("Task")),
@@ -121,8 +124,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
             )
         )
         .map {
-          case (audit, context, obj, objectJson) ⇒
-            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) → objectJson
+          case (audit, context, obj, renderedObject) ⇒
+            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) → renderedObject
         }
     )
 
