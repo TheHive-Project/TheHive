@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -58,8 +57,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val taskCtrl: TaskCtrl              = app.instanceOf[TaskCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val taskCtrl: TaskCtrl = app.instanceOf[TaskCtrl]
 
     s"[$name] task controller" should {
 

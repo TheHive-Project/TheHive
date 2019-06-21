@@ -6,7 +6,6 @@ import play.api.libs.json.{JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -86,8 +85,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val caseCtrl: CaseCtrl              = app.instanceOf[CaseCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val caseCtrl: CaseCtrl = app.instanceOf[CaseCtrl]
 
     s"[$name] case controller" should {
 

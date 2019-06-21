@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -36,8 +35,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val logCtrl: LogCtrl                = app.instanceOf[LogCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val logCtrl: LogCtrl = app.instanceOf[LogCtrl]
 
     s"[$name] log controller" should {
 

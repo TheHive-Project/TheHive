@@ -5,7 +5,6 @@ import java.util.Date
 import play.api.libs.json.{JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
-import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -73,8 +72,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val alertCtrl: AlertCtrl            = app.instanceOf[AlertCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val alertCtrl: AlertCtrl = app.instanceOf[AlertCtrl]
 
     s"[$name] alert controller" should {
 

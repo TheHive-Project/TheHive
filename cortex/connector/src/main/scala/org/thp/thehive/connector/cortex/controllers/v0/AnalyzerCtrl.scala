@@ -6,7 +6,6 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import akka.actor.ActorSystem
-import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.AnalyzerConversion
 import org.thp.scalligraph.controllers.EntryPoint
@@ -20,8 +19,7 @@ class AnalyzerCtrl @Inject()(
     db: Database,
     analyzerSrv: AnalyzerSrv,
     val queryExecutor: CortexQueryExecutor,
-    implicit val system: ActorSystem,
-    mat: Materializer
+    implicit val system: ActorSystem
 ) extends QueryCtrl
     with AnalyzerConversion {
 

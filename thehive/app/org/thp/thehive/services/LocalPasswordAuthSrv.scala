@@ -5,7 +5,6 @@ import scala.util.{Failure, Random, Try}
 import play.api.Logger
 import play.api.mvc.RequestHeader
 
-import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv}
 import org.thp.scalligraph.models.Database
@@ -21,7 +20,7 @@ object LocalPasswordAuthSrv {
 }
 
 @Singleton
-class LocalPasswordAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv, implicit val mat: Materializer) extends AuthSrv {
+class LocalPasswordAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
 
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)

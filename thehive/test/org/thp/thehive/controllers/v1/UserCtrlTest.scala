@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import scala.util.{Success, Try}
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -51,8 +50,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val userCtrl: UserCtrl              = app.instanceOf[UserCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val userCtrl: UserCtrl = app.instanceOf[UserCtrl]
 
     s"[$name] user controller" should {
 

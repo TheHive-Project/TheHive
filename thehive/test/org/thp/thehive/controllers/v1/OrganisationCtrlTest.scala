@@ -4,7 +4,6 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -37,7 +36,6 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val organisationCtrl: OrganisationCtrl = app.instanceOf[OrganisationCtrl]
-    implicit lazy val mat: Materializer    = app.instanceOf[Materializer]
 
     s"[$name] organisation controller" should {
 

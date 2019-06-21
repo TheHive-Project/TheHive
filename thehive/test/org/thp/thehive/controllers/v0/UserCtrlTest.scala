@@ -4,7 +4,6 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -40,10 +39,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = ()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val userCtrl: UserCtrl              = app.instanceOf[UserCtrl]
-    val authenticationCtrl              = app.instanceOf[AuthenticationCtrl]
-    val authenticateSrv                 = app.instanceOf[DefaultAuthenticateSrv]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val userCtrl: UserCtrl = app.instanceOf[UserCtrl]
+    val authenticationCtrl = app.instanceOf[AuthenticationCtrl]
+    val authenticateSrv    = app.instanceOf[DefaultAuthenticateSrv]
 
     s"[$name] user controller" should {
 

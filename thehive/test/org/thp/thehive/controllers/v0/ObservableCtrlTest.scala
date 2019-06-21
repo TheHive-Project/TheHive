@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.io.File
 import java.nio.file.{Path, Files ⇒ JFiles}
-import java.util.{Date, UUID}
+import java.util.UUID
 
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
@@ -12,18 +12,17 @@ import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import akka.stream.Materializer
+import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Entity, Schema}
+import org.thp.scalligraph.models.{DatabaseBuilder ⇒ _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{DataSrv, LocalUserSrv}
-import io.scalaland.chimney.dsl._
 
 case class TestObservable(
     dataType: String,
@@ -63,10 +62,9 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val observableCtrl: ObservableCtrl  = app.instanceOf[ObservableCtrl]
-    val caseCtrl: CaseCtrl              = app.instanceOf[CaseCtrl]
-    val hashers                         = Hasher(app.instanceOf[Configuration].get[Seq[String]]("attachment.hash"): _*)
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val observableCtrl: ObservableCtrl = app.instanceOf[ObservableCtrl]
+    val caseCtrl: CaseCtrl             = app.instanceOf[CaseCtrl]
+    val hashers                        = Hasher(app.instanceOf[Configuration].get[Seq[String]]("attachment.hash"): _*)
 
     s"[$name] observable controller" should {
 

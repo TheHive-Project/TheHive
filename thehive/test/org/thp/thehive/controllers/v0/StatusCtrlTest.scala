@@ -5,7 +5,6 @@ import play.api.mvc.AbstractController
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, UserSrv}
@@ -45,8 +44,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
   private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val statusCtrl                      = app.instanceOf[StatusCtrl]
-    implicit lazy val mat: Materializer = app.instanceOf[Materializer]
+    val statusCtrl = app.instanceOf[StatusCtrl]
 
     s"status controller" should {
 
