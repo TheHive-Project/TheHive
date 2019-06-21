@@ -5,9 +5,10 @@ import play.api.Logger
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.models.{SchemaUpdater ⇒ TheHiveSchemaUpdater}
 
 @Singleton
-class SchemaUpdater @Inject()(cortexSchema: CortexSchema, db: Database, userSrv: UserSrv) {
+class SchemaUpdater @Inject()(thehiveSchemaUpdater: TheHiveSchemaUpdater, cortexSchema: CortexSchema, db: Database, userSrv: UserSrv) {
   val latestVersion: Int = 1
 
   val currentVersion: Int = db.version("cortex")
