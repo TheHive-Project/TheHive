@@ -20,6 +20,7 @@ object Dependencies {
   lazy val macroParadise                  = "org.scalamacros"          % "paradise"                 % "2.1.1" cross CrossVersion.full
   lazy val playLogback                    = "com.typesafe.play"        %% "play-logback"            % play.core.PlayVersion.current
   lazy val playGuice                      = "com.typesafe.play"        %% "play-guice"              % play.core.PlayVersion.current
+  lazy val playFilters                    = "com.typesafe.play"        %% "filters-helpers"         % play.core.PlayVersion.current
   lazy val akkaCluster                    = "com.typesafe.akka"        %% "akka-cluster"            % "2.5.22"
   lazy val akkaClusterTools               = "com.typesafe.akka"        %% "akka-cluster-tools"      % "2.5.22"
   lazy val chimney                        = "io.scalaland"             %% "chimney"                 % "0.3.0"

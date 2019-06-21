@@ -129,7 +129,8 @@ lazy val cortexClient = (project in file("cortex/client"))
     name := "cortex-client",
     libraryDependencies ++= Seq(
       ws,
-      specs % Test
+      specs       % Test,
+      playFilters % Test
     )
   )
 
