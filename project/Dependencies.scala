@@ -3,9 +3,9 @@ import sbt._
 object Dependencies {
   lazy val gremlinScala                   = "com.michaelpollmeier"     %% "gremlin-scala"           % "3.4.1.3"
   lazy val gremlinOrientdb                = "com.orientechnologies"    % "orientdb-gremlin"         % "3.0.18"
-  lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"          % "0.3.1"
-  lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"    % "0.3.1"
-  lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"         % "0.3.1"
+  lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"          % "0.3.2"
+  lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"    % "0.3.2"
+  lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"         % "0.3.2"
   lazy val hbaseClient                    = "org.apache.hbase"         % "hbase-shaded-client"      % "1.4.9" exclude ("org.slf4j", "slf4j-log4j12")
   lazy val scalactic                      = "org.scalactic"            %% "scalactic"               % "3.0.8"
   lazy val specs                          = "com.typesafe.play"        %% "play-specs2"             % play.core.PlayVersion.current
@@ -21,8 +21,8 @@ object Dependencies {
   lazy val playLogback                    = "com.typesafe.play"        %% "play-logback"            % play.core.PlayVersion.current
   lazy val playGuice                      = "com.typesafe.play"        %% "play-guice"              % play.core.PlayVersion.current
   lazy val playFilters                    = "com.typesafe.play"        %% "filters-helpers"         % play.core.PlayVersion.current
-  lazy val akkaCluster                    = "com.typesafe.akka"        %% "akka-cluster"            % "2.5.22"
-  lazy val akkaClusterTools               = "com.typesafe.akka"        %% "akka-cluster-tools"      % "2.5.22"
+  lazy val akkaCluster                    = "com.typesafe.akka"        %% "akka-cluster"            % "2.5.23"
+  lazy val akkaClusterTools               = "com.typesafe.akka"        %% "akka-cluster-tools"      % "2.5.23"
   lazy val chimney                        = "io.scalaland"             %% "chimney"                 % "0.3.0"
   lazy val elastic4play                   = "org.thehive-project"      %% "elastic4play"            % "1.10.0" /*exclude ("org.apache.logging.log4j", "log4j-core") exclude("org.apache.logging.log4j", "log4j-api") exclude("org.apache.logging.log4j", "log4j-1.2-api") */
   lazy val log4jOverSlf4j                 = "org.slf4j"                % "log4j-over-slf4j"         % "1.7.25"
