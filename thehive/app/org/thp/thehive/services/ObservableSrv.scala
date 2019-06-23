@@ -55,6 +55,22 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
     Success(RichObservable(createdObservable, Some(data), None, extensions))
   }
 
+  def duplicate(richObservable: RichObservable)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] = {
+
+    val createdObservable = create(richObservable.observable)
+    richObservable.data.foreach { data ⇒
+      observableDataSrv.create(ObservableData(), createdObservable, data)
+    }
+    richObservable.attachment.foreach { attachment ⇒
+      observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+    }
+    // TODO copy or link key value ?
+    Success(richObservable.copy(observable = createdObservable))
+  }
+
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =
     for {
       _ ← Try(get(observable).data.remove())

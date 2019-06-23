@@ -169,7 +169,7 @@ class AlertSrv @Inject()(
           .toTry(task ⇒ taskSrv.create(task, createdCase.`case`))
       }.flip
 
-      _ = importObservables(alert.alert, createdCase.`case`)
+      _ ← importObservables(alert.alert, createdCase.`case`)
       _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
       _ ← markAsRead(alert._id)
       _ ← auditSrv.createCase(createdCase.`case`)
@@ -189,8 +189,8 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Seq[ShareObservable]] =
-    get(alert).observables.toIterator.toTry { observable ⇒
-      caseSrv.addObservable(`case`, observableSrv.create(observable))
+    get(alert).observables.richObservable.toIterator.toTry { richObservable ⇒
+      observableSrv.duplicate(richObservable).flatMap(duplicatedObservable ⇒ caseSrv.addObservable(`case`, duplicatedObservable.observable))
     }
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
