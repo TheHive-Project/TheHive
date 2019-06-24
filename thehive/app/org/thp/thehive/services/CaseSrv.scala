@@ -271,6 +271,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
                 case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
+              .toSeq
             RichCase(
               caze.as[Case],
               atMostOneOf[String](impactStatus),
@@ -303,6 +304,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
                 case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
+              .toSeq
             RichCase(
               caze.as[Case],
               atMostOneOf[String](impactStatus),
@@ -338,7 +340,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def linkedCases: Map[RichCase, Seq[RichObservable]] = {
+  def linkedCases: Seq[(RichCase, Seq[RichObservable])] = {
     val originCaseLabel = StepLabel[JSet[Vertex]]()
     val observableLabel = StepLabel[Vertex]()
     val linkedCaseLabel = StepLabel[Vertex]()
@@ -364,9 +366,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .select(richCaseLabel.name, richObservablesLabel.name)
       .toList()
       .map { resultMap =>
-        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala
+        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
       }
-      .toMap
   }
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])

@@ -28,6 +28,7 @@ object InputCustomFieldValue {
   val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
     case (_, FObject(fields)) =>
       fields
+        .toSeq
         .validatedBy {
           case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value)))
           case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value)))

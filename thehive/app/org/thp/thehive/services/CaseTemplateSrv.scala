@@ -122,8 +122,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
             RichCaseTemplate(
               caseTemplate.as[CaseTemplate],
               onlyOneOf[String](organisation),
-              tasks.asScala.map(_.as[Task]),
-              customFieldValues
+              tasks.asScala.map(_.as[Task]).toSeq,
+              customFieldValues.toSeq
             )
         }
     )

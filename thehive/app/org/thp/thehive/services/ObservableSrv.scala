@@ -113,7 +113,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               observable.as[Observable],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              extensions.asScala.map(_.as[KeyValue])
+              extensions.asScala.map(_.as[KeyValue]).toSeq
             )
         }
     )
@@ -136,7 +136,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               observable.as[Observable],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              extensions.asScala.map(_.as[KeyValue])
+              extensions.asScala.map(_.as[KeyValue]).toSeq
             ) -> renderedEntity
         }
     )

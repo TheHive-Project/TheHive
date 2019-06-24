@@ -2,11 +2,11 @@ import Dependencies._
 
 lazy val scala212               = "2.12.8"
 lazy val scala213               = "2.13.0"
-lazy val supportedScalaVersions = List(scala212) //, scala213)
+lazy val supportedScalaVersions = List(scala212, scala213)
 // format: off
 lazy val commonSettings = Seq(
   organization := "org.thp",
-  scalaVersion := "2.12.8",
+  scalaVersion := scala212,
   crossScalaVersions := supportedScalaVersions,
   resolvers ++= Seq(
     Resolver.mavenLocal,
@@ -21,10 +21,10 @@ lazy val commonSettings = Seq(
     "-unchecked",              // Enable additional warnings where generated code depends on assumptions.
     //"-Xfatal-warnings",      // Fail the compilation if there are any warnings.
     "-Xlint",                  // Enable recommended additional warnings.
-    "-Ywarn-adapted-args",     // Warn if an argument list is modified to match the receiver.
+//    "-Ywarn-adapted-args",     // Warn if an argument list is modified to match the receiver.
     //"-Ywarn-dead-code",      // Warn when dead code is identified.
-    "-Ywarn-inaccessible",     // Warn about inaccessible types in method signatures.
-    "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
+//    "-Ywarn-inaccessible",     // Warn about inaccessible types in method signatures.
+//    "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
     "-Ywarn-numeric-widen",    // Warn when numerics are widened.
     "-Ywarn-value-discard",    // Warn when non-Unit expression results are unused
     //"-Ylog-classpath",
@@ -151,6 +151,7 @@ lazy val thehiveMigration = (project in file("migration"))
   .settings(
     name := "thehive-migration",
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
+    crossScalaVersions := Seq(scala212),
     libraryDependencies ++= Seq(
       elastic4play,
       ehcache,
@@ -159,7 +160,7 @@ lazy val thehiveMigration = (project in file("migration"))
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
     fork := true,
-    javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml")
+    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
   )
 
 lazy val npm        = taskKey[Unit]("Install npm dependencies")

@@ -93,7 +93,7 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
           case (log, attachments) =>
             RichLog(
               log.as[Log],
-              attachments.asScala.map(_.as[Attachment])
+              attachments.asScala.map(_.as[Attachment]).toSeq
             )
         }
     )

@@ -262,6 +262,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               case List(acf, cf) => CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
               case _             => throw InternalError("Not possible")
             }
+            .toSeq
           val organisation = resultMap.getValue(organisationLabel).as[Organisation]
           RichAlert(
             resultMap.getValue(alertLabel).as[Alert],
@@ -310,7 +311,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             RichAlert(
               alert.as[Alert],
               onlyOneOf[String](organisation),
-              customFieldValues,
+              customFieldValues.toSeq,
               atMostOneOf[String](caseId),
               atMostOneOf[String](caseTemplate)
             )

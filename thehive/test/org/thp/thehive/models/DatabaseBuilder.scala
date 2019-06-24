@@ -9,7 +9,7 @@ import scala.util.{Failure, Success}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
-import gremlin.scala._
+import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
