@@ -26,4 +26,12 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     * @return
     */
   def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = analyser.list.map(_.map(_.copy(cortexIds = Some(List(name)))))
+
+  /**
+  * GET analyzer by id
+    *
+    * @param id guess
+    * @return
+    */
+  def getAnalyzer(id: String): Future[OutputCortexAnalyzer] = analyser.get(id).map(_.copy(cortexIds = Some(List(name))))
 }

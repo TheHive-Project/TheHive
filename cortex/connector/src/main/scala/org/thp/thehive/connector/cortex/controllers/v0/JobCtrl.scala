@@ -14,8 +14,13 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.{Success, Try}
 
 @Singleton
-class JobCtrl @Inject()(entryPoint: EntryPoint, db: Database, val queryExecutor: CortexQueryExecutor, jobSrv: JobSrv, observableSrv: ObservableSrv)
-    extends QueryCtrl
+class JobCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    val queryExecutor: CortexQueryExecutor,
+    jobSrv: JobSrv,
+    observableSrv: ObservableSrv
+) extends QueryCtrl
     with JobConversion {
 
   def get(jobId: String): Action[AnyContent] =
@@ -49,10 +54,8 @@ class JobCtrl @Inject()(entryPoint: EntryPoint, db: Database, val queryExecutor:
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val inputJob: InputJob = request.body('job)
         for {
-          observable <- observableSrv.getOrFail(inputJob.artifactId)
-          job <- Try(jobSrv.create(inputJob, observable))
-        } yield job
-
-        Success(Results.Created(""))
+          observable ← observableSrv.getOrFail(inputJob.artifactId)
+          job        ← Try(jobSrv.create(inputJob, observable))
+        } yield Results.Created(job.toJson)
       }
 }

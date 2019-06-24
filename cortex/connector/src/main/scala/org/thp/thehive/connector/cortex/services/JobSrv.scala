@@ -2,6 +2,8 @@ package org.thp.thehive.connector.cortex.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.thp.cortex.client.CortexConfig
+import org.thp.cortex.dto.client.InputCortexArtifact
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
@@ -9,8 +11,11 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
 import org.thp.thehive.models._
 
+import scala.concurrent.{ExecutionContext, Future}
+
 @Singleton
-class JobSrv @Inject()(implicit db: Database) extends VertexSrv[Job, JobSteps] {
+class JobSrv @Inject()(implicit db: Database, cortexConfig: CortexConfig, implicit val ex: ExecutionContext) extends VertexSrv[Job, JobSteps] {
+
   val observableJobSrv = new EdgeSrv[ObservableJob, Observable, Job]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
@@ -29,6 +34,25 @@ class JobSrv @Inject()(implicit db: Database) extends VertexSrv[Job, JobSteps] {
     observableJobSrv.create(ObservableJob(), observable, createdJob)
 
     createdJob
+  }
+
+  def submitJob(job: Job, observable: RichObservable, `case`: Case with Entity) = {
+    for {
+      cortexClient <- cortexConfig.instances
+        .find(_.name == job.cortexId)
+        .orElse(cortexConfig.instances.headOption)
+        .map(Future.successful)
+        .getOrElse(Future.failed(new Exception(s"No CortexClient found (tried first ${job.cortexId})")))
+      analyzer <- cortexClient.getAnalyzer(job.workerId)
+      cortexArtifact <- (observable.attachment, observable.data) match {
+        case (None, Some(data)) => Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
+        case (Some(attachment), None) => Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, None, None)) // TODO
+        case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
+      }
+    } yield "todo"
+
+
+
   }
 }
 

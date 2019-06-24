@@ -24,7 +24,7 @@ trait JobConversion {
       .withFieldConst(_.startDate, new Date)
       .withFieldConst(_.endDate, new Date)
       .withFieldConst(_.report, None)
-      .withFieldComputed(_.cortexId, _.cortexId)
+      .withFieldComputed(_.cortexId, _.cortexId.getOrElse(""))
       .withFieldConst(_.cortexJobId, "tbd")
       .transform
 
