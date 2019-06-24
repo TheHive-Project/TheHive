@@ -9,7 +9,7 @@ import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.UserSrv
 import play.api.Configuration
-import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
+import play.api.libs.json.{JsBoolean, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
 import scala.util.{Success, Try}
@@ -27,8 +27,20 @@ class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration,
               "TheHive"     → getVersion(classOf[TheHiveModule]),
               "Play"        → getVersion(classOf[AbstractController])
             ),
-            "connectors" → JsObject.empty,
-            "health"     → Json.obj("elasticsearch" → "UNKNOWN"),
+            "connectors" → Json.obj(
+              "cortex" → Json.obj( // FIXME make this dynamic
+                "enabled" → true,
+                "servers" → List(
+                  Json.obj(
+                    "name"    → "interne",
+                    "version" → "2.x.x",
+                    "status"  → "OK"
+                  )
+                ),
+                "status" → "OK"
+              )
+            ),
+            "health" → Json.obj("elasticsearch" → "UNKNOWN"),
             "config" → Json.obj(
               "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
               "authType" → (authSrv match {
