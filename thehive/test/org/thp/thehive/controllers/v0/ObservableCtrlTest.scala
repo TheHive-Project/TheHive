@@ -22,7 +22,7 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{DataSrv, LocalUserSrv}
+import org.thp.thehive.services.{AlertSrv, DataSrv, LocalUserSrv}
 
 case class TestObservable(
     dataType: String,
@@ -206,6 +206,34 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
           ok
         }
 
+      }
+
+      "be able to retrieve an observable" in {
+        val maybeObservable = app.instanceOf[Database].transaction { implicit graph =>
+          app
+            .instanceOf[AlertSrv]
+            .initSteps
+            .getBySourceId("testType", "testSource", "ref1")
+            .observables
+            .headOption()
+        }
+        maybeObservable must beSome
+        val observableId = maybeObservable.get._id
+        val getRequest = FakeRequest("GET", s"/api/case/artifact/$observableId")
+          .withHeaders("user" -> "user3")
+        val getResult = observableCtrl.get(observableId)(getRequest)
+
+        status(getResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
+        TestObservable(contentAsJson(getResult).as[OutputObservable]) must equalTo(
+          TestObservable(
+            dataType = "domain",
+            data = Some("h.fr"),
+            tlp = 3,
+            tags = Set("testDomain"),
+            ioc = true,
+            message = Some("Some weird domain")
+          )
+        )
       }
 
       "be able to update and bulk update observables" in {
