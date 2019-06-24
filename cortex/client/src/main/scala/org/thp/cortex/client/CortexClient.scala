@@ -1,14 +1,13 @@
 package org.thp.cortex.client
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
-
-import play.api.Logger
-
 import akka.actor.ActorSystem
 import org.thp.cortex.dto.client.{InputCortexAnalyzer, OutputCortexAnalyzer}
 import org.thp.cortex.dto.v0._
 import org.thp.scalligraph.{DelayRetry, Retry}
+import play.api.Logger
+
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
 class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
     implicit ws: CustomWSAPI,
@@ -26,5 +25,5 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = analyser.list
+  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = analyser.list.map(_.map(_.copy(cortexIds = Some(List(name)))))
 }
