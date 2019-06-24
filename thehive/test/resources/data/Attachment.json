@@ -1,0 +1,14 @@
+[
+  {
+    "id": "attachment-hello",
+    "name": "hello.txt",
+    "size": 13,
+    "contentType": "text/plain",
+    "hashes": [
+      "a4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889",
+      "b1fda0e52e8099d2aeb80f57bb91548cace3093f",
+      "905138a85e85e74344e90d25dba7299e"
+    ],
+    "attachmentId": "a4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889"
+  }
+]

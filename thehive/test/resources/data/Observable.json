@@ -1,9 +1,29 @@
-[{
-  "id": "h.fr",
-  "type": "domain",
-  "tags": ["testDomain"],
-  "message": "Some weird domain",
-  "tlp": 3,
-  "ioc": true,
-  "sighted": false
-}]
+[
+  {
+    "id": "h.fr",
+    "type": "domain",
+    "tags": ["testDomain"],
+    "message": "Some weird domain",
+    "tlp": 3,
+    "ioc": true,
+    "sighted": false
+  },
+  {
+    "id": "c.fr",
+    "type": "domain",
+    "tags": ["testDomain"],
+    "message": "This domain",
+    "tlp": 2,
+    "ioc": false,
+    "sighted": false
+  },
+  {
+    "id": "hello",
+    "type": "file",
+    "tags": ["hello", "world"],
+    "message": "hello world",
+    "tlp": 1,
+    "ioc": false,
+    "sighted": false
+  }
+]

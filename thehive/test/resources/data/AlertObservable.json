@@ -2,5 +2,13 @@
   {
     "from": "alert1",
     "to": "h.fr"
+  },
+  {
+    "from": "alert5",
+    "to": "c.fr"
+  },
+  {
+    "from": "alert5",
+    "to": "hello"
   }
 ]

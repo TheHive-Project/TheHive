@@ -36,7 +36,8 @@ class DatabaseBuilder @Inject()(
     keyValueSrv: KeyValueSrv,
     dataSrv: DataSrv,
     logSrv: LogSrv,
-    alertSrv: AlertSrv
+    alertSrv: AlertSrv,
+    attachmentSrv: AttachmentSrv
 ) {
 
   lazy val logger = Logger(getClass)
@@ -63,7 +64,8 @@ class DatabaseBuilder @Inject()(
           createVertex(logSrv, FieldsParser[Log]) ++
           createVertex(alertSrv, FieldsParser[Alert]) ++
           createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
-          createVertex(impactStatusSrv, FieldsParser[ImpactStatus])
+          createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
+          createVertex(attachmentSrv, FieldsParser[Attachment])
 
       createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
       createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
@@ -80,6 +82,7 @@ class DatabaseBuilder @Inject()(
 
       createEdge(observableSrv.observableKeyValueSrv, observableSrv, keyValueSrv, FieldsParser[ObservableKeyValue], idMap)
       createEdge(observableSrv.observableDataSrv, observableSrv, dataSrv, FieldsParser[ObservableData], idMap)
+      createEdge(observableSrv.observableAttachmentSrv, observableSrv, attachmentSrv, FieldsParser[ObservableAttachment], idMap)
 
       createEdge(taskSrv.taskUserSrv, taskSrv, userSrv, FieldsParser[TaskUser], idMap)
       createEdge(taskSrv.taskLogSrv, taskSrv, logSrv, FieldsParser[TaskLog], idMap)
@@ -103,12 +106,6 @@ class DatabaseBuilder @Inject()(
 
       ()
     }
-//    {
-//      import org.apache.tinkerpop.gremlin.process.traversal.IO
-//      import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry
-//      db.transaction(_.traversal().io("graph.json").`with`(IO.registry, JanusGraphIoRegistry.getInstance).write().iterate())
-//    }
-
   }
 
   def warn(message: String): Option[Nothing] = {

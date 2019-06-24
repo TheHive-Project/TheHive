@@ -15,8 +15,8 @@ import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0._
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.LocalUserSrv
+import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable, TheHiveSchema}
+import org.thp.thehive.services.{CaseSrv, LocalUserSrv}
 
 case class TestAlert(
     `type`: String,
@@ -304,7 +304,41 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       )
 
       TestCase(resultCaseOutput) must_=== expected
+      val observables = app.instanceOf[Database].transaction { implicit graph ⇒
+        app.instanceOf[CaseSrv].get(resultCaseOutput._id).observables.richObservable.toList()
+      }
+      observables must contain(
+        exactly(
+          beLike[RichObservable] {
+            case RichObservable(obs, Some(data), None, _) if obs.`type` == "domain" && data.data == "c.fr" ⇒ ok
+          },
+          beLike[RichObservable] {
+            case RichObservable(obs, None, Some(attachment), _) if obs.`type` == "file" && attachment.name == "hello.txt" ⇒ ok
+          }
+        )
+      )
     }
+    /*
+    {
+    "id": "c.fr",
+    "type": "domain",
+    "tags": ["testDomain"],
+    "message": "This domain",
+    "tlp": 2,
+    "ioc": false,
+    "sighted": false
+  },
+  {
+    "id": "hello",
+    "type": "file",
+    "tags": ["hello", "world"],
+    "message": "hello world",
+    "tlp": 1,
+    "ioc": false,
+    "sighted": false
+  }
+]
+     */
 
     "merge an alert with a case" in todo
   }

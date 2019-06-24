@@ -2,5 +2,9 @@
   {
     "from": "h.fr",
     "to": "data-h.fr"
+  },
+  {
+    "from": "c.fr",
+    "to": "data-c.fr"
   }
 ]
