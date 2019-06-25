@@ -93,6 +93,8 @@ lazy val thehiveCore = (project in file("thehive"))
 lazy val thehiveCortex = (project in file("cortex/connector"))
   .dependsOn(thehiveCore)
   .dependsOn(cortexClient)
+  .dependsOn(thehiveCore % "test -> test")
+  .dependsOn(scalligraph % "test -> test")
   .settings(commonSettings)
   .settings(
     name := "thehive-cortex",
