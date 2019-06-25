@@ -20,10 +20,11 @@ object Client {
 
 class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: CustomWSAPI) {
 
-  def create(input: Input)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
+  def create(input: Input, urlOverride: Option[String])(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     val body = Json.toJson(input)
-    Client.logger.debug(s"Request POST $baseUrl\n${Json.prettyPrint(body)}")
-    auth(ws.url(baseUrl))
+    val url  = urlOverride.getOrElse(baseUrl)
+    Client.logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
+    auth(ws.url(url))
       .post(body)
       .transform {
         case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue].as[Output])

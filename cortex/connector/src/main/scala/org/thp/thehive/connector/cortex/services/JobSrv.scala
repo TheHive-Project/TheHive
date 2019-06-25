@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.client.InputCortexArtifact
+import org.thp.cortex.dto.client.{CortexAttachment, InputCortexArtifact}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
@@ -45,8 +45,14 @@ class JobSrv @Inject()(implicit db: Database, cortexConfig: CortexConfig, implic
         .getOrElse(Future.failed(new Exception(s"No CortexClient found (tried first ${job.cortexId})")))
       analyzer <- cortexClient.getAnalyzer(job.workerId)
       cortexArtifact <- (observable.attachment, observable.data) match {
-        case (None, Some(data)) => Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
-        case (Some(attachment), None) => Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, None, None)) // TODO
+        case (None, Some(data)) =>
+          Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
+
+        case (Some(a), None) =>
+          Future.successful(
+            InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, None, Some(CortexAttachment(a.name, a.size, a.contentType, ???)))
+          )
+
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
     } yield "todo"
