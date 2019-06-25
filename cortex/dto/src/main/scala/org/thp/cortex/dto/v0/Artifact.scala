@@ -1,8 +1,14 @@
 package org.thp.cortex.dto.v0
 
-import play.api.libs.json.{Json, OFormat, OWrites}
+import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
 
-case class InputArtifact(something: String) // TODO
+case class InputArtifact(
+    dataType: String,
+    data: Option[String],
+    tlp: Long,
+    message: Option[String],
+    parameters: JsObject
+)
 
 object InputArtifact {
   implicit val writes: OWrites[InputArtifact] = Json.writes[InputArtifact]

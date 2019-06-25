@@ -1,7 +1,5 @@
 package org.thp.cortex.dto.v0
 
-import io.scalaland.chimney.dsl._
-import org.thp.cortex.dto.client.OutputCortexAnalyzer
 import play.api.libs.json.{Json, OFormat}
 
 case class InputAnalyzer(
@@ -25,12 +23,4 @@ case class OutputAnalyzer(
 
 object OutputAnalyzer {
   implicit val format: OFormat[OutputAnalyzer] = Json.format[OutputAnalyzer]
-}
-
-trait AnalyzerConversion {
-
-  def toOutputAnalyzer(a: OutputCortexAnalyzer): OutputAnalyzer =
-    a.into[OutputAnalyzer]
-      .withFieldComputed(_.cortexIds, _.cortexIds.getOrElse(Nil))
-      .transform
 }

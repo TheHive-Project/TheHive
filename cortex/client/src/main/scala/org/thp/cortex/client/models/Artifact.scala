@@ -1,21 +1,18 @@
-package org.thp.cortex.dto.client
+package org.thp.cortex.client.models
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import play.api.libs.json.{Json, OFormat}
 
-case class InputCortexArtifact(
+case class Artifact(
     tlp: Int,
     pap: Int,
     dataType: String,
     message: String,
     data: Option[String],
-    attachment: Option[String] // TODO
+    attachment: Option[Attachment]
 )
 
-object InputCortexArtifact {
-  implicit val format: OFormat[InputCortexArtifact] = Json.format[InputCortexArtifact]
+object Artifact {
+  implicit val format: OFormat[Artifact] = Json.format[Artifact]
 }
 
 //case class OutputCortexArtifact(

@@ -6,7 +6,7 @@ import play.api.Logger
 
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.client.OutputCortexAnalyzer
+import org.thp.cortex.client.models.OutputCortexAnalyzer
 
 @Singleton
 class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: ExecutionContext) {

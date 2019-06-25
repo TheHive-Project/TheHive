@@ -2,16 +2,16 @@ package org.thp.cortex.client
 
 import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
-import org.thp.cortex.dto.client.OutputCortexAnalyzer
 import play.api.Logger
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Action, ControllerComponents, Results}
 import play.api.routing.Router
 import play.api.routing.sird._
 import play.api.test.{PlaySpecification, WithServer}
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+
+import org.thp.cortex.client.models.OutputCortexAnalyzer
 
 class CortexClientTest extends PlaySpecification with Mockito {
 

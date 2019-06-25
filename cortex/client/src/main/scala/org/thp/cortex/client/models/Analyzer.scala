@@ -1,4 +1,4 @@
-package org.thp.cortex.dto.client
+package org.thp.cortex.client.models
 
 import play.api.libs.json.{Json, OFormat}
 
