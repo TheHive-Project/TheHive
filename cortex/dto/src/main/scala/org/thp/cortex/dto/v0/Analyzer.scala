@@ -2,25 +2,25 @@ package org.thp.cortex.dto.v0
 
 import play.api.libs.json.{Json, OFormat}
 
-case class InputAnalyzer(
+case class InputCortexAnalyzer(
     name: String,
     description: String,
     dataTypeList: Seq[String]
 )
 
-object InputAnalyzer {
-  implicit val format: OFormat[InputAnalyzer] = Json.format[InputAnalyzer]
+object InputCortexAnalyzer {
+  implicit val format: OFormat[InputCortexAnalyzer] = Json.format[InputCortexAnalyzer]
 }
 
-case class OutputAnalyzer(
+case class OutputCortexAnalyzer(
     id: String,
     name: String,
     version: String,
     description: String,
     dataTypeList: Seq[String],
-    cortexIds: List[String] = Nil
+    cortexIds: Option[List[String]] = None
 )
 
-object OutputAnalyzer {
-  implicit val format: OFormat[OutputAnalyzer] = Json.format[OutputAnalyzer]
+object OutputCortexAnalyzer {
+  implicit val format: OFormat[OutputCortexAnalyzer] = Json.format[OutputCortexAnalyzer]
 }

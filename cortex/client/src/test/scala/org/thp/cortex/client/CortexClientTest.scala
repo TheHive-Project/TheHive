@@ -2,16 +2,16 @@ package org.thp.cortex.client
 
 import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
+import org.thp.cortex.dto.v0.OutputCortexAnalyzer
 import play.api.Logger
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Action, ControllerComponents, Results}
 import play.api.routing.Router
 import play.api.routing.sird._
 import play.api.test.{PlaySpecification, WithServer}
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-
-import org.thp.cortex.client.models.OutputCortexAnalyzer
 
 class CortexClientTest extends PlaySpecification with Mockito {
 
@@ -32,7 +32,8 @@ class CortexClientTest extends PlaySpecification with Mockito {
     implicit lazy val system: ActorSystem  = app.actorSystem
     val mockLogger                         = mock[Logger]
 
-    lazy val client = new CortexClient("test", s"http://127.0.0.1:3333", 3.seconds, 3) {
+    val clientName = "test"
+    lazy val client = new CortexClient(clientName, s"http://127.0.0.1:3333", 3.seconds, 3) {
       override lazy val logger: Logger = mockLogger
     }
 
@@ -40,7 +41,7 @@ class CortexClientTest extends PlaySpecification with Mockito {
       val analyzers: Seq[OutputCortexAnalyzer] = await(client.listAnalyser)
 
       analyzers.length shouldEqual 2
-      analyzers.head.cortexIds must beNone
+      analyzers.head.cortexIds must beSome(List(clientName))
       analyzers.head.name shouldEqual "anaTest1"
     }
   }

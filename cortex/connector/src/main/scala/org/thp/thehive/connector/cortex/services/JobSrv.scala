@@ -2,20 +2,16 @@ package org.thp.thehive.connector.cortex.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.client.{CortexAttachment, InputCortexArtifact}
-import org.thp.scalligraph.EntitySteps
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.scalligraph.{EntitySteps, NotFoundError}
+import org.thp.cortex.dto.v0.InputCortexArtifact
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
 import org.thp.thehive.models._
-import scala.concurrent.{ExecutionContext, Future}
-import io.scalaland.chimney.dsl._
 
-import org.thp.cortex.client.models.Artifact
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class JobSrv @Inject()(implicit db: Database, cortexConfig: CortexConfig, implicit val ex: ExecutionContext) extends VertexSrv[Job, JobSteps] {
@@ -40,9 +36,6 @@ class JobSrv @Inject()(implicit db: Database, cortexConfig: CortexConfig, implic
     createdJob
   }
 
-  def richObservableToArtifact(richObservable: RichObservable) =
-    richObservable.into[Artifact].transform
-
   def submitJob(job: Job, observable: RichObservable, `case`: Case with Entity) =
     for {
       cortexClient ← cortexConfig
@@ -50,14 +43,11 @@ class JobSrv @Inject()(implicit db: Database, cortexConfig: CortexConfig, implic
         .find(_.name == job.cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex ${job.cortexId} not found")))(Future.successful)
       analyzer ← cortexClient.getAnalyzer(job.workerId)
-      artifact = richObservableToArtifact(observable)
-      job ← cortexClient.analyse(analyzer.id, artifact)
-
       cortexArtifact ← (observable.attachment, observable.data) match {
         case (None, Some(data)) ⇒
-          Future.successful(Artifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
+          Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
         case (Some(attachment), None) ⇒
-          Future.successful(Artifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, None, None)) // TODO
+          Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, None, None)) // TODO
         case _ ⇒ Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
     } yield "todo"

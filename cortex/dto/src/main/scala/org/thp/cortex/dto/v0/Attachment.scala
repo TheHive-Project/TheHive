@@ -1,4 +1,4 @@
-package org.thp.cortex.client.models
+package org.thp.cortex.dto.v0
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString

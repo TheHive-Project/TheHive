@@ -1,21 +1,42 @@
 package org.thp.cortex.dto.v0
 
-import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
+import java.util.Date
 
-case class InputArtifact(
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+
+case class InputCortexArtifact(
+    tlp: Int,
+    pap: Int,
     dataType: String,
+    message: String,
     data: Option[String],
-    tlp: Long,
-    message: Option[String],
-    parameters: JsObject
+    attachment: Option[Attachment]
 )
 
-object InputArtifact {
-  implicit val writes: OWrites[InputArtifact] = Json.writes[InputArtifact]
+object InputCortexArtifact {
+  implicit val writes: Writes[InputCortexArtifact] = (
+    (JsPath \ "tlp").write[Int] and
+      (JsPath \ "pap").write[Int] and
+      (JsPath \ "dataType").write[String] and
+      (JsPath \ "message").write[String] and
+      (JsPath \ "data").writeNullable[String]
+  )(i => (i.tlp, i.pap, i.dataType, i.message, i.data))
 }
 
-case class OutputArtifact(something: String) // TODO
+case class OutputCortexArtifact(
+    id: String,
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
+    date: Date,
+    status: String
+)
 
-object OutputArtifact {
-  implicit val format: OFormat[OutputArtifact] = Json.format[OutputArtifact]
+object OutputCortexArtifact {
+  implicit val format: OFormat[OutputCortexArtifact] = Json.format[OutputCortexArtifact]
 }
+
+case class CortexAttachment(name: String, size: Long, contentType: String, data: Source[ByteString, _])

@@ -4,19 +4,19 @@ import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
-import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services._
+import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{ParentFilterQuery, ParentIdFilter, ParentIdInputFilter, ParentQueryFilter}
 import org.thp.thehive.services.ObservableSteps
 
-import scala.reflect.runtime.{universe ⇒ ru}
+import scala.reflect.runtime.{universe => ru}
 
 /**
   * Range param case class for search query parsing

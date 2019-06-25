@@ -1,10 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.InputJob
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.Query
+import org.thp.thehive.connector.cortex.dto.v0.InputJob
 import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.QueryCtrl
 import org.thp.thehive.services.ObservableSrv
