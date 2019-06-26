@@ -4,12 +4,6 @@ import java.util.Date
 
 import play.api.libs.json.{Json, OFormat}
 
-case class InputJob(analyzerId: String, cortexId: Option[String], artifactId: String)
-
-object InputJob {
-  implicit val format: OFormat[InputJob] = Json.format[InputJob]
-}
-
 case class OutputJob(
     analyzerId: String,
     analyzerName: Option[String],

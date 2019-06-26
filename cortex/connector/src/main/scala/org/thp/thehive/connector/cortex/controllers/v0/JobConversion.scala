@@ -3,30 +3,17 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
+import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.thehive.connector.cortex.dto.v0.{InputJob, OutputJob}
+import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.connector.cortex.services.JobSteps
 
 import scala.language.implicitConversions
 
 trait JobConversion {
-
-  implicit def fromInputTask(inputJob: InputJob): Job =
-    inputJob
-      .into[Job]
-      .withFieldComputed(_.workerId, _.analyzerId)
-      .withFieldConst(_.workerName, "tbd")
-      .withFieldConst(_.workerDefinition, "tbd")
-      .withFieldConst(_.status, JobStatus.InProgress)
-      .withFieldConst(_.startDate, new Date)
-      .withFieldConst(_.endDate, new Date)
-      .withFieldConst(_.report, None)
-      .withFieldComputed(_.cortexId, _.cortexId.getOrElse(""))
-      .withFieldConst(_.cortexJobId, "tbd")
-      .transform
 
   implicit def toOutputJob(j: Job with Entity): Output[OutputJob] =
     Output[OutputJob](
@@ -49,4 +36,17 @@ trait JobConversion {
       .property[Option[String]]("cortexId")(_.simple.updatable)
       .property[Date]("startDate")(_.simple.readonly)
       .build
+
+  def fromCortexOutputJob(j: CortexOutputJob): Job =
+    j.into[Job]
+      .withFieldComputed(_.workerId, _.workerId)
+      .withFieldComputed(_.workerName, _.workerName)
+      .withFieldComputed(_.workerDefinition, _.workerDefinition)
+      .withFieldComputed(_.status, s ⇒ JobStatus.withName(s.status.toString))
+      .withFieldComputed(_.startDate, _.startDate)
+      .withFieldComputed(_.endDate, _.endDate)
+      .withFieldConst(_.report, None)
+      .withFieldConst(_.cortexId, "tbd")
+      .withFieldComputed(_.cortexJobId, _.id)
+      .transform
 }

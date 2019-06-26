@@ -4,14 +4,15 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.Query
-import org.thp.thehive.connector.cortex.dto.v0.InputJob
 import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.QueryCtrl
 import org.thp.thehive.services.ObservableSrv
 import play.api.libs.json.JsValue
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.Success
 
 @Singleton
 class JobCtrl @Inject()(
@@ -50,12 +51,24 @@ class JobCtrl @Inject()(
 
   def create(): Action[AnyContent] =
     entryPoint("create job")
-      .extract('job, FieldsParser[InputJob])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val inputJob: InputJob = request.body('job)
-        for {
-          observable ← observableSrv.getOrFail(inputJob.artifactId)
-          job        ← Try(jobSrv.create(inputJob, observable))
-        } yield Results.Created(job.toJson)
+      .extract('analyzerId, FieldsParser[String].on("analyzerId"))
+      .extract('cortexId, FieldsParser[String].on("cortexId"))
+      .extract('artifactId, FieldsParser[String].on("artifactId"))
+      .asyncAuth { implicit request ⇒
+        db.transaction { implicit graph ⇒
+          val analyzerId: String = request.body('analyzerId)
+          val cortexId: String   = request.body('cortexId)
+          val artifactId: String = request.body('artifactId)
+          val tryObservable      = observableSrv.get(artifactId).richObservable.getOrFail()
+          val tryCase            = observableSrv.get(artifactId).caze.getOrFail()
+          val r = for {
+            o ← tryObservable
+            c ← tryCase
+          } yield jobSrv
+            .submitJob(cortexId, analyzerId, o, c)
+            .map(j ⇒ Results.Created(j.toJson))
+
+          r.getOrElse(Future.successful(Results.InternalServerError))
+        }
       }
 }

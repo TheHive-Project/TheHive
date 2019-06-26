@@ -9,7 +9,7 @@ import org.thp.thehive.models.Observable
 
 object JobStatus extends Enumeration {
   type Type = Value
-  val InProgress, Success, Failure, Waiting = Value
+  val InProgress, Success, Failure, Waiting, Unknown = Value
 }
 
 @EdgeEntity[Observable, Job]
