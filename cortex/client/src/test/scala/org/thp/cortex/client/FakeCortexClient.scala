@@ -1,7 +1,7 @@
 package org.thp.cortex.client
 
 import akka.actor.ActorSystem
-import play.api.BuiltInComponentsFromContext
+import play.api.{BuiltInComponentsFromContext, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc._
 import play.api.routing.Router
@@ -12,6 +12,7 @@ import play.filters.HttpFiltersComponents
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 trait FakeCortexClient {
 
@@ -26,6 +27,8 @@ trait FakeCortexClient {
               Results.Ok.sendResource("analyzers.json")(fileMimeTypes)
             }
         }
+
+        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" -> 3333)
       }.application
     } { implicit port ⇒
       WsTestClient.withClient { _ ⇒

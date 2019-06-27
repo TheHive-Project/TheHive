@@ -2,6 +2,7 @@ package org.thp.thehive.connector.cortex.services
 
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.cortex.client.FakeCortexClient
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
@@ -16,7 +17,7 @@ import play.api.{Configuration, Environment}
 
 import scala.io.Source
 
-class JobSrvTest extends PlaySpecification with Mockito {
+class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
@@ -43,9 +44,15 @@ class JobSrvTest extends PlaySpecification with Mockito {
 
     s"[$name] job service" should {
       "create a job" in db.transaction { implicit graph ⇒
-        val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
+          val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
 
-        job shouldEqual getJobs.head
+          job shouldEqual getJobs.head
+      }
+
+      "submit a job" in {
+        withCortexClient { client ⇒
+          1 shouldEqual 1
+        }
       }
     }
   }
