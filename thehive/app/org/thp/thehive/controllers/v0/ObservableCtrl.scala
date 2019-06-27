@@ -105,14 +105,17 @@ class ObservableCtrl @Inject()(
 
   def findSimilar(obsId: String): Action[AnyContent] =
     entryPoint("find similar")
-      .authTransaction(db) { implicit request ⇒ graph ⇒
+      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val observables = observableSrv
-          .get(obsId)(graph)
-          .similar(obsId)
-          .richObservable
+          .get(obsId)
+          .similar
+          .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
           .toList()
+          .map {
+            case (org, parent) ⇒ org.toJson.as[JsObject] ++ parent
+          }
 
-        Success(Results.Ok(Json.toJson(observables.map(_.toJson))))
+        Success(Results.Ok(JsArray(observables)))
       }
 
   def bulkUpdate: Action[AnyContent] =

@@ -26,7 +26,6 @@ class CaseCtrl @Inject()(
     auditSrv: AuditSrv
 ) extends QueryCtrl {
   import CaseConversion._
-  import ObservableConversion._
   import TaskConversion._
   import CustomFieldConversion._
 

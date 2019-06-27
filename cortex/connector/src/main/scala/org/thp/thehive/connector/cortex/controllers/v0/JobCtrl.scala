@@ -60,7 +60,7 @@ class JobCtrl @Inject()(
           val cortexId: String   = request.body('cortexId)
           val artifactId: String = request.body('artifactId)
           val tryObservable      = observableSrv.get(artifactId).richObservable.getOrFail()
-          val tryCase            = observableSrv.get(artifactId).caze.getOrFail()
+          val tryCase            = observableSrv.get(artifactId).`case`.getOrFail()
           val r = for {
             o ← tryObservable
             c ← tryCase

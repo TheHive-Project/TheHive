@@ -67,6 +67,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   )
 
+  def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
+
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
   @deprecated("", "")

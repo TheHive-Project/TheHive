@@ -2,11 +2,16 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
-import gremlin.scala.Key
+import play.api.libs.json.{JsObject, Json}
+
+import gremlin.scala.{By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
@@ -42,6 +47,27 @@ object ObservableConversion {
         .withFieldComputed(_.startDate, _.observable._createdAt)
         .withFieldComputed(_.data, _.data.map(_.data))
         .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
+        .withFieldConst(_.stats, JsObject.empty)
+        .transform
+    )
+
+  implicit def toOutputObservableWithStats(richObservableWithStats: (RichObservable, JsObject)): Output[OutputObservable] =
+    Output[OutputObservable](
+      richObservableWithStats
+        ._1
+        .into[OutputObservable]
+        .withFieldConst(_._type, "case_artifact")
+        .withFieldComputed(_.id, _.observable._id)
+        .withFieldComputed(_._id, _.observable._id)
+        .withFieldComputed(_.updatedAt, _.observable._updatedAt)
+        .withFieldComputed(_.updatedBy, _.observable._updatedBy)
+        .withFieldComputed(_.createdAt, _.observable._createdAt)
+        .withFieldComputed(_.createdBy, _.observable._createdBy)
+        .withFieldComputed(_.dataType, _.observable.`type`)
+        .withFieldComputed(_.startDate, _.observable._createdAt)
+        .withFieldComputed(_.data, _.data.map(_.data))
+        .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
+        .withFieldConst(_.stats, richObservableWithStats._2)
         .transform
     )
 
@@ -58,4 +84,26 @@ object ObservableConversion {
       .property[Option[String]]("data")(_.derived(_.outTo[ObservableData].value(Key[String]("data"))).readonly)
       // TODO add attachment ?
       .build
+
+  def observableStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+    new ObservableSteps(_: GremlinScala[Vertex])
+      .similar
+      .raw
+      .groupCount(By(Key[Boolean]("ioc")))
+      .map { plop ⇒
+        val m      = plop.asScala
+        val nTrue  = m.get(true).fold(0L)(_.toLong)
+        val nFalse = m.get(false).fold(0L)(_.toLong)
+        Json.obj(
+          "seen" → (nTrue + nFalse),
+          "ioc"  → (nTrue > 0)
+        )
+      }
+
+  def observableLinkRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+    (_: GremlinScala[Vertex])
+      .coalesce(
+        new ObservableSteps(_).alert.richAlert.map(a ⇒ Json.obj("alert" → a.toJson)).raw,
+        new ObservableSteps(_).`case`.richCase.map(c ⇒ Json.obj("case"  → c.toJson)).raw
+      )
 }

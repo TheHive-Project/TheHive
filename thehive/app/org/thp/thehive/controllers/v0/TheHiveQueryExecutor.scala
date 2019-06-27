@@ -2,6 +2,8 @@ package org.thp.thehive.controllers.v0
 
 import scala.reflect.runtime.{currentMirror ⇒ rm, universe ⇒ ru}
 
+import play.api.libs.json.JsObject
+
 import gremlin.scala.{Graph, GremlinScala, StepLabel, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -17,7 +19,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 case class GetCaseParams(id: String)
-case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
+case class OutputParam(from: Long, to: Long, withSize: Option[Boolean], withStats: Option[Boolean])
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(
@@ -58,39 +60,55 @@ class TheHiveQueryExecutor @Inject()(
     Query.init[AlertSteps]("listAlert", (graph, _) ⇒ alertSrv.initSteps(graph)),
     Query.init[ObservableSteps]("listObservable", (graph, _) ⇒ observableSrv.initSteps(graph)),
     Query.init[LogSteps]("listLog", (graph, _) ⇒ logSrv.initSteps(graph)),
-    Query.withParam[RangeParams, CaseSteps, PagedResult[RichCase]](
+    Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
       "page",
-      FieldsParser[RangeParams],
-      (range, caseSteps, _) ⇒ caseSteps.richCase.page(range.from, range.to, range.withSize.getOrElse(false))
+      FieldsParser[OutputParam], {
+        case (OutputParam(from, to, withSize, withStats), caseSteps, authContext) ⇒
+          caseSteps
+            .richPage(from, to, withSize.getOrElse(false)) {
+              case c if withStats.contains(true) ⇒
+                caseSteps.newInstance(c).richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
+              case c ⇒
+                caseSteps.newInstance(c).richCase.raw.map(_ → JsObject.empty)
+            }
+      }
     ),
-    Query.withParam[RangeParams, AlertSteps, AlertSteps](
+    Query.withParam[OutputParam, AlertSteps, AlertSteps](
       "range",
-      FieldsParser[RangeParams],
+      FieldsParser[OutputParam],
       (range, alertSteps, _) ⇒ alertSteps.range(range.from, range.to)
     ),
-    Query.withParam[RangeParams, LogSteps, PagedResult[RichLog]](
+    Query.withParam[OutputParam, LogSteps, PagedResult[RichLog]](
       "page",
-      FieldsParser[RangeParams],
+      FieldsParser[OutputParam],
       (range, logSteps, _) ⇒ logSteps.richLog.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, TaskSteps, PagedResult[RichTask]](
+    Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
       "page",
-      FieldsParser[RangeParams],
+      FieldsParser[OutputParam],
       (range, taskSteps, _) ⇒ taskSteps.richTask.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, UserSteps, PagedResult[RichUser]](
+    Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
       "page",
-      FieldsParser[RangeParams],
+      FieldsParser[OutputParam],
       (range, userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query.withParam[RangeParams, ObservableSteps, PagedResult[RichObservable]](
+    Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
       "page",
-      FieldsParser[RangeParams],
-      (range, observableSteps, _) ⇒ observableSteps.richObservable.page(range.from, range.to, range.withSize.getOrElse(false))
+      FieldsParser[OutputParam], {
+        case (OutputParam(from, to, withSize, withStats), observableSteps, authContext) ⇒
+          observableSteps
+            .richPage(from, to, withSize.getOrElse(false)) {
+              case c if withStats.contains(true) ⇒
+                observableSteps.newInstance(c).richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph)).raw
+              case c ⇒
+                observableSteps.newInstance(c).richObservable.raw.map(_ → JsObject.empty)
+            }
+      }
     ),
-    Query.withParam[RangeParams, AlertSteps, PagedResult[(RichAlert, List[RichObservable])]](
+    Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, List[RichObservable])]](
       "page",
-      FieldsParser[RangeParams],
+      FieldsParser[OutputParam],
       (range, alertSteps, _) ⇒
         alertSteps
           .richAlert
@@ -105,6 +123,10 @@ class TheHiveQueryExecutor @Inject()(
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) ⇒ alertSteps.richAlert.toList()),
     Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) ⇒ observableSteps.richObservable.toList()),
     Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
+    Query[CaseSteps, List[(RichCase, JsObject)]](
+      "listWithStats",
+      (caseSteps, authContext) ⇒ caseSteps.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).toList()
+    ),
     new ParentFilterQuery(publicProperties),
     Query.output[RichCase, OutputCase],
     Query.output[RichTask, OutputTask],
@@ -112,18 +134,10 @@ class TheHiveQueryExecutor @Inject()(
     Query.output[RichObservable, OutputObservable],
     Query.output[RichUser, OutputUser],
     Query.output[RichLog, OutputLog],
-    Query.output[(RichAlert, Seq[RichObservable]), OutputAlert]
+    Query.output[(RichAlert, Seq[RichObservable]), OutputAlert],
+    Query.output[(RichCase, JsObject), OutputCase],
+    Query.output[(RichObservable, JsObject), OutputObservable]
   )
-
-//  val caseToList: ParamQuery[CaseSteps, Seq[RichCase]] = Query("toList")(_.richCase.toList)
-//  val caseListTask: ParamQuery[CaseSteps, TaskSteps]   = Query("listTask")(_.tasks)
-//  val taskToList: ParamQuery[TaskSteps, Seq[Task]]     = Query("toList")(_.toList)
-
-//  override def toOutput(output: Any): JsValue = output match {
-//    case r: RichCase         ⇒ r.toJson
-//    case t: Task with Entity ⇒ t.toJson
-//    case o                   ⇒ super.toOutput(o)
-//  }
 }
 
 object ParentIdFilter {

@@ -1,4 +1,5 @@
 package org.thp.thehive.controllers.v0
+
 import scala.util.Try
 
 import org.scalactic.Accumulation._
@@ -9,14 +10,27 @@ import org.thp.scalligraph.query.{Query, QueryExecutor}
 trait QueryCtrl {
   val queryExecutor: QueryExecutor
 
-  val rangeParser: FieldsParser[(Long, Long)] = FieldsParser.string.map("range") {
-    case "all" ⇒ (0, Long.MaxValue)
-    case r ⇒
-      val Array(offsetStr, endStr, _*) = (r + "-0").split("-", 3)
-      val offset: Long                 = Try(Math.max(0, offsetStr.toLong)).getOrElse(0)
-      val end: Long                    = Try(endStr.toLong).getOrElse(offset + 10L)
-      if (end <= offset) (offset, offset + 10)
-      else (offset, end)
+  val outputParamParser: FieldsParser[OutputParam] = FieldsParser[OutputParam]("OutputParam") {
+    case (_, o: FObject) ⇒
+      for {
+        fromTo ← FieldsParser
+          .string
+          .optional
+          .on("range")
+          .apply(o)
+          .map {
+            case Some("all") ⇒ (0L, Long.MaxValue)
+            case Some(r) ⇒
+              val Array(offsetStr, endStr, _*) = (r + "-0").split("-", 3)
+              val offset: Long                 = Try(Math.max(0, offsetStr.toLong)).getOrElse(0)
+              val end: Long                    = Try(endStr.toLong).getOrElse(offset + 10L)
+              if (end <= offset) (offset, offset + 10)
+              else (offset, end)
+            case None ⇒ (0L, 10L)
+          }
+        withSize  ← FieldsParser.boolean.optional.on("withSize")(o)
+        withStats ← FieldsParser.boolean.optional.on("withStats")(o)
+      } yield OutputParam(fromTo._1, fromTo._2, withSize, withStats)
   }
 
   val sortParser: FieldsParser[FSeq] = FieldsParser("sort") {
@@ -54,6 +68,10 @@ trait QueryCtrl {
         }
     }
 
+  /*
+  Instead of converting Fields which implies double parsing, we could implement a full query parser without using queryExecutor.parser
+  This is possible and pretty easy because queries are simple.
+   */
   def searchParser(initialStepName: String, paged: Boolean = true): FieldsParser[Query] =
     FieldsParser[FObject]
       .optional
@@ -66,11 +84,23 @@ trait QueryCtrl {
         case (Some(sort), query) ⇒ query :+ FObject("_name" → FString("sort"), "_fields" → sort)
         case (_, query)          ⇒ query
       }
-      .andThen("page")(rangeParser.optional.on("range")) {
-        case (Some((from, to)), query) ⇒
-          query :+ FObject("_name" → FString("page"), "from" → FNumber(from), "to" → FNumber(to), "withSize" → FBoolean(true))
+      .andThen("page")(outputParamParser.optional) {
+        case (Some(OutputParam(from, to, withSize, withStats)), query) ⇒
+          query :+ FObject(
+            "_name"     → FString("page"),
+            "from"      → FNumber(from),
+            "to"        → FNumber(to),
+            "withSize"  → FBoolean(withSize.getOrElse(paged)),
+            "withStats" → FBoolean(withStats.getOrElse(true))
+          )
         case (_, query) ⇒
-          query :+ FObject("_name" → FString("page"), "from" → FNumber(0), "to" → FNumber(10), "withSize" → FBoolean(true))
+          query :+ FObject(
+            "_name"     → FString("page"),
+            "from"      → FNumber(0),
+            "to"        → FNumber(10),
+            "withSize"  → FBoolean(true),
+            "withStats" → FBoolean(true)
+          )
       }
       .map("query")(q ⇒ FSeq(q.toList))
       .flatMap("query")(queryExecutor.parser)

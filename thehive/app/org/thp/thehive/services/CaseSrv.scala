@@ -280,6 +280,38 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
+  def richCaseWithCustomRenderer[A](
+      entityRenderer: GremlinScala[Vertex] ⇒ GremlinScala[A]
+  ): ScalarSteps[(RichCase, A)] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+            .and(By(entityRenderer(__[Vertex])))
+        )
+        .map {
+          case (caze, impactStatus, resolutionStatus, user, customFields, renderedEntity) ⇒
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             ⇒ throw InternalError("Not possible")
+              }
+            RichCase(
+              caze.as[Case],
+              atMostOneOf[String](impactStatus),
+              atMostOneOf[String](resolutionStatus),
+              atMostOneOf[String](user),
+              customFieldValues
+            ) → renderedEntity
+        }
+    )
+
   def customFields(name: Option[String] = None): ScalarSteps[CustomFieldWithValue] = {
     val ccfSteps: GremlinScala[Vertex] = raw
       .outToE[CaseCustomField]

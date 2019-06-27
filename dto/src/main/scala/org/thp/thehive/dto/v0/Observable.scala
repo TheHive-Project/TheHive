@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, Writes}
+import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -48,7 +48,8 @@ case class OutputObservable(
     tags: Set[String],
     ioc: Boolean,
     sighted: Boolean,
-    message: Option[String]
+    message: Option[String],
+    stats: JsObject
 )
 
 object OutputObservable {
