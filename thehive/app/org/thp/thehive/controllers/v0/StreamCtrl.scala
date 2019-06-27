@@ -42,7 +42,7 @@ class StreamCtrl @Inject()(
             db.transaction { implicit graph ⇒
               val audits = auditSrv
                 .get(auditIds)
-                .richAuditWithCustomObjectRenderer(auditRenderer)
+                .richAuditWithCustomRenderer(auditRenderer)
                 .toList()
                 .map {
                   case (audit, (rootId, obj)) ⇒

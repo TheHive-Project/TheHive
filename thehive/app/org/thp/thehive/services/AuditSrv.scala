@@ -101,8 +101,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         }
     )
 
-  def richAuditWithCustomObjectRenderer[A](
-      entityToJson: String ⇒ GremlinScala[Vertex] ⇒ GremlinScala[A]
+  def richAuditWithCustomRenderer[A](
+      entityRenderer: GremlinScala[Vertex] ⇒ GremlinScala[A]
   ): ScalarSteps[(RichAudit, A)] =
     ScalarSteps(
       raw
@@ -110,18 +110,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[AuditContext]))
             .and(By(__[Vertex].outTo[Audited].fold()))
-            .and(
-              By(
-                __[Vertex]
-                  .outTo[Audited]
-                  .choose[Label, A](
-                    on = _.label(),
-                    BranchCase("Case", entityToJson("Case")),
-                    BranchCase("Task", entityToJson("Task")),
-                    BranchCase("Log", entityToJson("Log"))
-                  )
-              )
-            )
+            .and(By(entityRenderer(__[Vertex])))
         )
         .map {
           case (audit, context, obj, renderedObject) ⇒
