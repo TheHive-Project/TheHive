@@ -51,7 +51,7 @@ object CortexOutputJob {
         analyzerId ← (json \ "workerId").orElse(json \ "analyzerId").validate[String]
         analyzerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(analyzerId)
         analyzerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
-        attributes         = filterObject(json.as[JsObject], "tlp", "message", "parameters", "pap", "tpe")
+        attributes         = (json \ "attributes").asOpt[JsObject].getOrElse(filterObject(json.as[JsObject], "tlp", "message", "parameters", "pap", "tpe"))
         data               = (json \ "data").asOpt[String]
         attachment         = (json \ "attachment").asOpt[JsObject]
         date         ← (json \ "date").validate[Date]

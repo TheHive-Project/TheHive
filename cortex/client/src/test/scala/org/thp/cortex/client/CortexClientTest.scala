@@ -25,9 +25,17 @@ class CortexClientTest extends PlaySpecification with Mockito {
     Json.parse(data).as[Seq[OutputCortexAnalyzer]]
   }
 
+  def getJobs: Seq[CortexOutputJob] = {
+    val dataSource = Source.fromFile(getClass.getResource("/jobs.json").getPath)
+    val data       = dataSource.mkString
+    dataSource.close()
+
+    Json.parse(data).as[Seq[CortexOutputJob]]
+  }
+
   s"CortexClient" should {
     lazy val app = GuiceApplicationBuilder()
-      .configure("play.allowGlobalApplication" → true, "play.filters.enabled" -> Nil)
+      .configure("play.allowGlobalApplication" → true, "play.filters.enabled" → Nil)
       .router(Router.from {
         case play.api.routing.sird.GET(p"/api/analyzer") ⇒
           Action {
@@ -39,7 +47,11 @@ class CortexClientTest extends PlaySpecification with Mockito {
           }
         case play.api.routing.sird.POST(p"/api/analyzer/_search") ⇒
           Action {
-            Results.Ok(Json.toJson(getAnalyzers.head))
+            Results.Ok(Json.toJson(getAnalyzers))
+          }
+        case play.api.routing.sird.POST(p"/api/analyzer/$id/run") ⇒
+          Action {
+            Results.Created(Json.toJson(getJobs.find(_.workerId == id).get))
           }
       })
       .build()
@@ -68,11 +80,13 @@ class CortexClientTest extends PlaySpecification with Mockito {
       oneAnalyzer.id shouldEqual "anaTest2"
       oneAnalyzer.name shouldEqual "anaTest2"
 
-//      val outputJob: CortexOutputJob = await(client.analyse("Abuse_Finder_2_0", InputCortexArtifact(1, 1, "test", "test", Some("test"), None)))
-
       val searchedAnalyzer: OutputCortexAnalyzer = await(client.getAnalyzerByName("anaTest1"))
 
       searchedAnalyzer.copy(cortexIds = None) shouldEqual getAnalyzers.find(_.name == "anaTest1").get
+
+      val outputJob: CortexOutputJob = await(client.analyse(searchedAnalyzer.id, InputCortexArtifact(1, 1, "test", "test", Some("test"), None)))
+
+      outputJob shouldEqual getJobs.find(_.workerId == "anaTest1").get
     }
   }
 
