@@ -29,8 +29,8 @@ case class CortexOutputJob(
     workerName: String,
     workerDefinition: String,
     date: Date,
-    startDate: Date,
-    endDate: Date,
+    startDate: Option[Date],
+    endDate: Option[Date],
     status: JobStatus.Type,
     data: Option[String],
     attachment: Option[JsObject],
@@ -55,8 +55,8 @@ object CortexOutputJob {
         data               = (json \ "data").asOpt[String]
         attachment         = (json \ "attachment").asOpt[JsObject]
         date         ← (json \ "date").validate[Date]
-        startDate    ← (json \ "startDate").validate[Date]
-        endDate      ← (json \ "endDate").validate[Date]
+        startDate    = (json \ "startDate").asOpt[Date]
+        endDate      = (json \ "endDate").asOpt[Date]
         status       ← (json \ "status").validate[String].map(s ⇒ Try(JobStatus.withName(s)).getOrElse(JobStatus.Unknown))
         organization ← (json \ "organization").validate[String]
         dataType     ← (json \ "dataType").validate[String]

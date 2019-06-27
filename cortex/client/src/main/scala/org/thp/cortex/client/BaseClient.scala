@@ -33,6 +33,19 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
       }
   }
 
+  def search[SearchInput: Writes](input: SearchInput)(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
+    val body = Json.toJson(input)
+    val url  = s"$baseUrl/_search"
+    Client.logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
+    auth(ws.url(url))
+      .post(body)
+      .transform {
+        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[Output]])
+        case Success(r)                               ⇒ Failure(ApplicationError(r))
+        case Failure(t)                               ⇒ throw t
+      }
+  }
+
   def get(id: String)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     Client.logger.debug(s"Request GET $baseUrl/$id")
     auth(ws.url(s"$baseUrl/$id"))

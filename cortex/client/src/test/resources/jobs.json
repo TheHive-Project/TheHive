@@ -1,0 +1,29 @@
+[
+  {
+    "date" : 1561625908856,
+    "data" : "https://www.faux-texte.com/lorem-ipsum-2.htm",
+    "type" : "analyzer",
+    "cacheTag" : "8b075e00a860a984993017dec86c16e1",
+    "createdAt" : 1561625908856,
+    "_parent" : null,
+    "id" : "AWuYKFatq3Rtqym9DFmL",
+    "_version" : 1,
+    "pap" : 2,
+    "_routing" : "AWuYKFatq3Rtqym9DFmL",
+    "workerId" : "301f5fc6c885e1b12bffc3b055a5a07f",
+    "analyzerName" : "Abuse_Finder_2_0",
+    "analyzerDefinitionId" : "Abuse_Finder_2_0",
+    "dataType" : "domain",
+    "_type" : "job",
+    "message" : "0ad6e75a-1a2e-419a-b54a-7a92d6528404",
+    "analyzerId" : "301f5fc6c885e1b12bffc3b055a5a07f",
+    "createdBy" : "billotei",
+    "organization" : "test",
+    "tlp" : 2,
+    "workerDefinitionId" : "Abuse_Finder_2_0",
+    "_id" : "AWuYKFatq3Rtqym9DFmL",
+    "workerName" : "Abuse_Finder_2_0",
+    "parameters" : { },
+    "status" : "Waiting"
+  }
+]

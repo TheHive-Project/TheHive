@@ -49,7 +49,7 @@ class JobSrv @Inject()(
         .instances
         .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-      analyzer ← cortexClient.getAnalyzer(workerId)
+      analyzer ← cortexClient.getAnalyzer(workerId).recoverWith { case _ ⇒ cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact ← (observable.attachment, observable.data) match {
         case (None, Some(data)) ⇒
           Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
@@ -74,7 +74,9 @@ class JobSrv @Inject()(
         case _ ⇒ Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
       cortexOutputJob ← cortexClient.analyse(analyzer.id, cortexArtifact)
-      createdJob = create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
+      createdJob = db.transaction { implicit newGraph ⇒
+        create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)(newGraph, authContext)
+      }
     } yield createdJob
 
   /**

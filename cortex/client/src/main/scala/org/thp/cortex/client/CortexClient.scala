@@ -11,7 +11,7 @@ import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
     implicit ws: CustomWSAPI,
@@ -40,6 +40,17 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
   def getAnalyzer(id: String): Future[OutputCortexAnalyzer] = analyser.get(id).map(_.copy(cortexIds = Some(List(name))))
 
   /**
+    * Search an analyzer by name
+    *
+    * @param name the name to search for
+    * @return
+    */
+  def getAnalyzerByName(name: String): Future[OutputCortexAnalyzer] =
+    analyser
+      .search[SearchQuery](SearchQuery("name", name, "0-1"))
+      .flatMap(l => Future.fromTry(Try(l.head)))
+
+  /**
     * Submits an artifact for analyze with the appropriate analyzer selection
     *
     * @param analyzerId the analyzer to invoke
@@ -50,10 +61,10 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     val requestBody = Json.toJson(artifact)
     val result = artifact.attachment match {
       case None ⇒
-        auth(ws.url(s"api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
           .post(requestBody)
       case Some(Attachment(filename, size, contentType, data)) ⇒
-        auth(ws.url(s"api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
           .post(
             Source(
               List(
@@ -65,7 +76,7 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     }
     result.transform {
       case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue].as[CortexOutputJob])
-      case Success(r)                               ⇒ Failure(ApplicationError(r))
+      case Success(r)                               ⇒ Try(r.body[JsValue].as[CortexOutputJob])
       case Failure(t)                               ⇒ throw t
     }
   }
