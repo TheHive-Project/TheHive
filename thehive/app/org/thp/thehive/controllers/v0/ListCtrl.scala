@@ -10,7 +10,8 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) extends CustomFieldConversion {
+class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
+  import CustomFieldConversion._
 
   def list: Action[AnyContent] =
     entryPoint("list")

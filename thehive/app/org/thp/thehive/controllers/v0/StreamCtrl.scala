@@ -23,7 +23,8 @@ class StreamCtrl @Inject()(
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     system: ActorSystem
-) extends AuditConversion {
+) {
+  import AuditConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create stream")

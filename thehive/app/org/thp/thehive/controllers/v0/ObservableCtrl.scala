@@ -23,8 +23,8 @@ class ObservableCtrl @Inject()(
     caseSrv: CaseSrv,
     auditSrv: AuditSrv,
     val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl
-    with ObservableConversion {
+) extends QueryCtrl {
+  import ObservableConversion._
 
   lazy val logger = Logger(getClass)
 

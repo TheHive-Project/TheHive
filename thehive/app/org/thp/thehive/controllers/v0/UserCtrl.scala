@@ -26,8 +26,8 @@ class UserCtrl @Inject()(
     implicit val ec: ExecutionContext,
     val queryExecutor: TheHiveQueryExecutor,
     auditSrv: AuditSrv
-) extends UserConversion
-    with QueryCtrl {
+) extends QueryCtrl {
+  import UserConversion._
 
   def current: Action[AnyContent] =
     entryPoint("current user")

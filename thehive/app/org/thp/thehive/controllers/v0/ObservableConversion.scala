@@ -13,7 +13,11 @@ import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models.{Observable, ObservableData, RichObservable}
 import org.thp.thehive.services.ObservableSteps
 
-trait ObservableConversion extends AttachmentConversion {
+object ObservableConversion {
+  import AttachmentConversion._
+  import AlertConversion._
+  import CaseConversion._
+
   implicit def fromInputObservable(inputObservable: InputObservable): Observable =
     inputObservable
       .into[Observable]

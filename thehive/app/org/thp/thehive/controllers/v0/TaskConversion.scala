@@ -14,9 +14,7 @@ import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
 
-trait TaskConversion {
-  val taskSrv: TaskSrv
-  val userSrv: UserSrv
+object TaskConversion {
 
   implicit def fromInputTask(inputTask: InputTask): Task =
     inputTask
@@ -41,7 +39,7 @@ trait TaskConversion {
         .transform
     )
 
-  val taskProperties: List[PublicProperty[_, _]] =
+  def taskProperties(taskSrv: TaskSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[TaskSteps]
       .property[String]("title")(_.simple.updatable)
       .property[Option[String]]("description")(_.simple.updatable)

@@ -12,7 +12,8 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) extends CustomFieldConversion {
+class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
+  import CustomFieldConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")

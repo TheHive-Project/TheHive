@@ -17,16 +17,18 @@ import scala.util.{Success, Try}
 class CaseCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
-    val caseSrv: CaseSrv,
+    caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    val taskSrv: TaskSrv,
-    val userSrv: UserSrv,
+    taskSrv: TaskSrv,
+    userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     val queryExecutor: TheHiveQueryExecutor,
     auditSrv: AuditSrv
-) extends QueryCtrl
-    with CaseConversion
-    with TaskConversion {
+) extends QueryCtrl {
+  import CaseConversion._
+  import ObservableConversion._
+  import TaskConversion._
+  import CustomFieldConversion._
 
   lazy val logger = Logger(getClass)
 
@@ -112,7 +114,7 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, FieldsParser.update("case", caseProperties))
+      .extract('case, FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
         caseSrv
@@ -132,7 +134,7 @@ class CaseCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, FieldsParser.update("case", caseProperties))
+      .extract('case, FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
       .extract('idsOrNumbers, FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)

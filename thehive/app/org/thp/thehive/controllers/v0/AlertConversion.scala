@@ -13,7 +13,10 @@ import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, RichAlert, RichObservable}
 import org.thp.thehive.services.AlertSteps
 
-trait AlertConversion extends CustomFieldConversion with ObservableConversion {
+object AlertConversion {
+  import CustomFieldConversion._
+  import ObservableConversion._
+
   implicit def toOutputAlert(richAlert: RichAlert): Output[OutputAlert] =
     Output[OutputAlert](
       richAlert

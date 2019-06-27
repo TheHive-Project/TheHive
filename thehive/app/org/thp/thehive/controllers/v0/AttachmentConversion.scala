@@ -6,7 +6,7 @@ import org.thp.thehive.dto.v0.OutputAttachment
 import org.thp.thehive.models.Attachment
 import scala.language.implicitConversions
 
-trait AttachmentConversion {
+object AttachmentConversion {
   implicit def toOutputAttachment(attachment: Attachment): Output[OutputAttachment] =
     Output[OutputAttachment](
       attachment

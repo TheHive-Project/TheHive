@@ -14,8 +14,8 @@ import scala.util.{Success, Try}
 
 @Singleton
 class LogCtrl @Inject()(entryPoint: EntryPoint, db: Database, logSrv: LogSrv, taskSrv: TaskSrv, val queryExecutor: TheHiveQueryExecutor)
-    extends QueryCtrl
-    with LogConversion {
+    extends QueryCtrl {
+  import LogConversion._
   lazy val logger = Logger(getClass)
 
   def create(taskId: String): Action[AnyContent] =

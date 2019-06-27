@@ -14,9 +14,8 @@ import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
 
-trait CaseConversion extends CustomFieldConversion {
-  val caseSrv: CaseSrv
-  val userSrv: UserSrv
+object CaseConversion {
+  import CustomFieldConversion._
 
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
     Output[OutputCase](

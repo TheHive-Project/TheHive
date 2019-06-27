@@ -10,7 +10,9 @@ import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{CaseCustomField, CaseTemplate, RichCaseTemplate}
 import org.thp.thehive.services.CaseTemplateSteps
 
-trait CaseTemplateConversion extends TaskConversion with CustomFieldConversion {
+object CaseTemplateConversion {
+  import TaskConversion._
+  import CustomFieldConversion._
 
   implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
     inputCaseTemplate

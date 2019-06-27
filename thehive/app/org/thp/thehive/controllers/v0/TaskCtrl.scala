@@ -18,12 +18,12 @@ import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
 class TaskCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
-    val taskSrv: TaskSrv,
+    taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    val userSrv: UserSrv,
+    userSrv: UserSrv,
     val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl
-    with TaskConversion {
+) extends QueryCtrl {
+  import TaskConversion._
 
   lazy val logger = Logger(getClass)
 
@@ -56,7 +56,7 @@ class TaskCtrl @Inject()(
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract('task, FieldsParser.update("task", taskProperties))
+      .extract('task, FieldsParser.update("task", taskProperties(taskSrv, userSrv)))
       .authTransaction(db) { implicit request ⇒ implicit graph ⇒
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
         taskSrv

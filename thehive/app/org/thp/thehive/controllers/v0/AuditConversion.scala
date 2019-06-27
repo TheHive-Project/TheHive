@@ -4,16 +4,19 @@ import scala.language.implicitConversions
 
 import play.api.libs.json.{JsObject, Json}
 
-import gremlin.scala.{__, By, Graph, GremlinScala, Vertex}
+import gremlin.scala.{__, BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.{RichAudit, ShareCase, ShareTask, TaskLog}
+import org.thp.thehive.models.{Audited, RichAudit, ShareCase, ShareTask, TaskLog}
 import org.thp.thehive.services.{CaseSteps, LogSteps, TaskSteps}
 
-trait AuditConversion extends CaseConversion with TaskConversion with LogConversion {
+object AuditConversion {
+  import CaseConversion._
+  import TaskConversion._
+  import LogConversion._
 
   def actionToOperation(action: String): String = action match {
     case "createCase"         ⇒ "Creation"
@@ -72,11 +75,14 @@ trait AuditConversion extends CaseConversion with TaskConversion with LogConvers
       case (log, (rootId, task)) ⇒ rootId → (log + ("case_task" → task))
     }
 
-  def auditRenderer(label: String)(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
-    label match {
-      case "Case" ⇒ caseToJson
-      case "Task" ⇒ taskToJson
-      case "Log"  ⇒ logToJson
-      case _      ⇒ _.constant("" → JsObject.empty)
-    }
+  def auditRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[(String, JsObject)] =
+    (_: GremlinScala[Vertex])
+      .outTo[Audited]
+      .choose[Label, (String, JsObject)](
+        on = _.label(),
+        BranchCase("Case", caseToJson),
+        BranchCase("Task", taskToJson),
+        BranchCase("Log", logToJson),
+        BranchOtherwise(_.constant("" → JsObject.empty))
+      )
 }

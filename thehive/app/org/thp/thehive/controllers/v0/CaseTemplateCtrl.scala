@@ -19,9 +19,12 @@ class CaseTemplateCtrl @Inject()(
     db: Database,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
-    val userSrv: UserSrv,
-    val taskSrv: TaskSrv
-) extends CaseTemplateConversion {
+    userSrv: UserSrv,
+    taskSrv: TaskSrv
+) {
+  import CaseTemplateConversion._
+  import TaskConversion._
+  import CustomFieldConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
@@ -74,13 +77,13 @@ class CaseTemplateCtrl @Inject()(
       }
 
   def search: Action[AnyContent] = list
-//  {
-//    entryPoint("search case template")
-//      //.extract('query, )
-//      .authenticated { implicit request =>
-//      db.transaction { implicit graph =>
-//        caseTemplateSrv.initSteps.toL
-//      }
-//    }
-//  }
+  //  {
+  //    entryPoint("search case template")
+  //      //.extract('query, )
+  //      .authenticated { implicit request =>
+  //      db.transaction { implicit graph =>
+  //        caseTemplateSrv.initSteps.toL
+  //      }
+  //    }
+  //  }
 }

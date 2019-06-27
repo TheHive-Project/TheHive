@@ -32,11 +32,11 @@ class AlertCtrl @Inject()(
     val caseSrv: CaseSrv,
     errorHandler: HttpErrorHandler,
     val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl
-    with CaseConversion
-    with CustomFieldConversion
-    with AlertConversion
-    with ObservableConversion {
+) extends QueryCtrl {
+  import CaseConversion._
+  import CustomFieldConversion._
+  import AlertConversion._
+  import ObservableConversion._
 
   lazy val logger = Logger(getClass)
 

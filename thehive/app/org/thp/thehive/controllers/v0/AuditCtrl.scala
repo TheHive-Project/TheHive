@@ -18,7 +18,8 @@ class AuditCtrl @Inject()(
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
     implicit val db: Database
-) extends AuditConversion {
+) {
+  import AuditConversion._
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
@@ -28,7 +29,7 @@ class AuditCtrl @Inject()(
           .fold(auditSrv.initSteps)(rid ⇒ auditSrv.initSteps.forCase(rid))
           .visible
           .range(0, count.getOrElse(10).toLong)
-          .richAuditWithCustomObjectRenderer(auditRenderer)
+          .richAuditWithCustomRenderer(auditRenderer)
           .toList()
           .map {
             case (audit, (rootId, obj)) ⇒

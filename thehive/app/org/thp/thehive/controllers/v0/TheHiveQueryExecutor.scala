@@ -21,27 +21,27 @@ case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(
-    val caseSrv: CaseSrv,
-    val taskSrv: TaskSrv,
+    caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     alertSrv: AlertSrv,
     logSrv: LogSrv,
     organisationSrv: OrganisationSrv,
-    val userSrv: UserSrv,
+    userSrv: UserSrv,
     implicit val db: Database
-) extends QueryExecutor
-    with CaseConversion
-    with TaskConversion
-    with AlertConversion
-    with ObservableConversion
-    with UserConversion
-    with LogConversion {
+) extends QueryExecutor {
+  import CaseConversion._
+  import TaskConversion._
+  import AlertConversion._
+  import ObservableConversion._
+  import UserConversion._
+  import LogConversion._
 
   override val version: (Int, Int) = 0 → 0
 
   override val publicProperties: List[PublicProperty[_, _]] =
-    caseProperties ++
-      taskProperties ++
+    caseProperties(caseSrv, userSrv) ++
+      taskProperties(taskSrv, userSrv) ++
       alertProperties ++
       observableProperties ++
       userProperties(userSrv) ++

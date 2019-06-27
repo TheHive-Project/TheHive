@@ -11,7 +11,8 @@ import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Log, RichLog}
 import org.thp.thehive.services.LogSteps
 
-trait LogConversion extends AttachmentConversion {
+object LogConversion {
+  import AttachmentConversion._
 
   implicit def toOutputLog(richLog: RichLog): Output[OutputLog] =
     Output[OutputLog](

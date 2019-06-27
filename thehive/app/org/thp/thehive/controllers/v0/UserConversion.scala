@@ -16,7 +16,7 @@ import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 
-trait UserConversion {
+object UserConversion {
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
 
   def permissions2Roles(permissions: Set[Permission]): Set[String] = {
