@@ -9,7 +9,7 @@ import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models.{CustomFieldWithValue, Permissions, RichCaseTemplate, User}
 import org.thp.thehive.services._
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.{Success, Try}
 
@@ -204,9 +204,13 @@ class CaseCtrl @Inject()(
         val relatedCases = caseSrv
           .get(caseIdsOrNumber)
           .linkedCases
-          .richCase
-          .map(_.toJson)
-          .toList()
-        Success(Results.Ok(Json.toJson(relatedCases)))
+          .map {
+            case (c, o) ⇒
+              c.toJson.as[JsObject] +
+                ("linkedWith" → JsArray(o.map(_.toJson))) +
+                ("linksCount" → JsNumber(o.size))
+          }
+          .toSeq
+        Success(Results.Ok(JsArray(relatedCases)))
       }
 }

@@ -9,10 +9,9 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
+import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichSeq}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
-
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
@@ -337,25 +336,43 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def linkedCases: CaseSteps = {
-    val label = StepLabel[JSet[Vertex]]()
-    new CaseSteps(
-      raw
-        .aggregate(label)
-        .inTo[ShareCase]
-        .outTo[ShareObservable]
-        .outTo[ObservableData]
-        .inTo[ObservableData]
-        .inTo[ShareObservable]
-        .outTo[ShareCase]
-        .where(JP.without(label.name))
-    )
+  def linkedCases: Map[RichCase, Seq[RichObservable]] = {
+    val originCaseLabel = StepLabel[JSet[Vertex]]()
+    val observableLabel = StepLabel[Vertex]()
+    val linkedCaseLabel = StepLabel[Vertex]()
+
+    val richCaseLabel        = StepLabel[RichCase]()
+    val richObservablesLabel = StepLabel[JList[RichObservable]]()
+    raw
+      .`match`(
+        _.as(originCaseLabel.name)
+          .in("ShareCase")
+          .out("ShareObservable")
+          .as(observableLabel.name),
+        _.as(observableLabel.name)
+          .out("ObservableData")
+          .in("ObservableData")
+          .in("ShareObservable")
+          .out("ShareCase")
+          .where(JP.neq(originCaseLabel.name))
+          .as(linkedCaseLabel.name),
+        c ⇒ new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
+        o ⇒ new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
+      )
+      .select(richCaseLabel.name, richObservablesLabel.name)
+      .toList()
+      .map { resultMap ⇒
+        resultMap.getValue(richCaseLabel) → resultMap.getValue(richObservablesLabel).asScala
+      }
+      .toMap
   }
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
+  @deprecated
   def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
+  @deprecated
   def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
 
   def share = new ShareSteps(raw.inTo[ShareCase])
