@@ -6,10 +6,10 @@ import org.thp.cortex.dto.v0.{Attachment, _}
 import org.thp.scalligraph.{DelayRetry, Retry}
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -19,10 +19,11 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     system: ActorSystem,
     ec: ExecutionContext
 ) {
-//  lazy val job            = new BaseClient[InputCortexArtifact, OutputJob](s"$baseUrl/api/job")
+  lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$baseUrl/api/job")
   lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$baseUrl/api/analyzer")
   lazy val logger         = Logger(getClass)
   val retrier: DelayRetry = Retry(maxRetryOnError).delayed(refreshDelay)(system.scheduler, ec)
+  val refreshDelayValue = refreshDelay
 
   /**
     * GET analysers endpoint
@@ -37,7 +38,7 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     * @param id guess
     * @return
     */
-  def getAnalyzer(id: String): Future[OutputCortexAnalyzer] = analyser.get(id).map(_.copy(cortexIds = Some(List(name))))
+  def getAnalyzer(id: String): Future[OutputCortexAnalyzer] = analyser.get(id, None).map(_.copy(cortexIds = Some(List(name))))
 
   /**
     * Search an analyzer by name
@@ -49,6 +50,8 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     analyser
       .search[SearchQuery](SearchQuery("name", name, "0-1"))
       .flatMap(l => Future.fromTry(Try(l.head)))
+
+  def getReport(jobId: String, atMost: Duration): Future[CortexOutputJob] = job.get(jobId, Some(s"/waitreport?atMost=${atMost.toString}"))
 
   /**
     * Submits an artifact for analyze with the appropriate analyzer selection

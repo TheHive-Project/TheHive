@@ -46,9 +46,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
       }
   }
 
-  def get(id: String)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
-    Client.logger.debug(s"Request GET $baseUrl/$id")
-    auth(ws.url(s"$baseUrl/$id"))
+  def get(id: String, urlFragments: Option[String])(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
+    Client.logger.debug(s"Request GET $baseUrl/$id${urlFragments.getOrElse("")}")
+    auth(ws.url(s"$baseUrl/$id${urlFragments.getOrElse("")}"))
       .get()
       .transform {
         case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Output])

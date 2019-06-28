@@ -40,7 +40,7 @@ class JobSrv @Inject()(
     * @param authContext auth context instance
     * @return
     */
-  def submitJob(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
+  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Future[Job with Entity] =

@@ -65,7 +65,7 @@ class JobCtrl @Inject()(
             o <- tryObservable
             c <- tryCase
           } yield jobSrv
-            .submitJob(cortexId, analyzerId, o, c)
+            .submit(cortexId, analyzerId, o, c)
             .map(j => Results.Created(j.toJson))
 
           r.getOrElse(Future.successful(Results.InternalServerError))
