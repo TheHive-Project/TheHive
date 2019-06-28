@@ -16,9 +16,9 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")
-      .extract('customField, FieldsParser[CustomField])
+      .extract("customField", FieldsParser[CustomField])
       .authTransaction(db) { implicit request => implicit graph =>
-        val customField        = request.body('customField)
+        val customField        = request.body("customField")
         val createdCustomField = customFieldSrv.create(customField)
         Success(Results.Created(createdCustomField.toJson))
       }

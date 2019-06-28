@@ -26,9 +26,9 @@ class CaseTemplateCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
-      .extract('caseTemplate, FieldsParser[InputCaseTemplate])
+      .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputCaseTemplate: InputCaseTemplate = request.body('caseTemplate)
+        val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
           organisation <- organisationSrv.getOrFail(request.organisation)
           tasks        = inputCaseTemplate.tasks.map(fromInputTask)
@@ -62,9 +62,9 @@ class CaseTemplateCtrl @Inject()(
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract('caseTemplate, FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .extract("caseTemplate", FieldsParser.update("caseTemplate", caseTemplateProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('caseTemplate)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv
           .update(
             _.get(caseTemplateNameOrId)

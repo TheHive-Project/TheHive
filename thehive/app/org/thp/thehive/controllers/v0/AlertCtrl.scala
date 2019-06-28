@@ -42,13 +42,13 @@ class AlertCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create alert")
-      .extract('alert, FieldsParser[InputAlert])
-      .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .extract('observables, FieldsParser[InputObservable].sequence.on("artifacts"))
+      .extract("alert", FieldsParser[InputAlert])
+      .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
+      .extract("observables", FieldsParser[InputObservable].sequence.on("artifacts"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String]  = request.body('caseTemplate)
-        val inputAlert: InputAlert            = request.body('alert)
-        val observables: Seq[InputObservable] = request.body('observables)
+        val caseTemplateName: Option[String]  = request.body("caseTemplate")
+        val inputAlert: InputAlert            = request.body("alert")
+        val observables: Seq[InputObservable] = request.body("observables")
         for {
           caseTemplate <- caseTemplateName.fold[Try[Option[RichCaseTemplate]]](Success(None)) { ct =>
             caseTemplateSrv
@@ -63,7 +63,7 @@ class AlertCtrl @Inject()(
           organisation <- userSrv.getOrganisation(user)
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
-          richAlert       <- alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+          richAlert       <- alertSrv.create(request.body("alert"), organisation, customFields, caseTemplate)
           richObservables <- observables.toTry(observable => importObservable(richAlert.alert, observable))
         } yield Results.Created((richAlert -> richObservables.flatten).toJson)
       }
@@ -106,9 +106,9 @@ class AlertCtrl @Inject()(
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract('alert, FieldsParser.update("alert", alertProperties))
+      .extract("alert", FieldsParser.update("alert", alertProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
           .update(_.get(alertId).can(Permissions.manageAlert), propertyUpdaters)
           .flatMap {
@@ -185,9 +185,9 @@ class AlertCtrl @Inject()(
 
   def stats: Action[AnyContent] =
     entryPoint("alert stats")
-      .extract('query, statsParser("listAlert"))
+      .extract("query", statsParser("listAlert"))
       .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body('query)
+        val queries: Seq[Query] = request.body("query")
         val results = queries
           .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
@@ -201,9 +201,9 @@ class AlertCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search alert")
-      .extract('query, searchParser("listAlert"))
+      .extract("query", searchParser("listAlert"))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {

@@ -18,9 +18,9 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
 
   def create: Action[AnyContent] =
     entryPoint("create task")
-      .extract('task, FieldsParser[InputTask])
+      .extract("task", FieldsParser[InputTask])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputTask: InputTask = request.body('task)
+        val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(inputTask.caseId)
           createdTask <- taskSrv.create(inputTask, case0)
@@ -50,9 +50,9 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract('task, FieldsParser.update("task", taskProperties))
+      .extract("task", FieldsParser.update("task", taskProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv
           .update(
             _.get(taskId)

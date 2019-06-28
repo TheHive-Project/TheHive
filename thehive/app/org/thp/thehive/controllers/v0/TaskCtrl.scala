@@ -29,9 +29,9 @@ class TaskCtrl @Inject()(
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create task")
-      .extract('task, FieldsParser[InputTask])
+      .extract("task", FieldsParser[InputTask])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputTask: InputTask = request.body('task)
+        val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(caseId)
           createdTask <- taskSrv.create(inputTask, case0)
@@ -56,9 +56,9 @@ class TaskCtrl @Inject()(
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract('task, FieldsParser.update("task", taskProperties(taskSrv, userSrv)))
+      .extract("task", FieldsParser.update("task", taskProperties(taskSrv, userSrv)))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv
           .update(
             _.get(taskId)
@@ -71,9 +71,9 @@ class TaskCtrl @Inject()(
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listTask")
     entryPoint("stats task")
-      .extract('query, parser)
+      .extract("query", parser)
       .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body('query)
+        val queries: Seq[Query] = request.body("query")
         val results = queries
           .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
@@ -88,9 +88,9 @@ class TaskCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search case")
-      .extract('query, searchParser("listTask", paged = false))
+      .extract("query", searchParser("listTask", paged = false))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {

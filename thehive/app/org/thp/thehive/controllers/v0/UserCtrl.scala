@@ -41,9 +41,9 @@ class UserCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create user")
-      .extract('user, FieldsParser[InputUser])
+      .extract("user", FieldsParser[InputUser])
       .auth { implicit request =>
-        val inputUser: InputUser = request.body('user)
+        val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
             val organisationName = inputUser.organisation.getOrElse(request.organisation)
             for {
@@ -94,9 +94,9 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract('user, FieldsParser.update("user", userProperties(userSrv)))
+      .extract("user", FieldsParser.update("user", userProperties(userSrv)))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('user)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         userSrv // Authorisation is managed in public properties
           .update(_.get(userId), propertyUpdaters)
           .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
@@ -105,7 +105,7 @@ class UserCtrl @Inject()(
 
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
-      .extract('password, FieldsParser[String].on("password"))
+      .extract("password", FieldsParser[String].on("password"))
       .auth { implicit request =>
         for {
           _ <- db.tryTransaction { implicit graph =>
@@ -117,18 +117,18 @@ class UserCtrl @Inject()(
               .existsOrFail()
           }
           _ <- authSrv
-            .setPassword(userId, request.body('password))
+            .setPassword(userId, request.body("password"))
         } yield Results.NoContent
       }
 
   def changePassword(userId: String): Action[AnyContent] =
     entryPoint("change password")
-      .extract('password, FieldsParser[String])
-      .extract('currentPassword, FieldsParser[String])
+      .extract("password", FieldsParser[String])
+      .extract("currentPassword", FieldsParser[String])
       .auth { implicit request =>
         if (userId == request.userId) {
           authSrv
-            .changePassword(userId, request.body('currentPassword), request.body('password))
+            .changePassword(userId, request.body("currentPassword"), request.body("password"))
             .map(_ => Results.NoContent)
         } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
@@ -187,9 +187,9 @@ class UserCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search user")
-      .extract('query, searchParser("listUser"))
+      .extract("query", searchParser("listUser"))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {

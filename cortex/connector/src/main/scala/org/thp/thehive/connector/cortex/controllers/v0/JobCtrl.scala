@@ -38,9 +38,9 @@ class JobCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search job")
-      .extract('query, searchParser("listJob"))
+      .extract("query", searchParser("listJob"))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
@@ -51,14 +51,14 @@ class JobCtrl @Inject()(
 
   def create(): Action[AnyContent] =
     entryPoint("create job")
-      .extract('analyzerId, FieldsParser[String].on("analyzerId"))
-      .extract('cortexId, FieldsParser[String].on("cortexId"))
-      .extract('artifactId, FieldsParser[String].on("artifactId"))
+      .extract("analyzerId", FieldsParser[String].on("analyzerId"))
+      .extract("cortexId", FieldsParser[String].on("cortexId"))
+      .extract("artifactId", FieldsParser[String].on("artifactId"))
       .asyncAuth { implicit request =>
         db.transaction { implicit graph =>
-          val analyzerId: String = request.body('analyzerId)
-          val cortexId: String   = request.body('cortexId)
-          val artifactId: String = request.body('artifactId)
+          val analyzerId: String = request.body("analyzerId")
+          val cortexId: String   = request.body("cortexId")
+          val artifactId: String = request.body("artifactId")
           val tryObservable      = observableSrv.get(artifactId).richObservable.getOrFail()
           val tryCase            = observableSrv.get(artifactId).`case`.getOrFail()
           val r = for {

@@ -29,10 +29,10 @@
 //
 //  def create: Action[AnyContent] =
 //    entryPoint("create share")
-//      .extract('share, FieldsParser[InputShare])
+//      .extract("share", FieldsParser[InputShare])
 //      .authenticated { implicit request =>
 //        db.transaction { implicit graph =>
-//          val inputShare: InputShare = request.body('share)
+//          val inputShare: InputShare = request.body("share")
 //          val organisation           = organisationSrv.getOrFail(inputShare.organisationName)
 //          val `case`                 = caseSrv.getOrFail(inputShare.caseId)
 //          val richShare              = shareSrv.create(`case`, organisation)
@@ -67,10 +67,10 @@
 //
 //  def update(shareId: String): Action[AnyContent] =
 //    entryPoint("update share")
-//      .extract('share, UpdateFieldsParser[InputShare])
+//      .extract("share", UpdateFieldsParser[InputShare])
 //      .authenticated { implicit request =>
 //        db.transaction { implicit graph =>
-//          shareSrv.update(shareId, request.body('share))
+//          shareSrv.update(shareId, request.body("share"))
 //          Results.NoContent
 //        }
 //      }

@@ -30,9 +30,9 @@ class ObservableCtrl @Inject()(
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
-      .extract('artifact, FieldsParser[InputObservable])
+      .extract("artifact", FieldsParser[InputObservable])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputObservable: InputObservable = request.body('artifact)
+        val inputObservable: InputObservable = request.body("artifact")
         for {
           case0 <- caseSrv
             .get(caseId)
@@ -61,9 +61,9 @@ class ObservableCtrl @Inject()(
 
   def update(obsId: String): Action[AnyContent] =
     entryPoint("update observable")
-      .extract('observable, FieldsParser.update("observable", observableProperties))
+      .extract("observable", FieldsParser.update("observable", observableProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('observable)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
             _.get(obsId).can(Permissions.manageCase),
@@ -75,9 +75,9 @@ class ObservableCtrl @Inject()(
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")
     entryPoint("stats observable")
-      .extract('query, parser)
+      .extract("query", parser)
       .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body('query)
+        val queries: Seq[Query] = request.body("query")
         val results = queries
           .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
@@ -92,9 +92,9 @@ class ObservableCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search case")
-      .extract('query, searchParser("listObservable", paged = false))
+      .extract("query", searchParser("listObservable", paged = false))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = (result.toJson \ "result").as[JsArray]
         result.toOutput match {
@@ -120,11 +120,11 @@ class ObservableCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("bulk update")
-      .extract('input, FieldsParser.update("observable", observableProperties))
-      .extract('ids, FieldsParser.seq[String].on("ids"))
+      .extract("input", FieldsParser.update("observable", observableProperties))
+      .extract("ids", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => graph =>
-        val properties: Seq[PropertyUpdater] = request.body('input)
-        val ids: Seq[String]                 = request.body('ids)
+        val properties: Seq[PropertyUpdater] = request.body("input")
+        val ids: Seq[String]                 = request.body("ids")
         val res = Try(
           ids.map(
             obsId =>

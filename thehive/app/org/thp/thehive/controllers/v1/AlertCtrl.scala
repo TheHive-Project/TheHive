@@ -18,11 +18,11 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def create: Action[AnyContent] =
     entryPoint("create alert")
-      .extract('alert, FieldsParser[InputAlert])
-      .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
+      .extract("alert", FieldsParser[InputAlert])
+      .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String] = request.body('caseTemplate)
-        val inputAlert: InputAlert           = request.body('alert)
+        val caseTemplateName: Option[String] = request.body("caseTemplate")
+        val inputAlert: InputAlert           = request.body("alert")
         for {
           caseTemplate <- caseTemplateName.map { ct =>
             caseTemplateSrv
@@ -33,7 +33,7 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
           }.flip
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          richAlert <- alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+          richAlert <- alertSrv.create(request.body("alert"), organisation, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 
@@ -61,9 +61,9 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract('alert, FieldsParser.update("alertUpdate", alertProperties))
+      .extract("alert", FieldsParser.update("alertUpdate", alertProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
           .update(
             _.get(alertId)

@@ -34,13 +34,13 @@ class CaseCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create case")
-      .extract('case, FieldsParser[InputCase])
-      .extract('tasks, FieldsParser[InputTask].sequence.on("tasks"))
-      .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
+      .extract("case", FieldsParser[InputCase])
+      .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
+      .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String] = request.body('caseTemplate)
-        val inputCase: InputCase             = request.body('case)
-        val inputTasks: Seq[InputTask]       = request.body('tasks)
+        val caseTemplateName: Option[String] = request.body("caseTemplate")
+        val inputCase: InputCase             = request.body("case")
+        val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
           caseTemplate <- caseTemplateName
             .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName =>
@@ -85,9 +85,9 @@ class CaseCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search case")
-      .extract('query, searchParser("listCase"))
+      .extract("query", searchParser("listCase"))
       .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body('query)
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
@@ -98,9 +98,9 @@ class CaseCtrl @Inject()(
 
   def stats: Action[AnyContent] =
     entryPoint("case stats")
-      .extract('query, statsParser("listCase"))
+      .extract("query", statsParser("listCase"))
       .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body('query)
+        val queries: Seq[Query] = request.body("query")
         val results = queries
           .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
@@ -114,9 +114,9 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
+      .extract("case", FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         caseSrv
           .update(
             _.get(caseIdOrNumber)
@@ -134,11 +134,11 @@ class CaseCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
-      .extract('idsOrNumbers, FieldsParser.seq[String].on("ids"))
+      .extract("case", FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
+      .extract("idsOrNumbers", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
-        val idsOrNumbers: Seq[String]              = request.body('idsOrNumbers)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
+        val idsOrNumbers: Seq[String]              = request.body("idsOrNumbers")
         val updatedCases = idsOrNumbers.map(
           caseIdOrNumber =>
             caseSrv

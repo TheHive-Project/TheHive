@@ -27,12 +27,12 @@ class AuthenticationCtrl @Inject()(
 
   def login: Action[AnyContent] =
     entryPoint("login")
-      .extract('login, FieldsParser[String].on("user"))
-      .extract('password, FieldsParser[String].on("password"))
-      .extract('organisation, FieldsParser[String].optional.on("organisation")) { implicit request =>
-        val login: String                = request.body('login)
-        val password: String             = request.body('password)
-        val organisation: Option[String] = request.body('organisation) orElse request.headers.get(organisationHeader)
+      .extract("login", FieldsParser[String].on("user"))
+      .extract("password", FieldsParser[String].on("password"))
+      .extract("organisation", FieldsParser[String].optional.on("organisation")) { implicit request =>
+        val login: String                = request.body("login")
+        val password: String             = request.body("password")
+        val organisation: Option[String] = request.body("organisation") orElse request.headers.get(organisationHeader)
         for {
           authContext <- authSrv.authenticate(login, password, organisation)
           user        <- db.tryTransaction(userSrv.getOrFail(authContext.userId)(_))

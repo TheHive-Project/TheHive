@@ -25,11 +25,11 @@ class CaseCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create case")
-      .extract('case, FieldsParser[InputCase])
-      .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
+      .extract("case", FieldsParser[InputCase])
+      .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String] = request.body('caseTemplate)
-        val inputCase: InputCase             = request.body('case)
+        val caseTemplateName: Option[String] = request.body("caseTemplate")
+        val inputCase: InputCase             = request.body("case")
         for {
           organisation <- userSrv
             .current
@@ -92,9 +92,9 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract('case, FieldsParser.update("case", caseProperties))
+      .extract("case", FieldsParser.update("case", caseProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         caseSrv
           .update(_.get(caseIdOrNumber).can(Permissions.manageCase), propertyUpdaters)
           .map(_ => Results.NoContent)

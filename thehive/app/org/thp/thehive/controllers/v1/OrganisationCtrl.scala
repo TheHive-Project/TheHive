@@ -22,12 +22,12 @@ class OrganisationCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")
-      .extract('organisation, FieldsParser[InputOrganisation])
+      .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           _    <- userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
           user <- userSrv.current.getOrFail()
-          inputOrganisation = request.body('organisation)
+          inputOrganisation = request.body("organisation")
           organisation      = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
         } yield Results.Created(organisation.toJson)
       }
@@ -54,9 +54,9 @@ class OrganisationCtrl @Inject()(
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
-      .extract('organisation, FieldsParser.update("organisation", organisationProperties))
+      .extract("organisation", FieldsParser.update("organisation", organisationProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
         organisationSrv
           .update(
             userSrv

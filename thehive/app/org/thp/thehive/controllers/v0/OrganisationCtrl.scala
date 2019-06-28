@@ -19,9 +19,9 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")
-      .extract('organisation, FieldsParser[InputOrganisation])
+      .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputOrganisation: InputOrganisation = request.body('organisation)
+        val inputOrganisation: InputOrganisation = request.body("organisation")
         val createdOrganisation                  = organisationSrv.create(fromInputOrganisation(inputOrganisation))
         val outputOrganisation                   = toOutputOrganisation(createdOrganisation)
         Success(Results.Created(Json.toJson(outputOrganisation)))
@@ -50,9 +50,9 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
-      .extract('organisation, FieldsParser.update("organisation", organisationProperties))
+      .extract("organisation", FieldsParser.update("organisation", organisationProperties))
       .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
         organisationSrv
           .update(
             userSrv
