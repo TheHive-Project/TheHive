@@ -64,7 +64,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   override def get(id: String): UserSteps =
     Try(UUID.fromString(id))
-      .map(_ ⇒ getById(id))
+      .map(_ => getById(id))
       .getOrElse(getByLogin(id))
 
   def visible(implicit authContext: AuthContext): UserSteps = newInstance(
@@ -126,7 +126,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisationName)).outTo[RoleProfile]))
         )
         .map {
-          case (userId, userName, profile) ⇒
+          case (userId, userName, profile) =>
             AuthContextImpl(userId, userName, organisationName, requestId, profile.as[Profile].permissions)
         }
     )
@@ -139,7 +139,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
         )
         .collect {
-          case (user, profiles) if profiles.size() == 1 ⇒
+          case (user, profiles) if profiles.size() == 1 =>
             val profile = profiles.get(0).as[Profile]
             RichUser(user.as[User], profile.name, profile.permissions, organisation)
         }

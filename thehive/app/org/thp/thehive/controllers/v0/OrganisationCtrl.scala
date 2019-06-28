@@ -20,7 +20,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
   def create: Action[AnyContent] =
     entryPoint("create organisation")
       .extract('organisation, FieldsParser[InputOrganisation])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body('organisation)
         val createdOrganisation                  = organisationSrv.create(fromInputOrganisation(inputOrganisation))
         val outputOrganisation                   = toOutputOrganisation(createdOrganisation)
@@ -29,10 +29,10 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def get(organisationId: String): Action[AnyContent] =
     entryPoint("get organisation")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
+      .authTransaction(db) { _ => implicit graph =>
         organisationSrv
           .getOrFail(organisationId)
-          .map { organisation ⇒
+          .map { organisation =>
             val outputOrganisation = toOutputOrganisation(organisation)
             Results.Ok(Json.toJson(outputOrganisation))
           }
@@ -40,7 +40,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def list: Action[AnyContent] =
     entryPoint("list organisation")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
+      .authTransaction(db) { _ => implicit graph =>
         val organisations = organisationSrv
           .initSteps
           .toList
@@ -51,7 +51,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
       .extract('organisation, FieldsParser.update("organisation", organisationProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('organisation)
         organisationSrv
           .update(
@@ -61,6 +61,6 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
               .get(organisationId),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 }

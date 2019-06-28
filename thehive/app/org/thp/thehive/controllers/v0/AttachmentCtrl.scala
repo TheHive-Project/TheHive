@@ -17,7 +17,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, db: Database, storageSrv:
 
   def download(id: String, name: Option[String]): Action[AnyContent] =
     entryPoint("download attachment")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
+      .authTransaction(db) { _ => implicit graph =>
         if (!name.getOrElse("").intersect(forbiddenChar).isEmpty)
           Success(Results.BadRequest("File name is invalid"))
         else
@@ -25,9 +25,9 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, db: Database, storageSrv:
             Result(
               header = ResponseHeader(
                 200,
-                Map("Content-Disposition" → s"""attachment; filename="${name.getOrElse(id)}"""", "Content-Transfer-Encoding" → "binary")
+                Map("Content-Disposition" -> s"""attachment; filename="${name.getOrElse(id)}"""", "Content-Transfer-Encoding" -> "binary")
               ),
-              body = HttpEntity.Streamed(StreamConverters.fromInputStream(() ⇒ storageSrv.loadBinary(id)), None, None)
+              body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(id)), None, None)
             )
           )
       }

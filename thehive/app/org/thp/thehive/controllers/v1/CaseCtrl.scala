@@ -27,16 +27,16 @@ class CaseCtrl @Inject()(
     entryPoint("create case")
       .extract('case, FieldsParser[InputCase])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body('caseTemplate)
         val inputCase: InputCase             = request.body('case)
         for {
-          organisation ← userSrv
+          organisation <- userSrv
             .current
             .organisations(Permissions.manageCase)
             .get(request.organisation)
             .getOrFail()
-          caseTemplate ← caseTemplateName.map { templateName ⇒
+          caseTemplate <- caseTemplateName.map { templateName =>
             caseTemplateSrv
               .get(templateName)
               .visible
@@ -44,9 +44,9 @@ class CaseCtrl @Inject()(
               .getOrFail()
           }.flip
           case0 = fromInputCase(inputCase, caseTemplate)
-          user ← inputCase
+          user <- inputCase
             .user
-            .map { u ⇒
+            .map { u =>
               userSrv
                 .current
                 .organisations
@@ -55,30 +55,30 @@ class CaseCtrl @Inject()(
                 .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
             }
             .flip
-//            organisation ← organisationSrv.getOrFail(request.organisation)
-          customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf ⇒ cf.name → cf.value).toMap)
+//            organisation <- organisationSrv.getOrFail(request.organisation)
+          customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf => cf.name -> cf.value).toMap)
           customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
-          richCase ← caseSrv.create(case0, user, organisation, customFields, caseTemplate)
+          richCase <- caseSrv.create(case0, user, organisation, customFields, caseTemplate)
 
-          _ = caseTemplate.map { ct ⇒
+          _ = caseTemplate.map { ct =>
             caseTemplateSrv
               .get(ct.caseTemplate)
               .tasks
               .toList()
-              .toTry(task ⇒ taskSrv.create(task, richCase.`case`))
+              .toTry(task => taskSrv.create(task, richCase.`case`))
           }.flip
         } yield Results.Created(richCase.toJson)
       }
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("get case")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
           .visible
           .richCase
           .getOrFail()
-          .map(richCase ⇒ Results.Ok(richCase.toJson))
+          .map(richCase => Results.Ok(richCase.toJson))
       }
 
 //  def list: Action[AnyContent] =
@@ -93,26 +93,26 @@ class CaseCtrl @Inject()(
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
       .extract('case, FieldsParser.update("case", caseProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('case)
         caseSrv
           .update(_.get(caseIdOrNumber).can(Permissions.manageCase), propertyUpdaters)
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("delete case")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
-          .update("status" → "deleted")
-          .map(_ ⇒ Results.NoContent)
+          .update("status" -> "deleted")
+          .map(_ => Results.NoContent)
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
     entryPoint("merge cases")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         caseIdsOrNumbers
           .split(',')
           .toSeq
@@ -122,7 +122,7 @@ class CaseCtrl @Inject()(
               .visible
               .getOrFail()
           )
-          .map { cases ⇒
+          .map { cases =>
             val mergedCase = caseSrv.merge(cases)
             Results.Ok(mergedCase.toJson)
           }

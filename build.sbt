@@ -41,14 +41,14 @@ lazy val commonSettings = Seq(
   scalafmtConfig := file(".scalafmt.conf"),
   scalacOptions ++= {
     CrossVersion.partialVersion((Compile / scalaVersion).value) match {
-      case Some((2, n)) if n >= 13 ⇒ "-Ymacro-annotations" :: Nil
-      case _                       ⇒ Nil
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case _                       => Nil
     }
   },
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 ⇒ Nil
-      case _                       ⇒ compilerPlugin(macroParadise) :: Nil
+      case Some((2, n)) if n >= 13 => Nil
+      case _                       => compilerPlugin(macroParadise) :: Nil
     }
   }
 )
@@ -176,14 +176,14 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "npm",
         inputFiles = baseDirectory.value / "package.json",
         outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
-        command = baseDirectory.value → "npm install",
+        command = baseDirectory.value -> "npm install",
         streams = streams.value
       ),
     bower := FileBuilder(
       label = "bower",
       inputFiles = baseDirectory.value / "bower.json",
       outputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
-      command = baseDirectory.value → "bower install",
+      command = baseDirectory.value -> "bower install",
       streams = streams.value
     ),
     gruntDev := {
@@ -193,7 +193,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "grunt",
         inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
         outputFiles = baseDirectory.value / "app" / "index.html",
-        command = baseDirectory.value → "grunt wiredep",
+        command = baseDirectory.value -> "grunt wiredep",
         streams = streams.value
       )
     },
@@ -205,13 +205,13 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "grunt",
         inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
         outputFiles = dist ** AllPassFilter,
-        command = baseDirectory.value → "grunt build",
+        command = baseDirectory.value -> "grunt build",
         streams = streams.value
       )
       for {
-        file        ← outputFiles.toSeq
-        rebasedFile ← sbt.Path.rebase(dist, "frontend")(file)
-      } yield file → rebasedFile
+        file        <- outputFiles.toSeq
+        rebasedFile <- sbt.Path.rebase(dist, "frontend")(file)
+      } yield file -> rebasedFile
     },
     Compile / resourceDirectory := baseDirectory.value / "app",
     Compile / packageBin / mappings := gruntBuild.value,

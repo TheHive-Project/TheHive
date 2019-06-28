@@ -19,7 +19,7 @@ import org.thp.thehive.services._
 
 import org.elastic4play.database.DBFind
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
+import org.elastic4play.services.{Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv}
 
 @Singleton
 class ObservableMigration @Inject()(
@@ -52,24 +52,24 @@ class ObservableMigration @Inject()(
 
   def importObservables(caseId: String, `case`: Case with Entity, progress: ProgressBar)(implicit graph: Graph): Unit = {
     val done = fromFind(Some("all"), Nil)(
-      index ⇒
+      index =>
         search(index / "case_artifact")
           .query(hasParentQuery("case", idsQuery(caseId), score = false))
     )._1
-      .map { artifactJs ⇒
+      .map { artifactJs =>
         catchError("Artifact", artifactJs, progress) {
-          userMigration.withUser((artifactJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+          userMigration.withUser((artifactJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
             val observable        = artifactJs.as[Observable]
             val createdObservable = observableSrv.create(observable)
             (artifactJs \ "attachment")
               .asOpt[ElasticAttachment]
-              .foreach { attachment ⇒
+              .foreach { attachment =>
                 val attachmentEntity = saveAttachment(attachmentSrv, storageSrv, elasticAttachmentSrv, hashers, toDB)(attachment)
                 observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachmentEntity)
               }
             (artifactJs \ "data")
               .asOpt[String]
-              .foreach { data ⇒
+              .foreach { data =>
                 val dataEntity = dataSrv.create(Data(data))
                 observableDataSrv.create(ObservableData(), createdObservable, dataEntity)
               }
@@ -78,7 +78,7 @@ class ObservableMigration @Inject()(
               .initSteps
               .getOrganisationShare(`case`._id)
               .getOrFail()
-              .foreach(s ⇒ shareSrv.shareObservableSrv.create(ShareObservable(), s, createdObservable))
+              .foreach(s => shareSrv.shareObservableSrv.create(ShareObservable(), s, createdObservable))
 
             auditMigration.importAudits("case_artifact", (artifactJs \ "_id").as[String], createdObservable, progress)
           }

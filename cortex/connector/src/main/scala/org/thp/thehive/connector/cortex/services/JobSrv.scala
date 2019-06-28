@@ -4,7 +4,7 @@ import akka.stream.scaladsl.StreamConverters
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.cortex.dto.v0.{InputCortexArtifact, Attachment ⇒ CortexAttachment}
+import org.thp.cortex.dto.v0.{InputCortexArtifact, Attachment => CortexAttachment}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
@@ -45,15 +45,15 @@ class JobSrv @Inject()(
       authContext: AuthContext
   ): Future[Job with Entity] =
     for {
-      cortexClient ← cortexConfig
+      cortexClient <- cortexConfig
         .instances
         .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-      analyzer ← cortexClient.getAnalyzer(workerId).recoverWith { case _ ⇒ cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
-      cortexArtifact ← (observable.attachment, observable.data) match {
-        case (None, Some(data)) ⇒
+      analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
+      cortexArtifact <- (observable.attachment, observable.data) match {
+        case (None, Some(data)) =>
           Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
-        case (Some(a), None) ⇒
+        case (Some(a), None) =>
           Future.successful(
             InputCortexArtifact(
               observable.tlp,
@@ -66,15 +66,15 @@ class JobSrv @Inject()(
                   a.name,
                   a.size,
                   a.contentType,
-                  StreamConverters.fromInputStream(() ⇒ storageSrv.loadBinary(a.hashes.head.toString))
+                  StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.hashes.head.toString))
                 )
               )
             )
           )
-        case _ ⇒ Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
+        case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
-      cortexOutputJob ← cortexClient.analyse(analyzer.id, cortexArtifact)
-      createdJob = db.transaction { implicit newGraph ⇒
+      cortexOutputJob <- cortexClient.analyse(analyzer.id, cortexArtifact)
+      createdJob = db.transaction { implicit newGraph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)(newGraph, authContext)
       }
     } yield createdJob

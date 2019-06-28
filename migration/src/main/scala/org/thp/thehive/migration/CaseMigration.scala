@@ -52,10 +52,10 @@ class CaseMigration @Inject()(
 
   def importCases(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database): Unit = {
     // TODO add mergeFrom, mergeTo
-    val (srv, total) = dbFind(Some("all"), Nil)(index ⇒ search(index / "case"))
+    val (srv, total) = dbFind(Some("all"), Nil)(index => search(index / "case"))
     val progress     = new ProgressBar(terminal, "Importing case", Await.result(total, Duration.Inf).toInt)
     val done = srv
-      .mapAsync(10) { caseJs ⇒
+      .mapAsync(10) { caseJs =>
         val caze = caseJs.as[Case]
         progress.inc(extraMessage = s"#${caze.number} ${caze.title}")
         Future {
@@ -65,8 +65,8 @@ class CaseMigration @Inject()(
             Retry(3)
               .on[IOException]
               .withTry {
-                db.tryTransaction { implicit graph ⇒
-                  val r = userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+                db.tryTransaction { implicit graph =>
+                  val r = userMigration.withUser((caseJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
                     val customFields = ((caseJs \ "customFields")
                       .asOpt[JsObject]
                       .fold(Seq.empty[(String, Option[Any])])(extractCustomFields) ++
@@ -81,7 +81,7 @@ class CaseMigration @Inject()(
                         customFields,
                         None // no case template
                       )
-                      .map { richCase ⇒
+                      .map { richCase =>
                         (caseJs \ "impactStatus")
                           .asOpt[String]
                           .flatMap(impactStatusSrv.get(_).headOption())
@@ -91,7 +91,7 @@ class CaseMigration @Inject()(
                           .flatMap(resolutionStatusSrv.get(_).headOption())
                           .foreach(caseSrv.setResolutionStatus(richCase.`case`, _))
                         val caseId = (caseJs \ "_id").as[String]
-                        caseMap += caseId → richCase._id
+                        caseMap += caseId -> richCase._id
                         auditMigration.importAudits("case", caseId, richCase.`case`, progress)
                         taskMigration.importTasks(caseId, richCase.`case`, progress)
                         observableMigration.importObservables(caseId, richCase.`case`, progress)

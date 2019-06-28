@@ -28,7 +28,7 @@ object LogConversion {
         .withFieldComputed(_.message, _.message)
         .withFieldComputed(_.startDate, _._createdAt)
         .withFieldComputed(_.owner, _._createdBy)
-        .withFieldComputed(_.status, l ⇒ if (l.deleted) "Deleted" else "Ok")
+        .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
         .withFieldComputed(_.attachment, _.attachments.headOption.map(toOutputAttachment(_).toOutput))
         .transform
     )

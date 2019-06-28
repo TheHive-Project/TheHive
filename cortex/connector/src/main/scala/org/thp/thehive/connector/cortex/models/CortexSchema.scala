@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.models
 
 import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe ⇒ ru}
+import scala.reflect.runtime.{universe => ru}
 
 import play.api.Logger
 
@@ -30,8 +30,8 @@ class CortexSchema @Inject()() extends Schema {
     reflectionClasses
       .getSubTypesOf(classOf[HasModel[_]])
       .asScala
-      .filterNot(c ⇒ java.lang.reflect.Modifier.isAbstract(c.getModifiers))
-      .map { modelClass ⇒
+      .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers))
+      .map { modelClass =>
         val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel[_]]
         logger.info(s"Loading model ${hasModel.model.label}")
         hasModel.model

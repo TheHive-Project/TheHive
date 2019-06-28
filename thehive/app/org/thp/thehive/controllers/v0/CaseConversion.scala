@@ -56,7 +56,7 @@ object CaseConversion {
       .observables
       .raw
       .count()
-      .map(count ⇒ Json.obj("count" → count.toLong))
+      .map(count => Json.obj("count" -> count.toLong))
 
   def taskStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
@@ -64,23 +64,23 @@ object CaseConversion {
       .active
       .raw
       .groupCount(By(Key[String]("status")))
-      .map { statusAgg ⇒
-        val (total, result) = statusAgg.asScala.foldLeft(0L → JsObject.empty) {
-          case ((t, r), (k, v)) ⇒ (t + v) → (r + (k → JsNumber(v.toInt)))
+      .map { statusAgg =>
+        val (total, result) = statusAgg.asScala.foldLeft(0L -> JsObject.empty) {
+          case ((t, r), (k, v)) => (t + v) -> (r + (k -> JsNumber(v.toInt)))
         }
-        result + ("total" → JsNumber(total))
+        result + ("total" -> JsNumber(total))
       }
 
   def alertStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] =
     caseTraversal
       .inTo[AlertCase]
       .group(By(Key[String]("type")), By(Key[String]("source")))
-      .map { alertAgg ⇒
+      .map { alertAgg =>
         alertAgg
           .asScala
           .flatMap {
-            case (tpe, listOfSource) ⇒
-              listOfSource.asScala.map(s ⇒ Json.obj("type" → tpe, "source" → s))
+            case (tpe, listOfSource) =>
+              listOfSource.asScala.map(s => Json.obj("type" -> tpe, "source" -> s))
           }
           .toSeq
       }
@@ -90,7 +90,7 @@ object CaseConversion {
 
   def mergeIntoStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
 
-  def caseStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+  def caseStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     (_: GremlinScala[Vertex])
       .project(
         _.apply(
@@ -109,13 +109,13 @@ object CaseConversion {
           .and(By(mergeIntoStats(__[Vertex])))
       )
       .map {
-        case ((tasks, observables), alerts, mergeFrom, mergeInto) ⇒
+        case ((tasks, observables), alerts, mergeFrom, mergeInto) =>
           Json.obj(
-            "tasks"     → tasks,
-            "artifacts" → observables,
-            "alerts"    → alerts,
-            "mergeFrom" → mergeFrom,
-            "mergeInto" → mergeInto
+            "tasks"     -> tasks,
+            "artifacts" -> observables,
+            "alerts"    -> alerts,
+            "mergeFrom" -> mergeFrom,
+            "mergeInto" -> mergeInto
           )
       }
 
@@ -152,15 +152,15 @@ object CaseConversion {
       .property[String]("status")(_.simple.updatable)
       .property[Option[String]]("summary")(_.simple.updatable)
       .property[Option[String]]("owner")(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
-        (_, _, login: Option[String], vertex, _, graph, authContext) ⇒
+        (_, _, login: Option[String], vertex, _, graph, authContext) =>
           for {
-            case0 ← caseSrv.get(vertex)(graph).getOrFail()
-            user  ← login.map(userSrv.get(_)(graph).getOrFail()).flip
-            _ ← user match {
-              case Some(u) ⇒ caseSrv.assign(case0, u)(graph, authContext)
-              case None    ⇒ caseSrv.unassign(case0)(graph, authContext)
+            case0 <- caseSrv.get(vertex)(graph).getOrFail()
+            user  <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+            _ <- user match {
+              case Some(u) => caseSrv.assign(case0, u)(graph, authContext)
+              case None    => caseSrv.unassign(case0)(graph, authContext)
             }
-          } yield Json.obj("owner" → user.map(_.login))
+          } yield Json.obj("owner" -> user.map(_.login))
       })
       .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
       .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
@@ -178,7 +178,7 @@ object CaseConversion {
       .build
 
   def fromInputCase(inputCase: InputCase, caseTemplate: Option[RichCaseTemplate]): Case =
-    caseTemplate.fold(fromInputCase(inputCase)) { ct ⇒
+    caseTemplate.fold(fromInputCase(inputCase)) { ct =>
       inputCase
         .into[Case]
         .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)

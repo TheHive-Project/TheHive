@@ -11,7 +11,7 @@ import org.thp.thehive.models.{CustomField, CustomFieldWithValue}
 trait CustomFieldConversion {
 
   def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Option[Any]) =
-    inputCustomFieldValue.name → inputCustomFieldValue.value
+    inputCustomFieldValue.name -> inputCustomFieldValue.value
 
   implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
     Output[OutputCustomFieldValue](

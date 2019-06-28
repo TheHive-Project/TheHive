@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import java.io.File
-import java.nio.file.{Path, Files ⇒ JFiles}
+import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
 import play.api.libs.Files
@@ -17,7 +17,7 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{DatabaseBuilder ⇒ _, _}
+import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
@@ -45,7 +45,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -70,7 +70,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create an observable with string data" in {
         val request = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -84,7 +84,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
             """.stripMargin))
         val result = observableCtrl.create("#1")(request)
 
-        status(result) must equalTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
         createdObservables must have size 3
@@ -97,7 +97,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and search 2 observables with data array" in {
         val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" → "user3")
+          .withHeaders("user" -> "user3")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -111,7 +111,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
             """.stripMargin))
         val result = observableCtrl.create("#4")(request)
 
-        status(result) must beEqualTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
         val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
@@ -122,14 +122,14 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
         createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
-        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" → "user2")
+        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2")
         val resultCaseGet = caseCtrl.get("#4")(requestCase)
 
         status(resultCaseGet) shouldEqual 200
 
         val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
         val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -164,10 +164,10 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       }
 
       "be able to create and get 2 observables with string data and attachment" in {
-        FakeTemporaryFile { tempFile ⇒
+        FakeTemporaryFile { tempFile =>
           val hashes    = hashers.fromPath(tempFile.path).map(_.toString)
           val files     = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
-          val dataParts = Map("_json" → Seq("""
+          val dataParts = Map("_json" -> Seq("""
               {
                 "dataType":"ip",
                 "ioc":false,
@@ -181,7 +181,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
           val request = FakeRequest(
             "POST",
             s"/api/case/#1/artifact",
-            Headers("user" → "user1"),
+            Headers("user" -> "user1"),
             body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
           )
           val result = observableCtrl.create("#1")(request)
@@ -202,7 +202,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
           attachment.size must beEqualTo(tempFile.length())
           attachment.contentType must beEqualTo("text/plain")
 
-          createdObservables.foreach(obs ⇒ obs must equalTo(getObservable(obs._id, observableCtrl)))
+          createdObservables.foreach(obs => obs must equalTo(getObservable(obs._id, observableCtrl)))
           ok
         }
 
@@ -211,7 +211,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       "be able to update and bulk update observables" in {
         val resObservable = createDummyObservable(observableCtrl)
         val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse(s"""
               {
                 "ids":${Json.toJson(resObservable.map(_._id))},
@@ -226,7 +226,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
         status(resultUp) shouldEqual 204
 
-        val resObsUpdated = resObservable.map(obs ⇒ getObservable(obs._id, observableCtrl))
+        val resObsUpdated = resObservable.map(obs => getObservable(obs._id, observableCtrl))
 
         resObsUpdated.map(_.tags) must contain(be_==(Set("tagfileUp"))).forall
         resObsUpdated.map(_.message) must contain(beSome("love exciting and new edited")).forall
@@ -236,7 +236,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "create 2 observables with the same data" in {
         val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"hostname",
@@ -245,12 +245,12 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
               }
             """))
         val result1 = observableCtrl.create("#1")(request1)
-        status(result1) must beEqualTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result1)}")
+        status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
         getData("localhost", app) must have size 1
 
         val request2 = FakeRequest("POST", s"/api/case/#3/artifact")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"domain",
@@ -259,7 +259,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
               }
             """))
         val result2 = observableCtrl.create("#3")(request2)
-        status(result2) must equalTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result2)}")
+        status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
         getData("localhost", app) must have size 1
       }
@@ -268,7 +268,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         val resObservable = createDummyObservable(observableCtrl)
         val observableId  = resObservable.head._id
         val requestDelete = FakeRequest("DELETE", s"/api/case/artifact/$observableId")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val resultDelete = observableCtrl.delete(observableId)(requestDelete)
 
         status(resultDelete) shouldEqual 204
@@ -278,7 +278,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
   def getObservable(id: String, observableCtrl: ObservableCtrl): OutputObservable = {
     val requestGet = FakeRequest("GET", s"/api/case/artifact/$id")
-      .withHeaders("user" → "user1")
+      .withHeaders("user" -> "user1")
     val resultGet = observableCtrl.get(id)(requestGet)
 
     status(resultGet) shouldEqual 200
@@ -287,7 +287,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
   def createDummyObservable(observableCtrl: ObservableCtrl): Seq[OutputObservable] = {
     val request = FakeRequest("POST", s"/api/case/#1/artifact")
-      .withHeaders("user" → "user1")
+      .withHeaders("user" -> "user1")
       .withJsonBody(Json.parse(s"""
               {
                 "dataType":"autonomous-system",
@@ -308,7 +308,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   def getData(data: String, app: AppBuilder): List[Data with Entity] = {
     val dataSrv: DataSrv = app.instanceOf[DataSrv]
     val db: Database     = app.instanceOf[Database]
-    db.transaction { implicit graph ⇒
+    db.transaction { implicit graph =>
       dataSrv.initSteps.getByData(data).toList()
     }
   }
@@ -316,7 +316,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
 object FakeTemporaryFile {
 
-  def apply[A](body: Files.TemporaryFile ⇒ A): A = {
+  def apply[A](body: Files.TemporaryFile => A): A = {
     val tempFile = JFiles.createTempFile("thehive-", "-test")
     JFiles.write(tempFile, s"hello ${UUID.randomUUID()}".getBytes)
     val fakeTempFile = new Files.TemporaryFile {

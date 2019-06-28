@@ -21,7 +21,7 @@ import org.thp.thehive.services.{AttachmentSrv, LogSrv}
 
 import org.elastic4play.database.DBFind
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
+import org.elastic4play.services.{Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv}
 
 class LogMigration @Inject()(
     config: Configuration,
@@ -44,16 +44,16 @@ class LogMigration @Inject()(
 
   def importLogs(taskId: String, task: Task with Entity, progress: ProgressBar)(implicit graph: Graph): Unit = {
     val done = fromFind(Some("all"), Nil)(
-      index ⇒
+      index =>
         search(index / "case_task_log")
           .query(hasParentQuery("case_task", idsQuery(taskId), score = false))
     )._1
-      .map { logJs ⇒
+      .map { logJs =>
         catchError("Log", logJs, progress) {
-          userMigration.withUser((logJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+          userMigration.withUser((logJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
             val log = logJs.as[Log]
 //            logger.info(s"Importing log ${task.title} / ${log.message}")
-            logSrv.create(log, task).map { createdLog ⇒
+            logSrv.create(log, task).map { createdLog =>
               auditMigration.importAudits("case_task_log", (logJs \ "_id").as[String], createdLog, progress)
               (logJs \ "attachment")
                 .asOpt[ElasticAttachment]

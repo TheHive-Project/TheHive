@@ -13,7 +13,7 @@ class OrganisationSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
   implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bindToProvider(dbProvider)
       .bind[StorageSrv, LocalFileSystemStorageSrv]
@@ -33,13 +33,13 @@ class OrganisationSrvTest extends PlaySpecification {
 
     s"[$name] organisation service" should {
 
-      "create and get an organisation by his id" in db.transaction { implicit graph ⇒
+      "create and get an organisation by his id" in db.transaction { implicit graph =>
         val organisation =
           organisationSrv.create(Organisation(name = "orga1"))
         organisationSrv.getOrFail(organisation._id) must beSuccessfulTry(organisation)
       }
 
-      "create and get an organisation by its name" in db.transaction { implicit graph ⇒
+      "create and get an organisation by its name" in db.transaction { implicit graph =>
         val organisation = organisationSrv.create(Organisation(name = "orga2"))
         organisationSrv.getOrFail(organisation.name) must beSuccessfulTry(organisation)
       }

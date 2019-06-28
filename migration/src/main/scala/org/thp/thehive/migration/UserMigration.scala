@@ -12,7 +12,7 @@ import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.ElasticDsl.{search, RichString}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.Instance
-import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv ⇒ UserDB}
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{ProfileSrv, UserSrv}
@@ -36,26 +36,26 @@ class UserMigration @Inject()(
       (JsPath \ "name").read[String] and
       (JsPath \ "key").readNullable[String] and
       (JsPath \ "status").readWithDefault[String]("ok").map {
-        case "Locked" ⇒ true
-        case _        ⇒ false
+        case "Locked" => true
+        case _        => false
       } and
       (JsPath \ "password").readNullable[String])(User.apply _)
 
   def importUsers(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database, authContext: AuthContext): Unit = {
-    val (srv, total) = dbFind(Some("all"), Nil)(index ⇒ search(index / "user"))
+    val (srv, total) = dbFind(Some("all"), Nil)(index => search(index / "user"))
     val progress     = new ProgressBar(terminal, "Importing user", Await.result(total, Duration.Inf).toInt)
     val done = srv
-      .map { userJs ⇒
-        db.transaction { implicit graph ⇒
+      .map { userJs =>
+        db.transaction { implicit graph =>
           catchError("User", userJs, progress) {
             progress.inc(extraMessage = (userJs \ "_id").asOpt[String].getOrElse("***"))
             ((userJs \ "role").asOpt[String].getOrElse("read") match {
-              case "admin"      ⇒ profileSrv.getOrFail("admin")
-              case "write"      ⇒ profileSrv.getOrFail("analyst")
-              case /*"read"*/ _ ⇒ profileSrv.getOrFail("read-only")
-            }).map { profile ⇒
+              case "admin"      => profileSrv.getOrFail("admin")
+              case "write"      => profileSrv.getOrFail("analyst")
+              case /*"read"*/ _ => profileSrv.getOrFail("read-only")
+            }).map { profile =>
               val user = userJs.as[User]
-              userMap += user.login → userSrv.create(user, organisation, profile)
+              userMap += user.login -> userSrv.create(user, organisation, profile)
             }
           }
         }
@@ -65,11 +65,11 @@ class UserMigration @Inject()(
     ()
   }
 
-  def withUser[A](name: String)(body: AuthContext ⇒ A): A = {
+  def withUser[A](name: String)(body: AuthContext => A): A = {
     val authContext = userMap.get(name) match {
-      case Some(user) ⇒
+      case Some(user) =>
         AuthContextImpl(user.login, user.name, defaultOrganisation, Instance.getInternalId, Set.empty)
-      case None ⇒
+      case None =>
         if (name != "init") logger.warn(s"User $name not found, using initial user context")
         userDB.initialAuthContext
     }

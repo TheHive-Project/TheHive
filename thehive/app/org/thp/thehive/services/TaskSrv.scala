@@ -22,12 +22,12 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
   def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
     val createdTask = create(task)
     for {
-      share ← caseSrv
+      share <- caseSrv
         .initSteps
         .getOrganisationShare(`case`._id)
         .getOrFail()
       _ = shareSrv.shareTaskSrv.create(ShareTask(), share, createdTask)
-      _ ← auditSrv.createTask(createdTask, `case`)
+      _ <- auditSrv.createTask(createdTask, `case`)
     } yield createdTask
   }
 
@@ -51,8 +51,8 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
 
   def cascadeRemove(task: Task with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ ← Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
-      r ← Try(get(task).remove())
+      _ <- Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
+      r <- Try(get(task).remove())
     } yield r
 }
 
@@ -100,7 +100,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
         )
         .map {
-          case (task, user) ⇒
+          case (task, user) =>
             RichTask(
               task.as[Task],
               atMostOneOf[String](user)

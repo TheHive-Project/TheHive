@@ -2,7 +2,7 @@
 //
 //import java.util.{Date, UUID}
 //
-//import scala.reflect.runtime.{universe ⇒ ru}
+//import scala.reflect.runtime.{universe => ru}
 //import scala.util.Try
 //
 //import gremlin.scala._
@@ -60,8 +60,8 @@
 //
 //  //  override def update(graph: Graph, element: Element, authContext: AuthContext, model: Model, fields: Map[FPath, UpdateOps.Type]): Try[Unit] = {
 ////    val updateFields = fields.map {
-////      case (FPath("password"), _) if model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
-////      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
+////      case (FPath("password"), _) if model.label == "User" => ("password", "**hidden**", "**hidden**")
+////      case (FPath(field), UpdateOps.SetAttribute(value)) =>
 ////        val mapping  = model.fields(field)
 ////        val oldValue = db.getProperty(element, field, mapping)
 ////        (field, oldValue.toString, value.toString)
@@ -70,7 +70,7 @@
 ////    db.update(graph, element, authContext, model, fields)
 ////
 ////    updateFields.foreach {
-////      case (field, oldValue, newValue) ⇒
+////      case (field, oldValue, newValue) =>
 ////        create(
 ////          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
 ////          model.toDomain(element.asInstanceOf[model.ElementType]))(graph, authContext)
@@ -88,25 +88,25 @@
 ////    val element = elementSrv.get(id)(graph).asInstanceOf[ElementSteps[_, _, _]].raw.asInstanceOf[GremlinScala[Element]]
 ////
 ////    val updateFields: Seq[(String, String, String)] = fields.map {
-////      case (FPath("password"), _) if elementSrv.model.label == "User" ⇒ ("password", "**hidden**", "**hidden**")
-////      case (FPath(field), UpdateOps.SetAttribute(value)) ⇒
+////      case (FPath("password"), _) if elementSrv.model.label == "User" => ("password", "**hidden**", "**hidden**")
+////      case (FPath(field), UpdateOps.SetAttribute(value)) =>
 ////        properties
 ////          .find(_.propertyName == field)
-////          .flatMap { prop ⇒
+////          .flatMap { prop =>
 ////            prop
 ////              .asInstanceOf[PublicProperty[Element, _, _]]
 ////              .get(element, authContext)
 ////              .headOption
-////              .asInstanceOf[Option[GremlinScala[Element] ⇒ GremlinScala[_]]]
+////              .asInstanceOf[Option[GremlinScala[Element] => GremlinScala[_]]]
 ////          }
-////          .map(f ⇒ (field, f(element).toString, value.toString))
+////          .map(f => (field, f(element).toString, value.toString))
 ////          .getOrElse(throw BadRequestError(s"Field $field not found"))
 ////    }.toSeq
 ////
 ////    db.update(graph, authContext, elementSrv, id, properties, fields)
 ////
 ////    updateFields.foreach {
-////      case (field, oldValue, newValue) ⇒
+////      case (field, oldValue, newValue) =>
 ////        create(
 ////          Audit(AuditableAction.Update, authContext.requestId, Some(field), Some(oldValue), Some(newValue)),
 ////          elementSrv.model.toDomain(element.asInstanceOf[elementSrv.model.ElementType])
@@ -115,9 +115,9 @@
 ////    Success(()) // FIXME
 ////  }
 //
-//  override def noTransaction[A](body: Graph ⇒ A): A                                                            = db.noTransaction(body)
-//  override def transaction[A](body: Graph ⇒ A): A                                                              = db.transaction(body)
-//  override def tryTransaction[A](body: Graph ⇒ Try[A]): Try[A]                                                 = db.tryTransaction(body)
+//  override def noTransaction[A](body: Graph => A): A                                                            = db.noTransaction(body)
+//  override def transaction[A](body: Graph => A): A                                                              = db.transaction(body)
+//  override def tryTransaction[A](body: Graph => Try[A]): Try[A]                                                 = db.tryTransaction(body)
 //  override def version: Int                                                                                    = db.version
 //  override def setVersion(v: Int): Unit                                                                        = db.setVersion(v)
 //  override def getModel[E <: Product: ru.TypeTag]: Base[E]                                                     = db.getModel[E]

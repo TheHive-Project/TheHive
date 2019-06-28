@@ -14,7 +14,7 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
 
   def flow(): Action[AnyContent] =
     entryPoint("audit flow")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val audits = auditSrv
           .initSteps
           .visible

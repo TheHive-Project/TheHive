@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.lang.reflect.Modifier
 
 import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe ⇒ ru}
+import scala.reflect.runtime.{universe => ru}
 
 import play.api.Logger
 import play.api.inject.Injector
@@ -36,8 +36,8 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
     reflectionClasses
       .getSubTypesOf(classOf[HasModel[_]])
       .asScala
-      .filterNot(c ⇒ Modifier.isAbstract(c.getModifiers))
-      .map { modelClass ⇒
+      .filterNot(c => Modifier.isAbstract(c.getModifiers))
+      .map { modelClass =>
         val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel[_]]
         logger.info(s"Loading model ${hasModel.model.label}")
         hasModel.model
@@ -48,17 +48,17 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
     reflectionClasses
       .getSubTypesOf(classOf[VertexSrv[_, _]])
       .asScala
-      .filterNot(c ⇒ Modifier.isAbstract(c.getModifiers))
+      .filterNot(c => Modifier.isAbstract(c.getModifiers))
       .toSeq
-      .flatMap[InitialValue[_], Seq[InitialValue[_]]] { vertexSrvClass ⇒
+      .flatMap[InitialValue[_], Seq[InitialValue[_]]] { vertexSrvClass =>
         injector.instanceOf(vertexSrvClass).getInitialValues
       }
 
   override def init(implicit graph: Graph, authContext: AuthContext): Unit = {
     for {
-      adminUser           ← injector.instanceOf[UserSrv].getOrFail("admin")
-      adminProfile        ← injector.instanceOf[ProfileSrv].getOrFail("admin")
-      defaultOrganisation ← injector.instanceOf[OrganisationSrv].getOrFail("default")
+      adminUser           <- injector.instanceOf[UserSrv].getOrFail("admin")
+      adminProfile        <- injector.instanceOf[ProfileSrv].getOrFail("admin")
+      defaultOrganisation <- injector.instanceOf[OrganisationSrv].getOrFail("default")
     } yield injector.instanceOf[RoleSrv].create(adminUser, defaultOrganisation, adminProfile)
     ()
   }

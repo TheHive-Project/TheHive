@@ -35,21 +35,21 @@ class CortexClientTest extends PlaySpecification with Mockito {
 
   s"CortexClient" should {
     lazy val app = GuiceApplicationBuilder()
-      .configure("play.allowGlobalApplication" → true, "play.filters.enabled" → Nil)
+      .configure("play.allowGlobalApplication" -> true, "play.filters.enabled" -> Nil)
       .router(Router.from {
-        case play.api.routing.sird.GET(p"/api/analyzer") ⇒
+        case play.api.routing.sird.GET(p"/api/analyzer") =>
           Action {
             Results.Ok.sendResource("analyzers.json")(GuiceApplicationBuilder().injector.instanceOf[ControllerComponents].fileMimeTypes)
           }
-        case play.api.routing.sird.GET(p"/api/analyzer/$id") ⇒
+        case play.api.routing.sird.GET(p"/api/analyzer/$id") =>
           Action {
             Results.Ok(Json.toJson(getAnalyzers.find(_.id == id).get))
           }
-        case play.api.routing.sird.POST(p"/api/analyzer/_search") ⇒
+        case play.api.routing.sird.POST(p"/api/analyzer/_search") =>
           Action {
             Results.Ok(Json.toJson(getAnalyzers))
           }
-        case play.api.routing.sird.POST(p"/api/analyzer/$id/run") ⇒
+        case play.api.routing.sird.POST(p"/api/analyzer/$id/run") =>
           Action {
             Results.Created(Json.toJson(getJobs.find(_.workerId == id).get))
           }

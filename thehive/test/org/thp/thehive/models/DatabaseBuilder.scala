@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.io.File
 
 import scala.io.Source
-import scala.reflect.runtime.{universe ⇒ ru}
+import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success}
 
 import play.api.Logger
@@ -47,7 +47,7 @@ class DatabaseBuilder @Inject()(
     lazy val logger = Logger(getClass)
     logger.info("Initialize database schema")
     db.createSchemaFrom(schema)
-    db.transaction { implicit graph ⇒
+    db.transaction { implicit graph =>
       val idMap =
         createVertex(caseSrv, FieldsParser[Case]) ++
           createVertex(userSrv, FieldsParser[User]) ++
@@ -116,7 +116,7 @@ class DatabaseBuilder @Inject()(
   def readFile(name: String): String =
     try Source.fromResource(name).mkString
     catch {
-      case _: NullPointerException ⇒ sys.error(s"resources/$name : file or directory unreadable")
+      case _: NullPointerException => sys.error(s"resources/$name : file or directory unreadable")
     }
 
   def readFile(file: File): String = {
@@ -136,19 +136,19 @@ class DatabaseBuilder @Inject()(
     try {
       val data = readFile(path)
       for {
-        json ← Json
+        json <- Json
           .parse(data)
           .asOpt[JsValue]
           .orElse(warn(s"File $data has invalid format"))
           .flatMap {
-            case arr: JsArray ⇒ arr.asOpt[Seq[JsObject]].orElse(warn("Array must contain only object"))
-            case o: JsObject  ⇒ Some(Seq(o))
-            case _            ⇒ warn(s"File $data contains data that is not an object nor an array")
+            case arr: JsArray => arr.asOpt[Seq[JsObject]].orElse(warn("Array must contain only object"))
+            case o: JsObject  => Some(Seq(o))
+            case _            => warn(s"File $data contains data that is not an object nor an array")
           }
           .getOrElse(Nil)
       } yield FObject(json)
     } catch {
-      case error: Throwable ⇒
+      case error: Throwable =>
         logger.warn(s"$path error: ${error.getMessage}")
         Nil
     }
@@ -156,8 +156,8 @@ class DatabaseBuilder @Inject()(
   implicit class RichField(field: Field) {
 
     def getString(path: String): Option[String] = field.get(path) match {
-      case FString(value) ⇒ Some(value)
-      case _              ⇒ None
+      case FString(value) => Some(value)
+      case _              => None
     }
   }
 
@@ -165,13 +165,13 @@ class DatabaseBuilder @Inject()(
       srv: VertexSrv[V, _],
       parser: FieldsParser[V]
   )(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
-    readJsonFile(s"data/${srv.model.label}.json").flatMap { fields ⇒
+    readJsonFile(s"data/${srv.model.label}.json").flatMap { fields =>
       parser(fields - "id")
         .map(srv.create)
-        .map { v ⇒
-          fields.getString("id").map(_ → v._id)
+        .map { v =>
+          fields.getString("id").map(_ -> v._id)
         }
-        .recover(e ⇒ warn(s"creation of $fields fails: $e"))
+        .recover(e => warn(s"creation of $fields fails: $e"))
         .get
     }.toMap
 
@@ -183,15 +183,15 @@ class DatabaseBuilder @Inject()(
       idMap: Map[String, String]
   )(implicit graph: Graph, authContext: AuthContext): Seq[E with Entity] =
     readJsonFile(s"data/${srv.model.label}.json")
-      .flatMap { fields ⇒
+      .flatMap { fields =>
         (for {
-          fromExtId ← fields.getString("from").toTry(Failure(new Exception("Edge has no from vertex")))
+          fromExtId <- fields.getString("from").toTry(Failure(new Exception("Edge has no from vertex")))
           fromId = idMap.getOrElse(fromExtId, fromExtId)
-          from    ← fromSrv.getOrFail(fromId)
-          toExtId ← fields.getString("to").toTry(Failure(new Exception("Edge has no to vertex")))
+          from    <- fromSrv.getOrFail(fromId)
+          toExtId <- fields.getString("to").toTry(Failure(new Exception("Edge has no to vertex")))
           toId = idMap.getOrElse(toExtId, toExtId)
-          to ← toSrv.getOrFail(toId)
-          e  ← parser(fields - "from" - "to").fold(e ⇒ Success(srv.create(e, from, to)), _ ⇒ Failure(new Exception("XX")))
+          to <- toSrv.getOrFail(toId)
+          e  <- parser(fields - "from" - "to").fold(e => Success(srv.create(e, from, to)), _ => Failure(new Exception("XX")))
         } yield e)
           .toOption
           .orElse(warn(s"Edge ${srv.model.label} creation fails with: $fields"))

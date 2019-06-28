@@ -17,11 +17,11 @@ import com.google.inject.name.Names
 import com.typesafe.config.ConfigFactory
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
-import org.thp.scalligraph.auth.{UserSrv ⇒ UserDB}
+import org.thp.scalligraph.auth.{UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.{SchemaUpdater ⇒ TheHiveSchemaUpdater, _}
+import org.thp.thehive.models.{SchemaUpdater => TheHiveSchemaUpdater, _}
 // import org.thp.thehive.connector.cortex.models.{SchemaUpdater ⇒ CortexSchemaUpdater} // TODO add cortex schema
 import org.thp.thehive.services._
 
@@ -46,15 +46,15 @@ class Migration @Inject()(
   lazy val logger = Logger(getClass)
 
   def migrate(): Unit =
-    userMigration.withUser("init") { implicit authContext ⇒
+    userMigration.withUser("init") { implicit authContext =>
       // create default organisation
       val organisationName = config.get[String]("organisation.name")
-      val defaultOrganisation = Try(db.transaction(implicit graph ⇒ organisationSrv.create(Organisation(organisationName))))
-        .orElse(db.transaction(implicit graph ⇒ organisationSrv.getOrFail(organisationName)))
+      val defaultOrganisation = Try(db.transaction(implicit graph => organisationSrv.create(Organisation(organisationName))))
+        .orElse(db.transaction(implicit graph => organisationSrv.getOrFail(organisationName)))
         .get
       logger.info(s"organisation $organisationName created")
 
-      Terminal { terminal ⇒
+      Terminal { terminal =>
         userMigration.importUsers(terminal, defaultOrganisation)
         dbListMigration.importDBLists(terminal)
         caseTemplateMigration.importCaseTemplates(terminal, defaultOrganisation)

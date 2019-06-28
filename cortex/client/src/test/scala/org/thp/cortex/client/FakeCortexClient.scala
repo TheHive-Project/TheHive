@@ -15,22 +15,22 @@ import scala.concurrent.duration._
 
 trait FakeCortexClient {
 
-  def withCortexClient[T](block: CortexClient ⇒ T): T =
-    Server.withApplicationFromContext() { context ⇒
+  def withCortexClient[T](block: CortexClient => T): T =
+    Server.withApplicationFromContext() { context =>
       new BuiltInComponentsFromContext(
         context
       ) with HttpFiltersComponents {
         override def router: Router = Router.from {
-          case GET(p"/api/analyzers") ⇒
-            Action { _ ⇒
+          case GET(p"/api/analyzers") =>
+            Action { _ =>
               Results.Ok.sendResource("analyzers.json")(fileMimeTypes)
             }
         }
 
-        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" → 3333)
+        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" -> 3333)
       }.application
-    } { implicit port ⇒
-      WsTestClient.withClient { _ ⇒
+    } { implicit port =>
+      WsTestClient.withClient { _ =>
         implicit lazy val auth: Authentication = PasswordAuthentication("test", "test")
         implicit lazy val system: ActorSystem  = GuiceApplicationBuilder().injector.instanceOf[ActorSystem]
         implicit lazy val ws: CustomWSAPI      = GuiceApplicationBuilder().injector.instanceOf[CustomWSAPI]

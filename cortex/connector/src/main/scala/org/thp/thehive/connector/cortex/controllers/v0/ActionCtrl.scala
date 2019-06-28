@@ -15,7 +15,7 @@ class ActionCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
-      .auth { _ ⇒
+      .auth { _ =>
         Success(Results.Ok(JsArray.empty))
       }
 }

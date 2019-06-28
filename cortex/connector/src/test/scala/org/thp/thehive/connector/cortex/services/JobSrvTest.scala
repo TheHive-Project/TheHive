@@ -21,7 +21,7 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -43,14 +43,14 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
     val db: Database   = app.instanceOf[Database]
 
     s"[$name] job service" should {
-      "create a job" in db.transaction { implicit graph ⇒
-          val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
+      "create a job" in db.transaction { implicit graph =>
+        val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
 
-          job shouldEqual getJobs.head
+        job shouldEqual getJobs.head
       }
 
       "submit a job" in {
-        withCortexClient { client ⇒
+        withCortexClient { client =>
           1 shouldEqual 1
         }
       }

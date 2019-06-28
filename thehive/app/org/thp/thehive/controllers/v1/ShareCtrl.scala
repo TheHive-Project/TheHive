@@ -30,8 +30,8 @@
 //  def create: Action[AnyContent] =
 //    entryPoint("create share")
 //      .extract('share, FieldsParser[InputShare])
-//      .authenticated { implicit request ⇒
-//        db.transaction { implicit graph ⇒
+//      .authenticated { implicit request =>
+//        db.transaction { implicit graph =>
 //          val inputShare: InputShare = request.body('share)
 //          val organisation           = organisationSrv.getOrFail(inputShare.organisationName)
 //          val `case`                 = caseSrv.getOrFail(inputShare.caseId)
@@ -43,8 +43,8 @@
 //
 //  def get(shareId: String): Action[AnyContent] =
 //    entryPoint("get share")
-//      .authenticated { _ ⇒
-//        db.transaction { implicit graph ⇒
+//      .authenticated { _ =>
+//        db.transaction { implicit graph =>
 //          val share = shareSrv
 //            .get(shareId)
 //            .richShare
@@ -57,8 +57,8 @@
 //
 //  def list: Action[AnyContent] =
 //    entryPoint("list share")
-//      .authenticated { _ ⇒
-//        db.transaction { implicit graph ⇒
+//      .authenticated { _ =>
+//        db.transaction { implicit graph =>
 //          val shares = shareSrv.initSteps.richShare.toList
 //            .map(ShareXfrm.toOutput)
 //          Results.Ok(Json.toJson(shares))
@@ -68,8 +68,8 @@
 //  def update(shareId: String): Action[AnyContent] =
 //    entryPoint("update share")
 //      .extract('share, UpdateFieldsParser[InputShare])
-//      .authenticated { implicit request ⇒
-//        db.transaction { implicit graph ⇒
+//      .authenticated { implicit request =>
+//        db.transaction { implicit graph =>
 //          shareSrv.update(shareId, request.body('share))
 //          Results.NoContent
 //        }

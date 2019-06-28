@@ -63,7 +63,7 @@ class StreamActor(
   }
 
   def receive(messages: Seq[String], keepAliveTimer: Cancellable): Receive = {
-    case GetStreamMessages ⇒
+    case GetStreamMessages =>
       logger.debug(s"[$self] GetStreamMessages")
       // rearm keepalive
       keepAliveTimer.cancel()
@@ -74,8 +74,8 @@ class StreamActor(
         else Some(context.system.scheduler.scheduleOnce(graceDuration, self, Commit))
       context.become(receive(messages, sender, newKeepAliveTimer, commitTimer, graceTimer))
 
-    case AuditStreamMessage(ids @ _*) ⇒
-      db.transaction { implicit graph ⇒
+    case AuditStreamMessage(ids @ _*) =>
+      db.transaction { implicit graph =>
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)
@@ -95,7 +95,7 @@ class StreamActor(
       commitTimer: Cancellable,
       graceTimer: Option[Cancellable]
   ): Receive = {
-    case GetStreamMessages ⇒
+    case GetStreamMessages =>
       logger.debug(s"[$self] GetStreamMessages")
       // rearm keepalive
       keepAliveTimer.cancel()
@@ -108,15 +108,15 @@ class StreamActor(
         else Some(context.system.scheduler.scheduleOnce(graceDuration, self, Commit))
       context.become(receive(messages, sender, newKeepAliveTimer, newCommitTimer, newGraceTimer))
 
-    case Commit ⇒
+    case Commit =>
       logger.debug(s"[$self] Commit")
       commitTimer.cancel()
       graceTimer.foreach(_.cancel())
       requestActor ! AuditStreamMessage(messages: _*)
       context.become(receive(Nil, keepAliveTimer))
 
-    case AuditStreamMessage(ids @ _*) ⇒
-      db.transaction { implicit graph ⇒
+    case AuditStreamMessage(ids @ _*) =>
+      db.transaction { implicit graph =>
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)
@@ -170,17 +170,17 @@ class StreamSrv @Inject()(configuration: Configuration, auditSrv: AuditSrv, db: 
     mediator
       .ask(Send(s"/user/stream-$streamId", Identify(1), localAffinity = false))(Timeout(2.seconds))
       .flatMap {
-        case ActorIdentity(1, Some(streamActor)) ⇒
+        case ActorIdentity(1, Some(streamActor)) =>
           logger.debug(s"Stream actor found for stream $streamId")
           (streamActor ? StreamActor.GetStreamMessages)
             .map {
-              case AuditStreamMessage(ids @ _*) ⇒ ids
-              case _                            ⇒ Nil
+              case AuditStreamMessage(ids @ _*) => ids
+              case _                            => Nil
             }
-        case other ⇒ Future.failed(NotFoundError(s"Stream $streamId doesn't exist: $other"))
+        case other => Future.failed(NotFoundError(s"Stream $streamId doesn't exist: $other"))
       }
       .recoverWith {
-        case _: AskTimeoutException ⇒ Future.failed(NotFoundError(s"Stream $streamId doesn't exist"))
+        case _: AskTimeoutException => Future.failed(NotFoundError(s"Stream $streamId doesn't exist"))
       }
   }
 }
@@ -194,10 +194,10 @@ class StreamSerializer extends Serializer {
     */
   def toBinary(o: AnyRef): Array[Byte] =
     o match {
-      case AuditStreamMessage(ids @ _*) ⇒ Json.toJson(ids).toString.getBytes
-      case GetStreamMessages            ⇒ "GetStreamMessages".getBytes
-      case Commit                       ⇒ "Commit".getBytes
-      case _                            ⇒ Array.empty[Byte] // Not serializable
+      case AuditStreamMessage(ids @ _*) => Json.toJson(ids).toString.getBytes
+      case GetStreamMessages            => "GetStreamMessages".getBytes
+      case Commit                       => "Commit".getBytes
+      case _                            => Array.empty[Byte] // Not serializable
     }
 
   /**
@@ -207,8 +207,8 @@ class StreamSerializer extends Serializer {
   @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     new String(bytes) match {
-      case "GetStreamMessages" ⇒ GetStreamMessages
-      case "Commit"            ⇒ Commit
-      case s                   ⇒ Try(AuditStreamMessage(Json.parse(s).as[Seq[String]]: _*)).getOrElse(throw new NotSerializableException)
+      case "GetStreamMessages" => GetStreamMessages
+      case "Commit"            => Commit
+      case s                   => Try(AuditStreamMessage(Json.parse(s).as[Seq[String]]: _*)).getOrElse(throw new NotSerializableException)
     }
 }

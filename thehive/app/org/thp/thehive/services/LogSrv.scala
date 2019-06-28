@@ -23,7 +23,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
   def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] = {
     val createdLog = create(log)
     taskLogSrv.create(TaskLog(), task, createdLog)
-    auditSrv.createLog(createdLog, task).map(_ ⇒ createdLog)
+    auditSrv.createLog(createdLog, task).map(_ => createdLog)
   }
 
   def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
@@ -34,18 +34,18 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
       attachment: Attachment with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
     logAttachmentSrv.create(LogAttachment(), log, attachment)
-    auditSrv.updateLog(log, Json.obj("attachment" → attachment.name)).map(_ ⇒ attachment)
+    auditSrv.updateLog(log, Json.obj("attachment" -> attachment.name)).map(_ => attachment)
   }
 
   def cascadeRemove(log: Log with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ ← Try(
+      _ <- Try(
         get(log)
           .attachments
           .toList()
-          .foreach(a ⇒ attachmentSrv.get(a.attachmentId).remove())
+          .foreach(a => attachmentSrv.get(a.attachmentId).remove())
       )
-      r ← Try(get(log).remove())
+      r <- Try(get(log).remove())
     } yield r
 }
 
@@ -90,7 +90,7 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
             .and(By(__[Vertex].outTo[LogAttachment].fold))
         )
         .map {
-          case (log, attachments) ⇒
+          case (log, attachments) =>
             RichLog(
               log.as[Log],
               attachments.asScala.map(_.as[Attachment])

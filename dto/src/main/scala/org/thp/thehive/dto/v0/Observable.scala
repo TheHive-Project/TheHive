@@ -25,10 +25,10 @@ object InputObservable {
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]
 
   val fp: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
-    case (_, FString(s)) ⇒ Good(s.split("\\R+").toSeq)
-    case (_, FAny(s))    ⇒ Good(s)
-    case (_, FSeq(a))    ⇒ a.validatedBy(FieldsParser.string(_))
-    case (_, FUndefined) ⇒ Good(Nil)
+    case (_, FString(s)) => Good(s.split("\\R+").toSeq)
+    case (_, FAny(s))    => Good(s)
+    case (_, FSeq(a))    => a.validatedBy(FieldsParser.string(_))
+    case (_, FUndefined) => Good(Nil)
   }
 }
 

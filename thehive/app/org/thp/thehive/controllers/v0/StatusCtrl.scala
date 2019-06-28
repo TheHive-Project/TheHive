@@ -18,40 +18,40 @@ import scala.util.{Success, Try}
 class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration, authSrv: AuthSrv, userSrv: UserSrv, db: Database) {
 
   def get: Action[AnyContent] =
-    entryPoint("status") { _ ⇒
+    entryPoint("status") { _ =>
       Success(
         Results.Ok(
           Json.obj(
-            "versions" → Json.obj(
-              "Scalligraph" → getVersion(classOf[ScalligraphApplicationLoader]),
-              "TheHive"     → getVersion(classOf[TheHiveModule]),
-              "Play"        → getVersion(classOf[AbstractController])
+            "versions" -> Json.obj(
+              "Scalligraph" -> getVersion(classOf[ScalligraphApplicationLoader]),
+              "TheHive"     -> getVersion(classOf[TheHiveModule]),
+              "Play"        -> getVersion(classOf[AbstractController])
             ),
-            "connectors" → Json.obj(
-              "cortex" → Json.obj( // FIXME make this dynamic
-                "enabled" → true,
-                "servers" → List(
+            "connectors" -> Json.obj(
+              "cortex" -> Json.obj( // FIXME make this dynamic
+                "enabled" -> true,
+                "servers" -> List(
                   Json.obj(
-                    "name"    → "interne",
-                    "version" → "2.x.x",
-                    "status"  → "OK"
+                    "name"    -> "interne",
+                    "version" -> "2.x.x",
+                    "status"  -> "OK"
                   )
                 ),
-                "status" → "OK"
+                "status" -> "OK"
               )
             ),
-            "health" → Json.obj("elasticsearch" → "UNKNOWN"),
-            "config" → Json.obj(
-              "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
-              "authType" → (authSrv match {
-                case multiAuthSrv: MultiAuthSrv ⇒
-                  multiAuthSrv.authProviders.map { a ⇒
+            "health" -> Json.obj("elasticsearch" -> "UNKNOWN"),
+            "config" -> Json.obj(
+              "protectDownloadsWith" -> configuration.get[String]("datastore.attachment.password"),
+              "authType" -> (authSrv match {
+                case multiAuthSrv: MultiAuthSrv =>
+                  multiAuthSrv.authProviders.map { a =>
                     JsString(a.name)
                   }
-                case _ ⇒ JsString(authSrv.name)
+                case _ => JsString(authSrv.name)
               }),
-              "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
-              "ssoAutoLogin" → JsBoolean(configuration.get[Boolean]("auth.sso.autologin"))
+              "capabilities" -> authSrv.capabilities.map(c => JsString(c.toString)),
+              "ssoAutoLogin" -> JsBoolean(configuration.get[Boolean]("auth.sso.autologin"))
             )
           )
         )
@@ -60,12 +60,12 @@ class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration,
 
   private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
-  def health: Action[AnyContent] = entryPoint("health") { _ ⇒
+  def health: Action[AnyContent] = entryPoint("health") { _ =>
     // TODO add connectors and better db monitoring if available
     db.transaction(
-      graph ⇒
+      graph =>
         Try(userSrv.initSteps(graph).getByLogin("admin"))
-          .map(_ ⇒ Results.Ok(HealthStatus.Ok.toString))
+          .map(_ => Results.Ok(HealthStatus.Ok.toString))
           .orElse(Success(Results.Ok(HealthStatus.Error.toString)))
     )
   }

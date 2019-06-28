@@ -31,30 +31,30 @@ class ObservableCtrl @Inject()(
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
       .extract('artifact, FieldsParser[InputObservable])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val inputObservable: InputObservable = request.body('artifact)
         for {
-          case0 ← caseSrv
+          case0 <- caseSrv
             .get(caseId)
             .can(Permissions.manageCase)
             .getOrFail()
-          observablesWithData      ← inputObservable.data.toTry(d ⇒ observableSrv.create(inputObservable, d, Nil))
-          observableWithAttachment ← inputObservable.attachment.map(a ⇒ observableSrv.create(inputObservable, a, Nil)).flip
-          createdObservables ← (observablesWithData ++ observableWithAttachment).toTry { richObservables ⇒
-            caseSrv.addObservable(case0, richObservables.observable).map(_ ⇒ richObservables)
+          observablesWithData      <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, d, Nil))
+          observableWithAttachment <- inputObservable.attachment.map(a => observableSrv.create(inputObservable, a, Nil)).flip
+          createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
+            caseSrv.addObservable(case0, richObservables.observable).map(_ => richObservables)
           }
         } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))
       }
 
   def get(observableId: String): Action[AnyContent] =
     entryPoint("get observable")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
+      .authTransaction(db) { _ => implicit graph =>
         observableSrv
           .get(observableId)
           //            .availableFor(request.organisation)
           .richObservable
           .getOrFail()
-          .map { observable ⇒
+          .map { observable =>
             Results.Ok(observable.toJson)
           }
       }
@@ -62,27 +62,27 @@ class ObservableCtrl @Inject()(
   def update(obsId: String): Action[AnyContent] =
     entryPoint("update observable")
       .extract('observable, FieldsParser.update("observable", observableProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('observable)
         observableSrv
           .update(
             _.get(obsId).can(Permissions.manageCase),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")
     entryPoint("stats observable")
       .extract('query, parser)
-      .authTransaction(db) { implicit request ⇒ graph ⇒
+      .authTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body('query)
         val results = queries
-          .map(query ⇒ queryExecutor.execute(query, graph, request.authContext).toJson)
+          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) ⇒ acc ++ o
-            case (acc, r) ⇒
+            case (acc, o: JsObject) => acc ++ o
+            case (acc, r) =>
               logger.warn(s"Invalid stats result: $r")
               acc
           }
@@ -93,26 +93,26 @@ class ObservableCtrl @Inject()(
   def search: Action[AnyContent] =
     entryPoint("search case")
       .extract('query, searchParser("listObservable", paged = false))
-      .authTransaction(db) { implicit request ⇒ graph ⇒
+      .authTransaction(db) { implicit request => graph =>
         val query: Query = request.body('query)
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = (result.toJson \ "result").as[JsArray]
         result.toOutput match {
-          case PagedResult(_, Some(size)) ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → size.toString))
-          case _                          ⇒ Success(Results.Ok(resp).withHeaders("X-Total" → resp.value.size.toString))
+          case PagedResult(_, Some(size)) => Success(Results.Ok(resp).withHeaders("X-Total" -> size.toString))
+          case _                          => Success(Results.Ok(resp).withHeaders("X-Total" -> resp.value.size.toString))
         }
       }
 
   def findSimilar(obsId: String): Action[AnyContent] =
     entryPoint("find similar")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .get(obsId)
           .similar
           .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
           .toList()
           .map {
-            case (org, parent) ⇒ org.toJson.as[JsObject] ++ parent
+            case (org, parent) => org.toJson.as[JsObject] ++ parent
           }
 
         Success(Results.Ok(JsArray(observables)))
@@ -122,32 +122,32 @@ class ObservableCtrl @Inject()(
     entryPoint("bulk update")
       .extract('input, FieldsParser.update("observable", observableProperties))
       .extract('ids, FieldsParser.seq[String].on("ids"))
-      .authTransaction(db) { implicit request ⇒ graph ⇒
+      .authTransaction(db) { implicit request => graph =>
         val properties: Seq[PropertyUpdater] = request.body('input)
         val ids: Seq[String]                 = request.body('ids)
         val res = Try(
           ids.map(
-            obsId ⇒
+            obsId =>
               observableSrv
                 .update(_.get(obsId).can(Permissions.manageCase), properties)(graph, request.authContext)
                 .get
           )
         )
 
-        res.map(_ ⇒ Results.NoContent)
+        res.map(_ => Results.NoContent)
       }
 
   def delete(obsId: String): Action[AnyContent] =
     entryPoint("delete")
-      .authTransaction(db) { implicit request ⇒ graph ⇒
+      .authTransaction(db) { implicit request => graph =>
         val obsStep = observableSrv
           .get(obsId)(graph)
           .can(Permissions.manageCase)
         for {
-          obs ← obsStep
+          obs <- obsStep
             .getOrFail()
-          _ ← Try(observableSrv.initSteps(graph).remove(obs._id))
-//          _ ← auditSrv.deleteObservable(obs, Json.obj("id" → obs._id, "type" → obs.`type`, "message" → obs.message))(graph, request.authContext)
+          _ <- Try(observableSrv.initSteps(graph).remove(obs._id))
+//          _ <- auditSrv.deleteObservable(obs, Json.obj("id" → obs._id, "type" → obs.`type`, "message" → obs.message))(graph, request.authContext)
         } yield Results.NoContent
       }
 }

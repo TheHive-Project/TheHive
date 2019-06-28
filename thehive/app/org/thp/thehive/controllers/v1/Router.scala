@@ -21,76 +21,76 @@ class Router @Inject()(
 ) extends SimpleRouter {
 
   override def routes: Routes = {
-    case GET(p"/status") ⇒ statusCtrl.get
+    case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-    case POST(p"/login") ⇒ authenticationCtrl.login()
+    case POST(p"/login") => authenticationCtrl.login()
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
 //    case GET(p"/case")                  ⇒ caseCtrl.list
-    case POST(p"/case")                 ⇒ caseCtrl.create
-    case GET(p"/case/$caseId")          ⇒ caseCtrl.get(caseId)
-    case PATCH(p"/case/$caseId")        ⇒ caseCtrl.update(caseId)
-    case POST(p"/case/_merge/$caseIds") ⇒ caseCtrl.merge(caseIds)
-    case DELETE(p"/case/$caseId")       ⇒ caseCtrl.delete(caseId)
+    case POST(p"/case")                 => caseCtrl.create
+    case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
+    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
+    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds)
+    case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId)
 //    case PATCH(p"api/case/_bulk") ⇒                          caseCtrl.bulkUpdate()
 //    case POST(p"/case/_stats") ⇒                        caseCtrl.stats()
 //    case DELETE(p"/case/$caseId/force") ⇒                  caseCtrl.realDelete(caseId)
 //    case GET(p"/case/$caseId/links") ⇒                  caseCtrl.linkedCases(caseId)
 
-    case GET(p"/caseTemplate")                   ⇒ caseTemplateCtrl.list
-    case POST(p"/caseTemplate")                  ⇒ caseTemplateCtrl.create
-    case GET(p"/caseTemplate/$caseTemplateId")   ⇒ caseTemplateCtrl.get(caseTemplateId)
-    case PATCH(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.update(caseTemplateId)
+    case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
+    case POST(p"/caseTemplate")                  => caseTemplateCtrl.create
+    case GET(p"/caseTemplate/$caseTemplateId")   => caseTemplateCtrl.get(caseTemplateId)
+    case PATCH(p"/caseTemplate/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
     //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
 
 //    case GET(p"/user")           ⇒ userCtrl.list
-    case POST(p"/user")          ⇒ userCtrl.create
-    case GET(p"/user/current")   ⇒ userCtrl.current
-    case GET(p"/user/$userId")   ⇒ userCtrl.get(userId)
-    case PATCH(p"/user/$userId") ⇒ userCtrl.update(userId)
+    case POST(p"/user")          => userCtrl.create
+    case GET(p"/user/current")   => userCtrl.current
+    case GET(p"/user/$userId")   => userCtrl.get(userId)
+    case PATCH(p"/user/$userId") => userCtrl.update(userId)
     //    case DELETE(p"/user/$userId") =>                         userCtrl.delete(userId)
-    case POST(p"/user/$userId/password/set")    ⇒ userCtrl.setPassword(userId)
-    case POST(p"/user/$userId/password/change") ⇒ userCtrl.changePassword(userId)
-    case GET(p"/user/$userId/key")              ⇒ userCtrl.getKey(userId)
-    case DELETE(p"/user/$userId/key")           ⇒ userCtrl.removeKey(userId)
-    case POST(p"/user/$userId/key/renew")       ⇒ userCtrl.renewKey(userId)
+    case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId)
+    case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId)
+    case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
+    case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
+    case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
 
 //    case GET(p"/organisation")                   ⇒ organisationCtrl.list
-    case POST(p"/organisation")                  ⇒ organisationCtrl.create
-    case GET(p"/organisation/$organisationId")   ⇒ organisationCtrl.get(organisationId)
-    case PATCH(p"/organisation/$organisationId") ⇒ organisationCtrl.update(organisationId)
+    case POST(p"/organisation")                  => organisationCtrl.create
+    case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
+    case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
 
 //    case GET(p"/share")            ⇒ shareCtrl.list
 //    case POST(p"/share")           ⇒ shareCtrl.create
 //    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
 //    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
-    case GET(p"/task")           ⇒ taskCtrl.list
-    case POST(p"/task")          ⇒ taskCtrl.create
-    case GET(p"/task/$taskId")   ⇒ taskCtrl.get(taskId)
-    case PATCH(p"/task/$taskId") ⇒ taskCtrl.update(taskId)
+    case GET(p"/task")           => taskCtrl.list
+    case POST(p"/task")          => taskCtrl.create
+    case GET(p"/task/$taskId")   => taskCtrl.get(taskId)
+    case PATCH(p"/task/$taskId") => taskCtrl.update(taskId)
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
 
-    case GET(p"/customField")  ⇒ customFieldCtrl.list
-    case POST(p"/customField") ⇒ customFieldCtrl.create
+    case GET(p"/customField")  => customFieldCtrl.list
+    case POST(p"/customField") => customFieldCtrl.create
 
 //    case GET(p"/alert")                    ⇒ alertCtrl.list
-    case POST(p"/alert")                   ⇒ alertCtrl.create
-    case GET(p"/alert/$alertId")           ⇒ alertCtrl.get(alertId)
-    case PATCH(p"/alert/$alertId")         ⇒ alertCtrl.update(alertId)
-    case POST(p"/alert/$alertId/read")     ⇒ alertCtrl.markAsRead(alertId)
-    case POST(p"/alert/$alertId/unread")   ⇒ alertCtrl.markAsUnread(alertId)
-    case POST(p"/alert/$alertId/follow")   ⇒ alertCtrl.followAlert(alertId)
-    case POST(p"/alert/$alertId/unfollow") ⇒ alertCtrl.unfollowAlert(alertId)
-    case POST(p"/alert/$alertId/case")     ⇒ alertCtrl.createCase(alertId)
+    case POST(p"/alert")                   => alertCtrl.create
+    case GET(p"/alert/$alertId")           => alertCtrl.get(alertId)
+    case PATCH(p"/alert/$alertId")         => alertCtrl.update(alertId)
+    case POST(p"/alert/$alertId/read")     => alertCtrl.markAsRead(alertId)
+    case POST(p"/alert/$alertId/unread")   => alertCtrl.markAsUnread(alertId)
+    case POST(p"/alert/$alertId/follow")   => alertCtrl.followAlert(alertId)
+    case POST(p"/alert/$alertId/unfollow") => alertCtrl.unfollowAlert(alertId)
+    case POST(p"/alert/$alertId/case")     => alertCtrl.createCase(alertId)
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
     //POST     /alert/_stats                        controllers.AlertCtrl.stats()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
-    case GET(p"/audit") ⇒ auditCtrl.flow()
+    case GET(p"/audit") => auditCtrl.flow()
 //      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
 //    GET      /audit                               controllers.AuditCtrl.find()
 //    POST     /audit/_search                       controllers.AuditCtrl.find()

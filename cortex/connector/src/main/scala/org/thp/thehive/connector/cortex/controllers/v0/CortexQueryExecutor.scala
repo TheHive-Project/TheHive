@@ -16,7 +16,7 @@ import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{ParentFilterQuery, ParentIdFilter, ParentIdInputFilter, ParentQueryFilter}
 import org.thp.thehive.services.ObservableSteps
 
-import scala.reflect.runtime.{universe ⇒ ru}
+import scala.reflect.runtime.{universe => ru}
 
 /**
   * Range param case class for search query parsing
@@ -34,17 +34,17 @@ class CortexQueryExecutor @Inject()(
 ) extends QueryExecutor
     with JobConversion {
 
-  override val version: (Int, Int)                          = 0 → 0
+  override val version: (Int, Int)                          = 0 -> 0
   override val publicProperties: List[PublicProperty[_, _]] = jobProperties
 
   override val queries: Seq[ParamQuery[_]] = Seq(
-    Query.init[JobSteps]("listJob", (graph, authContext) ⇒ jobSrv.initSteps(graph).visible(authContext)),
+    Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext)),
     Query.withParam[RangeParams, JobSteps, PagedResult[Job with Entity]](
       "page",
       FieldsParser[RangeParams],
-      (range, jobSteps, _) ⇒ jobSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+      (range, jobSteps, _) => jobSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query[JobSteps, List[Job with Entity]]("toList", (jobSteps, _) ⇒ jobSteps.toList()),
+    Query[JobSteps, List[Job with Entity]]("toList", (jobSteps, _) => jobSteps.toList()),
     new CortexParentFilterQuery(publicProperties),
     Query.output[Job with Entity, OutputJob]
   )
@@ -67,12 +67,12 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
     implicit val db: Database = vertexSteps.db
     implicit val graph: Graph = vertexSteps.graph
 
-    val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] ⇒ ScalliSteps[_, _, _ <: AnyRef]) =
-      if (stepType =:= ru.typeOf[JobSteps]) ru.typeOf[ObservableSteps] → ((s: GremlinScala[Vertex]) ⇒ new ObservableSteps(s.inTo[ObservableJob]))
+    val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] => ScalliSteps[_, _, _ <: AnyRef]) =
+      if (stepType =:= ru.typeOf[JobSteps]) ru.typeOf[ObservableSteps] -> ((s: GremlinScala[Vertex]) => new ObservableSteps(s.inTo[ObservableJob]))
       else ???
 
     vertexSteps
-      .where(s ⇒ parentFilter.apply(publicProperties, parentType, linkFn(s), authContext).raw)
+      .where(s => parentFilter.apply(publicProperties, parentType, linkFn(s), authContext).raw)
       .asInstanceOf[S]
   }
 }
@@ -84,14 +84,14 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
   */
 class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends ParentFilterQuery(publicProperties) {
   override val paramParser: FieldsParser[InputFilter] = FieldsParser("parentIdFilter") {
-    case (path, FObjOne("_and", FSeq(fields))) ⇒
-      fields.zipWithIndex.validatedBy { case (field, index) ⇒ paramParser((path :/ "_and").toSeq(index), field) }.map(and)
-    case (path, FObjOne("_or", FSeq(fields))) ⇒
-      fields.zipWithIndex.validatedBy { case (field, index) ⇒ paramParser((path :/ "_or").toSeq(index), field) }.map(or)
-    case (path, FObjOne("_not", field))                       ⇒ paramParser(path :/ "_not", field).map(not)
-    case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) ⇒ Good(new ParentIdInputFilter(parentId))
-    case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) ⇒
-      paramParser.apply(path, queryField).map(query ⇒ new CortexParentQueryInputFilter(query))
+    case (path, FObjOne("_and", FSeq(fields))) =>
+      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_and").toSeq(index), field) }.map(and)
+    case (path, FObjOne("_or", FSeq(fields))) =>
+      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_or").toSeq(index), field) }.map(or)
+    case (path, FObjOne("_not", field))                       => paramParser(path :/ "_not", field).map(not)
+    case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
+    case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
+      paramParser.apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
   }.orElse(InputFilter.fieldsParser)
 
   override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[JobSteps]

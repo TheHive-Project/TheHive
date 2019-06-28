@@ -60,10 +60,10 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
   def analyse(analyzerId: String, artifact: InputCortexArtifact): Future[CortexOutputJob] = {
     val requestBody = Json.toJson(artifact)
     val result = artifact.attachment match {
-      case None ⇒
+      case None =>
         auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
           .post(requestBody)
-      case Some(Attachment(filename, size, contentType, data)) ⇒
+      case Some(Attachment(filename, size, contentType, data)) =>
         auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
           .post(
             Source(
@@ -75,9 +75,9 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
           )
     }
     result.transform {
-      case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue].as[CortexOutputJob])
-      case Success(r)                               ⇒ Try(r.body[JsValue].as[CortexOutputJob])
-      case Failure(t)                               ⇒ throw t
+      case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[CortexOutputJob])
+      case Success(r)                               => Try(r.body[JsValue].as[CortexOutputJob])
+      case Failure(t)                               => throw t
     }
   }
 }

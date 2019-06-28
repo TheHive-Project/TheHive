@@ -41,12 +41,12 @@ object CortexConfig {
       ec: ExecutionContext
   ): Seq[CortexClient] =
     for {
-      cfg ← configuration.getOptional[Configuration]("cortex").toSeq
+      cfg <- configuration.getOptional[Configuration]("cortex").toSeq
       cortexWS = globalWS.withConfig(cfg)
-      cfgs ← cfg.getOptional[Seq[Configuration]]("servers").toSeq
-      c    ← cfgs
+      cfgs <- cfg.getOptional[Seq[Configuration]]("servers").toSeq
+      c    <- cfgs
       instanceWS = cortexWS.withConfig(c)
-      cic ← getCortexClient(c, instanceWS)
+      cic <- getCortexClient(c, instanceWS)
     } yield cic
 
   /**
@@ -67,14 +67,14 @@ object CortexConfig {
       .map(KeyAuthentication)
       .orElse {
         for {
-          basicEnabled ← configuration.getOptional[Boolean]("basicAuth")
+          basicEnabled <- configuration.getOptional[Boolean]("basicAuth")
           if basicEnabled
-          username ← configuration.getOptional[String]("username")
-          password ← configuration.getOptional[String]("password")
+          username <- configuration.getOptional[String]("username")
+          password <- configuration.getOptional[String]("password")
         } yield PasswordAuthentication(username, password)
       }
       .map(
-        auth ⇒
+        auth =>
           new CortexClient(
             configuration.getOptional[String]("name").getOrElse("no name"),
             url,

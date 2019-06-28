@@ -53,7 +53,7 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   override def get(id: String): OrganisationSteps =
     Try(UUID.fromString(id))
-      .map(_ ⇒ getById(id))
+      .map(_ => getById(id))
       .getOrElse(getByName(id))
 
   def getById(id: String): OrganisationSteps = newInstance(raw.has(Key("_id") of id))

@@ -14,7 +14,7 @@ abstract class CustomFieldAccessor[T, C] {
   def getValue(c: C): T
 }
 
-trait CustomFieldValue[C] { _: C ⇒
+trait CustomFieldValue[C] { _: C =>
   val stringValue: Option[String]
   val booleanValue: Option[Boolean]
   val integerValue: Option[Int]
@@ -44,8 +44,8 @@ sealed abstract class CustomFieldType[T] {
 
 object CustomFieldString extends CustomFieldType[String] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case v: String ⇒ Success(customFieldValue.setStringValue(v))
-    case _         ⇒ setValueFailure(value)
+    case v: String => Success(customFieldValue.setStringValue(v))
+    case _         => setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
   override val name: String                                       = "string"
@@ -54,8 +54,8 @@ object CustomFieldString extends CustomFieldType[String] {
 
 object CustomFieldBoolean extends CustomFieldType[Boolean] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case v: Boolean ⇒ Success(customFieldValue.setBooleanValue(v))
-    case _          ⇒ setValueFailure(value)
+    case v: Boolean => Success(customFieldValue.setBooleanValue(v))
+    case _          => setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
   override val name: String                                        = "boolean"
@@ -64,8 +64,8 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
 
 object CustomFieldInteger extends CustomFieldType[Int] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case v: Int ⇒ Success(customFieldValue.setIntegerValue(v))
-    case _      ⇒ setValueFailure(value)
+    case v: Int => Success(customFieldValue.setIntegerValue(v))
+    case _      => setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
   override val name: String                                    = "integer"
@@ -74,8 +74,8 @@ object CustomFieldInteger extends CustomFieldType[Int] {
 
 object CustomFieldFloat extends CustomFieldType[Float] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case n: Number ⇒ Success(customFieldValue.setFloatValue(n.floatValue()))
-    case _         ⇒ setValueFailure(value)
+    case n: Number => Success(customFieldValue.setFloatValue(n.floatValue()))
+    case _         => setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Float] = ccf.floatValue
   override val name: String                                      = "float"
@@ -84,13 +84,13 @@ object CustomFieldFloat extends CustomFieldType[Float] {
 
 object CustomFieldDate extends CustomFieldType[Date] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Any): Try[C] = value match {
-    case n: Number ⇒ Success(customFieldValue.setDateValue(new Date(n.longValue())))
-    case v: Date   ⇒ Success(customFieldValue.setDateValue(v))
-    case _         ⇒ setValueFailure(value)
+    case n: Number => Success(customFieldValue.setDateValue(new Date(n.longValue())))
+    case v: Date   => Success(customFieldValue.setDateValue(v))
+    case _         => setValueFailure(value)
   }
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
   override val name: String                                     = "date"
-  override val writes: Writes[Date]                             = Writes[Date](d ⇒ JsNumber(d.getTime))
+  override val writes: Writes[Date]                             = Writes[Date](d => JsNumber(d.getTime))
 }
 
 @VertexEntity

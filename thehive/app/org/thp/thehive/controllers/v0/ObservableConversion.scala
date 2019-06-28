@@ -85,25 +85,25 @@ object ObservableConversion {
       // TODO add attachment ?
       .build
 
-  def observableStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+  def observableStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     new ObservableSteps(_: GremlinScala[Vertex])
       .similar
       .raw
       .groupCount(By(Key[Boolean]("ioc")))
-      .map { stats ⇒
+      .map { stats =>
         val m      = stats.asScala
         val nTrue  = m.get(true).fold(0L)(_.toLong)
         val nFalse = m.get(false).fold(0L)(_.toLong)
         Json.obj(
-          "seen" → (nTrue + nFalse),
-          "ioc"  → (nTrue > 0)
+          "seen" -> (nTrue + nFalse),
+          "ioc"  -> (nTrue > 0)
         )
       }
 
-  def observableLinkRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] ⇒ GremlinScala[JsObject] =
+  def observableLinkRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     (_: GremlinScala[Vertex])
       .coalesce(
-        new ObservableSteps(_).alert.richAlert.map(a ⇒ Json.obj("alert" → a.toJson)).raw,
-        new ObservableSteps(_).`case`.richCase.map(c ⇒ Json.obj("case"  → c.toJson)).raw
+        new ObservableSteps(_).alert.richAlert.map(a => Json.obj("alert" -> a.toJson)).raw,
+        new ObservableSteps(_).`case`.richCase.map(c => Json.obj("case"  -> c.toJson)).raw
       )
 }

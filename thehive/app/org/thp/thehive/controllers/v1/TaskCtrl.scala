@@ -19,27 +19,27 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
   def create: Action[AnyContent] =
     entryPoint("create task")
       .extract('task, FieldsParser[InputTask])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body('task)
         for {
-          case0       ← caseSrv.getOrFail(inputTask.caseId)
-          createdTask ← taskSrv.create(inputTask, case0)
+          case0       <- caseSrv.getOrFail(inputTask.caseId)
+          createdTask <- taskSrv.create(inputTask, case0)
         } yield Results.Created(createdTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =
     entryPoint("get task")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(taskId)
           .availableFor(request.organisation)
           .getOrFail()
-          .map(task ⇒ Results.Ok(task.toJson))
+          .map(task => Results.Ok(task.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list task")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val tasks = taskSrv
           .initSteps
           .availableFor(request.organisation)
@@ -51,7 +51,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
       .extract('task, FieldsParser.update("task", taskProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
         taskSrv
           .update(
@@ -59,6 +59,6 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
               .can(Permissions.manageTask),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 }

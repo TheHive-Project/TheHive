@@ -18,19 +18,19 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Executi
     */
   def listAnalyzer: Future[Seq[OutputCortexAnalyzer]] =
     Future
-      .traverse(cortexConfig.instances) { cortexInstance ⇒
+      .traverse(cortexConfig.instances) { cortexInstance =>
         cortexInstance.listAnalyser.recover {
-          case error ⇒
+          case error =>
             logger.error(s"List Cortex analyzers fails on ${cortexInstance.name}", error)
             Nil
         }
       }
-      .map { listOfListOfAnalyzers ⇒
+      .map { listOfListOfAnalyzers =>
         val analysers = listOfListOfAnalyzers.flatten
         analysers
           .groupBy(_.name)
           .values
-          .map(_.reduceLeft((a1, a2) ⇒ a1.copy(cortexIds = Some(a1.cortexIds.getOrElse(Nil) ::: a2.cortexIds.getOrElse(Nil)))))
+          .map(_.reduceLeft((a1, a2) => a1.copy(cortexIds = Some(a1.cortexIds.getOrElse(Nil) ::: a2.cortexIds.getOrElse(Nil)))))
           .toSeq
       }
 }

@@ -69,13 +69,13 @@ class AuditSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichAudit] =
-    userSrv.current.getOrFail().map { user ⇒
+    userSrv.current.getOrFail().map { user =>
       val createdAudit = create(audit)
       auditUserSrv.create(AuditUser(), createdAudit, user)
       auditContextSrv.create(AuditContext(), createdAudit, context)
       `object`.map(auditedSrv.create(Audited(), createdAudit, _))
       val richAudit = RichAudit(createdAudit, context, `object`)
-      db.onSuccessTransaction(graph)(() ⇒ eventSrv.publish(AuditStreamMessage(richAudit._id)))
+      db.onSuccessTransaction(graph)(() => eventSrv.publish(AuditStreamMessage(richAudit._id)))
       richAudit
     }
 
@@ -96,13 +96,13 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
             .and(By(__[Vertex].outTo[Audited].fold()))
         )
         .map {
-          case (audit, context, obj) ⇒
+          case (audit, context, obj) =>
             RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
         }
     )
 
   def richAuditWithCustomRenderer[A](
-      entityRenderer: GremlinScala[Vertex] ⇒ GremlinScala[A]
+      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
   ): ScalarSteps[(RichAudit, A)] =
     ScalarSteps(
       raw
@@ -113,8 +113,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
             .and(By(entityRenderer(__[Vertex])))
         )
         .map {
-          case (audit, context, obj, renderedObject) ⇒
-            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) → renderedObject
+          case (audit, context, obj, renderedObject) =>
+            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
         }
     )
 
@@ -147,9 +147,9 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
   )
 
   def getObject: Option[Entity] =
-    raw.outTo[Audited].headOption().flatMap { v ⇒
+    raw.outTo[Audited].headOption().flatMap { v =>
       schema.getModel(v.label()).collect {
-        case model: VertexModel ⇒
+        case model: VertexModel =>
           model.converter(db, graph).toDomain(v)
       }
     }

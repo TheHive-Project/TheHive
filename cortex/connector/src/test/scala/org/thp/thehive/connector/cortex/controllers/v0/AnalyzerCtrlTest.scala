@@ -17,7 +17,7 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -39,7 +39,7 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
 
     s"[$name] analyzer controller" should {
       "list analyzers" in {
-        val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" → "user1")
+        val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "user1")
         val result  = analyzerCtrl.list(request)
 
         status(result) shouldEqual 200

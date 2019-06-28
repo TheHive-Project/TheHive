@@ -55,7 +55,7 @@ object TestAlert {
 
 class AlertCtrlTest extends PlaySpecification with Mockito {
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bindToProvider(dbProvider)
       .bind[UserSrv, LocalUserSrv]
@@ -79,7 +79,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "create a new alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(Json.toJson(InputAlert("test", "source1", "sourceRef1", "new alert", "test alert")))
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 201
         val createdAlert = contentAsJson(result).as[OutputAlert]
@@ -111,7 +111,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "fail to create a duplicated alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref1", "new alert", "test alert")))
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 400
       }
@@ -120,9 +120,9 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(
             Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", "new alert", "test alert"))
-              + ("caseTemplate" → JsString("spam"))
+              + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 201
         val createdAlert = contentAsJson(result).as[OutputAlert]
@@ -154,10 +154,10 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "get an alert" in {
         val alertSrv = app.instanceOf[AlertSrv]
-        app.instanceOf[Database].tryTransaction { implicit graph ⇒
+        app.instanceOf[Database].tryTransaction { implicit graph =>
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail()
-        } must beSuccessfulTry.withValue { alert: Alert with Entity ⇒
-          val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" → "user2")
+        } must beSuccessfulTry.withValue { alert: Alert with Entity =>
+          val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "user2")
           val result  = alertCtrl.get(alert._id)(request)
           status(result) must_=== 200
           val resultAlert = contentAsJson(result).as[OutputAlert]

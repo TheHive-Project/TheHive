@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{UUID, List ⇒ JList}
+import java.util.{UUID, List => JList}
 
 import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, Vertex}
 import javax.inject.Inject
@@ -37,27 +37,27 @@ class CaseTemplateSrv @Inject()(
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
     val createdTasks = tasks.map(taskSrv.create(_, createdCaseTemplate))
     for {
-      cfs ← customFields
+      cfs <- customFields
         .toTry {
-          case (name, Some(value)) ⇒
+          case (name, Some(value)) =>
             for {
-              customField ← customFieldSrv.getOrFail(name)
-              ctcf        ← customField.`type`.setValue(CaseTemplateCustomField(), value)
+              customField <- customFieldSrv.getOrFail(name)
+              ctcf        <- customField.`type`.setValue(CaseTemplateCustomField(), value)
               caseTemplateCustomField = caseTemplateCustomFieldSrv.create(ctcf, createdCaseTemplate, customField)
             } yield CustomFieldWithValue(customField, caseTemplateCustomField)
-          case (name, None) ⇒
-            customFieldSrv.getOrFail(name).map { customField ⇒
+          case (name, None) =>
+            customFieldSrv.getOrFail(name).map { customField =>
               val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
               CustomFieldWithValue(customField, caseTemplateCustomField)
             }
         }
-      _ ← auditSrv.createCaseTemplate(createdCaseTemplate)
+      _ <- auditSrv.createCaseTemplate(createdCaseTemplate)
     } yield RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
   }
 
 //  def addTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
 //    for {
-//      createdTask ← taskSrv.create
+//      createdTask <- taskSrv.create
 //    } auditSrv.addTaskToCaseTemplate(caseTemplate, task)
 //    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
 //    ()
@@ -71,7 +71,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   override def get(id: String): CaseTemplateSteps =
     Try(UUID.fromString(id))
-      .map(_ ⇒ getById(id))
+      .map(_ => getById(id))
       .getOrElse(getByName(id))
 
   def getById(id: String): CaseTemplateSteps = newInstance(raw.has(Key("_id") of id))
@@ -98,7 +98,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         .outToE[CaseTemplateCustomField]
         .inV()
         .path
-        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseTemplateCustomField]))
+        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseTemplateCustomField]))
     )
 
   def richCaseTemplate: ScalarSteps[RichCaseTemplate] =
@@ -111,13 +111,13 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
             .and(By(__[Vertex].outToE[CaseTemplateCustomField].inV().path.fold.traversal))
         )
         .map {
-          case (caseTemplate, organisation, tasks, customFields) ⇒
+          case (caseTemplate, organisation, tasks, customFields) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             ⇒ throw InternalError("Not possible")
+                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             => throw InternalError("Not possible")
               }
             RichCaseTemplate(
               caseTemplate.as[CaseTemplate],

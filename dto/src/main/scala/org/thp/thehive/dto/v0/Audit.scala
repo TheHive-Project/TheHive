@@ -42,15 +42,15 @@ case class OutputAudit(
 
 object OutputAudit {
 
-  val auditWrites: OWrites[OutputAudit] = Json.writes[OutputAudit].transform { js: JsObject ⇒
-    Json.obj("base" → (js - "summary"), "summary" → (js \ "summary").asOpt[JsObject])
+  val auditWrites: OWrites[OutputAudit] = Json.writes[OutputAudit].transform { js: JsObject =>
+    Json.obj("base" -> (js - "summary"), "summary" -> (js \ "summary").asOpt[JsObject])
   }
 
-  val auditReads: Reads[OutputAudit] = Reads[OutputAudit] { js ⇒
+  val auditReads: Reads[OutputAudit] = Reads[OutputAudit] { js =>
     for {
-      base    ← (js \ "base").validate[JsObject]
-      summary ← (js \ "summary").validate[JsObject]
-      audit   ← Json.reads[OutputAudit].reads(base ++ summary)
+      base    <- (js \ "base").validate[JsObject]
+      summary <- (js \ "summary").validate[JsObject]
+      audit   <- Json.reads[OutputAudit].reads(base ++ summary)
     } yield audit
   }
   implicit val format: OFormat[OutputAudit] = OFormat(auditReads, auditWrites)

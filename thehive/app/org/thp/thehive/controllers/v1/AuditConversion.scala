@@ -16,7 +16,7 @@ trait AuditConversion {
         .withFieldComputed(_._id, _._id)
         .withFieldComputed(_._createdAt, _._createdAt)
         .withFieldComputed(_._createdBy, _._createdBy)
-        .withFieldComputed(_.obj, a ⇒ a.`object`.map(OutputEntity.apply))
+        .withFieldComputed(_.obj, a => a.`object`.map(OutputEntity.apply))
 //        .withFieldComputed(_.obj, a ⇒ OutputEntity(a.obj))
 //        .withFieldComputed(
 //          _.summary,

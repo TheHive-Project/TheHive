@@ -12,5 +12,5 @@ case class PasswordAuthentication(username: String, password: String) extends Au
 }
 
 case class KeyAuthentication(key: String) extends Authentication {
-  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HttpHeaders.Names.AUTHORIZATION → s"Bearer $key")
+  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HttpHeaders.Names.AUTHORIZATION -> s"Bearer $key")
 }

@@ -18,7 +18,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -43,7 +43,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val tList = tasksList(app)
         val task  = tList.find(_.title == "case 1 task 1").get
         val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""
               {"message":"log 1\n\n### yeahyeahyeahs", "deleted":false}
             """.stripMargin))
@@ -52,7 +52,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         status(result) shouldEqual 201
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -99,7 +99,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         logJson.toString shouldEqual Json.toJson(Seq(expected)).toString
 
         val requestPatch = FakeRequest("PATCH", s"/api/case/task/log/${log.id}")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse(s"""
               {
                 "message":"yeah",
@@ -116,7 +116,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val task  = tList.find(_.title == "case 1 task 1").get
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -149,7 +149,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val logJson = contentAsJson(resultSearch)
         val log     = logJson.as[Seq[OutputLog]].head
 
-        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" → "user1")
+        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" -> "user1")
         val resultDelete  = logCtrl.delete(log.id)(requestDelete)
 
         status(resultDelete) shouldEqual 204
@@ -167,7 +167,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
   def tasksList(app: AppBuilder): Seq[OutputTask] = {
     val taskCtrl    = app.instanceOf[TaskCtrl]
-    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
+    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
     val resultList  = taskCtrl.search(requestList)
 
     status(resultList) shouldEqual 200

@@ -50,17 +50,17 @@ object TaskConversion {
       .property[Int]("order")(_.simple.updatable)
       .property[Option[Date]]("dueDate")(_.simple.updatable)
       .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
-        (_, _, login: Option[String], vertex, _, graph, authContext) ⇒
+        (_, _, login: Option[String], vertex, _, graph, authContext) =>
           for {
-            task ← taskSrv.get(vertex)(graph).getOrFail()
-            user ← login.map(userSrv.get(_)(graph).getOrFail()).flip
+            task <- taskSrv.get(vertex)(graph).getOrFail()
+            user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
           } yield user match {
-            case Some(u) ⇒
+            case Some(u) =>
               taskSrv.assign(task, u)(graph, authContext)
-              Json.obj("owner" → u.login)
-            case None ⇒
+              Json.obj("owner" -> u.login)
+            case None =>
               taskSrv.unassign(task)(graph, authContext)
-              Json.obj("owner" → JsNull)
+              Json.obj("owner" -> JsNull)
           }
       })
       .build

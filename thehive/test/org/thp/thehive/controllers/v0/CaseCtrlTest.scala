@@ -46,7 +46,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -100,12 +100,12 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                   customFieldValue = inputCustomFields
                 )
               )
-              .as[JsObject] + ("caseTemplate" → JsString("spam"))
+              .as[JsObject] + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
 
         val result = caseCtrl.create(request)
-        status(result) must equalTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
         val expected = TestCase(
@@ -153,10 +153,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
               .as[JsObject]
           )
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
 
         val result = caseCtrl.create(request)
-        status(result) must equalTo(201).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val outputCase = contentAsJson(result).as[OutputCase]
         TestCase(outputCase) must equalTo(
           TestCase(
@@ -175,23 +175,23 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           )
         )
 
-        val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" → "user1")
+        val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
         val resultList  = app.instanceOf[TaskCtrl].search(requestList)
 
-        status(resultList) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(resultList)}")
+        status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
         val tasksList = contentAsJson(resultList).as[Seq[OutputTask]]
         tasksList.find(_.title == "task x") must beSome
       }
 
       "try to get a case" in {
         val request = FakeRequest("GET", s"/api/v0/case/#2")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = caseCtrl.get("#145")(request)
 
         status(result) shouldEqual 404
 
         val result2 = caseCtrl.get("#2")(request)
-        status(result2) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(result2)}")
+        status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
         val resultCase       = contentAsJson(result2)
         val resultCaseOutput = resultCase.as[OutputCase]
 
@@ -218,11 +218,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "update a case properly" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#1")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(
             Json.obj(
-              "title" → "new title",
-              "flag"  → true
+              "title" -> "new title",
+              "flag"  -> true
             )
           )
         val result = caseCtrl.update("#1")(request)
@@ -235,17 +235,17 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "update a bulk of cases properly" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/_bulk")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(
             Json.obj(
-              "ids"         → List("#1", "#3"),
-              "description" → "new description",
-              "tlp"         → 1,
-              "pap"         → 1
+              "ids"         -> List("#1", "#3"),
+              "description" -> "new description",
+              "tlp"         -> 1,
+              "pap"         -> 1
             )
           )
         val result = caseCtrl.bulkUpdate(request)
-        status(result) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultCases = contentAsJson(result).as[List[OutputCase]]
         resultCases must have size 2
 
@@ -254,16 +254,16 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCases.map(_.pap) must contain(be_==(1)).forall
 
         val requestGet1 = FakeRequest("GET", s"/api/v0/case/#1")
-          .withHeaders("user" → "user2")
+          .withHeaders("user" -> "user2")
         val resultGet1 = caseCtrl.get("#1")(requestGet1)
-        status(resultGet1) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(resultGet1)}")
+        status(resultGet1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet1)}")
         // Ignore title and flag for case#1 because it can be updated by previous test
         val case1 = contentAsJson(resultGet1).as[OutputCase].copy(title = resultCases.head.title, flag = resultCases.head.flag)
 
         val requestGet3 = FakeRequest("GET", s"/api/v0/case/#3")
-          .withHeaders("user" → "user2")
+          .withHeaders("user" -> "user2")
         val resultGet3 = caseCtrl.get("#3")(requestGet3)
-        status(resultGet3) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(resultGet3)}")
+        status(resultGet3) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet3)}")
         val case3 = contentAsJson(resultGet3).as[OutputCase]
 
         resultCases.map(TestCase.apply) must contain(exactly(TestCase(case1), TestCase(case3)))
@@ -271,12 +271,12 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "search cases" in {
         val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
           .withJsonBody(
             Json.parse("""{"query":{"severity":2}}""")
           )
         val result = caseCtrl.search()(request)
-        status(result) must equalTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         header("X-Total", result) must beSome("3")
         val resultCases = contentAsJson(result).as[Seq[OutputCase]]
 
@@ -285,7 +285,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "get and aggregate properly case stats" in {
         val request = FakeRequest("POST", s"/api/v0/case/_stats")
-          .withHeaders("user" → "user3")
+          .withHeaders("user" -> "user3")
           .withJsonBody(
             Json.parse("""{
                             "query": {},
@@ -317,8 +317,8 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "assign a case to an user" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#4")
-          .withHeaders("user" → "user2")
-          .withJsonBody(Json.obj("owner" → "user2"))
+          .withHeaders("user" -> "user2")
+          .withJsonBody(Json.obj("owner" -> "user2"))
         val result = caseCtrl.update("#4")(request)
         status(result) must_=== 200
         val resultCase       = contentAsJson(result)
@@ -328,19 +328,19 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "force delete a case" in {
-        val tasks = db.transaction { implicit graph ⇒
+        val tasks = db.transaction { implicit graph =>
           caseSrv.get("#4").tasks.toList()
         }
         tasks must have size 2
 
         val requestDel = FakeRequest("DELETE", s"/api/v0/case/#4/force")
-          .withHeaders("user" → "user3")
+          .withHeaders("user" -> "user3")
         val resultDel = caseCtrl.realDelete("#4")(requestDel)
-        status(resultDel) must equalTo(204).updateMessage(s ⇒ s"$s\n${contentAsString(resultDel)}")
+        status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 
-        db.transaction { implicit graph ⇒
+        db.transaction { implicit graph =>
           caseSrv.get("#4").headOption() must beNone
-          tasks.flatMap(task ⇒ taskSrv.get(task).headOption()) must beEmpty
+          tasks.flatMap(task => taskSrv.get(task).headOption()) must beEmpty
         }
       }
     }

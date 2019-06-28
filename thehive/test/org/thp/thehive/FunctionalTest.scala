@@ -4,13 +4,13 @@ import java.util.Date
 
 import scala.concurrent.{ExecutionContext, Promise}
 
-import play.api.i18n.{I18nModule ⇒ PlayI18nModule}
+import play.api.i18n.{I18nModule => PlayI18nModule}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.{SimpleModule, bind, BuiltinModule ⇒ PlayBuiltinModule}
+import play.api.inject.{SimpleModule, bind, BuiltinModule => PlayBuiltinModule}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.libs.ws.ahc.{AhcWSModule ⇒ PlayAhcWSModule}
-import play.api.mvc.{CookiesModule ⇒ PlayCookiesModule}
+import play.api.libs.ws.ahc.{AhcWSModule => PlayAhcWSModule}
+import play.api.mvc.{CookiesModule => PlayCookiesModule}
 import play.api.test.{Helpers, PlaySpecification, TestServer}
 import play.api.{Configuration, Environment}
 
@@ -111,7 +111,7 @@ class FunctionalTest extends PlaySpecification {
                                                               |}
                                                               |auth.provider: [local]
     """.stripMargin))
-  Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig , neo4jConfig*/ )) { dbConfig ⇒
+  Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig , neo4jConfig*/ )) { dbConfig =>
     val serverPromise: Promise[TestServer] = Promise[TestServer]
     lazy val server: TestServer            = serverPromise.future.value.get.get
 
@@ -174,15 +174,15 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "list users" in {
-          val resonse = await(client.query(Json.obj("_name" → "listUser"), Json.obj("_name" → "toList")))
+          val resonse = await(client.query(Json.obj("_name" -> "listUser"), Json.obj("_name" -> "toList")))
           val users   = (resonse \ "result").asOpt[Seq[OutputUser]]
-          users must beSome.updateMessage(s ⇒ s"$s\n$resonse")
+          users must beSome.updateMessage(s => s"$s\n$resonse")
           users.get.map(TestUser.apply) must contain(exactly(adminUser, user2))
         }
 
         "return an authentication error if password is wrong" in {
-          val asyncResp = client.query(Json.obj("_name" → "listUser"), Json.obj("_name" → "toList"))(ec, auth.copy(password = "nopassword"))
-          val expected  = ApplicationError(401, Json.obj("type" → "AuthenticationError", "message" → "Authentication failure"))
+          val asyncResp = client.query(Json.obj("_name" -> "listUser"), Json.obj("_name" -> "toList"))(ec, auth.copy(password = "nopassword"))
+          val expected  = ApplicationError(401, Json.obj("type" -> "AuthenticationError", "message" -> "Authentication failure"))
           await(asyncResp) must throwA(expected)
         }
 
@@ -265,13 +265,13 @@ class FunctionalTest extends PlaySpecification {
 
         "list cases with custom fields" in {
           val asyncResp = client.query(
-            Json.obj("_name" → "listCase"),
+            Json.obj("_name" -> "listCase"),
             Json.obj(
-              "_name" → "filter",
-              "_and" → Json
-                .arr(Json.obj("_is" → Json.obj("customFieldName" → "businessUnit")), Json.obj("_is" → Json.obj("customFieldValue" → "HR")))
+              "_name" -> "filter",
+              "_and" -> Json
+                .arr(Json.obj("_is" -> Json.obj("customFieldName" -> "businessUnit")), Json.obj("_is" -> Json.obj("customFieldValue" -> "HR")))
             ),
-            Json.obj("_name" → "toList")
+            Json.obj("_name" -> "toList")
           )
           val cases = (await(asyncResp) \ "result").as[Seq[OutputCase]].map(TestCase.apply)
           cases must contain(exactly(case2))
@@ -295,13 +295,13 @@ class FunctionalTest extends PlaySpecification {
 
         "list task for case 2" in {
           val asyncResp =
-            client.query(Json.obj("_name" → "getCase", "id" → case2Id), Json.obj("_name" → "listTask"), Json.obj("_name" → "toList"))
+            client.query(Json.obj("_name" -> "getCase", "id" -> case2Id), Json.obj("_name" -> "listTask"), Json.obj("_name" -> "toList"))
           val tasks = (await(asyncResp) \ "result").as[Seq[OutputTask]].map(TestTask.apply)
           tasks must contain(exactly(task1))
         }
 
         "list cases" in {
-          val asyncResp = client.query(Json.obj("_name" → "listCase"), Json.obj("_name" → "toList"))
+          val asyncResp = client.query(Json.obj("_name" -> "listCase"), Json.obj("_name" -> "toList"))
           val cases     = (await(asyncResp) \ "result").as[Seq[OutputCase]].map(TestCase.apply)
           cases must contain(exactly(case1, case2))
         }
@@ -312,7 +312,7 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "list organisations" in {
-          val asyncResp     = client.query(Json.obj("_name" → "listOrganisation"), Json.obj("_name" → "toList"))
+          val asyncResp     = client.query(Json.obj("_name" -> "listOrganisation"), Json.obj("_name" -> "toList"))
           val organisations = (await(asyncResp) \ "result").as[Seq[OutputOrganisation]]
           organisations must contain(exactly(OutputOrganisation("test"), OutputOrganisation("default")))
         }
@@ -330,7 +330,7 @@ class FunctionalTest extends PlaySpecification {
         implicit val auth: Authentication = Authentication("testAdmin", "secret")
 
         "list cases in test organisation" in {
-          val asyncResp = client.query(Json.obj("_name" → "listCase"), Json.obj("_name" → "toList"))
+          val asyncResp = client.query(Json.obj("_name" -> "listCase"), Json.obj("_name" -> "toList"))
           val cases     = (await(asyncResp) \ "result").as[Seq[OutputCase]]
           cases must beEmpty
         }
@@ -355,7 +355,7 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "list cases in test organisation" in {
-          val asyncResp = client.query(Json.obj("_name" → "listCase"), Json.obj("_name" → "toList"))
+          val asyncResp = client.query(Json.obj("_name" -> "listCase"), Json.obj("_name" -> "toList"))
           val cases     = (await(asyncResp) \ "result").as[Seq[OutputCase]].map(TestCase.apply)
           cases must contain(exactly(case3))
         }

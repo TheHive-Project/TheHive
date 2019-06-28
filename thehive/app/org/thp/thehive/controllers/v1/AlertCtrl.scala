@@ -20,32 +20,32 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
     entryPoint("create alert")
       .extract('alert, FieldsParser[InputAlert])
       .extract('caseTemplate, FieldsParser[String].optional.on("caseTemplate"))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body('caseTemplate)
         val inputAlert: InputAlert           = request.body('alert)
         for {
-          caseTemplate ← caseTemplateName.map { ct ⇒
+          caseTemplate <- caseTemplateName.map { ct =>
             caseTemplateSrv
               .get(ct)
               .visible
               .richCaseTemplate
               .getOrFail()
           }.flip
-          organisation ← userSrv.current.organisations(Permissions.manageAlert).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          richAlert ← alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
+          richAlert <- alertSrv.create(request.body('alert), organisation, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .visible
           .richAlert
           .getOrFail()
-          .map(alert ⇒ Results.Ok(alert.toJson))
+          .map(alert => Results.Ok(alert.toJson))
       }
 
 //  def list: Action[AnyContent] =
@@ -62,7 +62,7 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
       .extract('alert, FieldsParser.update("alertUpdate", alertProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body('alert)
         alertSrv
           .update(
@@ -70,19 +70,19 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
               .can(Permissions.manageAlert),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 
   def mergeWithCase(alertId: String, caseId: String) = ???
 
   def markAsRead(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as read")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .can(Permissions.manageAlert)
           .existsOrFail()
-          .map { _ ⇒
+          .map { _ =>
             alertSrv.markAsRead(alertId)
             Results.NoContent
           }
@@ -90,12 +90,12 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def markAsUnread(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as unread")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .can(Permissions.manageAlert)
           .existsOrFail()
-          .map { _ ⇒
+          .map { _ =>
             alertSrv.markAsUnread(alertId)
             Results.NoContent
           }
@@ -103,21 +103,21 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def createCase(alertId: String): Action[AnyContent] =
     entryPoint("create case from alert")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
-          (alert, organisation) ← alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
-          richCase              ← alertSrv.createCase(alert, None, organisation)
+          (alert, organisation) <- alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
+          richCase              <- alertSrv.createCase(alert, None, organisation)
         } yield Results.Created(richCase.toJson)
       }
 
   def followAlert(alertId: String): Action[AnyContent] =
     entryPoint("follow alert")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .can(Permissions.manageAlert)
           .existsOrFail()
-          .map { _ ⇒
+          .map { _ =>
             alertSrv.followAlert(alertId)
             Results.NoContent
           }
@@ -125,12 +125,12 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
     entryPoint("unfollow alert")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .can(Permissions.manageAlert)
           .existsOrFail()
-          .map { _ ⇒
+          .map { _ =>
             alertSrv.unfollowAlert(alertId)
             Results.NoContent
           }

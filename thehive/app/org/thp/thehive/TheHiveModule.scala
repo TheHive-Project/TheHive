@@ -11,13 +11,13 @@ import org.thp.thehive.models.SchemaUpdater
 import org.thp.thehive.services.{LocalKeyAuthSrv, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import play.api.routing.{Router ⇒ PlayRouter}
+import play.api.routing.{Router => PlayRouter}
 import play.api.{Configuration, Environment, Logger}
 
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
-import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor ⇒ TheHiveQueryExecutorV0}
-import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor ⇒ TheHiveQueryExecutorV1}
+import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
+import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
 import org.thp.thehive.services.LocalPasswordAuthSrv
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
@@ -33,24 +33,24 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     configuration
       .get[Seq[String]]("auth.provider")
       .foreach {
-        case "ad"    ⇒ authBindings.addBinding.to[ADAuthSrv]
-        case "ldap"  ⇒ authBindings.addBinding.to[LdapAuthSrv]
-        case "local" ⇒ authBindings.addBinding.to[LocalPasswordAuthSrv]
-        case "key"   ⇒ authBindings.addBinding.to[LocalKeyAuthSrv]
-        case other   ⇒ logger.error(s"Authentication provider [$other] is not recognized")
+        case "ad"    => authBindings.addBinding.to[ADAuthSrv]
+        case "ldap"  => authBindings.addBinding.to[LdapAuthSrv]
+        case "local" => authBindings.addBinding.to[LocalPasswordAuthSrv]
+        case "key"   => authBindings.addBinding.to[LocalKeyAuthSrv]
+        case other   => logger.error(s"Authentication provider [$other] is not recognized")
       }
 
     configuration.get[String]("db.provider") match {
-      case "janusgraph" ⇒ bind(classOf[Database]).to(classOf[JanusDatabase])
-//      case "neo4j"      ⇒ bind(classOf[Database]).to(classOf[Neo4jDatabase])
-      case "orientdb" ⇒ bind(classOf[Database]).to(classOf[OrientDatabase])
-      case other      ⇒ sys.error(s"Authentication provider [$other] is not recognized")
+      case "janusgraph" => bind(classOf[Database]).to(classOf[JanusDatabase])
+//      case "neo4j"      => bind(classOf[Database]).to(classOf[Neo4jDatabase])
+      case "orientdb" => bind(classOf[Database]).to(classOf[OrientDatabase])
+      case other      => sys.error(s"Authentication provider [$other] is not recognized")
     }
 
     configuration.get[String]("storage.provider") match {
-      case "localfs"  ⇒ bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
-      case "database" ⇒ bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
-      case "orientdb" ⇒ bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
+      case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+      case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+      case "orientdb" => bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
     }
 
     val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)
