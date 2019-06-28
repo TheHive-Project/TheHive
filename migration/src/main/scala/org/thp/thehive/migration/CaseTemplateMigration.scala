@@ -46,7 +46,7 @@ class CaseTemplateMigration @Inject()(
     ((JsPath \ "title").read[String] and
       (JsPath \ "group").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
-      (JsPath \ "status").readWithDefault[String]("waiting").map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
+      (JsPath \ "status").readWithDefault[String]("waiting").map(s => s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "startDate").readNullable[Date] and
       (JsPath \ "endDate").readNullable[Date] and
@@ -58,18 +58,18 @@ class CaseTemplateMigration @Inject()(
       authContext: AuthContext
   ): Unit =
     catchError("caseTemplateTask", caseTemplateTaskJs, progress) {
-      caseTemplateTaskJs.as[Seq[Task]].foreach { task ⇒
+      caseTemplateTaskJs.as[Seq[Task]].foreach { task =>
         taskSrv.create(task, caseTemplate)
       }
     }
 
   def importCaseTemplates(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database, authContext: AuthContext): Unit = {
-    val (srv, total) = dbFind(Some("all"), Nil)(index ⇒ search(index / "caseTemplate"))
+    val (srv, total) = dbFind(Some("all"), Nil)(index => search(index / "caseTemplate"))
     val progress     = new ProgressBar(terminal, "Importing case template", Await.result(total, Duration.Inf).toInt)
     val done = srv
-      .map { caseTemplateJs ⇒
+      .map { caseTemplateJs =>
         catchError("caseTemplate", caseTemplateJs, progress) {
-          db.transaction { implicit graph ⇒
+          db.transaction { implicit graph =>
             progress.inc(extraMessage = (caseTemplateJs \ "name").asOpt[String].getOrElse("***"))
             val caseTemplate = caseTemplateJs.as[CaseTemplate]
             val tasks        = (caseTemplateJs \ "tasks").as[Seq[Task]]
@@ -80,8 +80,8 @@ class CaseTemplateMigration @Inject()(
                 .asOpt[JsObject]
                 .fold(Seq.empty[(String, Option[Any])])(extractMetrics)
 
-            caseTemplateSrv.create(caseTemplate, organisation, tasks, customFields).map { richCaseTemplate ⇒
-              caseTemplateMap += caseTemplate.name → richCaseTemplate
+            caseTemplateSrv.create(caseTemplate, organisation, tasks, customFields).map { richCaseTemplate =>
+              caseTemplateMap += caseTemplate.name -> richCaseTemplate
               (caseTemplateJs \ "tasks").asOpt[JsObject].foreach(importCaseTemplateTask(_, richCaseTemplate.caseTemplate, progress))
               auditMigration.importAudits("caseTemplate", (caseTemplateJs \ "_id").as[String], richCaseTemplate.caseTemplate, progress)
             }

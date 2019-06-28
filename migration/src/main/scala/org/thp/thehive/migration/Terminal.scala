@@ -62,7 +62,7 @@ object Terminal {
   // "unable to perform all requested operations"
   lazy val pathedStty = if (new File("/bin/stty").exists()) "/bin/stty" else "stty"
 
-  def apply[A](body: Terminal ⇒ A): A = {
+  def apply[A](body: Terminal => A): A = {
     stty("-a")
     val initialConfig = stty("-g").trim
     try {

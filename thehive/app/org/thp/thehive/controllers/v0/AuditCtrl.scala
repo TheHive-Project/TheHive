@@ -18,21 +18,22 @@ class AuditCtrl @Inject()(
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
     implicit val db: Database
-) extends AuditConversion {
+) {
+  import AuditConversion._
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val audits = caseId
           .filterNot(_ == "any")
-          .fold(auditSrv.initSteps)(rid ⇒ auditSrv.initSteps.forCase(rid))
+          .fold(auditSrv.initSteps)(rid => auditSrv.initSteps.forCase(rid))
           .visible
           .range(0, count.getOrElse(10).toLong)
-          .richAuditWithCustomObjectRenderer(auditRenderer)
+          .richAuditWithCustomRenderer(auditRenderer)
           .toList()
           .map {
-            case (audit, (rootId, obj)) ⇒
-              audit.toJson.as[JsObject].deepMerge(Json.obj("base" → Json.obj("object" → obj, "rootId" → rootId)))
+            case (audit, (rootId, obj)) =>
+              audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> rootId)))
           }
 
         Success(Results.Ok(JsArray(audits)))

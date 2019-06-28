@@ -19,7 +19,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -42,7 +42,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
     s"[$name] job controller" should {
       "get a job" in {
         val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                  "query":{}

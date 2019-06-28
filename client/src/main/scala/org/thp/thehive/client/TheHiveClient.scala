@@ -17,9 +17,9 @@ class UserClient(baseUrl: String)(implicit ws: WSClient) extends BaseClient[Inpu
     ws.url(s"$baseUrl/api/v1/user")
       .post(body)
       .transform {
-        case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue].as[OutputUser])
-        case Success(r)                               ⇒ Failure(ApplicationError(r))
-        case Failure(t)                               ⇒ throw t
+        case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[OutputUser])
+        case Success(r)                               => Failure(ApplicationError(r))
+        case Failure(t)                               => throw t
       }
   }
 }
@@ -41,9 +41,9 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
         .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
         .get()
         .transform {
-          case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[OutputAudit]])
-          case Success(r)                          ⇒ Failure(ApplicationError(r))
-          case Failure(t)                          ⇒ throw t
+          case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[OutputAudit]])
+          case Success(r)                          => Failure(ApplicationError(r))
+          case Failure(t)                          => throw t
         }
     }
   }
@@ -51,10 +51,10 @@ class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   def query(q: JsObject*)(implicit ec: ExecutionContext, auth: Authentication): Future[JsValue] =
     ws.url(s"$baseUrl/api/v1/query")
       .withAuth(auth.username, auth.password, WSAuthScheme.BASIC)
-      .post(Json.obj("query" → q))
+      .post(Json.obj("query" -> q))
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue])
-        case Success(r)                          ⇒ Failure(ApplicationError(r))
-        case Failure(t)                          ⇒ throw t
+        case Success(r) if r.status == Status.OK => Success(r.body[JsValue])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
       }
 }

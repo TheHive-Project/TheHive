@@ -16,7 +16,7 @@ import org.thp.scalligraph.{Hasher, Retry}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AttachmentSrv
 
-import org.elastic4play.services.{Attachment ⇒ ElasticAttachment, AttachmentSrv ⇒ ElasticAttachmentSrv}
+import org.elastic4play.services.{Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv}
 
 trait Utils {
   val logger: Logger = Logger(getClass)
@@ -32,40 +32,40 @@ trait Utils {
   def formatError(errors: Seq[(JsPath, Seq[JsonValidationError])]): String =
     errors
       .map {
-        case (path, e) ⇒ path.toString() + ":" + e.map(_.messages.mkString(",")).mkString(";")
+        case (path, e) => path.toString() + ":" + e.map(_.messages.mkString(",")).mkString(";")
       }
       .mkString("\n")
 
   def extractCustomFields(js: JsObject): Seq[(String, Option[Any])] =
     js.fields.flatMap {
-      case (name, typeValue: JsObject) ⇒
+      case (name, typeValue: JsObject) =>
         typeValue.fields.collectFirst {
-          case ("number", JsNumber(value))   ⇒ (name, Some(value.toInt))
-          case ("string", JsString(value))   ⇒ (name, Some(value))
-          case ("date", JsNumber(value))     ⇒ (name, Some(new Date(value.toLong)))
-          case ("boolean", JsBoolean(value)) ⇒ (name, Some(value))
-          case ("number", _)                 ⇒ (name, None)
-          case ("string", _)                 ⇒ (name, None)
-          case ("date", _)                   ⇒ (name, None)
-          case ("boolean", _)                ⇒ (name, None)
+          case ("number", JsNumber(value))   => (name, Some(value.toInt))
+          case ("string", JsString(value))   => (name, Some(value))
+          case ("date", JsNumber(value))     => (name, Some(new Date(value.toLong)))
+          case ("boolean", JsBoolean(value)) => (name, Some(value))
+          case ("number", _)                 => (name, None)
+          case ("string", _)                 => (name, None)
+          case ("date", _)                   => (name, None)
+          case ("boolean", _)                => (name, None)
         }
-      case _ ⇒ Nil
+      case _ => Nil
     }
 
   def extractMetrics(js: JsObject): Seq[(String, Option[Int])] =
     js.fields.collect {
-      case (name, JsNumber(value)) ⇒ (name, Some(value.toInt))
+      case (name, JsNumber(value)) => (name, Some(value.toInt))
     }
 
-  def catchError[A](entityType: String, entity: JsObject, progress: ProgressBar)(body: ⇒ Unit): Unit =
+  def catchError[A](entityType: String, entity: JsObject, progress: ProgressBar)(body: => Unit): Unit =
     try {
       body
     } catch {
-      case JsResultException(e) ⇒
+      case JsResultException(e) =>
         val message = s"[$entityType] Unable to convert input data:\n${Json.prettyPrint(entity).indent()}\n  Errors:\n${formatError(e).indent()}"
         progress.message(message)
         logger.error(message)
-      case t: Throwable ⇒
+      case t: Throwable =>
         val message = s"[$entityType] Import failure:${Json.prettyPrint(entity).indent()}"
         progress.message(message, t)
         logger.error(message, t)
@@ -79,7 +79,7 @@ trait Utils {
       toDB: Database
   )(attachment: ElasticAttachment)(implicit graph: Graph, authContext: AuthContext): Attachment with Entity = {
 
-    def readStream[A](f: InputStream ⇒ A) =
+    def readStream[A](f: InputStream => A) =
       Retry(3)
         .on[RemoteException]
         .withTry {

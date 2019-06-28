@@ -24,25 +24,25 @@ class LocalKeyAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Lo
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.authByKey)
 
   override def authenticate(key: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
       userSrv
         .initSteps
         .getByAPIKey(key)
         .getOrFail()
-        .flatMap(user ⇒ localUserSrv.getFromId(request, user.login, organisation))
+        .flatMap(user => localUserSrv.getFromId(request, user.login, organisation))
     }
 
   override def renewKey(username: String)(implicit authContext: AuthContext): Try[String] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
       val newKey = generateKey()
       userSrv
         .get(username)
-        .update("apikey" → Some(newKey))
-        .map(_ ⇒ newKey)
+        .update("apikey" -> Some(newKey))
+        .map(_ => newKey)
     }
 
   override def getKey(username: String)(implicit authContext: AuthContext): Try[String] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
       userSrv
         .get(username)
         .getOrFail()
@@ -50,10 +50,10 @@ class LocalKeyAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Lo
     }
 
   override def removeKey(username: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
       userSrv
         .get(username)
-        .update("apikey" → None)
-        .map(_ ⇒ ())
+        .update("apikey" -> None)
+        .map(_ => ())
     }
 }

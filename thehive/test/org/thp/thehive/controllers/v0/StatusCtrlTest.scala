@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.mvc.AbstractController
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -23,7 +23,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
   authSrv.capabilities returns Set(AuthCapability.changePassword)
   authSrv.name returns "authSrvName"
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -50,25 +50,37 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
 
       "return proper status" in {
         val request = FakeRequest("GET", s"/api/v0/status")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = statusCtrl.get()(request)
 
         status(result) shouldEqual 200
 
         val resultJson = contentAsJson(result)
         val expectedJson = Json.obj(
-          "versions" → Json.obj(
-            "Scalligraph" → getVersion(classOf[ScalligraphApplicationLoader]),
-            "TheHive"     → getVersion(classOf[TheHiveModule]),
-            "Play"        → getVersion(classOf[AbstractController])
+          "versions" -> Json.obj(
+            "Scalligraph" -> getVersion(classOf[ScalligraphApplicationLoader]),
+            "TheHive"     -> getVersion(classOf[TheHiveModule]),
+            "Play"        -> getVersion(classOf[AbstractController])
           ),
-          "connectors" → JsObject.empty,
-          "health"     → Json.obj("elasticsearch" → "UNKNOWN"),
-          "config" → Json.obj(
-            "protectDownloadsWith" → config.get[String]("datastore.attachment.password"),
-            "authType"             → "authSrvName",
-            "capabilities"         → Seq("changePassword"),
-            "ssoAutoLogin"         → config.get[Boolean]("auth.sso.autologin")
+          "connectors" -> Json.obj(
+            "cortex" -> Json.obj(
+              "enabled" -> true,
+              "servers" -> Json.arr(
+                Json.obj(
+                  "name"    -> "interne",
+                  "version" -> "2.x.x",
+                  "status"  -> "OK"
+                )
+              ),
+              "status" -> "OK"
+            )
+          ),
+          "health" -> Json.obj("elasticsearch" -> "UNKNOWN"),
+          "config" -> Json.obj(
+            "protectDownloadsWith" -> config.get[String]("datastore.attachment.password"),
+            "authType"             -> "authSrvName",
+            "capabilities"         -> Seq("changePassword"),
+            "ssoAutoLogin"         -> config.get[Boolean]("auth.sso.autologin")
           )
         )
 
@@ -77,7 +89,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
 
       "be healthy" in {
         val request = FakeRequest("GET", s"/api/v0/health")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = statusCtrl.health(request)
 
         status(result) shouldEqual 200

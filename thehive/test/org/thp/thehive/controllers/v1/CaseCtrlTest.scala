@@ -68,7 +68,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
 //  sequential
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -106,7 +106,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" → "admin")
+          .withHeaders("user" -> "admin")
         val result     = caseCtrl.create(request)
         val resultCase = contentAsJson(result).as[OutputCase]
         val expected = TestCase(
@@ -143,9 +143,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                 tlp = Some(1),
                 pap = Some(3)
               )
-            ) + ("caseTemplate" → JsString("spam"))
+            ) + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result = caseCtrl.create(request)
         status(result) must_=== 201
         val resultCase = contentAsJson(result).as[OutputCase]
@@ -173,7 +173,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "get a case" in {
         val request = FakeRequest("GET", s"/api/v1/case/#1")
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
         val result     = caseCtrl.get("#1")(request)
         val resultCase = contentAsJson(result).as[OutputCase]
         val expected = TestCase(

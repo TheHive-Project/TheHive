@@ -1,20 +1,21 @@
 package org.thp.thehive.services
 
-import java.util.{List ⇒ JList, Set ⇒ JSet}
+import java.util.{List => JList, Set => JSet}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P ⇒ JP}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
+import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNull, JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -45,21 +46,21 @@ class CaseSrv @Inject()(
     val createdCase = create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
     user.foreach(caseUserSrv.create(CaseUser(), createdCase, _))
     shareSrv.create(createdCase, organisation, profileSrv.admin)
-    caseTemplate.foreach(ct ⇒ caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
+    caseTemplate.foreach(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
 
     for {
-      _ ← auditSrv.createCase(createdCase)
-      cfs ← customFields
+      _ <- auditSrv.createCase(createdCase)
+      cfs <- customFields
         .toSeq
         .toTry {
-          case (name, Some(value)) ⇒
+          case (name, Some(value)) =>
             for {
-              cf  ← customFieldSrv.getOrFail(name)
-              ccf ← cf.`type`.setValue(CaseCustomField(), value)
+              cf  <- customFieldSrv.getOrFail(name)
+              ccf <- cf.`type`.setValue(CaseCustomField(), value)
               alertCustomField = caseCustomFieldSrv.create(ccf, createdCase, cf)
             } yield CustomFieldWithValue(cf, alertCustomField)
-          case (name, _) ⇒
-            customFieldSrv.getOrFail(name).map { cf ⇒
+          case (name, _) =>
+            customFieldSrv.getOrFail(name).map { cf =>
               val alertCustomField = caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
               CustomFieldWithValue(cf, alertCustomField)
             }
@@ -74,9 +75,9 @@ class CaseSrv @Inject()(
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] =
     for {
-      (caseSteps, updatedFields) ← super.update(steps, propertyUpdaters)
-      case0                      ← caseSteps.clone().getOrFail()
-      _                          ← auditSrv.updateCase(case0, updatedFields)
+      (caseSteps, updatedFields) <- super.update(steps, propertyUpdaters)
+      case0                      <- caseSteps.clone().getOrFail()
+      _                          <- auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
 
   def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
@@ -86,7 +87,7 @@ class CaseSrv @Inject()(
     initSteps
       .getOrganisationShare(`case`._id)
       .getOrFail()
-      .map(share ⇒ shareObservableSrv.create(ShareObservable(), share, observable))
+      .map(share => shareObservableSrv.create(ShareObservable(), share, observable))
 
   def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] = {
     val dataToRemove = get(`case`)
@@ -95,15 +96,15 @@ class CaseSrv @Inject()(
       .notShared(`case`._id)
 
     for {
-      _ ← Try(get(`case`).tasks.logs.attachments.remove())
-      _ ← Try(get(`case`).tasks.logs.remove())
-      _ ← Try(get(`case`).tasks.remove())
-      _ ← Try(get(`case`).observables.keyValues.remove())
-      _ ← Try(get(`case`).observables.attachments.remove())
-      _ ← Try(dataToRemove.remove())
-      _ ← Try(get(`case`).observables.remove())
-      _ ← Try(get(`case`).share.remove())
-      r ← Try(get(`case`).remove())
+      _ <- Try(get(`case`).tasks.logs.attachments.remove())
+      _ <- Try(get(`case`).tasks.logs.remove())
+      _ <- Try(get(`case`).tasks.remove())
+      _ <- Try(get(`case`).observables.keyValues.remove())
+      _ <- Try(get(`case`).observables.attachments.remove())
+      _ <- Try(dataToRemove.remove())
+      _ <- Try(get(`case`).observables.remove())
+      _ <- Try(get(`case`).share.remove())
+      r <- Try(get(`case`).remove())
     } yield r
   }
 
@@ -111,22 +112,22 @@ class CaseSrv @Inject()(
     get(caseIdOrNumber).visible.isDefined
 
   def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    customFieldSrv.getOrFail(customFieldName).flatMap(cf ⇒ setCustomField(`case`, cf, value))
+    customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(`case`, cf, value))
 
   def setCustomField(`case`: Case with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      _ ← getCustomField(`case`, customField.name) match {
-        case Some(cf) ⇒ caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
-        case None ⇒
-          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField ⇒
+      _ <- getCustomField(`case`, customField.name) match {
+        case Some(cf) => caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") -> Some(value))
+        case None =>
+          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField =>
             caseCustomFieldSrv.create(caseCustomField, `case`, customField)
             ()
           }
       }
-      _ ← auditSrv.updateCase(`case`, Json.obj(s"customField.${customField.name}" → value.toString))
+      _ <- auditSrv.updateCase(`case`, Json.obj(s"customField.${customField.name}" -> value.toString))
     } yield ()
 
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
@@ -138,7 +139,7 @@ class CaseSrv @Inject()(
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): CaseImpactStatus with Entity = {
-    auditSrv.updateCase(`case`, Json.obj("impactStatus" → impactStatus.value))
+    auditSrv.updateCase(`case`, Json.obj("impactStatus" -> impactStatus.value))
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
   }
 
@@ -146,19 +147,19 @@ class CaseSrv @Inject()(
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity = {
-    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" → resolutionStatus.value))
+    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
   }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("owner" → user.login)).map { _ ⇒
+    auditSrv.updateCase(`case`, Json.obj("owner" -> user.login)).map { _ =>
       get(`case`).unassign()
       caseUserSrv.create(CaseUser(), `case`, user)
       ()
     }
 
   def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("owner" → JsNull)).map { _ ⇒
+    auditSrv.updateCase(`case`, Json.obj("owner" -> JsNull)).map { _ =>
       get(`case`).unassign()
     }
 
@@ -262,14 +263,15 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
         )
         .map {
-          case (caze, impactStatus, resolutionStatus, user, customFields) ⇒
+          case (caze, impactStatus, resolutionStatus, user, customFields) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             ⇒ throw InternalError("Not possible")
+                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             => throw InternalError("Not possible")
               }
+              .toSeq
             RichCase(
               caze.as[Case],
               atMostOneOf[String](impactStatus),
@@ -280,15 +282,48 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
+  def richCaseWithCustomRenderer[A](
+      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
+  ): ScalarSteps[(RichCase, A)] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+            .and(By(entityRenderer(__[Vertex])))
+        )
+        .map {
+          case (caze, impactStatus, resolutionStatus, user, customFields, renderedEntity) =>
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             => throw InternalError("Not possible")
+              }
+              .toSeq
+            RichCase(
+              caze.as[Case],
+              atMostOneOf[String](impactStatus),
+              atMostOneOf[String](resolutionStatus),
+              atMostOneOf[String](user),
+              customFieldValues
+            ) -> renderedEntity
+        }
+    )
+
   def customFields(name: Option[String] = None): ScalarSteps[CustomFieldWithValue] = {
     val ccfSteps: GremlinScala[Vertex] = raw
       .outToE[CaseCustomField]
       .inV()
     ScalarSteps(
       name
-        .fold[GremlinScala[Vertex]](ccfSteps)(n ⇒ ccfSteps.has(Key("name") of n))
+        .fold[GremlinScala[Vertex]](ccfSteps)(n => ccfSteps.has(Key("name") of n))
         .path
-        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
+        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
     )
   }
 
@@ -305,25 +340,42 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def linkedCases: CaseSteps = {
-    val label = StepLabel[JSet[Vertex]]()
-    new CaseSteps(
-      raw
-        .aggregate(label)
-        .inTo[ShareCase]
-        .outTo[ShareObservable]
-        .outTo[ObservableData]
-        .inTo[ObservableData]
-        .inTo[ShareObservable]
-        .outTo[ShareCase]
-        .where(JP.without(label.name))
-    )
+  def linkedCases: Seq[(RichCase, Seq[RichObservable])] = {
+    val originCaseLabel = StepLabel[JSet[Vertex]]()
+    val observableLabel = StepLabel[Vertex]()
+    val linkedCaseLabel = StepLabel[Vertex]()
+
+    val richCaseLabel        = StepLabel[RichCase]()
+    val richObservablesLabel = StepLabel[JList[RichObservable]]()
+    raw
+      .`match`(
+        _.as(originCaseLabel.name)
+          .in("ShareCase")
+          .out("ShareObservable")
+          .as(observableLabel.name),
+        _.as(observableLabel.name)
+          .out("ObservableData")
+          .in("ObservableData")
+          .in("ShareObservable")
+          .out("ShareCase")
+          .where(JP.neq(originCaseLabel.name))
+          .as(linkedCaseLabel.name),
+        c => new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
+        o => new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
+      )
+      .select(richCaseLabel.name, richObservablesLabel.name)
+      .toList()
+      .map { resultMap =>
+        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
+      }
   }
 
   def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
+  @deprecated
   def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
 
+  @deprecated
   def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
 
   def share = new ShareSteps(raw.inTo[ShareCase])

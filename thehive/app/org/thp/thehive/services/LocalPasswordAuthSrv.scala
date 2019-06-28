@@ -28,40 +28,40 @@ class LocalPasswordAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSr
 
   private[services] def doAuthenticate(user: User, password: String): Boolean =
     user.password.map(_.split(",", 2)).fold(false) {
-      case Array(seed, pwd) ⇒
+      case Array(seed, pwd) =>
         val hash = Hasher("SHA-256").fromString(seed + password).head.toString
         logger.trace(s"Authenticate user ${user.name} ($hash == $pwd)")
         hash == pwd
-      case _ ⇒
+      case _ =>
         logger.trace(s"Authenticate user ${user.name} (no password in database)")
         false
     }
 
   override def authenticate(username: String, password: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
         userSrv
           .get(username)
           .getOrFail()
       }
-      .filter(user ⇒ doAuthenticate(user, password))
-      .map(user ⇒ localUserSrv.getFromId(request, user.login, organisation))
+      .filter(user => doAuthenticate(user, password))
+      .map(user => localUserSrv.getFromId(request, user.login, organisation))
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
         userSrv
           .get(username)
           .getOrFail()
       }
-      .filter(user ⇒ doAuthenticate(user, oldPassword))
-      .map(_ ⇒ setPassword(username, newPassword))
+      .filter(user => doAuthenticate(user, oldPassword))
+      .map(_ => setPassword(username, newPassword))
       .getOrElse(Failure(AuthorizationError("Authentication failure")))
 
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph ⇒
+    db.tryTransaction { implicit graph =>
       userSrv
         .get(username)
-        .update("password" → Some(LocalPasswordAuthSrv.hashPassword(newPassword)))
-        .map(_ ⇒ ())
+        .update("password" -> Some(LocalPasswordAuthSrv.hashPassword(newPassword)))
+        .map(_ => ())
     }
 }

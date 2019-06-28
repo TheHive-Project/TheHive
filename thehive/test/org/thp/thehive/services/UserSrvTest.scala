@@ -4,7 +4,7 @@ import play.api.test.PlaySpecification
 
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, UserSrv ⇒ SUserSrv}
+import org.thp.scalligraph.auth.{AuthContext, UserSrv => SUserSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
@@ -13,7 +13,7 @@ class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
   implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bindInstance[SUserSrv](dummyUserSrv)
       .bindToProvider(dbProvider)
@@ -34,13 +34,13 @@ class UserSrvTest extends PlaySpecification {
 
     s"[$name] user service" should {
 
-      "create and get an user by his id" in db.transaction { implicit graph ⇒
+      "create and get an user by his id" in db.transaction { implicit graph =>
         val user =
           userSrv.create(User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None))
         userSrv.getOrFail(user._id) must beSuccessfulTry(user)
       }
 
-      "create and get an user by his login" in db.transaction { implicit graph ⇒
+      "create and get an user by his login" in db.transaction { implicit graph =>
         val user =
           userSrv.create(User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None))
         userSrv.getOrFail(user.login) must beSuccessfulTry(user)

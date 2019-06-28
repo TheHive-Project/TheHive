@@ -32,7 +32,7 @@ class TaskMigration @Inject()(
     ((JsPath \ "title").read[String] and
       (JsPath \ "group").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
-      (JsPath \ "status").readWithDefault[String]("completed").map(s ⇒ s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
+      (JsPath \ "status").readWithDefault[String]("completed").map(s => s(0).toLower + s.substring(1)).map(TaskStatus.withName) and
       (JsPath \ "flag").read[Boolean] and
       (JsPath \ "startDate").readNullable[Date] and
       (JsPath \ "endDate").readNullable[Date] and
@@ -41,17 +41,17 @@ class TaskMigration @Inject()(
 
   def importTasks(caseId: String, `case`: Case with Entity, progress: ProgressBar)(implicit graph: Graph): Unit = {
     val done = fromFind(Some("all"), Nil)(
-      index ⇒
+      index =>
         search(index / "case_task")
           .query(hasParentQuery("case", idsQuery(caseId), score = false))
     )._1
-      .map { taskJs ⇒
+      .map { taskJs =>
         catchError("Task", taskJs, progress) {
-          userMigration.withUser((taskJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
+          userMigration.withUser((taskJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
             val task = taskJs.as[Task]
 //            logger.info(s"Importing task #${`case`.number} ${task.title}")
-            taskSrv.create(task, `case`).foreach { taskEntity ⇒
-              (taskJs \ "owner").asOpt[String].flatMap(userMigration.get).foreach(owner ⇒ taskSrv.assign(taskEntity, owner.user))
+            taskSrv.create(task, `case`).foreach { taskEntity =>
+              (taskJs \ "owner").asOpt[String].flatMap(userMigration.get).foreach(owner => taskSrv.assign(taskEntity, owner.user))
               auditMigration.importAudits("case_task", (taskJs \ "_id").as[String], taskEntity, progress)
               logMigration.importLogs((taskJs \ "_id").as[String], taskEntity, progress)
             }

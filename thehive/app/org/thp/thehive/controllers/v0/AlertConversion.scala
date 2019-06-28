@@ -13,7 +13,10 @@ import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, RichAlert, RichObservable}
 import org.thp.thehive.services.AlertSteps
 
-trait AlertConversion extends CustomFieldConversion with ObservableConversion {
+object AlertConversion {
+  import CustomFieldConversion._
+  import ObservableConversion._
+
   implicit def toOutputAlert(richAlert: RichAlert): Output[OutputAlert] =
     Output[OutputAlert](
       richAlert
@@ -22,12 +25,12 @@ trait AlertConversion extends CustomFieldConversion with ObservableConversion {
         .withFieldRenamed(_._id, _.id)
         .withFieldComputed(
           _.status,
-          alert ⇒
+          alert =>
             (alert.caseId, alert.read) match {
-              case (None, true)  ⇒ "Ignored"
-              case (None, false) ⇒ "New"
-              case (_, true)     ⇒ "Imported"
-              case (_, false)    ⇒ "Updated"
+              case (None, true)  => "Ignored"
+              case (None, false) => "New"
+              case (_, true)     => "Imported"
+              case (_, false)    => "Updated"
             }
         )
         .transform
@@ -42,12 +45,12 @@ trait AlertConversion extends CustomFieldConversion with ObservableConversion {
         .withFieldRenamed(_._id, _.id)
         .withFieldComputed(
           _.status,
-          alert ⇒
+          alert =>
             (alert.caseId, alert.read) match {
-              case (None, true)  ⇒ "Ignored"
-              case (None, false) ⇒ "New"
-              case (_, true)     ⇒ "Imported"
-              case (_, false)    ⇒ "Updated"
+              case (None, true)  => "Ignored"
+              case (None, false) => "New"
+              case (_, true)     => "Imported"
+              case (_, false)    => "Updated"
             }
         )
         .withFieldConst(_.artifacts, richAlertWithObservables._2.map(toOutputObservable(_).toOutput))
@@ -88,10 +91,10 @@ trait AlertConversion extends CustomFieldConversion with ObservableConversion {
             _.apply(By(Key[Boolean]("read")))
               .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
           ).map {
-            case (true, caseCount) if caseCount == 0  ⇒ "Ignored"
-            case (true, caseCount) if caseCount == 1  ⇒ "New"
-            case (false, caseCount) if caseCount == 0 ⇒ "Ignored"
-            case (false, caseCount) if caseCount == 1 ⇒ "Imported"
+            case (true, caseCount) if caseCount == 0  => "Ignored"
+            case (true, caseCount) if caseCount == 1  => "New"
+            case (false, caseCount) if caseCount == 0 => "Ignored"
+            case (false, caseCount) if caseCount == 1 => "Imported"
           }
         ).readonly
       )

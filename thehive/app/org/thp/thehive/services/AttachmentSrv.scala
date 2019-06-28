@@ -3,6 +3,11 @@ package org.thp.thehive.services
 import java.io.InputStream
 import java.nio.file.Files
 
+import scala.concurrent.Future
+import scala.util.Try
+
+import play.api.Configuration
+
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
@@ -14,10 +19,6 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
 import org.thp.scalligraph.{EntitySteps, Hasher}
 import org.thp.thehive.models.Attachment
-import play.api.Configuration
-
-import scala.concurrent.Future
-import scala.util.Try
 
 @Singleton
 class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database)
@@ -31,7 +32,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     val hs     = hashers.fromPath(file.filepath)
     val id     = hs.head.toString
     val is     = Files.newInputStream(file.filepath)
-    val result = storageSrv.saveBinary(id, is).map(_ ⇒ create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
+    val result = storageSrv.saveBinary(id, is).map(_ => create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
     is.close()
     result
   }
@@ -42,11 +43,11 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
-    storageSrv.saveBinary(id, data).map(_ ⇒ create(Attachment(filename, data.length.toLong, contentType, hs, id)))
+    storageSrv.saveBinary(id, data).map(_ => create(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
   def source(attachment: Attachment with Entity)(implicit graph: Graph): Source[ByteString, Future[IOResult]] =
-    StreamConverters.fromInputStream(() ⇒ stream(attachment))
+    StreamConverters.fromInputStream(() => stream(attachment))
 
   def stream(attachment: Attachment with Entity)(implicit graph: Graph): InputStream = storageSrv.loadBinary(attachment._id)
 }

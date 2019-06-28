@@ -16,7 +16,7 @@ import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 
-trait UserConversion {
+object UserConversion {
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
 
   def permissions2Roles(permissions: Set[Permission]): Set[String] = {
@@ -43,17 +43,17 @@ trait UserConversion {
     Output[OutputUser](
       user
         .into[OutputUser]
-        .withFieldComputed(_.roles, u ⇒ permissions2Roles(u.permissions))
+        .withFieldComputed(_.roles, u => permissions2Roles(u.permissions))
         .withFieldRenamed(_.login, _.id)
-        .withFieldComputed(_.hasKey, u ⇒ if (withKeyInfo) Some(u.apikey.isDefined) else None)
-        .withFieldComputed(_.status, u ⇒ if (u.locked) "Locked" else "Ok")
+        .withFieldComputed(_.hasKey, u => if (withKeyInfo) Some(u.apikey.isDefined) else None)
+        .withFieldComputed(_.status, u => if (u.locked) "Locked" else "Ok")
         .transform
     )
 
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom[String] { (prop, path, value, vertex, db, graph, authContext) ⇒
+      .property[String]("name")(_.simple.custom[String] { (prop, path, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -71,16 +71,16 @@ trait UserConversion {
         isCurrentUser
           .orElse(isUserAdmin)
           .flatMap {
-            case _ if path.isEmpty ⇒
+            case _ if path.isEmpty =>
               db.setProperty(vertex, "name", value, prop.mapping)
-              Success(Json.obj("name" → value))
-            case _ ⇒ Failure(UnsupportedAttributeError(s"name.$path"))
+              Success(Json.obj("name" -> value))
+            case _ => Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
       .property[String]("apikey")(_.simple.readonly)
       .property[String]("status")(
         _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
-          .custom[String] { (_, path, value, vertex, db, graph, authContext) ⇒
+          .custom[String] { (_, path, value, vertex, db, graph, authContext) =>
             userSrv
               .current(graph, authContext)
               .organisations(Permissions.manageUser)
@@ -88,14 +88,14 @@ trait UserConversion {
               .get(vertex)
               .existsOrFail()
               .flatMap {
-                case _ if path.nonEmpty ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
-                case _ if value == "Ok" ⇒
+                case _ if path.nonEmpty => Failure(UnsupportedAttributeError(s"status.$path"))
+                case _ if value == "Ok" =>
                   db.setProperty(vertex, "locked", false, UniMapping.booleanMapping)
-                  Success(Json.obj("status" → value))
-                case _ if value == "Locked" ⇒
+                  Success(Json.obj("status" -> value))
+                case _ if value == "Locked" =>
                   db.setProperty(vertex, "locked", true, UniMapping.booleanMapping)
-                  Success(Json.obj("status" → value))
-                case _ ⇒ Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
+                  Success(Json.obj("status" -> value))
+                case _ => Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
               }
           }
       )

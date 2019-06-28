@@ -13,7 +13,7 @@ import scala.util.Try
 
 @Singleton
 class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
-  lazy val admin: Profile with Entity = db.tryTransaction(graph ⇒ getOrFail("admin")(graph)).get
+  lazy val admin: Profile with Entity = db.tryTransaction(graph => getOrFail("admin")(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     Profile("admin", Permissions.all),
     Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask)),
@@ -29,7 +29,7 @@ class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Grap
 
   override def get(id: String): ProfileSteps =
     Try(UUID.fromString(id))
-      .map(_ ⇒ getById(id))
+      .map(_ => getById(id))
       .getOrElse(getByName(id))
 
   def getById(id: String): ProfileSteps = new ProfileSteps(raw.has(Key("_id") of id))

@@ -10,18 +10,18 @@ import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldWithValue}
 
-trait CustomFieldConversion {
+object CustomFieldConversion {
 
   def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Option[Any]) =
-    inputCustomFieldValue.name → inputCustomFieldValue.value
+    inputCustomFieldValue.name -> inputCustomFieldValue.value
 
   implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
     Output[OutputCustomFieldValue](
       customFieldValue
         .into[OutputCustomFieldValue]
         .withFieldComputed(_.value, _.value.map {
-          case d: Date ⇒ d.getTime.toString
-          case other   ⇒ other.toString
+          case d: Date => d.getTime.toString
+          case other   => other.toString
         })
         .withFieldComputed(_.tpe, _.typeName)
         .transform

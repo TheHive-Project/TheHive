@@ -2,11 +2,11 @@ import Dependencies._
 
 lazy val scala212               = "2.12.8"
 lazy val scala213               = "2.13.0"
-lazy val supportedScalaVersions = List(scala212) //, scala213)
+lazy val supportedScalaVersions = List(scala212, scala213)
 // format: off
 lazy val commonSettings = Seq(
   organization := "org.thp",
-  scalaVersion := "2.12.8",
+  scalaVersion := scala212,
   crossScalaVersions := supportedScalaVersions,
   resolvers ++= Seq(
     Resolver.mavenLocal,
@@ -21,10 +21,10 @@ lazy val commonSettings = Seq(
     "-unchecked",              // Enable additional warnings where generated code depends on assumptions.
     //"-Xfatal-warnings",      // Fail the compilation if there are any warnings.
     "-Xlint",                  // Enable recommended additional warnings.
-    "-Ywarn-adapted-args",     // Warn if an argument list is modified to match the receiver.
+//    "-Ywarn-adapted-args",     // Warn if an argument list is modified to match the receiver.
     //"-Ywarn-dead-code",      // Warn when dead code is identified.
-    "-Ywarn-inaccessible",     // Warn about inaccessible types in method signatures.
-    "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
+//    "-Ywarn-inaccessible",     // Warn about inaccessible types in method signatures.
+//    "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
     "-Ywarn-numeric-widen",    // Warn when numerics are widened.
     "-Ywarn-value-discard",    // Warn when non-Unit expression results are unused
     //"-Ylog-classpath",
@@ -41,14 +41,14 @@ lazy val commonSettings = Seq(
   scalafmtConfig := file(".scalafmt.conf"),
   scalacOptions ++= {
     CrossVersion.partialVersion((Compile / scalaVersion).value) match {
-      case Some((2, n)) if n >= 13 ⇒ "-Ymacro-annotations" :: Nil
-      case _                       ⇒ Nil
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case _                       => Nil
     }
   },
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 ⇒ Nil
-      case _                       ⇒ compilerPlugin(macroParadise) :: Nil
+      case Some((2, n)) if n >= 13 => Nil
+      case _                       => compilerPlugin(macroParadise) :: Nil
     }
   }
 )
@@ -93,6 +93,7 @@ lazy val thehiveCore = (project in file("thehive"))
 lazy val thehiveCortex = (project in file("cortex/connector"))
   .dependsOn(thehiveCore)
   .dependsOn(cortexClient)
+  .dependsOn(cortexClient % "test -> test")
   .dependsOn(thehiveCore % "test -> test")
   .dependsOn(scalligraph % "test -> test")
   .settings(commonSettings)
@@ -150,6 +151,7 @@ lazy val thehiveMigration = (project in file("migration"))
   .settings(
     name := "thehive-migration",
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
+    crossScalaVersions := Seq(scala212),
     libraryDependencies ++= Seq(
       elastic4play,
       ehcache,
@@ -158,7 +160,7 @@ lazy val thehiveMigration = (project in file("migration"))
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
     fork := true,
-    javaOptions := Seq( /*"-Dlogback.debug=true", */ "-Dlogger.file=../conf/migration-logback.xml")
+    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
   )
 
 lazy val npm        = taskKey[Unit]("Install npm dependencies")
@@ -175,14 +177,14 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "npm",
         inputFiles = baseDirectory.value / "package.json",
         outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
-        command = baseDirectory.value → "npm install",
+        command = baseDirectory.value -> "npm install",
         streams = streams.value
       ),
     bower := FileBuilder(
       label = "bower",
       inputFiles = baseDirectory.value / "bower.json",
       outputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
-      command = baseDirectory.value → "bower install",
+      command = baseDirectory.value -> "bower install",
       streams = streams.value
     ),
     gruntDev := {
@@ -192,7 +194,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "grunt",
         inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
         outputFiles = baseDirectory.value / "app" / "index.html",
-        command = baseDirectory.value → "grunt wiredep",
+        command = baseDirectory.value -> "grunt wiredep",
         streams = streams.value
       )
     },
@@ -204,13 +206,13 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "grunt",
         inputFiles = baseDirectory.value / "bower_components" ** AllPassFilter,
         outputFiles = dist ** AllPassFilter,
-        command = baseDirectory.value → "grunt build",
+        command = baseDirectory.value -> "grunt build",
         streams = streams.value
       )
       for {
-        file        ← outputFiles.toSeq
-        rebasedFile ← sbt.Path.rebase(dist, "frontend")(file)
-      } yield file → rebasedFile
+        file        <- outputFiles.toSeq
+        rebasedFile <- sbt.Path.rebase(dist, "frontend")(file)
+      } yield file -> rebasedFile
     },
     Compile / resourceDirectory := baseDirectory.value / "app",
     Compile / packageBin / mappings := gruntBuild.value,

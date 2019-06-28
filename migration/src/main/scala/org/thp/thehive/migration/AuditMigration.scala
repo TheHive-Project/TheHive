@@ -42,11 +42,11 @@ class AuditMigration @Inject()(
       Reads.pure(None) and
       Reads.pure(newValue))(Audit.apply(_, _, _, _, _))
 
-  implicit val multiAuditReads: Reads[Seq[Audit]] = Reads { json ⇒
+  implicit val multiAuditReads: Reads[Seq[Audit]] = Reads { json =>
     (json \ "details")
       .validateOpt[JsObject]
       .map(_.getOrElse(JsObject.empty))
-      .flatMap { details ⇒
+      .flatMap { details =>
         if (details.fields.isEmpty)
           auditReads().reads(json).map(Seq(_))
         else {
@@ -54,12 +54,12 @@ class AuditMigration @Inject()(
           details
             .fields
             .foldLeft[Either[Errors, Seq[Audit]]](Right(Nil)) {
-              case (acc, (attribute, newValue)) ⇒
+              case (acc, (attribute, newValue)) =>
                 (acc, auditReads(Some(attribute), Some(newValue.toString)).reads(json)) match {
-                  case (Right(a), JsSuccess(x, _))           ⇒ Right(a :+ x)
-                  case (_: Right[_, _], JsError(error))      ⇒ Left(error)
-                  case (errors: Left[_, _], JsSuccess(_, _)) ⇒ errors
-                  case (Left(errors), JsError(error))        ⇒ Left(errors ++ error)
+                  case (Right(a), JsSuccess(x, _))           => Right(a :+ x)
+                  case (_: Right[_, _], JsError(error))      => Left(error)
+                  case (errors: Left[_, _], JsSuccess(_, _)) => errors
+                  case (Left(errors), JsError(error))        => Left(errors ++ error)
                 }
             }
             .fold(JsError.apply, JsSuccess(_))
@@ -69,12 +69,12 @@ class AuditMigration @Inject()(
 
   def importAudits(objectType: String, objectId: String, entity: Entity, progress: ProgressBar)(implicit graph: Graph): Unit = {
     val done = dbFind(Some("all"), Nil)(
-      index ⇒ search(index / "audit").query(boolQuery().must(termQuery("objectType", objectType), termQuery("objectId", objectId)))
+      index => search(index / "audit").query(boolQuery().must(termQuery("objectType", objectType), termQuery("objectId", objectId)))
     )._1
-      .map { auditJs ⇒
+      .map { auditJs =>
         catchError("audit", auditJs, progress) {
-          userMigration.withUser((auditJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext ⇒
-            auditJs.as[Seq[Audit]].foreach { audit ⇒
+          userMigration.withUser((auditJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
+            auditJs.as[Seq[Audit]].foreach { audit =>
               val createdAudit = auditSrv.create(audit)
               edgeSrv.create(Audited(), createdAudit, entity)
             }

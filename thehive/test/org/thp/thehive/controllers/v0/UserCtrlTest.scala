@@ -20,7 +20,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
@@ -48,7 +48,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "search users" in {
         val request = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
           .withJsonBody(Json.parse("""{"query": {"_and": [{"status": "Ok"}, {"_not": {"_is": {"login": "user4"}}}]}}"""))
-          .withHeaders("user" → "user1")
+          .withHeaders("user" -> "user1")
 
         val result = userCtrl.search(request)
         status(result) must_=== 200
@@ -73,7 +73,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "create a new user" in {
         val request = FakeRequest("POST", "/api/v0/user")
           .withJsonBody(Json.parse("""{"login": "user5", "name": "new user", "roles": ["read", "write", "alert"]}"""))
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
         val result = userCtrl.create(request)
         status(result) must_=== 201
@@ -94,10 +94,10 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "update an user" in {
         val request = FakeRequest("POST", "/api/v0/user/user3")
           .withJsonBody(Json.parse("""{"name": "new name"}"""))
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
         val result = userCtrl.update("user3")(request)
-        status(result) must beEqualTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.name must_=== "new name"
@@ -111,7 +111,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val request = FakeRequest("POST", "/api/v0/user/user3")
           .withJsonBody(Json.parse("""{"status": "Locked"}"""))
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
         val result = userCtrl.update("user3")(request)
         status(result) must_=== 200
@@ -127,16 +127,16 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "unlock an user" in {
         val keyAuthRequest = FakeRequest("GET", "/api/v0/user/current")
-          .withHeaders("Authorization" → "Bearer azertyazerty")
+          .withHeaders("Authorization" -> "Bearer azertyazerty")
 
         authenticateSrv.getAuthContext(keyAuthRequest) must beFailedTry
 
         val request = FakeRequest("POST", "/api/v0/user/user4")
           .withJsonBody(Json.parse("""{"status": "Ok"}"""))
-          .withHeaders("user" → "user2", "X-Organisation" → "cert")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "cert")
 
         val result = userCtrl.update("user4")(request)
-        status(result) must beEqualTo(200).updateMessage(s ⇒ s"$s\n${contentAsString(result)}")
+        status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.status must_=== "Ok"
 
@@ -145,7 +145,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "remove a user" in {
         val request = FakeRequest("DELETE", "/api/v0/user/user3")
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
         val result = userCtrl.delete("user3")(request)
 
@@ -153,7 +153,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val requestGet = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
           .withJsonBody(Json.parse("""{"query": {"_and": [{"_not": {"_is": {"login": "user4"}}}]}}"""))
-          .withHeaders("user" → "user2", "X-Organisation" → "default")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
         val resultGet = userCtrl.search(requestGet)
 

@@ -18,24 +18,24 @@ import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
 class TaskCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
-    val taskSrv: TaskSrv,
+    taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    val userSrv: UserSrv,
+    userSrv: UserSrv,
     val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl
-    with TaskConversion {
+) extends QueryCtrl {
+  import TaskConversion._
 
   lazy val logger = Logger(getClass)
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create task")
-      .extract('task, FieldsParser[InputTask])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val inputTask: InputTask = request.body('task)
+      .extract("task", FieldsParser[InputTask])
+      .authTransaction(db) { implicit request => implicit graph =>
+        val inputTask: InputTask = request.body("task")
         for {
-          case0       ← caseSrv.getOrFail(caseId)
-          createdTask ← taskSrv.create(inputTask, case0)
-          owner       ← inputTask.owner.map(userSrv.getOrFail).flip
+          case0       <- caseSrv.getOrFail(caseId)
+          createdTask <- taskSrv.create(inputTask, case0)
+          owner       <- inputTask.owner.map(userSrv.getOrFail).flip
           _        = owner.foreach(taskSrv.assign(createdTask, _))
           richTask = RichTask(createdTask, owner.map(_.login))
         } yield Results.Created(richTask.toJson)
@@ -43,42 +43,42 @@ class TaskCtrl @Inject()(
 
   def get(taskId: String): Action[AnyContent] =
     entryPoint("get task")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(taskId)
           .visible
           .richTask
           .getOrFail()
-          .map { task ⇒
+          .map { task =>
             Results.Ok(task.toJson)
           }
       }
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract('task, FieldsParser.update("task", taskProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('task)
+      .extract("task", FieldsParser.update("task", taskProperties(taskSrv, userSrv)))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv
           .update(
             _.get(taskId)
               .can(Permissions.manageTask),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 
   def stats(): Action[AnyContent] = {
     val parser: FieldsParser[Seq[Query]] = statsParser("listTask")
     entryPoint("stats task")
-      .extract('query, parser)
-      .authTransaction(db) { implicit request ⇒ graph ⇒
-        val queries: Seq[Query] = request.body('query)
+      .extract("query", parser)
+      .authTransaction(db) { implicit request => graph =>
+        val queries: Seq[Query] = request.body("query")
         val results = queries
-          .map(query ⇒ queryExecutor.execute(query, graph, request.authContext).toJson)
+          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
           .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) ⇒ acc ++ o
-            case (acc, r) ⇒
+            case (acc, o: JsObject) => acc ++ o
+            case (acc, r) =>
               logger.warn(s"Invalid stats result: $r")
               acc
           }
@@ -88,14 +88,14 @@ class TaskCtrl @Inject()(
 
   def search: Action[AnyContent] =
     entryPoint("search case")
-      .extract('query, searchParser("listTask", paged = false))
-      .authTransaction(db) { implicit request ⇒ graph ⇒
-        val query: Query = request.body('query)
+      .extract("query", searchParser("listTask", paged = false))
+      .authTransaction(db) { implicit request => graph =>
+        val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
         result.toOutput match {
-          case PagedResult(_, Some(size)) ⇒ Success(resp.withHeaders("X-Total" → size.toString))
-          case _                          ⇒ Success(resp)
+          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
+          case _                          => Success(resp)
         }
       }
 }

@@ -35,7 +35,7 @@ trait CaseConversion extends CustomFieldConversion {
       .transform
 
   def fromInputCase(inputCase: InputCase, caseTemplate: Option[RichCaseTemplate]): Case =
-    caseTemplate.fold(fromInputCase(inputCase)) { ct ⇒
+    caseTemplate.fold(fromInputCase(inputCase)) { ct =>
       inputCase
         .into[Case]
         .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)

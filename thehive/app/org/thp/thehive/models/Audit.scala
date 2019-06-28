@@ -55,7 +55,7 @@ case class Audited()
 
 object Audited extends HasEdgeModel[Audited, Audit, Product] {
 
-  override val model: Model.Edge[Audited, Audit, Product] = new EdgeModel[Audit, Product] { thisModel ⇒
+  override val model: Model.Edge[Audited, Audit, Product] = new EdgeModel[Audit, Product] { thisModel =>
     override type E = Audited
     override val label: String                                = "Audited"
     override val fromLabel: String                            = "Audit"
@@ -78,7 +78,7 @@ case class AuditContext()
 
 object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
 
-  override val model: Model.Edge[AuditContext, Audit, Product] = new EdgeModel[Audit, Product] { thisModel ⇒
+  override val model: Model.Edge[AuditContext, Audit, Product] = new EdgeModel[Audit, Product] { thisModel =>
     override type E = AuditContext
     override val label: String                                = "AuditContext"
     override val fromLabel: String                            = "Audit"

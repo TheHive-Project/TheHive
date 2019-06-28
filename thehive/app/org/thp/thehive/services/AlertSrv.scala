@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Date, List ⇒ JList}
+import java.util.{Date, List => JList}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -43,20 +43,20 @@ class AlertSrv @Inject()(
   ): Try[RichAlert] = {
     val createdAlert = create(alert)
     alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
-    caseTemplate.foreach(ct ⇒ alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
+    caseTemplate.foreach(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
     for {
-      _ ← auditSrv.createAlert(createdAlert)
-      cfs ← customFields
+      _ <- auditSrv.createAlert(createdAlert)
+      cfs <- customFields
         .toSeq
         .toTry {
-          case (name, Some(value)) ⇒
+          case (name, Some(value)) =>
             for {
-              cf  ← customFieldSrv.getOrFail(name)
-              acf ← cf.`type`.setValue(AlertCustomField(), value)
+              cf  <- customFieldSrv.getOrFail(name)
+              acf <- cf.`type`.setValue(AlertCustomField(), value)
               alertCustomField = alertCustomFieldSrv.create(acf, createdAlert, cf)
             } yield CustomFieldWithValue(cf, alertCustomField)
-          case (name, _) ⇒
-            customFieldSrv.getOrFail(name).map { cf ⇒
+          case (name, _) =>
+            customFieldSrv.getOrFail(name).map { cf =>
               val alertCustomField = alertCustomFieldSrv.create(AlertCustomField(), createdAlert, cf)
               CustomFieldWithValue(cf, alertCustomField)
             }
@@ -69,9 +69,9 @@ class AlertSrv @Inject()(
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(AlertSteps, JsObject)] =
     for {
-      (alertSteps, updatedFields) ← super.update(steps, propertyUpdaters)
-      alert                       ← alertSteps.clone().getOrFail()
-      _                           ← auditSrv.updateAlert(alert, updatedFields)
+      (alertSteps, updatedFields) <- super.update(steps, propertyUpdaters)
+      alert                       <- alertSteps.clone().getOrFail()
+      _                           <- auditSrv.updateAlert(alert, updatedFields)
     } yield (alertSteps, updatedFields)
 
   def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
@@ -84,22 +84,22 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
-    customFieldSrv.getOrFail(customFieldName).flatMap(cf ⇒ setCustomField(alert, cf, value))
+    customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(alert, cf, value))
 
   def setCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      _ ← getCustomField(alert, customField.name) match {
-        case Some(cf) ⇒ alertCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") → Some(value))
-        case None ⇒
-          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value).map { alertCustomField ⇒
+      _ <- getCustomField(alert, customField.name) match {
+        case Some(cf) => alertCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") -> Some(value))
+        case None =>
+          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value).map { alertCustomField =>
             alertCustomFieldSrv.create(alertCustomField, alert, customField)
             ()
           }
       }
-      _ ← auditSrv.updateAlert(alert, Json.obj(s"customField.${customField.name}" → value.toString))
+      _ <- auditSrv.updateAlert(alert, Json.obj(s"customField.${customField.name}" -> value.toString))
     } yield ()
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
@@ -107,26 +107,26 @@ class AlertSrv @Inject()(
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert ← get(alertId).update("read" → false)
-      _     ← auditSrv.updateAlert(alert, Json.obj("read" → false))
+      alert <- get(alertId).update("read" -> false)
+      _     <- auditSrv.updateAlert(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert ← get(alertId).update("read" → true)
-      _     ← auditSrv.updateAlert(alert, Json.obj("read" → true))
+      alert <- get(alertId).update("read" -> true)
+      _     <- auditSrv.updateAlert(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert ← get(alertId).update("follow" → true)
-      _     ← auditSrv.updateAlert(alert, Json.obj("follow" → true))
+      alert <- get(alertId).update("follow" -> true)
+      _     <- auditSrv.updateAlert(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert ← get(alertId).update("follow" → false)
-      _     ← auditSrv.updateAlert(alert, Json.obj("follow" → false))
+      alert <- get(alertId).update("follow" -> false)
+      _     <- auditSrv.updateAlert(alert, Json.obj("follow" -> false))
     } yield ()
 
   def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
@@ -135,15 +135,15 @@ class AlertSrv @Inject()(
   ): Try[RichCase] =
     for {
 
-      caseTemplate ← alert
+      caseTemplate <- alert
         .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
         .flip
       customField = caseTemplate
-        .fold[Seq[(String, Option[Any])]](Nil) { ct ⇒
-          ct.customFields.map(f ⇒ f.name → f.value)
+        .fold[Seq[(String, Option[Any])]](Nil) { ct =>
+          ct.customFields.map(f => f.name -> f.value)
         }
-        .toMap ++ alert.customFields.map(f ⇒ f.name → f.value)
+        .toMap ++ alert.customFields.map(f => f.name -> f.value)
       case0 = Case(
         number = 0,
         title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
@@ -159,29 +159,29 @@ class AlertSrv @Inject()(
         summary = None
       )
 
-      createdCase ← caseSrv.create(case0, user, organisation, customField, caseTemplate)
+      createdCase <- caseSrv.create(case0, user, organisation, customField, caseTemplate)
 
-      _ ← caseTemplate.map { ct ⇒
+      _ <- caseTemplate.map { ct =>
         caseTemplateSrv
           .get(ct.caseTemplate)
           .tasks
           .toIterator
-          .toTry(task ⇒ taskSrv.create(task, createdCase.`case`))
+          .toTry(task => taskSrv.create(task, createdCase.`case`))
       }.flip
 
-      _ ← importObservables(alert.alert, createdCase.`case`)
+      _ <- importObservables(alert.alert, createdCase.`case`)
       _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-      _ ← markAsRead(alert._id)
-      _ ← auditSrv.createCase(createdCase.`case`)
+      _ <- markAsRead(alert._id)
+      _ <- auditSrv.createCase(createdCase.`case`)
     } yield createdCase
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     // TODO add audit
     for {
-      alert ← getOrFail(alertId)
-      case0 ← caseSrv.getOrFail(caseId)
+      alert <- getOrFail(alertId)
+      case0 <- caseSrv.getOrFail(caseId)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      _           = caseSrv.get(caseId).update("description" → description)
+      _           = caseSrv.get(caseId).update("description" -> description)
       _           = importObservables(alert, case0)
     } yield ()
 
@@ -189,8 +189,8 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Seq[ShareObservable]] =
-    get(alert).observables.richObservable.toIterator.toTry { richObservable ⇒
-      observableSrv.duplicate(richObservable).flatMap(duplicatedObservable ⇒ caseSrv.addObservable(`case`, duplicatedObservable.observable))
+    get(alert).observables.richObservable.toIterator.toTry { richObservable =>
+      observableSrv.duplicate(richObservable).flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
     }
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
@@ -202,8 +202,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   override def get(id: String): AlertSteps =
     id.split(';') match {
-      case Array(tpe, source, sourceRef) ⇒ getBySourceId(tpe, source, sourceRef)
-      case _                             ⇒ getById(id)
+      case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
+      case _                             => getById(id)
     }
 
   def getById(id: String): AlertSteps = newInstance(raw.has(Key("_id") of id))
@@ -253,15 +253,16 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
           _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel)
         )
         .select(alertLabel.name, organisationLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
-        .map { resultMap ⇒
+        .map { resultMap =>
           val customFieldValues = resultMap
             .getValue(customFieldLabel)
             .asScala
             .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
             .map {
-              case List(acf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
-              case _             ⇒ throw InternalError("Not possible")
+              case List(acf, cf) => CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
+              case _             => throw InternalError("Not possible")
             }
+            .toSeq
           val organisation = resultMap.getValue(organisationLabel).as[Organisation]
           RichAlert(
             resultMap.getValue(alertLabel).as[Alert],
@@ -269,7 +270,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             customFieldValues,
             atMostOneOf(resultMap.getValue(caseIdLabel)),
             atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
-          ) → organisation
+          ) -> organisation
         }
     )
   }
@@ -280,9 +281,9 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       .inV()
     ScalarSteps(
       name
-        .fold[GremlinScala[Vertex]](acfSteps)(n ⇒ acfSteps.has(Key("name") of n))
+        .fold[GremlinScala[Vertex]](acfSteps)(n => acfSteps.has(Key("name") of n))
         .path
-        .map(path ⇒ CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField]))
+        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField]))
     )
   }
 
@@ -299,18 +300,18 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
         )
         .map {
-          case (alert, organisation, customFields, caseId, caseTemplate) ⇒
+          case (alert, organisation, customFields, caseId, caseTemplate) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(acf, cf) ⇒ CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
-                case _             ⇒ throw InternalError("Not possible")
+                case List(acf, cf) => CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
+                case _             => throw InternalError("Not possible")
               }
             RichAlert(
               alert.as[Alert],
               onlyOneOf[String](organisation),
-              customFieldValues,
+              customFieldValues.toSeq,
               atMostOneOf[String](caseId),
               atMostOneOf[String](caseTemplate)
             )

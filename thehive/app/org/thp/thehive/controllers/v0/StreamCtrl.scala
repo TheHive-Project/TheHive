@@ -23,43 +23,44 @@ class StreamCtrl @Inject()(
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     system: ActorSystem
-) extends AuditConversion {
+) {
+  import AuditConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create stream")
-      .auth { implicit request ⇒
+      .auth { implicit request =>
         val streamId = streamSrv.create
         Success(Results.Ok(streamId))
       }
 
   def get(streamId: String): Action[AnyContent] =
-    entryPoint("get stream").async { _ ⇒
+    entryPoint("get stream").async { _ =>
       streamSrv
         .get(streamId)
         .map {
-          case auditIds if auditIds.nonEmpty ⇒
-            db.transaction { implicit graph ⇒
+          case auditIds if auditIds.nonEmpty =>
+            db.transaction { implicit graph =>
               val audits = auditSrv
                 .get(auditIds)
-                .richAuditWithCustomObjectRenderer(auditRenderer)
+                .richAuditWithCustomRenderer(auditRenderer)
                 .toList()
                 .map {
-                  case (audit, (rootId, obj)) ⇒
-                    audit.toJson.as[JsObject].deepMerge(Json.obj("base" → Json.obj("object" → obj, "rootId" → rootId)))
+                  case (audit, (rootId, obj)) =>
+                    audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> rootId)))
                 }
               Results.Ok(JsArray(audits))
             }
-          case _ ⇒ Results.Ok(JsArray.empty)
+          case _ => Results.Ok(JsArray.empty)
         }
     }
 
   def status: Action[AnyContent] = // TODO
-    entryPoint("get stream") { _ ⇒
+    entryPoint("get stream") { _ =>
       Success(
         Results.Ok(
           Json.obj(
-            "remaining" → 3600,
-            "warning"   → false
+            "remaining" -> 3600,
+            "warning"   -> false
           )
         )
       )

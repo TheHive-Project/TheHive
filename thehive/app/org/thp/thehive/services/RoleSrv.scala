@@ -40,7 +40,7 @@ class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 //          .and(By(__[Vertex].inTo[OrganisationRole]))
 //          .and(By(__[Vertex].outTo[RoleProfile])))
 //      .map {
-//        case (`case`, organisation, profile) ⇒
+//        case (`case`, organisation, profile) =>
 //          RichRole(`case`.as[Case], organisation, profile)
 ////            onlyOneOf[String](m.get[JList[String]]("case")),
 ////            onlyOneOf[String](m.get[JList[String]]("organisation"))

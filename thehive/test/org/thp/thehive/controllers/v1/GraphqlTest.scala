@@ -18,7 +18,7 @@
 //  val authenticated: AuthenticateSrv = mock[AuthenticateSrv]
 //  authenticated.getContext(any[RequestHeader]) returns Success(dummyUserSrv.authContext)
 //
-//  Fragments.foreach(new DatabaseProviders().list) { dbProvider ⇒
+//  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
 //    val app: AppBuilder = AppBuilder()
 //      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
 //      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))

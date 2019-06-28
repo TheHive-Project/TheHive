@@ -23,21 +23,21 @@ class TheHiveQueryExecutor @Inject()(
     with UserConversion
     with OrganisationConversion {
 
-  override val version: (Int, Int)                          = 1 → 1
+  override val version: (Int, Int)                          = 1 -> 1
   override val publicProperties: List[PublicProperty[_, _]] = caseProperties
   override val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
       FieldsParser[GetCaseParams],
-      (p, graph, authContext) ⇒ caseSrv.get(p.id)(graph).visible(authContext)
+      (p, graph, authContext) => caseSrv.get(p.id)(graph).visible(authContext)
     ),
-    Query.init[CaseSteps]("listCase", (graph, authContext) ⇒ caseSrv.initSteps(graph).visible(authContext)),
-    Query.init[TaskSteps]("listTask", (graph, _) ⇒ taskSrv.initSteps(graph)), // FIXME check permission,
-    Query.init[UserSteps]("listUser", (graph, _) ⇒ userSrv.initSteps(graph)),
-    Query.init[OrganisationSteps]("listOrganisation", (graph, _) ⇒ organisationSrv.initSteps(graph)),
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) ⇒ caseSteps.richCase.toList()),
-    Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) ⇒ caseSteps.tasks),
-    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) ⇒ userSteps.richUser(authContext.organisation).toList()),
+    Query.init[CaseSteps]("listCase", (graph, authContext) => caseSrv.initSteps(graph).visible(authContext)),
+    Query.init[TaskSteps]("listTask", (graph, _) => taskSrv.initSteps(graph)), // FIXME check permission,
+    Query.init[UserSteps]("listUser", (graph, _) => userSrv.initSteps(graph)),
+    Query.init[OrganisationSteps]("listOrganisation", (graph, _) => organisationSrv.initSteps(graph)),
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList()),
+    Query[CaseSteps, TaskSteps]("listTask", (caseSteps, _) => caseSteps.tasks),
+    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList()),
     Query.output[RichCase, OutputCase],
     Query.output[Task with Entity, OutputTask],
     Query.output[RichUser, OutputUser],

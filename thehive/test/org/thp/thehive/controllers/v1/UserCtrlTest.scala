@@ -32,7 +32,7 @@ class DummyAuthSrv extends AuthSrv {
 class UserCtrlTest extends PlaySpecification with Mockito {
   val config: Configuration = Configuration.load(Environment.simple())
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider ⇒
+  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bindToProvider(dbProvider)
       .bind[AuthenticateSrv, TestAuthenticateSrv]
@@ -56,7 +56,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "return current user information" in {
         val request = FakeRequest("GET", "/api/v1/user/current")
-          .withHeaders("user" → "admin")
+          .withHeaders("user" -> "admin")
         val result = userCtrl.current(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
@@ -84,7 +84,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" → "admin")
+          .withHeaders("user" -> "admin")
         val result = userCtrl.create(request)
         status(result) must_=== 201
         val resultCase = contentAsJson(result).as[OutputUser]
@@ -112,13 +112,13 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" → "user2")
+          .withHeaders("user" -> "user2")
         val result = userCtrl.create(request)
         status(result) must_=== 403
       }
 
       "get a user in the same organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/user2").withHeaders("user" → "user1")
+        val request = FakeRequest("GET", s"/api/v1/user/user2").withHeaders("user" -> "user1")
         val result  = userCtrl.get("user2")(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
@@ -134,7 +134,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get a user of a visible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/user1").withHeaders("user" → "user2")
+        val request = FakeRequest("GET", s"/api/v1/user/user1").withHeaders("user" -> "user2")
         val result  = userCtrl.get("user1")(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
@@ -150,7 +150,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }.pendingUntilFixed("Organisation visibility needs to be fixed")
 
       "refuse to get a user of an invisible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/admin").withHeaders("user" → "user1")
+        val request = FakeRequest("GET", s"/api/v1/user/admin").withHeaders("user" -> "user1")
         val result  = userCtrl.get("admin")(request)
         status(result) must_=== 404
       }

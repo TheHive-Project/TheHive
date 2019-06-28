@@ -19,37 +19,40 @@ class CaseTemplateCtrl @Inject()(
     db: Database,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
-    val userSrv: UserSrv,
-    val taskSrv: TaskSrv
-) extends CaseTemplateConversion {
+    userSrv: UserSrv,
+    taskSrv: TaskSrv
+) {
+  import CaseTemplateConversion._
+  import TaskConversion._
+  import CustomFieldConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
-      .extract('caseTemplate, FieldsParser[InputCaseTemplate])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val inputCaseTemplate: InputCaseTemplate = request.body('caseTemplate)
+      .extract("caseTemplate", FieldsParser[InputCaseTemplate])
+      .authTransaction(db) { implicit request => implicit graph =>
+        val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
-          organisation ← organisationSrv.getOrFail(request.organisation)
+          organisation <- organisationSrv.getOrFail(request.organisation)
           tasks        = inputCaseTemplate.tasks.map(fromInputTask)
           customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
-          richCaseTemplate ← caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 
   def get(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("get case template")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         caseTemplateSrv
           .get(caseTemplateNameOrId)
           .visible
           .richCaseTemplate
           .getOrFail()
-          .map(richCaseTemplate ⇒ Results.Ok(richCaseTemplate.toJson))
+          .map(richCaseTemplate => Results.Ok(richCaseTemplate.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list case template")
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+      .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplates = caseTemplateSrv
           .initSteps
           .visible
@@ -61,26 +64,26 @@ class CaseTemplateCtrl @Inject()(
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract('caseTemplate, FieldsParser.update("caseTemplate", caseTemplateProperties))
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body('caseTemplate)
+      .extract("caseTemplate", FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv
           .update(
             _.get(caseTemplateNameOrId)
               .can(Permissions.manageCaseTemplate),
             propertyUpdaters
           )
-          .map(_ ⇒ Results.NoContent)
+          .map(_ => Results.NoContent)
       }
 
   def search: Action[AnyContent] = list
-//  {
-//    entryPoint("search case template")
-//      //.extract('query, )
-//      .authenticated { implicit request =>
-//      db.transaction { implicit graph =>
-//        caseTemplateSrv.initSteps.toL
-//      }
-//    }
-//  }
+  //  {
+  //    entryPoint("search case template")
+  //      //.extract("query", )
+  //      .authenticated { implicit request =>
+  //      db.transaction { implicit graph =>
+  //        caseTemplateSrv.initSteps.toL
+  //      }
+  //    }
+  //  }
 }

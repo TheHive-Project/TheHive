@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -7,8 +9,6 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-
-import scala.util.Try
 
 @Singleton
 class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -22,12 +22,12 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
   def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
     val createdTask = create(task)
     for {
-      share ← caseSrv
+      share <- caseSrv
         .initSteps
         .getOrganisationShare(`case`._id)
         .getOrFail()
       _ = shareSrv.shareTaskSrv.create(ShareTask(), share, createdTask)
-      _ ← auditSrv.createTask(createdTask, `case`)
+      _ <- auditSrv.createTask(createdTask, `case`)
     } yield createdTask
   }
 
@@ -51,8 +51,8 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
 
   def cascadeRemove(task: Task with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ ← Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
-      r ← Try(get(task).remove())
+      _ <- Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
+      r <- Try(get(task).remove())
     } yield r
 }
 
@@ -66,6 +66,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .has(Key("name") of authContext.organisation)
     )
   )
+
+  def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
 
@@ -98,7 +100,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
         )
         .map {
-          case (task, user) ⇒
+          case (task, user) =>
             RichTask(
               task.as[Task],
               atMostOneOf[String](user)

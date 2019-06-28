@@ -24,10 +24,10 @@ class AnalyzerCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
-      .asyncAuth { implicit request ⇒
+      .asyncAuth { implicit request =>
         analyzerSrv
           .listAnalyzer
-          .map { analyzers ⇒
+          .map { analyzers =>
             Results.Ok(Json.toJson(analyzers.map(toOutputAnalyzer)))
           }
       }

@@ -16,16 +16,16 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")
-      .extract('customField, FieldsParser[CustomField])
-      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
-        val customField        = request.body('customField)
+      .extract("customField", FieldsParser[CustomField])
+      .authTransaction(db) { implicit request => implicit graph =>
+        val customField        = request.body("customField")
         val createdCustomField = customFieldSrv.create(customField)
         Success(Results.Created(createdCustomField.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list custom fields")
-      .authTransaction(db) { _ ⇒ implicit graph ⇒
+      .authTransaction(db) { _ => implicit graph =>
         val customFields = customFieldSrv
           .initSteps
           .map(_.toJson)

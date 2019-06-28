@@ -1,12 +1,12 @@
 package org.thp.thehive.connector.cortex
 
-import play.api.routing.{Router ⇒ PlayRouter}
+import play.api.routing.{Router => PlayRouter}
 import play.api.{Configuration, Environment, Logger}
 
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.query.QueryExecutor
-import org.thp.thehive.connector.cortex.controllers.v0.{CortexQueryExecutor ⇒ CortexQueryExecutorV0}
+import org.thp.thehive.connector.cortex.controllers.v0.{CortexQueryExecutor => CortexQueryExecutorV0}
 import org.thp.thehive.connector.cortex.models.SchemaUpdater
 
 class CortexModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {

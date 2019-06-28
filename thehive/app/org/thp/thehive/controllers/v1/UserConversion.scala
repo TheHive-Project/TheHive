@@ -34,7 +34,7 @@ trait UserConversion {
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom[String] { (prop, path, value, vertex, db, graph, authContext) ⇒
+      .property[String]("name")(_.simple.custom[String] { (prop, path, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -52,14 +52,14 @@ trait UserConversion {
         isCurrentUser
           .orElse(isUserAdmin)
           .flatMap {
-            case _ if path.isEmpty ⇒
+            case _ if path.isEmpty =>
               db.setProperty(vertex, "name", value, prop.mapping)
-              Success(Json.obj("name" → value))
-            case _ ⇒ Failure(UnsupportedAttributeError(s"name.$path"))
+              Success(Json.obj("name" -> value))
+            case _ => Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
       .property[String]("apikey")(_.simple.readonly)
-      .property[Boolean]("locked")(_.simple.custom[Boolean] { (prop, path, value, vertex, db, graph, authContext) ⇒
+      .property[Boolean]("locked")(_.simple.custom[Boolean] { (prop, path, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)
@@ -67,10 +67,10 @@ trait UserConversion {
           .get(vertex)
           .existsOrFail()
           .flatMap {
-            case _ if path.isEmpty ⇒
+            case _ if path.isEmpty =>
               db.setProperty(vertex, "locked", value, prop.mapping)
-              Success(Json.obj("locked" → value))
-            case _ ⇒ Failure(UnsupportedAttributeError(s"status.$path"))
+              Success(Json.obj("locked" -> value))
+            case _ => Failure(UnsupportedAttributeError(s"status.$path"))
           }
       })
       .build

@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 case class ApplicationError(status: Int, body: JsValue) extends Exception(s"ApplicationError($status):\n${Json.prettyPrint(body)}")
 
 object ApplicationError {
-  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" → r.body)))
+  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" -> r.body)))
 }
 
 object Client {
@@ -27,9 +27,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
     auth(ws.url(url))
       .post(body)
       .transform {
-        case Success(r) if r.status == Status.CREATED ⇒ Success(r.body[JsValue].as[Output])
-        case Success(r)                               ⇒ Failure(ApplicationError(r))
-        case Failure(t)                               ⇒ throw t
+        case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[Output])
+        case Success(r)                               => Failure(ApplicationError(r))
+        case Failure(t)                               => throw t
       }
   }
 
@@ -40,9 +40,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
     auth(ws.url(url))
       .post(body)
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[Output]])
-        case Success(r)                               ⇒ Failure(ApplicationError(r))
-        case Failure(t)                               ⇒ throw t
+        case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[Output]])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
       }
   }
 
@@ -51,9 +51,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
     auth(ws.url(s"$baseUrl/$id"))
       .get()
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Output])
-        case Success(r)                          ⇒ Failure(ApplicationError(r))
-        case Failure(t)                          ⇒ throw t
+        case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Output])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
       }
   }
 
@@ -62,9 +62,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
     auth(ws.url(baseUrl))
       .get
       .transform {
-        case Success(r) if r.status == Status.OK ⇒ Success(r.body[JsValue].as[Seq[Output]])
-        case Success(r)                          ⇒ Failure(ApplicationError(r))
-        case Failure(t)                          ⇒ throw t
+        case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[Output]])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
       }
   }
 }

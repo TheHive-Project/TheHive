@@ -29,7 +29,7 @@ class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, gr
 
   override def get(id: String): ResolutionStatusSteps =
     Try(UUID.fromString(id))
-      .map(_ ⇒ getById(id))
+      .map(_ => getById(id))
       .getOrElse(getByName(id))
 
   def getById(id: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("_id") of id))

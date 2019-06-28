@@ -26,15 +26,16 @@ case class InputCustomFieldValue(name: String, value: Option[Any])
 object InputCustomFieldValue {
 
   val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
-    case (_, FObject(fields)) ⇒
+    case (_, FObject(fields)) =>
       fields
+        .toSeq
         .validatedBy {
-          case (name, FString(value))   ⇒ Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FNumber(value))   ⇒ Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FBoolean(value))  ⇒ Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FAny(value :: _)) ⇒ Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FNull)            ⇒ Good(InputCustomFieldValue(name, None))
-          case (name, other) ⇒
+          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value)))
+          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value)))
+          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value)))
+          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value)))
+          case (name, FNull)            => Good(InputCustomFieldValue(name, None))
+          case (name, other) =>
             Bad(
               One(
                 InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: string"), other)
@@ -43,15 +44,15 @@ object InputCustomFieldValue {
         }
         .map(_.toSeq)
   }
-  implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv ⇒
+  implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
-      case InputCustomFieldValue(name, Some(s: String))  ⇒ name → JsString(s)
-      case InputCustomFieldValue(name, Some(l: Long))    ⇒ name → JsNumber(l)
-      case InputCustomFieldValue(name, Some(d: Double))  ⇒ name → JsNumber(d)
-      case InputCustomFieldValue(name, Some(b: Boolean)) ⇒ name → JsBoolean(b)
-      case InputCustomFieldValue(name, Some(d: Date))    ⇒ name → JsNumber(d.getTime)
-      case InputCustomFieldValue(name, None)             ⇒ name → JsNull
-      case InputCustomFieldValue(name, other)            ⇒ sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
+      case InputCustomFieldValue(name, Some(s: String))  => name -> JsString(s)
+      case InputCustomFieldValue(name, Some(l: Long))    => name -> JsNumber(l)
+      case InputCustomFieldValue(name, Some(d: Double))  => name -> JsNumber(d)
+      case InputCustomFieldValue(name, Some(b: Boolean)) => name -> JsBoolean(b)
+      case InputCustomFieldValue(name, Some(d: Date))    => name -> JsNumber(d.getTime)
+      case InputCustomFieldValue(name, None)             => name -> JsNull
+      case InputCustomFieldValue(name, other)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
     }
     JsObject(fields)
   }

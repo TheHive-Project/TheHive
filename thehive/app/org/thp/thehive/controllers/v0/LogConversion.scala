@@ -11,7 +11,8 @@ import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Log, RichLog}
 import org.thp.thehive.services.LogSteps
 
-trait LogConversion extends AttachmentConversion {
+object LogConversion {
+  import AttachmentConversion._
 
   implicit def toOutputLog(richLog: RichLog): Output[OutputLog] =
     Output[OutputLog](
@@ -27,7 +28,7 @@ trait LogConversion extends AttachmentConversion {
         .withFieldComputed(_.message, _.message)
         .withFieldComputed(_.startDate, _._createdAt)
         .withFieldComputed(_.owner, _._createdBy)
-        .withFieldComputed(_.status, l ⇒ if (l.deleted) "Deleted" else "Ok")
+        .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
         .withFieldComputed(_.attachment, _.attachments.headOption.map(toOutputAttachment(_).toOutput))
         .transform
     )

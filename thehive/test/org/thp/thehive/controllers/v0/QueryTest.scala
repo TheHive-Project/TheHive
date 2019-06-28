@@ -44,7 +44,7 @@ class QueryTest extends PlaySpecification with Mockito with QueryCtrl {
                                | }
         """.stripMargin)
 
-      val queryOrError = statsParser(FObject("_name" → FString("listTask")))(Field(input)).map(x ⇒ x)
+      val queryOrError = statsParser(FObject("_name" -> FString("listTask")))(Field(input)).map(x => x)
       queryOrError.isGood must beTrue
       queryOrError.get must not be empty
     }

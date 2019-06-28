@@ -1,15 +1,18 @@
 package org.thp.thehive.services
 
-import gremlin.scala.{KeyValue ⇒ _, _}
+import java.util.{Set => JSet}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 @Singleton
 class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attachmentSrv: AttachmentSrv, caseSrv: CaseSrv, shareSrv: ShareSrv)(
@@ -26,7 +29,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] =
-    attachmentSrv.create(file).flatMap { attachment ⇒
+    attachmentSrv.create(file).flatMap { attachment =>
       create(observable, attachment, extensions)
     }
 
@@ -38,7 +41,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
     observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
     extensions
       .map(keyValueSrv.create)
-      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+      .map(kv => observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
     Success(RichObservable(createdObservable, None, Some(attachment), extensions))
   }
 
@@ -51,7 +54,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
     observableDataSrv.create(ObservableData(), createdObservable, data)
     extensions
       .map(keyValueSrv.create)
-      .map(kv ⇒ observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
+      .map(kv => observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
     Success(RichObservable(createdObservable, Some(data), None, extensions))
   }
 
@@ -61,10 +64,10 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   ): Try[RichObservable] = {
 
     val createdObservable = create(richObservable.observable)
-    richObservable.data.foreach { data ⇒
+    richObservable.data.foreach { data =>
       observableDataSrv.create(ObservableData(), createdObservable, data)
     }
-    richObservable.attachment.foreach { attachment ⇒
+    richObservable.attachment.foreach { attachment =>
       observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
     }
     // TODO copy or link key value ?
@@ -73,10 +76,10 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
 
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ ← Try(get(observable).data.remove())
-      _ ← Try(get(observable).attachments.remove())
-      _ ← Try(get(observable).keyValues.remove())
-      r ← Try(get(observable).remove())
+      _ <- Try(get(observable).data.remove())
+      _ <- Try(get(observable).attachments.remove())
+      _ <- Try(get(observable).keyValues.remove())
+      r <- Try(get(observable).remove())
     } yield r
 }
 
@@ -105,30 +108,58 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
         )
         .map {
-          case (observable, data, attachment, extensions) ⇒
+          case (observable, data, attachment, extensions) =>
             RichObservable(
               observable.as[Observable],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              extensions.asScala.map(_.as[KeyValue])
+              extensions.asScala.map(_.as[KeyValue]).toSeq
             )
         }
     )
 
-  def caze: CaseSteps = new CaseSteps(raw.inTo[ShareObservable].outTo[ShareCase])
+  def richObservableWithCustomRenderer[A](
+      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
+  ): ScalarSteps[(RichObservable, A)] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[ObservableData].fold))
+            .and(By(__[Vertex].outTo[ObservableAttachment].fold))
+            .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
+            .and(By(entityRenderer(__[Vertex])))
+        )
+        .map {
+          case (observable, data, attachment, extensions, renderedEntity) =>
+            RichObservable(
+              observable.as[Observable],
+              atMostOneOf[Vertex](data).map(_.as[Data]),
+              atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
+              extensions.asScala.map(_.as[KeyValue]).toSeq
+            ) -> renderedEntity
+        }
+    )
 
-  def similar(id: String): ObservableSteps = newInstance(
-    raw
-      .unionFlat(
-        _.outTo[ObservableData]
-          .inTo[ObservableData]
-          .hasNot(Key("_id") of id),
-        _.outTo[ObservableAttachment]
-          .inTo[ObservableAttachment]
-          .hasNot(Key("_id") of id)
-      )
-      .dedup
-  )
+  def `case`: CaseSteps = new CaseSteps(raw.inTo[ShareObservable].outTo[ShareCase])
+
+  def alert: AlertSteps = new AlertSteps(raw.inTo[AlertObservable])
+
+  def similar: ObservableSteps = {
+    val originLabel = StepLabel[JSet[Vertex]]()
+    newInstance(
+      raw
+        .aggregate(originLabel)
+        .unionFlat(
+          _.outTo[ObservableData]
+            .inTo[ObservableData],
+          _.outTo[ObservableAttachment]
+            .inTo[ObservableAttachment]
+        )
+        .where(JP.without(originLabel.name))
+        .dedup
+    )
+  }
 
   override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
 
