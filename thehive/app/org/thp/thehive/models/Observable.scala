@@ -21,7 +21,7 @@ case class RichObservable(
     attachment: Option[Attachment with Entity],
     extensions: Seq[KeyValue]
 ) {
-  val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex
+  val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex ?
   val tags: Set[String]       = observable.tags
   val message: Option[String] = observable.message
   val tlp: Int                = observable.tlp

@@ -3,6 +3,7 @@ package org.thp.thehive.services
 import java.util.UUID
 
 import scala.util.{Failure, Success, Try}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}

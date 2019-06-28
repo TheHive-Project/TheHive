@@ -2,10 +2,9 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.thp.scalligraph.auth.Permission
+import org.thp.scalligraph.auth.{Permission, User ⇒ ScalligraphUser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
-import org.thp.scalligraph.auth.{User ⇒ ScalligraphUser}
 
 @EdgeEntity[User, Role]
 case class UserRole()

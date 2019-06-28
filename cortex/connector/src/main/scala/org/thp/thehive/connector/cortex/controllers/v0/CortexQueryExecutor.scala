@@ -16,7 +16,7 @@ import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{ParentFilterQuery, ParentIdFilter, ParentIdInputFilter, ParentQueryFilter}
 import org.thp.thehive.services.ObservableSteps
 
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{universe ⇒ ru}
 
 /**
   * Range param case class for search query parsing

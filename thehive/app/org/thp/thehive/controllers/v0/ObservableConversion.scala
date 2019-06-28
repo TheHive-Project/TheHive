@@ -90,8 +90,8 @@ object ObservableConversion {
       .similar
       .raw
       .groupCount(By(Key[Boolean]("ioc")))
-      .map { plop ⇒
-        val m      = plop.asScala
+      .map { stats ⇒
+        val m      = stats.asScala
         val nTrue  = m.get(true).fold(0L)(_.toLong)
         val nFalse = m.get(false).fold(0L)(_.toLong)
         Json.obj(

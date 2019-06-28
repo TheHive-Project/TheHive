@@ -36,7 +36,7 @@ trait FakeCortexClient {
         implicit lazy val system: ActorSystem  = GuiceApplicationBuilder().injector.instanceOf[ActorSystem]
         implicit lazy val ws: CustomWSAPI      = GuiceApplicationBuilder().injector.instanceOf[CustomWSAPI]
 
-        block(new CortexClient("test", "", 1 second, 3))
+        block(new CortexClient("test", "", 1.second, 3))
       }
     }
 }
