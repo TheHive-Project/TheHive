@@ -62,8 +62,20 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
             "TheHive"     → getVersion(classOf[TheHiveModule]),
             "Play"        → getVersion(classOf[AbstractController])
           ),
-          "connectors" → JsObject.empty,
-          "health"     → Json.obj("elasticsearch" → "UNKNOWN"),
+          "connectors" → Json.obj(
+            "cortex" → Json.obj(
+              "enabled" → true,
+              "servers" → Json.arr(
+                Json.obj(
+                  "name"    → "interne",
+                  "version" → "2.x.x",
+                  "status"  → "OK"
+                )
+              ),
+              "status" → "OK"
+            )
+          ),
+          "health" → Json.obj("elasticsearch" → "UNKNOWN"),
           "config" → Json.obj(
             "protectDownloadsWith" → config.get[String]("datastore.attachment.password"),
             "authType"             → "authSrvName",

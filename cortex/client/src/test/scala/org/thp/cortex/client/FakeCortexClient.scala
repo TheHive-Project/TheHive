@@ -12,7 +12,6 @@ import play.filters.HttpFiltersComponents
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 trait FakeCortexClient {
 
@@ -28,7 +27,7 @@ trait FakeCortexClient {
             }
         }
 
-        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" -> 3333)
+        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" → 3333)
       }.application
     } { implicit port ⇒
       WsTestClient.withClient { _ ⇒
