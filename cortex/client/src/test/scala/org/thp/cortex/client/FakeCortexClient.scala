@@ -1,12 +1,12 @@
 package org.thp.cortex.client
 
 import akka.actor.ActorSystem
-import play.api.{BuiltInComponentsFromContext, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc._
 import play.api.routing.Router
 import play.api.routing.sird._
 import play.api.test._
+import play.api.{BuiltInComponentsFromContext, Configuration}
 import play.core.server.Server
 import play.filters.HttpFiltersComponents
 
@@ -28,7 +28,14 @@ trait FakeCortexClient {
             }
         }
 
-        override lazy val configuration: Configuration = context.initialConfiguration ++ Configuration("akka.remote.netty.tcp.port" -> 3333)
+        override lazy val configuration: Configuration = context.initialConfiguration ++
+          Configuration(
+            "akka.remote.netty.tcp.port" → 3333,
+            "play.modules.disabled"      → List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
+          ) ++
+          Configuration(
+            "play.modules.disabled"      → List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
+          )
       }.application
     } { implicit port ⇒
       WsTestClient.withClient { _ ⇒
