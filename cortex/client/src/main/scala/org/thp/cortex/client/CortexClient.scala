@@ -16,13 +16,14 @@ import scala.util.{Failure, Success, Try}
 class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
     implicit ws: CustomWSAPI,
     auth: Authentication,
-    system: ActorSystem,
-    ec: ExecutionContext
+    system: ActorSystem
 ) {
+  implicit val ec: ExecutionContext = system.dispatcher
 //  lazy val job            = new BaseClient[InputCortexArtifact, OutputJob](s"$baseUrl/api/job")
-  lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$baseUrl/api/analyzer")
+  lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
   lazy val logger         = Logger(getClass)
   val retrier: DelayRetry = Retry(maxRetryOnError).delayed(refreshDelay)(system.scheduler, ec)
+  val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
   /**
     * GET analysers endpoint
@@ -61,10 +62,10 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     val requestBody = Json.toJson(artifact)
     val result = artifact.attachment match {
       case None =>
-        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$strippedUrl/api/analyzer/$analyzerId/run"))
           .post(requestBody)
       case Some(Attachment(filename, size, contentType, data)) =>
-        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$strippedUrl/api/analyzer/$analyzerId/run"))
           .post(
             Source(
               List(

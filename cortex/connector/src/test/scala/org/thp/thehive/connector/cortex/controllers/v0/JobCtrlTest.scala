@@ -7,8 +7,6 @@ import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzer
-import org.thp.thehive.dto.v0.OutputObservable
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.Json

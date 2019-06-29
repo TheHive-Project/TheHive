@@ -1,48 +1,44 @@
 package org.thp.cortex.client
 
-import akka.actor.ActorSystem
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.mvc._
-import play.api.routing.Router
-import play.api.routing.sird._
-import play.api.test._
-import play.api.{BuiltInComponentsFromContext, Configuration}
-import play.core.server.Server
-import play.filters.HttpFiltersComponents
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.io.Source
+
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc._
+import play.api.routing.sird._
+import play.api.test._
+import play.core.server.Server
+
+import akka.actor.ActorSystem
+import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexAnalyzer}
 
 trait FakeCortexClient {
 
-  def withCortexClient[T](block: CortexClient => T): T =
-    Server.withApplicationFromContext() { context =>
-      new BuiltInComponentsFromContext(
-        context
-      ) with HttpFiltersComponents {
-        override def router: Router = Router.from {
-          case GET(p"/api/analyzers") =>
-            Action { _ =>
-              Results.Ok.sendResource("analyzers.json")(fileMimeTypes)
-            }
-        }
+  def readResourceAsJson(name: String): JsValue = {
+    val dataSource = Source.fromFile(getClass.getResource(name).getPath)
+    val data       = dataSource.mkString
+    dataSource.close()
+    Json.parse(data)
+  }
+  lazy val analyzers: Seq[OutputCortexAnalyzer] = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexAnalyzer]]
+  lazy val jobs: Seq[CortexOutputJob]           = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
 
-        override lazy val configuration: Configuration = context.initialConfiguration ++
-          Configuration(
-            "akka.remote.netty.tcp.port" → 3333,
-            "play.modules.disabled"      → List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
-          ) ++
-          Configuration(
-            "play.modules.disabled"      → List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
-          )
-      }.application
+  def withCortexClient[T](block: CortexClient => T)(implicit auth: Authentication, system: ActorSystem, ws: CustomWSAPI): T =
+    Server.withRouterFromComponents() { components =>
+      import Results._
+
+      import components.{fileMimeTypes, defaultActionBuilder => Action}
+      {
+        case GET(p"/api/analyzers")         => Action(_ => Ok.sendResource("analyzers.json")(fileMimeTypes))
+        case GET(p"/api/analyzer")          => Action(Results.Ok.sendResource("analyzers.json")(fileMimeTypes))
+        case GET(p"/api/analyzer/$id")      => Action(Results.Ok(Json.toJson(analyzers.find(_.id == id).get)))
+        case POST(p"/api/analyzer/_search") => Action(Results.Ok(Json.toJson(analyzers)))
+        case POST(p"/api/analyzer/$id/run") => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
+      }
     } { implicit port =>
       WsTestClient.withClient { _ =>
-        implicit lazy val auth: Authentication = PasswordAuthentication("test", "test")
-        implicit lazy val system: ActorSystem  = GuiceApplicationBuilder().injector.instanceOf[ActorSystem]
-        implicit lazy val ws: CustomWSAPI      = GuiceApplicationBuilder().injector.instanceOf[CustomWSAPI]
-
-        block(new CortexClient("test", "", 1.second, 3))
+        block(new CortexClient("test", s"http://127.0.0.1:$port/", 1.second, 3))
       }
     }
 }
