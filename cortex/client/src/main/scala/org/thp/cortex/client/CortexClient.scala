@@ -6,24 +6,25 @@ import org.thp.cortex.dto.v0.{Attachment, _}
 import org.thp.scalligraph.{DelayRetry, Retry}
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
     implicit ws: CustomWSAPI,
     auth: Authentication,
-    system: ActorSystem,
-    ec: ExecutionContext
+    system: ActorSystem
 ) {
-  lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$baseUrl/api/job")
-  lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$baseUrl/api/analyzer")
-  lazy val logger         = Logger(getClass)
-  val retrier: DelayRetry = Retry(maxRetryOnError).delayed(refreshDelay)(system.scheduler, ec)
-  val refreshDelayValue = refreshDelay
+  lazy val job                          = new BaseClient[CortexInputJob, CortexOutputJob](s"$baseUrl/api/job")
+  lazy val analyser                     = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
+  lazy val logger                       = Logger(getClass)
+  val retrier: DelayRetry               = Retry(maxRetryOnError).delayed(refreshDelay)(system.scheduler)
+  val refreshDelayValue: FiniteDuration = refreshDelay
+  val strippedUrl: String               = baseUrl.replaceFirst("/*$", "")
 
   /**
     * GET analysers endpoint
@@ -64,10 +65,10 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     val requestBody = Json.toJson(artifact)
     val result = artifact.attachment match {
       case None =>
-        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$strippedUrl/api/analyzer/$analyzerId/run"))
           .post(requestBody)
       case Some(Attachment(filename, size, contentType, data)) =>
-        auth(ws.url(s"$baseUrl/api/analyzer/$analyzerId/run"))
+        auth(ws.url(s"$strippedUrl/api/analyzer/$analyzerId/run"))
           .post(
             Source(
               List(

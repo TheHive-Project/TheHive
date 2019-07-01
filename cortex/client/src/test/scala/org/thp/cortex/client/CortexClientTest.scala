@@ -1,93 +1,68 @@
 package org.thp.cortex.client
 
+import java.util.Date
+
 import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
-import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexArtifact, OutputCortexAnalyzer}
-import play.api.Logger
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
-import play.api.mvc.{Action, ControllerComponents, Results}
-import play.api.routing.Router
-import play.api.routing.sird._
-import play.api.test.{PlaySpecification, WithServer}
+import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexArtifact, JobStatus, OutputCortexAnalyzer}
+import org.thp.scalligraph.AppBuilder
+import play.api.libs.json.{JsObject, Json}
+import play.api.test.PlaySpecification
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import scala.io.Source
-
-class CortexClientTest extends PlaySpecification with Mockito {
-
-  def getAnalyzers: Seq[OutputCortexAnalyzer] = {
-    val dataSource = Source.fromFile(getClass.getResource("/analyzers.json").getPath)
-    val data       = dataSource.mkString
-    dataSource.close()
-
-    Json.parse(data).as[Seq[OutputCortexAnalyzer]]
-  }
-
-  def getJobs: Seq[CortexOutputJob] = {
-    val dataSource = Source.fromFile(getClass.getResource("/jobs.json").getPath)
-    val data       = dataSource.mkString
-    dataSource.close()
-
-    Json.parse(data).as[Seq[CortexOutputJob]]
-  }
-
+class CortexClientTest extends PlaySpecification with Mockito with FakeCortexClient {
   s"CortexClient" should {
-    lazy val app = GuiceApplicationBuilder()
-      .configure("play.allowGlobalApplication" -> true, "play.filters.enabled" -> Nil)
-      .router(Router.from {
-        case play.api.routing.sird.GET(p"/api/analyzer") =>
-          Action {
-            Results.Ok.sendResource("analyzers.json")(GuiceApplicationBuilder().injector.instanceOf[ControllerComponents].fileMimeTypes)
-          }
-        case play.api.routing.sird.GET(p"/api/analyzer/$id") =>
-          Action {
-            Results.Ok(Json.toJson(getAnalyzers.find(_.id == id).get))
-          }
-        case play.api.routing.sird.POST(p"/api/analyzer/_search") =>
-          Action {
-            Results.Ok(Json.toJson(getAnalyzers))
-          }
-        case play.api.routing.sird.POST(p"/api/analyzer/$id/run") =>
-          Action {
-            Results.Created(Json.toJson(getJobs.find(_.workerId == id).get))
-          }
-      })
-      .build()
+    lazy val app = AppBuilder()
 
-    implicit lazy val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
-    implicit lazy val ws: CustomWSAPI      = app.injector.instanceOf[CustomWSAPI]
+    implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
     implicit lazy val auth: Authentication = KeyAuthentication("test")
-    implicit lazy val system: ActorSystem  = app.actorSystem
-    val mockLogger                         = mock[Logger]
+    implicit lazy val system: ActorSystem  = app.instanceOf[ActorSystem]
 
-    val clientName = "test"
-    val clientPort = 3333
-    lazy val client = new CortexClient(clientName, s"http://127.0.0.1:$clientPort", 3.seconds, 3) {
-      override lazy val logger: Logger = mockLogger
-    }
+    "handle requests properly" in {
+      withCortexClient { client =>
+        val analyzers: Seq[OutputCortexAnalyzer] = await(client.listAnalyser)
 
-    "handle requests properly" in new WithServer(app, port = clientPort) {
-      val analyzers: Seq[OutputCortexAnalyzer] = await(client.listAnalyser)
+        analyzers.length shouldEqual 2
+        analyzers.head.cortexIds must beSome(List(client.name))
+        analyzers.head.name shouldEqual "anaTest1"
 
-      analyzers.length shouldEqual 2
-      analyzers.head.cortexIds must beSome(List(clientName))
-      analyzers.head.name shouldEqual "anaTest1"
+        val oneAnalyzer: OutputCortexAnalyzer = await(client.getAnalyzer("anaTest2"))
 
-      val oneAnalyzer: OutputCortexAnalyzer = await(client.getAnalyzer("anaTest2"))
+        oneAnalyzer.id shouldEqual "anaTest2"
+        oneAnalyzer.name shouldEqual "anaTest2"
 
-      oneAnalyzer.id shouldEqual "anaTest2"
-      oneAnalyzer.name shouldEqual "anaTest2"
+        val searchedAnalyzer: OutputCortexAnalyzer = await(client.getAnalyzerByName("anaTest1"))
 
-      val searchedAnalyzer: OutputCortexAnalyzer = await(client.getAnalyzerByName("anaTest1"))
+        searchedAnalyzer.copy(cortexIds = None) should equalTo(
+          OutputCortexAnalyzer(
+            id = "anaTest1",
+            name = "anaTest1",
+            version = "1",
+            description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
+            dataTypeList = Seq("test")
+          )
+        )
 
-      searchedAnalyzer.copy(cortexIds = None) shouldEqual getAnalyzers.find(_.name == "anaTest1").get
+        val outputJob: CortexOutputJob = await(client.analyse(searchedAnalyzer.id, InputCortexArtifact(1, 1, "test", "test", Some("test"), None)))
 
-      val outputJob: CortexOutputJob = await(client.analyse(searchedAnalyzer.id, InputCortexArtifact(1, 1, "test", "test", Some("test"), None)))
+        outputJob should equalTo(
+          CortexOutputJob(
+            id = "AWuYKFatq3Rtqym9DFmL",
+            workerId = "anaTest1",
+            workerName = "anaTest1",
+            workerDefinition = "anaTest1",
+            date = new Date(1561625908856L),
+            startDate = None,
+            endDate = None,
+            status = JobStatus.Waiting,
+            data = Some("https://www.faux-texte.com/lorem-ipsum-2.htm"),
+            attachment = None,
+            organization = "test",
+            dataType = "domain",
+            attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2)
+          )
+        )
 
-      outputJob shouldEqual getJobs.find(_.workerId == "anaTest1").get
+      }
     }
   }
-
 }

@@ -185,7 +185,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
             body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
           )
           val result = observableCtrl.create("#1")(request)
-          status(result) shouldEqual 201
+          status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
           val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
           createdObservables must have size 3
