@@ -3,6 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import akka.actor._
 import javax.inject._
 import org.thp.cortex.client.CortexConfig
+import play.api.Logger
 
 object CortexActor {
   def props(): Props = Props[CortexActor]
@@ -14,13 +15,17 @@ object CortexActor {
 class CortexActor @Inject()(cortexConfig: CortexConfig) extends Actor {
   import CortexActor._
 
+  lazy val logger = Logger(getClass)
+
   def receive: Receive = updated(CheckedJobs(Set.empty))
 
   private def updated(checkedJobs: CheckedJobs): Receive = {
-    case CheckJob(jobId, cortexJobId) => context.become(
-      updated(
-        checkedJobs.copy(checkedJobs.jobs ++ Set((jobId, cortexJobId)))
+    case CheckJob(jobId, cortexJobId) =>
+      logger.info(s"CortexActor received job ($jobId, $cortexJobId) to check, added to $checkedJobs")
+      context.become(
+        updated(
+          checkedJobs.copy(checkedJobs.jobs ++ Set((jobId, cortexJobId)))
+        )
       )
-    )
   }
 }

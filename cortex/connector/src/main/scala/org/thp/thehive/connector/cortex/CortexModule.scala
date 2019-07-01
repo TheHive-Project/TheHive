@@ -8,8 +8,11 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.thehive.connector.cortex.controllers.v0.{CortexQueryExecutor => CortexQueryExecutorV0}
 import org.thp.thehive.connector.cortex.models.SchemaUpdater
+import play.api.libs.concurrent.AkkaGuiceSupport
 
-class CortexModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
+import org.thp.thehive.connector.cortex.services.CortexActor
+
+class CortexModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   lazy val logger = Logger(getClass)
 
   override def configure(): Unit = {
@@ -19,6 +22,7 @@ class CortexModule(environment: Environment, configuration: Configuration) exten
     queryExecutorBindings.addBinding.to[CortexQueryExecutorV0]
 
     bind(classOf[SchemaUpdater]).asEagerSingleton()
+    bindActor[CortexActor]("cortex-actor")
     ()
   }
 }

@@ -1,6 +1,8 @@
 package org.thp.thehive.connector.cortex.services
 
+import akka.actor._
 import akka.stream.scaladsl.StreamConverters
+import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexConfig}
@@ -11,6 +13,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.JobConversion
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
+import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,7 +23,8 @@ class JobSrv @Inject()(
     implicit db: Database,
     cortexConfig: CortexConfig,
     storageSrv: StorageSrv,
-    implicit val ex: ExecutionContext
+    implicit val ex: ExecutionContext,
+    @Named("cortex-actor") cortexActor: ActorRef
 ) extends VertexSrv[Job, JobSteps]
     with JobConversion {
 
@@ -29,8 +33,8 @@ class JobSrv @Inject()(
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
 
   /**
-    * Submits an observable for analyzis to cortex client and stores
-    * resulting job
+    * Submits an observable for analysis to cortex client and stores
+    * resulting job and send the cortex reference id to the polling job status actor
     *
     * @param cortexId the client id name
     * @param workerId the analyzer (worker) id
@@ -77,6 +81,7 @@ class JobSrv @Inject()(
       createdJob = db.transaction { implicit newGraph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)(newGraph, authContext)
       }
+      _ = cortexActor ! CheckJob(createdJob._id, cortexOutputJob.id)
     } yield createdJob
 
   /**
