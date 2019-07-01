@@ -1,6 +1,5 @@
 package org.thp.cortex.client
 
-import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import org.thp.cortex.dto.v0.{Attachment, _}
 import play.api.Logger
@@ -10,19 +9,17 @@ import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDuration, maxRetryOnError: Int)(
+class CortexClient(val name: String, baseUrl: String)(
     implicit ws: CustomWSAPI,
-    auth: Authentication,
-    system: ActorSystem
+    auth: Authentication
 ) {
-  lazy val job                          = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
-  lazy val analyser                     = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
-  lazy val logger                       = Logger(getClass)
-  val refreshDelayValue: FiniteDuration = refreshDelay
-  val strippedUrl: String               = baseUrl.replaceFirst("/*$", "")
+  lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
+  lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
+  lazy val logger         = Logger(getClass)
+  val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
   /**
     * GET analysers endpoint

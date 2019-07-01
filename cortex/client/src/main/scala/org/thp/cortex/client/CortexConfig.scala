@@ -1,12 +1,9 @@
 package org.thp.cortex.client
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
-
+import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 
-import akka.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration._
 
 /**
   * Injected CortexConfig containing all client instances
@@ -14,12 +11,15 @@ import javax.inject.{Inject, Singleton}
   * @param instances the CortexClient instances
   */
 @Singleton
-case class CortexConfig(instances: Seq[CortexClient]) {
+case class CortexConfig(instances: Seq[CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int) {
 
   @Inject
-  def this(configuration: Configuration, globalWS: CustomWSAPI)(
-      implicit system: ActorSystem
-  ) = this(CortexConfig.getInstances(configuration, globalWS))
+  def this(configuration: Configuration, globalWS: CustomWSAPI) =
+    this(
+      CortexConfig.getInstances(configuration, globalWS),
+      configuration.getOptional[FiniteDuration]("cortex.refreshDelay").getOrElse(1.minute),
+      configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3)
+    )
 }
 
 /**
@@ -34,9 +34,7 @@ object CortexConfig {
     * @param globalWS the overridden or not web service client framework WSClient
     * @return
     */
-  def getInstances(configuration: Configuration, globalWS: CustomWSAPI)(
-      implicit system: ActorSystem
-  ): Seq[CortexClient] =
+  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] =
     for {
       cfg <- configuration.getOptional[Configuration]("cortex").toSeq
       cortexWS = globalWS.withConfig(cfg)
@@ -53,9 +51,7 @@ object CortexConfig {
     * @param ws custom or not web service client
     * @return
     */
-  def getCortexClient(configuration: Configuration, ws: CustomWSAPI)(
-      implicit system: ActorSystem
-  ): Option[CortexClient] = {
+  def getCortexClient(configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
     val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
 
     configuration
@@ -71,14 +67,10 @@ object CortexConfig {
       }
       .map(
         auth =>
-          // Refresh and maxRetry should not be by client now but global to
-          // JobUpdater actor
           new CortexClient(
             configuration.getOptional[String]("name").getOrElse("no name"),
-            url,
-            configuration.getOptional[FiniteDuration]("refreshDelay").getOrElse(1 minute),
-            configuration.getOptional[Int]("maxRetryOnError").getOrElse(3)
-          )(ws, auth, system)
+            url
+          )(ws, auth)
       )
   }
 }

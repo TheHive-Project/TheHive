@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.services
 
+import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{Authentication, CustomWSAPI, FakeCortexClient, PasswordAuthentication}
@@ -14,9 +15,8 @@ import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.{Json, Reads}
 import play.api.test.PlaySpecification
 import play.api.{Configuration, Environment}
-import scala.io.Source
 
-import akka.actor.ActorSystem
+import scala.io.Source
 
 class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -29,6 +29,7 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[CortexActor]("cortex-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
@@ -51,12 +52,6 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
         val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
 
         job shouldEqual getJobs.head
-      }
-
-      "submit a job" in {
-        withCortexClient { client =>
-          1 shouldEqual 1
-        }
       }
     }
   }
