@@ -3,7 +3,6 @@ package org.thp.cortex.client
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import org.thp.cortex.dto.v0.{Attachment, _}
-import org.thp.scalligraph.{DelayRetry, Retry}
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{JsValue, Json}
@@ -19,10 +18,9 @@ class CortexClient(val name: String, baseUrl: String, refreshDelay: FiniteDurati
     auth: Authentication,
     system: ActorSystem
 ) {
-  lazy val job                          = new BaseClient[CortexInputJob, CortexOutputJob](s"$baseUrl/api/job")
+  lazy val job                          = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
   lazy val analyser                     = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
   lazy val logger                       = Logger(getClass)
-  val retrier: DelayRetry               = Retry(maxRetryOnError).delayed(refreshDelay)(system.scheduler)
   val refreshDelayValue: FiniteDuration = refreshDelay
   val strippedUrl: String               = baseUrl.replaceFirst("/*$", "")
 
