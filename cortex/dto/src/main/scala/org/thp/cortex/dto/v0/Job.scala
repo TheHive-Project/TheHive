@@ -36,8 +36,32 @@ case class CortexOutputJob(
     attachment: Option[JsObject],
     organization: String,
     dataType: String,
-    attributes: JsObject
+    attributes: JsObject,
+    report: Option[CortexOutputReport]
 )
+
+case class CortexOutputAttachment(id: String, name: Option[String], contentType: Option[String])
+
+object CortexOutputAttachment {
+  implicit val format: Format[CortexOutputAttachment] = Json.format[CortexOutputAttachment]
+}
+
+case class CortexOutputArtifact(dataType: String, attachment: Option[CortexOutputAttachment])
+
+object CortexOutputArtifact {
+  implicit val format: Format[CortexOutputArtifact] = Json.format[CortexOutputArtifact]
+}
+
+case class CortexOutputReport(
+    summary: JsObject,
+    full: JsObject,
+    success: Boolean,
+    artifacts: List[CortexOutputArtifact]
+)
+
+object CortexOutputReport {
+  implicit val format: Format[CortexOutputReport] = Json.format[CortexOutputReport]
+}
 
 object CortexOutputJob {
   private def filterObject(json: JsObject, attributes: String*): JsObject =
@@ -60,6 +84,7 @@ object CortexOutputJob {
         status       <- (json \ "status").validate[String].map(s => Try(JobStatus.withName(s)).getOrElse(JobStatus.Unknown))
         organization <- (json \ "organization").validate[String]
         dataType     <- (json \ "dataType").validate[String]
+        report = (json \ "report").asOpt[CortexOutputReport]
       } yield CortexOutputJob(
         id,
         analyzerId,
@@ -73,7 +98,8 @@ object CortexOutputJob {
         attachment,
         organization,
         dataType,
-        attributes
+        attributes,
+        report
       )
   )
 }
