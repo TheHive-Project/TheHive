@@ -22,7 +22,8 @@ class Router @Inject()(
     authenticationCtrl: AuthenticationCtrl,
     listCtrl: ListCtrl,
     streamCtrl: StreamCtrl,
-    attachmentCtrl: AttachmentCtrl
+    attachmentCtrl: AttachmentCtrl,
+    describeCtrl: DescribeCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -141,6 +142,8 @@ class Router @Inject()(
 
     case GET(p"/datastore/$id" ? q_o"name=$name")    => attachmentCtrl.download(id, name)
     case GET(p"/datastorezip/$id" ? q_o"name=$name") => attachmentCtrl.downloadZip(id, name)
+    case GET(p"/describe/_all")                      => describeCtrl.describeAll
+    case GET(p"/describe/$modelName")                => describeCtrl.describe(modelName)
 
   }
 }
