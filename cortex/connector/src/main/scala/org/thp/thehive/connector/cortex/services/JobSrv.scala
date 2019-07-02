@@ -6,7 +6,7 @@ import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.cortex.dto.v0.{InputCortexArtifact, Attachment => CortexAttachment}
+import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
@@ -100,6 +100,9 @@ class JobSrv @Inject()(
     createdJob
   }
 
+  def checked(cortexClient: CortexClient, job: CortexOutputJob) = {
+
+  }
 }
 
 @EntitySteps[Job]

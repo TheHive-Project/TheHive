@@ -47,6 +47,14 @@ class CortexClient(val name: String, baseUrl: String)(
       .search[SearchQuery](SearchQuery("name", name, "0-1"))
       .flatMap(l => Future.fromTry(Try(l.head)))
 
+  /**
+    * Gets the job status and report if complete
+    *
+    * @param jobId the cortex job id
+    * @param atMost the time that Cortex has to wait before sending a response
+    *               (in case the job terminates in the meantime)
+    * @return
+    */
   def getReport(jobId: String, atMost: Duration): Future[CortexOutputJob] = job.get(jobId, Some(s"/waitreport?atMost=${atMost.toString}"))
 
   /**
