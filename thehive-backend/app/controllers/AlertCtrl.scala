@@ -173,6 +173,7 @@ class AlertCtrl @Inject()(
     for {
       alert ← alertSrv.get(id)
       customCaseTemplate = request.body.getString("caseTemplate")
+        .orElse(alert.caseTemplate())
       caze ← alertSrv.createCase(alert, customCaseTemplate)
     } yield renderer.toOutput(CREATED, caze)
   }
