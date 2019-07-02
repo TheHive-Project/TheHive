@@ -1,9 +1,8 @@
 package org.thp.thehive.connector.cortex.services
 
-import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.{Authentication, CustomWSAPI, FakeCortexClient, PasswordAuthentication}
+import org.thp.cortex.client.FakeCortexClient
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
@@ -41,11 +40,8 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val jobSrv: JobSrv                     = app.instanceOf[JobSrv]
-    val db: Database                       = app.instanceOf[Database]
-    implicit lazy val auth: Authentication = PasswordAuthentication("test", "test")
-    implicit lazy val system: ActorSystem  = app.instanceOf[ActorSystem]
-    implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
+    val jobSrv: JobSrv = app.instanceOf[JobSrv]
+    val db: Database   = app.instanceOf[Database]
 
     s"[$name] job service" should {
       "create a job" in db.transaction { implicit graph =>

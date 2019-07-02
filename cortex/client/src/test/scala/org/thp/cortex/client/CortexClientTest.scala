@@ -58,7 +58,8 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             attachment = None,
             organization = "test",
             dataType = "domain",
-            attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2)
+            attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2),
+            None
           )
         )
 

@@ -1,6 +1,5 @@
 package org.thp.cortex.client
 
-import akka.actor.ActorSystem
 import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexAnalyzer}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
@@ -22,7 +21,7 @@ trait FakeCortexClient {
     Json.parse(data)
   }
 
-  def withCortexClient[T](block: CortexClient => T)(implicit auth: Authentication, system: ActorSystem, ws: CustomWSAPI): T =
+  def withCortexClient[T](block: CortexClient => T)(implicit auth: Authentication, ws: CustomWSAPI): T =
     Server.withRouterFromComponents() { components =>
       import Results._
       import components.{fileMimeTypes, defaultActionBuilder => Action}
