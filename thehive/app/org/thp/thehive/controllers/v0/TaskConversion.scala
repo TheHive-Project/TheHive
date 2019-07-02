@@ -1,4 +1,5 @@
 package org.thp.thehive.controllers.v0
+
 import java.util.Date
 
 import scala.language.implicitConversions
@@ -21,6 +22,7 @@ object TaskConversion {
       .into[Task]
       .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(TaskStatus.withName))
       .withFieldComputed(_.order, _.order.getOrElse(0))
+      .withFieldComputed(_.flag, _.flag.getOrElse(false))
       .transform
 
   def toOutputTask(task: Task with Entity): Output[OutputTask] = toOutputTask(RichTask(task, None))

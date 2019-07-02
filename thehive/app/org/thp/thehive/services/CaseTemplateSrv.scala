@@ -35,7 +35,11 @@ class CaseTemplateSrv @Inject()(
 
     val createdCaseTemplate = create(caseTemplate)
     caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-    val createdTasks = tasks.map(taskSrv.create(_, createdCaseTemplate))
+    val createdTasks = tasks.map { t =>
+      val ct = taskSrv.create(t, createdCaseTemplate)
+      caseTemplateTaskSrv.create(CaseTemplateTask(), createdCaseTemplate, ct)
+      ct
+    }
     for {
       cfs <- customFields
         .toTry {

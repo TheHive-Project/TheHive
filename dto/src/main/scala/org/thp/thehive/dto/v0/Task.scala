@@ -10,7 +10,7 @@ case class InputTask(
     description: Option[String] = None,
     owner: Option[String] = None,
     status: Option[String] = None,
-    flag: Boolean = false,
+    flag: Option[Boolean] = None,
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
     order: Option[Int] = None,
