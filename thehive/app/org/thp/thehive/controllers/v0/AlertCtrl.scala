@@ -5,7 +5,6 @@ import java.util.Base64
 import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
-import play.api.http.HttpErrorHandler
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -30,12 +29,11 @@ class AlertCtrl @Inject()(
     attachmentSrv: AttachmentSrv,
     val userSrv: UserSrv,
     val caseSrv: CaseSrv,
-    errorHandler: HttpErrorHandler,
     val queryExecutor: TheHiveQueryExecutor
 ) extends QueryCtrl {
+  import AlertConversion._
   import CaseConversion._
   import CustomFieldConversion._
-  import AlertConversion._
   import ObservableConversion._
 
   lazy val logger = Logger(getClass)
