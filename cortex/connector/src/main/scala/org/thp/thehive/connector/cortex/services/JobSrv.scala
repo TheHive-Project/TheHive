@@ -24,7 +24,8 @@ class JobSrv @Inject()(
     cortexConfig: CortexConfig,
     storageSrv: StorageSrv,
     implicit val ex: ExecutionContext,
-    @Named("cortex-actor") cortexActor: ActorRef
+    @Named("cortex-actor") cortexActor: ActorRef,
+    cortexAttachmentSrv: CortexAttachmentSrv
 ) extends VertexSrv[Job, JobSteps]
     with JobConversion {
 
@@ -81,7 +82,7 @@ class JobSrv @Inject()(
       createdJob = db.transaction { implicit newGraph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)(newGraph, authContext)
       }
-      _ = cortexActor ! CheckJob(createdJob._id, cortexOutputJob.id, cortexClient)
+      _ = cortexActor ! CheckJob(createdJob._id, cortexOutputJob.id, cortexClient, authContext)
     } yield createdJob
 
   /**
@@ -100,9 +101,8 @@ class JobSrv @Inject()(
     createdJob
   }
 
-  def checked(cortexClient: CortexClient, job: CortexOutputJob) = {
-
-  }
+  def finished(jobId: String, job: CortexOutputJob, cortexClient: CortexClient)(implicit authContext: AuthContext) =
+    cortexAttachmentSrv.downloadAttachments(jobId, job, cortexClient)
 }
 
 @EntitySteps[Job]
