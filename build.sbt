@@ -133,6 +133,7 @@ lazy val cortexDto = (project in file("cortex/dto"))
 
 lazy val cortexClient = (project in file("cortex/client"))
   .dependsOn(cortexDto)
+  .dependsOn(scalligraph % "test -> test")
   .settings(commonSettings)
   .settings(
     name := "cortex-client",
