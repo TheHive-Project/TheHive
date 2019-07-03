@@ -81,15 +81,17 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th style="width:20px;"></th>
+                            <th style="width:40px;"></th>
                             <th style="width:100px;">Type</th>
                             <th>Data</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr ng-repeat="attribute in dialog.pagination.data" class="clickable">
-                            <td>
-                                <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
+                            <td class="nowrap">
+                                <span ng-if="attribute.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                                <span ng-if="attribute.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                                <span ng-if="attribute.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                             </td>
                             <td>{{attribute.dataType}}</td>
                             <td class="wrap">
