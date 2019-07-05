@@ -109,5 +109,29 @@ angular.module('theHiveServices')
             return defer.promise;
         };
 
+        res.autoComplete = function(query) {
+            return res.list({
+                _and: [
+                    {
+                        status: 'Ok'
+                    }
+                ]
+            }).then(function(data) {
+                return _.map(data, function(user) {
+                    return {
+                        label: user.name,
+                        text: user.id
+                    };
+                });
+            }).then(function(users) {
+                var filtered = _.filter(users, function(user) {
+                    var regex = new RegExp(query, 'gi');
+                    return regex.test(user.label);
+                });
+
+                return filtered;
+            });
+        };
+
         return res;
     });

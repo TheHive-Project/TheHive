@@ -1,0 +1,244 @@
+{
+  "description": "case",
+  "title": "Case statistics",
+  "definition": {
+    "period": "last3Months",
+    "items": [{
+      "type": "container",
+      "items": [{
+        "type": "donut",
+        "options": {
+          "title": "Owner of open cases",
+          "entity": "case",
+          "field": "owner",
+          "filters": [{
+            "field": "status",
+            "type": "enumeration",
+            "value": {
+              "list": [{
+                "text": "Open",
+                "label": "Open"
+              }]
+            }
+          }],
+          "query": {
+            "_field": "status",
+            "_value": "Open"
+          },
+          "names": {}
+        },
+        "id": "4cb4f7d3-eb21-dd61-2a6f-85cf096a2a6e"
+      }, {
+        "type": "donut",
+        "options": {
+          "title": "Cases by status",
+          "entity": "case",
+          "field": "status",
+          "filters": [],
+          "names": {
+            "NoImpact": "NoImpact",
+            "WithImpact": "WithImpact",
+            "NotApplicable": "NotApplicable",
+            "Open": "Open",
+            "Resolved": "Resolved",
+            "Deleted": "Deleted"
+          },
+          "query": {}
+        },
+        "id": "84b81a65-4b3c-2b26-421e-fd7453d92f3e"
+      }]
+    }, {
+      "type": "container",
+      "items": [{
+        "type": "donut",
+        "options": {
+          "title": "Revolved cases by resolution",
+          "entity": "case",
+          "field": "resolutionStatus",
+          "filters": [{
+            "field": "status",
+            "type": "enumeration",
+            "value": {
+              "list": [{
+                "text": "Resolved",
+                "label": "Resolved"
+              }]
+            }
+          }],
+          "query": {
+            "_field": "status",
+            "_value": "Resolved"
+          },
+          "names": {
+            "FalsePositive": "FalsePositive",
+            "Duplicated": "Duplicated",
+            "Indeterminate": "Indeterminate",
+            "TruePositive": "TruePositive",
+            "Other": "Other"
+          }
+        },
+        "id": "ede6e87a-2e39-5556-b421-1c4cd73a74b1"
+      }, {
+        "type": "donut",
+        "options": {
+          "title": "Case tags",
+          "entity": "case",
+          "field": "tags",
+          "query": {},
+          "names": {}
+        },
+        "id": "a9e47a5d-3c84-4949-b941-a60ea3c41e81"
+      }]
+    }, {
+      "type": "container",
+      "items": [{
+        "type": "bar",
+        "options": {
+          "entity": "case",
+          "dateField": "createdAt",
+          "interval": "1w",
+          "field": "owner",
+          "stacked": true,
+          "query": {},
+          "names": {},
+          "title": "Case owner history"
+        },
+        "id": "b5bb88c6-0a76-ca85-c4b6-5096199ddf80"
+      }, {
+        "type": "bar",
+        "options": {
+          "entity": "case",
+          "dateField": "createdAt",
+          "interval": "1w",
+          "field": "severity",
+          "stacked": true,
+          "query": {},
+          "names": {
+            "1": "low",
+            "2": "medium",
+            "3": "high"
+          },
+          "title": "Case severity history"
+        },
+        "id": "9bdac0ad-441b-2be3-9e6e-342968be5315"
+      }, {
+        "type": "bar",
+        "options": {
+          "entity": "case",
+          "dateField": "createdAt",
+          "interval": "1w",
+          "field": "tlp",
+          "stacked": true,
+          "title": "Case TLP history",
+          "query": {},
+          "names": {
+            "0": "white",
+            "1": "green",
+            "2": "amber",
+            "3": "red"
+          }
+        },
+        "id": "72157fd6-efb4-cf0c-a281-7eacc3c32a4f"
+      }]
+    }, {
+      "type": "container",
+      "items": [{
+        "type": "line",
+        "options": {
+          "title": "Case over time",
+          "entity": "case",
+          "field": "createdAt",
+          "interval": "1w",
+          "series": [{
+            "agg": "avg",
+            "field": "computed.handlingDurationInHours",
+            "type": "line",
+            "filters": [{
+              "field": "status",
+              "type": "enumeration",
+              "value": {
+                "list": [{
+                  "text": "Resolved",
+                  "label": "Resolved"
+                }]
+              }
+            }],
+            "query": {
+              "_field": "status",
+              "_value": "Resolved"
+            }
+          }, {
+            "agg": "count",
+            "field": null,
+            "type": "bar"
+          }],
+          "query": {}
+        },
+        "id": "377784a7-49c2-50aa-2eba-acc862a0b841"
+      }]
+    }, {
+      "type": "container",
+      "items": [{
+        "type": "donut",
+        "options": {
+          "title": "TLP of open cases",
+          "entity": "case",
+          "field": "tlp",
+          "filters": [{
+            "field": "status",
+            "type": "enumeration",
+            "value": {
+              "list": [{
+                "text": "Open",
+                "label": "Open"
+              }]
+            }
+          }],
+          "query": {
+            "_field": "status",
+            "_value": "Open"
+          },
+          "names": {
+            "0": "white",
+            "1": "green",
+            "2": "amber",
+            "3": "red"
+          }
+        },
+        "id": "4c7bb013-c87f-7f17-0892-e20af2a0dcac"
+      }, {
+        "type": "donut",
+        "options": {
+          "title": "Severity of open cases",
+          "entity": "case",
+          "field": "severity",
+          "filters": [{
+            "field": "status",
+            "type": "enumeration",
+            "value": {
+              "list": [{
+                "text": "Open",
+                "label": "Open"
+              }]
+            }
+          }],
+          "query": {
+            "_field": "status",
+            "_value": "Open"
+          },
+          "names": {
+            "1": "low",
+            "2": "medium",
+            "3": "high"
+          }
+        },
+        "id": "d943c6f4-61d8-b4dd-7a3a-56067829727a"
+      }]
+    }],
+    "customPeriod": {
+      "fromDate": null,
+      "toDate": null
+    }
+  },
+  "status": "Shared"
+}

@@ -5,7 +5,11 @@
             $scope.caseId = $stateParams.caseId;
             $scope.linkStats = [];
             $scope.currentFilter = '';
-            $scope.filtering = {}
+            $scope.filtering = {};
+            $scope.sorting = {
+              field: '-startDate'
+            }
+            $scope.displayOptions = {};
             var tabName = 'links-' + $scope.caseId;
 
             // Add tab
@@ -66,8 +70,24 @@
                 }
             };
 
+            $scope.sortBy = function(field) {
+                if($scope.sorting.field.substr(1) !== field) {
+                    $scope.sorting.field = '+' + field;
+                } else {
+                    $scope.sorting.field = ($scope.sorting.field === '+' + field) ? '-'+field : '+'+field;
+                }
+            };
+
             $scope.$watch('links', function(data){
                 $scope.linkStats = $scope.initStats(data);
+
+                _.each(data, function(link) {
+                    if($scope.displayOptions[link.id] === undefined) {
+                        $scope.displayOptions[link.id] = 5;
+                    }
+                });
+
+
             });
         }
     );

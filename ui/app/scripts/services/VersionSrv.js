@@ -1,14 +1,24 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('VersionSrv', function($http, $q) {
+        .factory('VersionSrv', function($http, $q, $interval) {
             var cache = null;
 
             var factory =  {
-                get: function() {
+                startMonitoring: function(callback) {
+                    $interval(function() {
+                        factory.get(true)
+                          .then(function(appConfig) {
+                              if(callback) {
+                                  callback(appConfig);
+                              }
+                          });
+                    }, 60000);
+                },
+                get: function(force) {
                     var deferred = $q.defer();
 
-                    if(cache !== null) {
+                    if(!force && cache !== null) {
                         deferred.resolve(cache);
                     } else {
                         $http.get('./api/status').then(function(response) {
@@ -25,11 +35,25 @@
                 hasCortex: function() {
                     try {
                         var service = cache.connectors.cortex;
-                        
-                        return service.enabled && service.servers.length;
+
+                        return service.enabled && _.pluck(service.servers, 'status').indexOf('OK') !== -1;
                     } catch (err) {
                         return false;
                     }
+                },
+
+                mispUrls: function() {
+                    var urls = {};
+                    var misp = cache.connectors.misp;
+
+                    if(!misp) {
+                        return {};
+                    }
+
+                    (misp.servers || []).forEach(function(item) {
+                        urls[item.name] = item.url;
+                    });                    
+                    return urls;
                 }
             };
 

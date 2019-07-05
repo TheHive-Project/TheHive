@@ -2,12 +2,15 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET      /                                        controllers.Default.redirect(to = "/index.html")
+GET      /                                        controllers.Home.redirect
 GET      /api/status                              controllers.StatusCtrl.get
+GET      /api/health                              controllers.StatusCtrl.health
 GET      /api/logout                              controllers.AuthenticationCtrl.logout()
 POST     /api/login                               controllers.AuthenticationCtrl.login()
+POST     /api/ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
 POST     /api/_search                             controllers.SearchCtrl.find()
+POST     /api/_stats                              controllers.SearchCtrl.stats()
 
 GET      /api/case                                controllers.CaseCtrl.find()
 POST     /api/case/_search                        controllers.CaseCtrl.find()
@@ -17,6 +20,7 @@ POST     /api/case                                controllers.CaseCtrl.create()
 GET      /api/case/:caseId                        controllers.CaseCtrl.get(caseId)
 PATCH    /api/case/:caseId                        controllers.CaseCtrl.update(caseId)
 DELETE   /api/case/:caseId                        controllers.CaseCtrl.delete(caseId)
+DELETE   /api/case/:caseId/force                  controllers.CaseCtrl.realDelete(caseId)
 GET      /api/case/:caseId/links                  controllers.CaseCtrl.linkedCases(caseId)
 POST     /api/case/:caseId1/_merge/:caseId2       controllers.CaseCtrl.merge(caseId1, caseId2)
 
@@ -32,9 +36,9 @@ POST     /api/case/artifact/_stats                controllers.ArtifactCtrl.stats
 POST     /api/case/:caseId/artifact               controllers.ArtifactCtrl.create(caseId)
 GET      /api/case/artifact/:artifactId           controllers.ArtifactCtrl.get(artifactId)
 DELETE   /api/case/artifact/:artifactId           controllers.ArtifactCtrl.delete(artifactId)
+PATCH    /api/case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
 PATCH    /api/case/artifact/:artifactId           controllers.ArtifactCtrl.update(artifactId)
 GET      /api/case/artifact/:artifactId/similar   controllers.ArtifactCtrl.findSimilar(artifactId)
-PATCH    /api/case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
 
 POST     /api/case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
 POST     /api/case/task/_search                   controllers.TaskCtrl.find()
@@ -46,6 +50,7 @@ POST     /api/case/:caseId/task                   controllers.TaskCtrl.create(ca
 GET      /api/case/task/:taskId/log               controllers.LogCtrl.findInTask(taskId)
 POST     /api/case/task/:taskId/log/_search       controllers.LogCtrl.findInTask(taskId)
 POST     /api/case/task/log/_search               controllers.LogCtrl.find()
+POST     /api/case/task/log/_stats                controllers.LogCtrl.stats()
 POST     /api/case/task/:taskId/log               controllers.LogCtrl.create(taskId)
 PATCH    /api/case/task/log/:logId                controllers.LogCtrl.update(logId)
 DELETE   /api/case/task/log/:logId                controllers.LogCtrl.delete(logId)
@@ -66,8 +71,12 @@ POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCa
 POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAlert(alertId)
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
 POST     /api/alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
+POST     /api/alert/merge/_bulk                   controllers.AlertCtrl.bulkMergeWithCase()
 
-GET      /api/flow                                controllers.FlowCtrl.flow(rootId: Option[String], count: Option[Int])
+GET      /api/flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+GET      /api/audit                               controllers.AuditCtrl.find()
+POST     /api/audit/_search                       controllers.AuditCtrl.find()
+POST     /api/audit/_stats                        controllers.AuditCtrl.stats()
 
 GET      /api/datastore/:hash                     controllers.AttachmentCtrl.download(hash, name: Option[String])
 GET      /api/datastorezip/:hash                  controllers.AttachmentCtrl.downloadZip(hash, name: Option[String])
@@ -99,6 +108,17 @@ POST     /api/user/:userId/key/renew              controllers.UserCtrl.renewKey(
 POST     /api/stream                              controllers.StreamCtrl.create()
 GET      /api/stream/status                       controllers.StreamCtrl.status
 GET      /api/stream/:streamId                    controllers.StreamCtrl.get(streamId)
+
+GET      /api/describe/_all                       controllers.DescribeCtrl.describeAll
+GET      /api/describe/:modelName                 controllers.DescribeCtrl.describe(modelName)
+
+GET      /api/dashboard                           controllers.DashboardCtrl.find()
+POST     /api/dashboard/_search                   controllers.DashboardCtrl.find()
+POST     /api/dashboard/_stats                    controllers.DashboardCtrl.stats()
+POST     /api/dashboard                           controllers.DashboardCtrl.create()
+GET      /api/dashboard/:dashboardId              controllers.DashboardCtrl.get(dashboardId)
+PATCH    /api/dashboard/:dashboardId              controllers.DashboardCtrl.update(dashboardId)
+DELETE   /api/dashboard/:dashboardId              controllers.DashboardCtrl.delete(dashboardId)
 
 ->       /api/connector                           connectors.ConnectorRouter
 

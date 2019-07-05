@@ -72,8 +72,18 @@
                             min-length="2"
                             ng-model="tags"
                             replace-spaces-with-dashes="false">
-                                <auto-complete debounceDelay="400" source="getTags($query)"></auto-complete>
+                                <auto-complete min-length="1" debounceDelay="400" source="getTags($query)"></auto-complete>
                             </tags-input>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-md-3 control-label">PAP
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div class="col-md-9">
+                        <a href ng-click="activePap='active'">
+                            <tlp format="activePap" on-update="updatePap(newValue)" value="newCase.pap" namespace="PAP"></tlp>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -91,7 +101,7 @@
         </div>
 
         <h4 class="vpad10 text-primary">Case tasks
-            <small ng-if="fromTemplate">(from [{{template.name | uppercase}}] template)</small>
+            <small ng-if="fromTemplate">(from [{{template.name}}] template)</small>
         </h4>
         <div class="row" ng-if="!fromTemplate">
             <div class="col-md-12">
@@ -104,7 +114,11 @@
             </div>
         </div>
         <div class="row vpad5" ng-if="tasks.length === 0">
-            <div class="col-md-12 text-danger">No tasks have been specified</div>
+            <div class="col-md-12">
+                <div class="empty-message">
+                    No tasks have been specified
+                </div>
+            </div>
         </div>
         <div class="row vpad5" ng-if="tasks.length !== 0" ng-repeat="t in tasks">
             <div class="col-md-12">
@@ -115,14 +129,15 @@
             </div>
         </div>
 
-        <h4 class="vpad10 text-primary" ng-if="fromTemplate">Case metrics <small> (from [{{template.name | uppercase}}] template)</small></h4>
-        <!-- <pre>{{template | json}}</pre> -->
-        <div class="row vpad5">
-            <div class="col-md-12" ng-if="template.metricNames.length > 0">
-                <span class="rm2 label label-default" ng-repeat="m in template.metricNames">{{metricsCache[m].title}}</span>
+        <h4 class="vpad10 text-primary" ng-if="fromTemplate">Case metrics <small> (from [{{template.name}}] template)</small></h4>
+        <div class="row vpad5" ng-if="fromTemplate">
+            <div class="col-md-12" ng-if="keys(template.metrics) > 0">
+                <span class="rm2 label label-default" ng-repeat="(m, v) in template.metrics">{{metricsCache[m].title}}</span>
             </div>
-            <div class="col-md-12 text-danger" ng-if="!template.metricNames || template.metricNames.length === 0">
-                No metrics have been specified
+            <div class="col-md-12" ng-if="keys(template.metrics) === 0">
+                <div class="empty-message">
+                  No metrics have been specified
+                </div>
             </div>
         </div>
 

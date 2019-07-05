@@ -10,15 +10,23 @@
 			<span>
 				<strong>Version</strong>: {{appConfig.versions.TheHive}}
 			</span>
+			<!--
+				show appConfig.connectors.cortex.status (OK, WARNING or ERROR)
+				and in tooltip the list of appConfig.connectors.cortex.server (property name, status and version)
+			-->
 			<span ng-if="appConfig.connectors.cortex.enabled" uib-tooltip="Cortex integration enabled">
-				<img class="footer-logo" src="images/cortex-logo.svg"/>
+				<img class="footer-logo logo-{{appConfig.connectors.cortex.status | lowercase}}" src="images/cortex-logo.svg"/>
 			</span>
+			<!--
+				show appConfig.connectors.misp.status (OK, WARNING or ERROR)
+				and in tooltip the list of appConfig.connectors.misp.server (property name, status and version)
+			-->
 			<span ng-if="appConfig.connectors.misp.enabled" uib-tooltip="MISP integration enabled">
-				<img class="footer-logo" src="images/misp-logo.svg"/>
+				<img class="footer-logo logo-{{appConfig.connectors.misp.status | lowercase}}" src="images/misp-logo.svg"/>
 			</span>
 		</div>
 		<div>
-			<strong><a href="http://www.thehive-project.org" target="_blank">TheHive Project</a> 2016-2017, <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank">AGPL-V3</a></strong>
+			<strong><a href="http://www.thehive-project.org" target="_blank">TheHive Project</a> 2016-2019, <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank">AGPL-V3</a></strong>
 		</div>
 	</div>
 </footer>

@@ -3,40 +3,59 @@
 <div class="log-entry">
     <div class="row mb-xxs">
         <div class="col-md-6">
-            <user user-id="log.user" icon-size="xs"></user>
+            <user user-id="log.owner" icon-size="xs"></user>
         </div>
         <div class="col-md-6">
+            <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                <a href class="text-primary noline nowrap" ng-click="getLogResponders(log.id, true)" uib-dropdown-toggle>
+                    <i class="text-primary fa fa-cog"></i>
+                </a>
+                <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                  <li ng-if="logResponders && logResponders.length === 0">
+                    <a href ng-click="getLogResponders(task.id, true)">
+                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                    </a>
+                  </li>
+                  <li ng-repeat="responder in logResponders">
+                    <a href ng-click="runResponder(responder.id, responder.name, log)">
+                      <strong>{{responder.name}}</strong>
+                      <br>
+                      <small>{{responder.description}}</small></a>
+                  </li>
+                </ul>
+            </span>
             <span class="pull-right">
                 <a href ng-click="dropLog()" uib-tooltip="Delete log">
-                    <i class="text-danger glyphicon glyphicon-remove-circle"></i>
+                    <i class="text-danger fa fa-times-circle"></i>
                 </a>
             </span>
             <span class="text-muted mr-xs pull-right" ng-bind="log.startDate | showDate"></span>
         </div>
     </div>
 
-    <div ng-show="log.attachment != undefined">
-        <div class="row">
-            <div class="col-md-12">
+    <div class="row" ng-show="log.attachment != undefined">
+        <div class="col-md-12">
+            <div class="description-pane">
                 <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
             </div>
         </div>
+        <div class="col-md-12">
+            <div class="clearfix mt-xxs">
+                <div class="file-box">
+                    <div class="file">
+                        <div class="image" ng-show="isImage(log.attachment.contentType)">
+                            <img class="btn img-responsive" ng-src="./api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
+                        </div>
 
-        <div class="clearfix">
-            <div class="file-box">
-                <div class="file">
-                    <div class="image" ng-show="isImage(log.attachment.contentType)">
-                        <img class="btn img-responsive" ng-src="./api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
+                        <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name | escape}}" target="_blank">
+                            <div class="icon" ng-hide="isImage(log.attachment.contentType)">
+                                <i class="glyphicon glyphicon-file"></i>
+                            </div>
+                            <div class="file-name">
+                                {{log.attachment.name}}
+                            </div>
+                        </a>
                     </div>
-
-                    <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name}}" target="_blank">
-                        <div class="icon" ng-hide="isImage(log.attachment.contentType)">
-                            <i class="glyphicon glyphicon-file"></i>
-                        </div>
-                        <div class="file-name">
-                            {{log.attachment.name}}
-                        </div>
-                    </a>
                 </div>
             </div>
         </div>
@@ -44,7 +63,19 @@
 
     <div class="row" ng-show="log.attachment == undefined">
         <div class="col-md-12">
-            <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+            <div class="description-pane">
+                <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" ng-if="log.nbActions > 0">
+        <div class="col-md-12">
+           <a href ng-show="showActions" ng-click="showActions=false">Hide Responder Jobs ({{log.nbActions}})</a>
+           <a href ng-show="!showActions" ng-click="showActions=true; getActions(log.id)">Show Responder Jobs ({{log.nbActions}})</a>
+        </div>
+        <div class="col-md-12" ng-show="showActions && actions">
+          <responder-actions header="" actions="actions"></responder-actions>
         </div>
     </div>
 </div>

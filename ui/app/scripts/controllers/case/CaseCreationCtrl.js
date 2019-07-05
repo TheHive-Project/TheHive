@@ -4,10 +4,11 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $state, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
+            $scope.activePap = 'active';
             $scope.active = true;
             $scope.pendingAsync = false;
             $scope.metricsCache = {};
@@ -22,13 +23,14 @@
 
                 MetricsCacheSrv.all().then(function (list) {
                     // Set basic info from template
-                    $scope.newCase = {
+                    $scope.newCase = _.defaults({
                         status: 'Open',
                         title: '',
                         description: template.description,
                         tlp: template.tlp,
+                        pap: template.pap,
                         severity: template.severity
-                    };
+                    }, {tlp: 2, pap: 2});
 
                     // Set metrics from template
                     $scope.metricsCache = list;
@@ -58,6 +60,10 @@
                 $scope.newCase.tlp = tlp;
             };
 
+            $scope.updatePap = function (pap) {
+                $scope.newCase.pap = pap;
+            };
+
             $scope.createNewCase = function (isValid) {
                 if (!isValid) {
                     return;
@@ -82,13 +88,9 @@
                     });
                 }
 
-
                 $scope.pendingAsync = true;
                 CaseSrv.save({}, $scope.newCase, function (data) {
-                    $state.go('app.case.details', {
-                        caseId: data.id
-                    });
-                    $uibModalInstance.close();
+                    $uibModalInstance.close(data);
                 }, function (response) {
                     $scope.pendingAsync = false;
                     NotificationSrv.error('CaseCreationCtrl', response.data, response.status);
@@ -113,6 +115,10 @@
 
             $scope.getTags = function(query) {
                 return TagSrv.fromCases(query);
+            };
+
+            $scope.keys = function(o) {
+                return _.keys(o).length;
             };
         }
     );

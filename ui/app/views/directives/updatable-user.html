@@ -14,7 +14,7 @@
             {{getUserInfo.get(value) | getField:'name'}}
             <span class="caret"></span>
         </button>
-        <ul class="dropdown-menu" uib-dropdown-menu>
+        <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
             <li ng-repeat="user in userList.allValues">
                 <a ng-click="update(user.id)">{{user.name}}</a>
             </li>

@@ -1,0 +1,19 @@
+<div class="c3-container">
+    <div class="c3-error" ng-if="error">
+        <div class="text-center">
+            <h4 class="text-danger">
+                <div class="mb-xxs"><i class="fa fa-2x fa-exclamation-triangle"></i></div>
+                <div>Failed to fetch data, please edit the widget definition</div>
+            </h4>
+        </div>
+    </div>
+    <div ng-if="!error" class="row" ng-repeat="item in data">        
+        <div class="col-md-4 text-right">
+            <h2 ng-if="item.agg !== 'count'">{{item.value | number}}</h2>
+            <h2 ng-if="item.agg === 'count'"><a href ng-click="openSearch(item)">{{item.value | number}}</a></h2>
+        </div>
+        <div class="col-md-8">
+            <h2><small>{{item.label}}</small></h2>
+        </div>
+    </div>
+</div>

@@ -8,7 +8,9 @@
 
             this.caze = caze;
             this.mode = '';
-            this.servers = config.servers;
+            this.servers = _.filter(config.servers, function(server) {
+                return !server.purpose || (server.purpose === 'ImportAndExport' || server.purpose === 'ExportOnly');
+            });
             this.failures = [];
 
             this.existingExports = {};
@@ -50,7 +52,7 @@
                 self.loading = true;
                 self.failures = [];
 
-                MispSrv.export(self.caze.id, server)
+                MispSrv.export(self.caze.id, server.name)
                 .then(function(response){
                     var success = 0,
                         failure = 0;

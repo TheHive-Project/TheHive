@@ -15,7 +15,7 @@
     </div>
     <div class="col-md-3 text-center">
         <div>
-            <a href="./api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name}}" target="_blank">
+            <a href="./api/datastorezip/{{artifact.attachment.id}}?name={{artifact.attachment.name | escape}}" target="_blank">
                 <i class="glyphicon glyphicon-download"></i>
                 <span class="wrap">{{artifact.attachment.name | ellipsis:30}}</span>
             </a>
@@ -43,5 +43,11 @@
 </div>
 
 <div ng-include="'views/partials/observables/details/artifact-details-information.html'"></div>
+
+<div class="row" ng-if="actions.values.length">
+    <div class="col-md-12">
+        <responder-actions header="Responder Jobs" actions="actions"></responder-actions>
+    </div>
+</div>
 
 <div ng-include="'views/partials/observables/details/artifact-details-analysers.html'"></div>

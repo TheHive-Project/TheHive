@@ -1,13 +1,13 @@
 <div class="case-metrics">
     <h4 class="vpad10 text-primary">
         Metrics
-        <span uib-dropdown class="pull-right" ng-show="metricsAvailable">
+        <span uib-dropdown class="ml-m" ng-show="metricsAvailable">
             <a href class="dropdown-toggle" uib-dropdown-toggle>
                 <i class="fa fa-plus"></i>
             </a>
-            <ul class="dropdown-menu" uib-dropdown-menu>
-                <li ng-repeat="(key, value) in allMetrics">
-                    <a ng-click="addMetric(value)">{{value.title}}</a>
+            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+                <li ng-repeat="key in keys(allMetrics) | orderBy">
+                    <a ng-click="addMetric(allMetrics[key])">{{allMetrics[key].title}}</a>
                 </li>
             </ul>
         </span>

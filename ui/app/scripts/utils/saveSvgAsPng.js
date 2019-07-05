@@ -1,3 +1,4 @@
+// jshint ignore: start
 (function() {
   var out$ = typeof exports != 'undefined' && exports || this;
 
@@ -38,7 +39,6 @@
           }
         }
         img.onerror = function() {
-          console.log("Could not load "+href);
           left--;
           if (left == 0) {
             callback();
@@ -147,7 +147,7 @@
 
       var svg = doctype + outer.innerHTML;
       // encode then decode to handle `btoa` on Unicode; see MDN for `btoa`.
-      var uri = 'data:image/svg+xml;base64,' + window.btoa(decodeURIComponent(encodeURIComponent(svg)));
+      var uri = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svg)));
       if (cb) {
         cb(uri);
       }

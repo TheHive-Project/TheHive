@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModalInstance, CaseResolutionStatus, AlertingSrv, NotificationSrv, event, templates) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, CustomFieldsCacheSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates) {
             var self = this;
             var eventId = event.id;
 
@@ -23,6 +23,24 @@
             self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
             self.currentSimilarFilter = '';
             self.similarCasesStats = [];
+            self.customFieldsCache = CustomFieldsCacheSrv;
+
+            self.hideEmptyCaseButton = UiSettingsSrv.hideEmptyCaseButton();
+
+            var getTemplateCustomFields = function(customFields) {
+                var result = [];
+
+                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
+                    return {
+                        name: name,
+                        order: definition.order
+                    };
+                }), function(item){
+                    return item.order;
+                }), 'name');
+
+                return result;
+            };
 
             this.filterArtifacts = function(value) {
                 self.pagination.currentPage = 1;
@@ -44,6 +62,21 @@
                 });
 
                 self.pagination.data = data;
+
+                // load custom fields
+                self.updateCustomFieldsList();
+            };
+
+            self.getCustomFieldName = function(fieldDef) {
+                return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
+            };
+
+            self.updateCustomFieldsList = function() {
+                CustomFieldsCacheSrv.all().then(function(fields) {
+                    self.orderedFields = getTemplateCustomFields(self.event.customFields);
+                    self.allCustomFields = _.omit(fields, _.keys(self.event.customFields));
+                    self.customFieldsAvailable = _.keys(self.allCustomFields).length > 0;
+                });
             };
 
             self.load = function() {
@@ -62,6 +95,19 @@
                   NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                   $uibModalInstance.dismiss();
                 });
+            };
+
+            self.updateField = function (fieldName, newValue) {
+                var field = {};
+                field[fieldName] = newValue;
+
+                return AlertingSrv.update(self.event.id, field)
+                  .then(function() {
+                      NotificationSrv.log('Alert updated successfully', 'success');
+                  })
+                  .catch(function (response) {
+                      NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                  });
             };
 
             self.import = function() {
@@ -99,6 +145,34 @@
                     });
             };
 
+            self.merge = function() {
+                var caseModal = $uibModal.open({
+                    templateUrl: 'views/partials/case/case.merge.html',
+                    controller: 'CaseMergeModalCtrl',
+                    controllerAs: 'dialog',
+                    size: 'lg',
+                    resolve: {
+                        source: function() {
+                            return self.event;
+                        },
+                        title: function() {
+                            return 'Merge Alert: ' + self.event.title;
+                        },
+                        prompt: function() {
+                            return self.event.title;
+                        }
+                    }
+                });
+
+                caseModal.result.then(function(selectedCase) {
+                    self.mergeIntoCase(selectedCase.id);
+                }).catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AlertEventCtrl', err.data, err.status);
+                    }
+                });
+            };
+
             this.follow = function() {
                 var fn = angular.noop;
 
@@ -109,7 +183,7 @@
                 }
 
                 fn(self.event.id).then(function() {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }).catch(function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
@@ -128,7 +202,7 @@
                 }
 
                 fn(this.event.id).then(function( /*data*/ ) {
-                    $uibModalInstance.dismiss();
+                    $uibModalInstance.close();
                 }, function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
@@ -145,7 +219,7 @@
 
                 // Init the stats object
                 _.each(_.without(_.keys(CaseResolutionStatus), 'Duplicated'), function(key) {
-                    stats[key] = 0
+                    stats[key] = 0;
                 });
 
                 _.each(data, function(item) {
@@ -161,7 +235,7 @@
                     result.push({
                         key: key,
                         value: stats[key]
-                    })
+                    });
                 });
 
                 self.similarCasesStats = result;
@@ -180,6 +254,10 @@
                         resolutionStatus: filter
                     };
                 }
+            };
+
+            self.copyId = function(id) {
+                clipboard.copyText(id);
             };
 
             self.load();

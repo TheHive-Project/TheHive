@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
+        function ($scope, $q, $state, $stateParams, $filter, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -9,6 +9,7 @@
             $scope.uiSrv = ObservablesUISrv;
             $scope.caseId = $stateParams.caseId;
             $scope.showText = false;
+            $scope.obsResponders = null;
 
             $scope.uiSrv.initContext($scope.caseId);
             $scope.searchForm = {
@@ -68,6 +69,16 @@
             $scope.$watchCollection('artifacts.pageSize', function (newValue) {
                 $scope.uiSrv.setPageSize(newValue);
             });
+
+            $scope.sortBy = function(field) {
+                if($scope.artifacts.sort.substr(1) !== field) {
+                    $scope.artifacts.sort = '+' + field;
+                } else {
+                    $scope.artifacts.sort = ($scope.artifacts.sort === '+' + field) ? '-'+field : '+'+field;
+                }
+
+                $scope.artifacts.update();
+            }
 
             $scope.keys = function(obj) {
                 return _.keys(obj || {});
@@ -197,11 +208,11 @@
                         $scope.analyzersList.active = {};
                         $scope.analyzersList.datatypes = {};
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.active[analyzer.id] = false;
+                            $scope.analyzersList.active[analyzer.name] = false;
                         });
                         $scope.analyzersList.selected = {};
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.selected[analyzer.id] = false;
+                            $scope.analyzersList.selected[analyzer.name] = false;
                         });
                     });
             };
@@ -326,13 +337,20 @@
                     animation: 'true',
                     templateUrl: 'views/partials/observables/observable.creation.html',
                     controller: 'ObservableCreationCtrl',
-                    size: 'lg'
+                    size: 'lg',
+                    resolve: {
+                        params: function() {
+                            return null;
+                        },
+                        tags: function() {
+                            return [];
+                        }
+                    }
                 });
 
             };
 
             $scope.dropArtifact = function (observable) {
-                // TODO check result !
                 CaseArtifactSrv.api().delete({
                     artifactId: observable.id
                 }, function () {
@@ -423,18 +441,27 @@
             $scope.chTLP = '-1';
             $scope.updateTLP = function (value) {
                 $scope.chTLP = value;
-                angular.forEach($scope.selection.artifacts, function (te) {
-                    $scope.updateField(te.id, 'tlp', $scope.chTLP);
-                });
-                $scope.chTLP = '-1';
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {'tlp': $scope.chTLP})
+                    .then(function(){
+                        $scope.chTLP = '-1';
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
             };
 
-            $scope.setIOC = function (action) {
-                var ioc = action === 'setIocFlog';
-
-                angular.forEach($scope.selection.artifacts, function (te) {
-                    $scope.updateField(te.id, 'ioc', ioc);
-                });
+            $scope.setIOC = function (ioc) {
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {ioc: ioc})
+                    .then(function(){
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
+            };
+            $scope.setSightedFlag = function (sighted) {
+                CaseArtifactSrv.bulkUpdate(_.pluck($scope.selection.artifacts, 'id'), {sighted: sighted})
+                    .then(function(){
+                        NotificationSrv.log('Selected observables have been updated successfully', 'success');
+                        $scope.selection.Action='main';
+                    });
             };
 
             $scope.updateField = function (id, fieldName, newValue) {
@@ -495,7 +522,7 @@
 
             $scope.activeAnalyzers = function () {
                 angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                    $scope.analyzersList.active[analyzer.id] = false;
+                    $scope.analyzersList.active[analyzer.name] = false;
                 });
 
                 $scope.analyzersList.countDataTypes = 0;
@@ -512,7 +539,7 @@
 
                         angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
                             if ($scope.checkDataTypeList(analyzer, key)) {
-                                $scope.analyzersList.active[analyzer.id] = true;
+                                $scope.analyzersList.active[analyzer.name] = true;
                                 $scope.analyzersList.countActiveAnalyzers.total++;
                                 $scope.analyzersList.countActiveAnalyzers[key]++;
 
@@ -558,9 +585,9 @@
 
                 angular.forEach($scope.selection.artifacts, function (element) {
                     angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                        if (($scope.analyzersList.selected[analyzer.id]) && ($scope.checkDataTypeList(analyzer, element.dataType))) {
+                        if (($scope.analyzersList.selected[analyzer.name]) && ($scope.checkDataTypeList(analyzer, element.dataType))) {
                             toRun.push({
-                                analyzerId: analyzer.id,
+                                analyzerId: analyzer.name,
                                 artifact: element
                             });
                         }
@@ -598,7 +625,7 @@
                 var analyzerIds = [];
                 AnalyzerSrv.forDataType(artifact.dataType)
                     .then(function(analyzers) {
-                        analyzerIds = _.pluck(analyzers, 'id');
+                        analyzerIds = _.pluck(analyzers, 'name');
                         return CortexSrv.getServers(analyzerIds);
                     })
                     .then(function (serverId) {
@@ -633,7 +660,7 @@
                         var job = response.data;
                         var report = {
                             job: job,
-                            template: job.analyzerId,
+                            template: job.analyzerName || job.analyzerId,
                             content: job.report,
                             status: job.status,
                             startDate: job.startDate,
@@ -659,6 +686,34 @@
                         NotificationSrv.error('Unable to fetch the analysis report');
                     })
             }
+
+            $scope.getObsResponders = function(observableId, force) {
+                if(!force && $scope.obsResponders !== null) {
+                   return;
+                }
+
+                $scope.obsResponders = null;
+                CortexSrv.getResponders('case_artifact', observableId)
+                  .then(function(responders) {
+                      $scope.obsResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('observablesList', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, responderName, artifact) {
+                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
+                  .then(function(response) {
+                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('observablesList', response.data, response.status);
+                      }
+                  });
+            };
         }
     )
     .controller('JobReportModalCtrl', function($uibModalInstance, report, observable) {

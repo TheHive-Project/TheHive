@@ -12,10 +12,10 @@
                     </li>
                     <li class="divider"></li>
                     <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action = 'setIocFlog'">Set IOC flag</a>
+                        <a ng-click="selection.isCollapsed=true;selection.Action = 'changeSightedFlog'">Change sighted flag</a>
                     </li>
                     <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action = 'unsetIocFlog'">Unset IOC flag</a>
+                        <a ng-click="selection.isCollapsed=true;selection.Action = 'changeIOCFlog'">Change IOC flag</a>
                     </li>
                     <li>
                         <a ng-click="selection.isCollapsed=true;selection.Action ='changeTlp'">Change TLP</a>
@@ -79,8 +79,8 @@
 
 <!-- collapse for Tags + TLP + Delete -->
 <div class="row" uib-collapse="!selection.isCollapsed">
-    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'setIocFlog'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'unsetIocFlog'"></div>
+    <div ng-include="'views/partials/observables/list/artifacts-list-sighted.html'" ng-if="selection.Action === 'changeSightedFlog'"></div>
+    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'changeIOCFlog'"></div>    
     <div ng-include="'views/partials/observables/list/artifacts-list-tlp.html'" ng-if="selection.Action === 'changeTlp'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-delete.html'" ng-if="selection.Action === 'remove'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-tags.html'" ng-if="selection.Action === 'addTags'"></div>

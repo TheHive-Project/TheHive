@@ -5,6 +5,20 @@
         function($scope, ListSrv, MetricsCacheSrv, NotificationSrv) {
             $scope.metrics = [];
 
+            $scope.state = {
+                sort: 'name',
+                asc: true
+            };
+
+            $scope.sortBy = function(field) {
+                if($scope.state.sort === field) {
+                    $scope.state.asc = !$scope.state.asc;
+                } else {
+                    $scope.state.sort = field;
+                    $scope.state.asc = true;
+                }
+            };
+
             $scope.initMetrics = function() {
                 $scope.metric = {
                     name: '',

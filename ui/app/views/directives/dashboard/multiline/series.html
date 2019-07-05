@@ -1,0 +1,70 @@
+<div ng-if="!component.options.series || component.options.series.length === 0" class="empty-message">
+    No series defined. <a href ng-click="addSerie()">Add a serie</a>
+</div>
+<div class="mb-xxxs dashboard-serie" ng-repeat="serie in component.options.series track by $index">
+    <div class="form-inline mb-xxxs">
+        <div class="input-group">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="removeSerie($index)">
+                    <i class="fa fa-times text-danger"></i>
+                </button>
+            </span>
+            <div class="form-group">
+                <select class="form-control" ng-model="serie.entity"
+                    ng-options="item as metadata[item].label for item in metadata.entities"></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <select class="form-control" ng-model="serie.dateField"
+                ng-options="item.name as item.name for item in pickFields(metadata[serie.entity].attributes, ['date']) | orderBy:'name'"></select>
+        </div>
+    </div>
+    <div class="form-inline">
+
+        <div class="form-group">
+            <select class="form-control" ng-model="serie.agg"
+                ng-options="item.label as item.id for (key, item) in aggregations"
+                ng-change="setSerieAgg(serie)">
+                <option value="" disabled selected></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <select class="form-control" ng-model="serie.field" ng-disabled="serie.agg === 'count'"
+                ng-options="item.name as item.name for (key, item) in fieldsForAggregation(metadata[serie.entity].attributes, serie.agg)">
+                    <option value="" disabled selected>-- Select field --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <select class="form-control" ng-model="serie.type"
+                ng-options="item for item in serieTypes"></select>
+        </div>
+
+        <div class="form-group">
+            <input class="form-control" type="text" ng-model="serie.label" placeholder="Label">
+        </div>
+        <div class="input-group">
+            <input type="text" class="form-control" ng-model="serie.color" placeholder="Color" size="8">
+            <span class="input-group-btn">
+                <button colorpicker colorpicker-close-on-select class="btn btn-default" ng-model="serie.color" type="button">
+                    <i class="fa fa-stop" style="color: {{serie.color}};" ng-class="{'fa-stop': serie.color, 'fa-ellipsis-h': !serie.color}"></i>
+                </button>
+            </span>
+        </div>
+    </div>
+    <div class="ml-m mt-xs">
+        <ng-include src="'views/directives/dashboard/multiline/serie.filters.html'"></ng-include>
+    </div>
+</div>
+<div ng-if="component.options.series && component.options.series.length > 1" class="mv-xs">
+    <div class="checkbox">
+        <label>
+            <input type="checkbox" ng-model="component.options.stacked"> Stack the series by type
+        </label>
+    </div>
+</div>
+
+<div ng-if="component.options.series && component.options.series.length > 0" class="mv-xs">
+    <a href ng-click="addSerie()">
+        <i class="fa fa-plus"></i> Add a serie
+    </a>
+</div>

@@ -2,14 +2,14 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, TemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsCacheSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
             $state.go('maintenance');
             return;
         }else if(!currentUser || !currentUser.id) {
-            $state.go('login');
+            $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
             return;
         }
 
@@ -22,21 +22,51 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
         $scope.mispEnabled = false;
         $scope.customFieldsCache = [];
-
-        StreamSrv.init();
         $scope.currentUser = currentUser;
 
-        $scope.templates = TemplateSrv.query();
+        StreamSrv.init();
+        VersionSrv.startMonitoring(function(conf) {
+          var connectors = ['misp', 'cortex'];
+
+          _.each(connectors, function(connector) {
+              var currentStatus = $scope.appConfig.connectors[connector];
+              var newStatus = conf.connectors[connector];
+              if(currentStatus && currentStatus.enabled === newStatus.enabled &&
+                  newStatus.enabled === true &&
+                  currentStatus.status !== newStatus.status) {
+
+                  if(newStatus.status === 'OK') {
+                      NotificationSrv.log('The configured ' + connector.toUpperCase() + ' connections are now up.', 'success');
+                  } else if(newStatus.status === 'WARNING') {
+                      NotificationSrv.log('Some of the configured ' + connector.toUpperCase() + ' connections have errors. Please check your configuration.', 'warning');
+                  } else {
+                      NotificationSrv.log('The configured ' + connector.toUpperCase() + ' connections have errors. Please check your configuration.', 'error');
+                  }
+              }
+          });
+
+          $scope.appConfig = conf;
+        });
+
+        CaseTemplateSrv.list().then(function(templates) {
+            $scope.templates = templates;
+        });
 
         $scope.myCurrentTasks = StreamStatSrv({
             scope: $scope,
             rootId: 'any',
             query: {
-                '_and': [{
-                    'status': 'InProgress'
-                }, {
-                    'owner': $scope.currentUser.id
-                }]
+                '_and': [
+                    {
+                        '_in': {
+                            '_field': 'status',
+                            '_values': ['Waiting', 'InProgress']
+                        }
+                    },
+                    {
+                        'owner': $scope.currentUser.id
+                    }
+                ]
             },
             result: {},
             objectType: 'case_task',
@@ -63,7 +93,9 @@ angular.module('theHiveControllers').controller('RootCtrl',
         $scope.alertEvents = AlertingSrv.stats($scope);
 
         $scope.$on('templates:refresh', function(){
-            $scope.templates = TemplateSrv.query();
+            CaseTemplateSrv.list().then(function(templates) {
+                $scope.templates = templates;
+            });
         });
 
         $scope.$on('metrics:refresh', function() {
@@ -116,13 +148,46 @@ angular.module('theHiveControllers').controller('RootCtrl',
         };
 
         $scope.createNewCase = function(template) {
-            $uibModal.open({
+            var modal = $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',
                 controller: 'CaseCreationCtrl',
                 size: 'lg',
                 resolve: {
                     template: template
                 }
+            });
+
+            modal.result
+                .then(function(data) {
+                    $state.go('app.case.details', {
+                        caseId: data.id
+                    });
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('CaseCreationCtrl', err.data, err.status);
+                    }
+                });
+        };
+
+        $scope.openTemplateSelector = function() {
+            var modal = $uibModal.open({
+                templateUrl: 'views/partials/case/case.templates.selector.html',
+                controller: 'CaseTemplatesDialogCtrl',
+                controllerAs: 'dialog',
+                size: 'lg',
+                resolve: {
+                    templates: function(){
+                        return $scope.templates;
+                    },
+                    uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
+                        return UiSettingsSrv.all();
+                    }]
+                }
+            });
+
+            modal.result.then(function(template) {
+                $scope.createNewCase(template);
             });
         };
 
@@ -134,13 +199,25 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
-        $scope.search = function(querystring) {
-            var query = Base64.encode(angular.toJson({
-                _string: querystring
-            }));
+        $scope.search = function(caseId) {
+            if(!caseId || !_.isNumber(caseId) || caseId <= 0) {
+                return;
+            }
 
-            $state.go('app.search', {
-                q: query
+            CaseSrv.query({
+                query: {
+                    caseId: caseId
+                },
+                range: '0-1'
+            }, function(response) {
+                if(response.length === 1) {
+                    $state.go('app.case.details', {caseId: response[0].id}, {reload: true});
+                } else {
+                    NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
+                }
+                console.log(response[0]);
+            }, function(err) {
+                NotificationSrv.error('Case search', err.data, err.status);
             });
         };
 

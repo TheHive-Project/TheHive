@@ -1,0 +1,43 @@
+<div class="box">
+    <div class="box-header with-border">
+        <h3 class="box-title">Dashboards ({{$vm.dashboards.length}})</h3>
+    </div>
+    <div class="box-body">
+        <button class="btn btn-primary" type="button" ng-click="$vm.addDashboard()">Create new Dashboard</button>
+        <button class="btn btn-default" type="button" ng-click="$vm.importDashboard()">Import Dashboard</button>
+
+        <div class="row mv-s" ng-if="$vm.dashboards.length === 0">
+            <div class="col-md-12">
+                <div class="empty-message">No dashboards defined.</div>
+            </div>
+        </div>
+
+        <div class="row mv-s" ng-if="$vm.dashboards.length > 0">
+            <div class="col-sm-12 dashboards-list">
+                <div class="dashboard-item media" ng-repeat="db in $vm.dashboards track by db.id">
+                    <div class="media-left">
+                        <span class="label label-default">{{db.status}}</span>
+                    </div>
+                    <div class="media-body">
+                        <h4 class="media-heading">
+                            <a href ui-sref="app.dashboards-view({id: db.id})">{{db.title}}</a>
+                        </h4>
+                        <span class="text-muted">{{db.description}}</span>
+                    </div>
+                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser.id)">
+                        <a href ng-click="$vm.editDashboard(db)"><i class="fa fa-pencil"></i>Edit</a>
+                    </div>
+                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser.id)">
+                        <a href class="text-danger" ng-click="$vm.deleteDashboard(db.id)"><i class="fa fa-trash"></i>Delete</a>
+                    </div>
+                    <div class="media-right ph-xs text-center">
+                        <a href ng-click="$vm.duplicateDashboard(db)"><i class="fa fa-copy"></i>Duplicate</a>
+                    </div>
+                    <div class="media-right ph-xs text-center">
+                        <a href ng-click="$vm.exportDashboard(db)"><i class="fa fa-download"></i> Export</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

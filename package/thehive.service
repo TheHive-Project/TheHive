@@ -15,8 +15,8 @@ ExecStart=/opt/thehive/bin/thehive \
 	-Dlogger.file=/etc/thehive/logback.xml \
 	-Dpidfile.path=/dev/null
 
-StandardOutput=journal
-StandardError=inherit
+StandardOutput=null
+StandardError=null
 
 # Specifies the maximum file descriptor number that can be opened by this process
 LimitNOFILE=65536

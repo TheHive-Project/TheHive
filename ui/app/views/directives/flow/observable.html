@@ -9,13 +9,19 @@
             <tlp value="base.object.tlp"></tlp>
         </span>
         <div class="flow-item-bulk" ng-if="isBulkOperation()">
-            <em>{{summary.case_artifact.Creation}} other observables have also been added</em>
+            <em>{{summary.case_artifact.Creation}} other observables have also been {{base.operation === 'Creation' ? 'added' : 'updated'}}</em>
             <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.case.id})">See all</a>
         </div>
     </div>
 
     <div class="flow-item-updates wrap" ng-switch-when="Creation">
-        description: <span ng-bind="base.object.message| limitTo: 250"></span>
+        <div ng-if="base.object.message">description: {{base.object.message| limitTo: 250}}</div>
+        <div ng-if="base.object.tags.length > 0">
+            Tags: 
+            <span ng-repeat="tag in base.object.tags">
+                <span class="label label-primary">{{tag}}</span>
+            </span>
+        </div>
     </div>
 
     <div class="flow-item-updates wrap" ng-switch-default>

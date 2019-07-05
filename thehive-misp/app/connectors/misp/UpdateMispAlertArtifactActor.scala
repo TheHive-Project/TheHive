@@ -1,9 +1,9 @@
 package connectors.misp
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import scala.concurrent.ExecutionContext
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 import play.api.Logger
 
@@ -14,20 +14,17 @@ import services.UserSrv
 import org.elastic4play.services.EventSrv
 
 /**
- * This actor listens message from migration (message UpdateMispAlertArtifact) which indicates that artifacts in
- * MISP event must be retrieved in inserted in alerts.
- *
- * @param eventSrv event bus used to receive migration message
- * @param userSrv user service used to do operations on database without real user request
- * @param mispSrv misp service to invoke artifact update action
- * @param ec execution context
- */
+  * This actor listens message from migration (message UpdateMispAlertArtifact) which indicates that artifacts in
+  * MISP event must be retrieved in inserted in alerts.
+  *
+  * @param eventSrv event bus used to receive migration message
+  * @param userSrv user service used to do operations on database without real user request
+  * @param mispSrv misp service to invoke artifact update action
+  * @param ec execution context
+  */
 @Singleton
-class UpdateMispAlertArtifactActor @Inject() (
-    eventSrv: EventSrv,
-    userSrv: UserSrv,
-    mispSrv: MispSrv,
-    implicit val ec: ExecutionContext) extends Actor {
+class UpdateMispAlertArtifactActor @Inject()(eventSrv: EventSrv, userSrv: UserSrv, mispSrv: MispSrv, implicit val ec: ExecutionContext)
+    extends Actor {
 
   private[UpdateMispAlertArtifactActor] lazy val logger = Logger(getClass)
   override def preStart(): Unit = {

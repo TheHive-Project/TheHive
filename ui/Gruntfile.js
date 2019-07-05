@@ -7,8 +7,7 @@ module.exports = function(grunt) {
     // Automatically load required Grunt tasks
     require('jit-grunt')(grunt, {
         useminPrepare: 'grunt-usemin',
-        ngtemplates: 'grunt-angular-templates',
-        cdnify: 'grunt-google-cdn'
+        ngtemplates: 'grunt-angular-templates'
     });
 
     grunt.loadNpmTasks('grunt-connect-proxy');
@@ -21,6 +20,8 @@ module.exports = function(grunt) {
     };
 
     var proxySnippet = require('grunt-connect-proxy/lib/utils').proxyRequest;
+
+    var serveStatic = require('serve-static');
 
     // Define the configuration for all the tasks
     grunt.initConfig({
@@ -82,7 +83,7 @@ module.exports = function(grunt) {
             options: {
                 port: 3001,
                 // Change this to '0.0.0.0' to access the server from outside.
-                hostname: 'localhost',
+                hostname: '0.0.0.0',
                 livereload: 35729
             },
             proxies: [{
@@ -97,16 +98,16 @@ module.exports = function(grunt) {
                     open: true,
                     middleware: function(connect) {
                         return [
-                            connect.static('.tmp'),
+                            serveStatic('.tmp'),
                             connect().use(
                                 '/bower_components',
-                                connect.static('./bower_components')
+                                serveStatic('./bower_components')
                             ),
                             connect().use(
                                 '/app/styles',
-                                connect.static('./app/styles')
+                                serveStatic('./app/styles')
                             ),
-                            connect.static(appConfig.app),
+                            serveStatic(appConfig.app),
                             proxySnippet
                         ];
                     }
@@ -114,16 +115,16 @@ module.exports = function(grunt) {
             },
             test: {
                 options: {
-                    port: 9001,
+                    port: 9000,
                     middleware: function(connect) {
                         return [
-                            connect.static('.tmp'),
-                            connect.static('test'),
+                            serveStatic('.tmp'),
+                            serveStatic('test'),
                             connect().use(
                                 '/bower_components',
-                                connect.static('./bower_components')
+                                serveStatic('./bower_components')
                             ),
-                            connect.static(appConfig.app)
+                            serveStatic(appConfig.app)
                         ];
                     }
                 }
@@ -132,9 +133,9 @@ module.exports = function(grunt) {
                 options: {
                     open: true,
                     base: '<%= yeoman.dist %>',
-                    middleware: function(connect) {
+                    middleware: function(/*connect*/) {
                         return [
-                            connect.static(appConfig.dist),
+                            serveStatic(appConfig.dist),
                             proxySnippet
                         ];
                     }
@@ -343,13 +344,6 @@ module.exports = function(grunt) {
                     src: '*.js',
                     dest: '.tmp/concat/scripts'
                 }]
-            }
-        },
-
-        // Replace Google CDN references
-        cdnify: {
-            dist: {
-                html: ['<%= yeoman.dist %>/*.html']
             }
         },
 

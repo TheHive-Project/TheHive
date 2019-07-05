@@ -7,8 +7,8 @@
                 actions: {
                     main: 'Action',
                     export: 'Export',
-                    setIocFlog: 'Set IOC flog',
-                    unsetIocFlog: 'Unset IOC flog',
+                    changeSightedFlog: 'Change sighted flag',
+                    changeIOCFlog: 'Change IOC flag',
                     changeTlp: 'Change TLP',
                     addTags: 'Add tags',
                     runAnalyzers: 'Run analyzers',
@@ -37,6 +37,11 @@
                     },
                     ioc: {
                         field: 'ioc',
+                        type: 'boolean',
+                        defaultValue: null
+                    },
+                    sighted: {
+                        field: 'sighted',
                         type: 'boolean',
                         defaultValue: null
                     },

@@ -9,6 +9,20 @@
                 types: ['string', 'number', 'boolean', 'date']
             };
 
+            self.state = {
+                sort: 'name',
+                asc: true
+            };
+
+            self.sortBy = function(field) {
+                if(self.state.sort === field) {
+                    self.state.asc = !self.state.asc;
+                } else {
+                    self.state.sort = field;
+                    self.state.asc = true;
+                }
+            };
+
             self.customFields = [];
 
             self.initCustomfields = function() {
@@ -45,12 +59,12 @@
                     }
                 });
 
-                modalInstance.result.then(function(data) {
+                modalInstance.result.then(function(/*data*/) {
                     self.initCustomfields();
                     CustomFieldsCacheSrv.clearCache();
                     $scope.$emit('custom-fields:refresh');
                 });
-            }
+            };
 
             self.initCustomfields();
         });

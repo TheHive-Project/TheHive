@@ -22,7 +22,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="datatype in dataTypeList">
+                        <tr ng-repeat="datatype in dataTypeList track by $index">
                             <td>{{datatype.value}}</td>
                             <td>
                                 <a href ng-click="deleteArtifactDataType(datatype)">

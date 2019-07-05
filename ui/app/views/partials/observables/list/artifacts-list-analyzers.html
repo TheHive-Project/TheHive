@@ -17,9 +17,9 @@
             <a href class="mr-xxs" ng-click="selectAllAnalyzers(true)">Select All</a><a href class="ml-xxs" ng-click="selectAllAnalyzers(false)">Deselect All</a>
         </div>
         <ul class="list-unstyled mb-xxs">
-            <li ng-repeat="analyzer in analyzersList.analyzers | orderObjectBy:'id'" ng-show="analyzersList.active[analyzer.id]">
-                <input id="select_{{analyzer.id}}" value="{{analyzer.description}}" type="checkbox" ng-model="analyzersList.selected[analyzer.id]">
-                <label for="select_{{analyzer.id}}">{{analyzer.name}}</label>
+            <li ng-repeat="analyzer in analyzersList.analyzers | orderObjectBy:'name'" ng-show="analyzersList.active[analyzer.name]">
+                <input id="select_{{analyzer.name}}" value="{{analyzer.description}}" type="checkbox" ng-model="analyzersList.selected[analyzer.name]">
+                <label for="select_{{analyzer.name}}">{{analyzer.name}}</label>
             </li>
         </ul>
         <div class="text-center mt-xxs">

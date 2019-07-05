@@ -5,7 +5,6 @@
                 <i class="glyphicon glyphicon-pencil"></i>
             </a>
         </small>
-        <!-- <span btf-markdown="value"></span> -->
         <div marked="value" class="markdown"></div>
     </span>
     <span ng-if="!value">
@@ -22,7 +21,6 @@
 
 <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
     <div class="form-group">
-        <!-- <markdown-editor content="value" placeholder="Add a description"></markdown-editor> -->
         <textarea name="content" class="content-box" markdown-editor="{'iconlibrary': 'fa', addExtraButtons: true, resize: 'vertical'}" rows="10" ng-model="value"></textarea>
 
         <div>

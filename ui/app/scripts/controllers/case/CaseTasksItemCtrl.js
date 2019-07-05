@@ -1,13 +1,14 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
             // Initialize controller
             $scope.task = task;
             $scope.tabName = 'task-' + task.id;
+            $scope.taskResponders = null;
 
             $scope.loading = false;
             $scope.newLog = {
@@ -36,22 +37,74 @@
 
                 $scope.logs = PSearchSrv(caseId, 'case_task_log', {
                     scope: $scope,
-                    'filter': {
-                        '_and': [{
-                            '_parent': {
-                                '_type': 'case_task',
-                                '_query': {
-                                    '_id': taskId
+                    filter: {
+                        _and: [{
+                            _parent: {
+                                _type: 'case_task',
+                                _query: {
+                                    _id: taskId
                                 }
                             }
                         }, {
-                            '_not': {
+                            _not: {
                                 'status': 'Deleted'
                             }
                         }]
                     },
                     'sort': $scope.state.sort,
-                    'pageSize': 10
+                    'pageSize': 10,
+                    onUpdate: function() {
+                        var ids = _.pluck($scope.logs.values, 'id');
+
+                        StatSrv.getPromise({
+                            objectType: 'connector/cortex/action',
+                            field: 'objectId',
+                            limit: 1000,
+                            skipTotal: true,
+                            query: {
+                              _and: [{
+                                  _field: 'objectType',
+                                  _value: 'case_task_log'
+                              },
+                              {
+                                  _in: {
+                                      _field: 'objectId',
+                                      _values: ids
+                                  }
+                              }]
+                            }
+                        }).then(function(response) {
+                            var counts = response.data;
+                            _.each($scope.logs.values, function(log) {
+                                log.nbActions = counts[log.id] ? counts[log.id].count : 0;
+                            });
+                        });
+                    }
+                });
+
+                $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                    scope: $scope,
+                    streamObjectType: 'action',
+                    filter: {
+                        _and: [
+                            {
+                                _not: {
+                                    status: 'Deleted'
+                                }
+                            }, {
+                                objectType: 'case_task'
+                            }, {
+                                objectId: taskId
+                            }
+                        ]
+                    },
+                    sort: ['-startDate'],
+                    pageSize: 100,
+                    guard: function(updates) {
+                        return _.find(updates, function(item) {
+                            return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
+                        }) !== undefined;
+                    }
                 });
             };
 
@@ -90,6 +143,20 @@
                 $scope.updateField('status', 'InProgress');
             };
 
+            $scope.startTask = function() {
+                var taskId = $scope.task.id;
+
+                CaseTaskSrv.update({
+                    'taskId': taskId
+                }, {
+                    'status': 'InProgress'
+                }, function(data) {
+                    $scope.task = data;
+                }, function(response) {
+                    NotificationSrv.error('taskDetails', response.data, response.status);
+                });
+            };
+
             $scope.showLogEditor = function () {
                 $scope.adding = true;
                 $rootScope.$broadcast('beforeNewLogShow');
@@ -111,6 +178,11 @@
                 TaskLogSrv.save({
                     'taskId': $scope.task.id
                 }, $scope.newLog, function () {
+                    if($scope.task.status === 'Waiting') {
+                        // Reload the task
+                        $scope.reloadTask();
+                    }
+
                     delete $scope.newLog.attachment;
                     $scope.state.attachmentCollapsed = true;
                     $scope.newLog.message = '';
@@ -134,6 +206,43 @@
                 $scope.logs.sort = sort;
                 $scope.logs.update();
             };
+
+            $scope.getTaskResponders = function(force) {
+                if(!force && $scope.taskResponders !== null) {
+                   return;
+                }
+
+                $scope.taskResponders = null;
+                CortexSrv.getResponders('case_task', $scope.task.id)
+                  .then(function(responders) {
+                      $scope.taskResponders = responders;
+                  })
+                  .catch(function(err) {
+                      NotificationSrv.error('taskDetails', response.data, response.status);
+                  })
+            };
+
+            $scope.runResponder = function(responderId, responderName) {
+                CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick($scope.task, 'id'))
+                  .then(function(response) {
+                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', $scope.task.title].join(' '), 'success');
+                  })
+                  .catch(function(response) {
+                      if(response && !_.isString(response)) {
+                          NotificationSrv.error('taskDetails', response.data, response.status);
+                      }
+                  });
+            };
+
+            $scope.reloadTask = function() {
+                CaseTaskSrv.get({
+                    'taskId': $scope.task.id
+                }, function(data) {
+                    $scope.task = data;
+                }, function(response) {
+                    NotificationSrv.error('taskDetails', response.data, response.status);
+                });
+            }
 
             // Add tabs
             CaseTabsSrv.addTab($scope.tabName, {

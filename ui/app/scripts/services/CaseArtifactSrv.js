@@ -1,9 +1,8 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CaseArtifactSrv', function(FileResource) {
+        .factory('CaseArtifactSrv', function($http, FileResource) {
             var api = null;
-            var filters = null;
 
             var factory = {
                 api: function() {
@@ -20,6 +19,10 @@
                     }
 
                     return api;
+                },
+
+                bulkUpdate: function(ids, update) {
+                    return $http.patch('./api/case/artifact/_bulk', _.extend({ids: ids}, update));
                 }
             };
 

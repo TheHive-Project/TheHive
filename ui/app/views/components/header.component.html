@@ -14,24 +14,35 @@
 
         <div class="collapse navbar-collapse" id="th-navbar-collapse">
             <ul class="nav navbar-nav" ng-show="currentUser.id">
-                <li class="dropdown" uib-dropdown>
+                <li ui-sref-active="active">
+                    <a href ng-click="createNewCase()" ng-if="!templates || templates.length === 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                    <a href ng-click="openTemplateSelector()" ng-if="templates && templates.length > 0">
+                        <i class="fa fa-plus"></i>
+                        <span class="hpad5">New Case</span>
+                    </a>
+                </li>
+                <!-- <li class="dropdown" uib-dropdown>
                     <a class="dropdown-toggle" uib-dropdown-toggle href>
-                        <i class="text-default fa fa-plus"></i>
+                        <i class="fa fa-plus"></i>
                         <span class="hpad5">New Case</span>
                         <span class="caret"></span>
                     </a>
-                    <ul class="dropdown-menu" uib-dropdown-menu>
+                    <ul class="dropdown-menu scroll-dropdown-2x" uib-dropdown-menu>
                         <li>
                             <a href ng-click="createNewCase()">Empty Case</a>
                         </li>
                         <li class="divider" ng-if="templates && templates.length > 0"></li>
                         <li ng-repeat="template in templates">
-                            <a href ng-click="createNewCase(template)">From
-                                {{template.name | uppercase}}
-                                template</a>
+                            <a href ng-click="createNewCase(template)">{{template.name}}</a>
+                        </li>
+                        <li ng-if="templates && templates.length > 0">
+                            <a href ng-click="openTemplateSelector()">From a template...</a>
                         </li>
                     </ul>
-                </li>
+                </li> -->
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
                         <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
@@ -50,8 +61,14 @@
                 </li>
                 <li class="hdivider hidden-xs"></li>
                 <li ui-sref-active="active">
-                    <a ui-sref="app.statistics">
-                        <i class="fa fa-bar-chart"></i> Statistics
+                    <a ui-sref="app.dashboards">
+                        <i class="fa fa-bar-chart"></i> Dashboards
+                    </a>
+                </li>
+                <li class="hdivider hidden-xs"></li>
+                <li ui-sref-active="active">
+                    <a ui-sref="app.search">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
             </ul>
@@ -64,34 +81,11 @@
 
                 <li>
                     <form ng-submit="search(querystring)" style="margin-top : 10px">
-                        <div class="input-group" style="width: 220px">
+                        <div class="input-group" style="width: 100px">
                             <span class="input-group-addon">
                                 <i class="glyphicon glyphicon-search"></i>
                             </span>
-                            <input class="input-sm form-control" ng-model="querystring" placeholder="Case, user, URL, hash, IP, domain ..." style="width : 200px" tooltype="Enter your query string" type="text"></input>
-                            <div class="input-group-btn">
-                                <div class="btn-group dropdown" uib-dropdown>
-                                    <a class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle href>
-                                        <span class="caret"></span>
-                                    </a>
-                                    <ul class="dropdown-menu" uib-dropdown-menu>
-                                        <li class="dropdown-header" role="presentation">Custom search</li>
-                                        <li>
-                                            <a ng-click="querystring = 'status:Resolved' ; search(querystring);">Closed cases</a>
-                                        </li>
-                                        <li>
-                                            <a ng-click="querystring = 'caseId:'">By case number</a>
-                                        </li>
-                                        <li>
-                                            <a ng-click="querystring = '_type:case_artifact '">Observables</a>
-                                        </li>
-                                        <li class="divider"></li>
-                                        <li>
-                                            <a ng-click="querystring = '_type:case AND (_missing_:endDate) AND (startDate:{* TO now-1M})' ; search(querystring);">Cold cases</a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
+                            <input class="input-sm form-control" ng-model="querystring" placeholder="CaseId" style="width: 80px" tooltype="Enter a case number" type="number"></input>
                         </div>
                     </form>
                 </li>
@@ -140,6 +134,13 @@
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a ui-sref="app.administration.ui-settings">
+                                <i class="fa fa-cogs"></i>
+                                <span class="hpad5">UI settings</span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li class="dropdown" uib-dropdown>
@@ -148,18 +149,21 @@
                     </a>
                     <ul class="dropdown-menu" uib-dropdown-menu>
                         <li>
-                            <a ui-sref="app.settings">Personal settings</a>
+                            <a ui-sref="app.settings">
+                              <i class="fa fa-address-book"></i> Settings
+                            </a>
                         </li>
                         <li class="divider"></li>
                         <li>
-                            <a href="/docs" target="_blank">Help</a>
-                        </li>
-                        <li>
-                            <a href ng-click="aboutTheHive()">About TheHive</a>
+                            <a href ng-click="aboutTheHive()">
+                              <i class="fa fa-question-circle"></i> About
+                            </a>
                         </li>
                         <li class="divider"></li>
                         <li>
-                            <a href ng-click="logout()">Logout</a>
+                            <a href ng-click="logout()">
+                              <i class="fa fa-sign-out"></i> Logout
+                            </a>
                         </li>
                     </ul>
                 </li>

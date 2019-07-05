@@ -8,6 +8,11 @@
             this.get = function(userId) {
                 if (angular.isDefined(this.userCache[userId])) {
                     return this.userCache[userId];
+                } else if (userId === undefined) {
+                    return {
+                        'name': 'Not assigned',
+                        'id': 'notassigned'
+                    };
                 } else {
                     this.userCache[userId] = UserSrv.getInfo(userId);
                     return this.userCache[userId];

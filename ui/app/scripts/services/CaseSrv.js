@@ -18,6 +18,23 @@
                         caseId: '@caseId',
                         mergedCaseId: '@mergedCaseId',
                     }
+                },
+                forceRemove: {
+                    method: 'DELETE',
+                    url : './api/case/:caseId/force',
+                    params: {
+                        caseId: '@caseId'
+                    }
+                },
+                query: {
+                    method: 'POST',
+                    url: './api/case/_search',
+                    isArray: true
+                },
+                alerts: {
+                  method: 'POST',
+                  url: './api/alert/_search',                  
+                  isArray: true
                 }
             });
         });

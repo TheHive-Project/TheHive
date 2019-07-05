@@ -25,11 +25,18 @@
                     stats.push(agg);
                 }
 
-                stats.push({
-                    _agg: 'count'
-                });
+                if(!config.skipTotal) {
+                  stats.push({
+                      _agg: 'count'
+                  });
+                }
 
-                return $http.post('./api/' + config.objectType.replace(/_/g, '/') + '/_stats', {
+                var entity = config.objectType.replace(/_/g, '/');
+                if(entity[0] === '/') {
+                    entity = entity.substr(1);
+                }
+
+                return $http.post('./api/' + entity + '/_stats', {
                         query: config.query,
                         stats: stats
                     })
@@ -53,7 +60,7 @@
                     if (angular.isFunction(config.success)) {
                         config.success(r.data, r.status, r.headers, r.config);
                     }
-                }, function(r) {
+                }).catch(function(r) {
                     if (angular.isFunction(config.error)) {
                         config.error(r.data, r.status, r.headers, r.config);
                     } else {
