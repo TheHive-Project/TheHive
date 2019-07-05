@@ -1,5 +1,7 @@
 package org.thp.thehive.connector.cortex.services
 
+import java.util.Date
+
 import akka.actor._
 import akka.stream.scaladsl.StreamConverters
 import com.google.inject.name.Named
@@ -12,7 +14,7 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
-import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
+import org.thp.thehive.connector.cortex.models.{Job, JobStatus, ObservableJob}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableSrv
@@ -130,10 +132,14 @@ class JobSrv @Inject()(
         artifact <- report.artifacts
       } yield for {
         obs <- Try(observableSrv.create(artifact))
-        job <- initSteps.get(jobId).getOrFail()
-        _   <- Try(observableJobSrv.create(ObservableJob(), obs, job))
-        _ = artifactSrv.process(artifact, job, obs, cortexClient)
-        updatedJob <- initSteps.update("report" -> Json.toJson(report.copy(artifacts = Nil)))
+        jobWithEntity <- initSteps.get(jobId).getOrFail()
+        _   <- Try(observableJobSrv.create(ObservableJob(), obs, jobWithEntity))
+        _ = artifactSrv.process(artifact, jobWithEntity, obs, cortexClient)
+        updatedJob <- initSteps.update(
+          "report" -> Json.toJson(report.copy(artifacts = Nil)),
+          "status" -> Try(JobStatus.withName(job.status.toString)).getOrElse(JobStatus.Unknown).toString,
+          "endDate" -> new Date()
+        )
       } yield updatedJob
     }
 }
