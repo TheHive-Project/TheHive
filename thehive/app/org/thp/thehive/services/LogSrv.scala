@@ -42,7 +42,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
       _ <- Try(
         get(log)
           .attachments
-          .toList()
+          .toList
           .foreach(a => attachmentSrv.get(a.attachmentId).remove())
       )
       r <- Try(get(log).remove())

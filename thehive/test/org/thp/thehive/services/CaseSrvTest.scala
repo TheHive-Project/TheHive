@@ -36,7 +36,7 @@ class CaseSrvTest extends PlaySpecification {
     s"[$name] case service" should {
 
       "list all cases" in db.transaction { implicit graph =>
-        caseSrv.initSteps.toList().map(_.number) must contain(allOf(1, 2, 3, 4))
+        caseSrv.initSteps.toList.map(_.number) must contain(allOf(1, 2, 3, 4))
       }
 
       "get a case without impact status" in db.transaction { implicit graph =>

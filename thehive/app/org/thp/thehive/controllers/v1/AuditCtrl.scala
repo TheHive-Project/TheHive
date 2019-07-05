@@ -20,7 +20,7 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
           .visible
           .range(0, 10)
           .richAudit
-          .toList()
+          .toList
           .map(_.toJson)
         Success(Results.Ok(JsArray(audits)))
       }

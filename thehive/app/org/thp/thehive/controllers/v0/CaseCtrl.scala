@@ -66,7 +66,7 @@ class CaseCtrl @Inject()(
             caseTemplateSrv
               .get(ct.caseTemplate)
               .tasks
-              .toList()
+              .toList
               .toTry(task => taskSrv.create(task, richCase.`case`))
           }.flip
         } yield Results.Created(richCase.toJson)

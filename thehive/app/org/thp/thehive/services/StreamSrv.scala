@@ -79,7 +79,7 @@ class StreamActor(
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)
-          .toList()
+          .toList
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
         if (visibleIds.nonEmpty) {
@@ -120,7 +120,7 @@ class StreamActor(
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)
-          .toList()
+          .toList
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
         if (visibleIds.nonEmpty) {

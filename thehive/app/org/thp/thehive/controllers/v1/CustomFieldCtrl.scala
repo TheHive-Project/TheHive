@@ -29,7 +29,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
         val customFields = customFieldSrv
           .initSteps
           .map(_.toJson)
-          .toList()
+          .toList
         Success(Results.Ok(Json.toJson(customFields)))
       }
 }

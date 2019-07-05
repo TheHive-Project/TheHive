@@ -51,7 +51,7 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
 
   def cascadeRemove(task: Task with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ <- Try(get(task).logs.toList().foreach(logSrv.cascadeRemove))
+      _ <- Try(get(task).logs.toList.foreach(logSrv.cascadeRemove))
       r <- Try(get(task).remove())
     } yield r
 }

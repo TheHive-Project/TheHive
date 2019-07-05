@@ -43,7 +43,7 @@ class StreamCtrl @Inject()(
               val audits = auditSrv
                 .get(auditIds)
                 .richAuditWithCustomRenderer(auditRenderer)
-                .toList()
+                .toList
                 .map {
                   case (audit, (rootId, obj)) =>
                     audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> rootId)))

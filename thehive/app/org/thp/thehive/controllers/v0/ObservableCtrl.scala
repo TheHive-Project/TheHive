@@ -110,7 +110,7 @@ class ObservableCtrl @Inject()(
           .get(obsId)
           .similar
           .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
-          .toList()
+          .toList
           .map {
             case (org, parent) => org.toJson.as[JsObject] ++ parent
           }

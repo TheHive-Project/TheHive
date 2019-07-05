@@ -56,7 +56,7 @@ class CaseTemplateCtrl @Inject()(
           .visible
           .richCaseTemplate
           .map(_.toJson)
-          .toList()
+          .toList
         Success(Results.Ok(Json.toJson(caseTemplates)))
       }
 

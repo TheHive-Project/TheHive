@@ -40,7 +40,7 @@ class AlertMigration @Inject()(
       (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "tlp").read[Int] and
-      Reads.pure(2) and                                                               // pap
+      Reads.pure(2) and                                                                // pap
       (JsPath \ "status").read[String].map(s => s == "Updated" || s == "Imported") and // read
       (JsPath \ "follow").read[Boolean])(Alert.apply _)
 

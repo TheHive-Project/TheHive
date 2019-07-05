@@ -43,7 +43,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
         val tasks = taskSrv
           .initSteps
           .availableFor(request.organisation)
-          .toList()
+          .toList
           .map(_.toJson)
         Success(Results.Ok(Json.toJson(tasks)))
       }

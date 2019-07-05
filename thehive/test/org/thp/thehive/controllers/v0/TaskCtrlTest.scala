@@ -190,7 +190,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
   }
 
   def tasksList(taskCtrl: TaskCtrl): Seq[OutputTask] = {
-    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
+    val requestList = FakeRequest("GET", "/api/case/task/_search").withHeaders("user" -> "user1")
     val resultList  = taskCtrl.search(requestList)
 
     status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")

@@ -64,7 +64,7 @@ class CaseCtrl @Inject()(
             caseTemplateSrv
               .get(ct.caseTemplate)
               .tasks
-              .toList()
+              .toList
               .toTry(task => taskSrv.create(task, richCase.`case`))
           }.flip
         } yield Results.Created(richCase.toJson)
@@ -86,7 +86,7 @@ class CaseCtrl @Inject()(
 //      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
 //        val cases = userSrv.current.organisations.cases.richCase
 //          .map(_.toJson)
-//          .toList()
+//          .toList
 //        Success(Results.Ok(Json.toJson(cases)))
 //      }
 

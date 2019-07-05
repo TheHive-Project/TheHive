@@ -98,7 +98,7 @@ class AlertCtrl @Inject()(
           .richAlert
           .getOrFail()
           .map { richAlert =>
-            Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList()).toJson)
+            Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson)
           }
       }
 
@@ -114,7 +114,7 @@ class AlertCtrl @Inject()(
               alertSteps
                 .richAlert
                 .getOrFail()
-                .map(richAlert => Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList()).toJson))
+                .map(richAlert => Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson))
           }
       }
 

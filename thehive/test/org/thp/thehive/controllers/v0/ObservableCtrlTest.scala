@@ -337,7 +337,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     val dataSrv: DataSrv = app.instanceOf[DataSrv]
     val db: Database     = app.instanceOf[Database]
     db.transaction { implicit graph =>
-      dataSrv.initSteps.getByData(data).toList()
+      dataSrv.initSteps.getByData(data).toList
     }
   }
 }
