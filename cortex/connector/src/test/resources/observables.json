@@ -1,0 +1,11 @@
+[
+  {
+    "type":"ip",
+    "ioc":false,
+    "sighted":false,
+    "tlp":2,
+    "message":"localhost",
+    "tags":["local", "host"],
+    "data":"127.0.0.1"
+  }
+]
