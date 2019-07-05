@@ -46,7 +46,14 @@ object CortexOutputAttachment {
   implicit val format: Format[CortexOutputAttachment] = Json.format[CortexOutputAttachment]
 }
 
-case class CortexOutputArtifact(dataType: String, attachment: Option[CortexOutputAttachment])
+case class CortexOutputArtifact(
+                                 dataType: String,
+                                 data: Option[String],
+                                 attachment: Option[CortexOutputAttachment],
+                                 message: Option[String],
+                                 tlp: Int,
+                                 tags: List[String]
+                               )
 
 object CortexOutputArtifact {
   implicit val format: Format[CortexOutputArtifact] = Json.format[CortexOutputArtifact]
@@ -56,7 +63,8 @@ case class CortexOutputReport(
     summary: JsObject,
     full: JsObject,
     success: Boolean,
-    artifacts: List[CortexOutputArtifact]
+    artifacts: List[CortexOutputArtifact],
+    operations: List[JsObject]
 )
 
 object CortexOutputReport {

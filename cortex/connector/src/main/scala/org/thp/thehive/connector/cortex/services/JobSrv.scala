@@ -11,12 +11,15 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
-import org.thp.thehive.connector.cortex.controllers.v0.JobConversion
+import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
+import org.thp.thehive.services.ObservableSrv
+import play.libs.Json
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class JobSrv @Inject()(
@@ -25,9 +28,12 @@ class JobSrv @Inject()(
     storageSrv: StorageSrv,
     implicit val ex: ExecutionContext,
     @Named("cortex-actor") cortexActor: ActorRef,
-    cortexAttachmentSrv: CortexAttachmentSrv
+    cortexAttachmentSrv: ArtifactSrv,
+    observableSrv: ObservableSrv,
+    artifactSrv: ArtifactSrv
 ) extends VertexSrv[Job, JobSteps]
-    with JobConversion {
+    with JobConversion
+    with ArtifactConversion {
 
   val observableJobSrv = new EdgeSrv[ObservableJob, Observable, Job]
 
@@ -101,8 +107,34 @@ class JobSrv @Inject()(
     createdJob
   }
 
-  def finished(jobId: String, job: CortexOutputJob, cortexClient: CortexClient)(implicit authContext: AuthContext) =
-    cortexAttachmentSrv.downloadAttachments(jobId, job, cortexClient)
+  /**
+    * Once a job has finished on Cortex side
+    * the report is processed here: each report's artifacts
+    * are stored as separate Observable with the appropriate edge ObservableJob
+    *
+    *
+    * @param jobId the job db id
+    * @param job the CortexOutputJob
+    * @param cortexClient client for Cortex api
+    * @param authContext the auth context for db queries
+    * @return
+    */
+  def finished(jobId: String, job: CortexOutputJob, cortexClient: CortexClient)(
+      implicit authContext: AuthContext
+  ): Seq[Try[Job with Entity]] =
+    db.transaction { implicit graph =>
+      for {
+        report   <- job.report.toSeq
+        artifact <- report.artifacts
+      } yield for {
+        obs <- Try(observableSrv.create(artifact))
+        job <- initSteps.get(jobId).getOrFail()
+        _   <- Try(observableJobSrv.create(ObservableJob(), obs, job))
+        _ = artifactSrv.process(artifact, job, obs, cortexClient)
+        updatedJob <- initSteps.update("report" -> Json.toJson(report.copy(artifacts = Nil)))
+      } yield updatedJob
+    }
+
 }
 
 @EntitySteps[Job]
