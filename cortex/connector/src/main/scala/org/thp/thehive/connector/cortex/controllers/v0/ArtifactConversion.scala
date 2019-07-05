@@ -6,7 +6,7 @@ import org.thp.thehive.models.Observable
 
 import scala.language.implicitConversions
 
-trait ArtifactConversion {
+object ArtifactConversion {
 
   implicit def fromCortexOutputArtifact(j: CortexOutputArtifact): Observable =
     j.into[Observable]

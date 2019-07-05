@@ -33,9 +33,9 @@ class JobSrv @Inject()(
     cortexAttachmentSrv: ArtifactSrv,
     observableSrv: ObservableSrv,
     artifactSrv: ArtifactSrv
-) extends VertexSrv[Job, JobSteps]
-    with JobConversion
-    with ArtifactConversion {
+) extends VertexSrv[Job, JobSteps] {
+  import JobConversion._
+  import ArtifactConversion._
 
   val observableJobSrv = new EdgeSrv[ObservableJob, Observable, Job]
 

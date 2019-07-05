@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.services.OrganisationSteps
 
-trait OrganisationConversion {
+object OrganisationConversion {
   implicit def fromInputOrganisation(inputOrganisation: InputOrganisation): Organisation =
     inputOrganisation
       .into[Organisation]

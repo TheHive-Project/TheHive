@@ -21,8 +21,8 @@ class JobCtrl @Inject()(
     val queryExecutor: CortexQueryExecutor,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv
-) extends QueryCtrl
-    with JobConversion {
+) extends QueryCtrl {
+  import JobConversion._
 
   def get(jobId: String): Action[AnyContent] =
     entryPoint("get job")

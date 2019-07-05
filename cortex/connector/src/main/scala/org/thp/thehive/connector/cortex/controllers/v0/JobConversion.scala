@@ -13,7 +13,7 @@ import org.thp.thehive.connector.cortex.services.JobSteps
 
 import scala.language.implicitConversions
 
-trait JobConversion {
+object JobConversion {
 
   implicit def toOutputJob(j: Job with Entity): Output[OutputJob] =
     Output[OutputJob](

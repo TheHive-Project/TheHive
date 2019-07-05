@@ -14,8 +14,8 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{OrganisationSrv, UserSrv}
 
 @Singleton
-class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv)
-    extends OrganisationConversion {
+class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv) {
+  import OrganisationConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")

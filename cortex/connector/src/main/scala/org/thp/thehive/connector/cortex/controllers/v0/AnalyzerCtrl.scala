@@ -19,8 +19,8 @@ class AnalyzerCtrl @Inject()(
     analyzerSrv: AnalyzerSrv,
     val queryExecutor: CortexQueryExecutor,
     implicit val system: ActorSystem
-) extends QueryCtrl
-    with AnalyzerConversion {
+) extends QueryCtrl {
+  import AnalyzerConversion._
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")

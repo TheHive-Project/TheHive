@@ -29,8 +29,8 @@ case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 class CortexQueryExecutor @Inject()(
     implicit val db: Database,
     jobSrv: JobSrv
-) extends QueryExecutor
-    with JobConversion {
+) extends QueryExecutor {
+  import JobConversion._
 
   override val version: (Int, Int)                          = 0 -> 0
   override val publicProperties: List[PublicProperty[_, _]] = jobProperties
