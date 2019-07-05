@@ -1,6 +1,8 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import gremlin.scala.{Graph, GremlinScala, Vertex}
+import scala.reflect.runtime.{universe => ru}
+
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -9,14 +11,10 @@ import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
-import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
+import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{ParentFilterQuery, ParentIdFilter, ParentIdInputFilter, ParentQueryFilter}
-import org.thp.thehive.services.ObservableSteps
-
-import scala.reflect.runtime.{universe => ru}
 
 /**
   * Range param case class for search query parsing
@@ -66,13 +64,12 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
 
     implicit val db: Database = vertexSteps.db
     implicit val graph: Graph = vertexSteps.graph
-
-    val (parentType, linkFn): (ru.Type, GremlinScala[Vertex] => ScalliSteps[_, _, _ <: AnyRef]) =
-      if (stepType =:= ru.typeOf[JobSteps]) ru.typeOf[ObservableSteps] -> ((s: GremlinScala[Vertex]) => new ObservableSteps(s.inTo[ObservableJob]))
-      else ???
-
     vertexSteps
-      .where(s => parentFilter.apply(publicProperties, parentType, linkFn(s), authContext).raw)
+      .filter { s =>
+        if (stepType =:= ru.typeOf[JobSteps])
+          parentFilter.apply(publicProperties, ru.typeOf[JobSteps], new JobSteps(s).observable, authContext).raw
+        else ???
+      }
       .asInstanceOf[S]
   }
 }
