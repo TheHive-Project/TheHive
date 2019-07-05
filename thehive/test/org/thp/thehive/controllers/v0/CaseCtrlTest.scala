@@ -5,7 +5,7 @@ import java.util.Date
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
@@ -329,7 +329,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "force delete a case" in {
         val tasks = db.transaction { implicit graph =>
-          caseSrv.get("#4").tasks.toList()
+          val authContext = mock[AuthContext]
+          authContext.organisation returns "default"
+          caseSrv.get("#4").tasks(authContext).toList
         }
         tasks must have size 2
 

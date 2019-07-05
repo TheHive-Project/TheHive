@@ -89,7 +89,7 @@ class CaseSrv @Inject()(
       .getOrFail()
       .map(share => shareObservableSrv.create(ShareObservable(), share, observable))
 
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph): Try[Unit] = {
+  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val dataToRemove = get(`case`)
       .observables
       .data
@@ -109,7 +109,7 @@ class CaseSrv @Inject()(
   }
 
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(caseIdOrNumber).visible.isDefined
+    get(caseIdOrNumber).visible.exists()
 
   def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(`case`, cf, value))
@@ -190,7 +190,7 @@ class CaseSrv @Inject()(
 //    caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
 //    cases
 //      .map(get)
-//      .flatMap(_.customFields().toList())
+//      .flatMap(_.customFields().toList
 //      .groupBy(_.name)
 //      .foreach {
 //        case (name, l) ⇒
@@ -206,12 +206,12 @@ class CaseSrv @Inject()(
 //
 //    cases
 //      .map(get)
-//      .flatMap(_.tasks.toList())
+//      .flatMap(_.tasks.toList
 //      .foreach(task ⇒ caseTaskSrv.create(CaseTask(), task, mergedCase))
 //
 //    cases
 //      .map(get)
-//      .flatMap(_.observables.toList())
+//      .flatMap(_.observables.toList
 //      .foreach(observable ⇒ observableCaseSrv.create(ObservableCase(), observable, mergedCase))
 //
 //    get(mergedCase).richCase.head()
@@ -370,15 +370,30 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       }
   }
 
-  def impactStatus = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
+  def impactStatus: ImpactStatusSteps = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  @deprecated
-  def tasks = new TaskSteps(raw.inTo[ShareCase].outTo[ShareTask])
+  def tasks(implicit authContext: AuthContext): TaskSteps =
+    new TaskSteps(
+      raw
+        .inTo[ShareCase]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+        .outTo[ShareTask]
+    )
 
-  @deprecated
-  def observables = new ObservableSteps(raw.inTo[ShareCase].outTo[ShareObservable])
+  def observables(implicit authContext: AuthContext): ObservableSteps =
+    new ObservableSteps(
+      raw
+        .inTo[ShareCase]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+        .outTo[ShareObservable]
+    )
 
-  def share = new ShareSteps(raw.inTo[ShareCase])
+  def share(implicit authContext: AuthContext): ShareSteps =
+    new ShareSteps(
+      raw
+        .inTo[ShareCase]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+    )
 
   def remove(): Unit = {
     newInstance(raw.drop().iterate())

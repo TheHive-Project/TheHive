@@ -38,7 +38,7 @@ class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv
   }
 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(taskId).visible(authContext).isDefined
+    get(taskId).visible(authContext).exists()
 
   def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
     get(task).unassign()
@@ -87,6 +87,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .has(Key("login") of authContext.userId)
       )
     )
+
+  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase])
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 

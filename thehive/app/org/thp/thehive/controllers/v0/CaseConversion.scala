@@ -97,7 +97,6 @@ object CaseConversion {
           By(
             new CaseSteps(__[Vertex])
               .share
-              .visible
               .project(
                 _.apply(By(taskStats(__[Vertex])))
                   .and(By(observableStats(__[Vertex])))

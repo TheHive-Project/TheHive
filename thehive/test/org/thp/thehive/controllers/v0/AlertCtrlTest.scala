@@ -10,7 +10,7 @@ import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
@@ -305,7 +305,9 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       TestCase(resultCaseOutput) must_=== expected
       val observables = app.instanceOf[Database].transaction { implicit graph =>
-        app.instanceOf[CaseSrv].get(resultCaseOutput._id).observables.richObservable.toList()
+        val authContext = mock[AuthContext]
+        authContext.organisation returns "cert"
+        app.instanceOf[CaseSrv].get(resultCaseOutput._id).observables(authContext).richObservable.toList
       }
       observables must contain(
         exactly(

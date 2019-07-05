@@ -35,8 +35,8 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
 class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Share, ShareSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
 
-  def visible(implicit authContext: AuthContext): ShareSteps =
-    newInstance(raw.filter(_.inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+//  def visible(implicit authContext: AuthContext): ShareSteps =
+//    newInstance(raw.filter(_.inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 

@@ -38,6 +38,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
 
+  def shares: ShareSteps = new ShareSteps(raw.outTo[OrganisationShare])
+
   def users(requiredPermission: String): UserSteps = new UserSteps(
     raw
       .inTo[RoleOrganisation]

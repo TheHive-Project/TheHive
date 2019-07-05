@@ -21,6 +21,8 @@ import play.libs.Json
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
+import org.thp.thehive.services.ObservableSteps
+
 @Singleton
 class JobSrv @Inject()(
     implicit db: Database,
@@ -134,7 +136,6 @@ class JobSrv @Inject()(
         updatedJob <- initSteps.update("report" -> Json.toJson(report.copy(artifacts = Nil)))
       } yield updatedJob
     }
-
 }
 
 @EntitySteps[Job]
@@ -156,6 +157,8 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
         .has(Key("login") of authContext.userId)
     )
   )
+
+  def observable: ObservableSteps = new ObservableSteps(raw.inTo[ObservableJob])
 
   override def newInstance(raw: GremlinScala[Vertex]): JobSteps = new JobSteps(raw)
 }

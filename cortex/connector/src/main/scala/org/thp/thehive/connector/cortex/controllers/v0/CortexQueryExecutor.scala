@@ -44,7 +44,7 @@ class CortexQueryExecutor @Inject()(
       FieldsParser[RangeParams],
       (range, jobSteps, _) => jobSteps.page(range.from, range.to, range.withSize.getOrElse(false))
     ),
-    Query[JobSteps, List[Job with Entity]]("toList", (jobSteps, _) => jobSteps.toList()),
+    Query[JobSteps, List[Job with Entity]]("toList", (jobSteps, _) => jobSteps.toList),
     new CortexParentFilterQuery(publicProperties),
     Query.output[Job with Entity, OutputJob]
   )
