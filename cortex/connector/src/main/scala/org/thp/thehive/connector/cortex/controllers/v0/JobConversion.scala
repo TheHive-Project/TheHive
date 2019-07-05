@@ -3,14 +3,13 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
-import org.thp.cortex.dto.v0.CortexOutputJob
+import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob}
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.connector.cortex.services.JobSteps
-
 import scala.language.implicitConversions
 
 object JobConversion {
@@ -49,4 +48,13 @@ object JobConversion {
       .withFieldConst(_.cortexId, "tbd")
       .withFieldComputed(_.cortexJobId, _.id)
       .transform
+
+  def fromCortexJobStatus(jobStatus: CortexJobStatus.Value): JobStatus.Value =
+    jobStatus match {
+      case CortexJobStatus.Failure    => JobStatus.Failure
+      case CortexJobStatus.InProgress => JobStatus.InProgress
+      case CortexJobStatus.Success    => JobStatus.Success
+      case CortexJobStatus.Unknown    => JobStatus.Unknown
+      case CortexJobStatus.Waiting    => JobStatus.Waiting
+    }
 }

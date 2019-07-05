@@ -44,8 +44,8 @@ trait FakeCortexClient {
         ))
       }
     } { implicit port =>
-      WsTestClient.withClient { _ =>
+//      WsTestClient.withClient { _ =>
         block(new CortexClient("test", s"http://127.0.0.1:$port/"))
-      }
+//      }
     }
 }

@@ -18,7 +18,7 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Executi
     */
   def listAnalyzer: Future[Seq[OutputCortexAnalyzer]] =
     Future
-      .traverse(cortexConfig.instances) { cortexInstance =>
+      .traverse(cortexConfig.instances.values) { cortexInstance =>
         cortexInstance.listAnalyser.recover {
           case error =>
             logger.error(s"List Cortex analyzers fails on ${cortexInstance.name}", error)

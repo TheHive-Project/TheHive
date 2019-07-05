@@ -30,9 +30,7 @@ class ArtifactSrvTest extends PlaySpecification with Mockito with FakeCortexClie
       .bind[Schema, TheHiveSchema]
       .addConfiguration(
         Configuration(
-          "play.modules.disabled"      -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port" -> 3334,
-          "akka.actor.provider"        -> "local"
+          "play.modules.disabled" -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
         )
       )
 
@@ -50,18 +48,18 @@ class ArtifactSrvTest extends PlaySpecification with Mockito with FakeCortexClie
     implicit val ws: CustomWSAPI         = app.instanceOf[CustomWSAPI]
 
     s"[$name] artifact service" should {
-      withCortexClient { client =>
-        "download and store an attachment" in {
-//          val r = artifactSrv.downloadAttachment(
-//            "test",
-//            "test",
-//            CortexOutputArtifact("test", None, Some(CortexOutputAttachment("test", Some("test"), Some("file"))), Some("test"), 1, Nil),
-//            client
-//          )(dummyUserSrv.authContext)
-//
-//          val attach = await(r)
-//
-//          attach._id shouldEqual "test"
+      "download and store an attachment" in {
+        withCortexClient { client =>
+          //          val r = artifactSrv.downloadAttachment(
+          //            "test",
+          //            "test",
+          //            CortexOutputArtifact("test", None, Some(CortexOutputAttachment("test", Some("test"), Some("file"))), Some("test"), 1, Nil),
+          //            client
+          //          )(dummyUserSrv.authContext)
+          //
+          //          val attach = await(r)
+          //
+          //          attach._id shouldEqual "test"
 
           val t  = client.listAnalyser
           val tt = await(t)

@@ -2,6 +2,11 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import akka.actor._
 import akka.stream.scaladsl.StreamConverters
 import com.google.inject.name.Named
@@ -14,16 +19,10 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
-import org.thp.thehive.connector.cortex.models.{Job, JobStatus, ObservableJob}
+import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
-import org.thp.thehive.services.ObservableSrv
-import play.libs.Json
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import org.thp.thehive.services.ObservableSteps
+import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
 
 @Singleton
 class JobSrv @Inject()(
@@ -36,8 +35,9 @@ class JobSrv @Inject()(
     observableSrv: ObservableSrv,
     artifactSrv: ArtifactSrv
 ) extends VertexSrv[Job, JobSteps] {
-  import JobConversion._
+
   import ArtifactConversion._
+  import JobConversion._
 
   val observableJobSrv = new EdgeSrv[ObservableJob, Observable, Job]
 
@@ -47,28 +47,29 @@ class JobSrv @Inject()(
     * Submits an observable for analysis to cortex client and stores
     * resulting job and send the cortex reference id to the polling job status actor
     *
-    * @param cortexId the client id name
-    * @param workerId the analyzer (worker) id
-    * @param observable the observable to analyze
-    * @param `case` the related case
-    * @param graph graph db instance
+    * @param cortexId    the client id name
+    * @param workerId    the analyzer (worker) id
+    * @param observable  the observable to analyze
+    * @param `case`      the related case
     * @param authContext auth context instance
     * @return
     */
   def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext
+      implicit authContext: AuthContext
   ): Future[Job with Entity] =
     for {
       cortexClient <- cortexConfig
         .instances
-        .find(_.name == cortexId)
+        .get(cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact <- (observable.attachment, observable.data) match {
         case (None, Some(data)) =>
           Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
         case (Some(a), None) =>
+          val data = StreamConverters.fromInputStream { () => // FIXME transaction must be closed when the whole data has been read
+            db.transaction(graph => storageSrv.loadBinary(a.attachmentId)(graph))
+          }
           Future.successful(
             InputCortexArtifact(
               observable.tlp,
@@ -81,7 +82,7 @@ class JobSrv @Inject()(
                   a.name,
                   a.size,
                   a.contentType,
-                  StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.hashes.head.toString))
+                  data
                 )
               )
             )
@@ -89,8 +90,8 @@ class JobSrv @Inject()(
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
       cortexOutputJob <- cortexClient.analyse(analyzer.id, cortexArtifact)
-      createdJob = db.transaction { implicit newGraph =>
-        create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)(newGraph, authContext)
+      createdJob = db.transaction { implicit graph =>
+        create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       }
       _ = cortexActor ! CheckJob(createdJob._id, cortexOutputJob.id, cortexClient, authContext)
     } yield createdJob
@@ -98,9 +99,9 @@ class JobSrv @Inject()(
   /**
     * Creates a Job with with according ObservableJob edge
     *
-    * @param job the job date to create
-    * @param observable the related observable
-    * @param graph the implicit graph instance needed
+    * @param job         the job date to create
+    * @param observable  the related observable
+    * @param graph       the implicit graph instance needed
     * @param authContext the implicit auth needed
     * @return
     */
@@ -116,31 +117,30 @@ class JobSrv @Inject()(
     * the report is processed here: each report's artifacts
     * are stored as separate Observable with the appropriate edge ObservableJob
     *
-    *
-    * @param jobId the job db id
-    * @param job the CortexOutputJob
+    * @param jobId        the job db id
+    * @param cortexJob    the CortexOutputJob
     * @param cortexClient client for Cortex api
-    * @param authContext the auth context for db queries
+    * @param authContext  the auth context for db queries
     * @return
     */
-  def finished(jobId: String, job: CortexOutputJob, cortexClient: CortexClient)(
+  def finished(jobId: String, cortexJob: CortexOutputJob, cortexClient: CortexClient)(
       implicit authContext: AuthContext
-  ): Seq[Try[Job with Entity]] =
+  ): Try[Job with Entity] =
     db.transaction { implicit graph =>
-      for {
-        report   <- job.report.toSeq
-        artifact <- report.artifacts
-      } yield for {
-        obs <- Try(observableSrv.create(artifact))
-        jobWithEntity <- initSteps.get(jobId).getOrFail()
-        _   <- Try(observableJobSrv.create(ObservableJob(), obs, jobWithEntity))
-        _ = artifactSrv.process(artifact, jobWithEntity, obs, cortexClient)
-        updatedJob <- initSteps.update(
-          "report" -> Json.toJson(report.copy(artifacts = Nil)),
-          "status" -> Try(JobStatus.withName(job.status.toString)).getOrElse(JobStatus.Unknown).toString,
-          "endDate" -> new Date()
-        )
-      } yield updatedJob
+      cortexJob.report.foreach { report =>
+        for {
+          artifact <- report.artifacts
+          obs = observableSrv.create(artifact)
+          job <- get(jobId).headOption()
+          _ = observableJobSrv.create(ObservableJob(), obs, job)
+          _ = artifactSrv.process(artifact, job, obs, cortexClient)
+        } ()
+      }
+      get(jobId).update(
+        "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),
+        "status"  -> fromCortexJobStatus(cortexJob.status),
+        "endDate" -> new Date()
+      )
     }
 }
 

@@ -4,7 +4,7 @@ import java.util.Date
 
 import akka.actor.ActorSystem
 import org.specs2.mock.Mockito
-import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexArtifact, JobStatus, OutputCortexAnalyzer}
+import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob, InputCortexArtifact, OutputCortexAnalyzer}
 import org.thp.scalligraph.AppBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.PlaySpecification
@@ -53,7 +53,7 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             date = new Date(1561625908856L),
             startDate = None,
             endDate = None,
-            status = JobStatus.Waiting,
+            status = CortexJobStatus.Waiting,
             data = Some("https://www.faux-texte.com/lorem-ipsum-2.htm"),
             attachment = None,
             organization = "test",

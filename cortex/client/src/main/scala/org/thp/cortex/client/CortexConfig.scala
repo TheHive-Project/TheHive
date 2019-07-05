@@ -11,7 +11,7 @@ import scala.concurrent.duration._
   * @param instances the CortexClient instances
   */
 @Singleton
-case class CortexConfig(instances: Seq[CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int) {
+case class CortexConfig(instances: Map[String, CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int) {
 
   @Inject
   def this(configuration: Configuration, globalWS: CustomWSAPI) =
@@ -34,15 +34,15 @@ object CortexConfig {
     * @param globalWS the overridden or not web service client framework WSClient
     * @return
     */
-  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Seq[CortexClient] =
-    for {
+  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Map[String, CortexClient] =
+    (for {
       cfg <- configuration.getOptional[Configuration]("cortex").toSeq
       cortexWS = globalWS.withConfig(cfg)
       cfgs <- cfg.getOptional[Seq[Configuration]]("servers").toSeq
       c    <- cfgs
       instanceWS = cortexWS.withConfig(c)
       cic <- getCortexClient(c, instanceWS)
-    } yield cic
+    } yield cic.name -> cic).toMap
 
   /**
     * Tries to get a CortexClient according to configuration

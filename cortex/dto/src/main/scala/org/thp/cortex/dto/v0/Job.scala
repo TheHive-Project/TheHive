@@ -6,7 +6,7 @@ import play.api.libs.json._
 
 import scala.util.Try
 
-object JobStatus extends Enumeration {
+object CortexJobStatus extends Enumeration {
   type Type = Value
   val InProgress, Success, Failure, Waiting, Unknown = Value
 }
@@ -31,7 +31,7 @@ case class CortexOutputJob(
     date: Date,
     startDate: Option[Date],
     endDate: Option[Date],
-    status: JobStatus.Type,
+    status: CortexJobStatus.Type,
     data: Option[String],
     attachment: Option[JsObject],
     organization: String,
@@ -47,13 +47,13 @@ object CortexOutputAttachment {
 }
 
 case class CortexOutputArtifact(
-                                 dataType: String,
-                                 data: Option[String],
-                                 attachment: Option[CortexOutputAttachment],
-                                 message: Option[String],
-                                 tlp: Int,
-                                 tags: List[String]
-                               )
+    dataType: String,
+    data: Option[String],
+    attachment: Option[CortexOutputAttachment],
+    message: Option[String],
+    tlp: Int,
+    tags: List[String]
+)
 
 object CortexOutputArtifact {
   implicit val format: Format[CortexOutputArtifact] = Json.format[CortexOutputArtifact]
@@ -89,7 +89,7 @@ object CortexOutputJob {
         date <- (json \ "date").validate[Date]
         startDate = (json \ "startDate").asOpt[Date]
         endDate   = (json \ "endDate").asOpt[Date]
-        status       <- (json \ "status").validate[String].map(s => Try(JobStatus.withName(s)).getOrElse(JobStatus.Unknown))
+        status       <- (json \ "status").validate[String].map(s => Try(CortexJobStatus.withName(s)).getOrElse(CortexJobStatus.Unknown))
         organization <- (json \ "organization").validate[String]
         dataType     <- (json \ "dataType").validate[String]
         report = (json \ "report").asOpt[CortexOutputReport]

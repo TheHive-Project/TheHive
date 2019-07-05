@@ -1,23 +1,17 @@
 package org.thp.thehive.connector.cortex.services
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+import scala.util.Failure
+
 import akka.actor.{Timers, _}
 import javax.inject.Inject
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.cortex.dto.v0.{CortexOutputJob, JobStatus}
+import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob}
 import org.thp.scalligraph.auth.AuthContext
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import scala.language.postfixOps
-import scala.util.Failure
-
 object CortexActor {
-  def props(): Props = Props[CortexActor]
-
   final case class CheckJob(jobId: String, cortexJobId: String, cortexClient: CortexClient, authContext: AuthContext)
-  final private case class Job(id: String, cortexId: String)
-
-  final private case class CheckedJobs(jobs: Map[Job, CortexClient])
 
   final private case object CheckJobs
   final private case object CheckJobsKey
@@ -33,56 +27,52 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
   import akka.pattern.pipe
   implicit val ec: ExecutionContext = context.dispatcher
 
-  def receive: Receive = updated(CheckedJobs(Map.empty))(AuthContext.empty)
+  def receive: Receive = receive(Nil)
 
-  private def updated(checkedJobs: CheckedJobs)(implicit authContext: AuthContext): Receive = {
+  private def receive(checkedJobs: List[CheckJob]): Receive = {
     case FirstCheckJobs =>
       log.debug(s"CortexActor starting check jobs ticking every ${cortexConfig.refreshDelay}")
       timers.startPeriodicTimer(CheckJobsKey, CheckJobs, cortexConfig.refreshDelay)
 
-    case CheckJob(jobId, cortexJobId, cortexClient, auth) =>
+    case cj @ CheckJob(jobId, cortexJobId, cortexClient, _) =>
       log.info(s"CortexActor received job ($jobId, $cortexJobId, ${cortexClient.name}) to check, added to $checkedJobs")
       if (!timers.isTimerActive(CheckJobsKey)) {
         timers.startSingleTimer(CheckJobsKey, FirstCheckJobs, 500.millis)
       }
-      context.become(
-        updated(
-          checkedJobs.copy(checkedJobs.jobs ++ Map(Job(jobId, cortexJobId) -> cortexClient))
-        )(auth)
-      )
+      context.become(receive(cj :: checkedJobs))
 
     case CheckJobs =>
-      checkedJobs
-        .jobs
-        .foreach(j => {
-          j._2
-            .getReport(j._1.cortexId, 0 second)
-            .pipeTo(self)
-        })
-      if (checkedJobs.jobs.isEmpty) {
+      if (checkedJobs.isEmpty) {
         log.debug("CortexActor has empty checkedJobs state, stopping ticks")
         timers.cancel(CheckJobsKey)
-      }
+      } else
+        checkedJobs
+          .foreach {
+            case CheckJob(_, cortexJobId, cortexClient, _) =>
+              cortexClient
+                .getReport(cortexJobId, 0.second)
+                .pipeTo(self)
+          }
 
     case j: CortexOutputJob =>
       j.status match {
-        case s: JobStatus.Value if s == JobStatus.InProgress || s == JobStatus.Waiting =>
+        case CortexJobStatus.InProgress | CortexJobStatus.Waiting =>
           log.info(s"CortexActor received ${j.status} from client, retrying in ${cortexConfig.refreshDelay}")
 
-        case JobStatus.Unknown =>
+        case CortexJobStatus.Unknown =>
           log.warning(s"CortexActor received JobStatus.Unknown from client, retrying in ${cortexConfig.refreshDelay}")
 
-        case s: JobStatus.Value =>
-          val job = checkedJobs.jobs.find(_._1.cortexId == j.id)
-          if (job.nonEmpty) {
-            log.info(
-              s"Job ${j.id} in cortex ${job.map(_._2.name).getOrElse("unknown")} has finished with status $s, " +
-                s"updating job ${job.map(_._1.id).getOrElse("unknown")}"
-            )
-            jobSrv.finished(job.get._1.id, j, job.get._2)
-            context.become(updated(checkedJobs.copy(checkedJobs.jobs - job.get._1)))
-          } else {
-            log.error(s"CortexActor received job output $j but did not have it in state ${checkedJobs.jobs}")
+        case CortexJobStatus.Success | CortexJobStatus.Failure =>
+          checkedJobs.find(_.cortexJobId == j.id) match {
+            case Some(job) =>
+              log.info(
+                s"Job ${j.id} in cortex ${job.cortexClient.name} has finished with status ${j.status}, " +
+                  s"updating job ${job.jobId}"
+              )
+              jobSrv.finished(job.jobId, j, job.cortexClient)(job.authContext) // TODO add log if the job update fails
+              context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id)))
+            case None =>
+              log.error(s"CortexActor received job output $j but did not have it in state $checkedJobs")
           }
       }
 
