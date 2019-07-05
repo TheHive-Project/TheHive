@@ -1,15 +1,15 @@
 package org.thp.cortex.client
 
-import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexAnalyzer}
-import play.api.http.FileMimeTypes
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc._
-import play.api.routing.sird._
-import play.api.test._
-import play.core.server.Server
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.Source
+
+import play.api.http.FileMimeTypes
+import play.api.libs.json.{ JsValue, Json }
+import play.api.mvc._
+import play.api.routing.sird._
+import play.core.server.Server
+
+import org.thp.cortex.dto.v0.{ CortexOutputJob, OutputCortexAnalyzer }
 
 trait FakeCortexClient {
 
@@ -28,7 +28,8 @@ trait FakeCortexClient {
   def withCortexClient[T](block: CortexClient => T)(implicit auth: Authentication, ws: CustomWSAPI): T =
     Server.withRouterFromComponents() { components =>
       import Results._
-      import components.{fileMimeTypes, defaultActionBuilder => Action}
+
+      import components.{ fileMimeTypes, defaultActionBuilder => Action }
 
       implicit val mimeTypes: FileMimeTypes = fileMimeTypes
 
@@ -43,9 +44,7 @@ trait FakeCortexClient {
           fileName = _ => s"$id.test.txt"
         ))
       }
-    } { implicit port =>
-//      WsTestClient.withClient { _ =>
+    } { port =>
         block(new CortexClient("test", s"http://127.0.0.1:$port/"))
-//      }
     }
 }

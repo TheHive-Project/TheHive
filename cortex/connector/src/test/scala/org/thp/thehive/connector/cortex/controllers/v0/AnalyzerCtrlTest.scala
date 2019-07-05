@@ -13,6 +13,8 @@ import org.thp.thehive.services.LocalUserSrv
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import org.thp.thehive.connector.cortex.services.CortexActor
+
 class AnalyzerCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
@@ -24,6 +26,7 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[CortexActor]("cortex-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
