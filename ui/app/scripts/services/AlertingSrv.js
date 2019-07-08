@@ -69,6 +69,14 @@
                     return $http.post(baseUrl + '/' + alertId + '/unfollow');
                 },
 
+                forceRemove: function(alertId) {
+                    return $http.delete(baseUrl + '/' + alertId, {
+                        params: {
+                            force: 1
+                        }
+                    });
+                },
+
                 stats: function(scope) {
                     var field = 'status',
                         result = {},

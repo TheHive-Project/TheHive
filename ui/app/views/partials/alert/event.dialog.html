@@ -163,6 +163,10 @@
         <i class="fa fa-compress"></i> Merge into case
     </button>
 
+    <button ng-if="dialog.isAdmin" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
+        <i class="fa fa-trash"></i> Delete
+    </button>
+
     <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
         <div class="form-group">
             <label class="col-sm-4 control-label">Import alert as</label>

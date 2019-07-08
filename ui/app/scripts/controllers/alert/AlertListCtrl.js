@@ -6,6 +6,8 @@
 
             self.urls = VersionSrv.mispUrls();
 
+            self.isAdmin = $scope.isAdmin($scope.currentUser);
+
             self.list = [];
             self.selection = [];
             self.menu = {
@@ -203,7 +205,8 @@
                         event: event,
                         templates: function() {
                             return CaseTemplateSrv.list();
-                        }
+                        },
+                        isAdmin: self.isAdmin
                     }
                 });
             };
