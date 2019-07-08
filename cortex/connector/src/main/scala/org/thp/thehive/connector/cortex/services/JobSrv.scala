@@ -2,11 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json}
-
 import akka.actor._
 import akka.stream.scaladsl.StreamConverters
 import com.google.inject.name.Named
@@ -19,10 +14,14 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
-import org.thp.thehive.connector.cortex.models.{Job, ObservableJob}
+import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObservable}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
+import play.api.libs.json.{JsObject, Json}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class JobSrv @Inject()(
@@ -39,7 +38,8 @@ class JobSrv @Inject()(
   import ArtifactConversion._
   import JobConversion._
 
-  val observableJobSrv = new EdgeSrv[ObservableJob, Observable, Job]
+  val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
+  val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
 
@@ -132,7 +132,7 @@ class JobSrv @Inject()(
           artifact <- report.artifacts
           obs = observableSrv.create(artifact)
           job <- get(jobId).headOption()
-          _ = observableJobSrv.create(ObservableJob(), obs, job)
+          _ = reportObservableSrv.create(ReportObservable(), job, obs)
           _ = artifactSrv.process(artifact, job, obs, cortexClient)
         } ()
       }
@@ -164,7 +164,15 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     )
   )
 
+  override def newInstance(raw: GremlinScala[Vertex]): JobSteps = new JobSteps(raw)
+
   def observable: ObservableSteps = new ObservableSteps(raw.inTo[ObservableJob])
 
-  override def newInstance(raw: GremlinScala[Vertex]): JobSteps = new JobSteps(raw)
+  /**
+    * Returns the potential observables that were attached to a job report
+    * after analyze has completed
+    *
+    * @return
+    */
+  def reportObservables: ObservableSteps = new ObservableSteps(raw.outTo[ReportObservable])
 }

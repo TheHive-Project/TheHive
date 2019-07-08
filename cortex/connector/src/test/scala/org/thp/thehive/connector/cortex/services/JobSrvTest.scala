@@ -2,7 +2,8 @@ package org.thp.thehive.connector.cortex.services
 
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.FakeCortexClient
+import org.thp.cortex.client.{Authentication, CustomWSAPI, FakeCortexClient, KeyAuthentication}
+import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
@@ -29,7 +30,12 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .bindActor[CortexActor]("cortex-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+      .addConfiguration(
+        Configuration(
+          "play.modules.disabled"      -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.remote.netty.tcp.port" -> 3334
+        )
+      )
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
@@ -44,10 +50,39 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
     val db: Database   = app.instanceOf[Database]
 
     s"[$name] job service" should {
+      implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
+      implicit lazy val auth: Authentication = KeyAuthentication("test")
+
       "create a job" in db.transaction { implicit graph =>
         val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
 
         job shouldEqual getJobs.head
+      }
+
+      "handle a finished job" in {
+        withCortexClient { client =>
+          val job             = db.transaction(graph => jobSrv.create(getJobs.last)(graph, dummyUserSrv.authContext))
+          val cortexOutputJob = getCortexJobs.find(_.report.isDefined)
+
+          cortexOutputJob must beSome
+
+          val updatedJobTry = jobSrv.finished(job._id, cortexOutputJob.get, client)(dummyUserSrv.authContext)
+
+          updatedJobTry must beSuccessfulTry
+
+          val updatedJob = updatedJobTry.get
+
+          updatedJob.status shouldEqual JobStatus.Success
+          updatedJob.report must beSome
+          updatedJob.report.get \ "artifacts" must beEmpty
+          (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
+
+          db.transaction {
+            implicit graph =>
+              jobSrv.get(updatedJob._id).observable.toList must beEmpty
+              jobSrv.get(updatedJob._id).reportObservables.toList.length must equalTo(2)
+          }
+        }
       }
     }
   }
@@ -61,5 +96,13 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
     implicit val reads: Reads[Job]                   = Json.reads[Job]
 
     Json.parse(data).as[Seq[Job]]
+  }
+
+  def getCortexJobs: Seq[CortexOutputJob] = {
+    val dataSource = Source.fromFile(getClass.getResource("/cortex-jobs.json").getPath)
+    val data       = dataSource.mkString
+    dataSource.close()
+
+    Json.parse(data).as[Seq[CortexOutputJob]]
   }
 }

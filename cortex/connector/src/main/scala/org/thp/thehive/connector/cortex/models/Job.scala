@@ -15,6 +15,9 @@ object JobStatus extends Enumeration {
 @EdgeEntity[Observable, Job]
 case class ObservableJob()
 
+@EdgeEntity[Job, Observable]
+case class ReportObservable()
+
 @VertexEntity
 case class Job(
     workerId: String,
