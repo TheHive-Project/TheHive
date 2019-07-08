@@ -33,8 +33,8 @@ class ArtifactSrvTest extends PlaySpecification with Mockito with FakeCortexClie
       .bindActor[CortexActor]("cortex-actor")
       .addConfiguration(
         Configuration(
-          "play.modules.disabled"          -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port"     -> 3334
+          "play.modules.disabled"      -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.remote.netty.tcp.port" -> 3334
         )
       )
 
@@ -58,22 +58,22 @@ class ArtifactSrvTest extends PlaySpecification with Mockito with FakeCortexClie
     s"[$name] artifact service" should {
       "download and store an attachment" in {
         withCortexClient { client =>
-          //          val r = artifactSrv.downloadAttachment(
-          //            "test",
-          //            "test",
-          //            CortexOutputArtifact("test", None, Some(CortexOutputAttachment("test", Some("test"), Some("file"))), Some("test"), 1, Nil),
-          //            client
-          //          )(dummyUserSrv.authContext)
-          //
-          //          val attach = await(r)
-          //
-          //          attach._id shouldEqual "test"
+          val r = artifactSrv.downloadAttachment(
+            "test",
+            "test",
+            CortexOutputArtifact("file", None, Some(CortexOutputAttachment("file", Some("file.test.txt"), Some("txt"))), Some("test"), 1, Nil),
+            client
+          )(dummyUserSrv.authContext)
 
-          val t = client.listAnalyser
-          val tt = await(t)
+          val attach = await(r)
 
-          1 shouldEqual 1
+          attach.name shouldEqual "file.test.txt"
+          attach.contentType shouldEqual "txt"
+        }
+      }
 
+      "handle artifacts correctly" in {
+        withCortexClient { client =>
           "process an artifact coming from Cortex report" in {
             db.transaction { graph =>
               val job = jobSrv.create(getJobs.head)(graph, dummyUserSrv.authContext)
