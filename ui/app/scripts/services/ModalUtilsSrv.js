@@ -12,10 +12,10 @@
 
                     this.cancel = function() {
                         $uibModalInstance.dismiss();
-                    }
+                    };
                     this.confirm = function() {
                         $uibModalInstance.close();
-                    }
+                    };
                 }],
                 controllerAs: '$modal',
                 resolve: {
@@ -23,7 +23,7 @@
                         return title;
                     },
                     message: function() {
-                        return message
+                        return message;
                     },
                     config: function() {
                         return config || {};
@@ -32,6 +32,6 @@
             });
 
             return modal.result;
-        }
+        };
     });
 })();

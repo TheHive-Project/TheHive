@@ -60,7 +60,7 @@
                     if (angular.isFunction(config.success)) {
                         config.success(r.data, r.status, r.headers, r.config);
                     }
-                }, function(r) {
+                }).catch(function(r) {
                     if (angular.isFunction(config.error)) {
                         config.error(r.data, r.status, r.headers, r.config);
                     } else {

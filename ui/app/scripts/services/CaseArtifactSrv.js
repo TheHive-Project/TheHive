@@ -3,7 +3,6 @@
     angular.module('theHiveServices')
         .factory('CaseArtifactSrv', function($http, FileResource) {
             var api = null;
-            var filters = null;
 
             var factory = {
                 api: function() {

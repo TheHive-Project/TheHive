@@ -17,7 +17,7 @@
                     </a>
                   </li>
                   <li ng-repeat="responder in logResponders">
-                    <a href ng-click="runResponder(responder.id, log)">
+                    <a href ng-click="runResponder(responder.id, responder.name, log)">
                       <strong>{{responder.name}}</strong>
                       <br>
                       <small>{{responder.description}}</small></a>
@@ -33,28 +33,29 @@
         </div>
     </div>
 
-    <div ng-show="log.attachment != undefined">
-        <div class="row">
-            <div class="col-md-12">
+    <div class="row" ng-show="log.attachment != undefined">
+        <div class="col-md-12">
+            <div class="description-pane">
                 <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
             </div>
         </div>
+        <div class="col-md-12">
+            <div class="clearfix mt-xxs">
+                <div class="file-box">
+                    <div class="file">
+                        <div class="image" ng-show="isImage(log.attachment.contentType)">
+                            <img class="btn img-responsive" ng-src="./api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
+                        </div>
 
-        <div class="clearfix">
-            <div class="file-box">
-                <div class="file">
-                    <div class="image" ng-show="isImage(log.attachment.contentType)">
-                        <img class="btn img-responsive" ng-src="./api/datastore/{{log.attachment.id}}" alt="{{log.attachment.name}}" class="img-thumbnail" width="200px" ng-click="showImage()"></img>
+                        <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name | escape}}" target="_blank">
+                            <div class="icon" ng-hide="isImage(log.attachment.contentType)">
+                                <i class="glyphicon glyphicon-file"></i>
+                            </div>
+                            <div class="file-name">
+                                {{log.attachment.name}}
+                            </div>
+                        </a>
                     </div>
-
-                    <a href="./api/datastore/{{log.attachment.id}}?name={{log.attachment.name | escape}}" target="_blank">
-                        <div class="icon" ng-hide="isImage(log.attachment.contentType)">
-                            <i class="glyphicon glyphicon-file"></i>
-                        </div>
-                        <div class="file-name">
-                            {{log.attachment.name}}
-                        </div>
-                    </a>
                 </div>
             </div>
         </div>
@@ -62,7 +63,9 @@
 
     <div class="row" ng-show="log.attachment == undefined">
         <div class="col-md-12">
-            <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+            <div class="description-pane">
+                <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
+            </div>
         </div>
     </div>
 

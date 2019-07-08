@@ -1,9 +1,9 @@
 package services
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Try }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Try}
 
 import play.api.Logger
 import play.api.libs.json.JsObject
@@ -11,19 +11,19 @@ import play.api.libs.json.JsValue.jsValueToJsLookup
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
-import models.{ CaseResolutionStatus, CaseStatus, _ }
+import akka.stream.scaladsl.{Sink, Source}
+import models.{CaseResolutionStatus, CaseStatus, _}
 
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
-import org.elastic4play.database.{ DBRemove, ModifyConfig }
+import org.elastic4play.database.{DBRemove, ModifyConfig}
 import org.elastic4play.services._
-import org.elastic4play.utils.{ RichFuture, RichOr }
+import org.elastic4play.utils.{RichFuture, RichOr}
 
 case class RemoveJobsOf(artifactId: String) extends EventMessage
 
 @Singleton
-class ArtifactSrv @Inject() (
+class ArtifactSrv @Inject()(
     artifactModel: ArtifactModel,
     caseModel: CaseModel,
     auditSrv: AuditSrv,
@@ -36,25 +36,29 @@ class ArtifactSrv @Inject() (
     fieldsSrv: FieldsSrv,
     dbRemove: DBRemove,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer) {
+    implicit val mat: Materializer
+) {
 
   private[ArtifactSrv] lazy val logger = Logger(getClass)
 
   def create(caseId: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒ create(caze, fields) }
+      .flatMap { caze ⇒
+        create(caze, fields)
+      }
 
-  def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] = {
+  def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
         case _: ConflictError ⇒ updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
       }
-  }
 
-  private def updateIfDeleted(caze: Case, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Artifact] = {
+  private def updateIfDeleted(caze: Case, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
+      implicit authContext: AuthContext
+  ): Future[Artifact] =
     fieldsSrv.parse(fields, artifactModel).toFuture.flatMap { attrs ⇒
       val updatedArtifact = for {
-        id ← artifactModel.computeId(caze, attrs)
+        id       ← artifactModel.computeId(caze, attrs)
         artifact ← getSrv[ArtifactModel, Artifact](artifactModel, id)
         if artifact.status() == ArtifactStatus.Deleted
         updatedArtifact ← updateSrv[ArtifactModel, Artifact](
@@ -63,19 +67,20 @@ class ArtifactSrv @Inject() (
           fields
             .unset("data")
             .unset("dataType")
-            .unset("attachment")
             .set("status", "Ok"),
-          modifyConfig)
+          modifyConfig
+        )
       } yield updatedArtifact
       updatedArtifact.recoverWith {
         case _ ⇒ Future.failed(ConflictError("Artifact already exists", attrs))
       }
     }
-  }
 
   def create(caseId: String, fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒ create(caze, fieldSet) }
+      .flatMap { caze ⇒
+        create(caze, fieldSet)
+      }
 
   def create(caze: Case, fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] =
     createSrv[ArtifactModel, Artifact, Case](artifactModel, fieldSet.map(caze → _))
@@ -89,33 +94,33 @@ class ArtifactSrv @Inject() (
         case t ⇒ Future.successful(t)
       }
 
-  def get(id: String): Future[Artifact] = {
+  def get(id: String): Future[Artifact] =
     getSrv[ArtifactModel, Artifact](artifactModel, id)
-  }
 
   def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Artifact] =
     updateSrv[ArtifactModel, Artifact](artifactModel, id, fields, modifyConfig)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] = {
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
+      implicit authContext: AuthContext
+  ): Future[Seq[Try[Artifact]]] =
     updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields, modifyConfig)
-  }
 
   def delete(id: String)(implicit authContext: AuthContext): Future[Artifact] =
     deleteSrv[ArtifactModel, Artifact](artifactModel, id)
 
-  def realDelete(artifact: Artifact): Future[Unit] = {
+  def realDelete(artifact: Artifact): Future[Unit] =
     for {
-      _ ← auditSrv.findFor(artifact, Some("all"), Nil)._1
+      _ ← auditSrv
+        .findFor(artifact, Some("all"), Nil)
+        ._1
         .mapAsync(1)(auditSrv.realDelete)
         .runWith(Sink.ignore)
       _ = eventSrv.publish(RemoveJobsOf(artifact.id))
       _ ← dbRemove(artifact)
     } yield ()
-  }
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) =
     findSrv[ArtifactModel, Artifact](artifactModel, queryDef, range, sortBy)
-  }
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(artifactModel, queryDef, aggs: _*)
 
@@ -126,13 +131,17 @@ class ArtifactSrv @Inject() (
     }
   }
 
-  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
+  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(artifact), range, sortBy)
-  }
 
-  def findSimilar(dataType: String, data: Either[String, Attachment], filter: Option[QueryDef], range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) = {
+  def findSimilar(
+      dataType: String,
+      data: Either[String, Attachment],
+      filter: Option[QueryDef],
+      range: Option[String],
+      sortBy: Seq[String]
+  ): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(dataType, data, filter.getOrElse(org.elastic4play.services.QueryDSL.any)), range, sortBy)
-  }
 
   private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {
     import org.elastic4play.services.QueryDSL._
@@ -154,11 +163,8 @@ class ArtifactSrv @Inject() (
           filter,
           parent("case", and("status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
-          or(
-            and(
-              "data" ~= d,
-              "dataType" ~= dataType),
-            "attachment.hashes" ~= d))
+          or(and("data" ~= d, "dataType" ~= dataType), "attachment.hashes" ~= d)
+        )
       // artifact contains data but not an hash
       case Left(d) ⇒
         and(
@@ -166,20 +172,25 @@ class ArtifactSrv @Inject() (
           parent("case", and("status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
           "data" ~= d,
-          "dataType" ~= dataType)
+          "dataType" ~= dataType
+        )
       // artifact is a file
       case Right(attachment) ⇒
         val hashes = attachment.hashes.map(_.toString)
-        val hashFilter = hashes.map { h ⇒ "attachment.hashes" ~= h }
+        val hashFilter = hashes.map { h ⇒
+          "attachment.hashes" ~= h
+        }
         and(
           filter,
           parent("case", and("status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
           "status" ~= "Ok",
           or(
             hashFilter :+
-              and(
-                "dataType" ~= "hash",
-                or(hashes.map { h ⇒ "data" ~= h }))))
+              and("dataType" ~= "hash", or(hashes.map { h ⇒
+                "data" ~= h
+              }))
+          )
+        )
     }
   }
 }

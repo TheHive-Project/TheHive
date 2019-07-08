@@ -28,8 +28,7 @@
                 });
 
                 return defer.promise;
-            }
-
+            };
 
             this.fromCases = function(term) {
                 return getTags('case', term);
@@ -37,6 +36,10 @@
 
             this.fromAlerts = function(term) {
                 return getTags('alert', term);
+            };
+
+            this.fromObservables = function(term) {
+                return getTags('case/artifact', term);
             };
 
         });

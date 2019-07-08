@@ -1,5 +1,7 @@
-import sbt._
+import scala.util.matching.Regex
+
 import sbt.Keys._
+import sbt._
 
 object Common {
 
@@ -9,6 +11,7 @@ object Common {
     licenses += "AGPL-V3" → url("https://www.gnu.org/licenses/agpl-3.0.html"),
     organizationHomepage := Some(url("http://thehive-project.org/")),
     resolvers += Resolver.bintrayRepo("thehive-project", "maven"),
+    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     scalaVersion := Dependencies.scalaVersion,
     scalacOptions ++= Seq(
       "-deprecation", // Emit warning and location for usages of deprecated APIs.
@@ -34,13 +37,15 @@ object Common {
     excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
   )
 
-  def getVersion(version: String): String = version.takeWhile(_ != '-')
-
-  def getRelease(version: String): String = {
-    version.dropWhile(_ != '-').dropWhile(_ == '-') match {
-      case "" ⇒ "1"
-      case r if r.contains('-') ⇒ sys.error("Version can't have more than one dash")
-      case r ⇒ s"0.1$r"
+  val stableVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-(\\d+)".r
+  val betaVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-[Rr][Cc](\\d+)".r
+  object snapshotVersion {
+    def unapplySeq(version: String): Option[List[String]] = {
+      if (version.endsWith("-SNAPSHOT")) {
+        val v = version.dropRight(9)
+        stableVersion.unapplySeq(v) orElse betaVersion.unapplySeq(v)
+      }
+      else None
     }
   }
 }

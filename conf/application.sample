@@ -1,7 +1,7 @@
 # Secret Key
 # The secret key is used to secure cryptographic functions.
 # WARNING: If you deploy your application on several servers, make sure to use the same key.
-#play.crypto.secret="***changeme***"
+#play.http.secret.key="***changeme***"
 
 # Elasticsearch
 search {
@@ -30,31 +30,31 @@ search {
 
   ### XPack SSL configuration
   # Username for XPack authentication
-  #search.username
+  #search.username = ""
   # Password for XPack authentication
-  #search.password
+  #search.password = ""
   # Enable SSL to connect to ElasticSearch
   search.ssl.enabled = false
   # Path to certificate authority file
-  #search.ssl.ca
+  #search.ssl.ca = ""
   # Path to certificate file
-  #search.ssl.certificate
+  #search.ssl.certificate = ""
   # Path to key file
-  #search.ssl.key
+  #search.ssl.key = ""
 
   ### SearchGuard configuration
   # Path to JKS file containing client certificate
-  #search.guard.keyStore.path
+  #search.guard.keyStore.path = ""
   # Password of the keystore
-  #search.guard.keyStore.password
+  #search.guard.keyStore.password = ""
   # Path to JKS file containing certificate authorities
-  #search.guard.trustStore.path
+  #search.guard.trustStore.path = ""
   ## Password of the truststore
-  #search.guard.trustStore.password
+  #search.guard.trustStore.password = ""
   # Enforce hostname verification
-  #search.guard.hostVerification
+  #search.guard.hostVerification = false
   # If hostname verification is enabled specify if hostname should be resolved
-  #search.guard.hostVerificationResolveHostname
+  #search.guard.hostVerificationResolveHostname = false
 }
 
 # Authentication
@@ -119,17 +119,18 @@ session {
 }
 
 # Max textual content length
-play.http.parser.maxMemoryBuffer=1M
+play.http.parser.maxMemoryBuffer= 1M
 # Max file size
-play.http.parser.maxDiskBuffer=1G
+play.http.parser.maxDiskBuffer = 1G
 
 # Cortex
-# TheHive can connect to one or multiple  Cortex  instances.  Give  each
+# TheHive can connect to one or multiple Cortex instances. Give each
 # Cortex instance a name and specify the associated URL.
 #
-# In order to use Cortex, first you need to enable the Cortex module by uncomment the next line
+# In order to use Cortex, first you need to enable the Cortex module by uncommenting the next line
+
 #play.modules.enabled += connectors.cortex.CortexConnector
-#
+
 cortex {
   #"CORTEX-SERVER-ID" {
   #  url = ""
@@ -140,19 +141,20 @@ cortex {
 }
 
 # MISP
-# TheHive can connect to one or multiple MISP instances. Give each  MISP
-# instance a name and specify the associated Authkey that must  be  used
-# to poll events, the case template that should be used by default  when
-# importing events as well as the tags that must be added to cases  upon
+# TheHive can connect to one or multiple MISP instances. Give each MISP
+# instance a name and specify the associated Authkey that must  be used
+# to poll events, the case template that should be used by default when
+# importing events as well as the tags that must be added to cases upon
 # import.
 
-# Prior to configuring the integration with a MISP  instance,  you  must
-# enable the MISP connector. This will allow you  to  import  events  to
+# Prior to configuring the integration with a MISP instance, you must
+# enable the MISP connector. This will allow you to import events to
 # and/or export cases to the MISP instance(s).
+
 #play.modules.enabled += connectors.misp.MispConnector
 
 misp {
-  # Interval between consecutive MISP event  imports  in  hours  (h)  or
+  # Interval between consecutive MISP event imports in hours (h) or
   # minutes (m).
   interval = 1h
 
@@ -181,18 +183,18 @@ misp {
   #  max-age = 7 days
   #  # Organization and tags
   #  exclusion {
-  #    organisation = ["bad organisation", "other orga"]
+  #    organisation = ["bad organisation", "other organisations"]
   #    tags = ["tag1", "tag2"]
   #  }
   #
   #  ## HTTP client configuration (SSL and proxy)
-  #  # Truststore to use to validate the X.509 certificate of the  MISP
+  #  # Truststore to use to validate the X.509 certificate of the MISP
   #  # instance if the default truststore is not sufficient.
   #  # Proxy can also be used
   #  ws {
   #    ssl.trustManager.stores = [ {
   #      path = /path/to/truststore.jks
-  #    }
+  #    } ]
   #    proxy {
   #      host = proxy.mydomain.org
   #      port = 3128

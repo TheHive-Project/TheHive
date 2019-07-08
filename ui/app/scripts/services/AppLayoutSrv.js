@@ -28,6 +28,11 @@
                 this.saveLayout();
             };
 
+            this.groupTasks = function(group) {
+                this.layout.groupTasks = group;
+                this.saveLayout();
+            };
+
             this.detachFlow = function(/*root*/) {
                 this.showFlow(false);
                 $window.open($state.href('live'), 'TheHiveLive', 'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');

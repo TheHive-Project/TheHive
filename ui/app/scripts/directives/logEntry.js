@@ -14,18 +14,20 @@
                             .then(function(responders) {
                                 $scope.logResponders = responders;
                             })
-                            .catch(function(err) {
+                            .catch(function(response) {
                                 NotificationSrv.error('logEntry', response.data, response.status);
-                            })
+                            });
                     };
 
-                    $scope.runResponder = function(responderId, log) {
-                        CortexSrv.runResponder(responderId, 'case_task_log', _.pick(log, 'id'))
+                    $scope.runResponder = function(responderId, responderName, log) {
+                        CortexSrv.runResponder(responderId, responderName, 'case_task_log', _.pick(log, 'id'))
                           .then(function(response) {
                               NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
                           })
                           .catch(function(response) {
-                              NotificationSrv.error('logEntry', response.data, response.status);
+                              if(response && !_.isString(response)) {
+                                  NotificationSrv.error('logEntry', response.data, response.status);
+                              }
                           });
                     };
 

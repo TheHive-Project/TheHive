@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv) {
+    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
         var self = this;
         var baseUrl = './api/connector/cortex';
 
@@ -21,7 +21,7 @@
                     }
                 }
             });
-        }
+        };
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
             return $http.post(baseUrl + '/job/_search', {
@@ -51,7 +51,7 @@
                         }
                     ]
                 }
-            })
+            });
         };
 
         this.getJob = function(jobId, nstats) {
@@ -104,18 +104,23 @@
               })
               .catch(function(err) {
                   return $q.reject(err);
-              })
+              });
         };
 
-        this.runResponder = function(responderId, type, object) {
+        this.runResponder = function(responderId, responderName, type, object) {
             var post = {
               responderId: responderId,
               objectType: type,
               objectId: object.id
             };
 
-            return $http.post(baseUrl + '/action', post);
-        }        
+            return ModalUtilsSrv.confirm('Run responder ' + responderName, 'Are you sure you want to run responser ' + responderName + '?', {
+                okText: 'Yes, run it'
+            }).then(function() {
+                return $http.post(baseUrl + '/action', post);
+            });
+
+        };
     });
 
 })();

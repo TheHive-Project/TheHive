@@ -9,7 +9,8 @@
                 'scope': {
                     'value': '=?',
                     'onUpdate': '&',
-                    'active': '=?'
+                    'active': '=?',
+                    'source': '='
                 }
             };
         });

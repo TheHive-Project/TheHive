@@ -82,14 +82,19 @@
                     <span ng-click="addFilterValue('sighted', artifact.sighted)" ng-if="artifact.sighted" class="clickable fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
-					<span uib-tooltip="{{artifact.stats.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="artifact.stats.seen > 0" class="glyphicon glyphicon-eye-open"></span>
+					          <span
+                      uib-tooltip="{{artifact.stats.seen}} related artifact(s)"
+                      tooltip-placement="bottom"
+                      ng-if="artifact.stats.seen > 0"
+                      class="glyphicon glyphicon-eye-open"
+                      ng-class="{'text-danger': artifact.stats.ioc}"></span>
                 </td>
                 <td>
                     <a href ng-click="addFilterValue('dataType', artifact.dataType)"><span ng-bind="artifact.dataType"></span></a>
                 </td>
                 <td class="wrap">
-                    <div class="wrap clickable" ng-click="openArtifact(artifact)">
-                        {{(artifact.data | fang) || (artifact.attachment.name | fang)}}
+                    <div class="wrap clickable" ng-click="openArtifact(artifact)" uib-tooltip="{{artifact.message}}" tooltip-placement="top-left">
+                         {{(artifact.data | fang) || (artifact.attachment.name | fang)}}
                     </div>
                     <div class="case-tags flexwrap mt-xxs">
                         <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
@@ -118,7 +123,7 @@
                             </a>
                           </li>
                           <li ng-repeat="responder in obsResponders">
-                            <a href ng-click="runResponder(responder.id, artifact)">
+                            <a href ng-click="runResponder(responder.id, responder.name, artifact)">
                               <strong>{{responder.name}}</strong>
                               <br>
                               <small>{{responder.description}}</small></a>

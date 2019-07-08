@@ -199,6 +199,21 @@
                 });
         };
 
+        this.filterMyOpenCases = function() {
+            this.uiSrv.clearFilters()
+                .then(function(){
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.uiSrv.activeFilters.owner = {
+                        value: [{
+                            text: currentUser.id,
+                            label: currentUser.name
+                        }]
+                    };
+                    self.filter();
+                    self.addFilterValue('status', 'Open');
+                });
+        };
+
         this.filterByStatus = function(status) {
             this.uiSrv.clearFilters()
                 .then(function(){
@@ -235,13 +250,15 @@
               })
         };
 
-        this.runResponder = function(responderId, caze) {
-            CortexSrv.runResponder(responderId, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
+        this.runResponder = function(responderId, responderName, caze) {
+            CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
               .then(function(response) {
                   NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
               })
               .catch(function(response) {
-                  NotificationSrv.error('CaseList', response.data, response.status);
+                  if(response && !_.isString(response)) {
+                      NotificationSrv.error('CaseList', response.data, response.status);
+                  }
               });
         };
 

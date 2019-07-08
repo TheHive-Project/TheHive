@@ -101,7 +101,7 @@
             dnd-drop="$vm.itemInserted(item, $vm.definition.items, rowIndex, index)">
             <dashboard-item ng-repeat="(colIndex, component) in row.items"
                 autoload="true"
-                mode="view"
+                mode="$vm.options.editLayout ? 'edit' : 'view'"
                 row-index="rowIndex"
                 col-index="colIndex"
                 component="component"

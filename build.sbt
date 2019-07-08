@@ -1,37 +1,68 @@
 import Common._
+import Dependencies._
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
   .enablePlugins(PlayScala)
   .settings(projectSettings)
-  .settings(publish := {})
-
-lazy val thehiveMetrics = (project in file("thehive-metrics"))
-  .enablePlugins(PlayScala)
-  .dependsOn(thehiveBackend)
-  .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.cache,
+      Library.Play.ws,
+      Library.Play.ahc,
+      Library.Play.filters,
+      Library.Play.guice,
+      Library.scalaGuice,
+      Library.elastic4play,
+      Library.zip4j,
+      Library.reflections,
+      Library.akkaCluster,
+      Library.akkaClusterTools
+    ),
+    play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
+  )
 
 lazy val thehiveMisp = (project in file("thehive-misp"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.ws,
+      Library.Play.guice,
+      Library.Play.ahc,
+      Library.zip4j,
+      Library.elastic4play
+    )
+  )
 
 lazy val thehiveCortex = (project in file("thehive-cortex"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
   .settings(projectSettings)
-  .settings(publish := {})
+  .settings(
+    publish := {},
+    libraryDependencies ++= Seq(
+      Library.Play.ws,
+      Library.Play.guice,
+      Library.Play.ahc,
+      Library.elastic4play,
+      Library.zip4j
+    )
+  )
 
 lazy val thehive = (project in file("."))
-  .enablePlugins(PlayScala)
+  .enablePlugins(PlayScala/*, PlayAkkaHttp2Support*/)
   .enablePlugins(Bintray)
-  .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
-  .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .dependsOn(thehiveBackend, thehiveMisp, thehiveCortex)
+  .aggregate(thehiveBackend, thehiveMisp, thehiveCortex)
   .settings(projectSettings)
-  .settings(aggregate in Debian := false)
-  .settings(aggregate in Rpm := false)
-  .settings(aggregate in Docker := false)
+  .settings(
+    aggregate in Debian := false,
+    aggregate in Rpm := false,
+    aggregate in Docker := false
+  )
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))
   .enablePlugins(RpmPlugin)
@@ -60,7 +91,13 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
 rpmReleaseFile := {
   import scala.sys.process._
   val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
-  s"rpm --addsign $rpmFile".!!
+  Process("rpm" ::
+    "--define" :: "_gpg_name TheHive Project" ::
+    "--define" :: "_signature gpg" ::
+    "--define" :: "__gpg_check_password_cmd /bin/true" ::
+    "--define" :: "__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --use-agent --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} %{__plaintext_filename}" ::
+    "--addsign" :: rpmFile.toString ::
+    Nil).!!
   rpmFile
 }
 

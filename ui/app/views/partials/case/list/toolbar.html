@@ -10,14 +10,18 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
-                        <a ng-click="$vm.filterMyCases()">My cases</a>
-                    </li>
-                    <li>
                         <a ng-click="$vm.filterByStatus('Open')">Open cases ({{$vm.caseStats.Open.count}})</a>
                     </li>
                     <li>
                         <a ng-click="$vm.filterByStatus('Resolved')">Closed cases ({{$vm.caseStats.Resolved.count}})</a>
                     </li>
+                    <li class="divider"></li>
+                    <li>
+                        <a ng-click="$vm.filterMyOpenCases()">My open cases</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.filterMyCases()">My cases</a>
+                    </li>                    
                 </ul>
             </div>
 

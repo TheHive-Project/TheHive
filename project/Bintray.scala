@@ -70,13 +70,13 @@ object Bintray extends AutoPlugin {
 
     publishDebian in ThisBuild := {
       if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
-      val repositoryName = if (version.value.contains('-')) "debian-beta" else "debian-stable"
       val file = (debianSign in Debian).value
+      val bintrayCredentials = bintrayEnsureCredentials.value
       btPublish(file.getName,
         file,
-        bintrayEnsureCredentials.value,
+        bintrayCredentials,
         bintrayOrganization.value,
-        repositoryName,
+        "debian-beta",
         bintrayPackage.value,
         version.value,
         sLog.value,
@@ -84,20 +84,42 @@ object Bintray extends AutoPlugin {
         "deb_component" → "main",
         "deb_architecture" → "all"
       )
+      if (!version.value.contains('-'))
+        btPublish(file.getName,
+          file,
+          bintrayCredentials,
+          bintrayOrganization.value,
+          "debian-stable",
+          bintrayPackage.value,
+          version.value,
+          sLog.value,
+          "deb_distribution" → "any",
+          "deb_component" → "main",
+          "deb_architecture" → "all"
+        )
     },
 
     publishRpm in ThisBuild := {
       if ((version in ThisBuild).value.endsWith("-SNAPSHOT")) sys.error("Snapshot version can't be released")
-      val repositoryName = if (version.value.contains('-')) "rpm-beta" else "rpm-stable"
       val file = (packageBin in Rpm).value
+      val bintrayCredentials = bintrayEnsureCredentials.value
       btPublish(file.getName,
         file,
-        bintrayEnsureCredentials.value,
+        bintrayCredentials,
         bintrayOrganization.value,
-        repositoryName,
+        "rpm-beta",
         bintrayPackage.value,
         (version in Rpm).value + '-' + (rpmRelease in Rpm).value,
         sLog.value)
+      if (!version.value.contains('-'))
+        btPublish(file.getName,
+          file,
+          bintrayCredentials,
+          bintrayOrganization.value,
+          "rpm-stable",
+          bintrayPackage.value,
+          (version in Rpm).value + '-' + (rpmRelease in Rpm).value,
+          sLog.value)
     },
 
     publishRpmRelease in ThisBuild := {

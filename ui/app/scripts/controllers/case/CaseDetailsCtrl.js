@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, PSearchSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserInfoSrv, TagSrv, PSearchSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -98,6 +98,10 @@
                 itemId: attachment.case_task.id
             });
         };
+
+        $scope.getCaseTags = function(query) {
+            return TagSrv.fromCases(query);
+        };
     });
 
     angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsCacheSrv) {
@@ -108,13 +112,13 @@
                 return {
                     name: name,
                     order: definition.order
-                }
+                };
             }), function(item){
                 return item.order;
             }), 'name');
 
             return result;
-        }
+        };
 
         $scope.getCustomFieldName = function(fieldDef) {
             return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;

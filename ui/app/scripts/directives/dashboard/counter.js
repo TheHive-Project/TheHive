@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('dashboardCounter', function($http, $state, DashboardSrv, NotificationSrv) {
+    angular.module('theHiveDirectives').directive('dashboardCounter', function($q, $http, $state, DashboardSrv, NotificationSrv, GlobalSearchSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -56,29 +56,29 @@
                                 name: name,
                                 label: serie.label,
                                 value: data[name] || 0
-                            }
+                            };
                         });
 
                     }, function(err) {
                         scope.error = true;
-                        NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
+                        NotificationSrv.error('dashboardBar', 'Failed to fetch data, please edit the widget definition', err.status);
                     });
                 };
 
                 scope.openSearch = function(item) {
-                  var criteria = [{ _type: scope.options.entity }, item.serie.query];
+                    if(scope.mode === 'edit') {
+                        return;
+                    }
 
-                  if (scope.globalQuery && scope.globalQuery !== '*') {
-                      criteria.push(scope.globalQuery);
-                  }
+                    var filters = (scope.options.filters || []).concat(item.serie.filters || []);
 
-                  var searchQuery = {
-                      _and: _.without(criteria, null, undefined, '')
-                  };
+                    $q.resolve(GlobalSearchSrv.saveSection(scope.options.entity, {
+                        search: filters.length === 0 ? '*' : null,
+                        filters: filters
+                    })).then(function() {
+                        $state.go('app.search');
+                    });
 
-                  $state.go('app.search', {
-                      q: Base64.encode(angular.toJson(searchQuery))
-                  });
                 };
 
                 if (scope.autoload === true) {

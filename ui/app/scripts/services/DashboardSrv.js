@@ -33,7 +33,7 @@
                 type: 'last7Days',
                 label: 'Last 7 days'
             }
-        ]
+        ];
 
         this.timeIntervals = [{
             code: '1d',
@@ -74,7 +74,8 @@
             donut: 'fa-pie-chart',
             line: 'fa-line-chart',
             multiline: 'fa-area-chart',
-            counter: 'fa-calculator'
+            counter: 'fa-calculator',
+            text: 'fa-file'
         };
 
         this.sortOptions = [{
@@ -114,6 +115,14 @@
                 }
             },
             {
+                type: 'text',
+                options: {
+                    title: null,
+                    template: null,
+                    entity: null
+                }
+            },
+            {
                 type: 'donut',
                 options: {
                     title: null,
@@ -139,7 +148,7 @@
             return _.filter(fields, function(item) {
                 return types.indexOf(item.type) !== -1;
             });
-        }
+        };
 
         this.fieldsForAggregation = function(fields, agg) {
             if(agg === 'count') {
@@ -149,7 +158,7 @@
             } else {
                 return fields;
             }
-        }
+        };
 
         this.renderers = {
             severity: function() {}
@@ -234,6 +243,7 @@
         this.hasMinimalConfiguration = function(component) {
             switch (component.type) {
                 case 'multiline':
+                case 'text':
                     return component.options.series.length === _.without(_.pluck(component.options.series, 'entity'), undefined).length;
                 default:
                     return !!component.options.entity;
@@ -245,14 +255,14 @@
         };
 
         this.buildChartQuery = function(filter, query) {
-            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function(c){return !_.isEmpty(c)});
+            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function(c){return !_.isEmpty(c);});
 
             if(criteria.length === 0) {
                 return {};
             } else {
                 return criteria.length === 1 ? criteria[0] : { _and: criteria };
             }
-        }
+        };
 
         this.buildPeriodQuery = function(period, field, start, end) {
             if(!period && !start && !end) {
@@ -270,8 +280,8 @@
             } else if (period === 'last3Months') {
                 from = moment(today).subtract(3, 'months');
             } else if(period === 'custom') {
-                from = start && start != null ? moment(start).valueOf() : null;
-                to = end && end != null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
+                from = start && start !== null ? moment(start).valueOf() : null;
+                to = end && end !== null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
 
                 if (from !== null && to !== null) {
                     return {
@@ -290,8 +300,8 @@
 
             return period === 'all' ? null : {
                 _between: { _field: field, _from: from.valueOf(), _to: to.valueOf() }
-            }
-        }        
+            };
+        };
 
         this.exportDashboard = function(dashboard) {
             var fileName = dashboard.title.replace(/\s/gi, '_') + '.json';
@@ -313,6 +323,6 @@
 
             // Save the file
             saveAs(fileToSave, fileName);
-        }
+        };
     });
 })();

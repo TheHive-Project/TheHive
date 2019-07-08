@@ -5,12 +5,14 @@
             restrict: 'E',
             scope: {
                 'date': '=',
-                'placeholder': '@?'
+                placeholder: '@?',
+                required: '='
             },
             templateUrl: 'views/directives/dt-picker.html',
             link: function(scope, elem) {
                 var dtEl = $(elem).find('.input-datetime');
-                var dtPicker = dtEl.datetimepicker({
+                /*var dtPicker = */
+                dtEl.datetimepicker({
                     format: 'dd-mm-yyyy',
                     weekStart: 1,
                     startView: 2,

@@ -91,7 +91,7 @@
             </div>
 
             <div class="case-observables-list">
-                <div ng-repeat="observable in item.linkedWith | limitTo:5" class="wrap">
+                <div ng-repeat="observable in item.linkedWith | limitTo:displayOptions[item.id]" class="wrap">
                     <i class="fa fa-star" ng-if="observable.ioc"></i>
                     <a href ui-sref="app.case.observables-item({caseId: item.id, itemId: observable.id})">
                         <strong>[{{observable.dataType}}]</strong>:
@@ -100,7 +100,8 @@
                     </a>
                 </div>
                 <div class="mt-xs" ng-if="item.linkedWith.length > 5">
-                    <a href ui-sref="app.case.observables({caseId: caseId})"><strong>See ({{item.linkedWith.length - 5}}) more links</strong></a>
+                    <a class="text-muted" ng-show="displayOptions[item.id]===5" href ng-click="displayOptions[item.id]=null"><strong>Show more links ({{item.linkedWith.length - 5}})</strong></a>
+                    <a class="text-muted" ng-show="displayOptions[item.id]===null" href ng-click="displayOptions[item.id]=5"><strong>Show less links</strong></a>
                 </div>
             </div>
         </div>

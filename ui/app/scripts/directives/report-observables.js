@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('reportObservables', function($q, $filter, $uibModal, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('reportObservables', function($q, $filter, $uibModal) {
         return {
             restrict: 'E',
             scope: {
@@ -20,7 +20,7 @@
                         filter: '',
                         data: scope.observables
                     };
-                })
+                });
             },
             controller: function($scope) {
                 $scope.filterArtifacts = function(type) {
@@ -67,15 +67,29 @@
                         return item.selected === true;
                     }), 'dataType');
 
-                    var keys = _.keys(toImport);
-                    var promises = [];
                     var message = [
                         '### Discovered from:',
                         '- Observable: **['+ $scope.origin.dataType + '] - ' + $filter('fang')($scope.origin.data) + '**',
                         '- Analyzer: **'+ $scope.analyzer + '**'
-                    ].join('\n')
+                    ].join('\n');
 
                     _.each(toImport, function(list, key) {
+                        var params = {
+                            dataType: key,
+                            single: list.length === 1,
+                            ioc: false,
+                            sighted: false,
+                            tlp: 2,
+                            message: message,
+                            tags: [{text: 'src:' + $scope.analyzer}]
+                        };
+
+                        if(key === 'file') {
+                            params.attachment = _.pluck(list, 'attachment');
+                            params.isUpload = false;
+                        } else {
+                            params.data = _.pluck(list, 'data').join('\n');
+                        }
 
                         var modal = $uibModal.open({
                             animation: 'true',
@@ -84,26 +98,13 @@
                             size: 'lg',
                             resolve: {
                                 params: function() {
-                                    return {
-                                        dataType: key,
-                                        bulk: true,
-                                        ioc: false,
-                                        sighted: false,
-                                        data: _.pluck(list, 'data').join('\n'),
-                                        tlp: 2,
-                                        message: message,
-                                        tags: [],
-                                        tagNames: ''
-                                    }
-                                },
-                                tags: function() {
-                                    return [{text: 'src:' + $scope.analyzer}]
+                                    return params;
                                 }
                             }
                         });
 
                         modal.result
-                          .then(function(response) {
+                          .then(function(/*response*/) {
                               _.each(list, function(item) {
                                   item.id = true;
                                   item.selected = false;

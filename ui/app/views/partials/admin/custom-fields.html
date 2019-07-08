@@ -18,6 +18,7 @@
                             <th width="250">Name <a ng-click="$vm.sortBy('name')"><i class="fa fa-sort" ng-class="{'fa-sort-up': $vm.state.sort==='name' && !$vm.state.asc, 'fa-sort-down': $vm.state.sort==='name' && $vm.state.asc}"></i></a></th>
                             <th width="250">Internal Reference <a ng-click="$vm.sortBy('reference')"><i class="fa fa-sort" ng-class="{'fa-sort-up': $vm.state.sort==='reference' && !$vm.state.asc, 'fa-sort-down': $vm.state.sort==='reference' && $vm.state.asc}"></i></a></th>
                             <th>Description</th>
+                            <th width="100" class="text-center">Mandatory</th>
                             <th width="200">Options</th>
                             <th width="80" class="text-center">Actions</th>
                         </tr>
@@ -30,6 +31,7 @@
                             <td><a href ng-click="$vm.showFieldDialog(field)">{{field.name}}</a></td>
                             <td>{{field.reference}}</td>
                             <td>{{field.description || 'N/A'}}</td>
+                            <td align="center">{{field.mandatory === true ? 'Yes': 'No'}}</td>
                             <td ng-if="field.options.length === 0">
                                 <em>None</em>
                             </td>
