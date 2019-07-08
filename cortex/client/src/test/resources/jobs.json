@@ -1,29 +1,120 @@
 [
   {
-    "date" : 1561625908856,
-    "data" : "https://www.faux-texte.com/lorem-ipsum-2.htm",
-    "type" : "analyzer",
-    "cacheTag" : "8b075e00a860a984993017dec86c16e1",
-    "createdAt" : 1561625908856,
-    "_parent" : null,
-    "id" : "AWuYKFatq3Rtqym9DFmL",
-    "_version" : 1,
-    "pap" : 2,
-    "_routing" : "AWuYKFatq3Rtqym9DFmL",
-    "workerId" : "anaTest1",
-    "analyzerName" : "anaTest1",
-    "analyzerDefinitionId" : "anaTest1",
-    "dataType" : "domain",
-    "_type" : "job",
-    "message" : "0ad6e75a-1a2e-419a-b54a-7a92d6528404",
-    "analyzerId" : "anaTest1",
-    "createdBy" : "billotei",
-    "organization" : "test",
-    "tlp" : 2,
-    "workerDefinitionId" : "anaTest1",
-    "_id" : "AWuYKFatq3Rtqym9DFmL",
-    "workerName" : "anaTest1",
-    "parameters" : { },
-    "status" : "Waiting"
+    "date": 1561625908856,
+    "data": "https://www.faux-texte.com/lorem-ipsum-2.htm",
+    "type": "analyzer",
+    "cacheTag": "8b075e00a860a984993017dec86c16e1",
+    "createdAt": 1561625908856,
+    "_parent": null,
+    "id": "AWuYKFatq3Rtqym9DFmL",
+    "_version": 1,
+    "pap": 2,
+    "_routing": "AWuYKFatq3Rtqym9DFmL",
+    "workerId": "anaTest1",
+    "analyzerName": "anaTest1",
+    "analyzerDefinitionId": "anaTest1",
+    "dataType": "domain",
+    "_type": "job",
+    "message": "0ad6e75a-1a2e-419a-b54a-7a92d6528404",
+    "analyzerId": "anaTest1",
+    "createdBy": "billotei",
+    "organization": "test",
+    "tlp": 2,
+    "workerDefinitionId": "anaTest1",
+    "_id": "AWuYKFatq3Rtqym9DFmL",
+    "workerName": "anaTest1",
+    "parameters": {},
+    "status": "Waiting"
+  },
+  {
+    "date": 1561625908856,
+    "data": "https://www.faux-texte.com/lorem-ipsum-2.htm",
+    "type": "analyzer",
+    "cacheTag": "8b075e00a860a984993017dec86c16e1",
+    "createdAt": 1561625908856,
+    "_parent": null,
+    "id": "XQuYKFert7Rtcvm9DFmT",
+    "_version": 1,
+    "pap": 2,
+    "_routing": "XQuYKFert7Rtcvm9DFmT",
+    "workerId": "anaTest2",
+    "analyzerName": "anaTest2",
+    "analyzerDefinitionId": "anaTest2",
+    "dataType": "domain",
+    "_type": "job",
+    "message": "0ad6e75a-1a2e-419a-b54a-7a92d6528404",
+    "analyzerId": "anaTest2",
+    "createdBy": "billotei",
+    "organization": "test",
+    "tlp": 2,
+    "workerDefinitionId": "anaTest2",
+    "_id": "XQuYKFert7Rtcvm9DFmT",
+    "workerName": "anaTest2",
+    "parameters": {},
+    "status": "Success",
+    "report": {
+      "summary": {
+        "taxonomies": [
+          {
+            "level": "info",
+            "namespace": "test",
+            "predicate": "data",
+            "value": "test"
+          }
+        ]
+      },
+      "full": {
+        "data": "imageedit_2_3904987689.jpg",
+        "input": {
+          "file": "attachment7619802021796183482",
+          "filename": "imageedit_2_3904987689.jpg",
+          "dataType": "file",
+          "tlp": 2,
+          "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
+          "contentType": "image/jpeg",
+          "parameters": {
+          },
+          "config": {
+            "proxy_https": null,
+            "cacerts": null,
+            "max_pap": 2,
+            "jobTimeout": 30,
+            "check_tlp": true,
+            "proxy_http": null,
+            "max_tlp": 2,
+            "auto_extract_artifacts": false,
+            "jobCache": 10,
+            "check_pap": true
+          },
+          "pap": 2
+        }
+      },
+      "success": true,
+      "artifacts": [
+        {
+          "attachment": {
+            "contentType": "application/octet-stream",
+            "id": "e64871cf4652cb6e1babc06a376e7c79256dd6b967ca845ae06708cbeb686663",
+            "name": "passwd",
+            "size": 2644
+          },
+          "dataType": "file",
+          "message": null,
+          "tags": ["file", "virus"],
+          "tlp": 3
+        },
+        {
+          "data": "127.0.0.1",
+          "dataType": "ip",
+          "message": null,
+          "tags": [
+            "localhost"
+          ],
+          "tlp": 2
+        }
+      ],
+      "operations": [
+      ]
+    }
   }
 ]

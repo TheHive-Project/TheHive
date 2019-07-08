@@ -33,11 +33,12 @@ trait FakeCortexClient {
       implicit val mimeTypes: FileMimeTypes = fileMimeTypes
 
       {
-        case GET(p"/api/analyzers")         => Action(_ => Ok.sendResource("analyzers.json"))
-        case GET(p"/api/analyzer")          => Action(Results.Ok.sendResource("analyzers.json"))
-        case GET(p"/api/analyzer/$id")      => Action(Results.Ok(Json.toJson(analyzers.find(_.id == id).get)))
-        case POST(p"/api/analyzer/_search") => Action(Results.Ok(Json.toJson(analyzers)))
-        case POST(p"/api/analyzer/$id/run") => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
+        case GET(p"/api/job/$id/waitreport") => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
+        case GET(p"/api/analyzers")          => Action(_ => Ok.sendResource("analyzers.json"))
+        case GET(p"/api/analyzer")           => Action(Results.Ok.sendResource("analyzers.json"))
+        case GET(p"/api/analyzer/$id")       => Action(Results.Ok(Json.toJson(analyzers.find(_.id == id).get)))
+        case POST(p"/api/analyzer/_search")  => Action(Results.Ok(Json.toJson(analyzers)))
+        case POST(p"/api/analyzer/$id/run")  => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
         case GET(p"/api/datastore/$id") =>
           Action(
             Result(
