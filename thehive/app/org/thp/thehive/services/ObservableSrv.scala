@@ -85,6 +85,10 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
 
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
 
+  def visible(implicit authContext: AuthContext): ObservableSteps = newInstance(
+    raw.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
+  )
+
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
     newInstance(
       raw.filter(

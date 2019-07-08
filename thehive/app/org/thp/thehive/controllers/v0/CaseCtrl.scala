@@ -1,17 +1,19 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
-import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.{InputCase, InputTask}
-import org.thp.thehive.models.{CustomFieldWithValue, Permissions, RichCaseTemplate, User}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v0.{InputCase, InputTask, OutputCase}
+import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsNumber, JsObject, JsValue, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -21,16 +23,32 @@ class CaseCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv,
-    val queryExecutor: TheHiveQueryExecutor,
-    auditSrv: AuditSrv
-) extends QueryCtrl {
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
   import CaseConversion._
+  import CustomFieldConversion._
   import ObservableConversion._
   import TaskConversion._
-  import CustomFieldConversion._
 
-  lazy val logger = Logger(getClass)
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "case"
+  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv)
+  override val initialQuery: ParamQuery[_] =
+    Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+    "page",
+    FieldsParser[OutputParam], {
+      case (OutputParam(from, to, withSize, withStats), caseSteps, authContext) =>
+        caseSteps
+          .richPage(from, to, withSize.getOrElse(false)) {
+            case c if withStats.contains(true) =>
+              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
+            case c =>
+              c.richCase.raw.map(_ -> JsObject.empty)
+          }
+    }
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[(RichCase, JsObject), OutputCase]
 
   def create: Action[AnyContent] =
     entryPoint("create case")
@@ -55,7 +73,7 @@ class CaseCtrl @Inject()(
             .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
             .map(cf => cf.name -> cf.value)
             .toMap
-          organisation <- organisationSrv.getOrFail(request.organisation)
+          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
           user     <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           case0    <- Success(fromInputCase(inputCase, caseTemplate))
@@ -81,35 +99,6 @@ class CaseCtrl @Inject()(
           .richCase
           .getOrFail()
           .map(richCase => Results.Ok(richCase.toJson))
-      }
-
-  def search: Action[AnyContent] =
-    entryPoint("search case")
-      .extract("query", searchParser("listCase"))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
-      }
-
-  def stats: Action[AnyContent] =
-    entryPoint("case stats")
-      .extract("query", statsParser("listCase"))
-      .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body("query")
-        val results = queries
-          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-          .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) => acc ++ o
-            case (acc, r) =>
-              logger.warn(s"Invalid stats result: $r")
-              acc
-          }
-        Success(Results.Ok(results))
       }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
@@ -199,11 +188,12 @@ class CaseCtrl @Inject()(
           }
       }
 
-  def linkedCases(caseIdsOrNumber: String): Action[AnyContent] =
+  def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("case link")
-      .authTransaction(db) { _ => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         val relatedCases = caseSrv
-          .get(caseIdsOrNumber)
+          .get(caseIdOrNumber)
+          .visible
           .linkedCases
           .map {
             case (c, o) =>

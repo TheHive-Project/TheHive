@@ -4,6 +4,7 @@ import java.util.Date
 
 import scala.concurrent.{ExecutionContext, Promise}
 
+import play.api.cache.caffeine.CaffeineCacheModule
 import play.api.i18n.{I18nModule => PlayI18nModule}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{SimpleModule, bind, BuiltinModule => PlayBuiltinModule}
@@ -130,6 +131,7 @@ class FunctionalTest extends PlaySpecification {
             new PlayI18nModule,
             new PlayCookiesModule,
             new PlayAhcWSModule,
+            new CaffeineCacheModule,
             new ScalligraphModule,
             new TheHiveModule(Environment.simple(), dbConfig),
             new SimpleModule(

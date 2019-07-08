@@ -1,19 +1,20 @@
 package org.thp.thehive.controllers.v0
 
+import scala.concurrent.ExecutionContext
+import scala.util.Failure
+
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{PropertyUpdater, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
-import org.thp.thehive.dto.v0.InputUser
+import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSrv, OrganisationSrv, ProfileSrv, UserSrv}
-import play.api.libs.json.JsValue
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import org.thp.thehive.services._
 
 @Singleton
 class UserCtrl @Inject()(
@@ -23,11 +24,23 @@ class UserCtrl @Inject()(
     profileSrv: ProfileSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
-    implicit val ec: ExecutionContext,
-    val queryExecutor: TheHiveQueryExecutor,
-    auditSrv: AuditSrv
-) extends QueryCtrl {
+    auditSrv: AuditSrv,
+    implicit val ec: ExecutionContext
+) extends QueryableCtrl {
+
   import UserConversion._
+
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "user"
+  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv)
+  override val initialQuery: ParamQuery[_] =
+    Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, range.withSize.getOrElse(false))
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[RichUser, OutputUser]
 
   def current: Action[AnyContent] =
     entryPoint("current user")
@@ -183,18 +196,5 @@ class UserCtrl @Inject()(
           key <- authSrv
             .renewKey(userId)
         } yield Results.Ok(key)
-      }
-
-  def search: Action[AnyContent] =
-    entryPoint("search user")
-      .extract("query", searchParser("listUser"))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
       }
 }

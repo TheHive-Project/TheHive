@@ -3,21 +3,20 @@ package org.thp.thehive.controllers.v0
 import scala.util.Success
 
 import play.api.http.HttpEntity
-import play.api.mvc.{Action, AnyContent, ResponseHeader, Result, Results}
+import play.api.mvc._
 
 import akka.stream.scaladsl.StreamConverters
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.StorageSrv
 
 @Singleton
-class AttachmentCtrl @Inject()(entryPoint: EntryPoint, db: Database, storageSrv: StorageSrv) {
+class AttachmentCtrl @Inject()(entryPoint: EntryPoint, storageSrv: StorageSrv) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
   def download(id: String, name: Option[String]): Action[AnyContent] =
     entryPoint("download attachment")
-      .authTransaction(db) { _ => implicit graph =>
+      .auth { _ =>
         if (!name.getOrElse("").intersect(forbiddenChar).isEmpty)
           Success(Results.BadRequest("File name is invalid"))
         else

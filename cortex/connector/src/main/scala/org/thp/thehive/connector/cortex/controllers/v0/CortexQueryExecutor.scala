@@ -11,10 +11,8 @@ import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
-import org.thp.thehive.connector.cortex.dto.v0.OutputJob
-import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
-import org.thp.thehive.controllers.v0.{ParentFilterQuery, ParentIdFilter, ParentIdInputFilter, ParentQueryFilter}
+import org.thp.thehive.controllers.v0._
 
 /**
   * Range param case class for search query parsing
@@ -27,25 +25,17 @@ case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class CortexQueryExecutor @Inject()(
-    implicit val db: Database,
-    jobSrv: JobSrv
+    jobCtrl: JobCtrl,
+    jobSrv: JobSrv,
+    queryCtrlBuilder: QueryCtrlBuilder,
+    implicit val db: Database
 ) extends QueryExecutor {
-  import JobConversion._
+  override val version: (Int, Int)                               = 0 -> 0
+  override lazy val publicProperties: List[PublicProperty[_, _]] = jobCtrl.publicProperties
 
-  override val version: (Int, Int)                          = 0 -> 0
-  override val publicProperties: List[PublicProperty[_, _]] = jobProperties
+  override lazy val queries: Seq[ParamQuery[_]] = jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: Nil
 
-  override val queries: Seq[ParamQuery[_]] = Seq(
-    Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext)),
-    Query.withParam[RangeParams, JobSteps, PagedResult[Job with Entity]](
-      "page",
-      FieldsParser[RangeParams],
-      (range, jobSteps, _) => jobSteps.page(range.from, range.to, range.withSize.getOrElse(false))
-    ),
-    Query[JobSteps, List[Job with Entity]]("toList", (jobSteps, _) => jobSteps.toList),
-    new CortexParentFilterQuery(publicProperties),
-    Query.output[Job with Entity, OutputJob]
-  )
+  val job: QueryCtrl = queryCtrlBuilder.apply(jobCtrl, this)
 }
 
 /**

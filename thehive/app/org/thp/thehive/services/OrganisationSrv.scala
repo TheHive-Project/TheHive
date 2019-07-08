@@ -2,15 +2,15 @@ package org.thp.thehive.services
 
 import java.util.UUID
 
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-import scala.util.Try
-
-import org.thp.scalligraph.auth.AuthContext
 
 @Singleton
 class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implicit db: Database) extends VertexSrv[Organisation, OrganisationSteps] {
@@ -39,6 +39,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
 
   def shares: ShareSteps = new ShareSteps(raw.outTo[OrganisationShare])
+
+  def caseTemplates: CaseTemplateSteps = new CaseTemplateSteps(raw.inTo[CaseTemplateOrganisation])
 
   def users(requiredPermission: String): UserSteps = new UserSteps(
     raw

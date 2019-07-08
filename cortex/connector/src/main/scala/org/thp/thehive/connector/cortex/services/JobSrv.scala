@@ -67,9 +67,7 @@ class JobSrv @Inject()(
         case (None, Some(data)) =>
           Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
         case (Some(a), None) =>
-          val data = StreamConverters.fromInputStream { () => // FIXME transaction must be closed when the whole data has been read
-            db.transaction(graph => storageSrv.loadBinary(a.attachmentId)(graph))
-          }
+          val data = StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.attachmentId))
           Future.successful(
             InputCortexArtifact(
               observable.tlp,

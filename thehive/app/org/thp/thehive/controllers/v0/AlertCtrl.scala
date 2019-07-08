@@ -5,7 +5,6 @@ import java.util.Base64
 import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import gremlin.scala.Graph
@@ -14,9 +13,9 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
-import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.{InputAlert, InputObservable}
-import org.thp.thehive.models.{Alert, Permissions, RichCaseTemplate, RichObservable}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
+import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
@@ -27,16 +26,31 @@ class AlertCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     attachmentSrv: AttachmentSrv,
+    organisationSrv: OrganisationSrv,
     val userSrv: UserSrv,
-    val caseSrv: CaseSrv,
-    val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl {
+    val caseSrv: CaseSrv
+) extends QueryableCtrl {
   import AlertConversion._
   import CaseConversion._
   import CustomFieldConversion._
   import ObservableConversion._
 
-  lazy val logger = Logger(getClass)
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "alert"
+  override val publicProperties: List[PublicProperty[_, _]] = alertProperties
+  override val initialQuery: ParamQuery[_] =
+    Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, alertSteps, _) =>
+      alertSteps
+        .richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richAlert.raw)
+        .map { richAlert =>
+          richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
+        }
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[RichAlert, OutputAlert]
 
   def create: Action[AnyContent] =
     entryPoint("create alert")
@@ -150,8 +164,12 @@ class AlertCtrl @Inject()(
     entryPoint("create case from alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          (alert, organisation) <- alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
-          richCase              <- alertSrv.createCase(alert, None, organisation)
+          (alert, organisation) <- alertSrv
+            .get(alertId)
+            .visible
+            .alertUserOrganisation(Permissions.manageCase)
+            .getOrFail()
+          richCase <- alertSrv.createCase(alert, None, organisation)
         } yield Results.Created(richCase.toJson)
       }
 
@@ -179,34 +197,5 @@ class AlertCtrl @Inject()(
             alertSrv.unfollowAlert(alertId)
             Results.NoContent
           }
-      }
-
-  def stats: Action[AnyContent] =
-    entryPoint("alert stats")
-      .extract("query", statsParser("listAlert"))
-      .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body("query")
-        val results = queries
-          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-          .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) => acc ++ o
-            case (acc, r) =>
-              logger.warn(s"Invalid stats result: $r")
-              acc
-          }
-        Success(Results.Ok(results))
-      }
-
-  def search: Action[AnyContent] =
-    entryPoint("search alert")
-      .extract("query", searchParser("listAlert"))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
       }
 }

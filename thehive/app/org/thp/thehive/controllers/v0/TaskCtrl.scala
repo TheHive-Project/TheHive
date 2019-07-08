@@ -1,18 +1,15 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.InputTask
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Permissions, RichTask}
-import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
+import org.thp.thehive.services._
 
 @Singleton
 class TaskCtrl @Inject()(
@@ -21,11 +18,21 @@ class TaskCtrl @Inject()(
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     userSrv: UserSrv,
-    val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl {
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
   import TaskConversion._
 
-  lazy val logger = Logger(getClass)
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "log"
+  override val publicProperties: List[PublicProperty[_, _]] = taskProperties(taskSrv, userSrv)
+  override val initialQuery: ParamQuery[_] =
+    Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richTask.raw)
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[RichTask, OutputTask]
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create task")
@@ -66,36 +73,5 @@ class TaskCtrl @Inject()(
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
-      }
-
-  def stats(): Action[AnyContent] = {
-    val parser: FieldsParser[Seq[Query]] = statsParser("listTask")
-    entryPoint("stats task")
-      .extract("query", parser)
-      .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body("query")
-        val results = queries
-          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-          .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) => acc ++ o
-            case (acc, r) =>
-              logger.warn(s"Invalid stats result: $r")
-              acc
-          }
-        Success(Results.Ok(results))
-      }
-  }
-
-  def search: Action[AnyContent] =
-    entryPoint("search case")
-      .extract("query", searchParser("listTask", paged = false))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
       }
 }

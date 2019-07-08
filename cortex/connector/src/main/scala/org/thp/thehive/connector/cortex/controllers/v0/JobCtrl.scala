@@ -1,28 +1,41 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.Query
-import org.thp.thehive.connector.cortex.services.JobSrv
-import org.thp.thehive.controllers.v0.QueryCtrl
-import org.thp.thehive.services.ObservableSrv
-import play.api.libs.json.JsValue
-import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Success
+
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.thehive.connector.cortex.dto.v0.OutputJob
+import org.thp.thehive.connector.cortex.models.Job
+import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
+import org.thp.thehive.controllers.v0.QueryableCtrl
+import org.thp.thehive.services.ObservableSrv
 
 @Singleton
 class JobCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
-    val queryExecutor: CortexQueryExecutor,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv
-) extends QueryCtrl {
+) extends QueryableCtrl {
+
   import JobConversion._
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "job"
+  override val publicProperties: List[PublicProperty[_, _]] = jobProperties
+  override val initialQuery: ParamQuery[_] =
+    Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext))
+  override val pageQuery: ParamQuery[_] = Query.withParam[RangeParams, JobSteps, PagedResult[Job with Entity]](
+    "page",
+    FieldsParser[RangeParams],
+    (range, jobSteps, _) => jobSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[Job with Entity, OutputJob]
 
   def get(jobId: String): Action[AnyContent] =
     entryPoint("get job")
@@ -36,20 +49,7 @@ class JobCtrl @Inject()(
           }
       }
 
-  def search: Action[AnyContent] =
-    entryPoint("search job")
-      .extract("query", searchParser("listJob"))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
-      }
-
-  def create(): Action[AnyContent] =
+  def create: Action[AnyContent] =
     entryPoint("create job")
       .extract("analyzerId", FieldsParser[String].on("analyzerId"))
       .extract("cortexId", FieldsParser[String].on("cortexId"))

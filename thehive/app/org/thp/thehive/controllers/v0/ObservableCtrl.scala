@@ -10,10 +10,10 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{PropertyUpdater, Query}
-import org.thp.thehive.dto.v0.InputObservable
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSrv, CaseSrv, ObservableSrv}
+import org.thp.thehive.services.{CaseSrv, ObservableSrv, ObservableSteps, OrganisationSrv}
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -21,12 +21,29 @@ class ObservableCtrl @Inject()(
     db: Database,
     observableSrv: ObservableSrv,
     caseSrv: CaseSrv,
-    auditSrv: AuditSrv,
-    val queryExecutor: TheHiveQueryExecutor
-) extends QueryCtrl {
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
   import ObservableConversion._
 
-  lazy val logger = Logger(getClass)
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "observable"
+  override val publicProperties: List[PublicProperty[_, _]] = observableProperties
+  override val initialQuery: ParamQuery[_] =
+    Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
+    "page",
+    FieldsParser[OutputParam], {
+      case (OutputParam(from, to, withSize, withStats), observableSteps, authContext) =>
+        observableSteps
+          .richPage(from, to, withSize.getOrElse(false)) {
+            case o if withStats.contains(true) =>
+              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph)).raw
+            case o =>
+              o.richObservable.raw.map(_ -> JsObject.empty)
+          }
+    }
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[(RichObservable, JsObject), OutputObservable]
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
@@ -70,37 +87,6 @@ class ObservableCtrl @Inject()(
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
-      }
-
-  def stats(): Action[AnyContent] = {
-    val parser: FieldsParser[Seq[Query]] = statsParser("listObservable")
-    entryPoint("stats observable")
-      .extract("query", parser)
-      .authTransaction(db) { implicit request => graph =>
-        val queries: Seq[Query] = request.body("query")
-        val results = queries
-          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-          .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) => acc ++ o
-            case (acc, r) =>
-              logger.warn(s"Invalid stats result: $r")
-              acc
-          }
-        Success(Results.Ok(results))
-      }
-  }
-
-  def search: Action[AnyContent] =
-    entryPoint("search case")
-      .extract("query", searchParser("listObservable", paged = false))
-      .authTransaction(db) { implicit request => graph =>
-        val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = (result.toJson \ "result").as[JsArray]
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(Results.Ok(resp).withHeaders("X-Total" -> size.toString))
-          case _                          => Success(Results.Ok(resp).withHeaders("X-Total" -> resp.value.size.toString))
-        }
       }
 
   def findSimilar(obsId: String): Action[AnyContent] =

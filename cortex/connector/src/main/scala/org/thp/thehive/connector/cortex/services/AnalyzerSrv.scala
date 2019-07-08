@@ -1,7 +1,9 @@
 package org.thp.thehive.connector.cortex.services
 
 import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.Logger
+
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexAnalyzer

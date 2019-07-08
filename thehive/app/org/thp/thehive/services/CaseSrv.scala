@@ -340,7 +340,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def linkedCases: Seq[(RichCase, Seq[RichObservable])] = {
+  def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
     val originCaseLabel = StepLabel[JSet[Vertex]]()
     val observableLabel = StepLabel[Vertex]()
     val linkedCaseLabel = StepLabel[Vertex]()
@@ -351,12 +351,24 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .`match`(
         _.as(originCaseLabel.name)
           .in("ShareCase")
+          .filter(
+            _.inTo[OrganisationShare]
+              .inTo[RoleOrganisation]
+              .inTo[UserRole]
+              .has(Key("login") of authContext.userId)
+          )
           .out("ShareObservable")
           .as(observableLabel.name),
         _.as(observableLabel.name)
           .out("ObservableData")
           .in("ObservableData")
           .in("ShareObservable")
+          .filter(
+            _.inTo[OrganisationShare]
+              .inTo[RoleOrganisation]
+              .inTo[UserRole]
+              .has(Key("login") of authContext.userId)
+          )
           .out("ShareCase")
           .where(JP.neq(originCaseLabel.name))
           .as(linkedCaseLabel.name),
