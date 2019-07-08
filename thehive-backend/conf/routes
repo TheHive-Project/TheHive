@@ -64,7 +64,7 @@ GET      /api/alert/_fixStatus                    controllers.AlertCtrl.fixStatu
 POST     /api/alert                               controllers.AlertCtrl.create()
 GET      /api/alert/:alertId                      controllers.AlertCtrl.get(alertId)
 PATCH    /api/alert/:alertId                      controllers.AlertCtrl.update(alertId)
-DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId)
+DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId, force: Option[Boolean])
 POST     /api/alert/:alertId/markAsRead           controllers.AlertCtrl.markAsRead(alertId)
 POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUnread(alertId)
 POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)

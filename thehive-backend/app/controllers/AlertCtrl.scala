@@ -119,9 +119,9 @@ class AlertCtrl @Inject()(
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def delete(id: String, force: Option[Boolean]): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
     alertSrv
-      .delete(id)
+      .delete(id, force.getOrElse(false))
       .map(_ ⇒ NoContent)
   }
 

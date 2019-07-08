@@ -325,8 +325,10 @@ class AlertSrv(
     updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
   }
 
-  def delete(id: String)(implicit authContext: AuthContext): Future[Alert] =
-    deleteSrv[AlertModel, Alert](alertModel, id)
+  def delete(id: String, force: Boolean)(implicit authContext: AuthContext): Future[Unit] = {
+    if (force) deleteSrv.realDelete[AlertModel, Alert](alertModel, id)
+    else get(id).flatMap(alert => markAsUnread(alert)).map(_ => ())
+  }
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Alert, NotUsed], Future[Long]) =
     findSrv[AlertModel, Alert](alertModel, queryDef, range, sortBy)
