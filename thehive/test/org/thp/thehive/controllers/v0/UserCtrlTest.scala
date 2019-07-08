@@ -39,9 +39,10 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = ()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val userCtrl: UserCtrl = app.instanceOf[UserCtrl]
-    val authenticationCtrl = app.instanceOf[AuthenticationCtrl]
-    val authenticateSrv    = app.instanceOf[DefaultAuthenticateSrv]
+    val userCtrl: UserCtrl   = app.instanceOf[UserCtrl]
+    val authenticationCtrl   = app.instanceOf[AuthenticationCtrl]
+    val authenticateSrv      = app.instanceOf[DefaultAuthenticateSrv]
+    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
 
     s"[$name] user controller" should {
 
@@ -50,7 +51,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(Json.parse("""{"query": {"_and": [{"status": "Ok"}, {"_not": {"_is": {"login": "user4"}}}]}}"""))
           .withHeaders("user" -> "user1")
 
-        val result = userCtrl.search(request)
+        val result = theHiveQueryExecutor.user.search(request)
         status(result) must_=== 200
 
         val resultUsers = contentAsJson(result)
@@ -155,7 +156,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(Json.parse("""{"query": {"_and": [{"_not": {"_is": {"login": "user4"}}}]}}"""))
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 
-        val resultGet = userCtrl.search(requestGet)
+        val resultGet = theHiveQueryExecutor.user.search(requestGet)
 
         status(resultGet) must_=== 200
 

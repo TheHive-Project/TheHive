@@ -19,8 +19,8 @@ import org.thp.thehive.models.{Observable, ObservableData, RichObservable}
 import org.thp.thehive.services.ObservableSteps
 
 object ObservableConversion {
-  import AttachmentConversion._
   import AlertConversion._
+  import AttachmentConversion._
   import CaseConversion._
 
   implicit def fromInputObservable(inputObservable: InputObservable): Observable =
@@ -88,6 +88,7 @@ object ObservableConversion {
   def observableStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     new ObservableSteps(_: GremlinScala[Vertex])
       .similar
+      .visible
       .raw
       .groupCount(By(Key[Boolean]("ioc")))
       .map { stats =>

@@ -1,18 +1,19 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
+
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0.{OutputLog, OutputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 class LogCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -22,6 +23,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
+      .bindInstance[AuthSrv](mock[AuthSrv])
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
@@ -35,13 +37,22 @@ class LogCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val logCtrl: LogCtrl = app.instanceOf[LogCtrl]
+    val logCtrl: LogCtrl     = app.instanceOf[LogCtrl]
+    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
+
+    def tasksList: Seq[OutputTask] = {
+      val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
+      val resultList  = theHiveQueryExecutor.task.search(requestList)
+
+      status(resultList) shouldEqual 200
+
+      contentAsJson(resultList).as[Seq[OutputTask]]
+    }
 
     s"[$name] log controller" should {
 
       "be able to create, retrieve and patch a log" in {
-        val tList = tasksList(app)
-        val task  = tList.find(_.title == "case 1 task 1").get
+        val task = tasksList.find(_.title == "case 1 task 1").get
         val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
           .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""
@@ -78,7 +89,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
                 }
              }
             """.stripMargin))
-        val resultSearch = logCtrl.search(requestSearch)
+        val resultSearch = theHiveQueryExecutor.log.search(requestSearch)
 
         status(resultSearch) shouldEqual 200
 
@@ -112,8 +123,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
       }
 
       "be able to create and remove a log" in {
-        val tList = tasksList(app)
-        val task  = tList.find(_.title == "case 1 task 1").get
+        val task = tasksList.find(_.title == "case 1 task 1").get
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
           .withHeaders("user" -> "user1")
@@ -142,7 +152,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
                 }
              }
             """.stripMargin))
-        val resultSearch = logCtrl.search(requestSearch)
+        val resultSearch = theHiveQueryExecutor.log.search(requestSearch)
 
         status(resultSearch) shouldEqual 200
 
@@ -154,7 +164,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
 
         status(resultDelete) shouldEqual 204
 
-        val resultSearch2 = logCtrl.search(requestSearch)
+        val resultSearch2 = theHiveQueryExecutor.log.search(requestSearch)
 
         status(resultSearch2) shouldEqual 200
 
@@ -165,13 +175,4 @@ class LogCtrlTest extends PlaySpecification with Mockito {
     }
   }
 
-  def tasksList(app: AppBuilder): Seq[OutputTask] = {
-    val taskCtrl    = app.instanceOf[TaskCtrl]
-    val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
-    val resultList  = taskCtrl.search(requestList)
-
-    status(resultList) shouldEqual 200
-
-    contentAsJson(resultList).as[Seq[OutputTask]]
-  }
 }

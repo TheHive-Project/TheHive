@@ -2,21 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
+
+import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, UserSrv}
+import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, LocalUserSrv, TaskSrv}
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
-import io.scalaland.chimney.dsl._
 
 case class TestCase(
     caseId: Int,
@@ -50,6 +50,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
+      .bindInstance[AuthSrv](mock[AuthSrv])
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
@@ -63,10 +64,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val caseCtrl: CaseCtrl = app.instanceOf[CaseCtrl]
-    val caseSrv: CaseSrv   = app.instanceOf[CaseSrv]
-    val taskSrv: TaskSrv   = app.instanceOf[TaskSrv]
-    val db: Database       = app.instanceOf[Database]
+    val caseCtrl: CaseCtrl   = app.instanceOf[CaseCtrl]
+    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
+    val caseSrv: CaseSrv     = app.instanceOf[CaseSrv]
+    val taskSrv: TaskSrv     = app.instanceOf[TaskSrv]
+    val db: Database         = app.instanceOf[Database]
 
     s"[$name] case controller" should {
 
@@ -176,7 +178,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         )
 
         val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
-        val resultList  = app.instanceOf[TaskCtrl].search(requestList)
+        val resultList  = theHiveQueryExecutor.task.search(requestList)
 
         status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
         val tasksList = contentAsJson(resultList).as[Seq[OutputTask]]
@@ -275,7 +277,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(
             Json.parse("""{"query":{"severity":2}}""")
           )
-        val result = caseCtrl.search()(request)
+        val result = theHiveQueryExecutor.`case`.search()(request)
         status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         header("X-Total", result) must beSome("3")
         val resultCases = contentAsJson(result).as[Seq[OutputCase]]
@@ -306,7 +308,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                             ]
                          }""")
           )
-        val result = caseCtrl.stats()(request)
+        val result = theHiveQueryExecutor.`case`.stats()(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result)
 

@@ -2,14 +2,14 @@ package org.thp.cortex.client
 
 import java.util.Date
 
-import akka.actor.ActorSystem
-import org.specs2.mock.Mockito
-import org.thp.cortex.dto.v0._
-import org.thp.scalligraph.AppBuilder
+import scala.concurrent.duration._
+
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.test.PlaySpecification
 
-import scala.concurrent.duration._
+import org.specs2.mock.Mockito
+import org.thp.cortex.dto.v0._
+import org.thp.scalligraph.AppBuilder
 
 class CortexClientTest extends PlaySpecification with Mockito with FakeCortexClient {
   s"CortexClient" should {
@@ -17,7 +17,6 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
 
     implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
     implicit lazy val auth: Authentication = KeyAuthentication("test")
-    implicit lazy val system: ActorSystem  = app.instanceOf[ActorSystem]
 
     "handle requests properly" in {
       withCortexClient { client =>
@@ -65,7 +64,7 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
           )
         )
 
-        val successfulJob = await(client.getReport("XQuYKFert7Rtcvm9DFmT", 0 second))
+        val successfulJob = await(client.getReport("XQuYKFert7Rtcvm9DFmT", 0.second))
 
         successfulJob.report must beSome(
           CortexOutputReport(

@@ -15,7 +15,7 @@ import play.api.{Configuration, Environment}
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
@@ -49,6 +49,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
+      .bindInstance[AuthSrv](mock[AuthSrv])
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
@@ -62,9 +63,10 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val observableCtrl: ObservableCtrl = app.instanceOf[ObservableCtrl]
-    val caseCtrl: CaseCtrl             = app.instanceOf[CaseCtrl]
-    val hashers                        = Hasher(app.instanceOf[Configuration].get[Seq[String]]("attachment.hash"): _*)
+    val observableCtrl: ObservableCtrl      = app.instanceOf[ObservableCtrl]
+    val queryExecutor: TheHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
+    val caseCtrl: CaseCtrl                  = app.instanceOf[CaseCtrl]
+    val hashers                             = Hasher(app.instanceOf[Configuration].get[Seq[String]]("attachment.hash"): _*)
 
     s"[$name] observable controller" should {
 
@@ -153,9 +155,9 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 }
              }
             """.stripMargin))
-        val resultSearch = observableCtrl.search(requestSearch)
+        val resultSearch = queryExecutor.observable.search(requestSearch)
 
-        status(resultSearch) shouldEqual 200
+        status(resultSearch) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
 
         val resSearchObservables = contentAsJson(resultSearch).as[Seq[OutputObservable]]
 

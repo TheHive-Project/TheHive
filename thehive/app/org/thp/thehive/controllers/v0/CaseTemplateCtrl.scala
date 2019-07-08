@@ -1,17 +1,15 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.Json
+import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.thehive.dto.v0.InputCaseTemplate
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, TaskSrv, UserSrv}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
+import org.thp.thehive.models.{Permissions, RichCaseTemplate}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
 
 @Singleton
 class CaseTemplateCtrl @Inject()(
@@ -19,12 +17,23 @@ class CaseTemplateCtrl @Inject()(
     db: Database,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv,
-    taskSrv: TaskSrv
-) {
+    userSrv: UserSrv
+) extends QueryableCtrl {
   import CaseTemplateConversion._
-  import TaskConversion._
   import CustomFieldConversion._
+  import TaskConversion._
+
+  lazy val logger                                           = Logger(getClass)
+  override val entityName: String                           = "caseTemplate"
+  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties
+  override val initialQuery: ParamQuery[_] =
+    Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richCaseTemplate.raw)
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[RichCaseTemplate, OutputCaseTemplate]
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
@@ -32,7 +41,7 @@ class CaseTemplateCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
-          organisation <- organisationSrv.getOrFail(request.organisation)
+          organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           tasks        = inputCaseTemplate.tasks.map(fromInputTask)
           customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
@@ -50,18 +59,6 @@ class CaseTemplateCtrl @Inject()(
           .map(richCaseTemplate => Results.Ok(richCaseTemplate.toJson))
       }
 
-  def list: Action[AnyContent] =
-    entryPoint("list case template")
-      .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplates = caseTemplateSrv
-          .initSteps
-          .visible
-          .richCaseTemplate
-          .map(_.toJson)
-          .toList
-        Success(Results.Ok(Json.toJson(caseTemplates)))
-      }
-
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
       .extract("caseTemplate", FieldsParser.update("caseTemplate", caseTemplateProperties))
@@ -75,15 +72,4 @@ class CaseTemplateCtrl @Inject()(
           )
           .map(_ => Results.NoContent)
       }
-
-  def search: Action[AnyContent] = list
-  //  {
-  //    entryPoint("search case template")
-  //      //.extract("query", )
-  //      .authenticated { implicit request =>
-  //      db.transaction { implicit graph =>
-  //        caseTemplateSrv.initSteps.toL
-  //      }
-  //    }
-  //  }
 }

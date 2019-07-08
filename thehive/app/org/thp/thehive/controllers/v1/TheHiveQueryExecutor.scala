@@ -23,9 +23,9 @@ class TheHiveQueryExecutor @Inject()(
     with UserConversion
     with OrganisationConversion {
 
-  override val version: (Int, Int)                          = 1 -> 1
-  override val publicProperties: List[PublicProperty[_, _]] = caseProperties
-  override val queries: Seq[ParamQuery[_]] = Seq(
+  override val version: (Int, Int)                               = 1 -> 1
+  override lazy val publicProperties: List[PublicProperty[_, _]] = caseProperties
+  override lazy val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",
       FieldsParser[GetCaseParams],
