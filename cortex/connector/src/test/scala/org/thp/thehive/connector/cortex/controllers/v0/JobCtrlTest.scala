@@ -1,9 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -14,6 +10,9 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 class JobCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -27,7 +26,12 @@ class JobCtrlTest extends PlaySpecification with Mockito {
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .bindActor[CortexActor]("cortex-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+      .addConfiguration(
+        Configuration(
+          "play.modules.disabled" -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.actor.provider"   -> "cluster"
+        )
+      )
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
@@ -54,39 +58,37 @@ class JobCtrlTest extends PlaySpecification with Mockito {
 
         status(resultSearch) shouldEqual 200
       }
+
+      "get stats for a job" in {
+        val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withJsonBody(Json.parse(s"""
+                                   {
+                                     "query": {
+                                       "_and": [{
+                                         "_in": {
+                                           "_field": "status",
+                                           "_values": ["Waiting", "InProgress"]
+                                         }
+                                       }, {
+                                         "analyzerId": "anaTest1"
+                                       }]
+                                     },
+                                     "stats": [{
+                                       "_agg": "field",
+                                       "_field": "status",
+                                       "_select": [{ "_agg": "count"}]
+                                     }, {
+                                       "_agg": "count"
+                                     }]
+                                   }
+            """.stripMargin))
+        val result = cortexQueryExecutor.job.stats(request)
+
+        val t = contentAsJson(result)
+
+        status(result) shouldEqual 200
+      }
     }
   }
-
-//  def getObservables(app: AppBuilder) = {
-//    val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-//      .withHeaders("user" → "user2", "X-Organisation" → "default")
-//      .withJsonBody(Json.parse(s"""
-//              {
-//                "query":{
-//                   "_and":[
-//                      {
-//                         "_and":[
-//                            {
-//                               "_parent":{
-//                                  "_type":"case",
-//                                  "_query":{
-//                                     "_id":"${resultCase._id}"
-//                                  }
-//                               }
-//                            },
-//                            {
-//                               "status":"Ok"
-//                            }
-//                         ]
-//                      }
-//                   ]
-//                }
-//             }
-//            """.stripMargin))
-//    val resultSearch = observableCtrl.search(requestSearch)
-//
-//    status(resultSearch) shouldEqual 200
-//
-//    val resSearchObservables = contentAsJson(resultSearch).as[Seq[OutputObservable]]
-//  }
 }

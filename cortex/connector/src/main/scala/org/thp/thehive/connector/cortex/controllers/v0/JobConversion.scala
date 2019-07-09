@@ -35,6 +35,7 @@ object JobConversion {
       .property[String]("analyzerId")(_.rename("workerId").updatable)
       .property[Option[String]]("cortexId")(_.simple.updatable)
       .property[Date]("startDate")(_.simple.readonly)
+      .property[String]("status")(_.simple.readonly)
       .build
 
   def fromCortexOutputJob(j: CortexOutputJob): Job =
