@@ -12,6 +12,9 @@
         <div class="flow-item-bulk" ng-show="summary.alert.Update">
             <ng-pluralize count="summary.alert.Update" when="{'one': '{} existing alert has been updated', 'other': '{} existing alerts have been updated'}"></ng-pluralize>
         </div>
+        <div class="flow-item-bulk" ng-show="summary.alert.Delete">
+            <ng-pluralize count="summary.alert.Delete" when="{'one': '{} existing alert has been permanently deleted', 'other': '{} existing alerts have been permanently deleted'}"></ng-pluralize>
+        </div>
         <div>
             <a class="small" href ng-click="openState('app.alert-list')">See all</a>
         </div>
@@ -30,7 +33,7 @@
             </div>
             <div ng-switch-when="status">
                 {{k}}: <span class="clickable label label-default" ng-class="{
-                  'label-danger': v === 'New', 
+                  'label-danger': v === 'New',
                   'label-warning': v === 'Update'}">{{::v}}</span>
             </div>
             <div ng-switch-when="case">

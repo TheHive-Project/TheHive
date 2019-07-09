@@ -25,6 +25,11 @@
                     <li ng-show="$vm.menu.markAsUnread">
                         <a href ng-click="$vm.bulkMarkAsRead(false)">Mark as unread</a>
                     </li>
+                    <li ng-show="$vm.menu.delete" ng-if="isAdmin(currentUser)">
+                        <a href ng-click="$vm.bulkDelete()">
+                            <span class="text-danger">Delete</span>
+                        </a>
+                    </li>
                     <li class="divider" ng-show="$vm.menu.createNewCase"></li>
                     <li ng-show="$vm.menu.createNewCase">
                         <a href ng-click="$vm.createNewCase()">New case from selection</a>
