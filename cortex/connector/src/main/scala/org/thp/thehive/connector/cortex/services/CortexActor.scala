@@ -49,7 +49,7 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
           .foreach {
             case CheckJob(_, cortexJobId, cortexClient, _) =>
               cortexClient
-                .getReport(cortexJobId, 0.second)
+                .getReport(cortexJobId, 1 second)
                 .pipeTo(self)
           }
 

@@ -13,7 +13,8 @@ case class OutputJob(
     endDate: Option[Date],
     report: Option[String],
     cortexId: Option[String],
-    cortexJobId: Option[String]
+    cortexJobId: Option[String],
+    id: Option[String]
 )
 
 object OutputJob {

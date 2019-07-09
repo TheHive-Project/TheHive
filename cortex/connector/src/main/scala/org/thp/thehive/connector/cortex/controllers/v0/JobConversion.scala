@@ -25,6 +25,7 @@ object JobConversion {
         .withFieldComputed(_.endDate, jb => Some(jb.endDate))
         .withFieldComputed(_.cortexId, jb => Some(jb.cortexId))
         .withFieldComputed(_.cortexJobId, jb => Some(jb.cortexJobId))
+        .withFieldComputed(_.id, jb => Some(jb._id))
         .withFieldComputed(_.startDate, _.startDate)
         .transform
     )
