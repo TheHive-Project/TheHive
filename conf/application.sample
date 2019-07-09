@@ -29,7 +29,7 @@ search {
   ## Authentication configuration
   #search.username = ""
   #search.password = ""
-  
+
   ## SSL configuration
   #search.keyStore {
   #  path = "/path/to/keystore"
