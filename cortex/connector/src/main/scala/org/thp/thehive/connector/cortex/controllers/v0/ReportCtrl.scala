@@ -15,16 +15,15 @@ class ReportCtrl @Inject()(
     db: Database,
     reportTemplateSrv: ReportTemplateSrv
 ) {
-  import ReportTemplateConversion._
 
   def getContent(analyzerId: String, reportType: String): Action[AnyContent] =
     entryPoint("get content")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { _ => implicit graph =>
         {
           for {
             rType    <- Try(ReportType.withName(reportType))
             template <- reportTemplateSrv.initSteps.forWorkerAndType(analyzerId, rType).getOrFail()
-          } yield Results.Ok(template.toJson)
+          } yield Results.Ok(template.content).as("text/html")
         } orElse Success(Results.NotFound)
       }
 }
