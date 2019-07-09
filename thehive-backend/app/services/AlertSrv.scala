@@ -3,27 +3,27 @@ package services
 import java.nio.file.Files
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.matching.Regex
-import scala.util.{Failure, Try}
+import scala.util.{ Failure, Success, Try }
 
 import play.api.libs.json._
-import play.api.{Configuration, Logger}
+import play.api.{ Configuration, Logger }
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import connectors.ConnectorRouter
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import models._
 
-import org.elastic4play.InternalError
-import org.elastic4play.controllers.{Fields, FileInputValue}
+import org.elastic4play.controllers.{ Fields, FileInputValue }
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.QueryDSL.{groupByField, parent, selectCount, withId}
+import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
 import org.elastic4play.services._
 import org.elastic4play.utils.Collection
+import org.elastic4play.{ ConflictError, InternalError }
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
@@ -240,9 +240,17 @@ class AlertSrv(
           case _ ⇒
             for {
               _ ← importArtifacts(alert, caze)
-              description = caze.description() + s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}"
-              updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
-              _           ← setCase(alert, caze)
+              newDescription = caze
+                .description() + s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}"
+              newTags = (caze.tags() ++ alert.tags()).distinct.map(JsString.apply)
+              updatedCase ← caseSrv.update(
+                caze,
+                Fields
+                  .empty
+                  .set("description", newDescription)
+                  .set("tags", JsArray(newTags))
+              )
+              _ ← setCase(alert, caze)
             } yield updatedCase
         }
     }
@@ -257,7 +265,16 @@ class AlertSrv(
       }
       .flatMap { _ ⇒ // then merge all tags
         val newTags = (caze.tags() ++ alerts.flatMap(_.tags())).distinct.map(JsString.apply)
-        caseSrv.update(caze, Fields.empty.set("tags", JsArray(newTags)))
+        val newDescription = caze.description() + alerts
+          .map(alert ⇒ s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}")
+          .mkString("")
+        caseSrv.update(
+          caze,
+          Fields
+            .empty
+            .set("description", newDescription)
+            .set("tags", JsArray(newTags))
+        )
       }
 
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
@@ -293,12 +310,37 @@ class AlertSrv(
 
     val updatedCase = artifactSrv
       .create(caze, artifactsFields)
-      .map { artifacts ⇒
-        artifacts.collect {
-          case Failure(e) ⇒ logger.warn("Create artifact error", e)
+      .flatMap { artifacts ⇒
+        Future.traverse(artifacts) {
+          case Success(_) => Future.successful(())
+          case Failure(ConflictError(_, attributes)) ⇒ // if it already exists, add tags from alert
+            import org.elastic4play.services.QueryDSL._
+            (for {
+              dataType ← (attributes \ "dataType").asOpt[String]
+              data       = (attributes \ "data").asOpt[String]
+              attachment = (attributes \ "attachment").asOpt[Attachment]
+              tags ← (attributes \ "tags").asOpt[Seq[String]]
+              _    ← data orElse attachment
+              dataOrAttachment = data.toLeft(attachment.get)
+            } yield artifactSrv
+              .find(artifactSrv.similarArtifactFilter(dataType, dataOrAttachment, withParent(caze)), None, Nil)
+              ._1
+              .mapAsyncUnordered(1) { artifact ⇒
+                artifactSrv.update(artifact.id, Fields.empty.set("tags", JsArray((artifact.tags() ++ tags).distinct.map(JsString.apply))))
+              }
+              .map(_ ⇒ caze)
+              .runWith(Sink.ignore)
+              .map(_ ⇒ caze))
+              .getOrElse {
+                logger.warn(s"A conflict error occurs when creating the artifact $attributes but it doesn't exist")
+                Future.successful(())
+              }
+          case Failure(e) ⇒
+            logger.warn("Create artifact error", e)
+            Future.successful(())
         }
-        caze
       }
+        .map(_ => caze)
     updatedCase.onComplete { _ ⇒
       // remove temporary files
       artifactsFields
@@ -325,10 +367,9 @@ class AlertSrv(
     updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
   }
 
-  def delete(id: String, force: Boolean)(implicit authContext: AuthContext): Future[Unit] = {
+  def delete(id: String, force: Boolean)(implicit authContext: AuthContext): Future[Unit] =
     if (force) deleteSrv.realDelete[AlertModel, Alert](alertModel, id)
-    else get(id).flatMap(alert => markAsUnread(alert)).map(_ => ())
-  }
+    else get(id).flatMap(alert ⇒ markAsUnread(alert)).map(_ ⇒ ())
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Alert, NotUsed], Future[Long]) =
     findSrv[AlertModel, Alert](alertModel, queryDef, range, sortBy)
