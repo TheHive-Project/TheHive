@@ -1,14 +1,13 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import scala.util.Failure
-
 import akka.actor.{Timers, _}
 import javax.inject.Inject
 import org.thp.cortex.client.{CortexClient, CortexConfig}
 import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob}
 import org.thp.scalligraph.auth.AuthContext
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 object CortexActor {
   final case class CheckJob(jobId: String, cortexJobId: String, cortexClient: CortexClient, authContext: AuthContext)
@@ -27,9 +26,9 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
   import akka.pattern.pipe
   implicit val ec: ExecutionContext = context.dispatcher
 
-  def receive: Receive = receive(Nil)
+  def receive: Receive = receive(Nil, 0)
 
-  private def receive(checkedJobs: List[CheckJob]): Receive = {
+  private def receive(checkedJobs: List[CheckJob], failuresCount: Int): Receive = {
     case FirstCheckJobs =>
       log.debug(s"CortexActor starting check jobs ticking every ${cortexConfig.refreshDelay}")
       timers.startPeriodicTimer(CheckJobsKey, CheckJobs, cortexConfig.refreshDelay)
@@ -39,7 +38,7 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
       if (!timers.isTimerActive(CheckJobsKey)) {
         timers.startSingleTimer(CheckJobsKey, FirstCheckJobs, 500.millis)
       }
-      context.become(receive(cj :: checkedJobs))
+      context.become(receive(cj :: checkedJobs, failuresCount))
 
     case CheckJobs =>
       if (checkedJobs.isEmpty) {
@@ -70,14 +69,21 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
                   s"updating job ${job.jobId}"
               )
               jobSrv.finished(job.jobId, j, job.cortexClient)(job.authContext) // TODO add log if the job update fails
-              context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id)))
+              context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
             case None =>
               log.error(s"CortexActor received job output $j but did not have it in state $checkedJobs")
           }
       }
 
-    case Failure(e) =>
-      log.error(s"CortexActor received failure ${e.getMessage}, stopping ticks")
+    case Status.Failure(e) if failuresCount < cortexConfig.maxRetryOnError =>
+      log.error(
+        s"CortexActor received ${failuresCount + 1} failure(s), last: ${e.getMessage}, " +
+          s"retrying again ${cortexConfig.maxRetryOnError - failuresCount} time(s)"
+      )
+      context.become(receive(checkedJobs, failuresCount + 1))
+
+    case Status.Failure(e) =>
+      log.error(s"CortexActor received $failuresCount failures, last: ${e.getMessage}, stopping ticks")
       timers.cancelAll()
 
     case x => log.error(s"CortexActor received unhandled message ${x.toString}")
