@@ -6,8 +6,13 @@ import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
 @Singleton
-class Router @Inject()(jobCtrl: JobCtrl, analyzerCtrl: AnalyzerCtrl, actionCtrl: ActionCtrl, cortexQueryExecutor: CortexQueryExecutor)
-    extends SimpleRouter {
+class Router @Inject()(
+    jobCtrl: JobCtrl,
+    analyzerCtrl: AnalyzerCtrl,
+    actionCtrl: ActionCtrl,
+    cortexQueryExecutor: CortexQueryExecutor,
+    reportCtrl: ReportCtrl
+) extends SimpleRouter {
   override def routes: Routes = {
     case GET(p"/job/$jobId<[^/]*>") => jobCtrl.get(jobId)
     case POST(p"/job/_search")      => cortexQueryExecutor.job.search
@@ -16,5 +21,7 @@ class Router @Inject()(jobCtrl: JobCtrl, analyzerCtrl: AnalyzerCtrl, actionCtrl:
 
     case GET(p"/analyzer")        => analyzerCtrl.list
     case POST(p"/action/_search") => actionCtrl.list
+
+    case GET(p"/report/template/content/$analyzerId<[^/]*>/$reportType<[^/]*>") => reportCtrl.getContent(analyzerId, reportType)
   }
 }
