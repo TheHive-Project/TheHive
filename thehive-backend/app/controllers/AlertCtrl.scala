@@ -126,6 +126,14 @@ class AlertCtrl @Inject()(
   }
 
   @Timed
+  def bulkDelete(): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+    request.body.getStrings("ids").fold(Future.successful(NoContent)) { ids ⇒
+      Future.traverse(ids)(alertSrv.delete(_, request.body.getBoolean("force").getOrElse(false)))
+        .map(_ => NoContent)
+    }
+  }
+
+  @Timed
   def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")

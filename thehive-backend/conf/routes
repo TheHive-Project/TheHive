@@ -72,6 +72,7 @@ POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAl
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
 POST     /api/alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 POST     /api/alert/merge/_bulk                   controllers.AlertCtrl.bulkMergeWithCase()
+POST     /api/alert/delete/_bulk                  controllers.AlertCtrl.bulkDelete()
 
 GET      /api/flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
 GET      /api/audit                               controllers.AuditCtrl.find()
