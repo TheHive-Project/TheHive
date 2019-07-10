@@ -23,7 +23,8 @@ class ReportTemplateSrv @Inject()(
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ReportTemplateSteps = new ReportTemplateSteps(raw)
 
   /**
-  * Creates or updates if found templates contained in a zip file
+    * Creates or updates if found templates contained in a zip file
+    *
     * @param file the zip file
     * @param graph needed graph connection for db query
     * @param authContext needed auth context for db query

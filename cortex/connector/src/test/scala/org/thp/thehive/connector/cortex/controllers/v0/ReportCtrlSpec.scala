@@ -1,5 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import java.io.File
+
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -11,6 +13,9 @@ import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
 import org.thp.thehive.connector.cortex.services.ReportTemplateSrv
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
+import play.api.libs.Files.SingletonTemporaryFileCreator
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
@@ -54,6 +59,20 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 200
         contentAsString(result) shouldEqual template.content
+      }
+
+      "import valid templates contained in a zip file" in {
+        val archive  = SingletonTemporaryFileCreator.create(new File(getClass.getResource("/report-templates.zip").toURI).toPath)
+        val file     = FilePart("templates", "report-templates.zip", Option("application/zip"), archive)
+        val request = FakeRequest("POST", s"/api/connector/cortex/report/template/_import")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withBody(AnyContentAsMultipartFormData(MultipartFormData(Map("" -> Seq("dummydata")), Seq(file), Nil)))
+
+        val result = reportCtrl.importTemplates(request)
+
+        val t = contentAsJson(result)
+
+        status(result) shouldEqual 200
       }
     }
   }
