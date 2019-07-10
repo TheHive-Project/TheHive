@@ -33,12 +33,12 @@ search {
   ## SSL configuration
   #search.keyStore {
   #  path = "/path/to/keystore"
-  #  type = "JPK" # or PKCS12
+  #  type = "JKS" # or PKCS12
   #  password = "keystore-password"
   #}
   #search.trustStore {
   #  path = "/path/to/trustStore"
-  #  type = "JPK" # or PKCS12
+  #  type = "JKS" # or PKCS12
   #  password = "trustStore-password"
   #}
 }
