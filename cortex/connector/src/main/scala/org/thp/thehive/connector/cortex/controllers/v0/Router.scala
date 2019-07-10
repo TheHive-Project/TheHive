@@ -23,5 +23,6 @@ class Router @Inject()(
     case POST(p"/action/_search") => actionCtrl.list
 
     case GET(p"/report/template/content/$analyzerId<[^/]*>/$reportType<[^/]*>") => reportCtrl.getContent(analyzerId, reportType)
+    case POST(p"/report/template/_import")                                      => reportCtrl.importTemplates
   }
 }
