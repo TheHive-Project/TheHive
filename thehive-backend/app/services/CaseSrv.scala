@@ -60,7 +60,7 @@ class CaseSrv @Inject()(
   }
 
   def create(fields: Fields, template: Option[CaseTemplate] = None)(implicit authContext: AuthContext): Future[Case] = {
-    val fieldsWithOwner = fields.get("owner") match {
+    val fieldsWithOwner = fields.getString("owner") match {
       case None    ⇒ fields.set("owner", authContext.userId)
       case Some(_) ⇒ fields
     }

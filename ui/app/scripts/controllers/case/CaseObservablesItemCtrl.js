@@ -19,7 +19,7 @@
             };
 
             $scope.artifact = artifact;
-            $scope.artifact.tlp = $scope.artifact.tlp || -1;
+            $scope.artifact.tlp = $scope.artifact.tlp !== undefined ? $scope.artifact.tlp : -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.cortexServers = $scope.analysisEnabled && appConfig.connectors.cortex.servers;
             $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;

@@ -54,6 +54,7 @@ trait AlertAttributes {
       Attribute("alert", "startDate", OptionalAttributeFormat(F.dateFmt), Nil, None, ""),
       Attribute("alert", "attachment", OptionalAttributeFormat(F.attachmentFmt), Nil, None, ""),
       Attribute("alert", "remoteAttachment", OptionalAttributeFormat(F.objectFmt(remoteAttachmentAttributes)), Nil, None, ""),
+      Attribute("alert", "sighted", OptionalAttributeFormat(F.booleanFmt), Nil, None, ""),
       Attribute("alert", "tlp", OptionalAttributeFormat(TlpAttributeFormat), Nil, None, ""),
       Attribute("alert", "tags", MultiAttributeFormat(F.stringFmt), Nil, None, ""),
       Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, "")
