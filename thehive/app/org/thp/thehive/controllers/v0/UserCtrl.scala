@@ -32,7 +32,7 @@ class UserCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv)
+  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](

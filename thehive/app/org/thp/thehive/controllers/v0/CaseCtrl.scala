@@ -32,7 +32,7 @@ class CaseCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "case"
-  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv)
+  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](

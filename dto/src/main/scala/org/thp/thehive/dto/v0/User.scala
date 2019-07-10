@@ -8,7 +8,7 @@ object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]
 }
 
-case class OutputUser(
+case class OutputUser( // TODO add metadata
     id: String,
     login: String,
     name: String,

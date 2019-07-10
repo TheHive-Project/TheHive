@@ -26,6 +26,8 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
     roleSrv.create(user, createdOrganisation, profileSrv.admin)
     createdOrganisation
   }
+
+  def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
 }
 
 @EntitySteps[Case]
@@ -50,6 +52,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   )
 
   def alerts: AlertSteps = new AlertSteps(raw.inTo[AlertOrganisation])
+
+  def dashboards: DashboardSteps = new DashboardSteps(raw.outTo[OrganisationDashboard])
 
   def visibleOrganisations: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
 

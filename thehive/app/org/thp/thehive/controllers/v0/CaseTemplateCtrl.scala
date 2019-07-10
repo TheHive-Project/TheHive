@@ -25,7 +25,7 @@ class CaseTemplateCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties
+  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties ::: metaProperties[CaseTemplateSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
