@@ -13,7 +13,6 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
 import org.thp.thehive.services.{ObservableSteps, _}
 
-case class GetCaseParams(id: String)
 case class OutputParam(from: Long, to: Long, withSize: Option[Boolean], withStats: Option[Boolean])
 
 @Singleton
@@ -25,11 +24,12 @@ class TheHiveQueryExecutor @Inject()(
     alertCtrl: AlertCtrl,
     userCtrl: UserCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
+    dashboardCtrl: DashboardCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: Nil
+    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: Nil
   override val version: (Int, Int) = 0 -> 0
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
@@ -47,6 +47,7 @@ class TheHiveQueryExecutor @Inject()(
   val user: QueryCtrl         = queryCtrlBuilder.apply(userCtrl, this)
   val caseTemplate: QueryCtrl = queryCtrlBuilder.apply(caseTemplateCtrl, this)
   val observable: QueryCtrl   = queryCtrlBuilder.apply(observableCtrl, this)
+  val dashboard: QueryCtrl    = queryCtrlBuilder.apply(dashboardCtrl, this)
 }
 
 object ParentIdFilter {

@@ -1,0 +1,35 @@
+package org.thp.thehive.services
+
+import scala.util.Try
+
+import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.services._
+import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
+
+@Singleton
+class DashboardSrv @Inject()(organisationSrv: OrganisationSrv)(implicit db: Database) extends VertexSrv[Dashboard, DashboardSteps] {
+  val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
+
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DashboardSteps = new DashboardSteps(raw)
+
+  def create(dashboard: Dashboard, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Dashboard with Entity = {
+    val createdDashboard = super.create(dashboard)
+    organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
+    createdDashboard
+  }
+}
+
+class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Dashboard, DashboardSteps](raw) {
+  override def newInstance(raw: GremlinScala[Vertex]): DashboardSteps = new DashboardSteps(raw)
+
+  def visible(implicit authContext: AuthContext): DashboardSteps = filter(_.inTo[OrganisationDashboard].has(Key("name") of authContext.organisation))
+
+  def share(implicit authContext: AuthContext): Try[Dashboard with Entity] = update("shared" -> true) // TODO add audit
+
+  def unshare(implicit authContext: AuthContext): Try[Dashboard with Entity] = update("shared" -> false) // TODO add audit
+
+  def delete(implicit authContext: AuthContext): Try[Unit] = raw.drop().getOrFail.map(_ => ()) // TODO add audit
+}

@@ -19,6 +19,7 @@ class Router @Inject()(
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
+    dashboardCtrl: DashboardCtrl,
     authenticationCtrl: AuthenticationCtrl,
     listCtrl: ListCtrl,
     streamCtrl: StreamCtrl,
@@ -131,6 +132,14 @@ class Router @Inject()(
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
+    case GET(p"/dashboard")                 => queryExecutor.dashboard.search
+    case POST(p"/dashboard/_search")        => queryExecutor.dashboard.search
+    case POST(p"/dashboard/_stats")         => queryExecutor.dashboard.stats
+    case POST(p"/dashboard")                => dashboardCtrl.create
+    case GET(p"/dashboard/$dashboardId")    => dashboardCtrl.get(dashboardId)
+    case PATCH(p"/dashboard/$dashboardId")  => dashboardCtrl.update(dashboardId)
+    case DELETE(p"/dashboard/$dashboardId") => dashboardCtrl.delete(dashboardId)
+
     case GET(p"/audit")                                                 => auditCtrl.flow(None, None)
     case GET(p"/flow" ? q_o"rootId=$rootId" & q_o"count=${int(count)}") => auditCtrl.flow(rootId, count)
 //    GET      /audit                               controllers.AuditCtrl.find
@@ -159,27 +168,16 @@ class Router @Inject()(
 POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
 #POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash
 
-GET      /list                                org.elastic4play.controllers.DBListCtrl.list
-DELETE   /list/:itemId                        org.elastic4play.controllers.DBListCtrl.deleteItem(itemId)
-PATCH    /list/:itemId                        org.elastic4play.controllers.DBListCtrl.updateItem(itemId)
-POST     /list/:listName                      org.elastic4play.controllers.DBListCtrl.addItem(listName)
-GET      /list/:listName                      org.elastic4play.controllers.DBListCtrl.listItems(listName)
-POST     /list/:listName/_exists              org.elastic4play.controllers.DBListCtrl.itemExists(listName)
+GET      /list                                org.elastic4play.dBListCtrl.list
+DELETE   /list/:itemId                        org.elastic4play.dBListCtrl.deleteItem(itemId)
+PATCH    /list/:itemId                        org.elastic4play.dBListCtrl.updateItem(itemId)
+POST     /list/:listName                      org.elastic4play.dBListCtrl.addItem(listName)
+GET      /list/:listName                      org.elastic4play.dBListCtrl.listItems(listName)
+POST     /list/:listName/_exists              org.elastic4play.dBListCtrl.itemExists(listName)
 
 
 
 
-
-GET      /describe/_all                       controllers.DescribeCtrl.describeAll
-GET      /describe/:modelName                 controllers.DescribeCtrl.describe(modelName)
-
-GET      /dashboard                           controllers.DashboardCtrl.find
-POST     /dashboard/_search                   controllers.DashboardCtrl.find
-POST     /dashboard/_stats                    controllers.DashboardCtrl.stats
-POST     /dashboard                           controllers.DashboardCtrl.create
-GET      /dashboard/:dashboardId              controllers.DashboardCtrl.get(dashboardId)
-PATCH    /dashboard/:dashboardId              controllers.DashboardCtrl.update(dashboardId)
-DELETE   /dashboard/:dashboardId              controllers.DashboardCtrl.delete(dashboardId)
 
 ->       /connector                           connectors.ConnectorRouter
 
