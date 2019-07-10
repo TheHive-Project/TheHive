@@ -218,19 +218,22 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[AlertOrganisation])
 
-  def visible(implicit authContext: AuthContext): AlertSteps = newInstance(
-    raw.filter(_.outTo[AlertOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
-  )
+  def visible(implicit authContext: AuthContext): AlertSteps =
+    filter(
+      _.outTo[AlertOrganisation]
+        .inTo[RoleOrganisation]
+        .inTo[UserRole]
+        .has(Key("login") of authContext.userId)
+    )
 
-  def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps = newInstance(
-    raw.filter(
+  def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
+    filter(
       _.outTo[AlertOrganisation]
         .inTo[RoleOrganisation]
         .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
         .inTo[UserRole]
         .has(Key("login") of authContext.userId)
     )
-  )
 
   def alertUserOrganisation(permission: Permission)(implicit authContext: AuthContext): ScalarSteps[(RichAlert, Organisation with Entity)] = {
     val alertLabel            = StepLabel[Vertex]()
