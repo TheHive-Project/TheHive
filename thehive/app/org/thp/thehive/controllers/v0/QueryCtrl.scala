@@ -1,17 +1,20 @@
 package org.thp.thehive.controllers.v0
 
+import java.util.Date
+
 import scala.util.{Success, Try}
 
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
+import scala.reflect.runtime.{universe => ru}
 
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query, QueryExecutor}
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, PagedResult}
+import org.thp.scalligraph.query._
 
 trait QueryableCtrl {
   val entityName: String
@@ -19,6 +22,14 @@ trait QueryableCtrl {
   val initialQuery: ParamQuery[_]
   val pageQuery: ParamQuery[_]
   val outputQuery: ParamQuery[_]
+
+  def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[S]
+      .property[String]("createdBy")(_.rename("_createdBy").readonly)
+      .property[Date]("createdAt")(_.rename("_createdAt").readonly)
+      .property[String]("updatedBy")(_.rename("_updatedBy").readonly)
+      .property[Date]("updatedAt")(_.rename("_updatedAt").readonly)
+      .build
 }
 
 class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {

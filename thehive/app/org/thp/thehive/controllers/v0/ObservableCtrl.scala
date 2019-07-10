@@ -27,7 +27,7 @@ class ObservableCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "observable"
-  override val publicProperties: List[PublicProperty[_, _]] = observableProperties
+  override val publicProperties: List[PublicProperty[_, _]] = observableProperties ::: metaProperties[ObservableSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](

@@ -37,7 +37,7 @@ class AlertCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = alertProperties
+  override val publicProperties: List[PublicProperty[_, _]] = alertProperties ::: metaProperties[AlertSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
@@ -123,12 +123,9 @@ class AlertCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
           .update(_.get(alertId).can(Permissions.manageAlert), propertyUpdaters)
-          .flatMap {
-            case (alertSteps, _) =>
-              alertSteps
-                .richAlert
-                .getOrFail()
-                .map(richAlert => Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson))
+          .flatMap { case (alertSteps, _) => alertSteps.richAlert.getOrFail() }
+          .map { richAlert =>
+            Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson)
           }
       }
 

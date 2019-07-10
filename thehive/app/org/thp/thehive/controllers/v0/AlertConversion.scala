@@ -22,6 +22,8 @@ object AlertConversion {
       richAlert
         .into[OutputAlert]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldRenamed(_._id, _.id)
         .withFieldComputed(
           _.status,
@@ -43,6 +45,8 @@ object AlertConversion {
         .into[OutputAlert]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
         .withFieldRenamed(_._id, _.id)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldComputed(
           _.status,
           alert =>
