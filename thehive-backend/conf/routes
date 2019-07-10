@@ -64,7 +64,7 @@ GET      /api/alert/_fixStatus                    controllers.AlertCtrl.fixStatu
 POST     /api/alert                               controllers.AlertCtrl.create()
 GET      /api/alert/:alertId                      controllers.AlertCtrl.get(alertId)
 PATCH    /api/alert/:alertId                      controllers.AlertCtrl.update(alertId)
-DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId)
+DELETE   /api/alert/:alertId                      controllers.AlertCtrl.delete(alertId, force: Option[Boolean])
 POST     /api/alert/:alertId/markAsRead           controllers.AlertCtrl.markAsRead(alertId)
 POST     /api/alert/:alertId/markAsUnread         controllers.AlertCtrl.markAsUnread(alertId)
 POST     /api/alert/:alertId/createCase           controllers.AlertCtrl.createCase(alertId)
@@ -72,6 +72,7 @@ POST     /api/alert/:alertId/follow               controllers.AlertCtrl.followAl
 POST     /api/alert/:alertId/unfollow             controllers.AlertCtrl.unfollowAlert(alertId)
 POST     /api/alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 POST     /api/alert/merge/_bulk                   controllers.AlertCtrl.bulkMergeWithCase()
+POST     /api/alert/delete/_bulk                  controllers.AlertCtrl.bulkDelete()
 
 GET      /api/flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
 GET      /api/audit                               controllers.AuditCtrl.find()

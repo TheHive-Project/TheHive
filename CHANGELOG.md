@@ -1,5 +1,30 @@
 # Change Log
 
+## [3.4.0-4C1](https://github.com/TheHive-Project/TheHive/tree/3.4.0-RC1) (2019-07-09)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.4.0-RC1...3.4.0-RC2)
+
+**Implemented enhancements:**
+
+- Display ioc and sighted attributes in Alert artifact list [\#1035](https://github.com/TheHive-Project/TheHive/issues/1035)
+- Merge Observable tags with existing observables during importing alerts into case [\#1014](https://github.com/TheHive-Project/TheHive/issues/1014)
+- API not recognizing the attribute 'sighted' of artifacts on alert creation [\#1003](https://github.com/TheHive-Project/TheHive/issues/1003)
+- Alerts are not getting deleted as expected [\#974](https://github.com/TheHive-Project/TheHive/issues/974)
+
+**Fixed bugs:**
+
+- Update case owner field validation to handle null value [\#1036](https://github.com/TheHive-Project/TheHive/issues/1036)
+- thehive prints error messages on first run \("Authentication failure" / "user init not found"\) [\#1027](https://github.com/TheHive-Project/TheHive/issues/1027)
+- TLP:WHITE for observable not shown, not editable [\#1025](https://github.com/TheHive-Project/TheHive/issues/1025)
+- Dashboard based on observables not refreshing correctly [\#996](https://github.com/TheHive-Project/TheHive/issues/996)
+- javascript error in tasks [\#979](https://github.com/TheHive-Project/TheHive/issues/979)
+- /api/alert/{}/createCase does not use caseTemplate [\#929](https://github.com/TheHive-Project/TheHive/issues/929)
+
+**Closed issues:**
+
+- Cannot add custom fields to case template [\#1042](https://github.com/TheHive-Project/TheHive/issues/1042)
+- sample hive does not connect to cortex and prints no helpful error message [\#1028](https://github.com/TheHive-Project/TheHive/issues/1028)
+
 ## [3.4.0-4C1](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-06-05)
 
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.1...3.4.0-4C1)
