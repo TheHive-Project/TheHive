@@ -85,8 +85,6 @@ class JobCtrlTest extends PlaySpecification with Mockito {
             """.stripMargin))
         val result = cortexQueryExecutor.job.stats(request)
 
-        val t = contentAsJson(result)
-
         status(result) shouldEqual 200
       }
     }
