@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.reflect.runtime.{universe => ru}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -13,6 +11,8 @@ import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0._
+
+import scala.reflect.runtime.{universe => ru}
 
 /**
   * Range param case class for search query parsing
@@ -28,15 +28,15 @@ class CortexQueryExecutor @Inject()(
     jobCtrl: JobCtrl,
     jobSrv: JobSrv,
     queryCtrlBuilder: QueryCtrlBuilder,
-    implicit val db: Database
+    implicit val db: Database,
+    reportCtrl: ReportCtrl
 ) extends QueryExecutor {
-  override val version: (Int, Int)                               = 0 -> 0
-  override lazy val publicProperties: List[PublicProperty[_, _]] = jobCtrl.publicProperties
-
-  override lazy val queries
-      : Seq[ParamQuery[_]] = new CortexParentFilterQuery(publicProperties) :: jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: Nil
-
-  val job: QueryCtrl = queryCtrlBuilder.apply(jobCtrl, this)
+  override lazy val publicProperties: List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties
+  override lazy val queries: Seq[ParamQuery[_]] =
+    new CortexParentFilterQuery(publicProperties) :: jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: reportCtrl.initialQuery :: reportCtrl.pageQuery :: reportCtrl.outputQuery :: Nil
+  override val version: (Int, Int) = 0 -> 0
+  val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
+  val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
 }
 
 /**

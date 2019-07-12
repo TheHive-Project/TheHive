@@ -6,7 +6,7 @@ import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.connector.cortex.models.ReportTemplate
-import org.thp.thehive.connector.cortex.services.JobSteps
+import org.thp.thehive.connector.cortex.services.ReportTemplateSteps
 
 import scala.language.implicitConversions
 
@@ -23,10 +23,9 @@ object ReportTemplateConversion {
     )
 
   val reportTemplateProperties: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[JobSteps]
+    PublicPropertyListBuilder[ReportTemplateSteps]
       .property[String]("analyzerId")(_.rename("workerId").updatable)
-      .property[String]("id")(_.simple.readonly)
-      .property[String]("content")(_.simple.updatable)
       .property[String]("reportType")(_.simple.updatable)
+      .property[String]("content")(_.simple.updatable)
       .build
 }
