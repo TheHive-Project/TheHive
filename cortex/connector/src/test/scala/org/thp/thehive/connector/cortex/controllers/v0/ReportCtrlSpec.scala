@@ -4,17 +4,18 @@ import java.io.File
 
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.cortex.dto.v0.OutputReportTemplate
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
-import org.thp.thehive.connector.cortex.services.ReportTemplateSrv
+import org.thp.thehive.connector.cortex.services.{CortexActor, ReportTemplateSrv}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.Files.SingletonTemporaryFileCreator
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -31,6 +32,7 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
       .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[CortexActor]("cortex-actor")
       .addConfiguration(
         Configuration(
           "play.modules.disabled" -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule")
@@ -49,6 +51,7 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
     val reportCtrl: ReportCtrl = app.instanceOf[ReportCtrl]
     val reportTemplateSrv      = app.instanceOf[ReportTemplateSrv]
     val db: Database           = app.instanceOf[Database]
+    val cortexQueryExecutor = app.instanceOf[CortexQueryExecutor]
 
     s"[$name] report controller" should {
       "fetch a template by analyzerId and reportType" in {
@@ -86,9 +89,32 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
 
         val requestGet = FakeRequest("GET", s"/api/connector/cortex/report/template/content/Abuse_Finder_2_0/long")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-        val resultGet = reportCtrl.getContent("Abuse_Finder_2_0", "long")(request)
+        val resultGet = reportCtrl.getContent("Abuse_Finder_2_0", "long")(requestGet)
 
         status(resultGet) shouldEqual 200
+      }
+
+      "search templates properly" in {
+        val archive  = SingletonTemporaryFileCreator.create(new File(getClass.getResource("/report-templates.zip").toURI).toPath)
+        val file     = FilePart("templates", "report-templates.zip", Option("application/zip"), archive)
+        val requestImport = FakeRequest("POST", s"/api/connector/cortex/report/template/_import")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withBody(AnyContentAsMultipartFormData(MultipartFormData(Map("" -> Seq("dummydata")), Seq(file), Nil)))
+
+        val resultImport = reportCtrl.importTemplates(requestImport)
+
+        status(resultImport) shouldEqual 200
+
+        val requestSearch = FakeRequest("POST", s"/api/connector/cortex/report/template/_search?range=0-200")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withJsonBody(Json.parse(s"""
+              {
+                 "query":{"analyzerId": "Abuse_Finder_2_0"}
+              }
+            """.stripMargin))
+        val resultSearch = cortexQueryExecutor.report.search(requestSearch)
+
+        status(resultSearch) shouldEqual 200
       }
     }
   }
