@@ -34,6 +34,6 @@ class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, gr
 
   def getById(id: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("_id") of id))
 
-  def getByName(name: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("name") of name))
+  def getByName(name: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("value") of name))
 
 }
