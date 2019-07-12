@@ -115,16 +115,23 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
 }
 
 class ParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
-  override val paramParser: FieldsParser[InputFilter] = FieldsParser("parentIdFilter") {
-    case (path, FObjOne("_and", FSeq(fields))) =>
-      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_and").toSeq(index), field) }.map(InputFilter.and)
-    case (path, FObjOne("_or", FSeq(fields))) =>
-      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_or").toSeq(index), field) }.map(InputFilter.or)
-    case (path, FObjOne("_not", field))                       => paramParser(path :/ "_not", field).map(InputFilter.not)
-    case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
-    case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
-      paramParser.apply(path, queryField).map(query => new ParentQueryInputFilter(query))
-  }.orElse(InputFilter.fieldsParser)
+  override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
+    FieldsParser("parentIdFilter") {
+      case (path, FObjOne("_and", FSeq(fields))) =>
+        fields
+          .zipWithIndex
+          .validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_and").toSeq(index), field) }
+          .map(InputFilter.and)
+      case (path, FObjOne("_or", FSeq(fields))) =>
+        fields
+          .zipWithIndex
+          .validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_or").toSeq(index), field) }
+          .map(InputFilter.or)
+      case (path, FObjOne("_not", field))                       => paramParser(tpe, properties)(path :/ "_not", field).map(InputFilter.not)
+      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
+      case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
+        paramParser(tpe, properties).apply(path, queryField).map(query => new ParentQueryInputFilter(query))
+    }.orElse(InputFilter.fieldsParser(tpe, properties))
   override val name: String                   = "filter"
   override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[TaskSteps] || t <:< ru.typeOf[ObservableSteps] || t <:< ru.typeOf[LogSteps]
   override def toType(t: ru.Type): ru.Type    = t

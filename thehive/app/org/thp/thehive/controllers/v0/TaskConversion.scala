@@ -45,14 +45,14 @@ object TaskConversion {
     PublicPropertyListBuilder[TaskSteps]
       .property[String]("title")(_.simple.updatable)
       .property[Option[String]]("description")(_.simple.updatable)
-      .property[String]("status")(_.simple.updatable)
+      .property[TaskStatus.Value]("status")(_.simple.updatable)
       .property[Boolean]("flag")(_.simple.updatable)
       .property[Option[Date]]("startDate")(_.simple.updatable)
       .property[Option[Date]]("endDate")(_.simple.updatable)
       .property[Int]("order")(_.simple.updatable)
       .property[Option[Date]]("dueDate")(_.simple.updatable)
       .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
-        (_, _, login: Option[String], vertex, _, graph, authContext) =>
+        (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail()
             user <- login.map(userSrv.get(_)(graph).getOrFail()).flip

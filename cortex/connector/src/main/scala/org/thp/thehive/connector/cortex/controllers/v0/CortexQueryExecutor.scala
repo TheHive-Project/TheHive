@@ -1,6 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.reflect.runtime.{universe => ru}
+import scala.language.existentials
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
@@ -70,17 +71,26 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
   *
   * @param publicProperties the models properties
   */
-class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends ParentFilterQuery(publicProperties) {
-  override val paramParser: FieldsParser[InputFilter] = FieldsParser("parentIdFilter") {
-    case (path, FObjOne("_and", FSeq(fields))) =>
-      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_and").toSeq(index), field) }.map(and)
-    case (path, FObjOne("_or", FSeq(fields))) =>
-      fields.zipWithIndex.validatedBy { case (field, index) => paramParser((path :/ "_or").toSeq(index), field) }.map(or)
-    case (path, FObjOne("_not", field))                       => paramParser(path :/ "_not", field).map(not)
-    case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
-    case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
-      paramParser.apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
-  }.orElse(InputFilter.fieldsParser)
-
+class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
+  override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
+    FieldsParser("parentIdFilter") {
+      case (path, FObjOne("_and", FSeq(fields))) =>
+        fields.zipWithIndex.validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_and").toSeq(index), field) }.map(and)
+      case (path, FObjOne("_or", FSeq(fields))) =>
+        fields.zipWithIndex.validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_or").toSeq(index), field) }.map(or)
+      case (path, FObjOne("_not", field))                       => paramParser(tpe, properties)(path :/ "_not", field).map(not)
+      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
+      case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
+        paramParser(tpe, properties).apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
+    }.orElse(InputFilter.fieldsParser(tpe, properties))
+  override val name: String                   = "filter"
   override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[JobSteps]
+  override def toType(t: ru.Type): ru.Type    = t
+  override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
+    inputFilter(
+      publicProperties,
+      rm.classSymbol(from.getClass).toType,
+      from.asInstanceOf[X forSome { type X <: BaseVertexSteps[_, X] }],
+      authContext
+    )
 }

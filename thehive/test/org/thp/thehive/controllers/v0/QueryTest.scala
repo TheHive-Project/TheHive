@@ -6,7 +6,7 @@ import play.api.test.PlaySpecification
 import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{EntryPoint, FObject, FString, Field}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, QueryExecutor}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, QueryExecutor}
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv, UserSrv}
 
 class QueryTest extends PlaySpecification with Mockito {
@@ -21,8 +21,9 @@ class QueryTest extends PlaySpecification with Mockito {
   )
 
   val queryExecutor: QueryExecutor = new QueryExecutor {
-    override val version: (Int, Int)              = 0 -> 0
-    override lazy val queries: Seq[ParamQuery[_]] = Seq(taskCtrl.initialQuery, taskCtrl.pageQuery, taskCtrl.outputQuery)
+    override val version: (Int, Int)                               = 0 -> 0
+    override lazy val queries: Seq[ParamQuery[_]]                  = Seq(taskCtrl.initialQuery, taskCtrl.pageQuery, taskCtrl.outputQuery)
+    override lazy val publicProperties: List[PublicProperty[_, _]] = taskCtrl.publicProperties
   }
   val queryCtrl: QueryCtrl = new QueryCtrlBuilder(mock[EntryPoint], mock[Database]).apply(taskCtrl, queryExecutor)
 
@@ -34,7 +35,7 @@ class QueryTest extends PlaySpecification with Mockito {
                                |     "_and": [{
                                |       "_in": {
                                |         "_field": "status",
-                               |         "_values": ["waiting", "inProgress"]
+                               |         "_values": ["Waiting", "InProgress"]
                                |       }
                                |     }, {
                                |       "owner": "admin"
@@ -50,8 +51,8 @@ class QueryTest extends PlaySpecification with Mockito {
                                | }
         """.stripMargin)
 
-      val queryOrError = queryCtrl.statsParser(FObject("_name" -> FString("listTask")))(Field(input)).map(x => x)
-      queryOrError.isGood must beTrue
+      val queryOrError = queryCtrl.statsParser(FObject("_name" -> FString("listTask")))(Field(input))
+      queryOrError.isGood must beTrue.updateMessage(s => s"$s\n$queryOrError")
       queryOrError.get must not be empty
     }
   }

@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.{Output, UnsupportedAttributeError}
@@ -9,6 +10,8 @@ import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 import play.api.libs.json.Json
+
+import org.thp.scalligraph.models.UniMapping
 
 trait UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -34,7 +37,7 @@ trait UserConversion {
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom[String] { (prop, path, value, vertex, db, graph, authContext) =>
+      .property[String]("name")(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -53,13 +56,13 @@ trait UserConversion {
           .orElse(isUserAdmin)
           .flatMap {
             case _ if path.isEmpty =>
-              db.setProperty(vertex, "name", value, prop.mapping)
+              db.setProperty(vertex, "name", value, UniMapping.stringMapping)
               Success(Json.obj("name" -> value))
             case _ => Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
       .property[String]("apikey")(_.simple.readonly)
-      .property[Boolean]("locked")(_.simple.custom[Boolean] { (prop, path, value, vertex, db, graph, authContext) =>
+      .property[Boolean]("locked")(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)
@@ -68,7 +71,7 @@ trait UserConversion {
           .existsOrFail()
           .flatMap {
             case _ if path.isEmpty =>
-              db.setProperty(vertex, "locked", value, prop.mapping)
+              db.setProperty(vertex, "locked", value, UniMapping.booleanMapping)
               Success(Json.obj("locked" -> value))
             case _ => Failure(UnsupportedAttributeError(s"status.$path"))
           }
