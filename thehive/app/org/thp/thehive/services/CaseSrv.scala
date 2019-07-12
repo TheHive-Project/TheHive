@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList, Set => JSet}
+import java.util.{Date, List => JList, Set => JSet}
 
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
@@ -14,7 +14,7 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichSeq}
+import org.thp.scalligraph.{EntitySteps, FPathElem, InternalError, RichJMap, RichSeq}
 import org.thp.thehive.models._
 
 @Singleton
@@ -23,7 +23,8 @@ class CaseSrv @Inject()(
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
-    auditSrv: AuditSrv
+    auditSrv: AuditSrv,
+    resolutionStatusSrv: ResolutionStatusSrv
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -70,15 +71,25 @@ class CaseSrv @Inject()(
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
+  def endDateSetter(endDate: Date): PropertyUpdater =
+    PropertyUpdater(FPathElem("endDate"), endDate.getTime) { (vertex, _, _, _) =>
+      vertex.property("endDate", endDate.getTime)
+      Success(Json.obj("endDate" -> endDate.getTime))
+    }
+
   override def update(
       steps: CaseSteps,
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] = {
+    val closeCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == "Resolved")
+
+    val newPropertyUpdaters = if (closeCase) endDateSetter(new Date) +: propertyUpdaters else propertyUpdaters
     for {
-      (caseSteps, updatedFields) <- super.update(steps, propertyUpdaters)
+      (caseSteps, updatedFields) <- super.update(steps, newPropertyUpdaters)
       case0                      <- caseSteps.clone().getOrFail()
       _                          <- auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
+  }
 
   def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
       implicit graph: Graph,
@@ -145,8 +156,15 @@ class CaseSrv @Inject()(
 
   def setResolutionStatus(
       `case`: Case with Entity,
+      resolutionStatus: String
+  )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
+    resolutionStatusSrv.get(resolutionStatus).getOrFail().map(setResolutionStatus(`case`, _))
+
+  def setResolutionStatus(
+      `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity = {
+    // TODO remove previous value
     auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
   }
@@ -250,7 +268,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       )
     )
 
-  def getLast: CaseSteps = newInstance(raw.order(By(Key[Int]("number"), Order.decr)))
+  def getLast: CaseSteps =
+    newInstance(raw.order(By(Key[Int]("number"), Order.decr))) // TODO use Order.desc when possible: org.janusgraph.graphdb.internal.Order
 
   def richCase: ScalarSteps[RichCase] =
     ScalarSteps(
