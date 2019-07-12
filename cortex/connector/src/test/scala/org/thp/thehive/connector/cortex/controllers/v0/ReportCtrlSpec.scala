@@ -14,6 +14,7 @@ import org.thp.thehive.connector.cortex.services.ReportTemplateSrv
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.Files.SingletonTemporaryFileCreator
+import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -70,9 +71,24 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
 
         val result = reportCtrl.importTemplates(request)
 
-        val t = contentAsJson(result)
-
         status(result) shouldEqual 200
+
+        val importedList = contentAsJson(result)
+
+        importedList shouldEqual Json.parse("""{
+                                                 "Abuse_Finder_2_0_long":true,
+                                                 "Abuse_Finder_2_0_short":true,
+                                                 "JoeSandbox_File_Analysis_Noinet_2_0_long":true,
+                                                 "JoeSandbox_File_Analysis_Noinet_2_0_short":true,
+                                                 "Yeti_1_0_long":true,
+                                                 "testAnalyzer_short.html_long":true
+                                              }""")
+
+        val requestGet = FakeRequest("GET", s"/api/connector/cortex/report/template/content/Abuse_Finder_2_0/long")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+        val resultGet = reportCtrl.getContent("Abuse_Finder_2_0", "long")(request)
+
+        status(resultGet) shouldEqual 200
       }
     }
   }

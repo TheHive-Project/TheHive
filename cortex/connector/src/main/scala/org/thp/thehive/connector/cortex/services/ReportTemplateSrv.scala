@@ -33,7 +33,7 @@ class ReportTemplateSrv @Inject()(
   def importZipFile(file: ZipFile)(implicit graph: Graph, authContext: AuthContext): Iterator[Try[ReportTemplate with Entity]] =
     for {
       entry <- file.entries.asScala
-      if !entry.isDirectory
+      if !entry.isDirectory && entry.getName.endsWith(".html")
     } yield for {
       stream  <- Try(file.getInputStream(entry))
       content <- Try(Source.fromInputStream(stream).mkString)
