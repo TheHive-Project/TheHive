@@ -151,7 +151,7 @@ object CaseConversion {
       .property[String]("status")(_.simple.updatable)
       .property[Option[String]]("summary")(_.simple.updatable)
       .property[Option[String]]("owner")(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
-        (_, _, login: Option[String], vertex, _, graph, authContext) =>
+        (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             case0 <- caseSrv.get(vertex)(graph).getOrFail()
             user  <- login.map(userSrv.get(_)(graph).getOrFail()).flip
@@ -161,7 +161,13 @@ object CaseConversion {
             }
           } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("name")).readonly)
+      .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("value")).custom {
+        (_, value: String, vertex, _, graph, authContext) =>
+          for {
+            c <- caseSrv.get(vertex)(graph).getOrFail()
+            _ <- caseSrv.setResolutionStatus(c, value)(graph, authContext)
+          } yield Json.obj("resolutionStatus" -> value)
+      })
       .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
       .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
       .property[String]("customFieldType")(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
@@ -172,6 +178,18 @@ object CaseConversion {
           _.outToE[CaseCustomField].value[Any]("integerValue"),
           _.outToE[CaseCustomField].value[Any]("floatValue"),
           _.outToE[CaseCustomField].value[Any]("dateValue")
+        ).readonly
+      )
+      .property[Long]("computed.handlingDurationInHours")(
+        _.derived(
+          _.coalesce(
+            _.has(Key("endDate"))
+              .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
+              .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))
+              .sack((_: Long) / (_: Long), By(__.constant(3600000L)))
+              .sack[Long](),
+            _.constant(0L)
+          )
         ).readonly
       )
       .build

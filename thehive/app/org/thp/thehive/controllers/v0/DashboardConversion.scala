@@ -42,17 +42,17 @@ object DashboardConversion {
       .property[String]("title")(_.simple.updatable)
       .property[String]("description")(_.simple.updatable)
       .property[String]("definition")(_.simple.updatable)
-      .property[String]("status")(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom[String] {
-        case (_, _, "Shared", vertex, _, graph, authContext) =>
+      .property[String]("status")(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
+        case (_, "Shared", vertex, _, graph, authContext) =>
           dashboardSrv.get(vertex)(graph).share(authContext)
           Success(Json.obj("status" -> "Shared"))
-        case (_, _, "Private", vertex, _, graph, authContext) =>
+        case (_, "Private", vertex, _, graph, authContext) =>
           dashboardSrv.get(vertex)(graph).unshare(authContext)
           Success(Json.obj("status" -> "Private"))
-        case (_, _, "Deleted", vertex, _, graph, authContext) =>
+        case (_, "Deleted", vertex, _, graph, authContext) =>
           dashboardSrv.get(vertex)(graph).delete(authContext)
           Success(Json.obj("status" -> "Deleted"))
-        case (_, _, status, _, _, _, _) =>
+        case (_, status, _, _, _, _) =>
           Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
       })
       .build
