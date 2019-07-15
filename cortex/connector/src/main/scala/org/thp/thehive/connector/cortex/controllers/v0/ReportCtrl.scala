@@ -6,7 +6,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
 import org.thp.thehive.controllers.v0.QueryableCtrl
@@ -45,6 +45,16 @@ class ReportCtrl @Inject()(
             template <- reportTemplateSrv.initSteps.forWorkerAndType(analyzerId, rType).getOrFail()
           } yield Results.Ok(template.content).as("text/html")
         } orElse Success(Results.NotFound)
+      }
+
+  def get(id: String): Action[AnyContent] =
+    entryPoint("get template")
+      .authTransaction(db) { _ => implicit graph =>
+        {
+          for {
+            template <- reportTemplateSrv.get(id).getOrFail()
+          } yield Results.Ok(template.toJson)
+        } recover { case e => Results.NotFound(e.getMessage) }
       }
 
   def importTemplates: Action[AnyContent] =
@@ -90,12 +100,27 @@ class ReportCtrl @Inject()(
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete template")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { _ => implicit graph =>
         Try(
           reportTemplateSrv
             .get(id)
             .remove()
         ).map(_ => Results.Ok)
           .recover { case e => Results.InternalServerError(e.getMessage) }
+      }
+
+  def update(id: String): Action[AnyContent] =
+    entryPoint("update template")
+      .extract("template", FieldsParser.update("template", reportTemplateProperties))
+      .authTransaction(db) { implicit request => implicit graph =>
+        if (request.permissions.contains(Permissions.manageReportTemplate)) {
+          val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")
+
+          for {
+            (templateSteps, _) <- reportTemplateSrv.update(_.get(id), propertyUpdaters)
+            template           <- templateSteps.getOrFail()
+          } yield Results.Ok(template.toJson)
+
+        } else Success(Results.Unauthorized)
       }
 }

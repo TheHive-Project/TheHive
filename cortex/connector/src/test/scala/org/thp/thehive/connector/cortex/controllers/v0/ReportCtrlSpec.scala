@@ -52,7 +52,7 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
     val cortexQueryExecutor    = app.instanceOf[CortexQueryExecutor]
 
     s"[$name] report controller" should {
-      "create a template" in {
+      "create, fetch and delete a template" in {
         val request = FakeRequest("POST", s"/api/connector/cortex/report/template")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
@@ -67,6 +67,11 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
         status(result) shouldEqual 201
 
         val outputReportTemplate = contentAsJson(result).as[OutputReportTemplate]
+        val requestGet = FakeRequest("GET", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+
+        status(reportCtrl.get(outputReportTemplate.id)(requestGet)) shouldEqual 200
+
         val requestDel = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
 

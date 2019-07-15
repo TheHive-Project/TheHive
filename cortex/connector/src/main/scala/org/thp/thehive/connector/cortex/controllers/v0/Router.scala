@@ -27,5 +27,7 @@ class Router @Inject()(
     case POST(p"/report/template/_search")                                      => cortexQueryExecutor.report.search
     case POST(p"/report/template")                                              => reportCtrl.create()
     case DELETE(p"/report/template/$reportTemplateId<[^/]*>")                   => reportCtrl.delete(reportTemplateId)
+    case GET(p"/report/template/$reportTemplateId<[^/]*>")                      => reportCtrl.get(reportTemplateId)
+    case PATCH(p"/report/template/$reportTemplateId<[^/]*>")                    => reportCtrl.update(reportTemplateId)
   }
 }
