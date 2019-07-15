@@ -2,19 +2,27 @@ package org.thp.cortex.client
 
 import java.util.Date
 
-import scala.concurrent.duration._
+import akka.actor.Terminated
 
+import scala.concurrent.duration._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.test.PlaySpecification
-
 import org.specs2.mock.Mockito
+import org.specs2.specification.core.Fragments
 import org.thp.cortex.dto.v0._
 import org.thp.scalligraph.AppBuilder
 
-class CortexClientTest extends PlaySpecification with Mockito with FakeCortexClient {
-  s"CortexClient" should {
-    lazy val app = AppBuilder()
+import scala.concurrent.Future
 
+class CortexClientTest extends PlaySpecification with Mockito with FakeCortexClient {
+  lazy val app = AppBuilder()
+
+  override def map(fragments: => Fragments): Fragments =
+    fragments ^ step(afterAll())
+
+  def afterAll(): Future[Terminated] = app.app.actorSystem.terminate()
+
+  s"CortexClient" should {
     implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
     implicit lazy val auth: Authentication = KeyAuthentication("test")
 

@@ -51,10 +51,6 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
 
         resultList must beEmpty
       }
-
-      "test" in {
-        1 shouldEqual 1
-      }
     }
   }
 }

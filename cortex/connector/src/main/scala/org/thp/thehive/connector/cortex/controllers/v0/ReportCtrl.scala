@@ -65,4 +65,11 @@ class ReportCtrl @Inject()(
 
         Success(Results.Ok(JsObject(r.toSeq)))
       }
+
+  def create(analyzerId: String, reportType: String): Action[AnyContent] =
+    entryPoint("create template")
+      .authTransaction(db) { _ => implicit graph =>
+
+        Success(Results.NotFound)
+      }
 }

@@ -33,17 +33,20 @@ class JobSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
       .addConfiguration(
         Configuration(
           "play.modules.disabled"      -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port" -> 3334
+          "akka.remote.netty.tcp.port" -> 3334,
+          "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on"
         )
       )
 
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
+    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
 
   def setupDatabase(app: AppBuilder): Unit =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
+
+  def shutdownActorSystem(app: AppBuilder): Unit = app.app.actorSystem.terminate()
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val jobSrv: JobSrv = app.instanceOf[JobSrv]
