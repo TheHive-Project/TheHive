@@ -77,4 +77,12 @@ class ReportTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, grap
   )
 
   override def newInstance(raw: GremlinScala[Vertex]): ReportTemplateSteps = new ReportTemplateSteps(raw)
+
+  /**
+    * Removes entities from database
+    */
+  def remove(): Unit = {
+    raw.drop().iterate()
+    ()
+  }
 }

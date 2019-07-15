@@ -3,13 +3,14 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import java.util.zip.ZipFile
 
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.OutputReportTemplate
+import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
 import org.thp.thehive.controllers.v0.QueryableCtrl
+import org.thp.thehive.models.Permissions
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -66,10 +67,35 @@ class ReportCtrl @Inject()(
         Success(Results.Ok(JsObject(r.toSeq)))
       }
 
-  def create(analyzerId: String, reportType: String): Action[AnyContent] =
+  def create: Action[AnyContent] =
     entryPoint("create template")
-      .authTransaction(db) { _ => implicit graph =>
+      .extract("template", FieldsParser[InputReportTemplate])
+      .authTransaction(db) { implicit request => implicit graph =>
+        // FIXME is there a need for ACL check concerning ReportTemplates? If so how to check it without any Edge
+        if (request.permissions.contains(Permissions.manageReportTemplate)) {
+          val template: InputReportTemplate = request.body("template")
 
-        Success(Results.NotFound)
+          {
+            for {
+              reportType <- Try(ReportType.withName(template.reportType))
+              _ <- reportTemplateSrv
+                .initSteps
+                .forWorkerAndType(template.analyzerId, reportType)
+                .getOrFail()
+            } yield Results.Conflict
+          } orElse Try(reportTemplateSrv.create(template))
+            .map(t => Results.Created(t.toJson))
+        } else Success(Results.Unauthorized)
+      }
+
+  def delete(id: String): Action[AnyContent] =
+    entryPoint("delete template")
+      .authTransaction(db) { implicit request => implicit graph =>
+        Try(
+          reportTemplateSrv
+            .get(id)
+            .remove()
+        ).map(_ => Results.Ok)
+          .recover { case e => Results.InternalServerError(e.getMessage) }
       }
 }

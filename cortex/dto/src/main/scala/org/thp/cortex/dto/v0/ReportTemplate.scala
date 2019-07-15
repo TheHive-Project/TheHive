@@ -12,3 +12,13 @@ case class OutputReportTemplate(
 object OutputReportTemplate {
   implicit val format: OFormat[OutputReportTemplate] = Json.format[OutputReportTemplate]
 }
+
+case class InputReportTemplate(
+    analyzerId: String,
+    content: String,
+    reportType: String
+)
+
+object InputReportTemplate {
+  implicit val format: OFormat[InputReportTemplate] = Json.format[InputReportTemplate]
+}
