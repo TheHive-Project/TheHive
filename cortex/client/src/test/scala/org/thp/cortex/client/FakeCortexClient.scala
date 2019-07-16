@@ -4,7 +4,7 @@ import java.net.URLEncoder
 import java.nio.file.{Path, Paths}
 
 import akka.stream.scaladsl._
-import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexAnalyzer}
+import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexAnalyzer, OutputCortexResponder}
 import play.api.http.{FileMimeTypes, HttpEntity}
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
@@ -17,6 +17,7 @@ trait FakeCortexClient {
 
   lazy val analyzers: Seq[OutputCortexAnalyzer] = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexAnalyzer]]
   lazy val jobs: Seq[CortexOutputJob]           = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
+  lazy val responders: Seq[OutputCortexResponder] = readResourceAsJson("/responders.json").as[Seq[OutputCortexResponder]]
 
   def readResourceAsJson(name: String): JsValue = {
     val dataSource = Source.fromFile(getClass.getResource(name).getPath)
@@ -47,6 +48,8 @@ trait FakeCortexClient {
               body = HttpEntity.Streamed(FileIO.fromPath(fileResource(id)), None, None)
             )
           )
+        case GET(p"/api/responder/$id")       => Action(Results.Ok(Json.toJson(responders.find(_.id == id).get)))
+        case POST(p"/api/responder/_search")  => Action(Results.Ok(Json.toJson(responders)))
       }
     } { port =>
       block(new CortexClient("test", s"http://127.0.0.1:$port/"))

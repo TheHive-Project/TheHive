@@ -19,6 +19,7 @@ class CortexClient(val name: String, baseUrl: String)(
 ) {
   lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
   lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
+  lazy val responder      = new BaseClient[InputCortexResponder, OutputCortexResponder](s"$strippedUrl/api/responder")
   lazy val logger         = Logger(getClass)
   val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
@@ -40,13 +41,13 @@ class CortexClient(val name: String, baseUrl: String)(
   /**
     * Search an analyzer by name
     *
-    * @param name the name to search for
+    * @param analyzerName the name to search for
     * @return
     */
-  def getAnalyzerByName(name: String): Future[OutputCortexAnalyzer] =
+  def getAnalyzerByName(analyzerName: String): Future[OutputCortexAnalyzer] =
     analyser
-      .search[SearchQuery](SearchQuery("name", name, "0-1"))
-      .flatMap(l => Future.fromTry(Try(l.head)))
+      .search[SearchQuery](SearchQuery("name", analyzerName, "0-1"))
+      .flatMap(l => Future.fromTry(Try(l.head.copy(cortexIds = Some(List(name))))))
 
   /**
     * Gets the job status and report if complete
@@ -99,4 +100,23 @@ class CortexClient(val name: String, baseUrl: String)(
     auth(ws.url(s"$strippedUrl/api/datastore/$id"))
       .get()
       .map(r => r.bodyAsSource)
+
+  /**
+    * Gets a responder by id
+    *
+    * @param id the id to look for
+    * @return
+    */
+  def getResponder(id: String): Future[OutputCortexResponder] = responder.get(id, None).map(_.addCortexId(name))
+
+  /**
+    * Search a responder by name
+    *
+    * @param responderName the name to search for
+    * @return
+    */
+  def getResponderByName(responderName: String): Future[OutputCortexResponder] =
+    responder
+      .search[SearchQuery](SearchQuery("name", responderName, "0-1"))
+      .flatMap(l => Future.fromTry(Try(l.head.addCortexId(name))))
 }

@@ -139,6 +139,36 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             operations = JsArray.empty.as[List[JsObject]]
           )
         )
+
+        val searchedResponder: OutputCortexResponder = await(client.getResponderByName("respTest1"))
+
+        searchedResponder should equalTo(
+          OutputCortexResponder(
+            id = "respTest1",
+            name = "respTest1",
+            version = "1",
+            description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
+            dataTypeList = Seq("test"),
+            maxPap = Some(3),
+            maxTlp = Some(2),
+            cortexIds = List("test")
+          )
+        )
+
+        val responder = await(client.getResponder("respTest2"))
+
+        responder should equalTo(
+          OutputCortexResponder(
+            id = "respTest2",
+            name = "respTest2",
+            version = "2",
+            description = "nos hoc tempore in provinciis decernendis perpetuae pacis",
+            dataTypeList = Seq("test", "dummy"),
+            maxPap = None,
+            maxTlp = None,
+            cortexIds = List("test", "test2")
+          )
+        )
       }
     }
   }

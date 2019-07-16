@@ -1,0 +1,20 @@
+[
+  {
+    "id": "respTest1",
+    "name": "respTest1",
+    "version": "1",
+    "description": "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
+    "dataTypeList": ["test"],
+    "maxTlp": 2,
+    "maxPap": 3,
+    "cortexIds": []
+  },
+  {
+    "id": "respTest2",
+    "name": "respTest2",
+    "version": "2",
+    "description": "nos hoc tempore in provinciis decernendis perpetuae pacis",
+    "dataTypeList": ["test", "dummy"],
+    "cortexIds": ["test2"]
+  }
+]

@@ -20,6 +20,7 @@ class Router @Inject()(
     case POST(p"/job")              => jobCtrl.create
 
     case GET(p"/analyzer")        => analyzerCtrl.list
+
     case POST(p"/action/_search") => actionCtrl.list
 
     case GET(p"/report/template/content/$analyzerId<[^/]*>/$reportType<[^/]*>") => reportCtrl.getContent(analyzerId, reportType)
