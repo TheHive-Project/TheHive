@@ -119,4 +119,22 @@ class CortexClient(val name: String, baseUrl: String)(
     responder
       .search[SearchQuery](SearchQuery("name", responderName, "0-1"))
       .flatMap(l => Future.fromTry(Try(l.head.addCortexId(name))))
+
+  /**
+    * Materializes an action as a job on Cortex client server
+    *
+    * @param responderId the responsible responder
+    * @param action the action to execute
+    * @return
+    */
+  def execute(responderId: String, action: InputCortexAction): Future[CortexOutputJob] = {
+    val requestBody = Json.toJson(action)
+    val result      = auth(ws.url(s"$strippedUrl/api/responder/$responderId/run")).post(requestBody)
+
+    result.transform {
+      case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[CortexOutputJob])
+      case Success(r)                               => Try(r.body[JsValue].as[CortexOutputJob])
+      case Failure(t)                               => throw t
+    }
+  }
 }
