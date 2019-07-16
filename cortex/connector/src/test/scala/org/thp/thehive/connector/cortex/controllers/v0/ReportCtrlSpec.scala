@@ -75,8 +75,10 @@ class ReportCtrlSpec extends PlaySpecification with Mockito {
         val requestUpdate = FakeRequest("PATCH", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
+        val resultUpdate = reportCtrl.update(outputReportTemplate.id)(requestUpdate)
 
-        status(reportCtrl.update(outputReportTemplate.id)(requestUpdate)) shouldEqual 200
+        status(resultUpdate) shouldEqual 200
+        contentAsJson(resultUpdate).as[OutputReportTemplate].content shouldEqual "<br/>"
 
         val requestDel = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
