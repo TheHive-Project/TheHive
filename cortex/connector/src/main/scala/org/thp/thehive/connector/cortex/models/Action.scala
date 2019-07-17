@@ -20,7 +20,7 @@ case class Action(
     report: Option[JsObject],
     cortexId: Option[String],
     cortexJobId: Option[String],
-    operations: String
+    operations: Option[String]
 )
 
 object Action {
@@ -32,7 +32,8 @@ object Action {
       status: JobStatus.Value,
       entity: Entity,
       startDate: Date,
-      operations: String
+      cortexId: Option[String],
+      cortexJobId: Option[String]
   ): Action = Action(
     responderId,
     responderName,
@@ -43,9 +44,9 @@ object Action {
     startDate,
     None,
     None,
-    None,
-    None,
-    operations
+    cortexId,
+    cortexJobId,
+    None
   )
 }
 

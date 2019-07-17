@@ -11,6 +11,11 @@ object CortexJobStatus extends Enumeration {
   val InProgress, Success, Failure, Waiting, Unknown = Value
 }
 
+object CortexJobType extends Enumeration {
+  type JobType = Value
+  val unknown, analyzer, responder = Value
+}
+
 case class CortexInputJob(
     id: String,
     workerId: String,
@@ -37,7 +42,8 @@ case class CortexOutputJob(
     organization: String,
     dataType: String,
     attributes: JsObject,
-    report: Option[CortexOutputReport]
+    report: Option[CortexOutputReport],
+    jobType: CortexJobType.JobType
 )
 
 case class CortexOutputAttachment(id: String, name: Option[String], contentType: Option[String])
@@ -93,6 +99,7 @@ object CortexOutputJob {
         organization <- (json \ "organization").validate[String]
         dataType     <- (json \ "dataType").validate[String]
         report = (json \ "report").asOpt[CortexOutputReport]
+        jobType <- (json \ "type").validate[String].map(t => Try(CortexJobType.withName(t)).getOrElse(CortexJobType.unknown))
       } yield CortexOutputJob(
         id,
         analyzerId,
@@ -107,7 +114,8 @@ object CortexOutputJob {
         organization,
         dataType,
         attributes,
-        report
+        report,
+        jobType
       )
   )
 }
