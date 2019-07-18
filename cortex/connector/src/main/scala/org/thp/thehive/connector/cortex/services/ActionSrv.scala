@@ -28,6 +28,7 @@ class ActionSrv @Inject()(
 ) extends VertexSrv[Action, ActionSteps] {
 
   import org.thp.thehive.connector.cortex.controllers.v0.JobConversion._
+  import org.thp.thehive.connector.cortex.controllers.v0.ActionOperationConversion._
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ActionSteps = new ActionSteps(raw)
 
@@ -74,7 +75,9 @@ class ActionSrv @Inject()(
     } yield action
 
   def finished(actionId: String, cortexOutputJob: CortexOutputJob) = {
-
+//    for {
+//      operations <-
+//    }
   }
 }
 

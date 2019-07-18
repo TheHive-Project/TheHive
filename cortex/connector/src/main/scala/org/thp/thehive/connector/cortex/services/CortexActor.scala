@@ -63,7 +63,7 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
 
         case CortexJobStatus.Success | CortexJobStatus.Failure =>
           checkedJobs.find(_.cortexJobId == j.id) match {
-            case Some(job) if j.jobType == CortexJobType.analyzer =>
+            case Some(job) if j.`type` == CortexJobType.analyzer =>
               log.info(
                 s"Job ${j.id} in cortex ${job.cortexClient.name} has finished with status ${j.status}, " +
                   s"updating job ${job.jobId}"
@@ -73,15 +73,18 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
               jobSrv.finished(job.jobId, j, job.cortexClient)(job.authContext)
               context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
 
-            case Some(job) if j.jobType == CortexJobType.responder =>
+            case Some(job) if j.`type` == CortexJobType.responder =>
               log.info(
                 s"Job ${j.id} in cortex ${job.cortexClient.name} has finished with status ${j.status}, " +
                   s"updating action ${job.actionId.get}"
               )
               if (j.status == CortexJobStatus.Failure) log.warning(s"Job ${j.id} has failed in Cortex")
 
-              jobSrv.finished(job.jobId, j, job.cortexClient)(job.authContext)
+              // TODO
               context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
+
+            case Some(_) =>
+              log.error(s"CortexActor received job output $j but with unknown type ${j.`type`}")
 
             case None =>
               log.error(s"CortexActor received job output $j but did not have it in state $checkedJobs")

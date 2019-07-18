@@ -43,7 +43,7 @@ case class CortexOutputJob(
     dataType: String,
     attributes: JsObject,
     report: Option[CortexOutputReport],
-    jobType: CortexJobType.JobType
+    `type`: CortexJobType.JobType
 )
 
 case class CortexOutputAttachment(id: String, name: Option[String], contentType: Option[String])
@@ -70,7 +70,7 @@ case class CortexOutputReport(
     full: JsObject,
     success: Boolean,
     artifacts: List[CortexOutputArtifact],
-    operations: List[JsObject]
+    operations: List[CortexOutputOperation]
 )
 
 object CortexOutputReport {
