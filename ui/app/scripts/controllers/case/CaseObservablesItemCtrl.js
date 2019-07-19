@@ -155,7 +155,9 @@
             };
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
-                'artifactId': observableId
+                artifactId: observableId,
+                range: 'all',
+                sort: ['-startDate']
             });
 
 
