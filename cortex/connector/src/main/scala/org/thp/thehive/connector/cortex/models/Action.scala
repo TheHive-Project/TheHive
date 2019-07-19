@@ -50,6 +50,44 @@ object Action {
   )
 }
 
+case class RichAction(
+    _id: String,
+    _createdAt: Date,
+    _createdBy: String,
+    responderId: String,
+    responderName: Option[String],
+    responderDefinition: Option[String],
+    status: JobStatus.Value,
+    startDate: Date,
+    endDate: Option[Date],
+    report: Option[JsObject],
+    cortexId: Option[String],
+    cortexJobId: Option[String],
+    operations: Option[String],
+    context: Entity
+)
+
+object RichAction {
+
+  def apply(action: Action with Entity, context: Entity): RichAction =
+    new RichAction(
+      action._id,
+      action._createdAt,
+      action._createdBy,
+      action.responderId,
+      action.responderName,
+      action.responderDefinition,
+      action.status,
+      action.startDate,
+      action.endDate,
+      action.report,
+      action.cortexId,
+      action.cortexJobId,
+      action.operations,
+      context
+    )
+}
+
 case class ActionContext()
 
 object ActionContext extends HasEdgeModel[ActionContext, Action, Product] {

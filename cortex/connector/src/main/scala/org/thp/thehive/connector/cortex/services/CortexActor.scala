@@ -10,7 +10,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object CortexActor {
-  final case class CheckJob(jobId: String, cortexJobId: String, actionId: Option[String], cortexClient: CortexClient, authContext: AuthContext)
+  final case class CheckJob(
+      jobId: Option[String],
+      cortexJobId: String,
+      actionId: Option[String],
+      cortexClient: CortexClient,
+      authContext: AuthContext
+  )
 
   final private case object CheckJobs
   final private case object CheckJobsKey
@@ -21,7 +27,7 @@ object CortexActor {
   * This actor is primarily used to check Job statuses on regular
   * ticks using the provided client for each job
   */
-class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends Actor with Timers with ActorLogging {
+class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers with ActorLogging {
   import CortexActor._
   import akka.pattern.pipe
   implicit val ec: ExecutionContext = context.dispatcher
@@ -33,8 +39,10 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
       log.debug(s"CortexActor starting check jobs ticking every ${cortexConfig.refreshDelay}")
       timers.startPeriodicTimer(CheckJobsKey, CheckJobs, cortexConfig.refreshDelay)
 
-    case cj @ CheckJob(jobId, cortexJobId, _, cortexClient, _) =>
-      log.info(s"CortexActor received job ($jobId, $cortexJobId, ${cortexClient.name}) to check, added to $checkedJobs")
+    case cj @ CheckJob(jobId, cortexJobId, actionId, cortexClient, _) =>
+      log.info(
+        s"CortexActor received job or action (${jobId.getOrElse(actionId.get)}, $cortexJobId, ${cortexClient.name}) to check, added to $checkedJobs"
+      )
       if (!timers.isTimerActive(CheckJobsKey)) {
         timers.startSingleTimer(CheckJobsKey, FirstCheckJobs, 500.millis)
       }
@@ -66,11 +74,11 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
             case Some(job) if j.`type` == CortexJobType.analyzer =>
               log.info(
                 s"Job ${j.id} in cortex ${job.cortexClient.name} has finished with status ${j.status}, " +
-                  s"updating job ${job.jobId}"
+                  s"updating job ${job.jobId.get}"
               )
               if (j.status == CortexJobStatus.Failure) log.warning(s"Job ${j.id} has failed in Cortex")
 
-              jobSrv.finished(job.jobId, j, job.cortexClient)(job.authContext)
+              jobSrv.finished(job.jobId.get, j, job.cortexClient)(job.authContext)
               context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
 
             case Some(job) if j.`type` == CortexJobType.responder =>
@@ -80,7 +88,7 @@ class CortexActor @Inject()(cortexConfig: CortexConfig, jobSrv: JobSrv) extends 
               )
               if (j.status == CortexJobStatus.Failure) log.warning(s"Job ${j.id} has failed in Cortex")
 
-              // TODO
+              actionSrv.finished(job.actionId.get, j)(job.authContext)
               context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
 
             case Some(_) =>

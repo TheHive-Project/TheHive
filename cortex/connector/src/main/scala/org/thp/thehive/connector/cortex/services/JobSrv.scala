@@ -91,7 +91,7 @@ class JobSrv @Inject()(
       createdJob = db.transaction { implicit graph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       }
-      _ = cortexActor ! CheckJob(createdJob._id, cortexOutputJob.id, None, cortexClient, authContext)
+      _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient, authContext)
     } yield createdJob
 
   /**
