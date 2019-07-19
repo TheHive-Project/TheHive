@@ -4,9 +4,14 @@ import java.util.Date
 
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.Entity
+import play.api.libs.json.{Format, Json, OFormat}
 
 object TaskStatus extends Enumeration {
+  type Type = Value
+
   val Waiting, InProgress, Completed, Cancel = Value
+
+  implicit val format: Format[TaskStatus.Type] = Json.formatEnum(TaskStatus)
 }
 
 @EdgeEntity[Task, User]
@@ -27,6 +32,10 @@ case class Task(
     order: Int,
     dueDate: Option[Date]
 )
+
+object Task {
+  implicit val format: OFormat[Task] = Json.format[Task]
+}
 
 case class RichTask(
     task: Task with Entity,
