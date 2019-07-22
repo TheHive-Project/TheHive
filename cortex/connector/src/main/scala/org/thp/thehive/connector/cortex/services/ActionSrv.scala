@@ -71,7 +71,7 @@ class ActionSrv @Inject()(
         tlp,
         pap,
         message,
-        parameters
+        parameters.as[JsObject]
       )
 
       job <- client.execute(responder.id, inputCortexAction)

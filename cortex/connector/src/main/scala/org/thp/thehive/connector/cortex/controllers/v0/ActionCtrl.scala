@@ -16,6 +16,8 @@ class ActionCtrl @Inject()(
     actionSrv: ActionSrv
 ) {
 
+  import org.thp.thehive.models.EntityFormat._
+
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
       .auth { _ =>
@@ -24,9 +26,9 @@ class ActionCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create action")
-//      .extract("action", FieldsParser[InputAction])
+      .extract("action", FieldsParser[InputAction])
       .authTransaction(db) { implicit request => implicit graph =>
-//        val inputAction: InputAction = request.body("action")
+        val inputAction: InputAction = request.body("action")
 
 //        actionSrv.execute(inputAction)
         Success(Results.Ok)

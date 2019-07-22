@@ -38,8 +38,9 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
       .addConfiguration(
         Configuration(
           "play.modules.disabled" -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port" -> 3334,
-          "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on"
+          "akka.remote.netty.tcp.port" -> 3335,
+          "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on",
+          "akka.actor.provider" -> "cluster"
         )
       )
 

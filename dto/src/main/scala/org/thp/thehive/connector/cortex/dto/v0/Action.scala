@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.dto.v0
 
-import play.api.libs.json.{JsObject, Json, OFormat}
+import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 
 case class InputAction(
     responderId: String,
@@ -9,7 +9,7 @@ case class InputAction(
     objectType: String,
     objectId: String,
     message: Option[String],
-    parameters: Option[JsObject],
+    parameters: Option[JsValue],
     tlp: Option[Int]
 )
 
