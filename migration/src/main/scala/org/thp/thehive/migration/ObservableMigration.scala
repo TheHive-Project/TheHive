@@ -43,8 +43,8 @@ class ObservableMigration @Inject()(
   val hashers                 = Hasher(config.get[Seq[String]]("attachment.hash"): _*)
 
   implicit val artifactReads: Reads[Observable] =
-    ((JsPath \ "dataType").read[String] and
-      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
+    (/*(JsPath \ "dataType").read[String] and*/
+    (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "message").readNullable[String] and
       (JsPath \ "tlp").readWithDefault[Int](2) and
       (JsPath \ "ioc").readWithDefault[Boolean](false) and

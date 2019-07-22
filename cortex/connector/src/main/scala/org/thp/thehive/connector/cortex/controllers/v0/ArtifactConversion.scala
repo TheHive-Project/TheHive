@@ -10,7 +10,6 @@ object ArtifactConversion {
 
   implicit def fromCortexOutputArtifact(j: CortexOutputArtifact): Observable =
     j.into[Observable]
-      .withFieldComputed(_.`type`, _.dataType)
       .withFieldComputed(_.message, _.message)
       .withFieldComputed(_.tlp, _.tlp)
       .withFieldComputed(_.tags, _.tags.toSet)

@@ -18,44 +18,47 @@ import org.thp.thehive.models._
 class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attachmentSrv: AttachmentSrv, caseSrv: CaseSrv, shareSrv: ShareSrv)(
     implicit db: Database
 ) extends VertexSrv[Observable, ObservableSteps] {
-  val observableKeyValueSrv   = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
-  val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
-  val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val alertObservableSrv      = new EdgeSrv[AlertObservable, Alert, Observable]
+  val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
+  val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
+  val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
+  val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
+  val alertObservableSrv       = new EdgeSrv[AlertObservable, Alert, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
 
-  def create(observable: Observable, file: FFile, extensions: Seq[KeyValue])(
+  def create(observable: Observable, `type`: ObservableType with Entity, file: FFile, extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] =
     attachmentSrv.create(file).flatMap { attachment =>
-      create(observable, attachment, extensions)
+      create(observable, `type`, attachment, extensions)
     }
 
-  def create(observable: Observable, attachment: Attachment with Entity, extensions: Seq[KeyValue])(
+  def create(observable: Observable, `type`: ObservableType with Entity, attachment: Attachment with Entity, extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
+    observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
     observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
     extensions
       .map(keyValueSrv.create)
       .map(kv => observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
-    Success(RichObservable(createdObservable, None, Some(attachment), extensions))
+    Success(RichObservable(createdObservable, `type`, None, Some(attachment), extensions))
   }
 
-  def create(observable: Observable, dataValue: String, extensions: Seq[KeyValue])(
+  def create(observable: Observable, `type`: ObservableType with Entity, dataValue: String, extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] = {
     val createdObservable = create(observable)
-    val data              = dataSrv.create(Data(dataValue))
+    observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
+    val data = dataSrv.create(Data(dataValue))
     observableDataSrv.create(ObservableData(), createdObservable, data)
     extensions
       .map(keyValueSrv.create)
       .map(kv => observableKeyValueSrv.create(ObservableKeyValue(), createdObservable, kv))
-    Success(RichObservable(createdObservable, Some(data), None, extensions))
+    Success(RichObservable(createdObservable, `type`, Some(data), None, extensions))
   }
 
   def duplicate(richObservable: RichObservable)(
@@ -64,6 +67,7 @@ class ObservableSrv @Inject()(keyValueSrv: KeyValueSrv, dataSrv: DataSrv, attach
   ): Try[RichObservable] = {
 
     val createdObservable = create(richObservable.observable)
+    observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
     richObservable.data.foreach { data =>
       observableDataSrv.create(ObservableData(), createdObservable, data)
     }
@@ -107,14 +111,16 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[ObservableObservableType].fold))
             .and(By(__[Vertex].outTo[ObservableData].fold))
             .and(By(__[Vertex].outTo[ObservableAttachment].fold))
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
         )
         .map {
-          case (observable, data, attachment, extensions) =>
+          case (observable, tpe, data, attachment, extensions) =>
             RichObservable(
               observable.as[Observable],
+              onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
               extensions.asScala.map(_.as[KeyValue]).toSeq
@@ -129,15 +135,17 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[ObservableObservableType].fold))
             .and(By(__[Vertex].outTo[ObservableData].fold))
             .and(By(__[Vertex].outTo[ObservableAttachment].fold))
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
             .and(By(entityRenderer(__[Vertex])))
         )
         .map {
-          case (observable, data, attachment, extensions, renderedEntity) =>
+          case (observable, tpe, data, attachment, extensions, renderedEntity) =>
             RichObservable(
               observable.as[Observable],
+              onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
               extensions.asScala.map(_.as[KeyValue]).toSeq
