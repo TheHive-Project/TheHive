@@ -1,10 +1,5 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.Json
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -13,6 +8,10 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
@@ -55,6 +54,13 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
   def task = new TaskSteps(raw.in("TaskLog"))
 
   def attachments = new AttachmentSteps(raw.outTo[LogAttachment])
+
+  def `case` = new CaseSteps(
+    raw
+      .inTo[TaskLog]
+      .inTo[ShareTask]
+      .outTo[ShareCase]
+  )
 
   def can(permission: Permission)(implicit authContext: AuthContext): LogSteps =
     newInstance(

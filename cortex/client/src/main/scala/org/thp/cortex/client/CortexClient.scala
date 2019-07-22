@@ -121,6 +121,17 @@ class CortexClient(val name: String, baseUrl: String)(
       .flatMap(l => Future.fromTry(Try(l.head.addCortexId(name))))
 
   /**
+    * Search a responder by entity type
+    *
+    * @param entityType the type to search for
+    * @return
+    */
+  def getRespondersByType(entityType: String): Future[Seq[OutputCortexResponder]] =
+    responder
+      .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "0-200"))
+      .map(l => l.map(_.addCortexId(name)))
+
+  /**
     * Materializes an action as a job on Cortex client server
     *
     * @param responderId the responsible responder

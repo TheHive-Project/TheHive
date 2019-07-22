@@ -86,7 +86,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
       implicit lazy val auth: Authentication     = KeyAuthentication("test")
       implicit lazy val authContext: AuthContext = dummyUserSrv.authContext
 
-      import org.thp.thehive.models.EntityFormat._
+      import org.thp.thehive.models.EntityHelper._
 
       "execute and create an action" in db.transaction { implicit graph =>
         withCortexClient { client =>
