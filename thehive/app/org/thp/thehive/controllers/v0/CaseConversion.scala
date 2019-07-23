@@ -43,7 +43,8 @@ object CaseConversion {
     inputCase
       .into[Case]
       .withFieldComputed(_.severity, _.severity.getOrElse(2))
-      .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
+//      .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date)) // FIXME use startDate from InputCase when UI will be fixed
+      .withFieldConst(_.startDate, new Date)
       .withFieldComputed(_.flag, _.flag.getOrElse(false))
       .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
       .withFieldComputed(_.pap, _.pap.getOrElse(2))
@@ -200,7 +201,8 @@ object CaseConversion {
         .into[Case]
         .withFieldComputed(_.title, ct.titlePrefix.getOrElse("") + _.title)
         .withFieldComputed(_.severity, _.severity.orElse(ct.severity).getOrElse(2))
-        .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
+//        .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date)) // FIXME use startDate from InputCase when UI will be fixed
+        .withFieldConst(_.startDate, new Date)
         .withFieldComputed(_.flag, _.flag.getOrElse(ct.flag))
         .withFieldComputed(_.tlp, _.tlp.orElse(ct.tlp).getOrElse(2))
         .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))

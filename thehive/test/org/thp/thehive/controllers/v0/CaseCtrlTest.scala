@@ -94,7 +94,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                   title = "case title (create case test)",
                   description = "case description (create case test)",
                   severity = Some(1),
-                  startDate = Some(now),
+//                  startDate = Some(now),
                   tags = Set("tag1", "tag2"),
                   flag = Some(false),
                   tlp = Some(1),
