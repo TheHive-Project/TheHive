@@ -1,4 +1,4 @@
-²package org.thp.thehive.connector.cortex.controllers.v0
+package org.thp.thehive.connector.cortex.controllers.v0
 
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.OutputCortexResponder
