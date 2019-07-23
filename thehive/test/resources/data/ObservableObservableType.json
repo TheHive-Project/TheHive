@@ -1,0 +1,14 @@
+[
+  {
+    "from": "h.fr",
+    "to": "domain"
+  },
+  {
+    "from": "c.fr",
+    "to": "domain"
+  },
+  {
+    "from": "hello",
+    "to": "file"
+  }
+]

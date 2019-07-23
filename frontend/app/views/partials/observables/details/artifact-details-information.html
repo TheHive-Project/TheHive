@@ -88,7 +88,7 @@
     <div class="col-md-5">
         <h4 class="vpad10 text-primary">Links</h4>
         <strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
-        <table ng-if="similarArtifacts.length > 0" class="table table-hover">
+        <table ng-if="similarArtifacts.length > 0" class="table table-striped">
             <thead>
                 <tr>
                     <th width="10">IOC</th>
@@ -108,9 +108,11 @@
                     <td>
                         <tlp value="a.tlp"></tlp>
                     </td>
-                    <td>[{{a.dataType}}]: {{a.data || a.attachment.name}}<br> #{{a.case.caseId}} - {{a.case.title}}
+                    <td>
+                      <!-- [{{a.dataType}}]: {{a.data || a.attachment.name}}<br> -->
+                      #{{a.case.caseId}} - {{a.case.title}}
                     </td>
-                    <td>{{a.startDate | showDate}}</td>
+                    <td>{{a.startDate | shortDate}}</td>
                 </tr>
             </tbody>
         </table>

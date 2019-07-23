@@ -1,11 +1,9 @@
 package org.thp.thehive.controllers.v0
 
 import scala.util.{Success, Try}
-
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
@@ -13,13 +11,14 @@ import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, ObservableSrv, ObservableSteps, OrganisationSrv}
+import org.thp.thehive.services.{CaseSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, OrganisationSrv}
 
 @Singleton
 class ObservableCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     observableSrv: ObservableSrv,
+    observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
@@ -55,8 +54,9 @@ class ObservableCtrl @Inject()(
             .get(caseId)
             .can(Permissions.manageCase)
             .getOrFail()
-          observablesWithData      <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, d, Nil))
-          observableWithAttachment <- inputObservable.attachment.map(a => observableSrv.create(inputObservable, a, Nil)).flip
+          observableType           <- observableTypeSrv.get(inputObservable.dataType).getOrFail()
+          observablesWithData      <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, Nil))
+          observableWithAttachment <- inputObservable.attachment.map(a => observableSrv.create(inputObservable, observableType, a, Nil)).flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
             caseSrv.addObservable(case0, richObservables.observable).map(_ => richObservables)
           }

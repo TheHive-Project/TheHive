@@ -1,113 +1,107 @@
-[
-  {
-    "date":1562157321611,
-    "endDate":1562157324938,
-    "type":"analyzer",
-    "cacheTag":"99bf872b81f82fe224fa450604d7cefa",
-    "createdAt":1562157321611,
-    "_parent":null,
-    "attachment":{
-      "name":"imageedit_2_3904987689.jpg",
-      "hashes":[
-        "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71",
-        "ae935b4669d03994d0fe60e9255b81abeb4f0299",
-        "b0e0792b9ea92b16a49dfcbe06cd2a88"
-      ],
-      "size":16824,
-      "contentType":"image/jpeg",
-      "id":"cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71"
-    },
-    "id":"ZWu85Q1OCVNx03hXK4df",
-    "_version":3,
-    "pap":2,
-    "updatedAt":1562157324938,
-    "_routing":"ZWu85Q1OCVNx03hXK4df",
-    "workerId":"da4bdbecae5b1f6d4180e25450b65459",
-    "updatedBy":"billotei",
-    "analyzerName":"testAnalyzer_1_0",
-    "analyzerDefinitionId":"testAnalyzer_1_0",
-    "dataType":"file",
-    "_type":"job",
-    "message":"179e85c4-4170-45fe-9d2d-3173539554a6",
-    "analyzerId":"da4bdbecae5b1f6d4180e25450b65459",
-    "createdBy":"billotei",
-    "organization":"test",
-    "report":{
-      "summary":{
-        "taxonomies":[
-          {
-            "level":"info",
-            "namespace":"test",
-            "predicate":"data",
-            "value":"test"
-          }
-        ]
-      },
-      "full":{
-        "data":"imageedit_2_3904987689.jpg",
-        "input":{
-          "file":"attachment7619802021796183482",
-          "filename":"imageedit_2_3904987689.jpg",
-          "dataType":"file",
-          "tlp":2,
-          "message":"179e85c4-4170-45fe-9d2d-3173539554a6",
-          "contentType":"image/jpeg",
-          "parameters":{
-
-          },
-          "config":{
-            "proxy_https":null,
-            "cacerts":null,
-            "max_pap":2,
-            "jobTimeout":30,
-            "check_tlp":true,
-            "proxy_http":null,
-            "max_tlp":2,
-            "auto_extract_artifacts":false,
-            "jobCache":10,
-            "check_pap":true
-          },
-          "pap":2
-        }
-      },
-      "success":true,
-      "artifacts":[
+{
+  "date": 1562157321611,
+  "endDate": 1562157324938,
+  "type": "analyzer",
+  "cacheTag": "99bf872b81f82fe224fa450604d7cefa",
+  "createdAt": 1562157321611,
+  "_parent": null,
+  "attachment": {
+    "name": "imageedit_2_3904987689.jpg",
+    "hashes": [
+      "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71",
+      "ae935b4669d03994d0fe60e9255b81abeb4f0299",
+      "b0e0792b9ea92b16a49dfcbe06cd2a88"
+    ],
+    "size": 16824,
+    "contentType": "image/jpeg",
+    "id": "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71"
+  },
+  "id": "ZWu85Q1OCVNx03hXK4df",
+  "_version": 3,
+  "pap": 2,
+  "updatedAt": 1562157324938,
+  "_routing": "ZWu85Q1OCVNx03hXK4df",
+  "workerId": "da4bdbecae5b1f6d4180e25450b65459",
+  "updatedBy": "billotei",
+  "analyzerName": "testAnalyzer_1_0",
+  "analyzerDefinitionId": "testAnalyzer_1_0",
+  "dataType": "file",
+  "_type": "job",
+  "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
+  "analyzerId": "da4bdbecae5b1f6d4180e25450b65459",
+  "createdBy": "billotei",
+  "organization": "test",
+  "report": {
+    "summary": {
+      "taxonomies": [
         {
-          "attachment":{
-            "contentType":"application/octet-stream",
-            "id":"file",
-            "name":"file.test.txt",
-            "size":5
-          },
-          "message":null,
-          "tags":[
-
-          ],
-          "tlp":3,
-          "dataType":"file"
-        },
-        {
-          "data":"127.0.0.1",
-          "dataType":"ip",
-          "message":null,
-          "tags":[
-            "localhost"
-          ],
-          "tlp":2
+          "level": "info",
+          "namespace": "test",
+          "predicate": "data",
+          "value": "test"
         }
-      ],
-      "operations":[
-
       ]
     },
-    "tlp":2,
-    "workerDefinitionId":"testAnalyzer_1_0",
-    "_id":"ZWu85Q1OCVNx03hXK4df",
-    "workerName":"testAnalyzer_1_0",
-    "parameters":{
-
+    "full": {
+      "data": "imageedit_2_3904987689.jpg",
+      "input": {
+        "file": "attachment7619802021796183482",
+        "filename": "imageedit_2_3904987689.jpg",
+        "dataType": "file",
+        "tlp": 2,
+        "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
+        "contentType": "image/jpeg",
+        "parameters": {
+        },
+        "config": {
+          "proxy_https": null,
+          "cacerts": null,
+          "max_pap": 2,
+          "jobTimeout": 30,
+          "check_tlp": true,
+          "proxy_http": null,
+          "max_tlp": 2,
+          "auto_extract_artifacts": false,
+          "jobCache": 10,
+          "check_pap": true
+        },
+        "pap": 2
+      }
     },
-    "startDate":1562157321892,
-    "status":"Success"
-  }
-]
+    "success": true,
+    "artifacts": [
+      {
+        "attachment": {
+          "contentType": "application/octet-stream",
+          "id": "file",
+          "name": "file.test.txt",
+          "size": 5
+        },
+        "message": null,
+        "tags": [
+        ],
+        "tlp": 3,
+        "dataType": "file"
+      },
+      {
+        "data": "127.0.0.1",
+        "dataType": "ip",
+        "message": null,
+        "tags": [
+          "localhost"
+        ],
+        "tlp": 2
+      }
+    ],
+    "operations": [
+    ]
+  },
+  "tlp": 2,
+  "workerDefinitionId": "testAnalyzer_1_0",
+  "_id": "ZWu85Q1OCVNx03hXK4df",
+  "workerName": "testAnalyzer_1_0",
+  "parameters": {
+  },
+  "startDate": 1562157321892,
+  "status": "Success"
+}

@@ -26,7 +26,6 @@ object ObservableConversion {
   implicit def fromInputObservable(inputObservable: InputObservable): Observable =
     inputObservable
       .into[Observable]
-      .withFieldRenamed(_.dataType, _.`type`)
       .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
       .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
       .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
@@ -43,7 +42,7 @@ object ObservableConversion {
         .withFieldComputed(_.updatedBy, _.observable._updatedBy)
         .withFieldComputed(_.createdAt, _.observable._createdAt)
         .withFieldComputed(_.createdBy, _.observable._createdBy)
-        .withFieldComputed(_.dataType, _.observable.`type`)
+        .withFieldComputed(_.dataType, _.`type`.name)
         .withFieldComputed(_.startDate, _.observable._createdAt)
         .withFieldComputed(_.data, _.data.map(_.data))
         .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
@@ -63,7 +62,7 @@ object ObservableConversion {
         .withFieldComputed(_.updatedBy, _.observable._updatedBy)
         .withFieldComputed(_.createdAt, _.observable._createdAt)
         .withFieldComputed(_.createdBy, _.observable._createdBy)
-        .withFieldComputed(_.dataType, _.observable.`type`)
+        .withFieldComputed(_.dataType, _.`type`.name)
         .withFieldComputed(_.startDate, _.observable._createdAt)
         .withFieldComputed(_.data, _.data.map(_.data))
         .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))

@@ -25,6 +25,7 @@ class AlertCtrl @Inject()(
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
+    observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     organisationSrv: OrganisationSrv,
     val userSrv: UserSrv,
@@ -83,25 +84,27 @@ class AlertCtrl @Inject()(
   private def importObservable(alert: Alert with Entity, observable: InputObservable)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Seq[RichObservable]] = {
-    val createdObservables = observable.dataType match {
-      case "file" =>
-        observable.data.map(_.split(';')).toTry {
-          case Array(filename, contentType, value) =>
-            val data = Base64.getDecoder.decode(value)
-            attachmentSrv
-              .create(filename, contentType, data)
-              .flatMap(attachment => observableSrv.create(observable, attachment, Nil))
-          case data =>
-            Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
-        }
-      case _ => observable.data.toTry(d => observableSrv.create(observable, d, Nil))
-    }
-    createdObservables.map(_.map { richObservable =>
-      alertSrv.addObservable(alert, richObservable.observable)
-      richObservable
-    })
-  }
+  ): Try[Seq[RichObservable]] =
+    observableTypeSrv
+      .get(observable.dataType)
+      .getOrFail()
+      .flatMap {
+        case attachmentType if attachmentType.isAttachment =>
+          observable.data.map(_.split(';')).toTry {
+            case Array(filename, contentType, value) =>
+              val data = Base64.getDecoder.decode(value)
+              attachmentSrv
+                .create(filename, contentType, data)
+                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, Nil))
+            case data =>
+              Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+          }
+        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, Nil))
+      }
+      .map(_.map { richObservable =>
+        alertSrv.addObservable(alert, richObservable.observable)
+        richObservable
+      })
 
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")

@@ -41,10 +41,11 @@ trait FakeCortexClient {
         case POST(p"/api/analyzer/_search")  => Action(Results.Ok(Json.toJson(analyzers)))
         case POST(p"/api/analyzer/$id/run")  => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
         case GET(p"/api/datastore/$id") =>
+          val filename = URLEncoder.encode(s"$id.test.txt", "utf-8")
           Action(
             Result(
-              header = ResponseHeader(200, Map("Content-Disposition"                -> s"""attachment; filename="${URLEncoder
-                .encode(s"$id.test.txt", "utf-8")}"""", "Content-Transfer-Encoding" -> "binary")),
+              header =
+                ResponseHeader(200, Map("Content-Disposition" -> s"""attachment; filename="$filename"""", "Content-Transfer-Encoding" -> "binary")),
               body = HttpEntity.Streamed(FileIO.fromPath(fileResource(id)), None, None)
             )
           )

@@ -13,15 +13,15 @@ case class ObservableAttachment()
 case class ObservableData()
 
 @VertexEntity
-case class Observable(`type`: String, tags: Set[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
+case class Observable(tags: Set[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
 
 case class RichObservable(
     observable: Observable with Entity,
+    `type`: ObservableType with Entity,
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
     extensions: Seq[KeyValue]
 ) {
-  val `type`: String          = observable.`type` // TODO put "type" in dedicated vertex ?
   val tags: Set[String]       = observable.tags
   val message: Option[String] = observable.message
   val tlp: Int                = observable.tlp

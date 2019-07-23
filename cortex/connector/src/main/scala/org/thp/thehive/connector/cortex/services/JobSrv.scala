@@ -1,15 +1,19 @@
 package org.thp.thehive.connector.cortex.services
 
+import java.nio.file.Files
 import java.util.Date
 
+import akka.Done
 import akka.actor._
-import akka.stream.scaladsl.StreamConverters
+import akka.stream.Materializer
+import akka.stream.scaladsl.{FileIO, StreamConverters}
 import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
+import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
@@ -17,31 +21,49 @@ import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobC
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObservable}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
-import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
+import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
+import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject()(
     implicit db: Database,
     cortexConfig: CortexConfig,
     storageSrv: StorageSrv,
-    implicit val ex: ExecutionContext,
     @Named("cortex-actor") cortexActor: ActorRef,
-    cortexAttachmentSrv: ArtifactSrv,
     observableSrv: ObservableSrv,
-    artifactSrv: ArtifactSrv
+    observableTypeSrv: ObservableTypeSrv,
+    attachmentSrv: AttachmentSrv,
+    implicit val ec: ExecutionContext,
+    implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
 
   import ArtifactConversion._
   import JobConversion._
 
+  lazy val logger         = Logger(getClass)
   val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
   val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
+
+  /**
+    * Creates a Job with with according ObservableJob edge
+    *
+    * @param job         the job date to create
+    * @param observable  the related observable
+    * @param graph       the implicit graph instance needed
+    * @param authContext the implicit auth needed
+    * @return
+    */
+  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Job with Entity = {
+    val createdJob = create(job)
+    observableJobSrv.create(ObservableJob(), observable, createdJob)
+    createdJob
+  }
 
   /**
     * Submits an observable for analysis to cortex client and stores
@@ -65,25 +87,14 @@ class JobSrv @Inject()(
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact <- (observable.attachment, observable.data) match {
         case (None, Some(data)) =>
-          Future.successful(InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`, `case`._id, Some(data.data), None))
-        case (Some(a), None) =>
-          val data = StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.attachmentId))
           Future.successful(
-            InputCortexArtifact(
-              observable.tlp,
-              `case`.pap,
-              observable.`type`,
-              `case`._id,
-              None,
-              Some(
-                CortexAttachment(
-                  a.name,
-                  a.size,
-                  a.contentType,
-                  data
-                )
-              )
-            )
+            InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
+          )
+        case (Some(a), None) =>
+          val data       = StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.attachmentId))
+          val attachment = CortexAttachment(a.name, a.size, a.contentType, data)
+          Future.successful(
+            InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -95,22 +106,6 @@ class JobSrv @Inject()(
     } yield createdJob
 
   /**
-    * Creates a Job with with according ObservableJob edge
-    *
-    * @param job         the job date to create
-    * @param observable  the related observable
-    * @param graph       the implicit graph instance needed
-    * @param authContext the implicit auth needed
-    * @return
-    */
-  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Job with Entity = {
-    val createdJob = create(job)
-    observableJobSrv.create(ObservableJob(), observable, createdJob)
-
-    createdJob
-  }
-
-  /**
     * Once a job has finished on Cortex side
     * the report is processed here: each report's artifacts
     * are stored as separate Observable with the appropriate edge ObservableJob
@@ -119,27 +114,111 @@ class JobSrv @Inject()(
     * @param cortexJob    the CortexOutputJob
     * @param cortexClient client for Cortex api
     * @param authContext  the auth context for db queries
-    * @return
+    * @return the updated job
     */
   def finished(jobId: String, cortexJob: CortexOutputJob, cortexClient: CortexClient)(
       implicit authContext: AuthContext
-  ): Try[Job with Entity] =
+  ): Future[Job with Entity] =
+    for {
+      job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
+      _   <- importCortexArtifacts(job, cortexJob, cortexClient)
+    } yield job
+
+  /**
+    * Update job status, set the endDate and remove artifacts from report
+    *
+    * @param jobId id of the job to update
+    * @param cortexJob the job from cortex
+    * @param authContext the authentication context
+    * @return the updated job
+    */
+  def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.transaction { implicit graph =>
-      cortexJob.report.foreach { report =>
-        for {
-          artifact <- report.artifacts
-          obs = observableSrv.create(artifact)
-          job <- get(jobId).headOption()
-          _ = reportObservableSrv.create(ReportObservable(), job, obs)
-          _ = artifactSrv.process(artifact, job, obs, cortexClient)
-        } ()
+      get(jobId).getOrFail().flatMap { job =>
+        get(job).update(
+          "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),
+          "status"  -> fromCortexJobStatus(cortexJob.status),
+          "endDate" -> new Date()
+        )
       }
-      get(jobId).update(
-        "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),
-        "status"  -> fromCortexJobStatus(cortexJob.status),
-        "endDate" -> new Date()
-      )
     }
+
+  /**
+    * Create observable for each artifact of the job report
+    *
+    * @param job the job on which the observables will be linked
+    * @param cortexJob the cortex job containing the artifact to import
+    * @param cortexClient the cortex client used to download attachment observable
+    * @param authContext the authentication context
+    * @return
+    */
+  def importCortexArtifacts(job: Job with Entity, cortexJob: CortexOutputJob, cortexClient: CortexClient)(
+      implicit authContext: AuthContext
+  ): Future[Done] = {
+    val artifacts = cortexJob
+      .report
+      .toList
+      .flatMap(_.artifacts)
+    Future
+      .traverse(artifacts) { artifact =>
+        db.transaction { implicit graph =>
+          observableTypeSrv.get(artifact.dataType).getOrFail() match {
+            case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
+            case Success(dataType) =>
+              Future
+                .fromTry {
+                  observableSrv
+                    .create(artifact, dataType, artifact.data.get, Nil)
+                    .map { richObservable =>
+                      reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+                    }
+                }
+            case Failure(e) => Future.failed(e)
+          }
+        }
+      }
+      .map(_ => Done)
+  }
+
+  /**
+    * Downloads and import the attachment file for an artifact of type file
+    * from the job's report and saves the Attachment to the db
+    *
+    * @param cortexClient the client api
+    * @param authContext  the auth context necessary for db persistence
+    * @return
+    */
+  def importCortexAttachment(
+      job: Job with Entity,
+      artifact: CortexOutputArtifact,
+      attachmentType: ObservableType with Entity,
+      cortexClient: CortexClient
+  )(
+      implicit authContext: AuthContext
+  ): Future[Attachment with Entity] =
+    artifact
+      .attachment
+      .map { attachment =>
+        val file = Files.createTempFile(s"job-cortex-${attachment.id}", "")
+        for {
+          src <- cortexClient.getAttachment(attachment.id)
+          s   <- src.runWith(FileIO.toPath(file))
+          _   <- Future.fromTry(s.status)
+          fFile = FFile(attachment.name.getOrElse(attachment.id), file, attachment.contentType.getOrElse("application/octet-stream"))
+          savedAttachment <- Future.fromTry {
+            db.transaction { implicit graph =>
+              for {
+                createdAttachment <- attachmentSrv.create(fFile)
+                richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, Nil)
+                _ = reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+              } yield createdAttachment
+            }
+          }
+          _ = Files.delete(file) // FIXME file won't be deleted if attachment creation fails
+        } yield savedAttachment
+      }
+      .getOrElse(Future.failed(new Exception(s"Attachment not present for artifact ${artifact.dataType}")))
+
 }
 
 @EntitySteps[Job]
