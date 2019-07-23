@@ -21,7 +21,7 @@ class ResponderCtrl @Inject()(
 
   def getResponders(entityType: String, entityId: String): Action[AnyContent] =
     entryPoint("get responders")
-      .asyncAuth { _ =>
+      .asyncAuth { implicit req =>
         db.transaction { implicit graph =>
           responderSrv
             .getRespondersByType(entityType, entityId)

@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
+import org.thp.scalligraph.auth.{AuthContext, AuthSrv, Permission, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
@@ -39,6 +39,13 @@ class EntityHelperTest extends PlaySpecification with Mockito {
     val entityHelper         = app.instanceOf[EntityHelper]
     val db                   = app.instanceOf[Database]
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
+    implicit val authContext: AuthContext = new AuthContext {
+      override def userId: String               = "user1"
+      override def userName: String             = "user1"
+      override def organisation: String         = "cert"
+      override def requestId: String            = ""
+      override def permissions: Set[Permission] = Permissions.all
+    }
 
     def tasksList: Seq[OutputTask] = {
       val requestList = FakeRequest("GET", "/api/case/task/_search").withHeaders("user" -> "user1")
@@ -62,8 +69,10 @@ class EntityHelperTest extends PlaySpecification with Mockito {
 
         val task1       = t1.get
         val successTask = entityHelper.threatLevels("task", task1.id)
+        val failureTask = entityHelper.threatLevels("task", task1.id)(graph, dummyUserSrv.authContext)
 
         successTask must beSuccessfulTry
+        failureTask must beFailedTry
 
         val (tlpTask, papTask) = successTask.get
 
@@ -99,7 +108,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         o1 must beSome
 
         val observable1 = o1.get
-        val successObs = entityHelper.threatLevels("observable", observable1._id)
+        val successObs  = entityHelper.threatLevels("observable", observable1._id)
 
         successObs must beSuccessfulTry
 

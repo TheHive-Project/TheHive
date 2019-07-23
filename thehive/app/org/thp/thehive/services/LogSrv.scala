@@ -53,6 +53,15 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
 
   def task = new TaskSteps(raw.in("TaskLog"))
 
+  def visible(implicit authContext: AuthContext): LogSteps =
+    newInstance(
+      raw
+        .inTo[TaskLog]
+        .inTo[ShareTask]
+        .inTo[OrganisationShare]
+        .has(Key("name") of authContext.organisation)
+    )
+
   def attachments = new AttachmentSteps(raw.outTo[LogAttachment])
 
   def `case` = new CaseSteps(

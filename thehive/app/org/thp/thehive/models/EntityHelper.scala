@@ -2,6 +2,7 @@ package org.thp.thehive.models
 
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.services._
 import play.api.Logger
@@ -25,18 +26,19 @@ class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: Alert
     * @param name the entity name to retrieve
     * @param id the entity id
     * @param graph the necessary traversal graph
+    * @param authContext the auth context for visibility check
     * @return
     */
-  def threatLevels(name: String, id: String)(implicit graph: Graph): Try[(Int, Int)] = name.trim.toLowerCase match {
-    case "task" => taskSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
-    case "case" => caseSrv.initSteps.get(id).getOrFail().map(c => (c.tlp, c.pap))
+  def threatLevels(name: String, id: String)(implicit graph: Graph, authContext: AuthContext): Try[(Int, Int)] = name.trim.toLowerCase match {
+    case "task" => taskSrv.initSteps.get(id).visible.`case`.getOrFail().map(c => (c.tlp, c.pap))
+    case "case" => caseSrv.initSteps.get(id).visible.getOrFail().map(c => (c.tlp, c.pap))
     case "observable" =>
       for {
-        observable <- observableSrv.initSteps.get(id).getOrFail()
+        observable <- observableSrv.initSteps.get(id).visible.getOrFail()
         c          <- observableSrv.initSteps.get(id).`case`.getOrFail()
       } yield (observable.tlp, c.pap)
-    case "log"   => logSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
-    case "alert" => alertSrv.initSteps.get(id).getOrFail().map(a => (a.tlp, a.pap))
+    case "log"   => logSrv.initSteps.get(id).visible.`case`.getOrFail().map(c => (c.tlp, c.pap))
+    case "alert" => alertSrv.initSteps.get(id).visible.getOrFail().map(a => (a.tlp, a.pap))
     case _ =>
       val m = s"Unmatched Entity from string $name - $id"
       logger.error(m)
