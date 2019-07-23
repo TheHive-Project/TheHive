@@ -8,15 +8,15 @@ import org.thp.cortex.client._
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
 import org.thp.thehive.controllers.v0.{CaseCtrl, TheHiveQueryExecutor}
 import org.thp.thehive.dto.v0.{OutputCase, OutputTask}
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
+import org.thp.thehive.models.{DatabaseBuilder, EntityHelper, Permissions, TheHiveSchema}
 import org.thp.thehive.services.{CaseSrv, LocalUserSrv, TaskSrv}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, Json, Writes}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
@@ -37,10 +37,10 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
       .bindActor[CortexActor]("cortex-actor")
       .addConfiguration(
         Configuration(
-          "play.modules.disabled" -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port" -> 3335,
+          "play.modules.disabled"                     -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.remote.netty.tcp.port"                -> 3335,
           "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on",
-          "akka.actor.provider" -> "cluster"
+          "akka.actor.provider"                       -> "cluster"
         )
       )
 
@@ -60,6 +60,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
     val db                   = app.instanceOf[Database]
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
     val caseCtrl: CaseCtrl   = app.instanceOf[CaseCtrl]
+    val entityHelper         = app.instanceOf[EntityHelper]
 
     def tasksList: Seq[OutputTask] = {
       val requestList = FakeRequest("GET", "/api/case/task/_search").withHeaders("user" -> "user1")
@@ -82,11 +83,10 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
     }
 
     s"[$name] action service" should {
-      implicit lazy val ws: CustomWSAPI          = app.instanceOf[CustomWSAPI]
-      implicit lazy val auth: Authentication     = KeyAuthentication("test")
-      implicit lazy val authContext: AuthContext = dummyUserSrv.authContext
-
-      import org.thp.thehive.models.EntityHelper._
+      implicit lazy val ws: CustomWSAPI              = app.instanceOf[CustomWSAPI]
+      implicit lazy val auth: Authentication         = KeyAuthentication("test")
+      implicit lazy val authContext: AuthContext     = dummyUserSrv.authContext
+      implicit lazy val entityWrites: Writes[Entity] = entityHelper.writes
 
       "execute and create an action" in db.transaction { implicit graph =>
         withCortexClient { client =>
