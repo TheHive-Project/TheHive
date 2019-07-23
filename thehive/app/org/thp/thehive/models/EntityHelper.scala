@@ -19,6 +19,14 @@ class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: Alert
     case _       => ???
   }
 
+  /**
+    * Tries to fetch the tlp and pap associated with the supplied entity
+    *
+    * @param name the entity name to retrieve
+    * @param id the entity id
+    * @param graph the necessary traversal graph
+    * @return
+    */
   def threatLevels(name: String, id: String)(implicit graph: Graph): Try[(Int, Int)] = name.trim.toLowerCase match {
     case "task" => taskSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
     case "case" => caseSrv.initSteps.get(id).getOrFail().map(c => (c.tlp, c.pap))
