@@ -10,12 +10,12 @@ case class OutputCortexResponder(
     dataTypeList: Seq[String],
     maxTlp: Option[Long],
     maxPap: Option[Long],
-    cortexIds: List[String] = Nil
+    cortexIds: Option[List[String]] = None
 ) {
 
-  def addCortexId(cid: String): OutputCortexResponder = copy(cortexIds = cid :: cortexIds)
+  def addCortexId(cid: String): OutputCortexResponder = copy(cortexIds = cortexIds.map(l => cid :: l))
 
-  def join(responder: OutputCortexResponder): OutputCortexResponder = copy(cortexIds = cortexIds ::: responder.cortexIds)
+  def join(responder: OutputCortexResponder): OutputCortexResponder = copy(cortexIds = cortexIds.map(l => l ::: responder.cortexIds.getOrElse(Nil)))
 }
 
 object OutputCortexResponder {

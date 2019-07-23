@@ -152,7 +152,7 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             dataTypeList = Seq("test"),
             maxPap = Some(3),
             maxTlp = Some(2),
-            cortexIds = List("test")
+            cortexIds = Some(List("test"))
           )
         )
 
@@ -167,7 +167,7 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             dataTypeList = Seq("test", "dummy"),
             maxPap = None,
             maxTlp = None,
-            cortexIds = List("test", "test2")
+            cortexIds = Some(List("test", "test2"))
           )
         )
       }

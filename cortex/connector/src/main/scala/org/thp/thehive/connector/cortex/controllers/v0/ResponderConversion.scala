@@ -7,5 +7,7 @@ import org.thp.thehive.connector.cortex.dto.v0.OutputResponder
 object ResponderConversion {
 
   def toOutputResponder(a: OutputCortexResponder): OutputResponder =
-    a.into[OutputResponder].transform
+    a.into[OutputResponder]
+      .withFieldComputed(_.cortexIds, _.cortexIds.getOrElse(Nil))
+      .transform
 }
