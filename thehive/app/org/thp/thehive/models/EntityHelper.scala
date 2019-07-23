@@ -20,7 +20,7 @@ class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: Alert
   }
 
   /**
-    * Tries to fetch the tlp and pap associated with the supplied entity
+    * Tries to fetch the tlp and pap associated to the supplied entity
     *
     * @param name the entity name to retrieve
     * @param id the entity id
@@ -31,10 +31,9 @@ class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: Alert
     case "task" => taskSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
     case "case" => caseSrv.initSteps.get(id).getOrFail().map(c => (c.tlp, c.pap))
     case "observable" =>
-      val steps = observableSrv.initSteps.get(id)
       for {
-        observable <- steps.getOrFail()
-        c          <- steps.`case`.getOrFail()
+        observable <- observableSrv.initSteps.get(id).getOrFail()
+        c          <- observableSrv.initSteps.get(id).`case`.getOrFail()
       } yield (observable.tlp, c.pap)
     case "log"   => logSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
     case "alert" => alertSrv.initSteps.get(id).getOrFail().map(a => (a.tlp, a.pap))
