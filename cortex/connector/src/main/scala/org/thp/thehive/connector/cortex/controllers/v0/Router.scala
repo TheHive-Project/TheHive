@@ -11,7 +11,8 @@ class Router @Inject()(
     analyzerCtrl: AnalyzerCtrl,
     actionCtrl: ActionCtrl,
     cortexQueryExecutor: CortexQueryExecutor,
-    reportCtrl: ReportCtrl
+    reportCtrl: ReportCtrl,
+    responderCtrl: ResponderCtrl
 ) extends SimpleRouter {
   override def routes: Routes = {
     case GET(p"/job/$jobId<[^/]*>") => jobCtrl.get(jobId)
@@ -31,5 +32,7 @@ class Router @Inject()(
     case DELETE(p"/report/template/$reportTemplateId<[^/]*>")                   => reportCtrl.delete(reportTemplateId)
     case GET(p"/report/template/$reportTemplateId<[^/]*>")                      => reportCtrl.get(reportTemplateId)
     case PATCH(p"/report/template/$reportTemplateId<[^/]*>")                    => reportCtrl.update(reportTemplateId)
+
+    case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") => responderCtrl.getResponders(entityType, entityId)
   }
 }

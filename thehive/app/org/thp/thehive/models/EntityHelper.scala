@@ -7,7 +7,7 @@ import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json._
 
-import scala.util.Failure
+import scala.util.{Failure, Try}
 
 @Singleton
 class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: AlertSrv, observableSrv: ObservableSrv, logSrv: LogSrv) {
@@ -19,16 +19,17 @@ class EntityHelper @Inject()(taskSrv: TaskSrv, caseSrv: CaseSrv, alertSrv: Alert
     case _       => ???
   }
 
-  def threatLevels(name: String, id: String)(implicit graph: Graph) = name.trim.toLowerCase match {
+  def threatLevels(name: String, id: String)(implicit graph: Graph): Try[(Int, Int)] = name.trim.toLowerCase match {
     case "task" => taskSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
     case "case" => caseSrv.initSteps.get(id).getOrFail().map(c => (c.tlp, c.pap))
     case "observable" =>
+      val steps = observableSrv.initSteps.get(id)
       for {
-        observable <- observableSrv.initSteps.get(id).getOrFail()
-        c          <- observableSrv.initSteps.get(id).`case`.getOrFail()
+        observable <- steps.getOrFail()
+        c          <- steps.`case`.getOrFail()
       } yield (observable.tlp, c.pap)
     case "log"   => logSrv.initSteps.get(id).`case`.getOrFail().map(c => (c.tlp, c.pap))
-    case "alert" => alertSrv.initSteps.get(id).observables
+    case "alert" => alertSrv.initSteps.get(id).getOrFail().map(a => (a.tlp, a.pap))
     case _ =>
       val m = s"Unmatched Entity from string $name - $id"
       logger.error(m)
