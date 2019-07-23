@@ -4,15 +4,12 @@ import org.thp.cortex.dto.v0.{CortexOperationType, CortexOutputOperation}
 import org.thp.thehive.connector.cortex.models._
 import play.api.libs.json.JsObject
 
+import scala.language.implicitConversions
+
 object ActionOperationConversion {
 
   implicit def fromCortexOutputOperation(o: CortexOutputOperation): ActionOperation = o.opType match {
-    case CortexOperationType.AddArtifactToCase =>
-      AddArtifactToCase(
-        o.data.getOrElse("unknown data"),
-        o.dataType.getOrElse("unknown dataType"),
-        o.message.getOrElse("unknown message")
-      )
+    case CortexOperationType.AddTagToCase => AddTagToCase(o.tag.getOrElse("unknown tag"))
     case CortexOperationType.AddTagToArtifact => AddTagToArtifact(o.tag.getOrElse("unknown tag"))
     case CortexOperationType.CreateTask =>
       CreateTask(

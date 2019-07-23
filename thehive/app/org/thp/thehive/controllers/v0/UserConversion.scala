@@ -11,7 +11,7 @@ import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.FString
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.{InvalidFormatAttributeError, Output, UnsupportedAttributeError}
+import org.thp.scalligraph.{InvalidFormatAttributeError, Output}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
@@ -37,7 +37,7 @@ object UserConversion {
 //    .withFieldRenamed(_.roles, _.permissions)
       .transform
 
-  implicit def toOutputUser(user: RichUser): Output[OutputUser] = toOutputUser(user, true)
+  implicit def toOutputUser(user: RichUser): Output[OutputUser] = toOutputUser(user, withKeyInfo = true)
 
   def toOutputUser(user: RichUser, withKeyInfo: Boolean): Output[OutputUser] =
     Output[OutputUser](
@@ -53,7 +53,7 @@ object UserConversion {
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property[String]("name")(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)

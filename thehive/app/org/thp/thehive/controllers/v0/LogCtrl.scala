@@ -67,7 +67,7 @@ class LogCtrl @Inject()(
 
   def delete(logId: String): Action[AnyContent] =
     entryPoint("update log")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { _ => implicit graph =>
         Try(logSrv.initSteps.remove(logId)) // FIXME use service instead of step in order to generate audit log
           .map(_ => Results.NoContent)
       }

@@ -2,6 +2,7 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import akka.actor.Terminated
 import gremlin.scala.{Key, P}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mock.Mockito
@@ -20,6 +21,7 @@ import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 import play.api.{Configuration, Environment}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
 
@@ -51,7 +53,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
-  def shutdownActorSystem(app: AppBuilder): Unit = app.app.actorSystem.terminate()
+  def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val jobSrv: JobSrv               = app.instanceOf[JobSrv]

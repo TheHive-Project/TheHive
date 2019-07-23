@@ -4,7 +4,6 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexResponder
-import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.EntityHelper
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,13 +19,12 @@ class ResponderSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Execut
     * @param entityType the entity
     * @param entityId its id
     * @param graph necessary graph db
-    * @param db necessary db instance
     * @return
     */
   def getRespondersByType(
       entityType: String,
       entityId: String
-  )(implicit graph: Graph, db: Database): Future[List[OutputCortexResponder]] =
+  )(implicit graph: Graph): Future[List[OutputCortexResponder]] =
     for {
       (tlp, pap) <- Future.fromTry(entityHelper.threatLevels(entityType, entityId)).recover { case _ => (0, 0) }
       responders <- Future.traverse(cortexConfig.instances)(client => client._2.getRespondersByType(entityType)).map(_.flatten)

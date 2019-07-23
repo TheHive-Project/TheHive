@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.dto.v0
 
-import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
+import play.api.libs.json.{JsValue, Json, OFormat}
 
 case class InputAction(
     responderId: String,

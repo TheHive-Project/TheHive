@@ -2,6 +2,7 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import akka.actor.Terminated
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
@@ -20,6 +21,7 @@ import play.api.libs.json.{JsObject, Json, Writes}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient {
@@ -52,7 +54,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
-  def shutdownActorSystem(app: AppBuilder): Unit = app.app.actorSystem.terminate()
+  def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val taskSrv              = app.instanceOf[TaskSrv]

@@ -91,7 +91,7 @@ class ObservableCtrl @Inject()(
 
   def findSimilar(obsId: String): Action[AnyContent] =
     entryPoint("find similar")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { _ => implicit graph =>
         val observables = observableSrv
           .get(obsId)
           .similar
