@@ -24,6 +24,10 @@ class EntityHelper @Inject()(
 
   val writes: Writes[Entity] = {
     case t: Task => Json.toJson(t)
+    case c: Case => Json.toJson(c)
+//    case a: Alert => Json.toJson(a)
+//    case o: Observable => Json.toJson(o)
+//    case l: Log => Json.toJson(l)
     case _       => ???
   }
 
@@ -41,11 +45,11 @@ class EntityHelper @Inject()(
     for {
       _ <- fromName(name)
       entity <- name.trim.toLowerCase match {
-        case "task"       => taskSrv.initSteps.get(id).can(permission).getOrFail()
-        case "case"       => caseSrv.initSteps.get(id).can(permission).getOrFail()
-        case "observable" => observableSrv.initSteps.get(id).can(permission).getOrFail()
-        case "log"        => logSrv.initSteps.get(id).can(permission).getOrFail()
-        case "alert"      => alertSrv.initSteps.get(id).can(permission).getOrFail()
+        case "task"       => taskSrv.initSteps.get(id).visible.can(permission).getOrFail()
+        case "case"       => caseSrv.initSteps.get(id).visible.can(permission).getOrFail()
+        case "observable" => observableSrv.initSteps.get(id).visible.can(permission).getOrFail()
+        case "log"        => logSrv.initSteps.get(id).visible.can(permission).getOrFail()
+        case "alert"      => alertSrv.initSteps.get(id).visible.can(permission).getOrFail()
         case _            => matchError(name, id)
       }
     } yield entity

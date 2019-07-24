@@ -15,7 +15,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{Case, ShareCase, TheHiveSchema}
+import org.thp.thehive.models.{EntityHelper, ShareCase, TheHiveSchema}
 import org.thp.thehive.services.CaseSteps
 import play.api.libs.json.{JsObject, Json, Writes}
 
@@ -28,7 +28,8 @@ class ActionSrv @Inject()(
     implicit val ex: ExecutionContext,
     @Named("cortex-actor") cortexActor: ActorRef,
     actionOperationSrv: ActionOperationSrv,
-    schema: TheHiveSchema
+    schema: TheHiveSchema,
+    entityHelper: EntityHelper
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
@@ -45,7 +46,6 @@ class ActionSrv @Inject()(
     *
     * @param inputAction the initial data
     * @param entity the Entity to execute an Action upon
-    * @param relatedCase the optional related Case
     * @param writes necessary entity json writes
     * @param graph necessary db connection graph
     * @param authContext necessary auth context
@@ -53,17 +53,17 @@ class ActionSrv @Inject()(
     */
   def execute(
       inputAction: InputAction,
-      entity: Entity,
-      relatedCase: Option[Case with Entity]
+      entity: Entity
   )(implicit writes: Writes[Entity], graph: Graph, authContext: AuthContext): Future[RichAction] =
     for {
-      client    <- Future.fromTry(Try(cortexConfig.instances(inputAction.cortexId.get)).orElse(Try(cortexConfig.instances.head._2)))
-      responder <- client.getResponder(inputAction.responderId).recoverWith { case _ => client.getResponderByName(inputAction.responderName.getOrElse("")) }
+      client <- Future.fromTry(Try(cortexConfig.instances(inputAction.cortexId.get)).orElse(Try(cortexConfig.instances.head._2)))
+      responder <- client.getResponder(inputAction.responderId).recoverWith {
+        case _ => client.getResponderByName(inputAction.responderName.getOrElse(""))
+      }
 
       message    = inputAction.message.getOrElse("")
       parameters = inputAction.parameters.getOrElse(JsObject.empty)
-      tlp        = inputAction.tlp.orElse(relatedCase.map(_.tlp)).getOrElse(2)
-      pap        = relatedCase.map(_.pap).getOrElse(2)
+      (tlp, pap) = entityHelper.threatLevels(entity._model.label, entity._id).getOrElse((2, 2))
       inputCortexAction = InputCortexAction(
         entity._model.label,
         Json.toJson(entity).as[JsObject],

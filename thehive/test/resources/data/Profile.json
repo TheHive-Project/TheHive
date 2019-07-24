@@ -4,7 +4,8 @@
     "permissions": [
       "manageCase",
       "manageAlert",
-      "manageTask"
+      "manageTask",
+      "manageAction"
     ]
   },
   {

@@ -11,10 +11,10 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
 import org.thp.thehive.connector.cortex.models.RichAction
-import org.thp.thehive.controllers.v0.{CaseCtrl, TheHiveQueryExecutor}
-import org.thp.thehive.dto.v0.{OutputCase, OutputTask}
+import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
+import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models.{DatabaseBuilder, EntityHelper, Permissions, TheHiveSchema}
-import org.thp.thehive.services.{CaseSrv, LocalUserSrv, TaskSrv}
+import org.thp.thehive.services.{LocalUserSrv, TaskSrv}
 import play.api.libs.json.{JsObject, Json, Writes}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -46,17 +46,6 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
       contentAsJson(resultList).as[Seq[OutputTask]]
     }
 
-    def getCase(caseCtrl: CaseCtrl): OutputCase = {
-      val request = FakeRequest("GET", s"/api/v0/case/#2")
-        .withHeaders("user" -> "user1")
-
-      val result2 = caseCtrl.get("#2")(request)
-      status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
-      val resultCase = contentAsJson(result2)
-
-      resultCase.as[OutputCase]
-    }
-
     s"[$name] action service" should {
       implicit lazy val ws: CustomWSAPI          = this.app(db, 3334).instanceOf[CustomWSAPI]
       implicit lazy val auth: Authentication     = KeyAuthentication("test")
@@ -69,7 +58,6 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
 
           app.instanceOf[Database].transaction { implicit graph =>
             val taskSrv                                     = app.instanceOf[TaskSrv]
-            val caseSrv                                     = app.instanceOf[CaseSrv]
             implicit val entityHelperWrites: Writes[Entity] = app.instanceOf[EntityHelper].writes
             val actionSrv                                   = app.instanceOf[ActionSrv]
 
@@ -77,8 +65,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
 
             t1 must beSome
 
-            val task1       = t1.get
-            val relatedCase = getCase(app.instanceOf[CaseCtrl])
+            val task1 = t1.get
             val inputAction = InputAction(
               "respTest1",
               Some("respTest1"),
@@ -92,8 +79,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
 
             val r = actionSrv.execute(
               inputAction,
-              taskSrv.get(task1.id).getOrFail().get,
-              Some(caseSrv.get(relatedCase._id).getOrFail().get)
+              taskSrv.get(task1.id).getOrFail().get
             )
             val richAction = await(r)
 

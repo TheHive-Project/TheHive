@@ -1,6 +1,8 @@
 package org.thp.thehive.connector.cortex.dto.v0
 
-import play.api.libs.json.{JsValue, Json, OFormat}
+import java.util.Date
+
+import play.api.libs.json.{JsObject, JsValue, Json, OFormat}
 
 case class InputAction(
     responderId: String,
@@ -15,4 +17,36 @@ case class InputAction(
 
 object InputAction {
   implicit val format: OFormat[InputAction] = Json.format[InputAction]
+}
+
+case class OutputAction(
+    responderId: String,
+    responderName: Option[String],
+    responderDefinition: Option[String],
+    cortexId: Option[String],
+    cortexJobId: Option[String],
+    objectType: String,
+    objectId: String,
+    status: String,
+    startDate: Date,
+    endDate: Option[Date],
+    operations: Option[String],
+    report: Option[JsObject]
+)
+
+object OutputAction {
+  implicit val format: OFormat[OutputAction] = Json.format[OutputAction]
+
+  /*responderId: String,
+    responderName: Option[String],
+    responderDefinition: Option[String],
+    status: JobStatus.Value,
+    objectType: String,
+    objectId: String,
+    startDate: Date,
+    endDate: Option[Date],
+    report: Option[JsObject],
+    cortexId: Option[String],
+    cortexJobId: Option[String],
+    operations: Option[String]*/
 }

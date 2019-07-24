@@ -124,18 +124,18 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         t2 must beSome
 
         val task2       = t2.get
-        val successTask = entityHelper.get("task", task2.id, Permissions.manageTask)
-        val failureTask = entityHelper.get("task", task2.id, Permissions.manageTask)(graph, dummyUserSrv.authContext)
+        val successTask = entityHelper.get("task", task2.id, Permissions.manageAction)
+        val failureTask = entityHelper.get("task", task2.id, Permissions.manageAction)(graph, dummyUserSrv.authContext)
 
         successTask must beSuccessfulTry
         failureTask must beFailedTry
 
         val requestAlert = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref2")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
         val result = app.instanceOf[AlertCtrl].get("testType;testSource;ref2")(requestAlert)
         status(result) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultAlertOutput = contentAsJson(result).as[OutputAlert]
-        val successAlert = entityHelper.get("alert", resultAlertOutput._id, Permissions.manageAlert)
+        val successAlert = entityHelper.get("alert", resultAlertOutput._id, Permissions.manageAction)
 
         successAlert must beSuccessfulTry
       }
