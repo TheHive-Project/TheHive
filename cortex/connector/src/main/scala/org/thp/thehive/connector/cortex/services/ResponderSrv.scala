@@ -29,7 +29,7 @@ class ResponderSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Execut
   )(implicit graph: Graph, authContext: AuthContext): Future[List[OutputCortexResponder]] =
     for {
       (tlp, pap) <- Future.fromTry(entityHelper.threatLevels(entityType, entityId)).recover { case _ => (0, 0) }
-      responders <- Future.traverse(cortexConfig.instances)(client => client._2.getRespondersByType(entityType)).map(_.flatten)
+      responders <- Future.traverse(cortexConfig.instances.values)(client => client.getRespondersByType(entityType)).map(_.flatten)
     } yield responders
       .groupBy(_.name)
       .values
