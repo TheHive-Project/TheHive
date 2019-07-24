@@ -1,15 +1,14 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import java.util.Date
-
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob}
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.connector.cortex.services.JobSteps
+
 import scala.language.implicitConversions
 
 object JobConversion {
@@ -32,10 +31,10 @@ object JobConversion {
 
   val jobProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[JobSteps]
-      .property[String]("analyzerId")(_.rename("workerId").updatable)
-      .property[Option[String]]("cortexId")(_.simple.updatable)
-      .property[Date]("startDate")(_.simple.readonly)
-      .property[String]("status")(_.simple.readonly)
+      .property("analyzerId", UniMapping.stringMapping)(_.rename("workerId").readonly)
+      .property("cortexId", UniMapping.stringMapping.optional)(_.simple.readonly)
+      .property("startDate", UniMapping.dateMapping)(_.simple.readonly)
+      .property("status", UniMapping.stringMapping)(_.simple.readonly)
       .build
 
   def fromCortexOutputJob(j: CortexOutputJob): Job =

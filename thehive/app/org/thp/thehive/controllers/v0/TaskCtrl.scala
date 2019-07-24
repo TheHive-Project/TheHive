@@ -63,7 +63,7 @@ class TaskCtrl @Inject()(
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract("task", FieldsParser.update("task", taskProperties(taskSrv, userSrv)))
+      .extract("task", FieldsParser.update("task", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv

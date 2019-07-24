@@ -1,19 +1,16 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
-import scala.language.implicitConversions
-
-import play.api.libs.json.{JsNull, Json}
-
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{Output, RichOptionTry}
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
+import play.api.libs.json.{JsNull, Json}
+
+import scala.language.implicitConversions
 
 object TaskConversion {
 
@@ -43,15 +40,15 @@ object TaskConversion {
 
   def taskProperties(taskSrv: TaskSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[TaskSteps]
-      .property[String]("title")(_.simple.updatable)
-      .property[Option[String]]("description")(_.simple.updatable)
-      .property[TaskStatus.Value]("status")(_.simple.updatable)
-      .property[Boolean]("flag")(_.simple.updatable)
-      .property[Option[Date]]("startDate")(_.simple.updatable)
-      .property[Option[Date]]("endDate")(_.simple.updatable)
-      .property[Int]("order")(_.simple.updatable)
-      .property[Option[Date]]("dueDate")(_.simple.updatable)
-      .property[Option[String]]("owner")(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
+      .property("title", UniMapping.stringMapping)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("status", UniMapping.enumMapping(TaskStatus))(_.simple.updatable)
+      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("startDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("endDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("order", UniMapping.intMapping)(_.simple.updatable)
+      .property("dueDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("owner", UniMapping.stringMapping.optional)(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
         (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail()

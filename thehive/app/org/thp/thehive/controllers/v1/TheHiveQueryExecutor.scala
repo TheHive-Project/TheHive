@@ -17,14 +17,15 @@ class TheHiveQueryExecutor @Inject()(
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     implicit val db: Database
-) extends QueryExecutor
-    with CaseConversion
-    with TaskConversion
-    with UserConversion
-    with OrganisationConversion {
+) extends QueryExecutor {
+
+  import CaseConversion._
+  import TaskConversion._
+  import UserConversion._
+  import OrganisationConversion._
 
   override val version: (Int, Int)                               = 1 -> 1
-  override lazy val publicProperties: List[PublicProperty[_, _]] = caseProperties
+  override lazy val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv)
   override lazy val queries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[GetCaseParams, CaseSteps](
       "getCase",

@@ -3,15 +3,16 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.language.implicitConversions
-
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
+import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
-import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, RichAlert, RichObservable}
-import org.thp.thehive.services.AlertSteps
+import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, AlertTag, RichAlert, RichObservable}
+import org.thp.thehive.services.{AlertSrv, AlertSteps}
+import play.api.libs.json.Json
 
 object AlertConversion {
   import CustomFieldConversion._
@@ -25,6 +26,7 @@ object AlertConversion {
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldRenamed(_._id, _.id)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(
           _.status,
           alert =>
@@ -47,6 +49,7 @@ object AlertConversion {
         .withFieldRenamed(_._id, _.id)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(
           _.status,
           alert =>
@@ -73,23 +76,32 @@ object AlertConversion {
       .withFieldConst(_.follow, true)
       .transform
 
-  val alertProperties: List[PublicProperty[_, _]] =
+  def alertProperties(alertSrv: AlertSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[AlertSteps]
-      .property[String]("type")(_.simple.updatable)
-      .property[String]("source")(_.simple.updatable)
-      .property[String]("sourceRef")(_.simple.updatable)
-      .property[String]("title")(_.simple.updatable)
-      .property[String]("description")(_.simple.updatable)
-      .property[Int]("severity")(_.simple.updatable)
-      .property[Date]("date")(_.simple.updatable)
-      .property[Option[Date]]("lastSyncDate")(_.simple.updatable)
-      .property[Set[String]]("tags")(_.simple.updatable)
-      .property[Boolean]("flag")(_.simple.updatable)
-      .property[Int]("tlp")(_.simple.updatable)
-      .property[Int]("pap")(_.simple.updatable)
-      .property[Boolean]("read")(_.simple.updatable)
-      .property[Boolean]("follow")(_.simple.updatable)
-      .property[String]("status")(
+      .property("type", UniMapping.stringMapping)(_.simple.updatable)
+      .property("source", UniMapping.stringMapping)(_.simple.updatable)
+      .property("sourceRef", UniMapping.stringMapping)(_.simple.updatable)
+      .property("title", UniMapping.stringMapping)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping)(_.simple.updatable)
+      .property("severity", UniMapping.intMapping)(_.simple.updatable)
+      .property("date", UniMapping.dateMapping)(_.simple.updatable)
+      .property("lastSyncDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("tags", UniMapping.stringMapping.set)(
+        _.derived(_.outTo[AlertTag].value("name"))
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            alertSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(alert => alertSrv.updateTags(alert, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("tlp", UniMapping.intMapping)(_.simple.updatable)
+      .property("pap", UniMapping.intMapping)(_.simple.updatable)
+      .property("read", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("follow", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("status", UniMapping.stringMapping)(
         _.derived(
           _.project(
             _.apply(By(Key[Boolean]("read")))
@@ -102,20 +114,20 @@ object AlertConversion {
           }
         ).readonly
       )
-      .property[Option[String]]("summary")(_.simple.updatable)
-      .property[String]("user")(_.simple.updatable)
-      .property[String]("customFieldName")(_.derived(_.outTo[AlertCustomField].value[String]("name")).readonly)
-      .property[String]("customFieldDescription")(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
-      .property[String]("customFieldType")(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
-      .property[String]("customFieldValue")(
+      .property("summary", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("user", UniMapping.stringMapping)(_.simple.updatable)
+      .property("customFieldName", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value("name")).readonly)
+      .property("customFieldDescription", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
+      .property("customFieldType", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
+      .property("customFieldValue", UniMapping.stringMapping)(
         _.derived(
-          _.outToE[AlertCustomField].value[Any]("stringValue"),
-          _.outToE[AlertCustomField].value[Any]("booleanValue"),
-          _.outToE[AlertCustomField].value[Any]("integerValue"),
-          _.outToE[AlertCustomField].value[Any]("floatValue"),
-          _.outToE[AlertCustomField].value[Any]("dateValue")
+          _.outToE[AlertCustomField].value("stringValue"),
+          _.outToE[AlertCustomField].value("booleanValue"),
+          _.outToE[AlertCustomField].value("integerValue"),
+          _.outToE[AlertCustomField].value("floatValue"),
+          _.outToE[AlertCustomField].value("dateValue")
         ).readonly
       )
-      .property[String]("case")(_.derived(_.outTo[AlertCase].value[String]("_id")).readonly)
+      .property("case", UniMapping.stringMapping)(_.derived(_.outTo[AlertCase].value[String]("_id")).readonly)
       .build
 }

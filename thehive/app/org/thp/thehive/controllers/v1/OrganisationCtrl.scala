@@ -18,7 +18,9 @@ class OrganisationCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     errorHandler: HttpErrorHandler,
     userSrv: UserSrv
-) extends OrganisationConversion {
+) {
+
+  import OrganisationConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")

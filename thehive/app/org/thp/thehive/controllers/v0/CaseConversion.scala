@@ -4,14 +4,12 @@ import java.util.Date
 
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
-
 import play.api.libs.json.{JsNumber, JsObject, Json}
-
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
@@ -35,6 +33,7 @@ object CaseConversion {
         .withFieldRenamed(_._updatedBy, _.updatedBy)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldConst(_.stats, JsObject.empty)
         .transform
     )
@@ -134,24 +133,34 @@ object CaseConversion {
         .withFieldRenamed(_._updatedBy, _.updatedBy)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldConst(_.stats, richCaseWithStats._2)
         .transform
     )
 
   def caseProperties(caseSrv: CaseSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
-      .property[String]("title")(_.simple.updatable)
-      .property[String]("description")(_.simple.updatable)
-      .property[Int]("severity")(_.simple.updatable)
-      .property[Date]("startDate")(_.simple.updatable)
-      .property[Option[Date]]("endDate")(_.simple.updatable)
-      .property[Set[String]]("tags")(_.simple.updatable)
-      .property[Boolean]("flag")(_.simple.updatable)
-      .property[Int]("tlp")(_.simple.updatable)
-      .property[Int]("pap")(_.simple.updatable)
-      .property[String]("status")(_.simple.updatable)
-      .property[Option[String]]("summary")(_.simple.updatable)
-      .property[Option[String]]("owner")(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
+      .property("title", UniMapping.stringMapping)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping)(_.simple.updatable)
+      .property("severity", UniMapping.intMapping)(_.simple.updatable)
+      .property("startDate", UniMapping.dateMapping)(_.simple.updatable)
+      .property("endDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("tags", UniMapping.stringMapping.set)(
+        _.derived(_.outTo[CaseTag].value("name"))
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            caseSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("tlp", UniMapping.intMapping)(_.simple.updatable)
+      .property("pap", UniMapping.intMapping)(_.simple.updatable)
+      .property("status", UniMapping.stringMapping)(_.simple.updatable)
+      .property("summary", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("owner", UniMapping.stringMapping.optional)(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
         (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             case0 <- caseSrv.get(vertex)(graph).getOrFail()
@@ -162,26 +171,26 @@ object CaseConversion {
             }
           } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property[String]("resolutionStatus")(_.derived(_.outTo[CaseResolutionStatus].value[String]("value")).custom {
+      .property("resolutionStatus", UniMapping.stringMapping)(_.derived(_.outTo[CaseResolutionStatus].value[String]("value")).custom {
         (_, value: String, vertex, _, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail()
             _ <- caseSrv.setResolutionStatus(c, value)(graph, authContext)
           } yield Json.obj("resolutionStatus" -> value)
       })
-      .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
-      .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property[String]("customFieldType")(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property[String]("customFieldValue")(
+      .property("customFieldName", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
+      .property("customFieldDescription", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
+      .property("customFieldType", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
+      .property("customFieldValue", UniMapping.stringMapping)(
         _.derived(
-          _.outToE[CaseCustomField].value[Any]("stringValue"),
-          _.outToE[CaseCustomField].value[Any]("booleanValue"),
-          _.outToE[CaseCustomField].value[Any]("integerValue"),
-          _.outToE[CaseCustomField].value[Any]("floatValue"),
-          _.outToE[CaseCustomField].value[Any]("dateValue")
+          _.outToE[CaseCustomField].value("stringValue"),
+          _.outToE[CaseCustomField].value("booleanValue"),
+          _.outToE[CaseCustomField].value("integerValue"),
+          _.outToE[CaseCustomField].value("floatValue"),
+          _.outToE[CaseCustomField].value("dateValue")
         ).readonly
       )
-      .property[Long]("computed.handlingDurationInHours")(
+      .property("computed.handlingDurationInHours", UniMapping.longMapping)(
         _.derived(
           _.coalesce(
             _.has(Key("endDate"))
@@ -206,7 +215,6 @@ object CaseConversion {
         .withFieldComputed(_.flag, _.flag.getOrElse(ct.flag))
         .withFieldComputed(_.tlp, _.tlp.orElse(ct.tlp).getOrElse(2))
         .withFieldComputed(_.pap, _.pap.orElse(ct.pap).getOrElse(2))
-        .withFieldComputed(_.tags, _.tags ++ ct.tags)
         .withFieldConst(_.summary, ct.summary)
         .withFieldConst(_.status, CaseStatus.Open)
         .withFieldConst(_.number, 0)

@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.language.implicitConversions
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.Json
-
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
@@ -15,6 +10,10 @@ import org.thp.scalligraph.{InvalidFormatAttributeError, Output}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
+import play.api.libs.json.Json
+
+import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
 object UserConversion {
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
@@ -52,8 +51,8 @@ object UserConversion {
 
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
-      .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
+      .property("login", UniMapping.stringMapping)(_.simple.readonly)
+      .property("name", UniMapping.stringMapping)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -75,8 +74,8 @@ object UserConversion {
             Json.obj("name" -> value)
           }
       })
-      .property[String]("apikey")(_.simple.readonly)
-      .property[String]("status")(
+      .property("apikey", UniMapping.stringMapping)(_.simple.readonly)
+      .property("status", UniMapping.stringMapping)(
         _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
           .custom { (_, value, vertex, db, graph, authContext) =>
             userSrv

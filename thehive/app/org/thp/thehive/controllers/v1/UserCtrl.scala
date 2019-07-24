@@ -26,9 +26,11 @@ class UserCtrl @Inject()(
     profileSrv: ProfileSrv,
     errorHandler: HttpErrorHandler,
     implicit val ec: ExecutionContext
-) extends UserConversion {
+) {
 
-  lazy val userProperties: Seq[PublicProperty[_, _]] = userProperties(userSrv)
+  import UserConversion._
+
+  val publicProperties: Seq[PublicProperty[_, _]] = userProperties(userSrv)
 
   def current: Action[AnyContent] =
     entryPoint("current user")
@@ -87,7 +89,7 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract("user", FieldsParser.update("user", userProperties))
+      .extract("user", FieldsParser.update("user", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         userSrv // Authorisation is managed in public properties
