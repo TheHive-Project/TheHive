@@ -34,6 +34,9 @@ case class AlertCase()
 @EdgeEntity[Alert, CaseTemplate]
 case class AlertCaseTemplate()
 
+@EdgeEntity[Alert, Tag]
+case class AlertTag()
+
 @VertexEntity
 @DefineIndex(IndexType.unique, "type", "source", "sourceRef")
 case class Alert(
@@ -45,7 +48,6 @@ case class Alert(
     severity: Int,
     date: Date,
     lastSyncDate: Date,
-    tags: Set[String],
     flag: Boolean,
     tlp: Int,
     pap: Int,
@@ -60,6 +62,7 @@ object Alert {
 case class RichAlert(
     alert: Alert with Entity,
     organisation: String,
+    tags: Seq[Tag],
     customFields: Seq[CustomFieldWithValue],
     caseId: Option[String],
     caseTemplate: Option[String]
@@ -77,7 +80,6 @@ case class RichAlert(
   val severity: Int              = alert.severity
   val date: Date                 = alert.date
   val lastSyncDate: Date         = alert.lastSyncDate
-  val tags: Set[String]          = alert.tags
   val flag: Boolean              = alert.flag
   val tlp: Int                   = alert.tlp
   val pap: Int                   = alert.pap
@@ -90,6 +92,7 @@ object RichAlert {
   def apply(
       alert: Alert with Entity,
       organisation: String,
+      tags: Seq[Tag],
       customFields: Seq[CustomFieldWithValue],
       caseId: Option[String],
       caseTemplate: Option[String]
@@ -99,6 +102,7 @@ object RichAlert {
       .into[RichAlert]
       .withFieldConst(_.alert, alert)
       .withFieldConst(_.organisation, organisation)
+      .withFieldConst(_.tags, tags)
       .withFieldConst(_.customFields, customFields)
       .withFieldConst(_.caseId, caseId)
       .withFieldConst(_.caseTemplate, caseTemplate)

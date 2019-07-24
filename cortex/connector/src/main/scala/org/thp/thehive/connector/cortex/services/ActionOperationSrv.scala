@@ -21,7 +21,7 @@ class ActionOperationSrv @Inject()(
       case AddTagToCase(tag, _, _) =>
         for {
           c <- Try(relatedCase.get)
-          _ <- caseSrv.get(c._id).update("tags" -> (c.tags + tag))
+          _ <- caseSrv.get(c).update("tags" -> (/*c.tags + */ tag)) //  FIXME
         } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
       case _ => ???
     }

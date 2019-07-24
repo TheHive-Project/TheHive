@@ -1,11 +1,10 @@
 package org.thp.thehive.controllers.v1
 
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
 import org.thp.scalligraph.{NotFoundError, RichOptionTry, RichSeq}
 import org.thp.thehive.dto.v1.InputCase
 import org.thp.thehive.models.Permissions
@@ -21,7 +20,11 @@ class CaseCtrl @Inject()(
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv
-) extends CaseConversion {
+) {
+  import CaseConversion._
+  import CustomFieldConversion._
+
+  val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv)
 
   def create: Action[AnyContent] =
     entryPoint("create case")
@@ -55,18 +58,8 @@ class CaseCtrl @Inject()(
                 .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
             }
             .flip
-//            organisation <- organisationSrv.getOrFail(request.organisation)
-          customFieldsCaseTemplate = caseTemplate.fold(Map.empty[String, Option[Any]])(_.customFields.map(cf => cf.name -> cf.value).toMap)
-          customFields             = customFieldsCaseTemplate ++ inputCase.customFieldValue.map(fromInputCustomField).toMap
-          richCase <- caseSrv.create(case0, user, organisation, customFields, caseTemplate)
-
-          _ = caseTemplate.map { ct =>
-            caseTemplateSrv
-              .get(ct.caseTemplate)
-              .tasks
-              .toList
-              .toTry(task => taskSrv.create(task, richCase.`case`))
-          }.flip
+          customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
+          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
         } yield Results.Created(richCase.toJson)
       }
 
@@ -92,7 +85,7 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract("case", FieldsParser.update("case", caseProperties))
+      .extract("case", FieldsParser.update("case", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         caseSrv

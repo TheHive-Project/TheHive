@@ -1,9 +1,8 @@
 package org.thp.thehive.services
 
 import scala.util.Try
-
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
@@ -11,11 +10,13 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
 @Singleton
-class TaskSrv @Inject()(caseSrv: CaseSrv, shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
+class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
     extends VertexSrv[Task, TaskSteps] {
-  val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
-  val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
-  val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
+
+  lazy val caseSrv: CaseSrv = caseSrvProvider.get
+  val caseTemplateTaskSrv   = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
+  val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
+  val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 

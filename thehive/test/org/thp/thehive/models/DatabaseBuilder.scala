@@ -34,6 +34,7 @@ class DatabaseBuilder @Inject()(
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     taskSrv: TaskSrv,
+    tagSrv: TagSrv,
     keyValueSrv: KeyValueSrv,
     dataSrv: DataSrv,
     logSrv: LogSrv,
@@ -67,7 +68,8 @@ class DatabaseBuilder @Inject()(
           createVertex(alertSrv, FieldsParser[Alert]) ++
           createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
           createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
-          createVertex(attachmentSrv, FieldsParser[Attachment])
+          createVertex(attachmentSrv, FieldsParser[Attachment]) ++
+          createVertex(tagSrv, FieldsParser[Tag])
 
       createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
       createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
@@ -96,16 +98,19 @@ class DatabaseBuilder @Inject()(
       createEdge(caseSrv.caseResolutionStatusSrv, caseSrv, resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
       createEdge(caseSrv.caseImpactStatusSrv, caseSrv, impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
       createEdge(caseSrv.caseCustomFieldSrv, caseSrv, customFieldSrv, FieldsParser[CaseCustomField], idMap)
+      createEdge(caseSrv.caseTagSrv, caseSrv, tagSrv, FieldsParser[CaseTag], idMap)
 
       createEdge(caseTemplateSrv.caseTemplateOrganisationSrv, caseTemplateSrv, organisationSrv, FieldsParser[CaseTemplateOrganisation], idMap)
       createEdge(caseTemplateSrv.caseTemplateTaskSrv, caseTemplateSrv, taskSrv, FieldsParser[CaseTemplateTask], idMap)
       createEdge(caseTemplateSrv.caseTemplateCustomFieldSrv, caseTemplateSrv, customFieldSrv, FieldsParser[CaseTemplateCustomField], idMap)
+      createEdge(caseTemplateSrv.caseTemplateTagSrv, caseTemplateSrv, tagSrv, FieldsParser[CaseTemplateTag], idMap)
 
       createEdge(alertSrv.alertOrganisationSrv, alertSrv, organisationSrv, FieldsParser[AlertOrganisation], idMap)
       createEdge(alertSrv.alertObservableSrv, alertSrv, observableSrv, FieldsParser[AlertObservable], idMap)
       createEdge(alertSrv.alertCaseSrv, alertSrv, caseSrv, FieldsParser[AlertCase], idMap)
       createEdge(alertSrv.alertCaseTemplateSrv, alertSrv, caseTemplateSrv, FieldsParser[AlertCaseTemplate], idMap)
       createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
+      createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
 
       ()
     }

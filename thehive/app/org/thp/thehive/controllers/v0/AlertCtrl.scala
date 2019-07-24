@@ -38,7 +38,7 @@ class AlertCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = alertProperties ::: metaProperties[AlertSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
@@ -76,7 +76,7 @@ class AlertCtrl @Inject()(
           organisation <- userSrv.getOrganisation(user)
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
-          richAlert       <- alertSrv.create(request.body("alert"), organisation, customFields, caseTemplate)
+          richAlert       <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
           richObservables <- observables.toTry(observable => importObservable(richAlert.alert, observable))
         } yield Results.Created((richAlert -> richObservables.flatten).toJson)
       }
@@ -121,7 +121,7 @@ class AlertCtrl @Inject()(
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract("alert", FieldsParser.update("alert", alertProperties))
+      .extract("alert", FieldsParser.update("alert", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv

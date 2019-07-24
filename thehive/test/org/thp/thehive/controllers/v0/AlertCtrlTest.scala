@@ -293,7 +293,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         tlp = 2,
         pap = 2,
         status = "Open",
-        tags = Set("alert", "test"),
+        tags = Set("alert", "test", "spam", "src:mail"),
         summary = None,
         owner = None,
         customFields = Set(

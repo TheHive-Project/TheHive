@@ -19,15 +19,19 @@ import org.thp.thehive.models._
 
 @Singleton
 class CaseSrv @Inject()(
+    caseTemplateSrv: CaseTemplateSrv,
+    tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
+    taskSrv: TaskSrv,
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
+  val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
   val caseResolutionStatusSrv = new EdgeSrv[CaseResolutionStatus, Case, ResolutionStatus]
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
@@ -41,17 +45,26 @@ class CaseSrv @Inject()(
       `case`: Case,
       user: Option[User with Entity],
       organisation: Organisation with Entity,
+      tagNames: Set[String],
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[RichCaseTemplate]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
     val createdCase = create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
     user.foreach(caseUserSrv.create(CaseUser(), createdCase, _))
-    shareSrv.create(createdCase, organisation, profileSrv.admin)
-    caseTemplate.foreach(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
-
     for {
       _ <- auditSrv.createCase(createdCase)
-      cfs <- customFields
+      _ = shareSrv.create(createdCase, organisation, profileSrv.admin)
+      _ = caseTemplate.foreach(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
+      _ <- caseTemplate.map { ct =>
+        ct.tasks
+          .toList
+          .toTry(task => taskSrv.create(task, createdCase))
+      }.flip
+      caseTemplateCustomFields = caseTemplate
+        .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
+        .map(cf => cf.name -> cf.value)
+        .toMap
+      cfs <- (caseTemplateCustomFields ++ customFields)
         .toSeq
         .toTry {
           case (name, Some(value)) =>
@@ -66,7 +79,12 @@ class CaseSrv @Inject()(
               CustomFieldWithValue(cf, alertCustomField)
             }
         }
-    } yield RichCase(createdCase, None, None, user.map(_.login), cfs)
+      caseTemplateTags = caseTemplate
+        .fold[Seq[Tag with Entity]](Nil)(_.tags)
+      tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+      allTags = tags ++ caseTemplateTags
+      _       = allTags.foreach(t => caseTagSrv.create(CaseTag(), createdCase, t))
+    } yield RichCase(createdCase, allTags, None, None, user.map(_.login), cfs)
   }
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
@@ -89,6 +107,30 @@ class CaseSrv @Inject()(
       case0                      <- caseSteps.clone().getOrFail()
       _                          <- auditSrv.updateCase(case0, updatedFields)
     } yield (caseSteps, updatedFields)
+  }
+
+  def updateTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val (tagsToAdd, tagsToRemove) = get(`case`)
+      .tags
+      .toIterator
+      .foldLeft((tags, Set.empty[String])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
+        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      }
+    tagsToAdd
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTagSrv.create(CaseTag(), `case`, t)))
+      .map(_ => get(`case`).removeTags(tagsToRemove))
+  }
+
+  def addTags(`case`: Case with Entity, tags: Seq[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val currentTags = get(`case`)
+      .tags
+      .toList
+      .map(_.name)
+      .toSet
+    (tags.toSet -- currentTags)
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTagSrv.create(CaseTag(), `case`, t)))
+      .map(_ => ())
   }
 
   def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
@@ -276,13 +318,14 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseTag].fold))
             .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
         )
         .map {
-          case (caze, impactStatus, resolutionStatus, user, customFields) =>
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -293,6 +336,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .toSeq
             RichCase(
               caze.as[Case],
+              tags.asScala.map(_.as[Tag]).toSeq,
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
@@ -308,6 +352,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseTag].fold))
             .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
@@ -315,7 +360,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(entityRenderer(__[Vertex])))
         )
         .map {
-          case (caze, impactStatus, resolutionStatus, user, customFields, renderedEntity) =>
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -326,6 +371,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .toSeq
             RichCase(
               caze.as[Case],
+              tags.asScala.map(_.as[Tag]).toSeq,
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
@@ -356,6 +402,11 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
     raw.outToE[CaseUser].drop().iterate()
+    ()
+  }
+
+  def removeTags(tagNames: Set[String]): Unit = {
+    raw.outToE[CaseTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
     ()
   }
 
@@ -400,6 +451,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
       }
   }
+
+  def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 
   def impactStatus: ImpactStatusSteps = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 

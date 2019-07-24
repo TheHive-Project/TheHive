@@ -20,9 +20,11 @@ class CaseTemplateCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
-) extends CaseTemplateConversion
-    with TaskConversion
-    with CustomFieldConversion {
+) {
+
+  import CaseTemplateConversion._
+  import TaskConversion._
+  import CustomFieldConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
@@ -33,7 +35,7 @@ class CaseTemplateCtrl @Inject()(
           organisation <- organisationSrv.getOrFail(request.organisation)
           tasks        = inputCaseTemplate.tasks.map(fromInputTask)
           customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 

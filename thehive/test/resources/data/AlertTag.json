@@ -1,0 +1,12 @@
+[
+  {"from": "alert1", "to": "test"},
+  {"from": "alert1", "to": "alert"},
+  {"from": "alert2", "to": "test"},
+  {"from": "alert2", "to": "alert"},
+  {"from": "alert3", "to": "test"},
+  {"from": "alert3", "to": "alert"},
+  {"from": "alert4", "to": "test"},
+  {"from": "alert4", "to": "alert"},
+  {"from": "alert5", "to": "test"},
+  {"from": "alert5", "to": "alert"}
+]

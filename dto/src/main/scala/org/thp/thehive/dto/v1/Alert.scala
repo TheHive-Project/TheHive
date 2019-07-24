@@ -14,7 +14,7 @@ case class InputAlert(
     description: String,
     severity: Option[Int] = None,
     date: Date = new Date,
-    tags: Seq[String] = Nil,
+    tags: Set[String] = Set.empty,
     flag: Option[Boolean] = None,
     tlp: Option[Int] = None,
     pap: Option[Int] = None,

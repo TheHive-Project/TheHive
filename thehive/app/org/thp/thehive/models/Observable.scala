@@ -13,6 +13,9 @@ case class ObservableAttachment()
 @EdgeEntity[Observable, Data]
 case class ObservableData()
 
+@EdgeEntity[Observable, Tag]
+case class ObservableTag()
+
 @VertexEntity
 case class Observable(tags: Set[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
 

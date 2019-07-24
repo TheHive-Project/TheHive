@@ -21,6 +21,7 @@ import shapeless.HNil
 @Singleton
 class AlertSrv @Inject()(
     caseSrv: CaseSrv,
+    tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
@@ -31,13 +32,20 @@ class AlertSrv @Inject()(
     implicit db: Database
 ) extends VertexSrv[Alert, AlertSteps] {
 
+  val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
   val alertCustomFieldSrv  = new EdgeSrv[AlertCustomField, Alert, CustomField]
   val alertOrganisationSrv = new EdgeSrv[AlertOrganisation, Alert, Organisation]
   val alertCaseSrv         = new EdgeSrv[AlertCase, Alert, Case]
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
   val alertObservableSrv   = new EdgeSrv[AlertObservable, Alert, Observable]
 
-  def create(alert: Alert, organisation: Organisation with Entity, customFields: Map[String, Option[Any]], caseTemplate: Option[RichCaseTemplate])(
+  def create(
+      alert: Alert,
+      organisation: Organisation with Entity,
+      tagNames: Set[String],
+      customFields: Map[String, Option[Any]],
+      caseTemplate: Option[RichCaseTemplate]
+  )(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
@@ -45,7 +53,9 @@ class AlertSrv @Inject()(
     alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
     caseTemplate.foreach(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
     for {
-      _ <- auditSrv.createAlert(createdAlert)
+      _    <- auditSrv.createAlert(createdAlert)
+      tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+      _ = tags.foreach(t => alertTagSrv.create(AlertTag(), createdAlert, t))
       cfs <- customFields
         .toSeq
         .toTry {
@@ -61,7 +71,7 @@ class AlertSrv @Inject()(
               CustomFieldWithValue(cf, alertCustomField)
             }
         }
-    } yield RichAlert(createdAlert, organisation.name, cfs, None, caseTemplate.map(_.name))
+    } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
   }
 
   override def update(
@@ -73,6 +83,30 @@ class AlertSrv @Inject()(
       alert                       <- alertSteps.clone().getOrFail()
       _                           <- auditSrv.updateAlert(alert, updatedFields)
     } yield (alertSteps, updatedFields)
+
+  def updateTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val (tagsToAdd, tagsToRemove) = get(alert)
+      .tags
+      .toIterator
+      .foldLeft((tags, Set.empty[String])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
+        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      }
+    tagsToAdd
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => alertTagSrv.create(AlertTag(), alert, t)))
+      .map(_ => get(alert).removeTags(tagsToRemove.toSeq))
+  }
+
+  def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val currentTags = get(alert)
+      .tags
+      .toList
+      .map(_.name)
+      .toSet
+    (tags -- currentTags)
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => alertTagSrv.create(AlertTag(), alert, t)))
+      .map(_ => ())
+  }
 
   def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
       implicit graph: Graph,
@@ -139,11 +173,7 @@ class AlertSrv @Inject()(
         .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
         .flip
-      customField = caseTemplate
-        .fold[Seq[(String, Option[Any])]](Nil) { ct =>
-          ct.customFields.map(f => f.name -> f.value)
-        }
-        .toMap ++ alert.customFields.map(f => f.name -> f.value)
+      customField = alert.customFields.map(f => f.name -> f.value).toMap
       case0 = Case(
         number = 0,
         title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
@@ -151,7 +181,6 @@ class AlertSrv @Inject()(
         severity = alert.severity,
         startDate = new Date,
         endDate = None,
-        tags = alert.tags,
         flag = alert.flag,
         tlp = alert.tlp,
         pap = alert.pap,
@@ -159,15 +188,7 @@ class AlertSrv @Inject()(
         summary = None
       )
 
-      createdCase <- caseSrv.create(case0, user, organisation, customField, caseTemplate)
-
-      _ <- caseTemplate.map { ct =>
-        caseTemplateSrv
-          .get(ct.caseTemplate)
-          .tasks
-          .toIterator
-          .toTry(task => taskSrv.create(task, createdCase.`case`))
-      }.flip
+      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.map(_.name).toSet, customField, caseTemplate)
 
       _ <- importObservables(alert.alert, createdCase.`case`)
       _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
@@ -218,6 +239,13 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[AlertOrganisation])
 
+  def tags: TagSteps = new TagSteps(raw.outTo[AlertTag])
+
+  def removeTags(tagNames: Seq[String]): Unit = {
+    raw.outToE[AlertTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
+    ()
+  }
+
   def visible(implicit authContext: AuthContext): AlertSteps =
     filter(
       _.outTo[AlertOrganisation]
@@ -238,6 +266,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def alertUserOrganisation(permission: Permission)(implicit authContext: AuthContext): ScalarSteps[(RichAlert, Organisation with Entity)] = {
     val alertLabel            = StepLabel[Vertex]()
     val organisationLabel     = StepLabel[Vertex]()
+    val tagLabel              = StepLabel[JList[Vertex]]()
     val customFieldLabel      = StepLabel[JList[Path]]()
     val caseIdLabel           = StepLabel[JList[String]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
@@ -246,6 +275,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .asInstanceOf[GremlinScala.Aux[Vertex, HNil]]
         .`match`(
           _.as(alertLabel).out("AlertOrganisation").as(organisationLabel),
+          _.as(alertLabel).out("AlertTag").fold().as(tagLabel),
           _.as(organisationLabel)
             .inTo[RoleOrganisation]
             .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
@@ -255,8 +285,10 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
           _.as(alertLabel).outTo[AlertCase].values[String]("_id").fold.as(caseIdLabel),
           _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel)
         )
-        .select(alertLabel.name, organisationLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
+        .select(alertLabel.name, organisationLabel.name, tagLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
         .map { resultMap =>
+          val organisation = resultMap.getValue(organisationLabel).as[Organisation]
+          val tags         = resultMap.getValue(tagLabel).asScala.map(_.as[Tag]).toSeq
           val customFieldValues = resultMap
             .getValue(customFieldLabel)
             .asScala
@@ -266,10 +298,11 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               case _             => throw InternalError("Not possible")
             }
             .toSeq
-          val organisation = resultMap.getValue(organisationLabel).as[Organisation]
+
           RichAlert(
             resultMap.getValue(alertLabel).as[Alert],
             organisation.name,
+            tags,
             customFieldValues,
             atMostOneOf(resultMap.getValue(caseIdLabel)),
             atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
@@ -298,12 +331,13 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .project(
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold))
+            .and(By(__[Vertex].outTo[AlertTag].fold))
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].values[String]("_id").fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
         )
         .map {
-          case (alert, organisation, customFields, caseId, caseTemplate) =>
+          case (alert, organisation, tags, customFields, caseId, caseTemplate) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -314,6 +348,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             RichAlert(
               alert.as[Alert],
               onlyOneOf[String](organisation),
+              tags.asScala.map(_.as[Tag]).toSeq,
               customFieldValues.toSeq,
               atMostOneOf[String](caseId),
               atMostOneOf[String](caseTemplate)
