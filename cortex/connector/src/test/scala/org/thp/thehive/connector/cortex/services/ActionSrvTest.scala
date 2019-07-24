@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.Date
-
 import akka.actor.Terminated
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -12,7 +10,7 @@ import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
-import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
+import org.thp.thehive.connector.cortex.models.RichAction
 import org.thp.thehive.controllers.v0.{CaseCtrl, TheHiveQueryExecutor}
 import org.thp.thehive.dto.v0.{OutputCase, OutputTask}
 import org.thp.thehive.models.{DatabaseBuilder, EntityHelper, Permissions, TheHiveSchema}
@@ -33,29 +31,9 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
     specs(dbProvider.name, a, dbProvider) ^ step(teardownDatabase(a)) ^ step(shutdownActorSystem(a))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
-
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
-
-  def app(dbProvider: DatabaseProvider, port: Int): AppBuilder = AppBuilder()
-    .bind[UserSrv, LocalUserSrv]
-    .bindToProvider(dbProvider)
-    .bindInstance[AuthSrv](mock[AuthSrv])
-    .bind[AuthenticateSrv, TestAuthenticateSrv]
-    .bind[StorageSrv, LocalFileSystemStorageSrv]
-    .bind[Schema, TheHiveSchema]
-    .bindActor[CortexActor]("cortex-actor")
-    .addConfiguration(
-      Configuration(
-        "play.modules.disabled"                     -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-        "akka.remote.netty.tcp.port"                -> port,
-        "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on",
-        "akka.actor.provider"                       -> "cluster"
-      )
-    )
 
   def specs(name: String, app: AppBuilder, db: DatabaseProvider): Fragment = {
 
@@ -80,9 +58,9 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
     }
 
     s"[$name] action service" should {
-      implicit lazy val ws: CustomWSAPI              = this.app(db, 3334).instanceOf[CustomWSAPI]
-      implicit lazy val auth: Authentication         = KeyAuthentication("test")
-      implicit lazy val authContext: AuthContext     = dummyUserSrv.authContext
+      implicit lazy val ws: CustomWSAPI          = this.app(db, 3334).instanceOf[CustomWSAPI]
+      implicit lazy val auth: Authentication     = KeyAuthentication("test")
+      implicit lazy val authContext: AuthContext = dummyUserSrv.authContext
 
       "execute and create an action" in {
         withCortexClient { client =>
@@ -90,20 +68,20 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
           setupDatabase(app)
 
           app.instanceOf[Database].transaction { implicit graph =>
-            val taskSrv = app.instanceOf[TaskSrv]
-            val caseSrv = app.instanceOf[CaseSrv]
+            val taskSrv                                     = app.instanceOf[TaskSrv]
+            val caseSrv                                     = app.instanceOf[CaseSrv]
             implicit val entityHelperWrites: Writes[Entity] = app.instanceOf[EntityHelper].writes
-            val actionSrv = app.instanceOf[ActionSrv]
+            val actionSrv                                   = app.instanceOf[ActionSrv]
 
             val t1 = tasksList(app.instanceOf[TheHiveQueryExecutor]).find(_.title == "case 1 task 1")
 
             t1 must beSome
 
-            val task1 = t1.get
+            val task1       = t1.get
             val relatedCase = getCase(app.instanceOf[CaseCtrl])
             val inputAction = InputAction(
               "respTest1",
-              "respTest1",
+              Some("respTest1"),
               Some(client.name),
               "case_task",
               task1.id,
@@ -117,36 +95,35 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
               taskSrv.get(task1.id).getOrFail().get,
               Some(caseSrv.get(relatedCase._id).getOrFail().get)
             )
+            val richAction = await(r)
 
-            await(r) must beAnInstanceOf[RichAction]
+            richAction must beAnInstanceOf[RichAction]
+            richAction.responderId shouldEqual "respTest1"
+
           }
         }
       }
-
-//      "update an action when job is finished" in {
-//        withCortexClient { client =>
-//          val actionSrv = app.instanceOf[ActionSrv]
-//
-//          val task = taskSrv.get(tasksList.find(_.title == "case 1 task 1").get.id).getOrFail()
-//
-//          task must beSuccessfulTry
-//
-//          val taskWithEntity = task.get
-//          val action = Action(
-//            "Mailer_1_0",
-//            Some("Mailer_1_0"),
-//            Some("test"),
-//            JobStatus.Waiting,
-//            taskWithEntity,
-//            new Date(),
-//            Some(client.name),
-//            None
-//          )
-//          val richAction = actionSrv.create(action, taskWithEntity)
-//
-//          richAction shouldEqual 1
-//        }
-//      }
     }
   }
+
+  def setupDatabase(app: AppBuilder): Unit =
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+
+  def app(dbProvider: DatabaseProvider, port: Int): AppBuilder =
+    AppBuilder()
+      .bind[UserSrv, LocalUserSrv]
+      .bindToProvider(dbProvider)
+      .bindInstance[AuthSrv](mock[AuthSrv])
+      .bind[AuthenticateSrv, TestAuthenticateSrv]
+      .bind[StorageSrv, LocalFileSystemStorageSrv]
+      .bind[Schema, TheHiveSchema]
+      .bindActor[CortexActor]("cortex-actor")
+      .addConfiguration(
+        Configuration(
+          "play.modules.disabled"                     -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.remote.netty.tcp.port"                -> port,
+          "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on",
+          "akka.actor.provider"                       -> "cluster"
+        )
+      )
 }

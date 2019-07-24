@@ -58,7 +58,7 @@ class ActionSrv @Inject()(
   )(implicit writes: Writes[Entity], graph: Graph, authContext: AuthContext): Future[RichAction] =
     for {
       client    <- Future.fromTry(Try(cortexConfig.instances(inputAction.cortexId.get)).orElse(Try(cortexConfig.instances.head._2)))
-      responder <- client.getResponder(inputAction.responderId).recoverWith { case _ => client.getResponderByName(inputAction.responderName) }
+      responder <- client.getResponder(inputAction.responderId).recoverWith { case _ => client.getResponderByName(inputAction.responderName.getOrElse("")) }
 
       message    = inputAction.message.getOrElse("")
       parameters = inputAction.parameters.getOrElse(JsObject.empty)

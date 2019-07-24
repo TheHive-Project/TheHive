@@ -4,7 +4,7 @@ import play.api.libs.json.{JsValue, Json, OFormat}
 
 case class InputAction(
     responderId: String,
-    responderName: String,
+    responderName: Option[String],
     cortexId: Option[String],
     objectType: String,
     objectId: String,

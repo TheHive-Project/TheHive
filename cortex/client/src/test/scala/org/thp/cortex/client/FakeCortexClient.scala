@@ -51,6 +51,7 @@ trait FakeCortexClient {
           )
         case GET(p"/api/responder/$id")       => Action(Results.Ok(Json.toJson(responders.find(_.id == id).get)))
         case POST(p"/api/responder/_search")  => Action(Results.Ok(Json.toJson(responders)))
+        case POST(p"/api/responder/$id/run")  => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
       }
     } { port =>
       block(new CortexClient("test", s"http://127.0.0.1:$port/"))
