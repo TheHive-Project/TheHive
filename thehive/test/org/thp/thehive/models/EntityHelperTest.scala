@@ -7,8 +7,8 @@ import org.thp.scalligraph.auth.{AuthContext, AuthSrv, Permission, UserSrv}
 import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
-import org.thp.thehive.dto.v0.{OutputObservable, OutputTask}
+import org.thp.thehive.controllers.v0.{AlertCtrl, TheHiveQueryExecutor}
+import org.thp.thehive.dto.v0.{OutputAlert, OutputObservable, OutputTask}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -116,6 +116,28 @@ class EntityHelperTest extends PlaySpecification with Mockito {
 
         tlp shouldEqual 3
         pap shouldEqual 2
+      }
+
+      "find a manageable entity only" in db.transaction { implicit graph =>
+        val t2 = tasksList.find(_.title == "case 1 task 2")
+
+        t2 must beSome
+
+        val task2       = t2.get
+        val successTask = entityHelper.get("task", task2.id, Permissions.manageTask)
+        val failureTask = entityHelper.get("task", task2.id, Permissions.manageTask)(graph, dummyUserSrv.authContext)
+
+        successTask must beSuccessfulTry
+        failureTask must beFailedTry
+
+        val requestAlert = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref2")
+          .withHeaders("user" -> "user1")
+        val result = app.instanceOf[AlertCtrl].get("testType;testSource;ref2")(requestAlert)
+        status(result) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        val resultAlertOutput = contentAsJson(result).as[OutputAlert]
+        val successAlert = entityHelper.get("alert", resultAlertOutput._id, Permissions.manageAlert)
+
+        successAlert must beSuccessfulTry
       }
 
     }
