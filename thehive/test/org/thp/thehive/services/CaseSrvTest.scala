@@ -102,7 +102,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.severity must_=== 2
         richCase.startDate must_=== new Date(1531667370000L)
         richCase.endDate must beNone
-        richCase.tags must_=== Seq(Tag("t1"), Tag("t2"))
+        richCase.tags must contain(exactly(Tag("t1"), Tag("t2")))
         richCase.flag must_=== false
         richCase.tlp must_=== 2
         richCase.pap must_=== 2
