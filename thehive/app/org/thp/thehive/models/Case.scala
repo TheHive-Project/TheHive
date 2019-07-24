@@ -5,10 +5,14 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{Format, Json, OFormat}
 
 object CaseStatus extends Enumeration {
+  type Type = Value
+
   val Open, Resolved, Deleted, Duplicated = Value
+
+  implicit val format: Format[CaseStatus.Type] = Json.formatEnum(CaseStatus)
 }
 
 @VertexEntity

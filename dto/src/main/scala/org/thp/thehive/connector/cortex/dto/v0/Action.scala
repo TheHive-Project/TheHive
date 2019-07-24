@@ -36,17 +36,4 @@ case class OutputAction(
 
 object OutputAction {
   implicit val format: OFormat[OutputAction] = Json.format[OutputAction]
-
-  /*responderId: String,
-    responderName: Option[String],
-    responderDefinition: Option[String],
-    status: JobStatus.Value,
-    objectType: String,
-    objectId: String,
-    startDate: Date,
-    endDate: Option[Date],
-    report: Option[JsObject],
-    cortexId: Option[String],
-    cortexJobId: Option[String],
-    operations: Option[String]*/
 }
