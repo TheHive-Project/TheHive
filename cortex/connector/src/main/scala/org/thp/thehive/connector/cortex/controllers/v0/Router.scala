@@ -23,7 +23,7 @@ class Router @Inject()(
     case GET(p"/analyzer") => analyzerCtrl.list
 
     case POST(p"/action")         => actionCtrl.create
-    case POST(p"/action/_search") => actionCtrl.list
+    case POST(p"/action/_search") => cortexQueryExecutor.action.search
 
     case GET(p"/report/template/content/$analyzerId<[^/]*>/$reportType<[^/]*>") => reportCtrl.getContent(analyzerId, reportType)
     case POST(p"/report/template/_import")                                      => reportCtrl.importTemplates

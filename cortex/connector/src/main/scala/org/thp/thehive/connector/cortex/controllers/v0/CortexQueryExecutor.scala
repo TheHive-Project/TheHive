@@ -1,8 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.language.existentials
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -14,6 +11,9 @@ import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0._
+
+import scala.language.existentials
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 /**
   * Range param case class for search query parsing
@@ -30,14 +30,17 @@ class CortexQueryExecutor @Inject()(
     jobSrv: JobSrv,
     queryCtrlBuilder: QueryCtrlBuilder,
     implicit val db: Database,
-    reportCtrl: ReportCtrl
+    reportCtrl: ReportCtrl,
+    actionCtrl: ActionCtrl
 ) extends QueryExecutor {
-  override lazy val publicProperties: List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties
+  override lazy val publicProperties
+      : List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
   override lazy val queries: Seq[ParamQuery[_]] =
-    new CortexParentFilterQuery(publicProperties) :: jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: reportCtrl.initialQuery :: reportCtrl.pageQuery :: reportCtrl.outputQuery :: Nil
+    new CortexParentFilterQuery(publicProperties) :: actionCtrl.initialQuery :: actionCtrl.pageQuery :: actionCtrl.outputQuery :: jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: reportCtrl.initialQuery :: reportCtrl.pageQuery :: reportCtrl.outputQuery :: Nil
   override val version: (Int, Int) = 0 -> 0
   val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
   val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
+  val action: QueryCtrl            = queryCtrlBuilder.apply(actionCtrl, this)
 }
 
 /**
@@ -72,6 +75,8 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
   * @param publicProperties the models properties
   */
 class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
+  override val name: String = "filter"
+
   override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
     FieldsParser("parentIdFilter") {
       case (path, FObjOne("_and", FSeq(fields))) =>
@@ -83,7 +88,7 @@ class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) exte
       case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
         paramParser(tpe, properties).apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
     }.orElse(InputFilter.fieldsParser(tpe, properties))
-  override val name: String                   = "filter"
+
   override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[JobSteps]
   override def toType(t: ru.Type): ru.Type    = t
   override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =

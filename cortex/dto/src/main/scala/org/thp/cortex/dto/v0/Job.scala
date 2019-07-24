@@ -8,7 +8,7 @@ import scala.util.Try
 
 object CortexJobStatus extends Enumeration {
   type Type = Value
-  val InProgress, Success, Failure, Waiting, Unknown = Value
+  val InProgress, Success, Failure, Waiting, Unknown, Deleted = Value
 }
 
 object CortexJobType extends Enumeration {

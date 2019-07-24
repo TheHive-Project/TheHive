@@ -2,15 +2,17 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.thehive.connector.cortex.dto.v0.InputAction
-import org.thp.thehive.connector.cortex.services.ActionSrv
+import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
+import org.thp.thehive.connector.cortex.models.RichAction
+import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps}
+import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
 import org.thp.thehive.models.{EntityHelper, Permissions}
-import play.api.libs.json.{JsArray, Writes}
+import play.api.libs.json.Writes
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 @Singleton
 class ActionCtrl @Inject()(
@@ -19,16 +21,21 @@ class ActionCtrl @Inject()(
     actionSrv: ActionSrv,
     entityHelper: EntityHelper,
     implicit val executionContext: ExecutionContext
-) {
+) extends QueryableCtrl {
   import ActionConversion._
 
   implicit val entityWrites: Writes[Entity] = entityHelper.writes
 
-  def list: Action[AnyContent] =
-    entryPoint("list analyzer")
-      .auth { _ =>
-        Success(Results.Ok(JsArray.empty))
-      }
+  override val entityName: String                           = "action"
+  override val publicProperties: List[PublicProperty[_, _]] = actionProperties
+  override val initialQuery: ParamQuery[_] =
+    Query.init[ActionSteps]("listAction", (graph, _) => actionSrv.initSteps(graph))
+  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richAction.raw)
+  )
+  override val outputQuery: ParamQuery[_] = Query.output[RichAction, OutputAction]
 
   def create: Action[AnyContent] =
     entryPoint("create action")
