@@ -41,7 +41,6 @@ class ActionCtrl @Inject()(
             entity <- Future.fromTry(entityHelper.get(inputAction.objectType, inputAction.objectId, Permissions.manageAction))
             action <- actionSrv.execute(inputAction, entity)
           } yield Results.Ok(action.toJson)
-
         }
       }
 }

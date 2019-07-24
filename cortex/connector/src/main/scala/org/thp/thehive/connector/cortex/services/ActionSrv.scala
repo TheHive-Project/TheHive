@@ -47,14 +47,13 @@ class ActionSrv @Inject()(
     * @param inputAction the initial data
     * @param entity the Entity to execute an Action upon
     * @param writes necessary entity json writes
-    * @param graph necessary db connection graph
     * @param authContext necessary auth context
     * @return
     */
   def execute(
       inputAction: InputAction,
       entity: Entity
-  )(implicit writes: Writes[Entity], graph: Graph, authContext: AuthContext): Future[RichAction] =
+  )(implicit writes: Writes[Entity], authContext: AuthContext): Future[RichAction] =
     for {
       client <- Future.fromTry(Try(cortexConfig.instances(inputAction.cortexId.get)).orElse(Try(cortexConfig.instances.head._2)))
       responder <- client.getResponder(inputAction.responderId).recoverWith {
@@ -63,7 +62,7 @@ class ActionSrv @Inject()(
 
       message    = inputAction.message.getOrElse("")
       parameters = inputAction.parameters.getOrElse(JsObject.empty)
-      (tlp, pap) = entityHelper.threatLevels(entity._model.label, entity._id).getOrElse((2, 2))
+      (tlp, pap) = db.transaction(implicit graph => entityHelper.threatLevels(entity._model.label, entity._id).getOrElse((2, 2)))
       inputCortexAction = InputCortexAction(
         entity._model.label,
         Json.toJson(entity).as[JsObject],
@@ -77,7 +76,7 @@ class ActionSrv @Inject()(
       job <- client.execute(responder.id, inputCortexAction)
       action <- Future.fromTry(
         Try(
-          create(
+          db.transaction(implicit graph => create(
             Action.apply(
               job.workerId,
               Some(job.workerName),
@@ -89,7 +88,7 @@ class ActionSrv @Inject()(
               Some(job.id)
             ),
             entity
-          )
+          ))
         )
       )
 

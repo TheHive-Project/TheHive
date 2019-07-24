@@ -4,12 +4,17 @@ import java.util.Date
 
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import play.api.libs.json.{Json, OFormat}
 
 @EdgeEntity[Log, Attachment]
 case class LogAttachment()
 
 @VertexEntity
 case class Log(message: String, date: Date, deleted: Boolean)
+
+object Log {
+  implicit val format: OFormat[Log] = Json.format[Log]
+}
 
 case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity]) {
   val _id: String                = log._id

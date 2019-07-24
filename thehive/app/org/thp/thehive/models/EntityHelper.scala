@@ -23,12 +23,12 @@ class EntityHelper @Inject()(
   lazy val logger = Logger(getClass)
 
   val writes: Writes[Entity] = {
-    case t: Task => Json.toJson(t)
-    case c: Case => Json.toJson(c)
-//    case a: Alert => Json.toJson(a)
-//    case o: Observable => Json.toJson(o)
-//    case l: Log => Json.toJson(l)
-    case _       => ???
+    case t: Task       => Json.toJson(t)
+    case c: Case       => Json.toJson(c)
+    case a: Alert      => Json.toJson(a)
+    case o: Observable => Json.toJson(o)
+    case l: Log        => Json.toJson(l)
+    case _             => throw new Exception("Entity writes missing")
   }
 
   /**

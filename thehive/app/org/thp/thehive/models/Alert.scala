@@ -5,6 +5,7 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+import play.api.libs.json.{Json, OFormat}
 
 @EdgeEntity[Alert, CustomField]
 case class AlertCustomField(
@@ -51,6 +52,10 @@ case class Alert(
     read: Boolean,
     follow: Boolean
 )
+
+object Alert {
+  implicit val format: OFormat[Alert] = Json.format[Alert]
+}
 
 case class RichAlert(
     alert: Alert with Entity,

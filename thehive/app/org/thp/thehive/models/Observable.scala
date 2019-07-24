@@ -2,6 +2,7 @@ package org.thp.thehive.models
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import play.api.libs.json.{Json, OFormat}
 
 @EdgeEntity[Observable, KeyValue]
 case class ObservableKeyValue()
@@ -14,6 +15,10 @@ case class ObservableData()
 
 @VertexEntity
 case class Observable(tags: Set[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
+
+object Observable {
+  implicit val format: OFormat[Observable] = Json.format[Observable]
+}
 
 case class RichObservable(
     observable: Observable with Entity,
