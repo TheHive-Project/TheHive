@@ -3,45 +3,46 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json._
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.Hash
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.query.PublicProperty
-import org.thp.thehive.services.{CaseSrv, TaskSrv, UserSrv}
+import play.api.Logger
+import play.api.libs.json._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
-class DescribeCtrl @Inject()(entryPoint: EntryPoint, caseSrv: CaseSrv, userSrv: UserSrv, taskSrv: TaskSrv) {
-
-  import AlertConversion._
-  import CaseConversion._
-  import LogConversion._
-  import ObservableConversion._
-  import TaskConversion._
-  import UserConversion._
+class DescribeCtrl @Inject()(
+    entryPoint: EntryPoint,
+    caseCtrl: CaseCtrl,
+    taskCtrl: TaskCtrl,
+    alertCtrl: AlertCtrl,
+    observableCtrl: ObservableCtrl,
+    userCtrl: UserCtrl,
+    logCtrl: LogCtrl
+) {
 
   lazy val logger = Logger(getClass)
 
-  lazy val caseDescription: JsObject =
-    Json.obj("label" -> "case", "path" -> "/case", "attributes" -> caseProperties(caseSrv, userSrv).map(propertyToJson("case", _)))
-  lazy val taskDescription: JsObject =
-    Json.obj("label" -> "case_task", "path" -> "/case/task", "attributes" -> taskProperties(taskSrv, userSrv).map(propertyToJson("task", _)))
-  lazy val alertDescription: JsObject =
-    Json.obj("label" -> "alert", "path" -> "/alert", "attributes" -> alertProperties.map(propertyToJson("alert", _)))
-  lazy val observableDescription: JsObject =
-    Json.obj("label" -> "case_artifact", "path" -> "/case/artifact", "attributes" -> observableProperties.map(propertyToJson("observable", _)))
-  lazy val userDescription: JsObject =
-    Json.obj("label" -> "user", "path" -> "/user", "attributes" -> userProperties(userSrv).map(propertyToJson("user", _)))
-  lazy val logDescription: JsObject =
-    Json.obj("label" -> "case_task_log", "path" -> "/case/task/log", "attributes" -> logProperties.map(propertyToJson("log", _)))
-
   // audit ?
   // action
+  lazy val entityDescriptors: Map[String, JsObject] = Map(
+    "case"          -> caseCtrl,
+    "case_task"     -> taskCtrl,
+    "alert"         -> alertCtrl,
+    "case_artifact" -> observableCtrl,
+    "user"          -> userCtrl,
+    "case_task_log" -> logCtrl
+  ).map {
+    case (label, ctrl) =>
+      label -> Json.obj(
+        "label"      -> label,
+        "path"       -> ("/" + label.replaceAllLiterally("_", "/")),
+        "attributes" -> ctrl.publicProperties.map(propertyToJson(label, _))
+      )
+  }
 
   case class PropertyDescription(name: String, `type`: String, values: Seq[JsValue] = Nil, labels: Seq[String] = Nil)
 
@@ -95,32 +96,9 @@ class DescribeCtrl @Inject()(entryPoint: EntryPoint, caseSrv: CaseSrv, userSrv: 
 
   def describe(modelName: String): Action[AnyContent] =
     entryPoint("describe model")
-      .auth { _ =>
-        val output = modelName match {
-          case "case"          => caseDescription
-          case "case_task"     => taskDescription
-          case "alert"         => alertDescription
-          case "case_artifact" => observableDescription
-          case "user"          => userDescription
-          case "case_task_log" => logDescription
-        }
-        Success(Results.Ok(output))
-      }
+      .auth(_ => Success(Results.Ok(entityDescriptors(modelName))))
 
   def describeAll: Action[AnyContent] =
     entryPoint("describe all models")
-      .auth { _ =>
-        Success(
-          Results.Ok(
-            Json.obj(
-              "case_artifact"     -> observableDescription,
-              "case"              -> caseDescription,
-              "case_task"         -> taskDescription,
-              "alert"             -> alertDescription,
-              "user"              -> userDescription,
-              "task_artifact_log" -> logDescription
-            )
-          )
-        )
-      }
+      .auth(_ => Success(Results.Ok(JsObject(entityDescriptors))))
 }
