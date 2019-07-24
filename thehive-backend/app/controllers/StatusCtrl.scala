@@ -1,24 +1,25 @@
 package controllers
 
+import akka.actor.ActorSystem
+
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.util.Try
-
 import play.api.Configuration
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
-
 import com.sksamuel.elastic4s.http.ElasticDsl
 import connectors.Connector
 import javax.inject.{Inject, Singleton}
 import models.HealthStatus
 import org.elasticsearch.client.Node
-
 import org.elastic4play.Timed
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.auth.MultiAuthSrv
+
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 @Singleton
 class StatusCtrl @Inject()(
@@ -26,15 +27,22 @@ class StatusCtrl @Inject()(
     configuration: Configuration,
     dbIndex: DBIndex,
     authSrv: AuthSrv,
+    system: ActorSystem,
     components: ControllerComponents,
     implicit val ec: ExecutionContext
 ) extends AbstractController(components) {
 
   private[controllers] def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
+  private var clusterStatusName: String = "Init"
+  val checkStatusInterval: FiniteDuration = configuration.getOptional[FiniteDuration]("statusCheckInterval").getOrElse(1.minute)
+  private def updateStatus(): Unit = {
+    clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
+    system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
+  }
+  updateStatus()
 
   @Timed("controllers.StatusCtrl.get")
   def get: Action[AnyContent] = Action {
-    val clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
     Ok(
       Json.obj(
         "versions" → Json.obj(
