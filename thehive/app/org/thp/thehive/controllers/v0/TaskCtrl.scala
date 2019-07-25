@@ -25,14 +25,14 @@ class TaskCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "log"
   override val publicProperties: List[PublicProperty[_, _]] = taskProperties(taskSrv, userSrv) ::: metaProperties[TaskSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
     "page",
     FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richTask.raw)
+    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask.raw)
   )
-  override val outputQuery: ParamQuery[_] = Query.output[RichTask, OutputTask]
+  override val outputQuery: Query = Query.output[RichTask, OutputTask]
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create task")

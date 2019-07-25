@@ -28,22 +28,22 @@ class ObservableCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "observable"
   override val publicProperties: List[PublicProperty[_, _]] = observableProperties(observableSrv) ::: metaProperties[ObservableSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withSize, withStats), observableSteps, authContext) =>
+      case (OutputParam(from, to, withStats), observableSteps, authContext) =>
         observableSteps
-          .richPage(from, to, withSize.getOrElse(false)) {
-            case o if withStats.contains(true) =>
+          .richPage(from, to, withTotal = true) {
+            case o if withStats =>
               o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph)).raw
             case o =>
               o.richObservable.raw.map(_ -> JsObject.empty)
           }
     }
   )
-  override val outputQuery: ParamQuery[_] = Query.output[(RichObservable, JsObject), OutputObservable]
+  override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable]
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")

@@ -38,19 +38,19 @@ class AlertCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "alert"
   override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
     "page",
     FieldsParser[OutputParam],
     (range, alertSteps, _) =>
       alertSteps
-        .richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richAlert.raw)
+        .richPage(range.from, range.to, true)(_.richAlert.raw)
         .map { richAlert =>
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: ParamQuery[_] = Query.output[RichAlert, OutputAlert]
+  override val outputQuery: Query = Query.output[RichAlert, OutputAlert]
 
   def create: Action[AnyContent] =
     entryPoint("create alert")

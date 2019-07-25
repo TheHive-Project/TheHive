@@ -15,14 +15,14 @@ import org.thp.thehive.controllers.v0._
 import scala.language.existentials
 import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
-/**
-  * Range param case class for search query parsing
-  *
-  * @param from the start
-  * @param to the end nb
-  * @param withSize with or without the total length
-  */
-case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
+///**
+//  * Range param case class for search query parsing
+//  *
+//  * @param from the start
+//  * @param to the end nb
+//  * @param withSize with or without the total length
+//  */
+//case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class CortexQueryExecutor @Inject()(

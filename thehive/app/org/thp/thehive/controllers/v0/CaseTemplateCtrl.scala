@@ -25,14 +25,14 @@ class CaseTemplateCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
   override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv) ::: metaProperties[CaseTemplateSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richCaseTemplate.raw)
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate.raw)
   )
-  override val outputQuery: ParamQuery[_] = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
