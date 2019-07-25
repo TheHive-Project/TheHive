@@ -36,7 +36,7 @@ class CaseTemplateMigration @Inject()(
       (JsPath \ "titlePrefix").readNullable[String] and
       (JsPath \ "description").readNullable[String] and
       (JsPath \ "severity").readNullable[Int] and
-      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
+//      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and // FIXME
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "tlp").readNullable[Int] and
       Reads.pure(None) and // pap
@@ -80,7 +80,7 @@ class CaseTemplateMigration @Inject()(
                 .asOpt[JsObject]
                 .fold(Seq.empty[(String, Option[Any])])(extractMetrics)
 
-            caseTemplateSrv.create(caseTemplate, organisation, tasks, customFields).map { richCaseTemplate =>
+            caseTemplateSrv.create(caseTemplate, organisation, ???, tasks, customFields).map { richCaseTemplate => //  FIXME add tags
               caseTemplateMap += caseTemplate.name -> richCaseTemplate
               (caseTemplateJs \ "tasks").asOpt[JsObject].foreach(importCaseTemplateTask(_, richCaseTemplate.caseTemplate, progress))
               auditMigration.importAudits("caseTemplate", (caseTemplateJs \ "_id").as[String], richCaseTemplate.caseTemplate, progress)

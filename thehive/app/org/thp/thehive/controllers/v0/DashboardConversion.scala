@@ -2,12 +2,10 @@ package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
-
 import play.api.libs.json.Json
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.FString
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.{InvalidFormatAttributeError, Output}
 import org.thp.thehive.dto.v0.{InputDashboard, OutputDashboard}
@@ -39,10 +37,10 @@ object DashboardConversion {
 
   def dashboardProperties(dashboardSrv: DashboardSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[DashboardSteps]
-      .property[String]("title")(_.simple.updatable)
-      .property[String]("description")(_.simple.updatable)
-      .property[String]("definition")(_.simple.updatable)
-      .property[String]("status")(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
+      .property("title", UniMapping.stringMapping)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping)(_.simple.updatable)
+      .property("definition", UniMapping.stringMapping)(_.simple.updatable)
+      .property("status", UniMapping.stringMapping)(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
         case (_, "Shared", vertex, _, graph, authContext) =>
           dashboardSrv.get(vertex)(graph).share(authContext)
           Success(Json.obj("status" -> "Shared"))

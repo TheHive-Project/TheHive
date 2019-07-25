@@ -1,20 +1,23 @@
 package org.thp.thehive.controllers.v1
 
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
 import org.thp.thehive.dto.v1.InputAlert
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
 
 @Singleton
-class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv)
-    extends AlertConversion
-    with CaseConversion {
+class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv) {
+
+  import AlertConversion._
+  import CaseConversion._
+  import CustomFieldConversion._
+
+  val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv)
 
   def create: Action[AnyContent] =
     entryPoint("create alert")
@@ -33,7 +36,7 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
           }.flip
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          richAlert <- alertSrv.create(request.body("alert"), organisation, customFields, caseTemplate)
+          richAlert <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 
@@ -61,7 +64,7 @@ class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertS
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract("alert", FieldsParser.update("alertUpdate", alertProperties))
+      .extract("alert", FieldsParser.update("alertUpdate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv

@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
@@ -10,6 +7,8 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class CaseTemplateCtrl @Inject()(
@@ -25,7 +24,7 @@ class CaseTemplateCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties ::: metaProperties[CaseTemplateSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv) ::: metaProperties[CaseTemplateSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
@@ -44,7 +43,7 @@ class CaseTemplateCtrl @Inject()(
           organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           tasks        = inputCaseTemplate.tasks.map(fromInputTask)
           customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 
@@ -61,7 +60,7 @@ class CaseTemplateCtrl @Inject()(
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract("caseTemplate", FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .extract("caseTemplate", FieldsParser.update("caseTemplate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv

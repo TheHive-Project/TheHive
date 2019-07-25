@@ -1,0 +1,6 @@
+[
+  {"from": "h.fr", "to": "testDomain"},
+  {"from": "c.fr", "to": "testDomain"},
+  {"from": "helloworld", "to": "hello"},
+  {"from": "helloworld", "to": "world"}
+]

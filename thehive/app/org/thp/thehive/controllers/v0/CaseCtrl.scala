@@ -69,24 +69,12 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          caseTemplateCustomFields = caseTemplate
-            .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
-            .map(cf => cf.name -> cf.value)
-            .toMap
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
           user     <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           case0    <- Success(fromInputCase(inputCase, caseTemplate))
-          richCase <- caseSrv.create(case0, user, organisation, caseTemplateCustomFields ++ customFields, caseTemplate)
-
-          _ <- inputTasks.toTry(t => taskSrv.create(fromInputTask(t), richCase.`case`))
-          _ <- caseTemplate.map { ct =>
-            caseTemplateSrv
-              .get(ct.caseTemplate)
-              .tasks
-              .toList
-              .toTry(task => taskSrv.create(task, richCase.`case`))
-          }.flip
+          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
+          _        <- inputTasks.toTry(t => taskSrv.create(fromInputTask(t), richCase.`case`))
         } yield Results.Created(richCase.toJson)
       }
 

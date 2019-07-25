@@ -13,7 +13,7 @@ import play.api.libs.json.Json
 
 import org.thp.scalligraph.models.UniMapping
 
-trait UserConversion {
+object UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
     inputUser
       .into[User]
@@ -36,8 +36,8 @@ trait UserConversion {
 
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
-      .property[String]("login")(_.simple.readonly)
-      .property[String]("name")(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("login", UniMapping.stringMapping)(_.simple.readonly)
+      .property("name", UniMapping.stringMapping)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -61,8 +61,8 @@ trait UserConversion {
             case _ => Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
-      .property[String]("apikey")(_.simple.readonly)
-      .property[Boolean]("locked")(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("apikey", UniMapping.stringMapping)(_.simple.readonly)
+      .property("locked", UniMapping.booleanMapping)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)

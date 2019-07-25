@@ -37,41 +37,40 @@ class AlertMigration @Inject()(
       (JsPath \ "severity").read[Int] and
       (JsPath \ "date").read[Date] and
       (JsPath \ "lastSyncDate").read[Date] and
-      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
+//      (JsPath \ "tags").readWithDefault[Set[String]](Set.empty) and
       (JsPath \ "flag").readWithDefault[Boolean](false) and
       (JsPath \ "tlp").read[Int] and
       Reads.pure(2) and                                                                // pap
       (JsPath \ "status").read[String].map(s => s == "Updated" || s == "Imported") and // read
       (JsPath \ "follow").read[Boolean])(Alert.apply _)
 
-  def importAlerts(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database): Unit = {
-    val (srv, total) = dbFind(Some("all"), Nil)(index => search(index / "alert"))
-    val progress     = new ProgressBar(terminal, "Importing alert", Await.result(total, Duration.Inf).toInt)
-    val done = srv
-      .map { alertJs =>
-        catchError("alert", alertJs, progress) {
-          db.transaction { implicit graph =>
-            userMigration.withUser((alertJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
-              val alert = alertJs.as[Alert]
-              progress.inc(extraMessage = alert.title)
-              val caseTemplate = (alertJs \ "caseTemplate").asOpt[String].flatMap(caseTemplateMigration.get)
-              val customFields = (alertJs \ "customFields")
-                .asOpt[JsObject]
-                .fold(Seq.empty[(String, Option[Any])])(extractCustomFields)
-                .toMap
-              alertSrv.create(alert, organisation, customFields, caseTemplate).map { richAlert =>
-                (alertJs \ "caze")
-                  .asOpt[String]
-                  .flatMap(caseMigration.get)
-                  .foreach(caze => alertSrv.alertCaseSrv.create(AlertCase(), richAlert.alert, caze))
-                auditMigration.importAudits("alert", (alertJs \ "_id").as[String], richAlert.alert, progress)
-              }
-            }
-          }
-        }
-      }
-      .runWith(Sink.ignore)
-    Await.ready(done, Duration.Inf)
+  def importAlerts(terminal: Terminal, organisation: Organisation with Entity)(implicit db: Database): Unit =
+//    val (srv, total) = dbFind(Some("all"), Nil)(index => search(index / "alert"))
+//    val progress     = new ProgressBar(terminal, "Importing alert", Await.result(total, Duration.Inf).toInt)
+//    val done = srv
+//      .map { alertJs =>
+//        catchError("alert", alertJs, progress) {
+//          db.transaction { implicit graph =>
+//            userMigration.withUser((alertJs \ "createdBy").asOpt[String].getOrElse("init")) { implicit authContext =>
+//              val alert = alertJs.as[Alert]
+//              progress.inc(extraMessage = alert.title)
+//              val caseTemplate = (alertJs \ "caseTemplate").asOpt[String].flatMap(caseTemplateMigration.get)
+//              val customFields = (alertJs \ "customFields")
+//                .asOpt[JsObject]
+//                .fold(Seq.empty[(String, Option[Any])])(extractCustomFields)
+//                .toMap
+//              alertSrv.create(alert, organisation, customFields, caseTemplate).map { richAlert =>
+//                (alertJs \ "caze")
+//                  .asOpt[String]
+//                  .flatMap(caseMigration.get)
+//                  .foreach(caze => alertSrv.alertCaseSrv.create(AlertCase(), richAlert.alert, caze))
+//                auditMigration.importAudits("alert", (alertJs \ "_id").as[String], richAlert.alert, progress)
+//              }
+//            }
+//          }
+//        }
+//      }
+//      .runWith(Sink.ignore)
+//    Await.ready(done, Duration.Inf)
     ()
-  }
 }

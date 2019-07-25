@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
@@ -17,6 +12,10 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -38,7 +37,7 @@ class AlertCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = alertProperties ::: metaProperties[AlertSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, Seq[RichObservable])]](
@@ -76,7 +75,7 @@ class AlertCtrl @Inject()(
           organisation <- userSrv.getOrganisation(user)
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
-          richAlert       <- alertSrv.create(request.body("alert"), organisation, customFields, caseTemplate)
+          richAlert       <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
           richObservables <- observables.toTry(observable => importObservable(richAlert.alert, observable))
         } yield Results.Created((richAlert -> richObservables.flatten).toJson)
       }
@@ -95,11 +94,11 @@ class AlertCtrl @Inject()(
               val data = Base64.getDecoder.decode(value)
               attachmentSrv
                 .create(filename, contentType, data)
-                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, Nil))
+                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, observable.tags, Nil))
             case data =>
               Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
           }
-        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, Nil))
+        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
       }
       .map(_.map { richObservable =>
         alertSrv.addObservable(alert, richObservable.observable)
@@ -121,7 +120,7 @@ class AlertCtrl @Inject()(
 
   def update(alertId: String): Action[AnyContent] =
     entryPoint("update alert")
-      .extract("alert", FieldsParser.update("alert", alertProperties))
+      .extract("alert", FieldsParser.update("alert", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv

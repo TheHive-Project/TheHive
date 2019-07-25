@@ -12,7 +12,6 @@ object ArtifactConversion {
     j.into[Observable]
       .withFieldComputed(_.message, _.message)
       .withFieldComputed(_.tlp, _.tlp)
-      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldConst(_.ioc, false)
       .withFieldConst(_.sighted, false)
       .transform

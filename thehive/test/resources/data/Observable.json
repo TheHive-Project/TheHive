@@ -1,7 +1,6 @@
 [
   {
     "id": "h.fr",
-    "tags": ["testDomain"],
     "message": "Some weird domain",
     "tlp": 3,
     "ioc": true,
@@ -9,15 +8,13 @@
   },
   {
     "id": "c.fr",
-    "tags": ["testDomain"],
     "message": "This domain",
     "tlp": 2,
     "ioc": false,
     "sighted": false
   },
   {
-    "id": "hello",
-    "tags": ["hello", "world"],
+    "id": "helloworld",
     "message": "hello world",
     "tlp": 1,
     "ioc": false,

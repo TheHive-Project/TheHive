@@ -1,20 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue}
-import play.api.mvc.{Action, AnyContent, Results}
-import scala.reflect.runtime.{universe => ru}
-
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, PagedResult}
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, PagedResult, UniMapping}
 import org.thp.scalligraph.query._
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Success, Try}
 
 trait QueryableCtrl {
   val entityName: String
@@ -25,10 +22,10 @@ trait QueryableCtrl {
 
   def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[S]
-      .property[String]("createdBy")(_.rename("_createdBy").readonly)
-      .property[Date]("createdAt")(_.rename("_createdAt").readonly)
-      .property[String]("updatedBy")(_.rename("_updatedBy").readonly)
-      .property[Date]("updatedAt")(_.rename("_updatedAt").readonly)
+      .property("createdBy", UniMapping.stringMapping)(_.rename("_createdBy").readonly)
+      .property("createdAt", UniMapping.dateMapping)(_.rename("_createdAt").readonly)
+      .property("updatedBy", UniMapping.stringMapping)(_.rename("_updatedBy").readonly)
+      .property("updatedAt", UniMapping.dateMapping)(_.rename("_updatedAt").readonly)
       .build
 }
 

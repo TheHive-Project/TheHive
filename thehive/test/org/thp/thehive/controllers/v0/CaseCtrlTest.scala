@@ -115,7 +115,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           title = "[SPAM] case title (create case test)",
           description = "case description (create case test)",
           severity = 1,
-          startDate = now,
+          startDate = resultCaseOutput.startDate, // FIXME when UI will be fixed
           endDate = None,
           flag = false,
           tlp = 1,

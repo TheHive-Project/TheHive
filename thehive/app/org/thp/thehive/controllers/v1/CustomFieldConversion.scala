@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldWithValue}
 
-trait CustomFieldConversion {
+object CustomFieldConversion {
 
   def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Option[Any]) =
     inputCustomFieldValue.name -> inputCustomFieldValue.value

@@ -4,14 +4,6 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import play.api.libs.Files
-import play.api.libs.Files.TemporaryFileCreator
-import play.api.libs.json.Json
-import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
-import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
-import play.api.{Configuration, Environment}
-
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -23,6 +15,13 @@ import org.thp.scalligraph.{AppBuilder, Hasher}
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, DataSrv, LocalUserSrv}
+import play.api.libs.Files
+import play.api.libs.Files.TemporaryFileCreator
+import play.api.libs.json.Json
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
+import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 case class TestObservable(
     dataType: String,
@@ -254,7 +253,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
             """))
         val resultUp = observableCtrl.bulkUpdate(requestUp)
 
-        status(resultUp) shouldEqual 204
+        status(resultUp) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultUp)}")
 
         val resObsUpdated = resObservable.map(obs => getObservable(obs._id, observableCtrl))
 

@@ -14,7 +14,9 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
 
 @Singleton
-class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv) extends TaskConversion {
+class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv) {
+
+  import TaskConversion._
 
   def create: Action[AnyContent] =
     entryPoint("create task")

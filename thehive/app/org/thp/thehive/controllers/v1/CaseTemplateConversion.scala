@@ -1,16 +1,21 @@
 package org.thp.thehive.controllers.v1
 
-import scala.language.implicitConversions
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
+import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v1.{InputCaseTemplate, OutputCaseTemplate}
-import org.thp.thehive.models.{CaseCustomField, CaseTemplate, RichCaseTemplate}
-import org.thp.thehive.services.CaseTemplateSteps
+import org.thp.thehive.models.{CaseCustomField, CaseTemplate, CaseTemplateTag, RichCaseTemplate}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
+import play.api.libs.json.Json
 
-trait CaseTemplateConversion extends CustomFieldConversion {
+import scala.language.implicitConversions
+
+object CaseTemplateConversion {
+
+  import CustomFieldConversion._
+
   implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
     inputCaseTemplate
       .into[CaseTemplate]
@@ -22,25 +27,35 @@ trait CaseTemplateConversion extends CustomFieldConversion {
       richCaseTemplate
         .into[OutputCaseTemplate]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .transform
     )
 
-  val caseTemplateProperties: List[PublicProperty[_, _]] =
+  def caseTemplateProperties(caseTemplateSrv: CaseTemplateSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
-      .property[String]("name")(_.simple.updatable)
-      .property[Option[String]]("titlePrefix")(_.simple.updatable)
-      .property[Option[String]]("description")(_.simple.updatable)
-      .property[Option[Int]]("severity")(_.simple.updatable)
-      .property[Set[String]]("tags")(_.simple.updatable)
-      .property[Boolean]("flag")(_.simple.updatable)
-      .property[Option[Int]]("tlp")(_.simple.updatable)
-      .property[Option[Int]]("pap")(_.simple.updatable)
-      .property[Option[String]]("summary")(_.simple.updatable)
-      .property[String]("user")(_.simple.updatable)
-      .property[String]("customFieldName")(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
-      .property[String]("customFieldDescription")(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property[String]("customFieldType")(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property[String]("customFieldValue")(
+      .property("name", UniMapping.stringMapping)(_.simple.updatable)
+      .property("titlePrefix", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("severity", UniMapping.intMapping.optional)(_.simple.updatable)
+      .property("tags", UniMapping.stringMapping.set)(
+        _.derived(_.outTo[CaseTemplateTag].value("name"))
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            caseTemplateSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("tlp", UniMapping.intMapping.optional)(_.simple.updatable)
+      .property("pap", UniMapping.intMapping.optional)(_.simple.updatable)
+      .property("summary", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("user", UniMapping.stringMapping)(_.simple.updatable)
+      .property("customFieldName", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
+      .property("customFieldDescription", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
+      .property("customFieldType", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
+      .property("customFieldValue", UniMapping.stringMapping)(
         _.derived(
           _.outToE[CaseCustomField].value[String]("stringValue"),
           _.outToE[CaseCustomField].value[String]("booleanValue"),

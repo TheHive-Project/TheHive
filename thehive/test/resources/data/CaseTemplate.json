@@ -1,6 +1,5 @@
 [
   {
-    "id": "spam",
     "name": "spam",
     "titlePrefix": "[SPAM] ",
     "description": "description of SPAM case",

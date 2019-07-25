@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Success, Try}
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
@@ -12,6 +8,11 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, OrganisationSrv}
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Success, Try}
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -26,7 +27,7 @@ class ObservableCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "observable"
-  override val publicProperties: List[PublicProperty[_, _]] = observableProperties ::: metaProperties[ObservableSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = observableProperties(observableSrv) ::: metaProperties[ObservableSteps]
   override val initialQuery: ParamQuery[_] =
     Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
   override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
@@ -54,9 +55,12 @@ class ObservableCtrl @Inject()(
             .get(caseId)
             .can(Permissions.manageCase)
             .getOrFail()
-          observableType           <- observableTypeSrv.get(inputObservable.dataType).getOrFail()
-          observablesWithData      <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, Nil))
-          observableWithAttachment <- inputObservable.attachment.map(a => observableSrv.create(inputObservable, observableType, a, Nil)).flip
+          observableType      <- observableTypeSrv.get(inputObservable.dataType).getOrFail()
+          observablesWithData <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, inputObservable.tags, Nil))
+          observableWithAttachment <- inputObservable
+            .attachment
+            .map(a => observableSrv.create(inputObservable, observableType, a, inputObservable.tags, Nil))
+            .flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
             caseSrv.addObservable(case0, richObservables.observable).map(_ => richObservables)
           }
@@ -78,7 +82,7 @@ class ObservableCtrl @Inject()(
 
   def update(obsId: String): Action[AnyContent] =
     entryPoint("update observable")
-      .extract("observable", FieldsParser.update("observable", observableProperties))
+      .extract("observable", FieldsParser.update("observable", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
@@ -106,7 +110,7 @@ class ObservableCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("bulk update")
-      .extract("input", FieldsParser.update("observable", observableProperties))
+      .extract("input", FieldsParser.update("observable", publicProperties))
       .extract("ids", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => graph =>
         val properties: Seq[PropertyUpdater] = request.body("input")

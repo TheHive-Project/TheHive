@@ -16,7 +16,7 @@ case class InputObservable(
     startDate: Option[Date] = None,
     attachment: Option[FFile] = None,
     tlp: Option[Int] = None,
-    tags: Seq[String] = Nil,
+    tags: Set[String] = Set.empty,
     ioc: Option[Boolean] = None,
     sighted: Option[Boolean] = None
 )

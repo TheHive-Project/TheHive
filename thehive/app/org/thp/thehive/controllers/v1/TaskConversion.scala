@@ -1,18 +1,16 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.Date
-
-import scala.language.implicitConversions
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v1.{InputTask, OutputTask}
 import org.thp.thehive.models.{Task, TaskStatus}
 import org.thp.thehive.services.TaskSteps
 
-trait TaskConversion {
+import scala.language.implicitConversions
+
+object TaskConversion {
   implicit def fromInputTask(inputTask: InputTask): Task =
     inputTask
       .into[Task]
@@ -31,14 +29,14 @@ trait TaskConversion {
 
   def taskProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[TaskSteps]
-      .property[String]("title")(_.simple.updatable)
-      .property[Option[String]]("description")(_.simple.updatable)
-      .property[String]("status")(_.simple.updatable)
-      .property[Boolean]("flag")(_.simple.updatable)
-      .property[Option[Date]]("startDate")(_.simple.updatable)
-      .property[Option[Date]]("endDate")(_.simple.updatable)
-      .property[Int]("order")(_.simple.updatable)
-      .property[Option[Date]]("dueDate")(_.simple.updatable)
+      .property("title", UniMapping.stringMapping)(_.simple.updatable)
+      .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
+      .property("status", UniMapping.stringMapping)(_.simple.updatable)
+      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("startDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("endDate", UniMapping.dateMapping.optional)(_.simple.updatable)
+      .property("order", UniMapping.intMapping)(_.simple.updatable)
+      .property("dueDate", UniMapping.dateMapping.optional)(_.simple.updatable)
       .build
 
 }

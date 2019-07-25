@@ -2,21 +2,20 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala.{By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
-import org.thp.thehive.models.{Observable, ObservableData, RichObservable}
-import org.thp.thehive.services.ObservableSteps
+import org.thp.thehive.models.{Observable, ObservableData, ObservableObservableType, ObservableTag, RichObservable}
+import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 
 object ObservableConversion {
   import AlertConversion._
@@ -44,6 +43,7 @@ object ObservableConversion {
         .withFieldComputed(_.createdBy, _.observable._createdBy)
         .withFieldComputed(_.dataType, _.`type`.name)
         .withFieldComputed(_.startDate, _.observable._createdAt)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(_.data, _.data.map(_.data))
         .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
         .withFieldConst(_.stats, JsObject.empty)
@@ -64,23 +64,33 @@ object ObservableConversion {
         .withFieldComputed(_.createdBy, _.observable._createdBy)
         .withFieldComputed(_.dataType, _.`type`.name)
         .withFieldComputed(_.startDate, _.observable._createdAt)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(_.data, _.data.map(_.data))
         .withFieldComputed(_.attachment, _.attachment.map(toOutputAttachment(_).toOutput))
         .withFieldConst(_.stats, richObservableWithStats._2)
         .transform
     )
 
-  val observableProperties: List[PublicProperty[_, _]] =
+  def observableProperties(observableSrv: ObservableSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ObservableSteps]
-      .property[String]("status")(_.derived(_.constant("Ok")).readonly)
-      .property[Date]("startDate")(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
-      .property[Boolean]("ioc")(_.simple.updatable)
-      .property[Boolean]("sighted")(_.simple.updatable)
-      .property[Set[String]]("tags")(_.simple.updatable)
-      .property[String]("message")(_.simple.updatable)
-      .property[Int]("tlp")(_.simple.updatable)
-      .property[String]("dataType")(_.rename("type").updatable)
-      .property[Option[String]]("data")(_.derived(_.outTo[ObservableData].value(Key[String]("data"))).readonly)
+      .property("status", UniMapping.stringMapping)(_.derived(_.constant("Ok")).readonly)
+      .property("startDate", UniMapping.dateMapping)(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
+      .property("ioc", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("sighted", UniMapping.booleanMapping)(_.simple.updatable)
+      .property("tags", UniMapping.stringMapping.set)(
+        _.derived(_.outTo[ObservableTag].value("name"))
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            observableSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("message", UniMapping.stringMapping)(_.simple.updatable)
+      .property("tlp", UniMapping.intMapping)(_.simple.updatable)
+      .property("dataType", UniMapping.stringMapping)(_.derived(_.outTo[ObservableObservableType].value("name")).readonly)
+      .property("data", UniMapping.stringMapping.optional)(_.derived(_.outTo[ObservableData].value("data")).readonly)
       // TODO add attachment ?
       .build
 

@@ -31,6 +31,9 @@ case class ImpactStatus(value: String) {
 @EdgeEntity[Case, ImpactStatus]
 case class CaseImpactStatus()
 
+@EdgeEntity[Case, Tag]
+case class CaseTag()
+
 @EdgeEntity[Case, Case]
 case class MergedFrom()
 
@@ -64,7 +67,6 @@ case class Case(
     severity: Int,
     startDate: Date,
     endDate: Option[Date],
-    tags: Set[String],
     flag: Boolean,
     tlp: Int,
     pap: Int,
@@ -78,6 +80,7 @@ object Case {
 
 case class RichCase(
     `case`: Case with Entity,
+    tags: Seq[Tag],
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
@@ -94,7 +97,6 @@ case class RichCase(
   val severity: Int              = `case`.severity
   val startDate: Date            = `case`.startDate
   val endDate: Option[Date]      = `case`.endDate
-  val tags: Set[String]          = `case`.tags
   val flag: Boolean              = `case`.flag
   val tlp: Int                   = `case`.tlp
   val pap: Int                   = `case`.pap
@@ -106,6 +108,7 @@ object RichCase {
 
   def apply(
       `case`: Case with Entity,
+      tags: Seq[Tag],
       caseImpactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
@@ -115,6 +118,7 @@ object RichCase {
       .asInstanceOf[Case]
       .into[RichCase]
       .withFieldConst(_.`case`, `case`)
+      .withFieldConst(_.tags, tags)
       .withFieldConst(_.impactStatus, caseImpactStatus)
       .withFieldConst(_.resolutionStatus, resolutionStatus)
       .withFieldConst(_.user, user)
@@ -133,7 +137,7 @@ object RichCase {
       severity: Int,
       startDate: Date,
       endDate: Option[Date],
-      tags: Set[String],
+      tags: Seq[Tag],
       flag: Boolean,
       tlp: Int,
       pap: Int,
@@ -144,7 +148,7 @@ object RichCase {
       user: Option[String],
       customFields: Seq[CustomFieldWithValue]
   ): RichCase = {
-    val `case` = new Case(number, title, description, severity, startDate, endDate, tags, flag, tlp, pap, status, summary) with Entity {
+    val `case` = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
       override val _id: String                = __id
       override val _model: Model              = Model.vertex[Case]
       override val _createdBy: String         = __createdBy
@@ -152,6 +156,6 @@ object RichCase {
       override val _createdAt: Date           = __createdAt
       override val _updatedAt: Option[Date]   = __updatedAt
     }
-    RichCase(`case`, impactStatus, resolutionStatus, user, customFields)
+    RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields)
   }
 }
