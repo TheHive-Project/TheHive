@@ -202,8 +202,8 @@ class AlertSrv @Inject()(
       alert <- getOrFail(alertId)
       case0 <- caseSrv.getOrFail(caseId)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      _           = caseSrv.get(caseId).update("description" -> description)
-      _           = importObservables(alert, case0)
+      _ <- caseSrv.get(caseId).update("description" -> description)
+      _ <- importObservables(alert, case0)
     } yield ()
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(

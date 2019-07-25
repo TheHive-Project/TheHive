@@ -17,7 +17,7 @@ case class ObservableData()
 case class ObservableTag()
 
 @VertexEntity
-case class Observable(tags: Set[String], message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
+case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
 
 object Observable {
   implicit val format: OFormat[Observable] = Json.format[Observable]
@@ -28,9 +28,9 @@ case class RichObservable(
     `type`: ObservableType with Entity,
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
-    extensions: Seq[KeyValue]
+    tags: Seq[Tag with Entity],
+    extensions: Seq[KeyValue with Entity]
 ) {
-  val tags: Set[String]       = observable.tags
   val message: Option[String] = observable.message
   val tlp: Int                = observable.tlp
   val ioc: Boolean            = observable.ioc

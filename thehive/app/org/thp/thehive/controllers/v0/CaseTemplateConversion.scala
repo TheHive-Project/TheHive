@@ -1,18 +1,20 @@
 package org.thp.thehive.controllers.v0
 
-import scala.language.implicitConversions
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
-import org.thp.thehive.models.{CaseCustomField, CaseTemplate, RichCaseTemplate}
-import org.thp.thehive.services.CaseTemplateSteps
+import org.thp.thehive.models.{CaseCustomField, CaseTemplate, CaseTemplateTag, RichCaseTemplate}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
+import play.api.libs.json.Json
+
+import scala.language.implicitConversions
 
 object CaseTemplateConversion {
-  import TaskConversion._
   import CustomFieldConversion._
+  import TaskConversion._
 
   implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
     inputCaseTemplate
@@ -37,13 +39,22 @@ object CaseTemplateConversion {
         .transform
     )
 
-  val caseTemplateProperties: List[PublicProperty[_, _]] =
+  def caseTemplateProperties(caseTemplateSrv: CaseTemplateSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
       .property("name", UniMapping.stringMapping)(_.simple.updatable)
       .property("titlePrefix", UniMapping.stringMapping.optional)(_.simple.updatable)
       .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
       .property("severity", UniMapping.intMapping.optional)(_.simple.updatable)
-      .property("tags", UniMapping.stringMapping.optional)(_.simple.updatable) // FIXME
+      .property("tags", UniMapping.stringMapping.set)(
+        _.derived(_.outTo[CaseTemplateTag].value("name"))
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            caseTemplateSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
       .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
       .property("tlp", UniMapping.intMapping.optional)(_.simple.updatable)
       .property("pap", UniMapping.intMapping.optional)(_.simple.updatable)

@@ -2,10 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -17,6 +13,9 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable, TheHiveSchema}
 import org.thp.thehive.services.{CaseSrv, LocalUserSrv}
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 case class TestAlert(
     `type`: String,
@@ -77,13 +76,13 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       )
       val inputObservables =
         Seq(
-          InputObservable(dataType = "ip", data = Seq("127.0.0.1"), message = Some("localhost"), tlp = Some(1), tags = Seq("here")),
+          InputObservable(dataType = "ip", data = Seq("127.0.0.1"), message = Some("localhost"), tlp = Some(1), tags = Set("here")),
           InputObservable(
             dataType = "file",
             data = Seq("hello.txt;text/plain;aGVsbG8gd29ybGQgIQ=="),
             message = Some("coucou"),
             tlp = Some(1),
-            tags = Seq("welcome", "message")
+            tags = Set("welcome", "message")
           )
         )
       val outputObservables = Seq(
@@ -312,10 +311,10 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       observables must contain(
         exactly(
           beLike[RichObservable] {
-            case RichObservable(obs, tpe, Some(data), None, _) if tpe.name == "domain" && data.data == "c.fr" => ok
+            case RichObservable(obs, tpe, Some(data), None, tags, _) if tpe.name == "domain" && data.data == "c.fr" => ok
           },
           beLike[RichObservable] {
-            case RichObservable(obs, tpe, None, Some(attachment), _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
+            case RichObservable(obs, tpe, None, Some(attachment), tags, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
           }
         )
       )

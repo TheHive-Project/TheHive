@@ -1,17 +1,16 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
 import org.thp.thehive.dto.v1.InputCaseTemplate
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, UserSrv}
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class CaseTemplateCtrl @Inject()(
@@ -23,8 +22,10 @@ class CaseTemplateCtrl @Inject()(
 ) {
 
   import CaseTemplateConversion._
-  import TaskConversion._
   import CustomFieldConversion._
+  import TaskConversion._
+
+  val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv)
 
   def create: Action[AnyContent] =
     entryPoint("create case template")
@@ -64,7 +65,7 @@ class CaseTemplateCtrl @Inject()(
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("update case template")
-      .extract("caseTemplate", FieldsParser.update("caseTemplate", caseTemplateProperties))
+      .extract("caseTemplate", FieldsParser.update("caseTemplate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv

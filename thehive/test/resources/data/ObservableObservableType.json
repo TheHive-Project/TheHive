@@ -8,7 +8,7 @@
     "to": "domain"
   },
   {
-    "from": "hello",
+    "from": "helloworld",
     "to": "file"
   }
 ]

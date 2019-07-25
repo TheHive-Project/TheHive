@@ -168,7 +168,7 @@ class JobSrv @Inject()(
               Future
                 .fromTry {
                   observableSrv
-                    .create(artifact, dataType, artifact.data.get, Nil)
+                    .create(artifact, dataType, artifact.data.get, artifact.tags, Nil)
                     .map { richObservable =>
                       reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
                     }
@@ -209,7 +209,7 @@ class JobSrv @Inject()(
             db.transaction { implicit graph =>
               for {
                 createdAttachment <- attachmentSrv.create(fFile)
-                richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, Nil)
+                richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, artifact.tags, Nil)
                 _ = reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
               } yield createdAttachment
             }

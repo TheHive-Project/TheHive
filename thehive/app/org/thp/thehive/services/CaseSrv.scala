@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList, Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
@@ -16,6 +11,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, FPathElem, InternalError, RichJMap, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -122,7 +121,7 @@ class CaseSrv @Inject()(
       .map(_ => get(`case`).removeTags(tagsToRemove))
   }
 
-  def addTags(`case`: Case with Entity, tags: Seq[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def addTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val currentTags = get(`case`)
       .tags
       .toList

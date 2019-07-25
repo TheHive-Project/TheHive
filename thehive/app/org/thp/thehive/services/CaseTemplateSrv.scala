@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import java.util.{UUID, List => JList}
 
-import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, Vertex}
+import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -67,6 +67,30 @@ class CaseTemplateSrv @Inject()(
         }
       _ <- auditSrv.createCaseTemplate(createdCaseTemplate)
     } yield RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
+  }
+
+  def updateTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val (tagsToAdd, tagsToRemove) = get(caseTemplate)
+      .tags
+      .toIterator
+      .foldLeft((tags, Set.empty[String])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
+        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      }
+    tagsToAdd
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, t)))
+      .map(_ => get(caseTemplate).removeTags(tagsToRemove))
+  }
+
+  def addTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val currentTags = get(caseTemplate)
+      .tags
+      .toList
+      .map(_.name)
+      .toSet
+    (tags.toSet -- currentTags)
+      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, t)))
+      .map(_ => ())
   }
 
 //  def addTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
@@ -145,4 +169,11 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     )
 
   def tasks = new TaskSteps(raw.outTo[CaseTemplateTask])
+
+  def tags: TagSteps = new TagSteps(raw.outTo[CaseTemplateTag])
+
+  def removeTags(tagNames: Set[String]): Unit = {
+    raw.outToE[CaseTemplateTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
+    ()
+  }
 }

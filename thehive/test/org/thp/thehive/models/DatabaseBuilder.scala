@@ -2,13 +2,6 @@ package org.thp.thehive.models
 
 import java.io.File
 
-import scala.io.Source
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOption
@@ -17,6 +10,12 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+
+import scala.io.Source
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Failure, Success}
 
 @Singleton
 class DatabaseBuilder @Inject()(
@@ -88,6 +87,7 @@ class DatabaseBuilder @Inject()(
       createEdge(observableSrv.observableObservableType, observableSrv, observableTypeSrv, FieldsParser[ObservableObservableType], idMap)
       createEdge(observableSrv.observableDataSrv, observableSrv, dataSrv, FieldsParser[ObservableData], idMap)
       createEdge(observableSrv.observableAttachmentSrv, observableSrv, attachmentSrv, FieldsParser[ObservableAttachment], idMap)
+      createEdge(observableSrv.observableTagSrv, observableSrv, tagSrv, FieldsParser[ObservableTag], idMap)
 
       createEdge(taskSrv.taskUserSrv, taskSrv, userSrv, FieldsParser[TaskUser], idMap)
       createEdge(taskSrv.taskLogSrv, taskSrv, logSrv, FieldsParser[TaskLog], idMap)

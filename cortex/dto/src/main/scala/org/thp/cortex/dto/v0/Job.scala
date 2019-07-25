@@ -58,7 +58,7 @@ case class CortexOutputArtifact(
     attachment: Option[CortexOutputAttachment],
     message: Option[String],
     tlp: Int,
-    tags: List[String]
+    tags: Set[String]
 )
 
 object CortexOutputArtifact {

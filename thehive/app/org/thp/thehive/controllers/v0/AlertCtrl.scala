@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
@@ -17,6 +12,10 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -95,11 +94,11 @@ class AlertCtrl @Inject()(
               val data = Base64.getDecoder.decode(value)
               attachmentSrv
                 .create(filename, contentType, data)
-                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, Nil))
+                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, observable.tags, Nil))
             case data =>
               Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
           }
-        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, Nil))
+        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
       }
       .map(_.map { richObservable =>
         alertSrv.addObservable(alert, richObservable.observable)
