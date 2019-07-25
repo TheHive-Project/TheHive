@@ -3,9 +3,9 @@ import sbt._
 object Dependencies {
   lazy val gremlinScala                   = "com.michaelpollmeier"     %% "gremlin-scala"           % "3.4.1.6"
   lazy val gremlinOrientdb                = "com.orientechnologies"    % "orientdb-gremlin"         % "3.0.18"
-  lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"          % "0.3.2"
-  lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"    % "0.3.2"
-  lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"         % "0.3.2"
+  lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"          % "0.4.0"
+  lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"    % "0.4.0"
+  lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"         % "0.4.0"
   lazy val hbaseClient                    = "org.apache.hbase"         % "hbase-shaded-client"      % "1.4.9" exclude ("org.slf4j", "slf4j-log4j12")
   lazy val scalactic                      = "org.scalactic"            %% "scalactic"               % "3.0.8"
   lazy val specs                          = "com.typesafe.play"        %% "play-specs2"             % play.core.PlayVersion.current

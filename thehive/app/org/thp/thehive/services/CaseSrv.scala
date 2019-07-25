@@ -310,7 +310,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def getLast: CaseSteps =
-    newInstance(raw.order(By(Key[Int]("number"), Order.decr))) // TODO use Order.desc when possible: org.janusgraph.graphdb.internal.Order
+    newInstance(raw.order(By(Key[Int]("number"), Order.desc)))
 
   def richCase: ScalarSteps[RichCase] =
     ScalarSteps(
