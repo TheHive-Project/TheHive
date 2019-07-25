@@ -137,7 +137,9 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
                                            "tlp": 2
                                          }
                                        ]""").as[List[CortexOutputArtifact]],
-            operations = JsArray.empty.as[List[CortexOutputOperation]]
+            operations = JsArray.empty.as[List[CortexOutputOperation]],
+            errorMessage = None,
+            input = None
           )
         )
 
@@ -149,7 +151,7 @@ class CortexClientTest extends PlaySpecification with Mockito with FakeCortexCli
             name = "respTest1",
             version = "1",
             description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
-            dataTypeList = Seq("test"),
+            dataTypeList = Seq("test", "case_task"),
             maxPap = Some(3),
             maxTlp = Some(2),
             cortexIds = Some(List("test"))

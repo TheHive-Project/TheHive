@@ -147,7 +147,7 @@ class ActionSrv @Inject()(
         .get(actionId)
         .update(
           "status"     -> fromCortexJobStatus(cortexOutputJob.status),
-          "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))).getOrElse(JsObject.empty),
+          "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
           "endDate"    -> new Date(),
           "operations" -> Json.toJson(operations).toString
         )

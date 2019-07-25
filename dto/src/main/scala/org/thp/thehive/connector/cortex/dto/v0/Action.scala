@@ -30,8 +30,8 @@ case class OutputAction(
     status: String,
     startDate: Date,
     endDate: Option[Date],
-    operations: Option[String],
-    report: Option[JsObject]
+    operations: String,
+    report: String
 )
 
 object OutputAction {
