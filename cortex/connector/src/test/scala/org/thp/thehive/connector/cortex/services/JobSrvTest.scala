@@ -24,6 +24,7 @@ import play.api.{Configuration, Environment}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
+import scala.util.Try
 
 class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito with FakeCortexClient {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -39,8 +40,8 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
       .bindActor[CortexActor]("cortex-actor")
       .addConfiguration(
         Configuration(
-          "play.modules.disabled"      -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port" -> 3334,
+          "play.modules.disabled"                     -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
+          "akka.remote.netty.tcp.port"                -> 3334,
           "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on"
         )
       )
@@ -65,26 +66,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
       implicit val authContext: AuthContext  = dummyUserSrv.authContext
       implicit lazy val auth: Authentication = KeyAuthentication("test")
 
-      "create a job" in db.transaction { implicit graph =>
-        val maybeObservable = observableSrv.initSteps.has(Key("message"), P.eq("This domain")).getOrFail()
-        maybeObservable must beSuccessfulTry
-        val observable = maybeObservable.get
-        val j = Job(
-          workerId = "anaTest1",
-          workerName = "anaTest1",
-          workerDefinition = "test",
-          status = JobStatus.Waiting,
-          startDate = new Date(1561625908856L),
-          endDate = new Date(1561625908856L),
-          report = None,
-          cortexId = "test",
-          cortexJobId = "AWuYKFatq3Rtqym9DFmL"
-        )
-        val job = jobSrv.create(j, observable)
-        jobSrv.get(job).observable.getOrFail().map(_._id) must beSuccessfulTry(observable._id)
-      }
-
-      "handle a finished job" in {
+      "handle creation and then finished job" in {
         val maybeObservable = db.transaction { implicit graph =>
           observableSrv.initSteps.has(Key("message"), P.eq("hello world")).getOrFail()
         }
@@ -102,9 +84,13 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           cortexId = "test",
           cortexJobId = "LVyYKFstq3Rtrdc9DFmL"
         )
-        val createdJob = db.transaction { implicit graph =>
-          jobSrv.create(job, observable)
+        val tryCreateJob = db.transaction { implicit graph =>
+          Try(jobSrv.create(job, observable))
         }
+
+        tryCreateJob must beSuccessfulTry
+
+        val createdJob = tryCreateJob.get
 
         val cortexOutputJob: CortexOutputJob = {
           val dataSource = Source.fromResource("cortex-jobs.json")

@@ -26,7 +26,7 @@ object ReportTemplateConversion {
     PublicPropertyListBuilder[ReportTemplateSteps]
       .property("analyzerId", UniMapping.stringMapping)(_.rename("workerId").readonly)
       .property("reportType", UniMapping.stringMapping)(_.simple.readonly)
-      .property("content", UniMapping.stringMapping)(_.simple.readonly)
+      .property("content", UniMapping.stringMapping)(_.simple.updatable)
       .build
 
   implicit def fromInputReportTemplate(inputReportTemplate: InputReportTemplate): ReportTemplate =
