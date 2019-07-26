@@ -9,7 +9,7 @@ import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
-import org.thp.thehive.controllers.v0.QueryableCtrl
+import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -27,14 +27,14 @@ class ReportCtrl @Inject()(
 
   override val entityName: String                           = "report"
   override val publicProperties: List[PublicProperty[_, _]] = reportTemplateProperties
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[ReportTemplateSteps]("listReportTemplate", (graph, _) => reportTemplateSrv.initSteps(graph))
-  override val pageQuery: ParamQuery[_] = Query.withParam[RangeParams, ReportTemplateSteps, PagedResult[ReportTemplate with Entity]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ReportTemplateSteps, PagedResult[ReportTemplate with Entity]](
     "page",
-    FieldsParser[RangeParams],
-    (range, ReportTemplateSteps, _) => ReportTemplateSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+    FieldsParser[OutputParam],
+    (range, ReportTemplateSteps, _) => ReportTemplateSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: ParamQuery[_] = Query.output[ReportTemplate with Entity, OutputReportTemplate]
+  override val outputQuery: Query = Query.output[ReportTemplate with Entity, OutputReportTemplate]
 
   def getContent(analyzerId: String, reportType: String): Action[AnyContent] =
     entryPoint("get content")

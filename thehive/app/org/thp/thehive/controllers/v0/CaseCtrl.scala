@@ -33,22 +33,22 @@ class CaseCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "case"
   override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withSize, withStats), caseSteps, authContext) =>
+      case (OutputParam(from, to, withStats), caseSteps, authContext) =>
         caseSteps
-          .richPage(from, to, withSize.getOrElse(false)) {
-            case c if withStats.contains(true) =>
+          .richPage(from, to, withTotal = true) {
+            case c if withStats =>
               c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
             case c =>
               c.richCase.raw.map(_ -> JsObject.empty)
           }
     }
   )
-  override val outputQuery: ParamQuery[_] = Query.output[(RichCase, JsObject), OutputCase]
+  override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
 
   def create: Action[AnyContent] =
     entryPoint("create case")

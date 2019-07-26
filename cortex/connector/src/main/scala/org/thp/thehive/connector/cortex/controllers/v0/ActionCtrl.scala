@@ -28,14 +28,14 @@ class ActionCtrl @Inject()(
 
   override val entityName: String                           = "action"
   override val publicProperties: List[PublicProperty[_, _]] = actionProperties
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[ActionSteps]("listAction", (graph, _) => actionSrv.initSteps(graph))
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
     "page",
     FieldsParser[OutputParam],
-    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, range.withSize.getOrElse(false))(_.richAction.raw)
+    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction.raw)
   )
-  override val outputQuery: ParamQuery[_] = Query.output[RichAction, OutputAction]
+  override val outputQuery: Query = Query.output[RichAction, OutputAction]
 
   def create: Action[AnyContent] =
     entryPoint("create action")

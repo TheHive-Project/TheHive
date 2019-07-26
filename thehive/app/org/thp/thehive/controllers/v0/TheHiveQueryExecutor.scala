@@ -13,7 +13,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
 import org.thp.thehive.services.{ObservableSteps, _}
 
-case class OutputParam(from: Long, to: Long, withSize: Option[Boolean], withStats: Option[Boolean])
+case class OutputParam(from: Long, to: Long, withStats: Boolean)
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(

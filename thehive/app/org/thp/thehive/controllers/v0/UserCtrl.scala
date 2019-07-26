@@ -33,14 +33,14 @@ class UserCtrl @Inject()(
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "user"
   override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
-  override val initialQuery: ParamQuery[_] =
+  override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
-  override val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, range.withSize.getOrElse(false))
+    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: ParamQuery[_] = Query.output[RichUser, OutputUser]
+  override val outputQuery: Query = Query.output[RichUser, OutputUser]
 
   def current: Action[AnyContent] =
     entryPoint("current user")

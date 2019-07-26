@@ -18,15 +18,15 @@ class DashboardCtrl @Inject()(entryPoint: EntryPoint, db: Database, dashboardSrv
   val entityName: String                           = "dashboard"
   val publicProperties: List[PublicProperty[_, _]] = dashboardProperties(dashboardSrv) ::: metaProperties[DashboardSteps]
 
-  val initialQuery: ParamQuery[_] =
+  val initialQuery: Query =
     Query.init[DashboardSteps]("listDashboard", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).dashboards)
 
-  val pageQuery: ParamQuery[_] = Query.withParam[OutputParam, DashboardSteps, PagedResult[Dashboard with Entity]](
+  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, DashboardSteps, PagedResult[Dashboard with Entity]](
     "page",
     FieldsParser[OutputParam],
-    (range, dashboardSteps, _) => dashboardSteps.page(range.from, range.to, range.withSize.getOrElse(false))
+    (range, dashboardSteps, _) => dashboardSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: ParamQuery[_] = Query.output[Dashboard with Entity, OutputDashboard]
+  val outputQuery: Query = Query.output[Dashboard with Entity, OutputDashboard]
 
   def create: Action[AnyContent] =
     entryPoint("create dashboard")
