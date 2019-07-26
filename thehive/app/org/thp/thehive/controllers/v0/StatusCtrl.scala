@@ -13,7 +13,7 @@ import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
 import scala.collection.immutable
-import scala.util.{Success, Try}
+import scala.util.Success
 
 @Singleton
 class StatusCtrl @Inject()(
@@ -67,6 +67,6 @@ class StatusCtrl @Inject()(
     } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
     else HealthStatus.Warning
 
-    Success(Results.Ok(globalStatus))
+    Success(Results.Ok(Json.toJson(globalStatus)))
   }
 }

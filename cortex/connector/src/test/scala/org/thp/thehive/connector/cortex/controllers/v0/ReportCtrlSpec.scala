@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import java.io.File
-
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.dto.v0.OutputReportTemplate
@@ -13,10 +11,7 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
-import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.json.Json
-import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
 
