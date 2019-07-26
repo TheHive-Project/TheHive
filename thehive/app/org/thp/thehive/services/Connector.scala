@@ -1,0 +1,10 @@
+package org.thp.thehive.services
+
+import org.thp.thehive.models.HealthStatus
+import play.api.libs.json.{JsObject, Json}
+
+trait Connector {
+  val name: String
+  def status: JsObject           = Json.obj("enabled" -> true)
+  def health: HealthStatus.Value = HealthStatus.Ok
+}

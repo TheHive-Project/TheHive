@@ -8,17 +8,16 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.SchemaUpdater
-import org.thp.thehive.services.{LocalKeyAuthSrv, LocalUserSrv}
+import org.thp.thehive.services.{Connector, LocalKeyAuthSrv, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import play.api.routing.{Router => PlayRouter}
-import play.api.{Configuration, Environment, Logger}
-
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.auth.{ADAuthSrv, LdapAuthSrv}
 import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
 import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
 import org.thp.thehive.services.LocalPasswordAuthSrv
+import play.api.routing.{Router => PlayRouter}
+import play.api.{Configuration, Environment, Logger}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule {
   lazy val logger = Logger(getClass)
@@ -58,6 +57,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV0]
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
+    ScalaMultibinder.newSetBinder[Connector](binder)
 
     bind(classOf[SchemaUpdater]).asEagerSingleton()
     ()
