@@ -54,6 +54,29 @@ class EntityHelper @Inject()(
       }
     } yield entity
 
+  private def fromName(name: String): Try[Model] = Try(schema.modelList.find(_.label.toLowerCase == name.trim.toLowerCase).get)
+
+  /**
+    * Retrieves an optional parent Case
+    * @param entity the child entity
+    * @param graph db traversal
+    * @return
+    */
+  def parentCase(entity: Entity)(implicit graph: Graph): Option[Case with Entity] = entity._model.label.toLowerCase match {
+    case "task"       => taskSrv.initSteps.get(entity._id).`case`.getOrFail().toOption
+    case "case"       => caseSrv.initSteps.get(entity._id).getOrFail().toOption
+    case "observable" => observableSrv.initSteps.get(entity._id).`case`.getOrFail().toOption
+    case "log"        => logSrv.initSteps.get(entity._id).`case`.getOrFail().toOption
+    case "alert"      => None
+    case _            => matchError(entity._model.label, entity._id).toOption
+  }
+
+  private def matchError(name: String, id: String) = {
+    val m = s"Unmatched Entity from string $name - $id"
+    logger.error(m)
+    Failure(new Exception(m))
+  }
+
   /**
     * Tries to fetch the tlp and pap associated to the supplied entity
     *
@@ -79,12 +102,4 @@ class EntityHelper @Inject()(
         case _       => matchError(name, id)
       }
     } yield levels
-
-  private def fromName(name: String): Try[Model] = Try(schema.modelList.find(_.label.toLowerCase == name.trim.toLowerCase).get)
-
-  private def matchError(name: String, id: String) = {
-    val m = s"Unmatched Entity from string $name - $id"
-    logger.error(m)
-    Failure(new Exception(m))
-  }
 }

@@ -15,8 +15,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{EntityHelper, ShareCase, TheHiveSchema}
-import org.thp.thehive.services.CaseSteps
+import org.thp.thehive.models.{Case, EntityHelper, TheHiveSchema}
 import play.api.libs.json.{JsObject, Json, Writes}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,19 +75,22 @@ class ActionSrv @Inject()(
       job <- client.execute(responder.id, inputCortexAction)
       action <- Future.fromTry(
         Try(
-          db.transaction(implicit graph => create(
-            Action.apply(
-              job.workerId,
-              Some(job.workerName),
-              Some(job.workerDefinition),
-              fromCortexJobStatus(job.status),
-              entity,
-              job.startDate.getOrElse(new Date()),
-              Some(client.name),
-              Some(job.id)
-            ),
-            entity
-          ))
+          db.transaction(
+            implicit graph =>
+              create(
+                Action.apply(
+                  job.workerId,
+                  Some(job.workerName),
+                  Some(job.workerDefinition),
+                  fromCortexJobStatus(job.status),
+                  entity,
+                  job.startDate.getOrElse(new Date()),
+                  Some(client.name),
+                  Some(job.id)
+                ),
+                entity
+              )
+          )
         )
       )
 
@@ -137,7 +139,7 @@ class ActionSrv @Inject()(
             operation <- actionOperationSrv.execute(
               action.context,
               op,
-              initSteps.get(actionId).relatedCase.getOrFail().toOption
+              relatedCase(actionId)
             )
           } yield operation
         }
@@ -152,6 +154,18 @@ class ActionSrv @Inject()(
           "operations" -> Json.toJson(operations).toString
         )
     }
+
+  /**
+    * Gets an optional related Case to the Action Entity
+    * @param id action id
+    * @param graph db graph
+    * @return
+    */
+  def relatedCase(id: String)(implicit graph: Graph): Option[Case with Entity] =
+    for {
+      richAction  <- initSteps.get(id).richAction.getOrFail().toOption
+      relatedCase <- entityHelper.parentCase(richAction.context)
+    } yield relatedCase
 }
 
 @EntitySteps[Action]
@@ -174,18 +188,5 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
           case (action, context) =>
             RichAction(action.as[Action], context.asEntity)
         }
-    )
-
-  /**
-    * Gets a potential related Case from the Action entity
-    *
-    * @return
-    */
-  def relatedCase: CaseSteps =
-    new CaseSteps(
-      raw.filter(
-        _.outTo[ActionContext]
-          .outTo[ShareCase]
-      )
     )
 }

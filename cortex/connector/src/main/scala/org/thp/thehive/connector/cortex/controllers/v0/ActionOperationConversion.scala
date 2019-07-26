@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 
 object ActionOperationConversion {
 
-  implicit def fromCortexOutputOperation(o: CortexOutputOperation): ActionOperation = o.opType match {
+  implicit def fromCortexOutputOperation(o: CortexOutputOperation): ActionOperation = o.`type` match {
     case CortexOperationType.AddTagToCase => AddTagToCase(o.tag.getOrElse("unknown tag"))
     case CortexOperationType.AddTagToArtifact => AddTagToArtifact(o.tag.getOrElse("unknown tag"))
     case CortexOperationType.CreateTask =>

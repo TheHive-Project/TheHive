@@ -12,7 +12,7 @@ object CortexOperationType extends Enumeration {
 }
 
 case class CortexOutputOperation(
-    opType: CortexOperationType.Type,
+    `type`: CortexOperationType.Type,
     tag: Option[String],
     title: Option[String],
     description: Option[String],
