@@ -5,7 +5,7 @@ import akka.util.ByteString
 import org.thp.cortex.dto.v0.{Attachment, _}
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -84,8 +84,8 @@ class CortexClient(val name: String, baseUrl: String)(
           )
     }
     result.transform {
-      case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[CortexOutputJob])
-      case Success(r)                               => Try(r.body[JsValue].as[CortexOutputJob])
+      case Success(r) if r.status == Status.CREATED => Success(r.json.as[CortexOutputJob])
+      case Success(r)                               => Try(r.json.as[CortexOutputJob])
       case Failure(t)                               => throw t
     }
   }
@@ -143,9 +143,40 @@ class CortexClient(val name: String, baseUrl: String)(
     val result      = auth(ws.url(s"$strippedUrl/api/responder/$responderId/run")).post(requestBody)
 
     result.transform {
-      case Success(r) if r.status == Status.CREATED => Success(r.body[JsValue].as[CortexOutputJob])
-      case Success(r)                               => Try(r.body[JsValue].as[CortexOutputJob])
+      case Success(r) if r.status == Status.CREATED => Success(r.json.as[CortexOutputJob])
+      case Success(r)                               => Try(r.json.as[CortexOutputJob])
       case Failure(t)                               => throw t
     }
+  }
+
+  /**
+    * Retrieve version of remote cortex
+    * @return version of cortex
+    */
+  def getVersion: Future[String] =
+    auth(ws.url(s"$strippedUrl/api/status"))
+      .get
+      .transform {
+        case Success(r) if r.status == Status.OK => Try((r.json \ "versions" \ "Cortex").as[String])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
+      }
+
+  /**
+    * Retrieve the name of the cortex user
+    * @return user name
+    */
+  def getCurrentUser: Future[String] =
+    auth(ws.url(s"$strippedUrl/api/user/current"))
+      .get
+      .transform {
+        case Success(r) if r.status == Status.OK => Try((r.json \ "id").as[String])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
+      }
+
+  def getHealth: Future[String] = getVersion.transform {
+    case _: Success[_] => Success("Ok")
+    case _             => Success("Error")
   }
 }
