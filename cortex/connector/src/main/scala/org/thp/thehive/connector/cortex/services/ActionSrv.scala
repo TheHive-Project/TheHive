@@ -166,12 +166,13 @@ class ActionSrv @Inject()(
       richAction  <- initSteps.get(id).richAction.getOrFail().toOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
+
+  // TODO to be tested
+  def listForEntity(id: String)(implicit graph: Graph): List[Action with Entity] = initSteps.forEntity(id).toList
 }
 
 @EntitySteps[Action]
 class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends BaseVertexSteps[Action, ActionSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(raw)
-
   /**
     * Provides a RichAction model with additional Entity context
     *
@@ -189,4 +190,14 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
             RichAction(action.as[Action], context.asEntity)
         }
     )
+
+  def forEntity(entityId: String): ActionSteps =
+    newInstance(
+      raw.filter(
+        _.outTo[ActionContext]
+          .has(Key("_id") of entityId)
+      )
+    )
+
+  override def newInstance(raw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(raw)
 }

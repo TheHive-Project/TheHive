@@ -9,7 +9,7 @@ import org.thp.thehive.connector.cortex.models.RichAction
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps}
 import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
 import org.thp.thehive.models.{EntityHelper, Permissions}
-import play.api.libs.json.Writes
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,5 +49,13 @@ class ActionCtrl @Inject()(
             action <- actionSrv.execute(inputAction, entity)
           } yield Results.Ok(action.toJson)
         }
+      }
+
+  def getByEntity(entityType: String, entityId: String): Action[AnyContent] =
+    entryPoint("get by entity")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          entity <- entityHelper.get(entityType, entityId, Permissions.manageAction)
+        } yield Results.Ok(Json.toJson(actionSrv.listForEntity(entity._id)))
       }
 }

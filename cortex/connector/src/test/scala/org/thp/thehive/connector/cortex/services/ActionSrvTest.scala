@@ -86,6 +86,7 @@ class ActionSrvTest extends PlaySpecification with Mockito with FakeCortexClient
             richAction must beAnInstanceOf[RichAction]
             richAction.responderId shouldEqual "respTest1"
 
+            // TODO test finished method
           }
         }
       }
