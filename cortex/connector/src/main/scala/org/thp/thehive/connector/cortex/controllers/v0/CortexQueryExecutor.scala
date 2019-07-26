@@ -36,7 +36,17 @@ class CortexQueryExecutor @Inject()(
   override lazy val publicProperties
       : List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
   override lazy val queries: Seq[ParamQuery[_]] =
-    new CortexParentFilterQuery(publicProperties) :: actionCtrl.initialQuery :: actionCtrl.pageQuery :: actionCtrl.outputQuery :: jobCtrl.initialQuery :: jobCtrl.pageQuery :: jobCtrl.outputQuery :: reportCtrl.initialQuery :: reportCtrl.pageQuery :: reportCtrl.outputQuery :: Nil
+    new CortexParentFilterQuery(publicProperties) ::
+      actionCtrl.initialQuery ::
+      actionCtrl.pageQuery ::
+      actionCtrl.outputQuery ::
+      jobCtrl.initialQuery ::
+      jobCtrl.pageQuery ::
+      jobCtrl.outputQuery ::
+      reportCtrl.initialQuery ::
+      reportCtrl.pageQuery ::
+      reportCtrl.outputQuery ::
+      Nil
   override val version: (Int, Int) = 0 -> 0
   val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
   val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
