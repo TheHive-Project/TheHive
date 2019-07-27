@@ -51,8 +51,8 @@ object UserConversion {
 
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
-      .property("login", UniMapping.stringMapping)(_.simple.readonly)
-      .property("name", UniMapping.stringMapping)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
+      .property("login", UniMapping.string)(_.simple.readonly)
+      .property("name", UniMapping.string)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -70,12 +70,12 @@ object UserConversion {
         isCurrentUser
           .orElse(isUserAdmin)
           .map { _ =>
-            db.setProperty(vertex, "name", value, UniMapping.stringMapping)
+            db.setProperty(vertex, "name", value, UniMapping.string)
             Json.obj("name" -> value)
           }
       })
-      .property("apikey", UniMapping.stringMapping)(_.simple.readonly)
-      .property("status", UniMapping.stringMapping)(
+      .property("apikey", UniMapping.string)(_.simple.readonly)
+      .property("status", UniMapping.string)(
         _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
           .custom { (_, value, vertex, db, graph, authContext) =>
             userSrv
@@ -86,10 +86,10 @@ object UserConversion {
               .existsOrFail()
               .flatMap {
                 case _ if value == "Ok" =>
-                  db.setProperty(vertex, "locked", false, UniMapping.booleanMapping)
+                  db.setProperty(vertex, "locked", false, UniMapping.boolean)
                   Success(Json.obj("status" -> value))
                 case _ if value == "Locked" =>
-                  db.setProperty(vertex, "locked", true, UniMapping.booleanMapping)
+                  db.setProperty(vertex, "locked", true, UniMapping.boolean)
                   Success(Json.obj("status" -> value))
                 case _ => Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
               }

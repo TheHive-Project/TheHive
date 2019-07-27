@@ -22,6 +22,6 @@ object OrganisationConversion {
 
   val organisationProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[OrganisationSteps]
-      .property("name", UniMapping.stringMapping)(_.simple.updatable)
+      .property("name", UniMapping.string)(_.simple.updatable)
       .build
 }

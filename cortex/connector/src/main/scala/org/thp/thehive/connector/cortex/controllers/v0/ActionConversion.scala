@@ -26,17 +26,17 @@ object ActionConversion {
 
   val actionProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ActionSteps]
-      .property("responderId", UniMapping.stringMapping)(_.simple.readonly)
-      .property("objectType", UniMapping.stringMapping)(
+      .property("responderId", UniMapping.string)(_.simple.readonly)
+      .property("objectType", UniMapping.string)(
         _.derived(
           _.outTo[ActionContext].value[String]("_label").map(_.toLowerCase)
         ).readonly
       )
-      .property("status", UniMapping.stringMapping)(_.simple.readonly)
-      .property("startDate", UniMapping.dateMapping)(_.simple.readonly)
-      .property("objectId", UniMapping.stringMapping)(_.simple.readonly)
-      .property("responderName", UniMapping.stringMapping.optional)(_.simple.readonly)
-      .property("cortexId", UniMapping.stringMapping.optional)(_.simple.readonly)
-      .property("tlp", UniMapping.intMapping.optional)(_.simple.readonly)
+      .property("status", UniMapping.string)(_.simple.readonly)
+      .property("startDate", UniMapping.date)(_.simple.readonly)
+      .property("objectId", UniMapping.string)(_.simple.readonly)
+      .property("responderName", UniMapping.string.optional)(_.simple.readonly)
+      .property("cortexId", UniMapping.string.optional)(_.simple.readonly)
+      .property("tlp", UniMapping.int.optional)(_.simple.readonly)
       .build
 }

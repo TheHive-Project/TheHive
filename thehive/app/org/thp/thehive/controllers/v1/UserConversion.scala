@@ -36,8 +36,8 @@ object UserConversion {
 
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
-      .property("login", UniMapping.stringMapping)(_.simple.readonly)
-      .property("name", UniMapping.stringMapping)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("login", UniMapping.string)(_.simple.readonly)
+      .property("name", UniMapping.string)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -56,13 +56,13 @@ object UserConversion {
           .orElse(isUserAdmin)
           .flatMap {
             case _ if path.isEmpty =>
-              db.setProperty(vertex, "name", value, UniMapping.stringMapping)
+              db.setProperty(vertex, "name", value, UniMapping.string)
               Success(Json.obj("name" -> value))
             case _ => Failure(UnsupportedAttributeError(s"name.$path"))
           }
       })
-      .property("apikey", UniMapping.stringMapping)(_.simple.readonly)
-      .property("locked", UniMapping.booleanMapping)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("apikey", UniMapping.string)(_.simple.readonly)
+      .property("locked", UniMapping.boolean)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)
@@ -71,7 +71,7 @@ object UserConversion {
           .existsOrFail()
           .flatMap {
             case _ if path.isEmpty =>
-              db.setProperty(vertex, "locked", value, UniMapping.booleanMapping)
+              db.setProperty(vertex, "locked", value, UniMapping.boolean)
               Success(Json.obj("locked" -> value))
             case _ => Failure(UnsupportedAttributeError(s"status.$path"))
           }

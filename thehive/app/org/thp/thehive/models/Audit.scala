@@ -66,10 +66,10 @@ object Audited extends HasEdgeModel[Audited, Audit, Product] {
     override def toDomain(element: Edge)(implicit db: Database): Audited with Entity = new Audited with Entity {
       override val _id: String                = element.value[String]("_id")
       override val _model: Model              = thisModel
-      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.stringMapping)
-      override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.stringMapping.optional)
-      override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.dateMapping)
-      override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.dateMapping.optional)
+      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
+      override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.string.optional)
+      override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.date)
+      override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.date.optional)
     }
     override def create(e: Audited, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
   }
@@ -89,10 +89,10 @@ object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
     override def toDomain(element: Edge)(implicit db: Database): AuditContext with Entity = new AuditContext with Entity {
       override val _id: String                = element.value[String]("_id")
       override val _model: Model              = thisModel
-      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.stringMapping)
-      override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.stringMapping.optional)
-      override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.dateMapping)
-      override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.dateMapping.optional)
+      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
+      override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.string.optional)
+      override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.date)
+      override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.date.optional)
     }
     override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
   }

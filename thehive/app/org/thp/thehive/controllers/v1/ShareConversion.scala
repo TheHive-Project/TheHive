@@ -1,5 +1,5 @@
 //package org.thp.thehive.controllers.v1
-//import org.thp.thehive.dto.v1.{ InputShare, OutputShare }
+//import org.thp.thehive.dto.v1.{InputShare, OutputShare}
 //import org.thp.thehive.models.Share
 //import io.scalaland.chimney.dsl._
 //

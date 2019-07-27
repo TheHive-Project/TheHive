@@ -40,15 +40,15 @@ object TaskConversion {
 
   def taskProperties(taskSrv: TaskSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[TaskSteps]
-      .property("title", UniMapping.stringMapping)(_.simple.updatable)
-      .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
-      .property("status", UniMapping.enumMapping(TaskStatus))(_.simple.updatable)
-      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("startDate", UniMapping.dateMapping.optional)(_.simple.updatable)
-      .property("endDate", UniMapping.dateMapping.optional)(_.simple.updatable)
-      .property("order", UniMapping.intMapping)(_.simple.updatable)
-      .property("dueDate", UniMapping.dateMapping.optional)(_.simple.updatable)
-      .property("owner", UniMapping.stringMapping.optional)(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
+      .property("title", UniMapping.string)(_.simple.updatable)
+      .property("description", UniMapping.string.optional)(_.simple.updatable)
+      .property("status", UniMapping.enum(TaskStatus))(_.simple.updatable)
+      .property("flag", UniMapping.boolean)(_.simple.updatable)
+      .property("startDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("endDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("order", UniMapping.int)(_.simple.updatable)
+      .property("dueDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("owner", UniMapping.string.optional)(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
         (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail()

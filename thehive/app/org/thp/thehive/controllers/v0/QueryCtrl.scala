@@ -24,10 +24,10 @@ trait QueryableCtrl {
 
   def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[S]
-      .property("createdBy", UniMapping.stringMapping)(_.rename("_createdBy").readonly)
-      .property("createdAt", UniMapping.dateMapping)(_.rename("_createdAt").readonly)
-      .property("updatedBy", UniMapping.stringMapping)(_.rename("_updatedBy").readonly)
-      .property("updatedAt", UniMapping.dateMapping)(_.rename("_updatedAt").readonly)
+      .property("createdBy", UniMapping.string)(_.rename("_createdBy").readonly)
+      .property("createdAt", UniMapping.date)(_.rename("_createdAt").readonly)
+      .property("updatedBy", UniMapping.string)(_.rename("_updatedBy").readonly)
+      .property("updatedAt", UniMapping.date)(_.rename("_updatedAt").readonly)
       .build
 }
 

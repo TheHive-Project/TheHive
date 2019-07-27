@@ -41,11 +41,11 @@ object CaseTemplateConversion {
 
   def caseTemplateProperties(caseTemplateSrv: CaseTemplateSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
-      .property("name", UniMapping.stringMapping)(_.simple.updatable)
-      .property("titlePrefix", UniMapping.stringMapping.optional)(_.simple.updatable)
-      .property("description", UniMapping.stringMapping.optional)(_.simple.updatable)
-      .property("severity", UniMapping.intMapping.optional)(_.simple.updatable)
-      .property("tags", UniMapping.stringMapping.set)(
+      .property("name", UniMapping.string)(_.simple.updatable)
+      .property("titlePrefix", UniMapping.string.optional)(_.simple.updatable)
+      .property("description", UniMapping.string.optional)(_.simple.updatable)
+      .property("severity", UniMapping.int.optional)(_.simple.updatable)
+      .property("tags", UniMapping.string.set)(
         _.derived(_.outTo[CaseTemplateTag].value("name"))
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseTemplateSrv
@@ -55,15 +55,15 @@ object CaseTemplateConversion {
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("tlp", UniMapping.intMapping.optional)(_.simple.updatable)
-      .property("pap", UniMapping.intMapping.optional)(_.simple.updatable)
-      .property("summary", UniMapping.stringMapping.optional)(_.simple.updatable)
-      .property("user", UniMapping.stringMapping)(_.simple.updatable)
-      .property("customFieldName", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
-      .property("customFieldDescription", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.stringMapping)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.stringMapping)(
+      .property("flag", UniMapping.boolean)(_.simple.updatable)
+      .property("tlp", UniMapping.int.optional)(_.simple.updatable)
+      .property("pap", UniMapping.int.optional)(_.simple.updatable)
+      .property("summary", UniMapping.string.optional)(_.simple.updatable)
+      .property("user", UniMapping.string)(_.simple.updatable)
+      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
+      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
+      .property("customFieldValue", UniMapping.string)(
         _.derived(
           _.outToE[CaseCustomField].value("stringValue"),
           _.outToE[CaseCustomField].value("booleanValue"),

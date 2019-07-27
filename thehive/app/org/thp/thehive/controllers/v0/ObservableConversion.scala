@@ -73,11 +73,11 @@ object ObservableConversion {
 
   def observableProperties(observableSrv: ObservableSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ObservableSteps]
-      .property("status", UniMapping.stringMapping)(_.derived(_.constant("Ok")).readonly)
-      .property("startDate", UniMapping.dateMapping)(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
-      .property("ioc", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("sighted", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("tags", UniMapping.stringMapping.set)(
+      .property("status", UniMapping.string)(_.derived(_.constant("Ok")).readonly)
+      .property("startDate", UniMapping.date)(_.derived(_.value(Key[Date]("_createdAt"))).readonly)
+      .property("ioc", UniMapping.boolean)(_.simple.updatable)
+      .property("sighted", UniMapping.boolean)(_.simple.updatable)
+      .property("tags", UniMapping.string.set)(
         _.derived(_.outTo[ObservableTag].value("name"))
           .custom { (_, value, vertex, _, graph, authContext) =>
             observableSrv
@@ -87,10 +87,10 @@ object ObservableConversion {
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("message", UniMapping.stringMapping)(_.simple.updatable)
-      .property("tlp", UniMapping.intMapping)(_.simple.updatable)
-      .property("dataType", UniMapping.stringMapping)(_.derived(_.outTo[ObservableObservableType].value("name")).readonly)
-      .property("data", UniMapping.stringMapping.optional)(_.derived(_.outTo[ObservableData].value("data")).readonly)
+      .property("message", UniMapping.string)(_.simple.updatable)
+      .property("tlp", UniMapping.int)(_.simple.updatable)
+      .property("dataType", UniMapping.string)(_.derived(_.outTo[ObservableObservableType].value("name")).readonly)
+      .property("data", UniMapping.string.optional)(_.derived(_.outTo[ObservableData].value("data")).readonly)
       // TODO add attachment ?
       .build
 

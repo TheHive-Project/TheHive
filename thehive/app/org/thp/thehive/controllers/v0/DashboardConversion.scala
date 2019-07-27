@@ -37,10 +37,10 @@ object DashboardConversion {
 
   def dashboardProperties(dashboardSrv: DashboardSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[DashboardSteps]
-      .property("title", UniMapping.stringMapping)(_.simple.updatable)
-      .property("description", UniMapping.stringMapping)(_.simple.updatable)
-      .property("definition", UniMapping.stringMapping)(_.simple.updatable)
-      .property("status", UniMapping.stringMapping)(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
+      .property("title", UniMapping.string)(_.simple.updatable)
+      .property("description", UniMapping.string)(_.simple.updatable)
+      .property("definition", UniMapping.string)(_.simple.updatable)
+      .property("status", UniMapping.string)(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
         case (_, "Shared", vertex, _, graph, authContext) =>
           dashboardSrv.get(vertex)(graph).share(authContext)
           Success(Json.obj("status" -> "Shared"))

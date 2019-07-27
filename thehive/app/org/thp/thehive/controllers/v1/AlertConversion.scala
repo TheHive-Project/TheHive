@@ -41,15 +41,15 @@ object AlertConversion {
   // TODO fix properties
   def alertProperties(alertSrv: AlertSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[AlertSteps]
-      .property("type", UniMapping.stringMapping)(_.simple.updatable)
-      .property("source", UniMapping.stringMapping)(_.simple.updatable)
-      .property("sourceRef", UniMapping.stringMapping)(_.simple.updatable)
-      .property("title", UniMapping.stringMapping)(_.simple.updatable)
-      .property("description", UniMapping.stringMapping)(_.simple.updatable)
-      .property("severity", UniMapping.intMapping)(_.simple.updatable)
-      .property("date", UniMapping.dateMapping)(_.simple.updatable)
-      .property("lastSyncDate", UniMapping.dateMapping.optional)(_.simple.updatable)
-      .property("tags", UniMapping.stringMapping.set)(
+      .property("type", UniMapping.string)(_.simple.updatable)
+      .property("source", UniMapping.string)(_.simple.updatable)
+      .property("sourceRef", UniMapping.string)(_.simple.updatable)
+      .property("title", UniMapping.string)(_.simple.updatable)
+      .property("description", UniMapping.string)(_.simple.updatable)
+      .property("severity", UniMapping.int)(_.simple.updatable)
+      .property("date", UniMapping.date)(_.simple.updatable)
+      .property("lastSyncDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("tags", UniMapping.string.set)(
         _.derived(_.outTo[AlertTag].value("name"))
           .custom { (_, value, vertex, _, graph, authContext) =>
             alertSrv
@@ -59,12 +59,12 @@ object AlertConversion {
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("flag", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("tlp", UniMapping.intMapping)(_.simple.updatable)
-      .property("pap", UniMapping.intMapping)(_.simple.updatable)
-      .property("read", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("follow", UniMapping.booleanMapping)(_.simple.updatable)
-      .property("status", UniMapping.stringMapping)(
+      .property("flag", UniMapping.boolean)(_.simple.updatable)
+      .property("tlp", UniMapping.int)(_.simple.updatable)
+      .property("pap", UniMapping.int)(_.simple.updatable)
+      .property("read", UniMapping.boolean)(_.simple.updatable)
+      .property("follow", UniMapping.boolean)(_.simple.updatable)
+      .property("status", UniMapping.string)(
         _.derived(
           _.project(
             _.apply(By(Key[Boolean]("read")))
@@ -77,12 +77,12 @@ object AlertConversion {
           }
         ).readonly
       )
-      .property("summary", UniMapping.stringMapping.optional)(_.simple.updatable)
-      .property("user", UniMapping.stringMapping)(_.simple.updatable)
-      .property("customFieldName", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value[String]("name")).readonly)
-      .property("customFieldDescription", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.stringMapping)(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.stringMapping)(
+      .property("summary", UniMapping.string.optional)(_.simple.updatable)
+      .property("user", UniMapping.string)(_.simple.updatable)
+      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value[String]("name")).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
+      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
+      .property("customFieldValue", UniMapping.string)(
         _.derived(
           _.outToE[AlertCustomField].value("stringValue"),
           _.outToE[AlertCustomField].value("booleanValue"),

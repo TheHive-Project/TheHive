@@ -31,10 +31,10 @@ object JobConversion {
 
   val jobProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[JobSteps]
-      .property("analyzerId", UniMapping.stringMapping)(_.rename("workerId").readonly)
-      .property("cortexId", UniMapping.stringMapping.optional)(_.simple.readonly)
-      .property("startDate", UniMapping.dateMapping)(_.simple.readonly)
-      .property("status", UniMapping.stringMapping)(_.simple.readonly)
+      .property("analyzerId", UniMapping.string)(_.rename("workerId").readonly)
+      .property("cortexId", UniMapping.string.optional)(_.simple.readonly)
+      .property("startDate", UniMapping.date)(_.simple.readonly)
+      .property("status", UniMapping.string)(_.simple.readonly)
       .build
 
   def fromCortexOutputJob(j: CortexOutputJob): Job =
