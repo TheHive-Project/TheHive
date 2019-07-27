@@ -26,7 +26,8 @@ class CaseSrv @Inject()(
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
-    resolutionStatusSrv: ResolutionStatusSrv
+    resolutionStatusSrv: ResolutionStatusSrv,
+    impactStatusSrv: ImpactStatusSrv
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -189,26 +190,42 @@ class CaseSrv @Inject()(
 
   def setImpactStatus(
       `case`: Case with Entity,
+      impactStatus: String
+  )(implicit graph: Graph, authContext: AuthContext): Try[CaseImpactStatus with Entity] =
+    impactStatusSrv.get(impactStatus).getOrFail().flatMap(setImpactStatus(`case`, _))
+
+  def setImpactStatus(
+      `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): CaseImpactStatus with Entity = {
-    auditSrv.updateCase(`case`, Json.obj("impactStatus" -> impactStatus.value))
-    caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
-  }
+  )(implicit graph: Graph, authContext: AuthContext): Try[CaseImpactStatus with Entity] =
+    auditSrv
+      .updateCase(`case`, Json.obj("impactStatus" -> impactStatus.value))
+      .map(_ => caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus))
+
+  def unsetImpactStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    auditSrv.updateCase(`case`, Json.obj("impactStatus" -> JsNull)).map { _ =>
+      get(`case`).unsetImpactStatus
+    }
 
   def setResolutionStatus(
       `case`: Case with Entity,
       resolutionStatus: String
   )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
-    resolutionStatusSrv.get(resolutionStatus).getOrFail().map(setResolutionStatus(`case`, _))
+    resolutionStatusSrv.get(resolutionStatus).getOrFail().flatMap(setResolutionStatus(`case`, _))
 
   def setResolutionStatus(
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): CaseResolutionStatus with Entity = {
-    // TODO remove previous value
-    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
-    caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
-  }
+  )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
+    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value)).map { _ =>
+      get(`case`).unsetResolutionStatus
+      caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
+    }
+
+  def unsetResolutionStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> JsNull)).map { _ =>
+      get(`case`).unsetResolutionStatus
+    }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     auditSrv.updateCase(`case`, Json.obj("owner" -> user.login)).map { _ =>
@@ -401,6 +418,16 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
     raw.outToE[CaseUser].drop().iterate()
+    ()
+  }
+
+  def unsetResolutionStatus: Unit = {
+    raw.outToE[CaseResolutionStatus].drop().iterate()
+    ()
+  }
+
+  def unsetImpactStatus: Unit = {
+    raw.outToE[CaseImpactStatus].drop().iterate()
     ()
   }
 
