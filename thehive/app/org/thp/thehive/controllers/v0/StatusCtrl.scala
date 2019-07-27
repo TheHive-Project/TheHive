@@ -67,6 +67,6 @@ class StatusCtrl @Inject()(
     } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
     else HealthStatus.Warning
 
-    Success(Results.Ok(Json.toJson(globalStatus)))
+    Success(Results.Ok(globalStatus.toString))
   }
 }

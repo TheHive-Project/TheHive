@@ -8,26 +8,22 @@ import org.thp.thehive.services.{Connector => TheHiveConnector}
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @Singleton
 class Connector @Inject()(
     cortexConfig: CortexConfig,
     configuration: Configuration,
+    implicit val ec: ExecutionContext,
     implicit val system: ActorSystem
 ) extends TheHiveConnector {
   override val name: String               = "cortex"
   val statusCheckInterval: FiniteDuration = configuration.get[FiniteDuration]("cortex.statusCheckInterval")
-  var cachedHealth: HealthStatus.Value    = HealthStatus.Ok
-  var cachedStatus: JsObject    = JsObject.empty
 
   override def health: HealthStatus.Value = cachedHealth
-
-  override def status: JsObject = cachedStatus
-
+  var cachedHealth: HealthStatus.Value    = HealthStatus.Ok
   private def updateHealth(): Unit =
     Future
       .traverse(cortexConfig.instances.values)(_.getHealth)
@@ -40,6 +36,8 @@ class Connector @Inject()(
         system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
       }
 
+  override def status: JsObject = cachedStatus
+  var cachedStatus: JsObject    = JsObject.empty
   private def updateStatus(): Unit =
     Future
       .traverse(cortexConfig.instances.values) { client =>
