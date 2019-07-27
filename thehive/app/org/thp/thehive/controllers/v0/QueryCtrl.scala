@@ -81,33 +81,29 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
       } yield OutputParam(fromTo._1, fromTo._2, withStats.getOrElse(false))
   }
 
-  val statsParser: FieldsParser[Seq[Query]] = {
-    FieldsParser[Seq[Query]]("stats") {
-      case (_, field) =>
-        for {
-          maybeInputFilter <- inputFilterParser.optional(field.get("filter"))
-          filteredQuery = maybeInputFilter
-            .map(inputFilter => filterQuery.toQuery(inputFilter))
-            .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
-          groupAggs <- aggregationParser.sequence(field.get("stats"))
-        } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(publicProperties).toQuery(a))
-    }
+  val statsParser: FieldsParser[Seq[Query]] = FieldsParser[Seq[Query]]("stats") {
+    case (_, field) =>
+      for {
+        maybeInputFilter <- inputFilterParser.optional(field.get("filter"))
+        filteredQuery = maybeInputFilter
+          .map(inputFilter => filterQuery.toQuery(inputFilter))
+          .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
+        groupAggs <- aggregationParser.sequence(field.get("stats"))
+      } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(publicProperties).toQuery(a))
   }
 
-  val searchParser: FieldsParser[Query] = {
-    FieldsParser[Query]("search") {
-      case (_, field) =>
-        for {
-          maybeInputFilter <- inputFilterParser.optional(field.get("filter"))
-          filteredQuery = maybeInputFilter
-            .map(inputFilter => filterQuery.toQuery(inputFilter))
-            .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
-          inputSort <- sortParser(field.get("sort"))
-          sortedQuery = filteredQuery andThen new SortQuery(publicProperties).toQuery(inputSort)
-          outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false)))
-          outputQuery = ctrl.pageQuery.toQuery(outputParam)
-        } yield sortedQuery andThen outputQuery
-    }
+  val searchParser: FieldsParser[Query] = FieldsParser[Query]("search") {
+    case (_, field) =>
+      for {
+        maybeInputFilter <- inputFilterParser.optional(field.get("filter"))
+        filteredQuery = maybeInputFilter
+          .map(inputFilter => filterQuery.toQuery(inputFilter))
+          .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
+        inputSort <- sortParser(field.get("sort"))
+        sortedQuery = filteredQuery andThen new SortQuery(publicProperties).toQuery(inputSort)
+        outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false)))
+        outputQuery = ctrl.pageQuery.toQuery(outputParam)
+      } yield sortedQuery andThen outputQuery
   }
 
   def search: Action[AnyContent] =
