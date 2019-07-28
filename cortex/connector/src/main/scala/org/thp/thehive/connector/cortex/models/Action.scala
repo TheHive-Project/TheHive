@@ -103,7 +103,7 @@ object ActionContext extends HasEdgeModel[ActionContext, Action, Product] {
     override def toDomain(element: Edge)(implicit db: Database): ActionContext with Entity = new ActionContext with Entity {
       override val _id: String                = element.value[String]("_id")
       override val _model: Model              = thisModel
-²      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
+      override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
       override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.string.optional)
       override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.date)
       override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.date.optional)
