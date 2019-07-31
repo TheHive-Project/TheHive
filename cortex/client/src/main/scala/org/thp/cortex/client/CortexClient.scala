@@ -5,7 +5,8 @@ import akka.util.ByteString
 import org.thp.cortex.dto.v0.{Attachment, _}
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{JsString, Json}
+import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,12 +15,12 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class CortexClient(val name: String, baseUrl: String)(
-    implicit ws: CustomWSAPI,
+    implicit ws: WSClient,
     auth: Authentication
 ) {
   lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
-  lazy val analyser       = new BaseClient[InputCortexAnalyzer, OutputCortexAnalyzer](s"$strippedUrl/api/analyzer")
-  lazy val responder      = new BaseClient[InputCortexResponder, OutputCortexResponder](s"$strippedUrl/api/responder")
+  lazy val analyser       = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/analyzer")
+  lazy val responder      = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/responder")
   lazy val logger         = Logger(getClass)
   val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
@@ -28,7 +29,7 @@ class CortexClient(val name: String, baseUrl: String)(
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputCortexAnalyzer]] = analyser.list.map(_.map(_.copy(cortexIds = Some(List(name)))))
+  def listAnalyser: Future[Seq[OutputCortexWorker]] = analyser.list
 
   /**
     * GET analyzer by id
@@ -36,7 +37,7 @@ class CortexClient(val name: String, baseUrl: String)(
     * @param id guess
     * @return
     */
-  def getAnalyzer(id: String): Future[OutputCortexAnalyzer] = analyser.get(id, None).map(_.copy(cortexIds = Some(List(name))))
+  def getAnalyzer(id: String): Future[OutputCortexWorker] = analyser.get(id)
 
   /**
     * Search an analyzer by name
@@ -44,10 +45,10 @@ class CortexClient(val name: String, baseUrl: String)(
     * @param analyzerName the name to search for
     * @return
     */
-  def getAnalyzerByName(analyzerName: String): Future[OutputCortexAnalyzer] =
+  def getAnalyzerByName(analyzerName: String): Future[OutputCortexWorker] =
     analyser
       .search[SearchQuery](SearchQuery("name", analyzerName, "0-1"))
-      .flatMap(l => Future.fromTry(Try(l.head.copy(cortexIds = Some(List(name))))))
+      .map(_.headOption.getOrElse(throw ApplicationError(404, JsString(s"Analyzer $analyzerName not found"))))
 
   /**
     * Gets the job status and report if complete
@@ -57,7 +58,7 @@ class CortexClient(val name: String, baseUrl: String)(
     *               (in case the job terminates in the meantime)
     * @return
     */
-  def getReport(jobId: String, atMost: Duration): Future[CortexOutputJob] = job.get(jobId, Some(s"/waitreport?atMost=${atMost.toString}"))
+  def getReport(jobId: String, atMost: Duration): Future[CortexOutputJob] = job.get(jobId, s"/waitreport?atMost=$atMost")
 
   /**
     * Submits an artifact for analyze with the appropriate analyzer selection
@@ -107,7 +108,7 @@ class CortexClient(val name: String, baseUrl: String)(
     * @param id the id to look for
     * @return
     */
-  def getResponder(id: String): Future[OutputCortexResponder] = responder.get(id, None).map(_.addCortexId(name))
+  def getResponder(id: String): Future[OutputCortexWorker] = responder.get(id)
 
   /**
     * Search a responder by name
@@ -115,10 +116,10 @@ class CortexClient(val name: String, baseUrl: String)(
     * @param responderName the name to search for
     * @return
     */
-  def getResponderByName(responderName: String): Future[OutputCortexResponder] =
+  def getResponderByName(responderName: String): Future[OutputCortexWorker] =
     responder
       .search[SearchQuery](SearchQuery("name", responderName, "0-1"))
-      .flatMap(l => Future.fromTry(Try(l.head.addCortexId(name))))
+      .map(_.headOption.getOrElse(throw ApplicationError(404, JsString(s"Responder $responderName not found"))))
 
   /**
     * Search a responder by entity type
@@ -126,10 +127,9 @@ class CortexClient(val name: String, baseUrl: String)(
     * @param entityType the type to search for
     * @return
     */
-  def getRespondersByType(entityType: String): Future[Seq[OutputCortexResponder]] =
+  def getRespondersByType(entityType: String): Future[Seq[OutputCortexWorker]] =
     responder
       .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "0-200"))
-      .map(l => l.map(_.addCortexId(name)))
 
   /**
     * Materializes an action as a job on Cortex client server

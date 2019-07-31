@@ -1,15 +1,14 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.ExecutionContext
-
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.services.AnalyzerSrv
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class AnalyzerCtrl @Inject()(
@@ -20,7 +19,7 @@ class AnalyzerCtrl @Inject()(
     implicit val ec: ExecutionContext
 ) {
 
-  import AnalyzerConversion._
+  import WorkerConversion._
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
@@ -28,7 +27,7 @@ class AnalyzerCtrl @Inject()(
         analyzerSrv
           .listAnalyzer
           .map { analyzers =>
-            Results.Ok(Json.toJson(analyzers.map(toOutputAnalyzer)))
+            Results.Ok(Json.toJson(analyzers.map(toOutputWorker)))
           }
       }
 }

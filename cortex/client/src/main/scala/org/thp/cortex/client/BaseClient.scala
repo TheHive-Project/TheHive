@@ -3,7 +3,7 @@ package org.thp.cortex.client
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{WSClient, WSResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -18,7 +18,7 @@ object Client {
   lazy val logger = Logger(getClass)
 }
 
-class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: CustomWSAPI) {
+class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSClient) {
 
   def create(input: Input, urlOverride: Option[String])(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     val body = Json.toJson(input)
@@ -46,9 +46,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: Cus
       }
   }
 
-  def get(id: String, urlFragments: Option[String])(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
-    Client.logger.debug(s"Request GET $baseUrl/$id${urlFragments.getOrElse("")}")
-    auth(ws.url(s"$baseUrl/$id${urlFragments.getOrElse("")}"))
+  def get(id: String, urlFragments: String = "")(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
+    Client.logger.debug(s"Request GET $baseUrl/$id$urlFragments")
+    auth(ws.url(s"$baseUrl/$id$urlFragments"))
       .get()
       .transform {
         case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Output])

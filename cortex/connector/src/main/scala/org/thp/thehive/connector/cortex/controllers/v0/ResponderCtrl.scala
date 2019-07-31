@@ -17,7 +17,7 @@ class ResponderCtrl @Inject()(
     implicit val ex: ExecutionContext
 ) {
 
-  import org.thp.thehive.connector.cortex.controllers.v0.ResponderConversion._
+  import WorkerConversion._
 
   def getResponders(entityType: String, entityId: String): Action[AnyContent] =
     entryPoint("get responders")
@@ -25,7 +25,7 @@ class ResponderCtrl @Inject()(
         db.transaction { implicit graph =>
           responderSrv
             .getRespondersByType(entityType, entityId)
-            .map(l => Results.Ok(Json.toJson(l.map(toOutputResponder))))
+            .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))
         }
       }
 }

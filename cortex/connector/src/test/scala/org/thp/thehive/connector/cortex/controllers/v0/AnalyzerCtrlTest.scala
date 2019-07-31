@@ -8,7 +8,8 @@ import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzer
+import org.thp.thehive.connector.cortex.dto.v0.OutputWorker
+import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
@@ -47,7 +48,7 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 200
 
-        val resultList = contentAsJson(result).as[Seq[OutputAnalyzer]]
+        val resultList = contentAsJson(result).as[Seq[OutputWorker]]
 
         resultList must beEmpty
       }
