@@ -10,12 +10,16 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.TheHiveModule
 
 @Singleton
-class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration, authSrv: AuthSrv) {
+class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfiguration, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
+
+  val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
+  def password: String                   = passwordConfig.get
 
   def get: Action[AnyContent] =
     entryPoint("status") { _ =>
@@ -30,7 +34,7 @@ class StatusCtrl @Inject()(entryPoint: EntryPoint, configuration: Configuration,
             "connectors" -> JsObject.empty,
             "health"     -> Json.obj("elasticsearch" -> "UNKNOWN"),
             "config" -> Json.obj(
-              "protectDownloadsWith" -> configuration.get[String]("datastore.attachment.password"),
+              "protectDownloadsWith" -> password,
               "authType" -> (authSrv match {
                 case multiAuthSrv: MultiAuthSrv =>
                   multiAuthSrv.authProviders.map { a =>

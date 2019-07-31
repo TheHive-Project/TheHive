@@ -18,12 +18,15 @@ import scala.util.Success
 @Singleton
 class StatusCtrl @Inject()(
     entryPoint: EntryPoint,
-    configuration: Configuration,
+    appConfig: ApplicationConfiguration,
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],
     db: Database
 ) {
+
+  val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
+  def password: String                   = passwordConfig.get
 
   def get: Action[AnyContent] =
     entryPoint("status") { _ =>
@@ -38,7 +41,7 @@ class StatusCtrl @Inject()(
             "connectors" -> JsObject(connectors.map(c => c.name -> c.status).toSeq),
             "health"     -> Json.obj("elasticsearch" -> "UNKNOWN"),
             "config" -> Json.obj(
-              "protectDownloadsWith" -> configuration.get[String]("datastore.attachment.password"),
+              "protectDownloadsWith" -> password,
               "authType" -> (authSrv match {
                 case multiAuthSrv: MultiAuthSrv =>
                   multiAuthSrv.authProviders.map { a =>

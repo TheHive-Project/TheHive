@@ -3,9 +3,9 @@ package org.thp.thehive.connector.cortex.services
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
+import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
-import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.duration.FiniteDuration
@@ -15,12 +15,15 @@ import scala.util.{Failure, Success}
 @Singleton
 class Connector @Inject()(
     cortexConfig: CortexConfig,
-    configuration: Configuration,
+    appConfig: ApplicationConfiguration,
     implicit val ec: ExecutionContext,
     implicit val system: ActorSystem
 ) extends TheHiveConnector {
-  override val name: String               = "cortex"
-  val statusCheckInterval: FiniteDuration = configuration.get[FiniteDuration]("cortex.statusCheckInterval")
+  override val name: String = "cortex"
+
+  val statusCheckIntervalConfig: ConfigItem[FiniteDuration] =
+    appConfig.item[FiniteDuration]("cortex.statusCheckInterval", "Interval between two checks of cortex status")
+  def statusCheckInterval: FiniteDuration = statusCheckIntervalConfig.get
 
   override def health: HealthStatus.Value = cachedHealth
   var cachedHealth: HealthStatus.Value    = HealthStatus.Ok

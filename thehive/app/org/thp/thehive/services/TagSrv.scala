@@ -6,15 +6,15 @@ import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
-import org.thp.scalligraph.services.VertexSrv
+import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem, VertexSrv}
 import org.thp.thehive.models.Tag
-import play.api.Configuration
 
 import scala.util.Try
 
 @Singleton
-class TagSrv @Inject()(configuration: Configuration)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
-  val autocreate: Boolean                                                        = configuration.get[Boolean]("tags.autocreate")
+class TagSrv @Inject()(appConfig: ApplicationConfiguration)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
+  val autoCreateConfig: ConfigItem[Boolean]                                      = appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
+  def autoCreate: Boolean                                                        = autoCreateConfig.get
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TagSteps = new TagSteps(raw)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
@@ -22,7 +22,7 @@ class TagSrv @Inject()(configuration: Configuration)(implicit db: Database) exte
       .getByName(tagName)
       .getOrFail()
       .recover {
-        case _ if autocreate => create(Tag(tagName))
+        case _ if autoCreate => create(Tag(tagName))
       }
 }
 

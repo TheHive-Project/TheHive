@@ -2,14 +2,6 @@ package org.thp.thehive.services
 
 import java.io.NotSerializableException
 
-import scala.collection.immutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Random, Try}
-
-import play.api.libs.json.Json
-import play.api.{Configuration, Logger}
-
 import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Put, Send, Subscribe}
@@ -20,7 +12,15 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.services.StreamActor.{Commit, GetStreamMessages}
+import play.api.Logger
+import play.api.libs.json.Json
+
+import scala.collection.immutable
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
 
 trait StreamMessage extends Serializable
 
@@ -140,16 +140,34 @@ class StreamActor(
 }
 
 @Singleton
-class StreamSrv @Inject()(configuration: Configuration, auditSrv: AuditSrv, db: Database, system: ActorSystem, implicit val ec: ExecutionContext) {
+class StreamSrv @Inject()(
+    appConfig: ApplicationConfiguration,
+    auditSrv: AuditSrv,
+    db: Database,
+    system: ActorSystem,
+    implicit val ec: ExecutionContext
+) {
 
   lazy val logger                              = Logger(getClass)
   val streamLength                             = 20
   val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
   val mediator: ActorRef                       = DistributedPubSub(system).mediator
-  val refresh: FiniteDuration                  = configuration.get[FiniteDuration]("stream.longPolling.refresh")
-  val maxWait: FiniteDuration                  = configuration.get[FiniteDuration]("stream.longPolling.maxWait")
-  val graceDuration: FiniteDuration            = configuration.get[FiniteDuration]("stream.longPolling.graceDuration")
-  val keepAlive: FiniteDuration                = configuration.get[FiniteDuration]("stream.longPolling.keepAlive")
+
+  val refreshConfig: ConfigItem[FiniteDuration] =
+    appConfig.item[FiniteDuration]("stream.longPolling.refresh", "Response time when there is no message")
+  def refresh: FiniteDuration = refreshConfig.get
+
+  val maxWaitConfig: ConfigItem[FiniteDuration] =
+    appConfig.item[FiniteDuration]("stream.longPolling.maxWait", "Maximum latency when a message is ready to send")
+  def maxWait: FiniteDuration = maxWaitConfig.get
+
+  val graceDurationConfig: ConfigItem[FiniteDuration] = appConfig
+    .item[FiniteDuration]("stream.longPolling.graceDuration", "When a message is ready to send, wait this time to include potential other messages")
+  def graceDuration: FiniteDuration = graceDurationConfig.get
+
+  val keepAliveConfig: ConfigItem[FiniteDuration] =
+    appConfig.item[FiniteDuration]("stream.longPolling.keepAlive", "Remove the stream after this time of inactivity")
+  val keepAlive: FiniteDuration = keepAliveConfig.get
 
   def generateStreamId(): String = Seq.fill(streamLength)(alphanumeric(Random.nextInt(alphanumeric.size))).mkString
 
