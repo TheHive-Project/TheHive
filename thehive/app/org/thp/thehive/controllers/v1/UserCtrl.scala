@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.concurrent.ExecutionContext
-import scala.util.Failure
-
-import play.api.http.HttpErrorHandler
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -15,6 +9,11 @@ import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
+import play.api.http.HttpErrorHandler
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.Failure
 
 @Singleton
 class UserCtrl @Inject()(

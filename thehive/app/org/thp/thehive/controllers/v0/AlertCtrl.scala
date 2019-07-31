@@ -85,8 +85,7 @@ class AlertCtrl @Inject()(
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
     observableTypeSrv
-      .get(observable.dataType)
-      .getOrFail()
+      .getOrFail(observable.dataType)
       .flatMap {
         case attachmentType if attachmentType.isAttachment =>
           observable.data.map(_.split(';')).toTry {

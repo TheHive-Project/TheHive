@@ -81,8 +81,7 @@ object ObservableConversion {
         _.derived(_.outTo[ObservableTag].value("name"))
           .custom { (_, value, vertex, _, graph, authContext) =>
             observableSrv
-              .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail(vertex)(graph)
               .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }

@@ -1,13 +1,13 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
 import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
+
+import scala.util.Try
 
 @Singleton
 class DashboardSrv @Inject()(organisationSrv: OrganisationSrv)(implicit db: Database) extends VertexSrv[Dashboard, DashboardSteps] {
@@ -31,5 +31,8 @@ class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Gr
 
   def unshare(implicit authContext: AuthContext): Try[Dashboard with Entity] = update("shared" -> false) // TODO add audit
 
-  def delete(implicit authContext: AuthContext): Try[Unit] = raw.drop().getOrFail.map(_ => ()) // TODO add audit
+  def remove(implicit authContext: AuthContext): Unit = { // TODO add audit
+    raw.drop().iterate()
+    ()
+  }
 }

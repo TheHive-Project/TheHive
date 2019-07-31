@@ -12,7 +12,7 @@ import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Success, Try}
+import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -55,7 +55,7 @@ class ObservableCtrl @Inject()(
             .get(caseId)
             .can(Permissions.manageCase)
             .getOrFail()
-          observableType      <- observableTypeSrv.get(inputObservable.dataType).getOrFail()
+          observableType      <- observableTypeSrv.getOrFail(inputObservable.dataType)
           observablesWithData <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, inputObservable.tags, Nil))
           observableWithAttachment <- inputObservable
             .attachment
@@ -80,14 +80,14 @@ class ObservableCtrl @Inject()(
           }
       }
 
-  def update(obsId: String): Action[AnyContent] =
+  def update(observableId: String): Action[AnyContent] =
     entryPoint("update observable")
       .extract("observable", FieldsParser.update("observable", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.get(obsId).can(Permissions.manageCase),
+            _.get(observableId).can(Permissions.manageCase),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
@@ -112,31 +112,26 @@ class ObservableCtrl @Inject()(
     entryPoint("bulk update")
       .extract("input", FieldsParser.update("observable", publicProperties))
       .extract("ids", FieldsParser.seq[String].on("ids"))
-      .authTransaction(db) { implicit request => graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         val properties: Seq[PropertyUpdater] = request.body("input")
         val ids: Seq[String]                 = request.body("ids")
-        val res = Try(
-          ids.map(
-            obsId =>
-              observableSrv
-                .update(_.get(obsId).can(Permissions.manageCase), properties)(graph, request.authContext)
-                .get
-          )
-        )
-
-        res.map(_ => Results.NoContent)
+        ids
+          .toTry { id =>
+            observableSrv
+              .update(_.get(id).can(Permissions.manageCase), properties)
+          }
+          .map(_ => Results.NoContent)
       }
 
   def delete(obsId: String): Action[AnyContent] =
     entryPoint("delete")
-      .authTransaction(db) { implicit request => graph =>
-        val obsStep = observableSrv
-          .get(obsId)(graph)
-          .can(Permissions.manageCase)
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
-          obs <- obsStep
+          observable <- observableSrv
+            .get(obsId)
+            .can(Permissions.manageCase)
             .getOrFail()
-          _ <- Try(observableSrv.initSteps(graph).remove(obs._id))
+          _ = observableSrv.get(observable).remove()
 //          _ <- auditSrv.deleteObservable(obs, Json.obj("id" → obs._id, "type" → obs.`type`, "message" → obs.message))(graph, request.authContext)
         } yield Results.NoContent
       }

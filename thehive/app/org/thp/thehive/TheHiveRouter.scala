@@ -1,14 +1,13 @@
 package org.thp.thehive
 
-import play.api.mvc._
-import play.api.routing.sird._
-import play.api.routing.{Router, SimpleRouter}
-import play.api.{Environment, Logger, Mode}
-
 import _root_.controllers.{Assets, ExternalAssets}
 import com.google.inject.ProvidedBy
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.thehive.controllers.{v0, v1}
+import play.api.mvc._
+import play.api.routing.sird._
+import play.api.routing.{Router, SimpleRouter}
+import play.api.{Environment, Logger, Mode}
 
 @Singleton
 class TheHiveRouter @Inject()(routerV0: v0.Router, routerV1: v1.Router, assets: AssetGetter, actionBuilder: DefaultActionBuilder)

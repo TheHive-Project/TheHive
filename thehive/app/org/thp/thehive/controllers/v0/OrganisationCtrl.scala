@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -12,6 +7,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{OrganisationSrv, UserSrv}
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv) {

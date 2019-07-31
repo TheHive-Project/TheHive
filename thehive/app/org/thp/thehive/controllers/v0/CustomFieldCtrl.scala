@@ -1,15 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {

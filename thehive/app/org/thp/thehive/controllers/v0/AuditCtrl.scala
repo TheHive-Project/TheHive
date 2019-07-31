@@ -1,14 +1,13 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services._
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class AuditCtrl @Inject()(

@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -12,6 +7,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv) {

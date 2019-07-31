@@ -1,9 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
@@ -13,6 +9,11 @@ import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
 import org.thp.thehive.services.ObservableSrv
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Singleton
 class JobCtrl @Inject()(

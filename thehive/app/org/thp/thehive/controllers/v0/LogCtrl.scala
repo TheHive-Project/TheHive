@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
@@ -12,6 +7,8 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class LogCtrl @Inject()(
@@ -21,6 +18,7 @@ class LogCtrl @Inject()(
     taskSrv: TaskSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
+
   import LogConversion._
 
   lazy val logger                                           = Logger(getClass)
@@ -68,7 +66,11 @@ class LogCtrl @Inject()(
   def delete(logId: String): Action[AnyContent] =
     entryPoint("update log")
       .authTransaction(db) { _ => implicit graph =>
-        Try(logSrv.initSteps.remove(logId)) // FIXME use service instead of step in order to generate audit log
-          .map(_ => Results.NoContent)
+        logSrv
+          .getOrFail(logId)
+          .map { log =>
+            logSrv.get(log).remove()
+            Results.NoContent
+          }
       }
 }

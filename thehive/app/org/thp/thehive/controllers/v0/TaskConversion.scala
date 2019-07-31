@@ -52,7 +52,7 @@ object TaskConversion {
         (_, login: Option[String], vertex, _, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail()
-            user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+            user <- login.map(userSrv.getOrFail(_)(graph)).flip
           } yield user match {
             case Some(u) =>
               taskSrv.assign(task, u)(graph, authContext)

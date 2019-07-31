@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -9,6 +8,7 @@ import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
 import org.thp.thehive.dto.v1.InputAlert
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv) {

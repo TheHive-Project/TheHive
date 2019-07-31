@@ -78,12 +78,14 @@ class ReportCtrl @Inject()(
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete template")
       .authTransaction(db) { _ => implicit graph =>
-        Try(
-          reportTemplateSrv
-            .get(id)
-            .remove()
-        ).map(_ => Results.Ok)
-          .recover { case e => Results.InternalServerError(e.getMessage) }
+        // TODO check authorisation
+        reportTemplateSrv
+          .get(id)
+          .getOrFail()
+          .map { reportTemplate =>
+            reportTemplateSrv.get(reportTemplate).remove()
+            Results.NoContent
+          }
       }
 
   def update(id: String): Action[AnyContent] =

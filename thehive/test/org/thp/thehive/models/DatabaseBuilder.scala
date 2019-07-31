@@ -116,8 +116,8 @@ class DatabaseBuilder @Inject()(
     }
   }
 
-  def warn(message: String): Option[Nothing] = {
-    logger.warn(message)
+  def warn(message: String, error: Throwable = null): Option[Nothing] = {
+    logger.warn(message, error)
     None
   }
 
@@ -201,7 +201,6 @@ class DatabaseBuilder @Inject()(
           to <- toSrv.getOrFail(toId)
           e  <- parser(fields - "from" - "to").fold(e => Success(srv.create(e, from, to)), _ => Failure(new Exception("XX")))
         } yield e)
-          .toOption
-          .orElse(warn(s"Edge ${srv.model.label} creation fails with: $fields"))
+          .fold(t => warn(s"Edge ${srv.model.label} creation fails with: $fields", t), Some(_))
       }
 }

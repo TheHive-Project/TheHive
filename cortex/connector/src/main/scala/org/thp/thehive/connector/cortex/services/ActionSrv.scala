@@ -5,21 +5,21 @@ import java.util.Date
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
+import io.scalaland.chimney.dsl._
 import javax.inject.Inject
-import org.thp.cortex.client.CortexConfig
+import org.thp.cortex.client.{CortexClient, CortexConfig}
 import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexAction}
-import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.thehive.connector.cortex.dto.v0.InputAction
+import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{Case, EntityHelper, TheHiveSchema}
-import play.api.libs.json.{JsObject, Json, Writes}
+import org.thp.thehive.models.{Case, TheHiveSchema}
+import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class ActionSrv @Inject()(
     implicit db: Database,
@@ -38,64 +38,66 @@ class ActionSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ActionSteps = new ActionSteps(raw)
 
+  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): InputCortexAction =
+    action
+      .into[InputCortexAction]
+      .withFieldConst(_.dataType, s"thehive:${action.objectType}")
+      .withFieldConst(_.label, label)
+      .withFieldConst(_.data, data)
+      .withFieldConst(_.tlp, tlp)
+      .withFieldConst(_.pap, pap)
+      .transform
+
+  def getEntityLabel(entity: Entity): String = entity._model.label // FIXME
   /**
     * Executes an Action on user demand,
     * creates a job on Cortex side and then persist the
     * Action, looking forward job completion
     *
-    * @param inputAction the initial data
+    * @param action the initial data
     * @param entity the Entity to execute an Action upon
-    * @param writes necessary entity json writes
     * @param authContext necessary auth context
     * @return
     */
   def execute(
-      inputAction: InputAction,
+      action: Action,
       entity: Entity
-  )(implicit writes: Writes[Entity], authContext: AuthContext): Future[RichAction] =
+  )(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] =
     for {
-      client <- Future.fromTry(Try(cortexConfig.instances(inputAction.cortexId.get)).orElse(Try(cortexConfig.instances.head._2)))
-      responder <- client.getResponder(inputAction.responderId).recoverWith {
-        case _ => client.getResponderByName(inputAction.responderName.getOrElse(""))
+      client <- action.cortexId match {
+        case Some(cortexId) =>
+          cortexConfig
+            .instances
+            .get(cortexId)
+            .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
+        case None if cortexConfig.instances.nonEmpty =>
+          Future.firstCompletedOf {
+            cortexConfig
+              .instances
+              .values
+              .map(client => client.getResponder(action.responderId).map(_ => client))
+          }
+        case None => Future.failed(NotFoundError(s"Responder ${action.responderId} not found"))
+      }
+      (label, tlp, pap) <- Future.fromTry(db.tryTransaction(implicit graph => entityHelper.entityInfo(entity)))
+      inputCortexAction = toCortexAction(action, label, tlp, pap, writes.writes(entity))
+      job <- client.execute(action.responderId, inputCortexAction)
+      updatedAction = action.copy(
+        responderName = Some(job.workerName),
+        responderDefinition = Some(job.workerDefinition),
+        status = fromCortexJobStatus(job.status),
+        startDate = job.startDate.getOrElse(new Date()),
+        cortexId = Some(client.name),
+        cortexJobId = Some(job.id)
+      )
+      createdAction <- Future.fromTry {
+        db.tryTransaction { implicit graph =>
+          create(updatedAction, entity)
+        }
       }
 
-      message    = inputAction.message.getOrElse("")
-      parameters = inputAction.parameters.getOrElse(JsObject.empty)
-      (tlp, pap) = db.transaction(implicit graph => entityHelper.threatLevels(entity._model.label, entity._id).getOrElse((2, 2)))
-      inputCortexAction = InputCortexAction(
-        entity._model.label,
-        Json.toJson(entity).as[JsObject],
-        s"thehive:${inputAction.objectType}",
-        tlp,
-        pap,
-        message,
-        parameters.as[JsObject]
-      )
-
-      job <- client.execute(responder.id, inputCortexAction)
-      action <- Future.fromTry(
-        Try(
-          db.transaction(
-            implicit graph =>
-              create(
-                Action.apply(
-                  job.workerId,
-                  Some(job.workerName),
-                  Some(job.workerDefinition),
-                  fromCortexJobStatus(job.status),
-                  entity,
-                  job.startDate.getOrElse(new Date()),
-                  Some(client.name),
-                  Some(job.id)
-                ),
-                entity
-              )
-          )
-        )
-      )
-
-      _ = cortexActor ! CheckJob(None, job.id, Some(action._id), client, authContext)
-    } yield action
+      _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client, authContext)
+    } yield createdAction
 
   /**
     * Creates an Action with necessary ActionContext edge
@@ -109,12 +111,12 @@ class ActionSrv @Inject()(
   def create(
       action: Action,
       context: Entity
-  )(implicit graph: Graph, authContext: AuthContext): RichAction = {
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichAction] = {
 
     val createdAction = create(action)
     actionContextSrv.create(ActionContext(), createdAction, context)
 
-    RichAction(createdAction, context)
+    Success(RichAction(createdAction, context))
   }
 
   /**
@@ -173,6 +175,7 @@ class ActionSrv @Inject()(
 
 @EntitySteps[Action]
 class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends BaseVertexSteps[Action, ActionSteps](raw) {
+
   /**
     * Provides a RichAction model with additional Entity context
     *
@@ -195,7 +198,7 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
     newInstance(
       raw.filter(
         _.outTo[ActionContext]
-          .has(Key("_id") of entityId)
+          .hasId(entityId)
       )
     )
 

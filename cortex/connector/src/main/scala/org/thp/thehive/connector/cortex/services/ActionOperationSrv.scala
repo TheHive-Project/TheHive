@@ -40,7 +40,7 @@ class ActionOperationSrv @Inject()(
 
       case AddTagToArtifact(tag, _, _) =>
         for {
-          obs <- observableSrv.get(entity._id).getOrFail()
+          obs <- observableSrv.getOrFail(entity._id)
           _   <- observableSrv.addTags(obs, Set(tag))
         } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
       // TODO add rest of operations

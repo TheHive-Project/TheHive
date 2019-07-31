@@ -92,11 +92,6 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     ()
   }
 
-  def remove(id: String): Unit = {
-    raw.has(Key("_id") of id).drop().iterate()
-    ()
-  }
-
   def richLog: ScalarSteps[RichLog] =
     ScalarSteps(
       raw

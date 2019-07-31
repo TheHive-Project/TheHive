@@ -3,10 +3,9 @@ package org.thp.thehive.services
 import java.util.Date
 
 import play.api.test.PlaySpecification
-
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{UserSrv => SUserSrv}
+import org.thp.scalligraph.auth.{AuthContext, UserSrv => SUserSrv}
 import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
@@ -30,8 +29,9 @@ class CaseSrvTest extends PlaySpecification {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val caseSrv: CaseSrv = app.instanceOf[CaseSrv]
-    val db: Database     = app.instanceOf[Database]
+    val caseSrv: CaseSrv                  = app.instanceOf[CaseSrv]
+    val db: Database                      = app.instanceOf[Database]
+    implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
 
     s"[$name] case service" should {
 
@@ -147,26 +147,26 @@ class CaseSrvTest extends PlaySpecification {
 
       "add custom field with wrong type" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", "plop")(graph, dummyUserSrv.initialAuthContext) must beFailedTry
+          caseSrv.setCustomField(`case`, "boolean1", "plop") must beFailedTry
         }
       }
 
       "add custom field" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", true)(graph, dummyUserSrv.initialAuthContext) must beSuccessfulTry
+          caseSrv.setCustomField(`case`, "boolean1", true) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == true)
         }
       }
 
       "update custom field" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", false)(graph, dummyUserSrv.initialAuthContext) must beSuccessfulTry
+          caseSrv.setCustomField(`case`, "boolean1", false) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
         }
       }
 
       "update case title" in db.transaction { implicit graph =>
-        caseSrv.get("#4").update("title" -> "new title")(dummyUserSrv.initialAuthContext)
+        caseSrv.get("#4").update("title" -> "new title")
         caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
           `case`.title must_=== "new title"
         }

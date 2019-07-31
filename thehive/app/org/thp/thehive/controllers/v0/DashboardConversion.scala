@@ -48,7 +48,7 @@ object DashboardConversion {
           dashboardSrv.get(vertex)(graph).unshare(authContext)
           Success(Json.obj("status" -> "Private"))
         case (_, "Deleted", vertex, _, graph, authContext) =>
-          dashboardSrv.get(vertex)(graph).delete(authContext)
+          dashboardSrv.get(vertex)(graph).remove(authContext)
           Success(Json.obj("status" -> "Deleted"))
         case (_, status, _, _, _, _) =>
           Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))

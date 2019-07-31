@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v0
 
+import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -30,14 +29,12 @@ class Router @Inject()(
 
   override def routes: Routes = {
 
-    /**/
     case GET(p"/status") => statusCtrl.get
     case GET(p"/health") => statusCtrl.health
     case GET(p"/logout") => authenticationCtrl.logout
     case POST(p"/login") => authenticationCtrl.login
-//    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin
+//    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
-    /**/
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
