@@ -7,14 +7,15 @@ import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.thehive.connector.cortex.models.{ReportTemplate, ReportType}
+import org.thp.thehive.connector.cortex.models.ReportTemplate
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
 import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
+import play.api.Logger
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success}
 
 @Singleton
 class ReportCtrl @Inject()(
@@ -25,6 +26,7 @@ class ReportCtrl @Inject()(
 
   import ReportTemplateConversion._
 
+  lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "report"
   override val publicProperties: List[PublicProperty[_, _]] = reportTemplateProperties
   override val initialQuery: Query =
@@ -36,45 +38,29 @@ class ReportCtrl @Inject()(
   )
   override val outputQuery: Query = Query.output[ReportTemplate with Entity, OutputReportTemplate]
 
-  def getContent(analyzerId: String, reportType: String): Action[AnyContent] =
+  def get(id: String): Action[AnyContent] =
     entryPoint("get content")
       .authTransaction(db) { _ => implicit graph =>
-        {
-          for {
-            rType    <- Try(ReportType.withName(reportType))
-            template <- reportTemplateSrv.initSteps.forWorkerAndType(analyzerId, rType).getOrFail()
-          } yield Results.Ok(template.content).as("text/html")
-        } orElse Success(Results.NotFound)
-      }
-
-  def get(id: String): Action[AnyContent] =
-    entryPoint("get template")
-      .authTransaction(db) { _ => implicit graph =>
-        {
-          for {
-            template <- reportTemplateSrv.get(id).getOrFail()
-          } yield Results.Ok(template.toJson)
-        } recover { case e => Results.NotFound(e.getMessage) }
+        reportTemplateSrv
+          .getOrFail(id)
+          .map(report => Results.Ok(report.content))
       }
 
   def importTemplates: Action[AnyContent] =
     entryPoint("import templates")
       .extract("archive", FieldsParser.file.on("templates"))
-      .authTransaction(db) { implicit req => implicit graph =>
-        val archive: FFile = req.body("archive")
-        val triedTemplates = reportTemplateSrv.importZipFile(new ZipFile(archive.filepath.toFile))
+      .auth { implicit request =>
+        val archive: FFile = request.body("archive")
+        val triedTemplates = reportTemplateSrv
+          .importZipFile(db, new ZipFile(archive.filepath.toFile))
+          .map {
+            case (analyzerId, Success(_)) => analyzerId -> JsTrue
+            case (analyzerId, Failure(e)) =>
+              logger.error(s"Import of report template $analyzerId fails", e)
+              analyzerId -> JsFalse
+          }
 
-        val r = triedTemplates
-          .map(
-            t =>
-              t.map(template => s"${template.workerId}_${template.reportType}" -> JsTrue)
-                .recover {
-                  case e => e.getMessage -> JsFalse
-                }
-                .get
-          )
-
-        Success(Results.Ok(JsObject(r.toSeq)))
+        Success(Results.Ok(JsObject(triedTemplates)))
       }
 
   def create: Action[AnyContent] =
@@ -84,17 +70,8 @@ class ReportCtrl @Inject()(
         // FIXME is there a need for ACL check concerning ReportTemplates? If so how to check it without any Edge
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
           val template: InputReportTemplate = request.body("template")
-
-          {
-            for {
-              reportType <- Try(ReportType.withName(template.reportType))
-              _ <- reportTemplateSrv
-                .initSteps
-                .forWorkerAndType(template.analyzerId, reportType)
-                .getOrFail()
-            } yield Results.Conflict
-          } orElse Try(reportTemplateSrv.create(template))
-            .map(t => Results.Created(t.toJson))
+          val createdReportTemplate         = reportTemplateSrv.create(template)
+          Success(Results.Created(createdReportTemplate.toJson))
         } else Success(Results.Unauthorized)
       }
 
