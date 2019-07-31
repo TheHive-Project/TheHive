@@ -134,7 +134,7 @@ class JobSrv @Inject()(
     */
   def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.transaction { implicit graph =>
-      get(jobId).getOrFail().flatMap { job =>
+      getOrFail(jobId).flatMap { job =>
         get(job).update(
           "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),
           "status"  -> fromCortexJobStatus(cortexJob.status),
@@ -161,20 +161,20 @@ class JobSrv @Inject()(
       .flatMap(_.artifacts)
     Future
       .traverse(artifacts) { artifact =>
-        db.transaction { implicit graph =>
-          observableTypeSrv.get(artifact.dataType).getOrFail() match {
-            case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
-            case Success(dataType) =>
-              Future
-                .fromTry {
+        db.tryTransaction(graph => observableTypeSrv.getOrFail(artifact.dataType)(graph)) match {
+          case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
+          case Success(dataType) =>
+            Future
+              .fromTry {
+                db.tryTransaction { implicit graph =>
                   observableSrv
                     .create(artifact, dataType, artifact.data.get, artifact.tags, Nil)
                     .map { richObservable =>
                       reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
                     }
                 }
-            case Failure(e) => Future.failed(e)
-          }
+              }
+          case Failure(e) => Future.failed(e)
         }
       }
       .map(_ => Done)
@@ -206,7 +206,7 @@ class JobSrv @Inject()(
           _   <- Future.fromTry(s.status)
           fFile = FFile(attachment.name.getOrElse(attachment.id), file, attachment.contentType.getOrElse("application/octet-stream"))
           savedAttachment <- Future.fromTry {
-            db.transaction { implicit graph =>
+            db.tryTransaction { implicit graph =>
               for {
                 createdAttachment <- attachmentSrv.create(fFile)
                 richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, artifact.tags, Nil)
