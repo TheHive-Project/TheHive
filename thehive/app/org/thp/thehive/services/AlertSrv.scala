@@ -39,6 +39,12 @@ class AlertSrv @Inject()(
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
   val alertObservableSrv   = new EdgeSrv[AlertObservable, Alert, Observable]
 
+  override def get(id: String)(implicit graph: Graph): AlertSteps =
+    id.split(';') match {
+      case Array(tpe, source, sourceRef) => initSteps.getBySourceId(tpe, source, sourceRef)
+      case _                             => super.get(id)
+    }
+
   def create(
       alert: Alert,
       organisation: Organisation with Entity,
@@ -227,7 +233,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       case _                             => getById(id)
     }
 
-  def getById(id: String): AlertSteps = newInstance(raw.has(Key("_id") of id))
+  def getById(id: String): AlertSteps = newInstance(raw.hasId(id))
 
   def getBySourceId(`type`: String, source: String, sourceRef: String): AlertSteps =
     newInstance(
@@ -268,7 +274,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     val organisationLabel     = StepLabel[Vertex]()
     val tagLabel              = StepLabel[JList[Vertex]]()
     val customFieldLabel      = StepLabel[JList[Path]]()
-    val caseIdLabel           = StepLabel[JList[String]]()
+    val caseIdLabel           = StepLabel[JList[AnyRef]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
     new ScalarSteps(
       raw
@@ -282,7 +288,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .inTo[UserRole]
             .has(Key("login") of authContext.userId),
           _.as(alertLabel).outToE[AlertCustomField].inV().path.fold.as(customFieldLabel),
-          _.as(alertLabel).outTo[AlertCase].values[String]("_id").fold.as(caseIdLabel),
+          _.as(alertLabel).outTo[AlertCase].id().fold.as(caseIdLabel),
           _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel)
         )
         .select(alertLabel.name, organisationLabel.name, tagLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
@@ -304,7 +310,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             organisation.name,
             tags,
             customFieldValues,
-            atMostOneOf(resultMap.getValue(caseIdLabel)),
+            atMostOneOf(resultMap.getValue(caseIdLabel)).map(_.toString),
             atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
           ) -> organisation
         }
@@ -333,7 +339,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .and(By(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold))
             .and(By(__[Vertex].outTo[AlertTag].fold))
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
-            .and(By(__[Vertex].outTo[AlertCase].values[String]("_id").fold))
+            .and(By(__[Vertex].outTo[AlertCase].id().fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
         )
         .map {
@@ -350,7 +356,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               onlyOneOf[String](organisation),
               tags.asScala.map(_.as[Tag]).toSeq,
               customFieldValues.toSeq,
-              atMostOneOf[String](caseId),
+              atMostOneOf[AnyRef](caseId).map(_.toString),
               atMostOneOf[String](caseTemplate)
             )
         }

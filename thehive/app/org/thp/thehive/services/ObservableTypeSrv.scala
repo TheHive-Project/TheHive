@@ -1,15 +1,11 @@
 package org.thp.thehive.services
 
-import java.util.UUID
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.models.{BaseVertexSteps, Database}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-
-import scala.util.Try
 
 @Singleton
 class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[ObservableType, ObservableTypeSteps] {
@@ -36,6 +32,9 @@ class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) ext
 
   val observableObservableTypeSrv                                                           = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableTypeSteps = new ObservableTypeSteps(raw)
+  override def get(id: String)(implicit graph: Graph): ObservableTypeSteps =
+    if (db.isValidId(id)) super.get(id)
+    else initSteps.getByName(id)
 }
 
 @EntitySteps[ObservableType]
@@ -45,11 +44,10 @@ class ObservableTypeSteps(raw: GremlinScala[Vertex])(implicit db: Database, grap
   override def newInstance(raw: GremlinScala[Vertex]): ObservableTypeSteps = new ObservableTypeSteps(raw)
 
   override def get(id: String): ObservableTypeSteps =
-    Try(UUID.fromString(id))
-      .map(_ => getById(id))
-      .getOrElse(getByName(id))
+    if (db.isValidId(id)) getById(id)
+    else getByName(id)
 
-  def getById(id: String): ObservableTypeSteps = new ObservableTypeSteps(raw.has(Key("_id") of id))
+  def getById(id: String): ObservableTypeSteps = new ObservableTypeSteps(raw.hasId(id))
 
   def getByName(name: String): ObservableTypeSteps = new ObservableTypeSteps(raw.has(Key("name") of name))
 }

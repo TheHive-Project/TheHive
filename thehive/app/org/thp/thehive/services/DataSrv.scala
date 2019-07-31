@@ -2,6 +2,7 @@ package org.thp.thehive.services
 
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
@@ -32,7 +33,7 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       _.inTo[ObservableData]
         .inTo[ShareObservable]
         .outTo[ShareCase]
-        .hasNot(Key("_id") of caseId)
+        .has(T.id, P.neq(caseId))
         .count()
         .is(P.eq(0))
     )

@@ -89,6 +89,13 @@ class CaseSrv @Inject()(
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
+  override def get(id: String)(implicit graph: Graph): CaseSteps =
+    Success(id)
+      .filter(_.headOption.contains('#'))
+      .map(_.tail.toInt)
+      .map(initSteps.getByNumber(_))
+      .getOrElse(super.get(id))
+
   def endDateSetter(endDate: Date): PropertyUpdater =
     PropertyUpdater(FPathElem("endDate"), endDate.getTime) { (vertex, _, _, _) =>
       vertex.property("endDate", endDate.getTime)
@@ -173,7 +180,7 @@ class CaseSrv @Inject()(
   ): Try[Unit] =
     for {
       _ <- getCustomField(`case`, customField.name) match {
-        case Some(cf) => caseCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") -> Some(value))
+        case Some(cf) => caseCustomFieldSrv.get(cf.customFieldValue).update((cf.`type`.name + "Value") -> Some(value))
         case None =>
           customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField =>
             caseCustomFieldSrv.create(caseCustomField, `case`, customField)
@@ -192,7 +199,7 @@ class CaseSrv @Inject()(
       `case`: Case with Entity,
       impactStatus: String
   )(implicit graph: Graph, authContext: AuthContext): Try[CaseImpactStatus with Entity] =
-    impactStatusSrv.get(impactStatus).getOrFail().flatMap(setImpactStatus(`case`, _))
+    impactStatusSrv.getOrFail(impactStatus).flatMap(setImpactStatus(`case`, _))
 
   def setImpactStatus(
       `case`: Case with Entity,
@@ -211,7 +218,7 @@ class CaseSrv @Inject()(
       `case`: Case with Entity,
       resolutionStatus: String
   )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
-    resolutionStatusSrv.get(resolutionStatus).getOrFail().flatMap(setResolutionStatus(`case`, _))
+    resolutionStatusSrv.getOrFail(resolutionStatus).flatMap(setResolutionStatus(`case`, _))
 
   def setResolutionStatus(
       `case`: Case with Entity,
@@ -303,7 +310,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .map(getByNumber)
       .getOrElse(getById(id))
 
-  def getById(id: String): CaseSteps = newInstance(raw.has(Key("_id") of id))
+  def getById(id: String): CaseSteps = newInstance(raw.hasId(id))
 
   def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
@@ -410,7 +417,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getOrganisationShare(id: String)(implicit authContext: AuthContext): ShareSteps = new ShareSteps(
     raw
-      .has(Key("_id") of id)
+      .hasId(id)
       .inTo[ShareCase]
       .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
   )
@@ -421,12 +428,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def unsetResolutionStatus: Unit = {
+  def unsetResolutionStatus(): Unit = {
     raw.outToE[CaseResolutionStatus].drop().iterate()
     ()
   }
 
-  def unsetImpactStatus: Unit = {
+  def unsetImpactStatus(): Unit = {
     raw.outToE[CaseImpactStatus].drop().iterate()
     ()
   }

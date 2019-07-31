@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import java.util.UUID
-
-import scala.util.Try
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -20,6 +16,10 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
 
   override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
+
+  override def get(id: String)(implicit graph: Graph): OrganisationSteps =
+    if (db.isValidId(id)) super.get(id)
+    else initSteps.getByName(id)
 
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Organisation with Entity = {
     val createdOrganisation = create(organisation)
@@ -57,14 +57,11 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def visibleOrganisations: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
 
-//  override def filter(f: EntityFilter[Vertex]): OrganisationSteps        = newInstance(f(raw))
-
   override def get(id: String): OrganisationSteps =
-    Try(UUID.fromString(id))
-      .map(_ => getById(id))
-      .getOrElse(getByName(id))
+    if (db.isValidId(id)) getById(id)
+    else getByName(id)
 
-  def getById(id: String): OrganisationSteps = newInstance(raw.has(Key("_id") of id))
+  def getById(id: String): OrganisationSteps = newInstance(raw.hasId(id))
 
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
 }

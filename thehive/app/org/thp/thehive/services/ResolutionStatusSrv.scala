@@ -1,14 +1,10 @@
 package org.thp.thehive.services
 
-import java.util.UUID
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database}
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.models.ResolutionStatus
-
-import scala.util.Try
 
 @Singleton
 class ResolutionStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ResolutionStatus, ResolutionStatusSteps] {
@@ -20,6 +16,10 @@ class ResolutionStatusSrv @Inject()(implicit db: Database) extends VertexSrv[Res
     ResolutionStatus("Duplicated")
   )
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ResolutionStatusSteps = new ResolutionStatusSteps(raw)
+
+  override def get(id: String)(implicit graph: Graph): ResolutionStatusSteps =
+    if (db.isValidId(id)) super.get(id)
+    else initSteps.getByName(id)
 }
 
 class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
@@ -28,11 +28,10 @@ class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, gr
   override def newInstance(raw: GremlinScala[Vertex]): ResolutionStatusSteps = new ResolutionStatusSteps(raw)
 
   override def get(id: String): ResolutionStatusSteps =
-    Try(UUID.fromString(id))
-      .map(_ => getById(id))
-      .getOrElse(getByName(id))
+    if (db.isValidId(id)) getById(id)
+    else getByName(id)
 
-  def getById(id: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("_id") of id))
+  def getById(id: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.hasId(id))
 
   def getByName(name: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("value") of name))
 

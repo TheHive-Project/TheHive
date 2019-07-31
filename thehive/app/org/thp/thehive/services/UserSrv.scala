@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import java.util.UUID
-
-import scala.util.{Failure, Success, Try}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -11,6 +7,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError}
 import org.thp.thehive.models._
+
+import scala.util.{Failure, Success, Try}
 
 object UserSrv {
   val initUser: String         = "admin"
@@ -34,6 +32,10 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
       password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
     )
   )
+
+  override def get(id: String)(implicit graph: Graph): UserSteps =
+    if (db.isValidId(id)) super.get(id)
+    else initSteps.getByName(id)
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -63,9 +65,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def current(authContext: AuthContext): UserSteps = get(authContext.userId)
 
   override def get(id: String): UserSteps =
-    Try(UUID.fromString(id))
-      .map(_ => getById(id))
-      .getOrElse(getByLogin(id))
+    if (db.isValidId(id)) getById(id)
+    else getByName(id)
 
   def visible(implicit authContext: AuthContext): UserSteps = newInstance(
     raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
@@ -82,9 +83,9 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .has(Key("login") of authContext.userId)
   )
 
-  def getById(id: String): UserSteps = new UserSteps(raw.has(Key("_id") of id))
+  def getById(id: String): UserSteps = new UserSteps(raw.hasId(id))
 
-  def getByLogin(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
+  def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 

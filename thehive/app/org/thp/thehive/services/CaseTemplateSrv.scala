@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{UUID, List => JList}
+import java.util.{List => JList}
 
 import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
@@ -29,6 +29,10 @@ class CaseTemplateSrv @Inject()(
   val caseTemplateTaskSrv         = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseTemplateSteps = new CaseTemplateSteps(raw)
+
+  override def get(id: String)(implicit graph: Graph): CaseTemplateSteps =
+    if (db.isValidId(id)) super.get(id)
+    else initSteps.getByName(id)
 
   def create(
       caseTemplate: CaseTemplate,
@@ -108,11 +112,10 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
   override def get(id: String): CaseTemplateSteps =
-    Try(UUID.fromString(id))
-      .map(_ => getById(id))
-      .getOrElse(getByName(id))
+    if (db.isValidId(id)) getById(id)
+    else getByName(id)
 
-  def getById(id: String): CaseTemplateSteps = newInstance(raw.has(Key("_id") of id))
+  def getById(id: String): CaseTemplateSteps = newInstance(raw.hasId(id))
 
   def getByName(name: String): CaseTemplateSteps = newInstance(raw.has(Key("name") of name))
 

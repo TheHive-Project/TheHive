@@ -64,7 +64,7 @@ object Audited extends HasEdgeModel[Audited, Audit, Product] {
 
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override def toDomain(element: Edge)(implicit db: Database): Audited with Entity = new Audited with Entity {
-      override val _id: String                = element.value[String]("_id")
+      override val _id: String                = element.id().toString
       override val _model: Model              = thisModel
       override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
       override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.string.optional)
@@ -87,7 +87,7 @@ object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
 
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override def toDomain(element: Edge)(implicit db: Database): AuditContext with Entity = new AuditContext with Entity {
-      override val _id: String                = element.value[String]("_id")
+      override val _id: String                = element.id().toString
       override val _model: Model              = thisModel
       override val _createdBy: String         = db.getProperty(element, "_createdBy", UniMapping.string)
       override val _updatedBy: Option[String] = db.getProperty(element, "_updatedBy", UniMapping.string.optional)

@@ -128,6 +128,6 @@ object AlertConversion {
           _.outToE[AlertCustomField].value("dateValue")
         ).readonly
       )
-      .property("case", UniMapping.string)(_.derived(_.outTo[AlertCase].value[String]("_id")).readonly)
+      .property("case", UniMapping.string)(_.derived(_.outTo[AlertCase].id().map(_.toString)).readonly)
       .build
 }

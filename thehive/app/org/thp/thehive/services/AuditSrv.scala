@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -11,6 +7,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.util.Try
+
+case class PendingAudit(authContext: AuthContext, details: Option[String], context: Entity, `object`: Option[Entity])
 
 @Singleton
 class AuditSrv @Inject()(
@@ -24,7 +25,7 @@ class AuditSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
 
-  def get(auditIds: Seq[String])(implicit graph: Graph): AuditSteps = initSteps.has(Key[String]("_id"), P.within(auditIds))
+  def get(auditIds: Seq[String])(implicit graph: Graph): AuditSteps = initSteps.filter(_.hasId(auditIds: _*)) // FIXME:ID
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] =
     get(audit).getObject
@@ -125,7 +126,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
           .in()
           .hasLabel("Share")
           .outTo[ShareCase]
-          .has(Key("_id") of caseId)
+          .hasId(caseId)
       )
     )
 

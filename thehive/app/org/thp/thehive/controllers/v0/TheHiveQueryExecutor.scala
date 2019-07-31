@@ -1,9 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import scala.language.existentials
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
-import gremlin.scala.{Graph, Key, P, Vertex}
+import gremlin.scala.{Graph, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -12,6 +9,9 @@ import org.thp.scalligraph.controllers.{FSeq, Field, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
 import org.thp.thehive.services.{ObservableSteps, _}
+
+import scala.language.existentials
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean)
 
@@ -34,9 +34,9 @@ class TheHiveQueryExecutor @Inject()(
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
 
+  override lazy val filterQuery = new ParentFilterQuery(publicProperties)
   override lazy val queries: Seq[ParamQuery[_]] =
-    new ParentFilterQuery(publicProperties).asInstanceOf[ParamQuery[_]] ::
-      controllers.map(_.initialQuery) :::
+    controllers.map(_.initialQuery) :::
       controllers.map(_.pageQuery) :::
       controllers.map(_.outputQuery)
 
@@ -69,9 +69,9 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
       authContext: AuthContext
   ): S = {
     val s =
-      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].where(_.`case`.has(Key("_id"), P.eq(parentId)))
-      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].where(_.`case`.has(Key("_id"), P.eq(parentId)))
-      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].where(_.task.has(Key("_id"), P.eq(parentId)))
+      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].where(_.`case`.getById(parentId))
+      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].where(_.`case`.getById(parentId))
+      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].where(_.task.get(parentId))
       else ???
     s.asInstanceOf[S]
   }
