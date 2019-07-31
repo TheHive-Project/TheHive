@@ -7,11 +7,11 @@ import gremlin.scala.{Key, P}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.{Authentication, CustomWSAPI, FakeCortexClient, KeyAuthentication}
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
+import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
@@ -24,9 +24,8 @@ import play.api.{Configuration, Environment}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
-import scala.util.Try
 
-class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito with FakeCortexClient {
+class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
@@ -34,17 +33,12 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
+      .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .bindActor[CortexActor]("cortex-actor")
-      .addConfiguration(
-        Configuration(
-          "play.modules.disabled"                     -> List("org.thp.scalligraph.ScalligraphModule", "org.thp.thehive.TheHiveModule"),
-          "akka.remote.netty.tcp.port"                -> 3334,
-          "akka.cluster.jmx.multi-mbeans-in-same-jvm" -> "on"
-        )
-      )
+      .bindToProvider[CortexClient, TestCortexClientProvider]
+      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
@@ -62,9 +56,8 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
     val db: Database                 = app.instanceOf[Database]
 
     s"[$name] job service" should {
-      implicit lazy val ws: CustomWSAPI      = app.instanceOf[CustomWSAPI]
-      implicit val authContext: AuthContext  = dummyUserSrv.authContext
-      implicit lazy val auth: Authentication = KeyAuthentication("test")
+      implicit val authContext: AuthContext = dummyUserSrv.authContext
+      val client: CortexClient              = app.instanceOf[CortexClient]
 
       "handle creation and then finished job" in {
         val maybeObservable = db.transaction { implicit graph =>
@@ -84,13 +77,9 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           cortexId = "test",
           cortexJobId = "LVyYKFstq3Rtrdc9DFmL"
         )
-        val tryCreateJob = db.transaction { implicit graph =>
-          Try(jobSrv.create(job, observable))
+        val createdJob = db.transaction { implicit graph =>
+          jobSrv.create(job, observable)
         }
-
-        tryCreateJob must beSuccessfulTry
-
-        val createdJob = tryCreateJob.get
 
         val cortexOutputJob: CortexOutputJob = {
           val dataSource = Source.fromResource("cortex-jobs.json")
@@ -99,22 +88,20 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           Json.parse(data).as[CortexOutputJob]
         }
 
-        withCortexClient { client =>
-          jobSrv
-            .finished(createdJob._id, cortexOutputJob, client)
-            .map { updatedJob =>
-              updatedJob.status shouldEqual JobStatus.Success
-              updatedJob.report must beSome
-              updatedJob.report.get \ "artifacts" must beEmpty
-              (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
+        jobSrv
+          .finished(createdJob._id, cortexOutputJob, client)
+          .map { updatedJob =>
+            updatedJob.status shouldEqual JobStatus.Success
+            updatedJob.report must beSome
+            updatedJob.report.get \ "artifacts" must beEmpty
+            (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
-              db.transaction { implicit graph =>
-                jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
-                jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
-              }
+            db.transaction { implicit graph =>
+              jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
+              jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
             }
-            .await(0, 5.seconds)
-        }
+          }
+          .await(0, 5.seconds)
       }
     }
   }

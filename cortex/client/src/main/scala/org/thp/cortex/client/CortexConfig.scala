@@ -1,6 +1,7 @@
 package org.thp.cortex.client
 
-import javax.inject.{Inject, Singleton}
+import com.google.inject.ProvidedBy
+import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
 
 import scala.concurrent.duration._
@@ -10,22 +11,19 @@ import scala.concurrent.duration._
   *
   * @param instances the CortexClient instances
   */
-@Singleton
-case class CortexConfig(instances: Map[String, CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int) {
-
-  @Inject
-  def this(configuration: Configuration, globalWS: CustomWSAPI) =
-    this(
-      CortexConfig.getInstances(configuration, globalWS),
-      configuration.getOptional[FiniteDuration]("cortex.refreshDelay").getOrElse(1.minute),
-      configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3)
-    )
-}
+@ProvidedBy(classOf[CortexConfigProvider])
+case class CortexConfig(instances: Map[String, CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int)
 
 /**
-  * The config's companion helper
+  * The cortex config provider
   */
-object CortexConfig {
+@Singleton
+class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: CustomWSAPI) extends Provider[CortexConfig] {
+  override def get(): CortexConfig = CortexConfig(
+    getInstances(configuration, globalWS),
+    configuration.getOptional[FiniteDuration]("cortex.refreshDelay").getOrElse(1.minute),
+    configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3)
+  )
 
   /**
     * Gets the list of client instances
