@@ -5,7 +5,7 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.{Format, Json}
 
 object CaseStatus extends Enumeration {
   type Type = Value
@@ -73,10 +73,6 @@ case class Case(
     status: CaseStatus.Value,
     summary: Option[String]
 )
-
-object Case {
-  implicit val format: OFormat[Case] = Json.format[Case]
-}
 
 case class RichCase(
     `case`: Case with Entity,
