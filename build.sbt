@@ -85,6 +85,7 @@ lazy val thehiveCore = (project in file("thehive"))
       guice,
       akkaCluster,
       akkaClusterTools,
+      zip4j,
       ws    % Test,
       specs % Test
     )
