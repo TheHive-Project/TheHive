@@ -15,6 +15,7 @@ case class Action(
     status: JobStatus.Value,
     objectType: String,
     objectId: String,
+    parameters: JsObject,
     startDate: Date,
     endDate: Option[Date],
     report: Option[JsObject],
@@ -22,33 +23,6 @@ case class Action(
     cortexJobId: Option[String],
     operations: Option[String]
 )
-
-object Action {
-
-  def apply(
-      responderId: String,
-      responderName: Option[String],
-      responderDefinition: Option[String],
-      status: JobStatus.Value,
-      entity: Entity,
-      startDate: Date,
-      cortexId: Option[String],
-      cortexJobId: Option[String]
-  ): Action = Action(
-    responderId,
-    responderName,
-    responderDefinition,
-    status,
-    entity._model.label,
-    entity._id,
-    startDate,
-    None,
-    None,
-    cortexId,
-    cortexJobId,
-    None
-  )
-}
 
 case class RichAction(
     _id: String,

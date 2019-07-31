@@ -2,16 +2,14 @@ package org.thp.thehive.connector.cortex.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsValue, Json, OFormat}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 case class InputAction(
     responderId: String,
-    responderName: Option[String],
     cortexId: Option[String],
     objectType: String,
     objectId: String,
-    message: Option[String],
-    parameters: Option[JsValue],
+    parameters: Option[JsObject],
     tlp: Option[Int]
 )
 
