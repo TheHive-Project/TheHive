@@ -1,39 +1,55 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.mvc.AbstractController
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
+import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.LocalUserSrv
+import org.thp.thehive.services.{Connector, LocalUserSrv}
+import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.AbstractController
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 class StatusCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration = Configuration.load(Environment.simple())
-  val authSrv: AuthSrv      = mock[AuthSrv]
+  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
+  val authSrv: AuthSrv           = mock[AuthSrv]
   authSrv.capabilities returns Set(AuthCapability.changePassword)
   authSrv.name returns "authSrvName"
+
+  val fakeCortexConnector = new Connector {
+    override val name: String = "cortex"
+    override def status: JsObject =
+      Json.obj(
+        "enabled" -> true,
+        "status"  -> "OK",
+        "servers" -> Json.arr(
+          Json.obj(
+            "name"    -> "interne",
+            "version" -> "2.x.x",
+            "status"  -> "OK"
+          )
+        )
+      )
+  }
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .multiBindInstance[Connector](fakeCortexConnector)
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .bindInstance[AuthSrv](authSrv)
 
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
+    specs(dbProvider.name, app)
   }
 
   def setupDatabase(app: AppBuilder): Unit =
@@ -84,7 +100,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
           )
         )
 
-        resultJson.toString shouldEqual expectedJson.toString
+        resultJson shouldEqual expectedJson
       }
 
       "be healthy" in {
@@ -93,7 +109,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
         val result = statusCtrl.health(request)
 
         status(result) shouldEqual 200
-        contentAsString(result) shouldEqual "Ok"
+        contentAsString(result) shouldEqual "Warning"
       }
     }
   }

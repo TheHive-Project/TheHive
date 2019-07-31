@@ -4,11 +4,12 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, Hasher}
@@ -20,7 +21,7 @@ import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
-import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
+import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
 import play.api.{Configuration, Environment}
 
 case class TestObservable(
@@ -41,15 +42,15 @@ object TestObservable {
 }
 
 class ObservableCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration = Configuration.load(Environment.simple())
+  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bindInstance[AuthSrv](mock[AuthSrv])
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
+      .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
@@ -165,7 +166,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       }
 
       "be able to create and get 2 observables with string data and attachment" in {
-        FakeTemporaryFile { tempFile =>
+        WithFakeTemporaryFile { tempFile =>
           val hashes    = hashers.fromPath(tempFile.path).map(_.toString)
           val files     = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
           val dataParts = Map("_json" -> Seq("""
@@ -343,7 +344,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   }
 }
 
-object FakeTemporaryFile {
+object WithFakeTemporaryFile {
 
   def apply[A](body: Files.TemporaryFile => A): A = {
     val tempFile = JFiles.createTempFile("thehive-", "-test")

@@ -1,30 +1,30 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
+import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0.{OutputLog, OutputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services.LocalUserSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 class LogCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration = Configuration.load(Environment.simple())
+  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bindInstance[AuthSrv](mock[AuthSrv])
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
+      .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")

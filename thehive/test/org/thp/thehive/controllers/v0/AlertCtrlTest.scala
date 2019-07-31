@@ -2,19 +2,20 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
+import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable, TheHiveSchema}
 import org.thp.thehive.services.{CaseSrv, LocalUserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
 case class TestAlert(
@@ -42,14 +43,15 @@ object TestAlert {
 }
 
 class AlertCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration = Configuration.load(Environment.simple())
+  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
+      .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")

@@ -1,20 +1,20 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Success, Try}
-
+import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.{Database, DatabaseProviders, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.LocalUserSrv
+import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
+
+import scala.util.{Success, Try}
 
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
@@ -30,16 +30,18 @@ class DummyAuthSrv extends AuthSrv {
 }
 
 class UserCtrlTest extends PlaySpecification with Mockito {
-  val config: Configuration = Configuration.load(Environment.simple())
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bindToProvider(dbProvider)
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[UserSrv, LocalUserSrv]
       .bind[Schema, TheHiveSchema]
-      .bind[AuthSrv, DummyAuthSrv]
+      .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
+      .bindToProvider[AuthSrv, MultiAuthSrvProvider]
+      .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

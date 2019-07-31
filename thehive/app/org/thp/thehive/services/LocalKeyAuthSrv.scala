@@ -2,18 +2,24 @@ package org.thp.thehive.services
 
 import java.util.Base64
 
-import scala.util.{Failure, Random, Success, Try}
-
+import javax.inject.{Inject, Provider, Singleton}
+import org.thp.scalligraph.BadRequestError
+import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider, KeyAuthSrv, RequestOrganisation}
+import org.thp.scalligraph.models.Database
+import play.api.Configuration
 import play.api.mvc.RequestHeader
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.BadRequestError
-import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv}
-import org.thp.scalligraph.models.Database
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Random, Success, Try}
 
-@Singleton
-class LocalKeyAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
-  override val name = "key"
+class LocalKeyAuthSrv(
+    db: Database,
+    userSrv: UserSrv,
+    localUserSrv: LocalUserSrv,
+    authSrv: AuthSrv,
+    requestOrganisation: RequestOrganisation,
+    ec: ExecutionContext
+) extends KeyAuthSrv(authSrv, requestOrganisation, ec) {
 
   final protected def generateKey(): String = {
     val bytes = Array.ofDim[Byte](24)
@@ -44,8 +50,7 @@ class LocalKeyAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Lo
   override def getKey(username: String)(implicit authContext: AuthContext): Try[String] =
     db.tryTransaction { implicit graph =>
       userSrv
-        .get(username)
-        .getOrFail()
+        .getOrFail(username)
         .flatMap(_.apikey.fold[Try[String]](Failure(BadRequestError(s"User $username hasn't key")))(Success.apply))
     }
 
@@ -56,4 +61,19 @@ class LocalKeyAuthSrv @Inject()(db: Database, userSrv: UserSrv, localUserSrv: Lo
         .update("apikey" -> None)
         .map(_ => ())
     }
+}
+
+@Singleton
+class LocalKeyAuthProvider @Inject()(
+    db: Database,
+    userSrv: UserSrv,
+    localUserSrv: LocalUserSrv,
+    authSrvProvider: Provider[AuthSrv],
+    requestOrganisation: RequestOrganisation,
+    ec: ExecutionContext
+) extends AuthSrvProvider {
+  lazy val authSrv: AuthSrv = authSrvProvider.get
+  override val name: String = "key"
+  override def apply(config: Configuration): Try[AuthSrv] =
+    Success(new LocalKeyAuthSrv(db, userSrv, localUserSrv, authSrv, requestOrganisation, ec))
 }

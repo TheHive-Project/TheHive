@@ -1,29 +1,24 @@
 package org.thp.thehive.controllers.v1
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-
-import play.api.Configuration
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
-import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{AuthenticateSrv, EntryPoint, FieldsParser}
+import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.UserSrv
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 @Singleton
 class AuthenticationCtrl @Inject()(
     entryPoint: EntryPoint,
-    authenticated: AuthenticateSrv,
-    configuration: Configuration,
     authSrv: AuthSrv,
+    requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
     db: Database,
     implicit val ec: ExecutionContext
 ) {
-
-  val organisationHeader: String = configuration.get[String]("auth.organisationHeader")
 
   def login: Action[AnyContent] =
     entryPoint("login")
@@ -32,12 +27,11 @@ class AuthenticationCtrl @Inject()(
       .extract("organisation", FieldsParser[String].optional.on("organisation")) { implicit request =>
         val login: String                = request.body("login")
         val password: String             = request.body("password")
-        val organisation: Option[String] = request.body("organisation") orElse request.headers.get(organisationHeader)
+        val organisation: Option[String] = request.body("organisation") orElse requestOrganisation(request)
         for {
           authContext <- authSrv.authenticate(login, password, organisation)
-          user        <- db.tryTransaction(userSrv.getOrFail(authContext.userId)(_))
-          _ <- if (!user.locked) Success(())
-          else Failure(AuthorizationError("Your account is locked"))
-        } yield authenticated.setSessingUser(Results.Ok, authContext)
+          user        <- db.transaction(userSrv.getOrFail(authContext.userId)(_))
+          _           <- if (user.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
+        } yield authSrv.setSessionUser(authContext)(Results.Ok)
       }
 }

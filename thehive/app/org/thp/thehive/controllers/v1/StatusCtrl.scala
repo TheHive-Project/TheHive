@@ -1,17 +1,15 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.Configuration
-import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
-import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrv}
+import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.TheHiveModule
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfiguration, authSrv: AuthSrv) {
@@ -36,14 +34,11 @@ class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfigu
             "config" -> Json.obj(
               "protectDownloadsWith" -> password,
               "authType" -> (authSrv match {
-                case multiAuthSrv: MultiAuthSrv =>
-                  multiAuthSrv.authProviders.map { a =>
-                    JsString(a.name)
-                  }
-                case _ => JsString(authSrv.name)
+                case multiAuthSrv: MultiAuthSrv => Json.toJson(multiAuthSrv.providerNames)
+                case _                          => JsString(authSrv.name)
               }),
               "capabilities" -> authSrv.capabilities.map(c => JsString(c.toString)),
-              "ssoAutoLogin" -> JsBoolean(configuration.get[Boolean]("auth.sso.autologin"))
+              "ssoAutoLogin" -> authSrv.capabilities.contains(AuthCapability.sso)
             )
           )
         )

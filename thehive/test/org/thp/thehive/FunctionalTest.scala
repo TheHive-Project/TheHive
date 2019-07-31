@@ -2,8 +2,16 @@ package org.thp.thehive
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Promise}
-
+import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
+import com.typesafe.config.ConfigFactory
+import org.specs2.specification.core.Fragments
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
+import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
+import org.thp.thehive.controllers.v1.{TestCase, TestUser}
+import org.thp.thehive.dto.v1._
+import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.UserSrv
 import play.api.cache.caffeine.CaffeineCacheModule
 import play.api.i18n.{I18nModule => PlayI18nModule}
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -15,16 +23,7 @@ import play.api.mvc.{CookiesModule => PlayCookiesModule}
 import play.api.test.{Helpers, PlaySpecification, TestServer}
 import play.api.{Configuration, Environment}
 
-import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
-import com.typesafe.config.ConfigFactory
-import org.specs2.specification.core.Fragments
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
-import org.thp.thehive.client.{ApplicationError, Authentication, TheHiveClient}
-import org.thp.thehive.controllers.v1.{TestCase, TestUser}
-import org.thp.thehive.dto.v1._
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.UserSrv
+import scala.concurrent.{ExecutionContext, Promise}
 
 case class TestTask(
     title: String,
@@ -101,7 +100,9 @@ class FunctionalTest extends PlaySpecification {
                                                                  |  localfs.location: /tmp
                                                                  |}
                                                                  |
-                                                                 |auth.provider: [local]
+                                                                 |auth.providers: [
+                                                                 |  {name: local}
+                                                                 |]
    """.stripMargin))
 
   val neo4jConfig = Configuration(ConfigFactory.parseString("""
@@ -110,7 +111,9 @@ class FunctionalTest extends PlaySpecification {
                                                               |  provider: localfs
                                                               |  localfs.location: /tmp
                                                               |}
-                                                              |auth.provider: [local]
+                                                              |auth.providers: [
+                                                              |  {name: local}
+                                                              |]
     """.stripMargin))
   Fragments.foreach(Seq(janusGraphConfig /*, orientdbConfig , neo4jConfig*/ )) { dbConfig =>
     val serverPromise: Promise[TestServer] = Promise[TestServer]

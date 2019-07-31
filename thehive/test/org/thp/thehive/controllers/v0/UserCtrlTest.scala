@@ -1,34 +1,33 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-import play.api.{Configuration, Environment}
-
+import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrvProvider, UserSrv}
-import org.thp.scalligraph.controllers.{AuthenticateSrv, DefaultAuthenticateSrv, TestAuthenticateSrv}
+import org.thp.scalligraph.auth.{AuthSrv, AuthSrvProvider, HeaderAuthProvider, MultiAuthSrvProvider, UserSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.models._
-import org.thp.thehive.services.{LocalKeyAuthSrv, LocalPasswordAuthSrv, LocalUserSrv}
+import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import play.api.{Configuration, Environment}
 
 class UserCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv = DummyUserSrv(permissions = Permissions.all)
-
-  val config: Configuration = Configuration.load(Environment.simple())
+  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val config: Configuration      = Configuration.load(Environment.simple())
+  implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
       .bind[UserSrv, LocalUserSrv]
       .bindToProvider(dbProvider)
-      .bind[AuthenticateSrv, TestAuthenticateSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
-      .multiBind[AuthSrv](classOf[LocalPasswordAuthSrv], classOf[LocalKeyAuthSrv])
+      .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
+      .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
@@ -41,7 +40,6 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   def specs(name: String, app: AppBuilder): Fragment = {
     val userCtrl: UserCtrl   = app.instanceOf[UserCtrl]
     val authenticationCtrl   = app.instanceOf[AuthenticationCtrl]
-    val authenticateSrv      = app.instanceOf[DefaultAuthenticateSrv]
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
 
     s"[$name] user controller" should {
@@ -130,7 +128,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         val keyAuthRequest = FakeRequest("GET", "/api/v0/user/current")
           .withHeaders("Authorization" -> "Bearer azertyazerty")
 
-        authenticateSrv.getAuthContext(keyAuthRequest) must beFailedTry
+        status(userCtrl.current(keyAuthRequest)) must_=== 401
 
         val request = FakeRequest("POST", "/api/v0/user/user4")
           .withJsonBody(Json.parse("""{"status": "Ok"}"""))
@@ -141,7 +139,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.status must_=== "Ok"
 
-        authenticateSrv.getAuthContext(keyAuthRequest) must beSuccessfulTry
+        status(userCtrl.current(keyAuthRequest)) must_=== 200
       }
 
       "remove a user" in {
