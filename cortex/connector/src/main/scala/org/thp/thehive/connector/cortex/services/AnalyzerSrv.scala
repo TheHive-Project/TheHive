@@ -1,12 +1,12 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.{ExecutionContext, Future}
-
-import play.api.Logger
-
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.v0.OutputCortexAnalyzer
+import org.thp.cortex.dto.v0.OutputCortexWorker
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: ExecutionContext) {
@@ -18,21 +18,24 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Executi
     *
     * @return
     */
-  def listAnalyzer: Future[Seq[OutputCortexAnalyzer]] =
+  def listAnalyzer: Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
-      .traverse(cortexConfig.instances.values) { cortexInstance =>
-        cortexInstance.listAnalyser.recover {
-          case error =>
-            logger.error(s"List Cortex analyzers fails on ${cortexInstance.name}", error)
-            Nil
-        }
+      .traverse(cortexConfig.instances.values) { client =>
+        client
+          .listAnalyser
+          .transform {
+            case Success(analyzers) => Success(analyzers.map(_ -> client.name))
+            case Failure(error) =>
+              logger.error(s"List Cortex analyzers fails on ${client.name}", error)
+              Success(Nil)
+          }
       }
       .map { listOfListOfAnalyzers =>
-        val analysers = listOfListOfAnalyzers.flatten
-        analysers
-          .groupBy(_.name)
-          .values
-          .map(_.reduceLeft((a1, a2) => a1.copy(cortexIds = Some(a1.cortexIds.getOrElse(Nil) ::: a2.cortexIds.getOrElse(Nil)))))
-          .toSeq
+        listOfListOfAnalyzers // Iterable[Seq[(worker, cortexId)]]
+        .flatten              // Seq[(worker, cortexId)]
+          .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
+          .values             // Seq[Seq[(worker, cortexId)]]
+          .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
+          .toMap
       }
 }
