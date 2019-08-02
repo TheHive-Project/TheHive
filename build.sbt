@@ -57,7 +57,7 @@ lazy val commonSettings = Seq(
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore, thehiveCortex)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveMigration, thehiveFrontend, thehiveCortex)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex)
   .settings(commonSettings)
   .settings(
     name := "thehive",
@@ -146,25 +146,25 @@ lazy val cortexClient = (project in file("cortex/client"))
     )
   )
 
-lazy val thehiveMigration = (project in file("migration"))
-  .enablePlugins(JavaAppPackaging)
-  .dependsOn(scalligraph)
-  .dependsOn(thehiveCore)
-  .settings(commonSettings)
-  .settings(
-    name := "thehive-migration",
-    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
-    crossScalaVersions := Seq(scala212),
-    libraryDependencies ++= Seq(
-      elastic4play,
-      ehcache,
-      specs % Test
-    ),
-    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
-    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
-    fork := true,
-    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
-  )
+//lazy val thehiveMigration = (project in file("migration"))
+//  .enablePlugins(JavaAppPackaging)
+//  .dependsOn(scalligraph)
+//  .dependsOn(thehiveCore)
+//  .settings(commonSettings)
+//  .settings(
+//    name := "thehive-migration",
+//    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
+//    crossScalaVersions := Seq(scala212),
+//    libraryDependencies ++= Seq(
+//      elastic4play,
+//      ehcache,
+//      specs % Test
+//    ),
+//    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+//    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
+//    fork := true,
+//    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
+//  )
 
 lazy val npm        = taskKey[Unit]("Install npm dependencies")
 lazy val bower      = taskKey[Unit]("Install bower dependencies")
