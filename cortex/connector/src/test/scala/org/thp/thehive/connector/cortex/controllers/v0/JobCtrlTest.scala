@@ -15,6 +15,8 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 class JobCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration      = Configuration.load(Environment.simple())
@@ -33,7 +35,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()

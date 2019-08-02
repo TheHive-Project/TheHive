@@ -25,17 +25,17 @@ class OrganisationCtrl @Inject()(
     entryPoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
+        val inputOrganisation = request.body("organisation")
         for {
-          _    <- userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
-          user <- userSrv.current.getOrFail()
-          inputOrganisation = request.body("organisation")
-          organisation      = organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
+          _            <- userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+          user         <- userSrv.current.getOrFail()
+          organisation <- organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
         } yield Results.Created(organisation.toJson)
       }
 
   def get(organisationId: String): Action[AnyContent] =
     entryPoint("get organisation")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
           .organisations
@@ -47,7 +47,7 @@ class OrganisationCtrl @Inject()(
 
   //  def list: Action[AnyContent] =
   //    entryPoint("list organisation")
-  //      .authTransaction(db) { _ ⇒ implicit graph ⇒
+  //      .authRoTransaction(db) { _ ⇒ implicit graph ⇒
   //          val organisations = organisationSrv.initSteps.toList
   //            .map(toOutputOrganisation)
   //          Results.Ok(Json.toJson(organisations))

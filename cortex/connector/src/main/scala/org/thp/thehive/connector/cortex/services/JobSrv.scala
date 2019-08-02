@@ -59,11 +59,11 @@ class JobSrv @Inject()(
     * @param authContext the implicit auth needed
     * @return
     */
-  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Job with Entity = {
-    val createdJob = create(job)
-    observableJobSrv.create(ObservableJob(), observable, createdJob)
-    createdJob
-  }
+  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Job with Entity] =
+    for {
+      createdJob <- create(job)
+      _          <- observableJobSrv.create(ObservableJob(), observable, createdJob)
+    } yield createdJob
 
   /**
     * Submits an observable for analysis to cortex client and stores
@@ -99,9 +99,9 @@ class JobSrv @Inject()(
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
       cortexOutputJob <- cortexClient.analyse(analyzer.id, cortexArtifact)
-      createdJob = db.transaction { implicit graph =>
+      createdJob <- Future.fromTry(db.tryTransaction { implicit graph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
-      }
+      })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient, authContext)
     } yield createdJob
 
@@ -133,7 +133,7 @@ class JobSrv @Inject()(
     * @return the updated job
     */
   def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
-    db.transaction { implicit graph =>
+    db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         get(job).update(
           "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),

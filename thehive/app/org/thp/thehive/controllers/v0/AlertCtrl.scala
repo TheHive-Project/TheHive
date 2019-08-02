@@ -106,7 +106,7 @@ class AlertCtrl @Inject()(
 
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
           .visible

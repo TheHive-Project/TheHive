@@ -18,6 +18,8 @@ import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 case class TestCase(
     caseId: Int,
     title: String,
@@ -58,7 +60,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -330,7 +332,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       }
 
       "force delete a case" in {
-        val tasks = db.transaction { implicit graph =>
+        val tasks = db.roTransaction { implicit graph =>
           val authContext = mock[AuthContext]
           authContext.organisation returns "default"
           caseSrv.get("#4").tasks(authContext).toList
@@ -342,7 +344,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultDel = caseCtrl.realDelete("#4")(requestDel)
         status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 
-        db.transaction { implicit graph =>
+        db.roTransaction { implicit graph =>
           caseSrv.get("#4").headOption() must beNone
           tasks.flatMap(task => taskSrv.get(task).headOption()) must beEmpty
         }

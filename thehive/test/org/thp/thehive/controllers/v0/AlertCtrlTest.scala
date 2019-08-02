@@ -18,6 +18,8 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 case class TestAlert(
     `type`: String,
     source: String,
@@ -58,7 +60,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -305,7 +307,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       )
 
       TestCase(resultCaseOutput) must_=== expected
-      val observables = app.instanceOf[Database].transaction { implicit graph =>
+      val observables = app.instanceOf[Database].roTransaction { implicit graph =>
         val authContext = mock[AuthContext]
         authContext.organisation returns "cert"
         app.instanceOf[CaseSrv].get(resultCaseOutput._id).observables(authContext).richObservable.toList
@@ -321,27 +323,6 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         )
       )
     }
-    /*
-    {
-    "id": "c.fr",
-    "type": "domain",
-    "tags": ["testDomain"],
-    "message": "This domain",
-    "tlp": 2,
-    "ioc": false,
-    "sighted": false
-  },
-  {
-    "id": "hello",
-    "type": "file",
-    "tags": ["hello", "world"],
-    "message": "hello world",
-    "tlp": 1,
-    "ioc": false,
-    "sighted": false
-  }
-]
-     */
 
     "merge an alert with a case" in todo
   }

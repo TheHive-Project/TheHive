@@ -23,7 +23,7 @@ class TagSrv @Inject()(appConfig: ApplicationConfiguration)(implicit db: Databas
     initSteps
       .getByName(tagName)
       .getOrFail()
-      .recover {
+      .recoverWith {
         case _ if autoCreate => create(Tag(tagName))
       }
 }

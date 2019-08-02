@@ -19,6 +19,8 @@ import play.api.libs.json.Json
 import play.api.test.{NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 class ActionSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
   val config: Configuration      = Configuration.load(Environment.simple())
@@ -38,7 +40,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) // ^ step(shutdownActorSystem(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -48,7 +50,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
   def specs(name: String, app: AppBuilder): Fragment =
     s"[$name] action service" should {
       "execute and create an action" in {
-        app.instanceOf[Database].transaction { implicit graph =>
+        app.instanceOf[Database].roTransaction { implicit graph =>
           val taskSrv    = app.instanceOf[TaskSrv]
           val actionSrv  = app.instanceOf[ActionSrv]
           val actionCtrl = app.instanceOf[ActionCtrl]

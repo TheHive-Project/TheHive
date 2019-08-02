@@ -109,7 +109,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
   def search: Action[AnyContent] =
     entryPoint(s"search ${ctrl.entityName}")
       .extract("query", searchParser)
-      .authTransaction(db) { implicit request => graph =>
+      .authRoTransaction(db) { implicit request => graph =>
         val query: Query = request.body("query")
         val result       = queryExecutor.execute(query, graph, request.authContext)
         val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
@@ -122,7 +122,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
   def stats: Action[AnyContent] =
     entryPoint("case stats")
       .extract("query", statsParser)
-      .authTransaction(db) { implicit request => graph =>
+      .authRoTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body("query")
         val results = queries
           .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)

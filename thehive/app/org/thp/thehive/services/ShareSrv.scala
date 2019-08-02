@@ -8,6 +8,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+import scala.util.Try
+
 @Singleton
 class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, ShareSteps] {
 
@@ -22,13 +24,13 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
   def create(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Share = {
-    val createdShare = create(Share())
-    organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
-    shareCaseSrv.create(ShareCase(), createdShare, `case`)
-    shareProfileSrv.create(ShareProfile(), createdShare, profile)
-    createdShare
-  }
+  ): Try[Share] =
+    for {
+      createdShare <- create(Share())
+      _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
+      _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
+      _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
+    } yield createdShare
 }
 
 @EntitySteps[Share]

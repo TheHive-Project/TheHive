@@ -14,7 +14,7 @@ import org.thp.thehive.models.Permissions
 class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends ScalligraphUserSrv {
 
   override def getFromId(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
       userSrv
         .initSteps
         .get(userId)
@@ -23,7 +23,7 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends Scalligraph
     }
 
   override def getInitialUser(request: RequestHeader): Try[AuthContext] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
       if (userSrv.count > 0)
         Failure(AuthenticationError(s"Use of initial user is forbidden because users exist in database"))
       else Success(initialAuthContext)

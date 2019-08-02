@@ -8,15 +8,17 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
 import org.thp.thehive.models._
 
+import scala.util.{Success, Try}
+
 @Singleton
 class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DataSteps = new DataSteps(raw)
 
-  override def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Data with Entity =
+  override def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     initSteps
       .getByData(e.data)
       .headOption()
-      .getOrElse(super.create(e))
+      .fold(super.create(e))(Success(_))
 }
 
 class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Data, DataSteps](raw) {

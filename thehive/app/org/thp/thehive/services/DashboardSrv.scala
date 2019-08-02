@@ -10,16 +10,21 @@ import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
 import scala.util.Try
 
 @Singleton
-class DashboardSrv @Inject()(organisationSrv: OrganisationSrv)(implicit db: Database) extends VertexSrv[Dashboard, DashboardSteps] {
+class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSrv)(implicit db: Database)
+    extends VertexSrv[Dashboard, DashboardSteps] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DashboardSteps = new DashboardSteps(raw)
 
-  def create(dashboard: Dashboard, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Dashboard with Entity = {
-    val createdDashboard = super.create(dashboard)
-    organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
-    createdDashboard
-  }
+  def create(
+      dashboard: Dashboard,
+      organisation: Organisation with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[Dashboard with Entity] =
+    for {
+      createdDashboard <- super.create(dashboard)
+      _                <- organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
+      _                <- auditSrv.dashboard.create(createdDashboard)
+    } yield createdDashboard
 }
 
 class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Dashboard, DashboardSteps](raw) {

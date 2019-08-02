@@ -8,7 +8,7 @@ import org.thp.thehive.models.ImpactStatus
 
 @Singleton
 class ImpactStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ImpactStatus, ImpactStatusSteps] {
-  override val initialValues = Seq(
+  override val initialValues: Seq[ImpactStatus] = Seq(
     ImpactStatus("NoImpact"),
     ImpactStatus("WithImpact"),
     ImpactStatus("NotApplicable")

@@ -9,7 +9,7 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, FPathElem, InternalError, RichJMap, RichSeq}
+import org.thp.scalligraph.{EntitySteps, FPathElem, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
@@ -25,6 +25,7 @@ class CaseSrv @Inject()(
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
+    observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv
@@ -36,9 +37,10 @@ class CaseSrv @Inject()(
   val caseResolutionStatusSrv = new EdgeSrv[CaseResolutionStatus, Case, ResolutionStatus]
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
-  val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
+  val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val shareObservableSrv      = new EdgeSrv[ShareObservable, Share, Observable]
+  val shareTaskSrv            = new EdgeSrv[ShareTask, Share, Task]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
 
   def create(
@@ -49,41 +51,44 @@ class CaseSrv @Inject()(
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[RichCaseTemplate]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-    val createdCase = create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-    user.foreach(caseUserSrv.create(CaseUser(), createdCase, _))
-    for {
-      _ <- auditSrv.createCase(createdCase)
-      _ = shareSrv.create(createdCase, organisation, profileSrv.admin)
-      _ = caseTemplate.foreach(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate))
-      _ <- caseTemplate.map { ct =>
-        ct.tasks
-          .toList
-          .toTry(task => taskSrv.create(task, createdCase))
-      }.flip
-      caseTemplateCustomFields = caseTemplate
-        .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
-        .map(cf => cf.name -> cf.value)
-        .toMap
-      cfs <- (caseTemplateCustomFields ++ customFields)
-        .toSeq
+
+    def createTaskFromCaseTemplate(`case`: Case with Entity, caseTemplate: RichCaseTemplate): Try[Unit] =
+      for {
+        createdTasks <- caseTemplate.tasks.toTry(task => taskSrv.create(task))
+        _            <- createdTasks.toTry(addTask(`case`, _))
+      } yield ()
+
+    def createCustomFields(`case`: Case with Entity, customFields: Map[String, Option[Any]]) =
+      customFields
         .toTry {
           case (name, Some(value)) =>
             for {
-              cf  <- customFieldSrv.getOrFail(name)
-              ccf <- cf.`type`.setValue(CaseCustomField(), value)
-              alertCustomField = caseCustomFieldSrv.create(ccf, createdCase, cf)
-            } yield CustomFieldWithValue(cf, alertCustomField)
+              cf              <- customFieldSrv.getOrFail(name)
+              ccf             <- cf.`type`.setValue(CaseCustomField(), value)
+              caseCustomField <- caseCustomFieldSrv.create(ccf, `case`, cf)
+            } yield CustomFieldWithValue(cf, caseCustomField)
           case (name, _) =>
-            customFieldSrv.getOrFail(name).map { cf =>
-              val alertCustomField = caseCustomFieldSrv.create(CaseCustomField(), createdCase, cf)
-              CustomFieldWithValue(cf, alertCustomField)
-            }
+            for {
+              cf              <- customFieldSrv.getOrFail(name)
+              caseCustomField <- caseCustomFieldSrv.create(CaseCustomField(), `case`, cf)
+            } yield CustomFieldWithValue(cf, caseCustomField)
         }
-      caseTemplateTags = caseTemplate
-        .fold[Seq[Tag with Entity]](Nil)(_.tags)
+
+    for {
+      createdCase <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
+      _           <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
+      _           <- shareSrv.create(createdCase, organisation, profileSrv.admin)
+      _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+      _           <- caseTemplate.map(createTaskFromCaseTemplate(createdCase, _)).flip
+      caseTemplateCustomFields = caseTemplate
+        .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
+        .map(cf => cf.name -> cf.value)
+      cfs  <- createCustomFields(createdCase, caseTemplateCustomFields.toMap ++ customFields)
       tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
-      allTags = tags ++ caseTemplateTags
-      _       = allTags.foreach(t => caseTagSrv.create(CaseTag(), createdCase, t))
+      caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
+      allTags          = tags ++ caseTemplateTags
+      _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
+      _ <- auditSrv.`case`.create(createdCase)
     } yield RichCase(createdCase, allTags, None, None, user.map(_.login), cfs)
   }
 
@@ -96,24 +101,26 @@ class CaseSrv @Inject()(
       .map(initSteps.getByNumber(_))
       .getOrElse(super.get(id))
 
-  def endDateSetter(endDate: Date): PropertyUpdater =
-    PropertyUpdater(FPathElem("endDate"), endDate.getTime) { (vertex, _, _, _) =>
-      vertex.property("endDate", endDate.getTime)
-      Success(Json.obj("endDate" -> endDate.getTime))
-    }
-
   override def update(
       steps: CaseSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] = {
+    def endDateSetter(endDate: Date): PropertyUpdater =
+      PropertyUpdater(FPathElem("endDate"), endDate.getTime) { (vertex, _, _, _) =>
+        vertex.property("endDate", endDate.getTime)
+        Success(Json.obj("endDate" -> endDate.getTime))
+      }
+
     val closeCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == "Resolved")
 
     val newPropertyUpdaters = if (closeCase) endDateSetter(new Date) +: propertyUpdaters else propertyUpdaters
-    for {
-      (caseSteps, updatedFields) <- super.update(steps, newPropertyUpdaters)
-      case0                      <- caseSteps.clone().getOrFail()
-      _                          <- auditSrv.updateCase(case0, updatedFields)
-    } yield (caseSteps, updatedFields)
+    auditSrv.mergeAudits(super.update(steps, newPropertyUpdaters)) {
+      case (caseSteps, updatedFields) =>
+        caseSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.`case`.update(_, updatedFields))
+    }
   }
 
   def updateTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -124,9 +131,12 @@ class CaseSrv @Inject()(
         case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
         case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
       }
-    tagsToAdd
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTagSrv.create(CaseTag(), `case`, t)))
-      .map(_ => get(`case`).removeTags(tagsToRemove))
+    for {
+      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(caseTagSrv.create(CaseTag(), `case`, _))
+      _ = get(`case`).removeTags(tagsToRemove)
+      _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
+    } yield ()
   }
 
   def addTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -135,38 +145,45 @@ class CaseSrv @Inject()(
       .toList
       .map(_.name)
       .toSet
-    (tags.toSet -- currentTags)
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTagSrv.create(CaseTag(), `case`, t)))
-      .map(_ => ())
+    for {
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(caseTagSrv.create(CaseTag(), `case`, _))
+      _           <- auditSrv.`case`.update(`case`, Json.obj("tags" -> (currentTags ++ tags)))
+    } yield ()
   }
 
   def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[ShareObservable] =
-    initSteps
-      .getOrganisationShare(`case`._id)
-      .getOrFail()
-      .map(share => shareObservableSrv.create(ShareObservable(), share, observable))
-
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val dataToRemove = get(`case`)
-      .observables
-      .data
-      .notShared(`case`._id)
-
+  ): Try[Unit] =
     for {
-      _ <- Try(get(`case`).tasks.logs.attachments.remove())
-      _ <- Try(get(`case`).tasks.logs.remove())
-      _ <- Try(get(`case`).tasks.remove())
-      _ <- Try(get(`case`).observables.keyValues.remove())
-      _ <- Try(get(`case`).observables.attachments.remove())
-      _ <- Try(dataToRemove.remove())
-      _ <- Try(get(`case`).observables.remove())
-      _ <- Try(get(`case`).share.remove())
-      r <- Try(get(`case`).remove())
-    } yield r
-  }
+      share <- initSteps
+        .getOrganisationShare(`case`._id)
+        .getOrFail()
+      _ = shareObservableSrv.create(ShareObservable(), share, observable)
+      _ <- auditSrv.observable.create(observable, `case`)
+    } yield ()
+
+  def addTask(`case`: Case with Entity, task: Task with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      share <- initSteps
+        .getOrganisationShare(`case`._id)
+        .getOrFail()
+      _ = shareTaskSrv.create(ShareTask(), share, task)
+      _ <- auditSrv.task.create(task, `case`)
+    } yield ()
+
+  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _ <- get(`case`).tasks.toIterator.toTry(taskSrv.cascadeRemove(_))
+      _ <- get(`case`).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
+      _ = get(`case`).share.remove()
+      _ = get(`case`).remove()
+      _ <- auditSrv.`case`.delete(`case`)
+    } yield ()
 
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(caseIdOrNumber).visible.exists()
@@ -187,7 +204,7 @@ class CaseSrv @Inject()(
             ()
           }
       }
-      _ <- auditSrv.updateCase(`case`, Json.obj(s"customField.${customField.name}" -> value.toString))
+      _ <- auditSrv.`case`.update(`case`, Json.obj(s"customField.${customField.name}" -> value.toString))
     } yield ()
 
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
@@ -198,53 +215,51 @@ class CaseSrv @Inject()(
   def setImpactStatus(
       `case`: Case with Entity,
       impactStatus: String
-  )(implicit graph: Graph, authContext: AuthContext): Try[CaseImpactStatus with Entity] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     impactStatusSrv.getOrFail(impactStatus).flatMap(setImpactStatus(`case`, _))
 
   def setImpactStatus(
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[CaseImpactStatus with Entity] =
-    auditSrv
-      .updateCase(`case`, Json.obj("impactStatus" -> impactStatus.value))
-      .map(_ => caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus))
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
+    auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> impactStatus.value))
+  }
 
-  def unsetImpactStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("impactStatus" -> JsNull)).map { _ =>
-      get(`case`).unsetImpactStatus
-    }
+  def unsetImpactStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unsetImpactStatus()
+    auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> JsNull))
+  }
 
   def setResolutionStatus(
       `case`: Case with Entity,
       resolutionStatus: String
-  )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     resolutionStatusSrv.getOrFail(resolutionStatus).flatMap(setResolutionStatus(`case`, _))
 
   def setResolutionStatus(
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[CaseResolutionStatus with Entity] =
-    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value)).map { _ =>
-      get(`case`).unsetResolutionStatus
-      caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
-    }
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unsetResolutionStatus()
+    caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
+    auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
+  }
 
-  def unsetResolutionStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("resolutionStatus" -> JsNull)).map { _ =>
-      get(`case`).unsetResolutionStatus
-    }
+  def unsetResolutionStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unsetResolutionStatus()
+    auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> JsNull))
+  }
 
-  def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("owner" -> user.login)).map { _ =>
-      get(`case`).unassign()
-      caseUserSrv.create(CaseUser(), `case`, user)
-      ()
-    }
+  def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    caseUserSrv.create(CaseUser(), `case`, user)
+    auditSrv.`case`.update(`case`, Json.obj("owner" -> user.login))
+  }
 
-  def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    auditSrv.updateCase(`case`, Json.obj("owner" -> JsNull)).map { _ =>
-      get(`case`).unassign()
-    }
+  def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unassign()
+    auditSrv.`case`.update(`case`, Json.obj("owner" -> JsNull))
+  }
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): RichCase = ???
 //  {

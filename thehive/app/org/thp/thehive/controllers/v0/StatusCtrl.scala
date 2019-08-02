@@ -58,7 +58,7 @@ class StatusCtrl @Inject()(
 
   def health: Action[AnyContent] = entryPoint("health") { _ =>
     val dbStatus = db
-      .tryTransaction(graph => userSrv.getOrFail("admin")(graph))
+      .roTransaction(graph => userSrv.getOrFail("admin")(graph))
       .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
     val connectorStatus = connectors.map(c => c.health)
     val distinctStatus  = connectorStatus + dbStatus

@@ -75,7 +75,7 @@ class StreamActor(
       context.become(receive(messages, sender, newKeepAliveTimer, commitTimer, graceTimer))
 
     case AuditStreamMessage(ids @ _*) =>
-      db.transaction { implicit graph =>
+      db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)
@@ -116,7 +116,7 @@ class StreamActor(
       context.become(receive(Nil, keepAliveTimer))
 
     case AuditStreamMessage(ids @ _*) =>
-      db.transaction { implicit graph =>
+      db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .get(ids)
           .visible(authContext)

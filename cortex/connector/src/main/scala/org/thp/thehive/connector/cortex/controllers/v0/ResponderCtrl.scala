@@ -22,7 +22,7 @@ class ResponderCtrl @Inject()(
   def getResponders(entityType: String, entityId: String): Action[AnyContent] =
     entryPoint("get responders")
       .asyncAuth { implicit req =>
-        db.transaction { implicit graph =>
+        db.roTransaction { implicit graph =>
           responderSrv
             .getRespondersByType(entityType, entityId)
             .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))

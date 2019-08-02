@@ -10,6 +10,7 @@ import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarStep
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.Json
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -45,33 +46,43 @@ class CaseTemplateSrv @Inject()(
       authContext: AuthContext
   ): Try[RichCaseTemplate] = {
 
-    val createdCaseTemplate = create(caseTemplate)
-    caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-    val createdTasks = tasks.map { t =>
-      val ct = taskSrv.create(t, createdCaseTemplate)
-      caseTemplateTaskSrv.create(CaseTemplateTask(), createdCaseTemplate, ct)
-      ct
-    }
-    for {
-      tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
-      _ = tags.foreach(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
-      cfs <- customFields
+    def createCustomFields(caseTemplate: CaseTemplate with Entity, customFields: Seq[(String, Option[Any])]): Try[Seq[CustomFieldWithValue]] =
+      customFields
         .toTry {
           case (name, Some(value)) =>
             for {
-              customField <- customFieldSrv.getOrFail(name)
-              ctcf        <- customField.`type`.setValue(CaseTemplateCustomField(), value)
-              caseTemplateCustomField = caseTemplateCustomFieldSrv.create(ctcf, createdCaseTemplate, customField)
-            } yield CustomFieldWithValue(customField, caseTemplateCustomField)
-          case (name, None) =>
-            customFieldSrv.getOrFail(name).map { customField =>
-              val caseTemplateCustomField = caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), createdCaseTemplate, customField)
-              CustomFieldWithValue(customField, caseTemplateCustomField)
-            }
+              cf                      <- customFieldSrv.getOrFail(name)
+              ccf                     <- cf.`type`.setValue(CaseTemplateCustomField(), value)
+              caseTemplateCustomField <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
+            } yield CustomFieldWithValue(cf, caseTemplateCustomField)
+          case (name, _) =>
+            for {
+              cf                      <- customFieldSrv.getOrFail(name)
+              caseTemplateCustomField <- caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), caseTemplate, cf)
+            } yield CustomFieldWithValue(cf, caseTemplateCustomField)
         }
-      _ <- auditSrv.createCaseTemplate(createdCaseTemplate)
+
+    for {
+      createdCaseTemplate <- create(caseTemplate)
+      _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
+      _                   <- createCustomFields(createdCaseTemplate, customFields)
+      createdTasks        <- tasks.toTry(taskSrv.create)
+      _                   <- createdTasks.toTry(addTask(createdCaseTemplate, _))
+      tags                <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+      _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
+      cfs                 <- createCustomFields(createdCaseTemplate, customFields)
+      _                   <- auditSrv.caseTemplate.create(createdCaseTemplate)
     } yield RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
   }
+
+  def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      _ <- caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
+      _ <- auditSrv.taskInTemplate.create(task, caseTemplate)
+    } yield ()
 
   def updateTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(caseTemplate)
@@ -81,9 +92,12 @@ class CaseTemplateSrv @Inject()(
         case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
         case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
       }
-    tagsToAdd
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, t)))
-      .map(_ => get(caseTemplate).removeTags(tagsToRemove))
+    for {
+      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
+      _ = get(caseTemplate).removeTags(tagsToRemove)
+      _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags))
+    } yield ()
   }
 
   def addTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -92,18 +106,13 @@ class CaseTemplateSrv @Inject()(
       .toList
       .map(_.name)
       .toSet
-    (tags.toSet -- currentTags)
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, t)))
-      .map(_ => ())
+    for {
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
+      _           <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> (currentTags ++ tags)))
+    } yield ()
   }
 
-//  def addTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
-//    for {
-//      createdTask <- taskSrv.create
-//    } auditSrv.addTaskToCaseTemplate(caseTemplate, task)
-//    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
-//    ()
-//  }
 }
 
 @EntitySteps[CaseTemplate]

@@ -19,33 +19,39 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
   val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)
 
-  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] = {
-    val createdLog = create(log)
-    taskLogSrv.create(TaskLog(), task, createdLog)
-    auditSrv.createLog(createdLog, task).map(_ => createdLog)
-  }
+  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] =
+    for {
+      createdLog <- create(log)
+      _          <- taskLogSrv.create(TaskLog(), task, createdLog)
+      case0      <- get(createdLog).`case`.getOrFail()
+      _          <- auditSrv.log.create(createdLog, case0)
+    } yield createdLog
 
   def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
-    attachmentSrv.create(file).flatMap(addAttachment(log, _))
+    for {
+      case0      <- get(log).`case`.getOrFail()
+      attachment <- attachmentSrv.create(file)
+      _          <- addAttachment(log, attachment)
+      _          <- auditSrv.log.update(log, case0, Json.obj("attachment" -> attachment.name))
+    } yield attachment
 
   def addAttachment(
       log: Log with Entity,
       attachment: Attachment with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
-    logAttachmentSrv.create(LogAttachment(), log, attachment)
-    auditSrv.updateLog(log, Json.obj("attachment" -> attachment.name)).map(_ => attachment)
-  }
-
-  def cascadeRemove(log: Log with Entity)(implicit graph: Graph): Try[Unit] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
     for {
-      _ <- Try(
-        get(log)
-          .attachments
-          .toList
-          .foreach(a => attachmentSrv.get(a.attachmentId).remove())
-      )
-      r <- Try(get(log).remove())
-    } yield r
+      _     <- logAttachmentSrv.create(LogAttachment(), log, attachment)
+      case0 <- get(log).`case`.getOrFail()
+      _     <- auditSrv.log.update(log, case0, Json.obj("attachment" -> attachment.name))
+    } yield attachment
+
+  def cascadeRemove(log: Log with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _     <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
+      case0 <- get(log).`case`.getOrFail()
+      _ = get(log).remove()
+      _ <- auditSrv.log.delete(log, case0)
+    } yield ()
 }
 
 @EntitySteps[Log]

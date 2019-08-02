@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.util.{Set => JSet}
 
 import gremlin.scala.{KeyValue => _, _}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -13,7 +13,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
 import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
+import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject()(
@@ -21,11 +21,13 @@ class ObservableSrv @Inject()(
     dataSrv: DataSrv,
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
-    caseSrv: CaseSrv,
-    shareSrv: ShareSrv
+    caseSrvProvider: Provider[CaseSrv],
+    shareSrv: ShareSrv,
+    auditSrv: AuditSrv
 )(
     implicit db: Database
 ) extends VertexSrv[Observable, ObservableSteps] {
+  lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
@@ -52,29 +54,27 @@ class ObservableSrv @Inject()(
   )(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val createdObservable = create(observable)
-    observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-    observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+  ): Try[RichObservable] =
     for {
-      tags <- addTags(createdObservable, tagNames)
-      ext  <- addExtensions(createdObservable, extensions)
+      createdObservable <- create(observable)
+      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
+      _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+      tags              <- addTags(createdObservable, tagNames)
+      ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, ext)
-  }
 
   def create(observable: Observable, `type`: ObservableType with Entity, dataValue: String, tagNames: Set[String], extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val createdObservable = create(observable)
-    observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-    val data = dataSrv.create(Data(dataValue))
-    observableDataSrv.create(ObservableData(), createdObservable, data)
+  ): Try[RichObservable] =
     for {
-      tags <- addTags(createdObservable, tagNames)
-      ext  <- addExtensions(createdObservable, extensions)
+      createdObservable <- create(observable)
+      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
+      data              <- dataSrv.create(Data(dataValue))
+      _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
+      tags              <- addTags(createdObservable, tagNames)
+      ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, Some(data), None, tags, ext)
-  }
 
   def updateTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(observable)
@@ -84,9 +84,12 @@ class ObservableSrv @Inject()(
         case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
         case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
       }
-    tagsToAdd
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => observableTagSrv.create(ObservableTag(), observable, t)))
-      .map(_ => get(observable).removeTags(tagsToRemove))
+    for {
+      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      _ = get(observable).removeTags(tagsToRemove)
+//      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
+    } yield ()
   }
 
   def addTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Seq[Tag with Entity]] = {
@@ -95,44 +98,33 @@ class ObservableSrv @Inject()(
       .toList
       .map(_.name)
       .toSet
-    (tags.toSet -- currentTags)
-      .toTry { tn =>
-        tagSrv.getOrCreate(tn).map { t =>
-          observableTagSrv.create(ObservableTag(), observable, t)
-          t
-        }
-      }
+    for {
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+//      _           <- auditSrv.observable.update(observable, Json.obj("tags" -> (currentTags ++ tags)))
+    } yield createdTags
   }
 
   private def addExtensions(observable: Observable with Entity, extensions: Seq[KeyValue])(
       implicit graph: Graph,
       authContext: AuthContext
-  ) =
-    Success(
-      extensions
-        .map(keyValueSrv.create)
-        .map { kv =>
-          observableKeyValueSrv.create(ObservableKeyValue(), observable, kv)
-          kv
-        }
-    )
+  ): Try[Seq[KeyValue with Entity]] =
+    for {
+      keyValues <- extensions.toTry(keyValueSrv.create)
+      _         <- keyValues.toTry(kv => observableKeyValueSrv.create(ObservableKeyValue(), observable, kv))
+    } yield keyValues
 
   def duplicate(richObservable: RichObservable)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-
-    val createdObservable = create(richObservable.observable)
-    observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
-    richObservable.data.foreach { data =>
-      observableDataSrv.create(ObservableData(), createdObservable, data)
-    }
-    richObservable.attachment.foreach { attachment =>
-      observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
-    }
-    // TODO copy or link key value ?
-    Success(richObservable.copy(observable = createdObservable))
-  }
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- create(richObservable.observable)
+      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
+      _                 <- richObservable.data.map(data => observableDataSrv.create(ObservableData(), createdObservable, data)).flip
+      _                 <- richObservable.attachment.map(attachment => observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)).flip
+      // TODO copy or link key value ?
+    } yield richObservable.copy(observable = createdObservable)
 
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =
     for {

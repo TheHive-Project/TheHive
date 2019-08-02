@@ -24,6 +24,7 @@ import play.api.{Configuration, Environment}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
+import scala.util.Try
 
 class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -43,7 +44,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -60,7 +61,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
       val client: CortexClient              = app.instanceOf[CortexClient]
 
       "handle creation and then finished job" in {
-        val maybeObservable = db.transaction { implicit graph =>
+        val maybeObservable = db.roTransaction { implicit graph =>
           observableSrv.initSteps.has(Key("message"), P.eq("hello world")).getOrFail()
         }
         maybeObservable must beSuccessfulTry
@@ -77,9 +78,6 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           cortexId = "test",
           cortexJobId = "LVyYKFstq3Rtrdc9DFmL"
         )
-        val createdJob = db.transaction { implicit graph =>
-          jobSrv.create(job, observable)
-        }
 
         val cortexOutputJob: CortexOutputJob = {
           val dataSource = Source.fromResource("cortex-jobs.json")
@@ -88,20 +86,23 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           Json.parse(data).as[CortexOutputJob]
         }
 
-        jobSrv
-          .finished(createdJob._id, cortexOutputJob, client)
-          .map { updatedJob =>
-            updatedJob.status shouldEqual JobStatus.Success
-            updatedJob.report must beSome
-            updatedJob.report.get \ "artifacts" must beEmpty
-            (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
+        (for {
+          createdJob <- Future.fromTry(db.tryTransaction { implicit graph =>
+            jobSrv.create(job, observable)
+          })
+          updatedJob <- jobSrv
+            .finished(createdJob._id, cortexOutputJob, client)
+        } yield {
+          updatedJob.status shouldEqual JobStatus.Success
+          updatedJob.report must beSome
+          updatedJob.report.get \ "artifacts" must beEmpty
+          (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
-            db.transaction { implicit graph =>
-              jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
-              jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
-            }
+          db.roTransaction { implicit graph =>
+            jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
+            jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
           }
-          .await(0, 5.seconds)
+        }).await(0, 5.seconds)
       }
     }
   }

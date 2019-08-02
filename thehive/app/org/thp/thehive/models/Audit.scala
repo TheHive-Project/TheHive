@@ -14,6 +14,7 @@ case class AuditUser()
 case class Audit(
     requestId: String,
     action: String,
+    mainAction: Boolean,
     objectId: Option[String],
     objectType: Option[String],
     details: Option[String]
@@ -22,7 +23,7 @@ case class Audit(
 object Audit {
 
   def apply(action: String, entity: Entity, details: Option[String] = None)(implicit authContext: AuthContext): Audit =
-    Audit(authContext.requestId, action, Some(entity._id), Some(entity._model.label), details)
+    Audit(authContext.requestId, action, mainAction = false, Some(entity._id), Some(entity._model.label), details)
 }
 
 case class RichAudit(
@@ -30,6 +31,7 @@ case class RichAudit(
     _createdAt: Date,
     _createdBy: String,
     action: String,
+    mainAction: Boolean,
     requestId: String,
     details: Option[String],
     context: Entity,
@@ -44,6 +46,7 @@ object RichAudit {
       audit._createdAt,
       audit._createdBy,
       audit.action,
+      audit.mainAction,
       audit.requestId,
       audit.details,
       context,

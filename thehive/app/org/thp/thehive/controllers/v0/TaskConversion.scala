@@ -8,7 +8,7 @@ import org.thp.scalligraph.{Output, RichOptionTry}
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
-import play.api.libs.json.{JsNull, Json}
+import play.api.libs.json.Json
 
 import scala.language.implicitConversions
 
@@ -53,14 +53,11 @@ object TaskConversion {
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail()
             user <- login.map(userSrv.getOrFail(_)(graph)).flip
-          } yield user match {
-            case Some(u) =>
-              taskSrv.assign(task, u)(graph, authContext)
-              Json.obj("owner" -> u.login)
-            case None =>
-              taskSrv.unassign(task)(graph, authContext)
-              Json.obj("owner" -> JsNull)
-          }
+            _ <- user match {
+              case Some(u) => taskSrv.assign(task, u)(graph, authContext)
+              case None    => taskSrv.unassign(task)(graph, authContext)
+            }
+          } yield Json.obj("owner" -> user.map(_.login))
       })
       .build
 }

@@ -46,7 +46,7 @@ class CortexClientTest extends PlaySpecification with Mockito {
           description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
           dataTypeList = Seq("test"),
           maxTlp = 2,
-          maxPap = 2 // FIXME Add CortexIds
+          maxPap = 2
         )
       )
 

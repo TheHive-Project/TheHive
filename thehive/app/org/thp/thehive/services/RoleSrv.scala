@@ -8,6 +8,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+import scala.util.Try
+
 @Singleton
 class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleSteps] {
 
@@ -20,13 +22,14 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
   def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Role with Entity = {
-    val createdRole = create(Role())
-    roleOrganisationSrv.create(RoleOrganisation(), createdRole, organisation)
-    userRoleSrv.create(UserRole(), user, createdRole)
-    roleProfileSrv.create(RoleProfile(), createdRole, profile)
-    createdRole
-  }
+  ): Try[Role with Entity] =
+    for {
+      createdRole <- create(Role())
+      _           <- roleOrganisationSrv.create(RoleOrganisation(), createdRole, organisation)
+      _           <- userRoleSrv.create(UserRole(), user, createdRole)
+      _           <- roleProfileSrv.create(RoleProfile(), createdRole, profile)
+    } yield createdRole
+  // TODO add audit
 }
 
 @EntitySteps[Role]

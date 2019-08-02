@@ -33,7 +33,7 @@ class UserCtrl @Inject()(
 
   def current: Action[AnyContent] =
     entryPoint("current user")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
           .richUser(request.organisation)
@@ -52,7 +52,7 @@ class UserCtrl @Inject()(
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile      <- profileSrv.getOrFail(inputUser.profile)
-              user = userSrv.create(inputUser, organisation, profile)
+              user         <- userSrv.create(inputUser, organisation, profile)
             } yield user
           }
           .flatMap { user =>
@@ -66,7 +66,7 @@ class UserCtrl @Inject()(
 
   def get(userId: String): Action[AnyContent] =
     entryPoint("get user")
-      .authTransaction(db) { request => implicit graph =>
+      .authRoTransaction(db) { request => implicit graph =>
         userSrv
           .get(userId)
           .richUser(request.organisation) // FIXME what if user is not in the same org ?
@@ -99,7 +99,7 @@ class UserCtrl @Inject()(
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
       .extract("password", FieldsParser[String])
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           _ <- userSrv
             .current
@@ -107,7 +107,7 @@ class UserCtrl @Inject()(
             .users
             .get(userId)
             .existsOrFail()
-          _ <- authSrv.setPassword(userId, request.body("password"))
+          _ <- authSrv.setPassword(userId, request.body("password")) // FIXME
         } yield Results.NoContent
       }
 
@@ -125,7 +125,7 @@ class UserCtrl @Inject()(
 
   def getKey(userId: String): Action[AnyContent] =
     entryPoint("get key")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           _ <- userSrv
             .current
@@ -133,14 +133,14 @@ class UserCtrl @Inject()(
             .users
             .get(userId)
             .existsOrFail()
-          key <- authSrv
+          key <- authSrv // FIXME put outside tx
             .getKey(userId)
         } yield Results.Ok(key)
       }
 
   def removeKey(userId: String): Action[AnyContent] =
     entryPoint("remove key")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           _ <- userSrv
             .current
@@ -155,7 +155,7 @@ class UserCtrl @Inject()(
 
   def renewKey(userId: String): Action[AnyContent] =
     entryPoint("renew key")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           _ <- userSrv
             .current

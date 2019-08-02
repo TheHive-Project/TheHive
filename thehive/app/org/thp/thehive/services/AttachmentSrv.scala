@@ -31,7 +31,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     val hs     = hashers.fromPath(file.filepath)
     val id     = hs.head.toString
     val is     = Files.newInputStream(file.filepath)
-    val result = storageSrv.saveBinary(id, is).map(_ => create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
+    val result = storageSrv.saveBinary(id, is).flatMap(_ => create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
     is.close()
     result
   }
@@ -42,13 +42,15 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
-    storageSrv.saveBinary(id, data).map(_ => create(Attachment(filename, data.length.toLong, contentType, hs, id)))
+    storageSrv.saveBinary(id, data).flatMap(_ => create(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
   def source(attachment: Attachment with Entity)(implicit graph: Graph): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
 
   def stream(attachment: Attachment with Entity): InputStream = storageSrv.loadBinary(attachment._id)
+
+  def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = ??? // TODO
 }
 
 @EntitySteps[Attachment]

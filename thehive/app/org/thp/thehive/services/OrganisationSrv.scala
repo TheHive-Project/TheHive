@@ -8,6 +8,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+import scala.util.Try
+
 @Singleton
 class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implicit db: Database) extends VertexSrv[Organisation, OrganisationSteps] {
 
@@ -21,11 +23,11 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
     if (db.isValidId(id)) super.get(id)
     else initSteps.getByName(id)
 
-  def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Organisation with Entity = {
-    val createdOrganisation = create(organisation)
-    roleSrv.create(user, createdOrganisation, profileSrv.admin)
-    createdOrganisation
-  }
+  def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+    for {
+      createdOrganisation <- create(organisation)
+      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.admin)
+    } yield createdOrganisation
 
   def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
 }

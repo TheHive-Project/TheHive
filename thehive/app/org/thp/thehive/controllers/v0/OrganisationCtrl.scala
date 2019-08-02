@@ -7,7 +7,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{OrganisationSrv, UserSrv}
-import play.api.libs.json.Json
+import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -21,30 +21,28 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
       .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
-        val createdOrganisation                  = organisationSrv.create(fromInputOrganisation(inputOrganisation))
-        val outputOrganisation                   = toOutputOrganisation(createdOrganisation)
-        Success(Results.Created(Json.toJson(outputOrganisation)))
+        organisationSrv
+          .create(fromInputOrganisation(inputOrganisation))
+          .map(createdOrganisation => Results.Created(createdOrganisation.toJson))
       }
 
   def get(organisationId: String): Action[AnyContent] =
     entryPoint("get organisation")
-      .authTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         organisationSrv
           .getOrFail(organisationId)
-          .map { organisation =>
-            val outputOrganisation = toOutputOrganisation(organisation)
-            Results.Ok(Json.toJson(outputOrganisation))
-          }
+          .map(organisation => Results.Ok(organisation.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list organisation")
-      .authTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         val organisations = organisationSrv
           .initSteps
-          .toList
-          .map(toOutputOrganisation)
-        Success(Results.Ok(Json.toJson(organisations)))
+          .toIterator
+          .map(_.toJson)
+          .toSeq
+        Success(Results.Ok(JsArray(organisations)))
       }
 
   def update(organisationId: String): Action[AnyContent] =

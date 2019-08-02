@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers._
+import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
@@ -40,16 +41,17 @@ class TaskCtrl @Inject()(
         val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(caseId)
-          createdTask <- taskSrv.create(inputTask, case0)
+          createdTask <- taskSrv.create(inputTask)
+          _           <- caseSrv.addTask(case0, createdTask)
           owner       <- inputTask.owner.map(userSrv.getOrFail).flip
-          _        = owner.foreach(taskSrv.assign(createdTask, _))
+          _           <- owner.map(taskSrv.assign(createdTask, _)).flip
           richTask = RichTask(createdTask, owner.map(_.login))
         } yield Results.Created(richTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =
     entryPoint("get task")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(taskId)
           .visible

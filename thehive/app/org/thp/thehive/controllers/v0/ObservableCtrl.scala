@@ -62,14 +62,16 @@ class ObservableCtrl @Inject()(
             .map(a => observableSrv.create(inputObservable, observableType, a, inputObservable.tags, Nil))
             .flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
-            caseSrv.addObservable(case0, richObservables.observable).map(_ => richObservables)
+            caseSrv
+              .addObservable(case0, richObservables.observable)
+              .map(_ => richObservables)
           }
         } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))
       }
 
   def get(observableId: String): Action[AnyContent] =
     entryPoint("get observable")
-      .authTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         observableSrv
           .get(observableId)
           //            .availableFor(request.organisation)
@@ -95,7 +97,7 @@ class ObservableCtrl @Inject()(
 
   def findSimilar(obsId: String): Action[AnyContent] =
     entryPoint("find similar")
-      .authTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         val observables = observableSrv
           .get(obsId)
           .similar

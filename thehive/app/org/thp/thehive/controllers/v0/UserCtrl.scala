@@ -43,7 +43,7 @@ class UserCtrl @Inject()(
 
   def current: Action[AnyContent] =
     entryPoint("current user")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .get(request.userId)
           .richUser(request.organisation)
@@ -65,7 +65,7 @@ class UserCtrl @Inject()(
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail("analyst")
               else if (inputUser.roles.contains("read")) profileSrv.getOrFail("read-only")
               else ???
-              user = userSrv.create(inputUser, organisation, profile)
+              user <- userSrv.create(inputUser, organisation, profile)
             } yield user
           }
           .flatMap { user =>
@@ -88,13 +88,13 @@ class UserCtrl @Inject()(
           u <- userSrv
             .get(userId)
             .update("locked" -> true)
-          _ <- auditSrv.deleteUser(u)
+          _ <- auditSrv.user.delete(u)
         } yield Results.NoContent
       }
 
   def get(userId: String): Action[AnyContent] =
     entryPoint("get user")
-      .authTransaction(db) { request => implicit graph =>
+      .authRoTransaction(db) { request => implicit graph =>
         userSrv
           .get(userId)
           .richUser(request.organisation) // FIXME what if user is not in the same org ?
@@ -120,7 +120,7 @@ class UserCtrl @Inject()(
       .extract("password", FieldsParser[String].on("password"))
       .auth { implicit request =>
         for {
-          _ <- db.tryTransaction { implicit graph =>
+          _ <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)
@@ -149,7 +149,7 @@ class UserCtrl @Inject()(
     entryPoint("get key")
       .auth { implicit request =>
         for {
-          _ <- db.tryTransaction { implicit graph =>
+          _ <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)
@@ -166,7 +166,7 @@ class UserCtrl @Inject()(
     entryPoint("remove key")
       .auth { implicit request =>
         for {
-          _ <- db.tryTransaction { implicit graph =>
+          _ <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)
@@ -184,7 +184,7 @@ class UserCtrl @Inject()(
     entryPoint("renew key")
       .auth { implicit request =>
         for {
-          _ <- db.tryTransaction { implicit graph =>
+          _ <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)

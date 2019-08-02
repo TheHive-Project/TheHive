@@ -22,7 +22,7 @@ class AuditCtrl @Inject()(
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val audits = caseId
           .filterNot(_ == "any")
           .fold(auditSrv.initSteps)(rid => auditSrv.initSteps.forCase(rid))

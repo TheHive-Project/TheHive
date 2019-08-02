@@ -38,7 +38,7 @@ class StreamCtrl @Inject()(
         .get(streamId)
         .map {
           case auditIds if auditIds.nonEmpty =>
-            db.transaction { implicit graph =>
+            db.roTransaction { implicit graph =>
               val audits = auditSrv
                 .get(auditIds)
                 .richAuditWithCustomRenderer(auditRenderer)

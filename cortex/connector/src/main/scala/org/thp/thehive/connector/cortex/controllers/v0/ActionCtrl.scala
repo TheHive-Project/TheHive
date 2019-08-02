@@ -36,7 +36,7 @@ class ActionCtrl @Inject()(
   import org.thp.thehive.controllers.v0.AlertConversion._
 
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
         entity match {
           case c: Case       => caseSrv.get(c).richCase.getOrFail().map(_.toJson.as[JsObject])
           case t: Task       => taskSrv.get(t).richTask.getOrFail().map(_.toJson.as[JsObject])
@@ -63,19 +63,19 @@ class ActionCtrl @Inject()(
     entryPoint("create action")
       .extract("action", FieldsParser[InputAction])
       .asyncAuth { implicit request =>
-        db.transaction { implicit graph =>
-          val action: CortexAction = fromInputAction(request.body("action"))
-
-          for {
-            entity <- Future.fromTry(entityHelper.get(action.objectType, action.objectId, Permissions.manageAction))
-            action <- actionSrv.execute(action, entity)
-          } yield Results.Ok(action.toJson)
+        val action: CortexAction = fromInputAction(request.body("action"))
+        val tryEntity = db.roTransaction { implicit graph =>
+          entityHelper.get(action.objectType, action.objectId, Permissions.manageAction)
         }
+        for {
+          entity <- Future.fromTry(tryEntity)
+          action <- actionSrv.execute(action, entity)
+        } yield Results.Ok(action.toJson)
       }
 
   def getByEntity(objectType: String, objectId: String): Action[AnyContent] =
     entryPoint("get by entity")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           entity <- entityHelper.get(toEntityType(objectType), objectId, Permissions.manageAction)
         } yield Results.Ok(Json.toJson(actionSrv.listForEntity(entity._id)))

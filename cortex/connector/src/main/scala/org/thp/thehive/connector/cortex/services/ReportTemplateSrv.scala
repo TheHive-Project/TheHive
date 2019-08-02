@@ -50,11 +50,11 @@ class ReportTemplateSrv @Inject()(
         case (templateMap, (analyzerId, _)) if templateMap.contains(analyzerId) => templateMap
         case (templateMap, (analyzerId, entry)) =>
           val reportTemplate = readZipEntry(file, entry)
-            .map { content =>
-              db.transaction { implicit graph =>
+            .flatMap { content =>
+              db.tryTransaction { implicit graph =>
                 get(analyzerId)
                   .update("content" -> content)
-                  .getOrElse(create(ReportTemplate(analyzerId, content)))
+                  .recoverWith { case _ => create(ReportTemplate(analyzerId, content)) }
               }
             }
           templateMap + (analyzerId -> reportTemplate)

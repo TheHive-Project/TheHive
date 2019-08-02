@@ -17,7 +17,7 @@ object UserSrv {
 }
 
 @Singleton
-class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
+class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
 
   val userRoleSrv = new EdgeSrv[UserRole, User, Role]
 
@@ -40,11 +40,12 @@ class UserSrv @Inject()(roleSrv: RoleSrv, implicit val db: Database) extends Ver
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): RichUser = {
-    val createdUser = create(user)
-    roleSrv.create(createdUser, organisation, profile)
-    RichUser(createdUser, profile.name, profile.permissions, organisation.name)
-  }
+  ): Try[RichUser] =
+    for {
+      createdUser <- create(user)
+      _           <- roleSrv.create(createdUser, organisation, profile)
+      _           <- auditSrv.user.create(createdUser)
+    } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 

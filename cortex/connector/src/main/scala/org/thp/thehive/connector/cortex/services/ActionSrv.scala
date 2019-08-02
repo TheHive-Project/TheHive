@@ -8,7 +8,7 @@ import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.Inject
 import org.thp.cortex.client.{CortexClient, CortexConfig}
-import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexAction}
+import org.thp.cortex.dto.v0.{CortexOutputJob, CortexOutputOperation, InputCortexAction}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
@@ -19,7 +19,7 @@ import org.thp.thehive.models.{Case, TheHiveSchema}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.util.Try
 
 class ActionSrv @Inject()(
     implicit db: Database,
@@ -48,14 +48,13 @@ class ActionSrv @Inject()(
       .withFieldConst(_.pap, pap)
       .transform
 
-  def getEntityLabel(entity: Entity): String = entity._model.label // FIXME
   /**
     * Executes an Action on user demand,
     * creates a job on Cortex side and then persist the
     * Action, looking forward job completion
     *
-    * @param action the initial data
-    * @param entity the Entity to execute an Action upon
+    * @param action      the initial data
+    * @param entity      the Entity to execute an Action upon
     * @param authContext necessary auth context
     * @return
     */
@@ -79,7 +78,7 @@ class ActionSrv @Inject()(
           }
         case None => Future.failed(NotFoundError(s"Responder ${action.responderId} not found"))
       }
-      (label, tlp, pap) <- Future.fromTry(db.tryTransaction(implicit graph => entityHelper.entityInfo(entity)))
+      (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       inputCortexAction = toCortexAction(action, label, tlp, pap, writes.writes(entity))
       job <- client.execute(action.responderId, inputCortexAction)
       updatedAction = action.copy(
@@ -102,53 +101,49 @@ class ActionSrv @Inject()(
   /**
     * Creates an Action with necessary ActionContext edge
     *
-    * @param action the action to persist
-    * @param context the context Entity to link to
-    * @param graph graph needed for db queries
+    * @param action      the action to persist
+    * @param context     the context Entity to link to
+    * @param graph       graph needed for db queries
     * @param authContext auth for db queries
     * @return
     */
   def create(
       action: Action,
       context: Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[RichAction] = {
-
-    val createdAction = create(action)
-    actionContextSrv.create(ActionContext(), createdAction, context)
-
-    Success(RichAction(createdAction, context))
-  }
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichAction] =
+    for {
+      createdAction <- create(action)
+      _             <- actionContextSrv.create(ActionContext(), createdAction, context)
+    } yield RichAction(createdAction, context)
 
   /**
     * Once the job is finished for a precise Action,
     * updates it
     *
-    * @param actionId the action to update
+    * @param actionId        the action to update
     * @param cortexOutputJob the result Cortex job
-    * @param authContext context for db queries
+    * @param authContext     context for db queries
     * @return
     */
   def finished(actionId: String, cortexOutputJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Action with Entity] =
-    db.transaction { implicit graph =>
-      val operations = {
-        for {
-          report <- cortexOutputJob.report.toSeq
-          op     <- report.operations
-          if op.status == ActionOperationStatus.Waiting
-        } yield {
-          for {
-            action <- initSteps.get(actionId).richAction.getOrFail()
-            operation <- actionOperationSrv.execute(
+    db.tryTransaction { implicit graph =>
+      val operations = cortexOutputJob
+        .report
+        .fold[Seq[CortexOutputOperation]](Nil)(_.operations)
+        .filter(_.status == ActionOperationStatus.Waiting)
+        .map { operation =>
+          (for {
+            action <- get(actionId).richAction.getOrFail()
+            updatedOperation <- actionOperationSrv.execute(
               action.context,
-              op,
+              operation,
               relatedCase(actionId)
             )
-          } yield operation
+          } yield updatedOperation)
+            .fold(t => operation.updateStatus(ActionOperationStatus.Failure, t.getMessage), identity)
         }
-      } flatMap (_.toOption)
 
-      initSteps
-        .get(actionId)
+      get(actionId)
         .update(
           "status"     -> fromCortexJobStatus(cortexOutputJob.status),
           "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),

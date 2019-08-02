@@ -33,7 +33,7 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
           case "ui_settings"  => JsObject.empty
           case "custom_fields" =>
             val cf = db
-              .transaction { implicit grap =>
+              .roTransaction { implicit grap =>
                 customFieldSrv.initSteps.toList
               }
               .map(cf => cf._id -> cf.toJson)

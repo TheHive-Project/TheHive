@@ -1,13 +1,14 @@
 package org.thp.thehive.services
 
 import play.api.test.PlaySpecification
-
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, UserSrv => SUserSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
+
+import scala.util.Try
 
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
@@ -23,7 +24,7 @@ class UserSrvTest extends PlaySpecification {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -35,15 +36,17 @@ class UserSrvTest extends PlaySpecification {
     s"[$name] user service" should {
 
       "create and get an user by his id" in db.transaction { implicit graph =>
-        val user =
-          userSrv.create(User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None))
-        userSrv.getOrFail(user._id) must beSuccessfulTry(user)
+        userSrv.create(User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None)) must beSuccessfulTry
+          .which { user =>
+            userSrv.getOrFail(user._id) must beSuccessfulTry(user)
+          }
       }
 
       "create and get an user by his login" in db.transaction { implicit graph =>
-        val user =
-          userSrv.create(User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None))
-        userSrv.getOrFail(user.login) must beSuccessfulTry(user)
+        userSrv.create(User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None)) must beSuccessfulTry
+          .which { user =>
+            userSrv.getOrFail(user.login) must beSuccessfulTry(user)
+          }
       }
     }
   }

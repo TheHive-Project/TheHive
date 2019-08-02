@@ -1,13 +1,14 @@
 package org.thp.thehive.services
 
-import scala.util.Try
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, Json}
+
+import scala.util.Try
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -20,44 +21,33 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
-  def create(task: Task, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = {
-    val createdTask = create(task)
-    for {
-      share <- caseSrv
-        .initSteps
-        .getOrganisationShare(`case`._id)
-        .getOrFail()
-      _ = shareSrv.shareTaskSrv.create(ShareTask(), share, createdTask)
-      _ <- auditSrv.createTask(createdTask, `case`)
-    } yield createdTask
-  }
-
-  def create(task: Task, caseTemplate: CaseTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Task with Entity = {
-    val createdTask = create(task)
-    caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, createdTask)
-    createdTask
-  }
-
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(taskId).visible(authContext).exists()
 
-  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Unit = {
-    get(task).unassign()
-    taskUserSrv.create(TaskUser(), task, user)
-    ()
-  }
-
-  def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Unit =
-    get(task).unassign()
-
-  def cascadeRemove(task: Task with Entity)(implicit graph: Graph): Try[Unit] =
+  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- Try(get(task).logs.toList.foreach(logSrv.cascadeRemove))
-      r <- Try(get(task).remove())
-    } yield r
+      case0 <- get(task).`case`.getOrFail()
+      _ = get(task).unassign()
+      _ = taskUserSrv.create(TaskUser(), task, user)
+      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> user.login))
+    } yield ()
+
+  def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      case0 <- get(task).`case`.getOrFail()
+      _ = get(task).unassign()
+      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> JsNull))
+    } yield ()
+
+  def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      case0 <- get(task).`case`.getOrFail()
+      _     <- get(task).logs.toIterator.toTry(logSrv.cascadeRemove(_))
+      _ = get(task).remove()
+      _ <- auditSrv.task.delete(task, case0)
+    } yield ()
 }
 
-@EntitySteps[Task]
 class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
 
   def visible(implicit authContext: AuthContext): TaskSteps = newInstance(
@@ -71,10 +61,6 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
-
-  @deprecated("", "")
-  def availableFor(organisation: String): TaskSteps = ???
-//    newInstance(raw.as("x").where(x ⇒ new CaseSteps(x.inTo[CaseTask]).availableFor(organisation).raw))
 
   def can(permission: Permission)(implicit authContext: AuthContext): TaskSteps =
     newInstance(
@@ -111,7 +97,6 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  @deprecated("must not be used because it doesn't generate audit log")
   def unassign(): Unit = {
     raw.outToE[TaskUser].drop().iterate()
     ()

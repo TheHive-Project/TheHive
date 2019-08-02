@@ -24,26 +24,27 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
         val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(inputTask.caseId)
-          createdTask <- taskSrv.create(inputTask, case0)
+          createdTask <- taskSrv.create(inputTask)
+          _           <- caseSrv.addTask(case0, createdTask)
         } yield Results.Created(createdTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =
     entryPoint("get task")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(taskId)
-          .availableFor(request.organisation)
+          .visible
           .getOrFail()
           .map(task => Results.Ok(task.toJson))
       }
 
   def list: Action[AnyContent] =
     entryPoint("list task")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val tasks = taskSrv
           .initSteps
-          .availableFor(request.organisation)
+          .visible
           .toList
           .map(_.toJson)
         Success(Results.Ok(Json.toJson(tasks)))

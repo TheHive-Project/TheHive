@@ -30,7 +30,7 @@ class LocalKeyAuthSrv(
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.authByKey)
 
   override def authenticate(key: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
       userSrv
         .initSteps
         .getByAPIKey(key)
@@ -48,7 +48,7 @@ class LocalKeyAuthSrv(
     }
 
   override def getKey(username: String)(implicit authContext: AuthContext): Try[String] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
       userSrv
         .getOrFail(username)
         .flatMap(_.apikey.fold[Try[String]](Failure(BadRequestError(s"User $username hasn't key")))(Success.apply))

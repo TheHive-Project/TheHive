@@ -10,6 +10,8 @@ import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
 
+import scala.util.Try
+
 class CaseSrvTest extends PlaySpecification {
   val dummyUserSrv = DummyUserSrv()
 
@@ -23,7 +25,7 @@ class CaseSrvTest extends PlaySpecification {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -35,11 +37,11 @@ class CaseSrvTest extends PlaySpecification {
 
     s"[$name] case service" should {
 
-      "list all cases" in db.transaction { implicit graph =>
+      "list all cases" in db.roTransaction { implicit graph =>
         caseSrv.initSteps.toList.map(_.number) must contain(allOf(1, 2, 3, 4))
       }
 
-      "get a case without impact status" in db.transaction { implicit graph =>
+      "get a case without impact status" in db.roTransaction { implicit graph =>
         val richCase = caseSrv.get("#1").richCase.head()
         richCase must_== RichCase(
           richCase._id,
@@ -66,7 +68,7 @@ class CaseSrvTest extends PlaySpecification {
         )
       }
 
-      "get a case with impact status" in db.transaction { implicit graph =>
+      "get a case with impact status" in db.roTransaction { implicit graph =>
         val richCase = caseSrv.get("#2").richCase.head()
         richCase must_== RichCase(
           richCase._id,
@@ -94,7 +96,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase._createdBy must_=== dummyUserSrv.userId
       }
 
-      "get a case with custom fields" in db.transaction { implicit graph =>
+      "get a case with custom fields" in db.roTransaction { implicit graph =>
         val richCase = caseSrv.get("#3").richCase.head()
         richCase.number must_=== 3
         richCase.title must_=== "case#3"
@@ -119,9 +121,10 @@ class CaseSrvTest extends PlaySpecification {
         )
       }
 
-      "merge two cases" in db.transaction { implicit graph =>
+      "merge two cases" in
         pending
-      //        Seq("#2", "#3").toTry(caseSrv.getOrFail) must beSuccessfulTry.withValue { cases: Seq[Case with Entity] ⇒
+//      db.transaction { implicit graph =>
+      //        Seq("#2", "#3").toTry(caseSrv.getOrFail) must beSuccessfulTry.which { cases: Seq[Case with Entity] ⇒
       //          val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.initialAuthContext)
       //
       //          mergedCase.title must_=== "case#2 / case#3"
@@ -143,23 +146,23 @@ class CaseSrvTest extends PlaySpecification {
       //              ("string1", "string", Some("string1 custom field"))
       //            ))
       //        }
-      }
+//      }
 
       "add custom field with wrong type" in db.transaction { implicit graph =>
-        caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
+        caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
           caseSrv.setCustomField(`case`, "boolean1", "plop") must beFailedTry
         }
       }
 
       "add custom field" in db.transaction { implicit graph =>
-        caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
+        caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
           caseSrv.setCustomField(`case`, "boolean1", true) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == true)
         }
       }
 
       "update custom field" in db.transaction { implicit graph =>
-        caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
+        caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
           caseSrv.setCustomField(`case`, "boolean1", false) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
         }
@@ -167,7 +170,7 @@ class CaseSrvTest extends PlaySpecification {
 
       "update case title" in db.transaction { implicit graph =>
         caseSrv.get("#4").update("title" -> "new title")
-        caseSrv.getOrFail("#4") must beSuccessfulTry.withValue { `case`: Case with Entity =>
+        caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
           `case`.title must_=== "new title"
         }
       }

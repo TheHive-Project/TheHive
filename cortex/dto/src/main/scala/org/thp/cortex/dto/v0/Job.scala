@@ -69,8 +69,8 @@ case class CortexOutputReport(
     summary: JsObject,
     full: JsObject,
     success: Boolean,
-    artifacts: List[CortexOutputArtifact],
-    operations: List[CortexOutputOperation],
+    artifacts: Seq[CortexOutputArtifact],
+    operations: Seq[CortexOutputOperation],
     errorMessage: Option[String],
     input: Option[String]
 )

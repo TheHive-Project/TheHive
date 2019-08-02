@@ -17,6 +17,8 @@ import org.thp.thehive.services.{AlertSrv, LocalUserSrv}
 import play.api.libs.json.{JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
+import scala.util.Try
+
 case class TestAlert(
     `type`: String,
     source: String,
@@ -67,7 +69,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], app.instanceOf[UserSrv].initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -155,9 +157,9 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "get an alert" in {
         val alertSrv = app.instanceOf[AlertSrv]
-        app.instanceOf[Database].tryTransaction { implicit graph =>
+        app.instanceOf[Database].roTransaction { implicit graph =>
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail()
-        } must beSuccessfulTry.withValue { alert: Alert with Entity =>
+        } must beSuccessfulTry.which { alert: Alert with Entity =>
           val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "user2")
           val result  = alertCtrl.get(alert._id)(request)
           status(result) must_=== 200

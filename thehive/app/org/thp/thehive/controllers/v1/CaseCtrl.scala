@@ -65,7 +65,7 @@ class CaseCtrl @Inject()(
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("get case")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
           .visible
@@ -76,7 +76,7 @@ class CaseCtrl @Inject()(
 
 //  def list: Action[AnyContent] =
 //    entryPoint("list case")
-//      .authTransaction(db) { implicit request ⇒ implicit graph ⇒
+//      .authRoTransaction(db) { implicit request ⇒ implicit graph ⇒
 //        val cases = userSrv.current.organisations.cases.richCase
 //          .map(_.toJson)
 //          .toList

@@ -35,7 +35,7 @@ class AuthenticationCtrl @Inject()(
         val organisation: Option[String] = request.body("organisation") orElse requestOrganisation(request)
         for {
           authContext <- authSrv.authenticate(login, password, organisation)
-          user        <- db.transaction(userSrv.getOrFail(authContext.userId)(_))
+          user        <- db.roTransaction(userSrv.getOrFail(authContext.userId)(_))
           _           <- if (user.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
         } yield authSrv.setSessionUser(authContext)(Results.Ok)
       }

@@ -14,6 +14,8 @@ import org.thp.thehive.services.{AlertSrv, LocalUserSrv, ObservableSrv, TaskSrv}
 import play.api.test.{NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 class EntityHelperTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration      = Configuration.load(Environment.simple())
@@ -30,7 +32,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -48,7 +50,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
 
     s"[$name] entity helper" should {
 
-      "return appropriate entity threat levels" in db.transaction { implicit graph =>
+      "return appropriate entity threat levels" in db.roTransaction { implicit graph =>
         val taskSrv: TaskSrv = app.instanceOf[TaskSrv]
         val t1               = taskSrv.initSteps.toList.find(_.title == "case 1 task 1")
         t1 must beSome
@@ -66,7 +68,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         papTask shouldEqual 2
       }
 
-      "return proper observable threat levels" in db.transaction { implicit graph =>
+      "return proper observable threat levels" in db.roTransaction { implicit graph =>
         val observableSrv: ObservableSrv = app.instanceOf[ObservableSrv]
         val o1                           = observableSrv.initSteps.has(Key("tlp"), P.eq(3)).headOption()
         o1 must beSome
@@ -80,7 +82,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         pap shouldEqual 2
       }
 
-      "find a manageable entity only (task)" in db.transaction { implicit graph =>
+      "find a manageable entity only (task)" in db.roTransaction { implicit graph =>
         val taskSrv: TaskSrv = app.instanceOf[TaskSrv]
         val t2               = taskSrv.initSteps.toList.find(_.title == "case 1 task 2")
         t2 must beSome
@@ -93,7 +95,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         failureTask must beFailedTry
       }
 
-      "find a manageable entity only (alert)" in db.transaction { implicit graph =>
+      "find a manageable entity only (alert)" in db.roTransaction { implicit graph =>
         val alertSrv: AlertSrv = app.instanceOf[AlertSrv]
         val a1                 = alertSrv.get("testType;testSource;ref2").headOption()
         a1 must beSome

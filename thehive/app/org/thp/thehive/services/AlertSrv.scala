@@ -55,28 +55,32 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
-    val createdAlert = create(alert)
-    alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
-    caseTemplate.foreach(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate))
-    for {
-      _    <- auditSrv.createAlert(createdAlert)
-      tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
-      _ = tags.foreach(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-      cfs <- customFields
+
+    def createCustomFields(alert: Alert with Entity) =
+      customFields
         .toSeq
         .toTry {
           case (name, Some(value)) =>
             for {
-              cf  <- customFieldSrv.getOrFail(name)
-              acf <- cf.`type`.setValue(AlertCustomField(), value)
-              alertCustomField = alertCustomFieldSrv.create(acf, createdAlert, cf)
+              cf               <- customFieldSrv.getOrFail(name)
+              acf              <- cf.`type`.setValue(AlertCustomField(), value)
+              alertCustomField <- alertCustomFieldSrv.create(acf, alert, cf)
             } yield CustomFieldWithValue(cf, alertCustomField)
           case (name, _) =>
-            customFieldSrv.getOrFail(name).map { cf =>
-              val alertCustomField = alertCustomFieldSrv.create(AlertCustomField(), createdAlert, cf)
-              CustomFieldWithValue(cf, alertCustomField)
-            }
+            for {
+              cf               <- customFieldSrv.getOrFail(name)
+              alertCustomField <- alertCustomFieldSrv.create(AlertCustomField(), alert, cf)
+            } yield CustomFieldWithValue(cf, alertCustomField)
         }
+
+    for {
+      createdAlert <- create(alert)
+      _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
+      _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
+      tags         <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+      _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
+      cfs          <- createCustomFields(createdAlert)
+      _            <- auditSrv.alert.create(createdAlert)
     } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
   }
 
@@ -84,11 +88,13 @@ class AlertSrv @Inject()(
       steps: AlertSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(AlertSteps, JsObject)] =
-    for {
-      (alertSteps, updatedFields) <- super.update(steps, propertyUpdaters)
-      alert                       <- alertSteps.clone().getOrFail()
-      _                           <- auditSrv.updateAlert(alert, updatedFields)
-    } yield (alertSteps, updatedFields)
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (alertSteps, updatedFields) =>
+        alertSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.alert.update(_, updatedFields))
+    }
 
   def updateTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(alert)
@@ -98,9 +104,12 @@ class AlertSrv @Inject()(
         case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
         case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
       }
-    tagsToAdd
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => alertTagSrv.create(AlertTag(), alert, t)))
-      .map(_ => get(alert).removeTags(tagsToRemove.toSeq))
+    for {
+      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(alertTagSrv.create(AlertTag(), alert, _))
+      _ = get(alert).removeTags(tagsToRemove)
+      _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
+    } yield ()
   }
 
   def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -109,16 +118,21 @@ class AlertSrv @Inject()(
       .toList
       .map(_.name)
       .toSet
-    (tags -- currentTags)
-      .toTry(tn => tagSrv.getOrCreate(tn).map(t => alertTagSrv.create(AlertTag(), alert, t)))
-      .map(_ => ())
+    for {
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      _           <- createdTags.toTry(alertTagSrv.create(AlertTag(), alert, _))
+      _           <- auditSrv.alert.update(alert, Json.obj("tags" -> (currentTags ++ tags)))
+    } yield ()
   }
 
   def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): AlertObservable with Entity =
-    alertObservableSrv.create(AlertObservable(), alert, observable)
+  ): Try[Unit] =
+    for {
+      _ <- alertObservableSrv.create(AlertObservable(), alert, observable)
+      _ <- auditSrv.observableInAlert.create(observable, alert)
+    } yield ()
 
   def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
       implicit graph: Graph,
@@ -130,17 +144,29 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
-    for {
-      _ <- getCustomField(alert, customField.name) match {
-        case Some(cf) => alertCustomFieldSrv.get(cf.customFieldValue._id).update((cf.`type`.name + "Value") -> Some(value))
-        case None =>
-          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value).map { alertCustomField =>
-            alertCustomFieldSrv.create(alertCustomField, alert, customField)
-            ()
-          }
+    getCustomField(alert, customField.name)
+      .fold(addCustomField(alert, customField, value))(updateCustomField(alert, _, value))
+      .flatMap { _ =>
+        auditSrv.alert.update(alert, Json.obj(s"customField.${customField.name}" -> value.toString))
       }
-      _ <- auditSrv.updateAlert(alert, Json.obj(s"customField.${customField.name}" -> value.toString))
+
+  private def addCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      alertCustomField <- customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value)
+      _                <- alertCustomFieldSrv.create(alertCustomField, alert, customField)
     } yield ()
+
+  private def updateCustomField(alert: Alert with Entity, customFieldWithValue: CustomFieldWithValue, value: Any)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    alertCustomFieldSrv
+      .get(customFieldWithValue.customFieldValue._id)
+      .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
+      .map(_ => ())
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
     get(alert).customFields(Some(customFieldName)).headOption()
@@ -148,25 +174,25 @@ class AlertSrv @Inject()(
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update("read" -> false)
-      _     <- auditSrv.updateAlert(alert, Json.obj("read" -> false))
+      _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update("read" -> true)
-      _     <- auditSrv.updateAlert(alert, Json.obj("read" -> true))
+      _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update("follow" -> true)
-      _     <- auditSrv.updateAlert(alert, Json.obj("follow" -> true))
+      _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update("follow" -> false)
-      _     <- auditSrv.updateAlert(alert, Json.obj("follow" -> false))
+      _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
   def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
@@ -174,7 +200,6 @@ class AlertSrv @Inject()(
       authContext: AuthContext
   ): Try[RichCase] =
     for {
-
       caseTemplate <- alert
         .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
@@ -195,30 +220,35 @@ class AlertSrv @Inject()(
       )
 
       createdCase <- caseSrv.create(case0, user, organisation, alert.tags.map(_.name).toSet, customField, caseTemplate)
-
-      _ <- importObservables(alert.alert, createdCase.`case`)
-      _ = alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-      _ <- markAsRead(alert._id)
-      _ <- auditSrv.createCase(createdCase.`case`)
+      _           <- importObservables(alert.alert, createdCase.`case`)
+      _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+      _           <- markAsRead(alert._id)
+      _           <- auditSrv.`case`.create(createdCase.`case`) // TODO add from alert ?
     } yield createdCase
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    // TODO add audit
     for {
       alert <- getOrFail(alertId)
       case0 <- caseSrv.getOrFail(caseId)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
       _ <- caseSrv.get(caseId).update("description" -> description)
       _ <- importObservables(alert, case0)
-    } yield ()
+    } yield () // TODO add special audit ?
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Seq[ShareObservable]] =
-    get(alert).observables.richObservable.toIterator.toTry { richObservable =>
-      observableSrv.duplicate(richObservable).flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
-    }
+  ): Try[Unit] =
+    get(alert)
+      .observables
+      .richObservable
+      .toIterator
+      .toTry { richObservable =>
+        observableSrv
+          .duplicate(richObservable)
+          .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
+      }
+      .map(_ => ())
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
 }
@@ -247,7 +277,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def tags: TagSteps = new TagSteps(raw.outTo[AlertTag])
 
-  def removeTags(tagNames: Seq[String]): Unit = {
+  def removeTags(tagNames: Set[String]): Unit = {
     raw.outToE[AlertTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
     ()
   }

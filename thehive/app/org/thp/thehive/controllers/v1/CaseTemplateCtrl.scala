@@ -42,7 +42,7 @@ class CaseTemplateCtrl @Inject()(
 
   def get(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("get case template")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         caseTemplateSrv
           .get(caseTemplateNameOrId)
           .visible
@@ -53,7 +53,7 @@ class CaseTemplateCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list case template")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val caseTemplates = caseTemplateSrv
           .initSteps
           .visible

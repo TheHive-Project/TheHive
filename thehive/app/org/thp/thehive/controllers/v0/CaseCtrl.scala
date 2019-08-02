@@ -68,18 +68,19 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
-          user     <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
-          case0    <- Success(fromInputCase(inputCase, caseTemplate))
-          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
-          _        <- inputTasks.toTry(t => taskSrv.create(fromInputTask(t), richCase.`case`))
+          case0        = fromInputCase(inputCase, caseTemplate)
+          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
+          user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
+          richCase     <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
+          tasks        <- inputTasks.toTry(t => taskSrv.create(t))
+          _            <- tasks.toTry(caseSrv.addTask(richCase.`case`, _))
         } yield Results.Created(richCase.toJson)
       }
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("get case")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
           .visible
@@ -153,7 +154,6 @@ class CaseCtrl @Inject()(
             .can(Permissions.manageCase)
             .getOrFail()
           _ <- caseSrv.cascadeRemove(c)
-//          _ <- auditSrv.forceDeleteCase(c) TODO
         } yield Results.NoContent
       }
 
@@ -177,7 +177,7 @@ class CaseCtrl @Inject()(
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("case link")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val relatedCases = caseSrv
           .get(caseIdOrNumber)
           .visible

@@ -4,6 +4,7 @@ import java.io.File
 
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
+import org.scalactic.Or
 import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
@@ -15,7 +16,7 @@ import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 import scala.io.Source
 import scala.reflect.runtime.{universe => ru}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class DatabaseBuilder @Inject()(
@@ -43,12 +44,12 @@ class DatabaseBuilder @Inject()(
 
   lazy val logger = Logger(getClass)
 
-  def build()(implicit db: Database, authContext: AuthContext): Unit = {
+  def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
 
     lazy val logger = Logger(getClass)
     logger.info("Initialize database schema")
     db.createSchemaFrom(schema)
-    db.transaction { implicit graph =>
+    db.tryTransaction { implicit graph =>
       val idMap =
         createVertex(caseSrv, FieldsParser[Case]) ++
           createVertex(userSrv, FieldsParser[User]) ++
@@ -112,7 +113,7 @@ class DatabaseBuilder @Inject()(
       createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
       createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
 
-      ()
+      Success(())
     }
   }
 
@@ -175,10 +176,8 @@ class DatabaseBuilder @Inject()(
   )(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
     readJsonFile(s"data/${srv.model.label}.json").flatMap { fields =>
       parser(fields - "id")
-        .map(srv.create)
-        .map { v =>
-          fields.getString("id").map(_ -> v._id)
-        }
+        .flatMap(e => Or.from(srv.create(e)))
+        .map(v => fields.getString("id").map(_ -> v._id))
         .recover(e => warn(s"creation of $fields fails: $e"))
         .get
     }.toMap
@@ -199,7 +198,7 @@ class DatabaseBuilder @Inject()(
           toExtId <- fields.getString("to").toTry(Failure(new Exception("Edge has no to vertex")))
           toId = idMap.getOrElse(toExtId, toExtId)
           to <- toSrv.getOrFail(toId)
-          e  <- parser(fields - "from" - "to").fold(e => Success(srv.create(e, from, to)), _ => Failure(new Exception("XX")))
+          e  <- parser(fields - "from" - "to").fold(e => srv.create(e, from, to), _ => Failure(new Exception("XX")))
         } yield e)
           .fold(t => warn(s"Edge ${srv.model.label} creation fails with: $fields", t), Some(_))
       }

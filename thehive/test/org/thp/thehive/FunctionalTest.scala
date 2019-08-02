@@ -78,7 +78,10 @@ class FunctionalTest extends PlaySpecification {
                                               |  provider: localfs
                                               |  localfs.location: /tmp
                                               |}
-                                              |auth.provider: [local]
+                                              |auth.providers: [
+                                              |  {name: basic},
+                                              |  {name:local}
+                                              |]
     """.stripMargin))
 //  Configuration(ConfigFactory.parseString("""
 //      |db {
@@ -101,6 +104,7 @@ class FunctionalTest extends PlaySpecification {
                                                                  |}
                                                                  |
                                                                  |auth.providers: [
+                                                                 |  {name: basic},
                                                                  |  {name: local}
                                                                  |]
    """.stripMargin))
@@ -112,6 +116,7 @@ class FunctionalTest extends PlaySpecification {
                                                               |  localfs.location: /tmp
                                                               |}
                                                               |auth.providers: [
+                                                              |  {name: basic},
                                                               |  {name: local}
                                                               |]
     """.stripMargin))

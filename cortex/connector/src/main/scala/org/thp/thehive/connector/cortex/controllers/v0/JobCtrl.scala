@@ -1,6 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.ErrorHandler
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
@@ -13,14 +14,14 @@ import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 @Singleton
 class JobCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     jobSrv: JobSrv,
-    observableSrv: ObservableSrv
+    observableSrv: ObservableSrv,
+    errorHandler: ErrorHandler
 ) extends QueryableCtrl {
 
   import JobConversion._
@@ -38,7 +39,7 @@ class JobCtrl @Inject()(
 
   def get(jobId: String): Action[AnyContent] =
     entryPoint("get job")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         jobSrv
           .get(jobId)
           .visible
@@ -54,20 +55,20 @@ class JobCtrl @Inject()(
       .extract("cortexId", FieldsParser[String].on("cortexId"))
       .extract("artifactId", FieldsParser[String].on("artifactId"))
       .asyncAuth { implicit request =>
-        db.transaction { implicit graph =>
-          val analyzerId: String = request.body("analyzerId")
-          val cortexId: String   = request.body("cortexId")
-          val artifactId: String = request.body("artifactId")
-          val tryObservable      = observableSrv.get(artifactId).richObservable.getOrFail()
-          val tryCase            = observableSrv.get(artifactId).`case`.getOrFail()
-          val r = for {
-            o <- tryObservable
-            c <- tryCase
-          } yield jobSrv
-            .submit(cortexId, analyzerId, o, c)
-            .map(j => Results.Created(j.toJson))
-
-          r.getOrElse(Future.successful(Results.InternalServerError))
-        }
+        val analyzerId: String = request.body("analyzerId")
+        val cortexId: String   = request.body("cortexId")
+        db.roTransaction { implicit graph =>
+            val artifactId: String = request.body("artifactId")
+            for {
+              o <- observableSrv.get(artifactId).richObservable.getOrFail()
+              c <- observableSrv.get(artifactId).`case`.getOrFail()
+            } yield (o, c)
+          }
+          .fold(error => errorHandler.onServerError(request, error), {
+            case (o, c) =>
+              jobSrv
+                .submit(cortexId, analyzerId, o, c)
+                .map(j => Results.Created(j.toJson))
+          })
       }
 }

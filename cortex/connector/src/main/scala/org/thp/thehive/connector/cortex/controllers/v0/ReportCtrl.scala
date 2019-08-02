@@ -40,7 +40,7 @@ class ReportCtrl @Inject()(
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")
-      .authTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         reportTemplateSrv
           .getOrFail(id)
           .map(report => Results.Ok(report.content))
@@ -70,8 +70,9 @@ class ReportCtrl @Inject()(
         // FIXME is there a need for ACL check concerning ReportTemplates? If so how to check it without any Edge
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
           val template: InputReportTemplate = request.body("template")
-          val createdReportTemplate         = reportTemplateSrv.create(template)
-          Success(Results.Created(createdReportTemplate.toJson))
+          reportTemplateSrv.create(template).map { createdReportTemplate =>
+            Results.Created(createdReportTemplate.toJson)
+          }
         } else Success(Results.Unauthorized)
       }
 

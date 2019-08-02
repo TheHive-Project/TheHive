@@ -36,7 +36,7 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
     }
 
   override def authenticate(username: String, password: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
         userSrv
           .getOrFail(username)
       }
@@ -45,7 +45,7 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph =>
+    db.roTransaction { implicit graph =>
         userSrv
           .getOrFail(username)
       }

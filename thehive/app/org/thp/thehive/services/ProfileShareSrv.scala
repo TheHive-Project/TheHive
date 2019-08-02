@@ -9,7 +9,7 @@ import org.thp.thehive.models._
 
 @Singleton
 class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
-  lazy val admin: Profile with Entity = db.tryTransaction(graph => getOrFail("admin")(graph)).get
+  lazy val admin: Profile with Entity = db.roTransaction(graph => getOrFail("admin")(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     Profile("admin", Permissions.all),
     Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask)),

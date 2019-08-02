@@ -24,6 +24,8 @@ import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.util.Try
+
 case class TestObservable(
     dataType: String,
     data: Option[String] = None,
@@ -57,7 +59,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
-  def setupDatabase(app: AppBuilder): Unit =
+  def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
@@ -211,7 +213,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       }
 
       "be able to retrieve an observable" in {
-        val maybeObservable = app.instanceOf[Database].transaction { implicit graph =>
+        val maybeObservable = app.instanceOf[Database].roTransaction { implicit graph =>
           app
             .instanceOf[AlertSrv]
             .initSteps
@@ -338,7 +340,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   def getData(data: String, app: AppBuilder): List[Data with Entity] = {
     val dataSrv: DataSrv = app.instanceOf[DataSrv]
     val db: Database     = app.instanceOf[Database]
-    db.transaction { implicit graph =>
+    db.roTransaction { implicit graph =>
       dataSrv.initSteps.getByData(data).toList
     }
   }
