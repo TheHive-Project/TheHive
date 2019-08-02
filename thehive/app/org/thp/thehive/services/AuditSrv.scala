@@ -2,87 +2,151 @@ package org.thp.thehive.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models._
+import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
-case class PendingAudit(authContext: AuthContext, details: Option[String], context: Entity, `object`: Option[Entity])
+case class PendingAudit(audit: Audit, context: Entity, `object`: Option[Entity])
 
 @Singleton
 class AuditSrv @Inject()(
     userSrv: UserSrv,
     eventSrv: EventSrv
 )(implicit db: Database, schema: TheHiveSchema)
-    extends VertexSrv[Audit, AuditSteps] {
-  val auditUserSrv    = new EdgeSrv[AuditUser, Audit, User]
-  val auditedSrv      = new EdgeSrv[Audited, Audit, Product]
-  val auditContextSrv = new EdgeSrv[AuditContext, Audit, Product]
+    extends VertexSrv[Audit, AuditSteps] { auditSrv =>
+  val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
+  val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
+  val auditContextSrv                                     = new EdgeSrv[AuditContext, Audit, Product]
+  private var pendingAudit: Map[AnyRef, PendingAudit]     = Map.empty
+  private val pendingAuditsLock                           = new Object
+  private var transactionAuditIds: List[(AnyRef, String)] = Nil
+  private val transactionAuditIdsLock                     = new Object
+  private var unauditedTransactions: Set[AnyRef]          = Set.empty
+  private val unauditedTransactionsLock                   = new Object
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
 
+  def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = {
+    val tx = db.currentTransactionId(graph)
+    unauditedTransactionsLock.synchronized {
+      unauditedTransactions = unauditedTransactions + tx
+    }
+    val result = body.flatMap { r =>
+      auditCreator(r).map(_ => r)
+    }
+    unauditedTransactionsLock.synchronized {
+      unauditedTransactions = unauditedTransactions - tx
+    }
+    result
+  }
+
+  def create(audit: Audit, context: Entity, `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+
+    def createLastPending(tx: AnyRef)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+      val p = pendingAudit(tx)
+      pendingAuditsLock.synchronized {
+        pendingAudit = pendingAudit - tx
+      }
+      createFromPending(tx, p.audit.copy(mainAction = true), p.context, p.`object`).map { _ =>
+        val (ids, otherTxIds) = transactionAuditIds.partition(_._1 == tx)
+        transactionAuditIdsLock.synchronized {
+          transactionAuditIds = otherTxIds
+        }
+        graph.tx.addTransactionListener {
+          case Status.COMMIT => eventSrv.publish(AuditStreamMessage(ids.map(_._2): _*))
+          case _             =>
+        }
+      }
+    }
+
+    def createFromPending(tx: AnyRef, audit: Audit, context: Entity, `object`: Option[Entity])(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      for {
+        user         <- userSrv.current.getOrFail()
+        createdAudit <- create(audit)
+        _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
+        _            <- auditContextSrv.create(AuditContext(), createdAudit, context)
+        _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
+      } yield transactionAuditIdsLock.synchronized {
+        transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
+      }
+
+    def setupCallbacks(tx: AnyRef): Try[Unit] = {
+      graph.tx.addTransactionListener {
+        case Status.ROLLBACK =>
+          pendingAuditsLock.synchronized {
+            pendingAudit = pendingAudit - tx
+          }
+          transactionAuditIdsLock.synchronized {
+            transactionAuditIds = transactionAuditIds.filterNot(_._1 == tx)
+          }
+        case _ =>
+      }
+      db.addCallback(() => createLastPending(tx))
+      Success(())
+    }
+
+    val tx = db.currentTransactionId(graph)
+    if (unauditedTransactions.contains(tx))
+      Success(())
+    else {
+      val p = pendingAudit.get(tx)
+      pendingAuditsLock.synchronized {
+        pendingAudit = pendingAudit + (tx -> PendingAudit(audit, context, `object`))
+      }
+      p.fold(setupCallbacks(tx))(p => createFromPending(tx, p.audit, p.context, p.`object`))
+    }
+  }
+
   def get(auditIds: Seq[String])(implicit graph: Graph): AuditSteps = initSteps.filter(_.hasId(auditIds: _*)) // FIXME:ID
+
+  class ObjectAudit[E <: Product, C <: Product] {
+
+    def create(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit("create", entity), context, Some(entity))
+
+    def update(entity: E with Entity, context: C with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit("update", entity, Some(details.toString)), context, Some(entity))
+
+    def delete(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
+    // FIXME there is no context
+//      auditSrv.create(Audit("update", entity), context, Some(entity))
+  }
+
+  class SelfContextObjectAudit[E <: Product] {
+
+    def create(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit("create", entity), entity, Some(entity))
+
+    def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit("update", entity, Some(details.toString)), entity, Some(entity))
+
+    def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
+    // FIXME there is no context
+//      auditSrv.create(Audit("update", entity, None), entity, Some(entity))
+  }
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] =
     get(audit).getObject
 
-  def createCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createCase", `case`), `case`, Some(`case`))
-
-  def forceDeleteCase(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    // TODO check how to handle case for deletion
-    create(Audit("forceDeleteCase", `case`), `case`, Some(`case`))
-
-  def updateCase(`case`: Case with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("updateCase", `case`, Some(details.toString)), `case`, Some(`case`))
-
-  def createAlert(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createAlert", alert), alert, Some(alert))
-
-  def updateAlert(alert: Alert with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("updateAlert", alert, Some(details.toString)), alert, Some(alert))
-
-  def createCaseTemplate(caseTemplate: CaseTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createCaseTemplate", caseTemplate), caseTemplate, Some(caseTemplate))
-
-  def createLog(log: Log with Entity, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createLog", log), task, Some(log))
-
-  def updateLog(log: Log with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    // FIXME find the related task and use it as context
-    create(Audit("updateLog", log, Some(details.toString)), log, Some(log))
-
-  def createTask(task: Task with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("createTask", task), `case`, Some(task))
-
-  def deleteUser(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    create(Audit("deleteUser", user), user, Some(user))
-
-  def create(
-      audit: Audit,
-      context: Entity,
-      `object`: Option[Entity]
-  )(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[RichAudit] =
-    userSrv.current.getOrFail().map { user =>
-      val createdAudit = create(audit)
-      auditUserSrv.create(AuditUser(), createdAudit, user)
-      auditContextSrv.create(AuditContext(), createdAudit, context)
-      `object`.map(auditedSrv.create(Audited(), createdAudit, _))
-      val richAudit = RichAudit(createdAudit, context, `object`)
-      db.onSuccessTransaction(graph)(() => eventSrv.publish(AuditStreamMessage(richAudit._id)))
-      richAudit
-    }
-
-  def deleteObservable(observable: Observable with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[RichAudit] =
-    // TODO check how to handle audit for deletion
-    create(Audit("deleteObservable", observable, Some(details.toString)), observable, Some(observable))
+  val `case`            = new SelfContextObjectAudit[Case]
+  val task              = new ObjectAudit[Task, Case]
+  val taskInTemplate    = new ObjectAudit[Task, CaseTemplate]
+  val observable        = new ObjectAudit[Observable, Case]
+  val observableInAlert = new ObjectAudit[Observable, Alert]
+  val log               = new ObjectAudit[Log, Case]
+  val alert             = new SelfContextObjectAudit[Alert]
+  val user              = new SelfContextObjectAudit[User]
+  val caseTemplate      = new SelfContextObjectAudit[CaseTemplate]
+  val dashboard         = new SelfContextObjectAudit[Dashboard]
 }
 
 @EntitySteps[Audit]
