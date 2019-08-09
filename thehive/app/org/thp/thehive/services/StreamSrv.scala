@@ -2,9 +2,15 @@ package org.thp.thehive.services
 
 import java.io.NotSerializableException
 
+import scala.collection.immutable
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
+
+import play.api.Logger
+import play.api.libs.json.Json
+
 import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
-import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.{Put, Send, Subscribe}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
 import akka.util.Timeout
@@ -12,25 +18,19 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
-import org.thp.thehive.services.StreamActor.{Commit, GetStreamMessages}
-import play.api.Logger
-import play.api.libs.json.Json
+import org.thp.scalligraph.services.EventSrv
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
-import scala.collection.immutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Random, Try}
+sealed trait StreamMessage extends Serializable
 
-trait StreamMessage extends Serializable
+object StreamTopic {
+  def apply(streamId: String = ""): String = if (streamId.isEmpty) "stream" else s"stream-$streamId"
+}
 
 case class AuditStreamMessage(id: String*) extends StreamMessage
-
-object StreamActor {
-  /* Ask messages, wait if there is no ready messages */
-  case object GetStreamMessages extends StreamMessage
-  case object Commit            extends StreamMessage
-}
+/* Ask messages, wait if there is no ready messages */
+case object GetStreamMessages extends StreamMessage
+case object Commit            extends StreamMessage
 
 /**
   * This actor receive message generated locally and when aggregation is finished (http request is over) send the message
@@ -45,17 +45,9 @@ class StreamActor(
     auditSrv: AuditSrv,
     db: Database
 ) extends Actor {
-  import EventSrv._
-  import StreamActor._
   import context.dispatcher
 
-  lazy val logger        = Logger(s"${getClass.getName}.$self")
-  val mediator: ActorRef = DistributedPubSub(context.system).mediator
-
-  override def preStart(): Unit = {
-    mediator ! Subscribe(STREAM, self)
-    super.preStart()
-  }
+  lazy val logger = Logger(s"${getClass.getName}.$self")
 
   override def receive: Receive = {
     val keepAliveTimer = context.system.scheduler.scheduleOnce(keepAlive, self, PoisonPill)
@@ -77,7 +69,7 @@ class StreamActor(
     case AuditStreamMessage(ids @ _*) =>
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
-          .get(ids)
+          .getByIds(ids: _*)
           .visible(authContext)
           .toList
           .map(_._id)
@@ -118,7 +110,7 @@ class StreamActor(
     case AuditStreamMessage(ids @ _*) =>
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
-          .get(ids)
+          .getByIds(ids: _*)
           .visible(authContext)
           .toList
           .map(_._id)
@@ -141,7 +133,8 @@ class StreamActor(
 
 @Singleton
 class StreamSrv @Inject()(
-    appConfig: ApplicationConfiguration,
+    appConfig: ApplicationConfig,
+    eventSrv: EventSrv,
     auditSrv: AuditSrv,
     db: Database,
     system: ActorSystem,
@@ -151,7 +144,6 @@ class StreamSrv @Inject()(
   lazy val logger                              = Logger(getClass)
   val streamLength                             = 20
   val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
-  val mediator: ActorRef                       = DistributedPubSub(system).mediator
 
   val refreshConfig: ConfigItem[FiniteDuration] =
     appConfig.item[FiniteDuration]("stream.longPolling.refresh", "Response time when there is no message")
@@ -176,21 +168,26 @@ class StreamSrv @Inject()(
   def create(implicit authContext: AuthContext): String = {
     val streamId = generateStreamId()
     val streamActor =
-      system.actorOf(Props(classOf[StreamActor], authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db), s"stream-$streamId")
+      system.actorOf(
+        Props(classOf[StreamActor], authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
+        s"stream-$streamId"
+      )
     logger.debug(s"Register stream actor ${streamActor.path}")
-    mediator ! Put(streamActor)
+    eventSrv.subscribe(StreamTopic(streamId), streamActor)
+    eventSrv.subscribe(StreamTopic(), streamActor)
     streamId
   }
 
   def get(streamId: String): Future[Seq[String]] = {
     implicit val timeout: Timeout = Timeout(refresh + 1.second)
     // Check if stream actor exists
-    mediator
-      .ask(Send(s"/user/stream-$streamId", Identify(1), localAffinity = false))(Timeout(2.seconds))
+    eventSrv
+      .publishAsk(StreamTopic(streamId))(Identify(1))(Timeout(2.seconds))
+//      .ask(s"/user/stream-$streamId", Identify(1))(Timeout(2.seconds))
       .flatMap {
         case ActorIdentity(1, Some(streamActor)) =>
           logger.debug(s"Stream actor found for stream $streamId")
-          (streamActor ? StreamActor.GetStreamMessages)
+          (streamActor ? GetStreamMessages)
             .map {
               case AuditStreamMessage(ids @ _*) => ids
               case _                            => Nil
@@ -204,6 +201,7 @@ class StreamSrv @Inject()(
 }
 
 class StreamSerializer extends Serializer {
+
   def identifier: Int = 226591535
   def includeManifest = false
 
