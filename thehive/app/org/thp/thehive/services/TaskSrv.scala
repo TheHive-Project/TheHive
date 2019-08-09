@@ -1,14 +1,16 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
+import play.api.libs.json.{JsNull, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
+import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNull, Json}
-
-import scala.util.Try
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -22,7 +24,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(taskId).visible(authContext).exists()
+    getByIds(taskId).visible(authContext).exists()
 
   def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -48,6 +50,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
     } yield ()
 }
 
+@EntitySteps[Task]
 class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
 
   def visible(implicit authContext: AuthContext): TaskSteps = newInstance(

@@ -40,7 +40,7 @@ class LogCtrl @Inject()(
         val inputLog: InputLog = request.body("log")
         for {
           task <- taskSrv
-            .get(taskId)
+            .getByIds(taskId)
             .can(Permissions.manageTask)
             .getOrFail()
           createdLog <- logSrv.create(inputLog, task)
@@ -56,7 +56,7 @@ class LogCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("log")
         logSrv
           .update(
-            _.get(logId)
+            _.getByIds(logId)
               .can(Permissions.manageTask),
             propertyUpdaters
           )

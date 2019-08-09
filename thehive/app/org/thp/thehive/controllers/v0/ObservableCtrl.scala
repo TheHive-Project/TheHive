@@ -73,7 +73,7 @@ class ObservableCtrl @Inject()(
     entryPoint("get observable")
       .authRoTransaction(db) { _ => implicit graph =>
         observableSrv
-          .get(observableId)
+          .getByIds(observableId)
           //            .availableFor(request.organisation)
           .richObservable
           .getOrFail()
@@ -89,7 +89,7 @@ class ObservableCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.get(observableId).can(Permissions.manageCase),
+            _.getByIds(observableId).can(Permissions.manageCase),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
@@ -99,7 +99,7 @@ class ObservableCtrl @Inject()(
     entryPoint("find similar")
       .authRoTransaction(db) { _ => implicit graph =>
         val observables = observableSrv
-          .get(obsId)
+          .getByIds(obsId)
           .similar
           .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
           .toList
@@ -120,7 +120,7 @@ class ObservableCtrl @Inject()(
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(id).can(Permissions.manageCase), properties)
+              .update(_.getByIds(id).can(Permissions.manageCase), properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -130,7 +130,7 @@ class ObservableCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <- observableSrv
-            .get(obsId)
+            .getByIds(obsId)
             .can(Permissions.manageCase)
             .getOrFail()
           _ = observableSrv.get(observable).remove()

@@ -39,11 +39,10 @@ class AlertSrv @Inject()(
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
   val alertObservableSrv   = new EdgeSrv[AlertObservable, Alert, Observable]
 
-  override def get(id: String)(implicit graph: Graph): AlertSteps =
-    id.split(';') match {
-      case Array(tpe, source, sourceRef) => initSteps.getBySourceId(tpe, source, sourceRef)
-      case _                             => super.get(id)
-    }
+  override def get(idOrSource: String)(implicit graph: Graph): AlertSteps = idOrSource.split(';') match {
+    case Array(tpe, source, sourceRef) => initSteps.getBySourceId(tpe, source, sourceRef)
+    case _                             => super.getByIds(idOrSource)
+  }
 
   def create(
       alert: Alert,
@@ -56,7 +55,7 @@ class AlertSrv @Inject()(
       authContext: AuthContext
   ): Try[RichAlert] = {
 
-    def createCustomFields(alert: Alert with Entity) =
+    def createCustomFields(alert: Alert with Entity): Try[Seq[CustomFieldWithValue]] =
       customFields
         .toSeq
         .toTry {
@@ -164,7 +163,7 @@ class AlertSrv @Inject()(
       authContext: AuthContext
   ): Try[Unit] =
     alertCustomFieldSrv
-      .get(customFieldWithValue.customFieldValue._id)
+      .getByIds(customFieldWithValue.customFieldValue._id)
       .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
       .map(_ => ())
 
@@ -173,25 +172,25 @@ class AlertSrv @Inject()(
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("read" -> false)
+      alert <- getByIds(alertId).update("read" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("read" -> true)
+      alert <- getByIds(alertId).update("read" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("follow" -> true)
+      alert <- getByIds(alertId).update("follow" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("follow" -> false)
+      alert <- getByIds(alertId).update("follow" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
@@ -219,7 +218,7 @@ class AlertSrv @Inject()(
         summary = None
       )
 
-      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.map(_.name).toSet, customField, caseTemplate)
+      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.map(_.name).toSet, customField, caseTemplate, Nil)
       _           <- importObservables(alert.alert, createdCase.`case`)
       _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
       _           <- markAsRead(alert._id)
@@ -257,13 +256,7 @@ class AlertSrv @Inject()(
 class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Alert, AlertSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): AlertSteps = new AlertSteps(raw)
 
-  override def get(id: String): AlertSteps =
-    id.split(';') match {
-      case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
-      case _                             => getById(id)
-    }
-
-  def getById(id: String): AlertSteps = newInstance(raw.hasId(id))
+  override def getByIds(ids: String*): AlertSteps = newInstance(raw.hasId(ids: _*))
 
   def getBySourceId(`type`: String, source: String, sourceRef: String): AlertSteps =
     newInstance(

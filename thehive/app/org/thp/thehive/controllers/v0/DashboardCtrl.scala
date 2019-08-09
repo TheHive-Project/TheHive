@@ -42,7 +42,7 @@ class DashboardCtrl @Inject()(entryPoint: EntryPoint, db: Database, dashboardSrv
     entryPoint("get dashboard")
       .authRoTransaction(db) { implicit request => implicit graph =>
         dashboardSrv
-          .get(dashboardId)
+          .getByIds(dashboardId)
           .visible
           .getOrFail()
           .map { dashboard =>
@@ -56,7 +56,7 @@ class DashboardCtrl @Inject()(entryPoint: EntryPoint, db: Database, dashboardSrv
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("dashboard")
         dashboardSrv
-          .update(_.get(dashboardId) /*.can(Permissions.manageAlert)*/, propertyUpdaters) // TODO check permission
+          .update(_.getByIds(dashboardId) /*.can(Permissions.manageAlert)*/, propertyUpdaters) // TODO check permission
           .flatMap { case (dashboardSteps, _) => dashboardSteps.getOrFail() }
           .map(dashboard => Results.Ok(dashboard.toJson))
       }

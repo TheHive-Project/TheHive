@@ -17,9 +17,9 @@ class ResolutionStatusSrv @Inject()(implicit db: Database) extends VertexSrv[Res
   )
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ResolutionStatusSteps = new ResolutionStatusSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): ResolutionStatusSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): ResolutionStatusSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 }
 
 class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
@@ -27,11 +27,9 @@ class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, gr
 
   override def newInstance(raw: GremlinScala[Vertex]): ResolutionStatusSteps = new ResolutionStatusSteps(raw)
 
-  override def get(id: String): ResolutionStatusSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.hasId(id))
+  def get(idOrName: String): ResolutionStatusSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("value") of name))
 

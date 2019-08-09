@@ -33,7 +33,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
     entryPoint("get task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
-          .get(taskId)
+          .getByIds(taskId)
           .visible
           .getOrFail()
           .map(task => Results.Ok(task.toJson))
@@ -57,7 +57,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv
           .update(
-            _.get(taskId)
+            _.getByIds(taskId)
               .can(Permissions.manageTask),
             propertyUpdaters
           )

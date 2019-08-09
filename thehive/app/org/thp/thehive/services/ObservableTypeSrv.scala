@@ -32,9 +32,10 @@ class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) ext
 
   val observableObservableTypeSrv                                                           = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableTypeSteps = new ObservableTypeSteps(raw)
-  override def get(id: String)(implicit graph: Graph): ObservableTypeSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+
+  override def get(idOrName: String)(implicit graph: Graph): ObservableTypeSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 }
 
 @EntitySteps[ObservableType]
@@ -43,11 +44,9 @@ class ObservableTypeSteps(raw: GremlinScala[Vertex])(implicit db: Database, grap
 
   override def newInstance(raw: GremlinScala[Vertex]): ObservableTypeSteps = new ObservableTypeSteps(raw)
 
-  override def get(id: String): ObservableTypeSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): ObservableTypeSteps = new ObservableTypeSteps(raw.hasId(id))
+  def get(idOrName: String): ObservableTypeSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): ObservableTypeSteps = new ObservableTypeSteps(raw.has(Key("name") of name))
 }

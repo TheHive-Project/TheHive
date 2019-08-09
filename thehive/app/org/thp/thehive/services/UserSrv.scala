@@ -33,9 +33,9 @@ class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: D
     )
   )
 
-  override def get(id: String)(implicit graph: Graph): UserSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): UserSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -65,9 +65,9 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def current(authContext: AuthContext): UserSteps = get(authContext.userId)
 
-  override def get(id: String): UserSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
+  def get(idOrName: String): UserSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def visible(implicit authContext: AuthContext): UserSteps = newInstance(
     raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
@@ -84,8 +84,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .has(Key("login") of authContext.userId)
   )
 
-  def getById(id: String): UserSteps = new UserSteps(raw.hasId(id))
-
   def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
@@ -98,7 +96,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
       .outTo[RoleOrganisation]
   )
-//  def availableFor(authContext: AuthContext): UserSteps = ???
+
+  def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])
+
+  //  def availableFor(authContext: AuthContext): UserSteps = ???
 //    availableFor(authContext.organisation)
 
 //  def availableFor(organisation: String): UserSteps = ???

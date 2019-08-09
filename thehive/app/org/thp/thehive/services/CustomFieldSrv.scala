@@ -9,19 +9,17 @@ import org.thp.thehive.models.CustomField
 class CustomFieldSrv @Inject()(implicit db: Database) extends VertexSrv[CustomField, CustomFieldSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): CustomFieldSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): CustomFieldSteps =
+    if (db.isValidId(idOrName)) super.getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 }
 
 class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[CustomField, CustomFieldSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(raw)
 
-  override def get(id: String): CustomFieldSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): CustomFieldSteps = new CustomFieldSteps(raw.hasId(id))
+  def get(idOrName: String): CustomFieldSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): CustomFieldSteps = new CustomFieldSteps(raw.has(Key("name") of name))
 

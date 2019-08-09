@@ -59,7 +59,7 @@ class CaseCtrl @Inject()(
             }
             .flip
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
-          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
+          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate, Nil)
         } yield Results.Created(richCase.toJson)
       }
 

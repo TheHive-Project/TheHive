@@ -19,9 +19,9 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
   override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): OrganisationSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): OrganisationSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
@@ -59,11 +59,11 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def visibleOrganisations: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
 
-  override def get(id: String): OrganisationSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
+  def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
 
-  def getById(id: String): OrganisationSteps = newInstance(raw.hasId(id))
+  def get(idOrName: String): OrganisationSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
 }

@@ -41,7 +41,7 @@ class JobCtrl @Inject()(
     entryPoint("get job")
       .authRoTransaction(db) { implicit request => implicit graph =>
         jobSrv
-          .get(jobId)
+          .getByIds(jobId)
           .visible
           .getOrFail()
           .map { job =>
@@ -60,8 +60,8 @@ class JobCtrl @Inject()(
         db.roTransaction { implicit graph =>
             val artifactId: String = request.body("artifactId")
             for {
-              o <- observableSrv.get(artifactId).richObservable.getOrFail()
-              c <- observableSrv.get(artifactId).`case`.getOrFail()
+              o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
+              c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
             } yield (o, c)
           }
           .fold(error => errorHandler.onServerError(request, error), {

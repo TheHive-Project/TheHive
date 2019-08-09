@@ -21,9 +21,9 @@ class ReportTemplateSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ReportTemplateSteps = new ReportTemplateSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): ReportTemplateSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): ReportTemplateSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 
   def readZipEntry(file: ZipFile, entry: ZipEntry): Try[String] =
     Try {
@@ -65,11 +65,9 @@ class ReportTemplateSrv @Inject()(
 class ReportTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     extends BaseVertexSteps[ReportTemplate, ReportTemplateSteps](raw) {
 
-  override def get(id: String): ReportTemplateSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): ReportTemplateSteps = new ReportTemplateSteps(raw.hasId(id))
+  def get(idOrName: String): ReportTemplateSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   /**
     * Looks for a template that has the workerId supplied

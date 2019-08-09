@@ -36,11 +36,11 @@ class EntityHelper @Inject()(
     */
   def get(objectType: String, objectId: String, permission: Permission)(implicit graph: Graph, authContext: AuthContext): Try[Entity] =
     objectType match {
-      case "Task"       => taskSrv.get(objectId).can(permission).getOrFail()
+      case "Task"       => taskSrv.getByIds(objectId).can(permission).getOrFail()
       case "Case"       => caseSrv.get(objectId).can(permission).getOrFail()
-      case "Observable" => observableSrv.get(objectId).can(permission).getOrFail()
-      case "Log"        => logSrv.get(objectId).can(permission).getOrFail()
-      case "Alert"      => alertSrv.get(objectId).can(permission).getOrFail()
+      case "Observable" => observableSrv.getByIds(objectId).can(permission).getOrFail()
+      case "Log"        => logSrv.getByIds(objectId).can(permission).getOrFail()
+      case "Alert"      => alertSrv.getByIds(objectId).can(permission).getOrFail()
       case _            => Failure(BadRequestError(s"objectType $objectType is not recognised"))
     }
 

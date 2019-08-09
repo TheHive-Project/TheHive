@@ -133,7 +133,7 @@ class ActionSrv @Inject()(
         .filter(_.status == ActionOperationStatus.Waiting)
         .map { operation =>
           (for {
-            action <- get(actionId).richAction.getOrFail()
+            action <- getByIds(actionId).richAction.getOrFail()
             updatedOperation <- actionOperationSrv.execute(
               action.context,
               operation,
@@ -143,7 +143,7 @@ class ActionSrv @Inject()(
             .fold(t => operation.updateStatus(ActionOperationStatus.Failure, t.getMessage), identity)
         }
 
-      get(actionId)
+      getByIds(actionId)
         .update(
           "status"     -> fromCortexJobStatus(cortexOutputJob.status),
           "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
@@ -160,7 +160,7 @@ class ActionSrv @Inject()(
     */
   def relatedCase(id: String)(implicit graph: Graph): Option[Case with Entity] =
     for {
-      richAction  <- initSteps.get(id).richAction.getOrFail().toOption
+      richAction  <- initSteps.getByIds(id).richAction.getOrFail().toOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
 

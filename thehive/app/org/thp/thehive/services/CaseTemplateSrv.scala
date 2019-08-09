@@ -31,9 +31,9 @@ class CaseTemplateSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): CaseTemplateSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): CaseTemplateSteps =
+    if (db.isValidId(idOrName)) super.getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 
   def create(
       caseTemplate: CaseTemplate,
@@ -120,11 +120,9 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     extends BaseVertexSteps[CaseTemplate, CaseTemplateSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
-  override def get(id: String): CaseTemplateSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): CaseTemplateSteps = newInstance(raw.hasId(id))
+  def get(idOrName: String): CaseTemplateSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): CaseTemplateSteps = newInstance(raw.has(Key("name") of name))
 

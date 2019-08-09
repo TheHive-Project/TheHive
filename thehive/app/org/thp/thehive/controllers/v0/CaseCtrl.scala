@@ -72,9 +72,7 @@ class CaseCtrl @Inject()(
           case0        = fromInputCase(inputCase, caseTemplate)
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
-          richCase     <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate)
-          tasks        <- inputTasks.toTry(t => taskSrv.create(t))
-          _            <- tasks.toTry(caseSrv.addTask(richCase.`case`, _))
+          richCase     <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate, inputTasks.map(fromInputTask))
         } yield Results.Created(richCase.toJson)
       }
 

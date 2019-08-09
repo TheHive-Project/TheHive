@@ -18,20 +18,18 @@ class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile,
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ProfileSteps = new ProfileSteps(raw)
 
-  override def get(id: String)(implicit graph: Graph): ProfileSteps =
-    if (db.isValidId(id)) super.get(id)
-    else initSteps.getByName(id)
+  override def get(idOrName: String)(implicit graph: Graph): ProfileSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
 }
 
 @EntitySteps[Profile]
 class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Profile, ProfileSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ProfileSteps = new ProfileSteps(raw)
 
-  override def get(id: String): ProfileSteps =
-    if (db.isValidId(id)) getById(id)
-    else getByName(id)
-
-  def getById(id: String): ProfileSteps = new ProfileSteps(raw.hasId(id))
+  def get(idOrName: String): ProfileSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else getByName(idOrName)
 
   def getByName(name: String): ProfileSteps = new ProfileSteps(raw.has(Key("name") of name))
 }

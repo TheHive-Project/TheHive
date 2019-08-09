@@ -69,9 +69,9 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
       authContext: AuthContext
   ): S = {
     val s =
-      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].where(_.`case`.getById(parentId))
-      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].where(_.`case`.getById(parentId))
-      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].where(_.task.get(parentId))
+      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].where(_.`case`.getByIds(parentId))
+      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].where(_.`case`.getByIds(parentId))
+      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].where(_.task.getByIds(parentId))
       else ???
     s.asInstanceOf[S]
   }

@@ -49,14 +49,9 @@ class CaseSrv @Inject()(
       organisation: Organisation with Entity,
       tagNames: Set[String],
       customFields: Map[String, Option[Any]],
-      caseTemplate: Option[RichCaseTemplate]
+      caseTemplate: Option[RichCaseTemplate],
+      additionalTasks: Seq[Task]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-
-    def createTaskFromCaseTemplate(`case`: Case with Entity, caseTemplate: RichCaseTemplate): Try[Unit] =
-      for {
-        createdTasks <- caseTemplate.tasks.toTry(task => taskSrv.create(task))
-        _            <- createdTasks.toTry(addTask(`case`, _))
-      } yield ()
 
     def createCustomFields(`case`: Case with Entity, customFields: Map[String, Option[Any]]) =
       customFields
@@ -75,11 +70,12 @@ class CaseSrv @Inject()(
         }
 
     for {
-      createdCase <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-      _           <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
-      _           <- shareSrv.create(createdCase, organisation, profileSrv.admin)
-      _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-      _           <- caseTemplate.map(createTaskFromCaseTemplate(createdCase, _)).flip
+      createdCase  <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
+      _            <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
+      _            <- shareSrv.create(createdCase, organisation, profileSrv.admin)
+      _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
+      _            <- createdTasks.toTry(addTask(createdCase, _))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
         .map(cf => cf.name -> cf.value)
@@ -94,12 +90,12 @@ class CaseSrv @Inject()(
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
-  override def get(id: String)(implicit graph: Graph): CaseSteps =
-    Success(id)
+  override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
+    Success(idOrNumber)
       .filter(_.headOption.contains('#'))
       .map(_.tail.toInt)
       .map(initSteps.getByNumber(_))
-      .getOrElse(super.get(id))
+      .getOrElse(super.getByIds(idOrNumber))
 
   override def update(
       steps: CaseSteps,
@@ -157,8 +153,8 @@ class CaseSrv @Inject()(
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- initSteps
-        .getOrganisationShare(`case`._id)
+      share <- get(`case`)
+        .getOrganisationShare
         .getOrFail()
       _ = shareObservableSrv.create(ShareObservable(), share, observable)
       _ <- auditSrv.observable.create(observable, `case`)
@@ -169,8 +165,8 @@ class CaseSrv @Inject()(
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- initSteps
-        .getOrganisationShare(`case`._id)
+      share <- get(`case`)
+        .getOrganisationShare
         .getOrFail()
       _ = shareTaskSrv.create(ShareTask(), share, task)
       _ <- auditSrv.task.create(task, `case`)
@@ -318,14 +314,13 @@ class CaseSrv @Inject()(
 
 @EntitySteps[Case]
 class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Case, CaseSteps](raw) {
-  override def get(id: String): CaseSteps =
+
+  def get(id: String): CaseSteps =
     Success(id)
       .filter(_.headOption.contains('#'))
       .map(_.tail.toInt)
       .map(getByNumber)
-      .getOrElse(getById(id))
-
-  def getById(id: String): CaseSteps = newInstance(raw.hasId(id))
+      .getOrElse(getByIds(id))
 
   def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
@@ -430,12 +425,13 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   }
 
-  def getOrganisationShare(id: String)(implicit authContext: AuthContext): ShareSteps = new ShareSteps(
+  def getOrganisationShare(implicit authContext: AuthContext): ShareSteps = new ShareSteps(
     raw
-      .hasId(id)
       .inTo[ShareCase]
       .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
   )
+
+  def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
 
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {

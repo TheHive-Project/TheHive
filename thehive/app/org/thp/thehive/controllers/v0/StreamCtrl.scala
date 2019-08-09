@@ -7,9 +7,10 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.concurrent.ExecutionContext
 import scala.util.Success
+
+import gremlin.scala.{Key, P}
 
 @Singleton
 class StreamCtrl @Inject()(
@@ -40,14 +41,15 @@ class StreamCtrl @Inject()(
           case auditIds if auditIds.nonEmpty =>
             db.roTransaction { implicit graph =>
               val audits = auditSrv
-                .get(auditIds)
+                .getByIds(auditIds: _*)
+                .has(Key("mainAction"), P.eq(true))
                 .richAuditWithCustomRenderer(auditRenderer)
-                .toList
+                .toIterator
                 .map {
                   case (audit, (rootId, obj)) =>
                     audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> rootId)))
                 }
-              Results.Ok(JsArray(audits))
+              Results.Ok(JsArray(audits.toSeq))
             }
           case _ => Results.Ok(JsArray.empty)
         }
