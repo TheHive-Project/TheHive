@@ -80,7 +80,7 @@ class FunctionalTest extends PlaySpecification {
                                               |}
                                               |auth.providers: [
                                               |  {name: basic},
-                                              |  {name:local}
+                                              |  {name: local}
                                               |]
     """.stripMargin))
 //  Configuration(ConfigFactory.parseString("""
