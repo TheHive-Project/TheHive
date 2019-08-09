@@ -7,10 +7,11 @@ import play.api.libs.json.{JsObject, Json}
 import gremlin.scala.{__, BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.Output
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UniMapping}
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.{Audited, RichAudit, ShareCase, ShareTask, TaskLog}
+import org.thp.thehive.models.{AuditContext, Audited, RichAudit, ShareCase, ShareTask, TaskLog}
 import org.thp.thehive.services.{CaseSteps, LogSteps, TaskSteps}
 
 object AuditConversion {
@@ -19,15 +20,9 @@ object AuditConversion {
   import LogConversion._
 
   def actionToOperation(action: String): String = action match {
-    case "createCase"         => "Creation"
-    case "updateCase"         => "Update"
-    case "createAlert"        => "Creation"
-    case "updateAlert"        => "Update"
-    case "createCaseTemplate" => "Creation"
-    case "createLog"          => "Creation"
-    case "updateLog"          => "Update"
-    case "createTask"         => "Creation"
-    case _                    => "Unknown"
+    case "create" => "Creation"
+    case "update" => "Update"
+    case _        => "Unknown"
   }
 
   def objectTypeMapper(objectType: String): String = objectType match {
@@ -85,4 +80,16 @@ object AuditConversion {
         BranchCase("Log", logToJson),
         BranchOtherwise(_.constant("" -> JsObject.empty))
       )
+
+  val auditProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[LogSteps]
+      .property("operation", UniMapping.string)(_.rename("action").readonly)
+      .property("details", UniMapping.string)(_.simple.readonly)
+      .property("objectType", UniMapping.string.optional)(_.simple.readonly)
+      .property("objectId", UniMapping.string.optional)(_.simple.readonly)
+      .property("base", UniMapping.boolean)(_.rename("mainAction").readonly)
+      .property("startDate", UniMapping.date)(_.rename("_createdAt").readonly)
+      .property("requestId", UniMapping.string)(_.simple.readonly)
+      .property("rootId", UniMapping.string)(_.derived(_.outTo[AuditContext].id().map(_.toString)).readonly)
+      .build
 }

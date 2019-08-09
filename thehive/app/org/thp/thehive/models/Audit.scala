@@ -24,6 +24,11 @@ object Audit {
 
   def apply(action: String, entity: Entity, details: Option[String] = None)(implicit authContext: AuthContext): Audit =
     Audit(authContext.requestId, action, mainAction = false, Some(entity._id), Some(entity._model.label), details)
+
+  final val create = "create"
+  final val update = "update"
+  final val delete = "delete"
+  final val merge  = "merge"
 }
 
 case class RichAudit(

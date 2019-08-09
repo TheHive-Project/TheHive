@@ -1,13 +1,18 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.models.Database
-import org.thp.thehive.services._
+import scala.util.Success
+
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import gremlin.scala.{Key, P}
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.Query
+import org.thp.thehive.dto.v0.OutputAudit
+import org.thp.thehive.models.RichAudit
+import org.thp.thehive.services._
 
 @Singleton
 class AuditCtrl @Inject()(
@@ -17,15 +22,30 @@ class AuditCtrl @Inject()(
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
     implicit val db: Database
-) {
+) extends QueryableCtrl {
   import AuditConversion._
+
+  val entityName: String = "audit"
+
+  val initialQuery: org.thp.scalligraph.query.Query =
+    Query.init[AuditSteps]("listAudit", (graph, authContext) => auditSrv.initSteps(graph).visible(authContext))
+  val publicProperties: List[org.thp.scalligraph.query.PublicProperty[_, _]] = auditProperties ::: metaProperties[LogSteps]
+
+  val pageQuery: org.thp.scalligraph.query.ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
+    Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
+      "page",
+      FieldsParser[OutputParam],
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit.raw)
+    )
+  val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit, OutputAudit]
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
       .authRoTransaction(db) { implicit request => implicit graph =>
+        val auditTraversal = auditSrv.initSteps.has(Key("mainAction"), P.eq(true))
         val audits = caseId
           .filterNot(_ == "any")
-          .fold(auditSrv.initSteps)(rid => auditSrv.initSteps.forCase(rid))
+          .fold(auditTraversal)(cid => auditTraversal.forCase(cid))
           .visible
           .range(0, count.getOrElse(10).toLong)
           .richAuditWithCustomRenderer(auditRenderer)
