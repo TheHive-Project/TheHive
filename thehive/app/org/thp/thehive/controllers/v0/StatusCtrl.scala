@@ -5,20 +5,20 @@ import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-
 import scala.collection.immutable
 import scala.util.Success
+
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 @Singleton
 class StatusCtrl @Inject()(
     entryPoint: EntryPoint,
-    appConfig: ApplicationConfiguration,
+    appConfig: ApplicationConfig,
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],

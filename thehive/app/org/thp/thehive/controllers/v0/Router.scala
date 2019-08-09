@@ -24,6 +24,7 @@ class Router @Inject()(
     streamCtrl: StreamCtrl,
     attachmentCtrl: AttachmentCtrl,
     describeCtrl: DescribeCtrl,
+    configCtrl: ConfigCtrl,
     queryExecutor: TheHiveQueryExecutor
 ) extends SimpleRouter {
 
@@ -152,6 +153,10 @@ class Router @Inject()(
     case GET(p"/describe/_all")                      => describeCtrl.describeAll
     case GET(p"/describe/$modelName")                => describeCtrl.describe(modelName)
 
+    case GET(p"/config")            => configCtrl.list
+    case PUT(p"/config/$path")      => configCtrl.set(path)
+    case GET(p"/config/user/$path") => configCtrl.userGet(path)
+    case PUT(p"/config/user/$path") => configCtrl.userSet(path)
   }
 }
 /*

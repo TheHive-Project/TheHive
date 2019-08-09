@@ -4,15 +4,15 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem}
 import org.thp.thehive.TheHiveModule
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-
 import scala.util.Success
 
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+
 @Singleton
-class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfiguration, authSrv: AuthSrv) {
+class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 

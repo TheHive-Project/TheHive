@@ -8,14 +8,15 @@ import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
 import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.services.{ApplicationConfiguration, ConfigItem, StorageSrv}
+import org.thp.scalligraph.services.StorageSrv
 import play.api.http.HttpEntity
 import play.api.mvc._
-
 import scala.util.{Success, Try}
 
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+
 @Singleton
-class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfiguration, storageSrv: StorageSrv) {
+class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfig, storageSrv: StorageSrv) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
   val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
