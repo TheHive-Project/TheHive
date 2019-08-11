@@ -7,6 +7,7 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, UserSrv => SUserSrv}
 import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models._
 
@@ -21,6 +22,7 @@ class CaseSrvTest extends PlaySpecification {
       .bind[Schema, TheHiveSchema]
       .bindToProvider(dbProvider)
       .bind[StorageSrv, LocalFileSystemStorageSrv]
+      .bindActor[ConfigActor]("config-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

@@ -10,6 +10,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
@@ -33,6 +34,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
       .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[ConfigActor]("config-actor")
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexConfig, TestCortexConfigProvider]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")

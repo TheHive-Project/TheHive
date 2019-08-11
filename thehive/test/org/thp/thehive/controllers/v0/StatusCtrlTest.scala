@@ -5,6 +5,7 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, UserSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
@@ -49,6 +50,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
       .bind[Schema, TheHiveSchema]
       .multiBindInstance[Connector](fakeCortexConnector)
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+      .bindActor[ConfigActor]("config-actor")
       .bindInstance[AuthSrv](authSrv)
 
     specs(dbProvider.name, app)

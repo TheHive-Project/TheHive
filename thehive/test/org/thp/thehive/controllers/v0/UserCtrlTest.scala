@@ -6,6 +6,7 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, AuthSrvProvider, HeaderAuthProvider, MultiAuthSrvProvider, UserSrv}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.models._
@@ -29,6 +30,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       .bind[Schema, TheHiveSchema]
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
+      .bindActor[ConfigActor]("config-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))

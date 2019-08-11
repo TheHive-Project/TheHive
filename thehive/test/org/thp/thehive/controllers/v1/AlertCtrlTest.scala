@@ -10,6 +10,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, Entity, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
@@ -65,6 +66,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[ConfigActor]("config-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

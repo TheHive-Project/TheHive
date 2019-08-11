@@ -13,6 +13,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
@@ -37,6 +38,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
       .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[ConfigActor]("config-actor")
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")

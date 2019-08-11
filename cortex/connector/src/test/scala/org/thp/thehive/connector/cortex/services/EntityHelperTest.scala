@@ -8,6 +8,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, AuthSrv, Permission, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services.{AlertSrv, LocalUserSrv, ObservableSrv, TaskSrv}
@@ -28,6 +29,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
       .bind[AuthSrv, TestAuthSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[ConfigActor]("config-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

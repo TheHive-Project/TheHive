@@ -7,6 +7,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, Schema}
+import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
@@ -28,6 +29,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[UserSrv, LocalUserSrv]
       .bind[Schema, TheHiveSchema]
+      .bindActor[ConfigActor]("config-actor")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
