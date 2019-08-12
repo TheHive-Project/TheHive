@@ -99,7 +99,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
 
       "find a manageable entity only (alert)" in db.roTransaction { implicit graph =>
         val alertSrv: AlertSrv = app.instanceOf[AlertSrv]
-        val a1                 = alertSrv.getByIds("testType;testSource;ref2").headOption()
+        val a1                 = alertSrv.get("testType;testSource;ref2").headOption()
         a1 must beSome
         val alert1 = a1.get
 

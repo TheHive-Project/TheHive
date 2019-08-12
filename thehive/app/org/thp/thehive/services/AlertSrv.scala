@@ -163,7 +163,7 @@ class AlertSrv @Inject()(
       authContext: AuthContext
   ): Try[Unit] =
     alertCustomFieldSrv
-      .getByIds(customFieldWithValue.customFieldValue._id)
+      .get(customFieldWithValue.customFieldValue._id)
       .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
       .map(_ => ())
 
@@ -172,25 +172,25 @@ class AlertSrv @Inject()(
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- getByIds(alertId).update("read" -> false)
+      alert <- get(alertId).update("read" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- getByIds(alertId).update("read" -> true)
+      alert <- get(alertId).update("read" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- getByIds(alertId).update("follow" -> true)
+      alert <- get(alertId).update("follow" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- getByIds(alertId).update("follow" -> false)
+      alert <- get(alertId).update("follow" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
@@ -255,6 +255,11 @@ class AlertSrv @Inject()(
 @EntitySteps[Alert]
 class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Alert, AlertSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): AlertSteps = new AlertSteps(raw)
+
+  def get(idOrSource: String)(implicit graph: Graph): AlertSteps = idOrSource.split(';') match {
+    case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
+    case _                             => getByIds(idOrSource)
+  }
 
   override def getByIds(ids: String*): AlertSteps = newInstance(raw.hasId(ids: _*))
 
