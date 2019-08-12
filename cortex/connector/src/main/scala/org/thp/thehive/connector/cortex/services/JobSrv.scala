@@ -200,7 +200,7 @@ class JobSrv @Inject()(
       .attachment
       .map { attachment =>
         val file = Files.createTempFile(s"job-cortex-${attachment.id}", "")
-        for {
+        val attach = for {
           src <- cortexClient.getAttachment(attachment.id)
           s   <- src.runWith(FileIO.toPath(file))
           _   <- Future.fromTry(s.status)
@@ -214,8 +214,15 @@ class JobSrv @Inject()(
               } yield createdAttachment
             }
           }
-          _ = Files.delete(file) // FIXME file won't be deleted if attachment creation fails
+          _ = Files.delete(file)
         } yield savedAttachment
+
+        attach transform {
+          case s @ Success(_) => s
+          case Failure(cause) =>
+            Files.delete(file)
+            Failure(new Exception("Saving attachment failed", cause))
+        }
       }
       .getOrElse(Future.failed(new Exception(s"Attachment not present for artifact ${artifact.dataType}")))
 

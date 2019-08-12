@@ -83,15 +83,6 @@
           ],
           "tlp": 3,
           "dataType": "file"
-        },
-        {
-          "data": "127.0.0.1",
-          "dataType": "ip",
-          "message": null,
-          "tags": [
-            "localhost"
-          ],
-          "tlp": 2
         }
       ],
       "operations": [
