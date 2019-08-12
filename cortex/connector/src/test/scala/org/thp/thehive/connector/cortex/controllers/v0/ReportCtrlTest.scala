@@ -19,7 +19,7 @@ import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import scala.util.Try
+import scala.util.{Random, Try}
 
 class ReportCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
@@ -50,37 +50,9 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
     val cortexQueryExecutor    = app.instanceOf[CortexQueryExecutor]
 
     s"[$name] report controller" should {
-      "create, fetch, update and delete a template" in {
-        val createRequest = FakeRequest("POST", "/api/connector/cortex/report/template")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-          .withJsonBody(Json.parse(s"""
-              {
-                "analyzerId": "dummy",
-                "content": "<span>lol</span>",
-                "reportType": "long"
-              }
-            """.stripMargin))
-        val createResult = reportCtrl.create(createRequest)
-        status(createResult) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(createResult)}")
-
-        val outputReportTemplate = contentAsJson(createResult).as[OutputReportTemplate]
-        val getRequest = FakeRequest("GET", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-        val getResult = reportCtrl.get(outputReportTemplate.id)(getRequest)
-        status(getResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
-
-        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-          .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
-        val updateResult = reportCtrl.update(outputReportTemplate.id)(updateRequest)
-        status(updateResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
-        contentAsJson(updateResult).as[OutputReportTemplate].content must equalTo("<br/>")
-
-        val deleteRequest = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-        val deleteResult = reportCtrl.delete(outputReportTemplate.id)(deleteRequest)
-        status(deleteResult) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
-      }
+//      "create, fetch, update and delete a template" in {
+//
+//      }
 
       "import valid templates contained in a zip file and fetch them by id and type" in {
 //        val archive = SingletonTemporaryFileCreator.create(new File(getClass.getResource("/report-templates.zip").toURI).toPath)
@@ -107,6 +79,43 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
         val getResult = reportCtrl.get("JoeSandbox_File_Analysis_Noinet_2_0")(getRequest)
         status(getResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
+
+
+
+
+
+
+
+        // FIXME some obscure db conflicts issue again
+
+        val createRequest = FakeRequest("POST", "/api/connector/cortex/report/template")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withJsonBody(Json.parse(s"""
+              {
+                "analyzerId": "anaTest1",
+                "content": "<span>${Random.alphanumeric.take(10).mkString}</span>"
+              }
+            """.stripMargin))
+        val createResult = reportCtrl.create(createRequest)
+        status(createResult) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(createResult)}")
+
+        val outputReportTemplate = contentAsJson(createResult).as[OutputReportTemplate]
+        val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+        val getResult2 = reportCtrl.get(outputReportTemplate.id)(getRequest2)
+        status(getResult2) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult2)}")
+
+        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
+        val updateResult = reportCtrl.update(outputReportTemplate.id)(updateRequest)
+        status(updateResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
+        contentAsJson(updateResult).as[OutputReportTemplate].content must equalTo("<br/>")
+
+        val deleteRequest = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+        val deleteResult = reportCtrl.delete(outputReportTemplate.id)(deleteRequest)
+        status(deleteResult) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
       }
 
       "search templates properly" in {

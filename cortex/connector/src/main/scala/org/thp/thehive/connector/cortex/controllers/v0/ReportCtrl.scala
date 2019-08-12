@@ -67,7 +67,6 @@ class ReportCtrl @Inject()(
     entryPoint("create template")
       .extract("template", FieldsParser[InputReportTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
-        // FIXME is there a need for ACL check concerning ReportTemplates? If so how to check it without any Edge
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
           val template: InputReportTemplate = request.body("template")
           reportTemplateSrv.create(template).map { createdReportTemplate =>

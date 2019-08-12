@@ -38,16 +38,6 @@ class ActionSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ActionSteps = new ActionSteps(raw)
 
-  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): InputCortexAction =
-    action
-      .into[InputCortexAction]
-      .withFieldConst(_.dataType, s"thehive:${action.objectType}")
-      .withFieldConst(_.label, label)
-      .withFieldConst(_.data, data)
-      .withFieldConst(_.tlp, tlp)
-      .withFieldConst(_.pap, pap)
-      .transform
-
   /**
     * Executes an Action on user demand,
     * creates a job on Cortex side and then persist the
@@ -97,6 +87,16 @@ class ActionSrv @Inject()(
 
       _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client, authContext)
     } yield createdAction
+
+  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): InputCortexAction =
+    action
+      .into[InputCortexAction]
+      .withFieldConst(_.dataType, s"thehive:${action.objectType}")
+      .withFieldConst(_.label, label)
+      .withFieldConst(_.data, data)
+      .withFieldConst(_.tlp, tlp)
+      .withFieldConst(_.pap, pap)
+      .transform
 
   /**
     * Creates an Action with necessary ActionContext edge
