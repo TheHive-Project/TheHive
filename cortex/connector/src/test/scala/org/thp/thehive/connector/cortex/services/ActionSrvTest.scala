@@ -6,17 +6,17 @@ import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
-import org.thp.cortex.dto.v0.{CortexJobType, CortexOutputJob}
+import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
+import org.thp.scalligraph.auth.{AuthContextImpl, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.{LocalUserSrv, TaskSrv}
+import org.thp.thehive.models.{DatabaseBuilder, _}
+import org.thp.thehive.services.{CaseSrv, LocalUserSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -41,15 +41,13 @@ class ActionSrvTest extends PlaySpecification with Mockito {
       .bindToProvider[CortexConfig, TestCortexConfigProvider]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) // ^ step(shutdownActorSystem(app))
+    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
     app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-//  def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
 
   def specs(name: String, app: AppBuilder): Fragment =
     s"[$name] action service" should {
@@ -58,6 +56,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           val taskSrv    = app.instanceOf[TaskSrv]
           val actionSrv  = app.instanceOf[ActionSrv]
           val actionCtrl = app.instanceOf[ActionCtrl]
+          val caseSrv    = app.instanceOf[CaseSrv]
 
           val t1 = taskSrv.initSteps.toList.find(_.title == "case 1 task 1")
           t1 must beSome
@@ -114,6 +113,27 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                                                                           "message": "Success"
                                                                         }
                                                                       ]""".stripMargin).toString
+          val relatedCaseTry = caseSrv.initSteps.get("#1").richCase.getOrFail()
+
+          relatedCaseTry must beSuccessfulTry
+
+          val relatedCase      = relatedCaseTry.get
+          val authContextUser1 = AuthContextImpl("user1", "user1", "cert", "testRequest", Permissions.all)
+
+          relatedCase.tags must contain(Tag("mail sent"))
+          caseSrv.initSteps.tasks(authContextUser1).toList.filter(_.title == "task created by action") must contain(
+            Task(
+              title = "task created by action",
+              group = None,
+              description = Some("yop !"),
+              status = TaskStatus.Waiting,
+              flag = false,
+              startDate = None,
+              endDate = None,
+              order = 0,
+              dueDate = None
+            )
+          )
         }
       }
     }
