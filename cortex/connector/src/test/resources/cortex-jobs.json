@@ -100,7 +100,7 @@
   {
     "date": 1562167321611,
     "endDate": 1562167324938,
-    "type": "analyzer",
+    "type": "responder",
     "cacheTag": "99bf872b81f82fe224fa450604d7cefa",
     "createdAt": 1562167321611,
     "_parent": null,
@@ -122,8 +122,8 @@
     "_routing": "AWu78Q1OCVNz03gXK4df",
     "workerId": "da4bdbecae5b1f6d4180e25450b65459",
     "updatedBy": "billotei",
-    "analyzerName": "testAnalyzer_1_0",
-    "analyzerDefinitionId": "testAnalyzer_1_0",
+    "analyzerName": "testResponder_1_0",
+    "analyzerDefinitionId": "testResponder_1_0",
     "dataType": "file",
     "_type": "job",
     "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
@@ -131,66 +131,28 @@
     "createdBy": "billotei",
     "organization": "test",
     "report": {
-      "summary": {
-        "taxonomies": [
-          {
-            "level": "info",
-            "namespace": "test",
-            "predicate": "data",
-            "value": "test"
-          }
-        ]
-      },
+      "summary": {},
       "full": {
-        "data": "pic.jpg",
-        "input": {
-          "file": "attachment7619802021796183482",
-          "filename": "pic.jpg",
-          "dataType": "file",
-          "tlp": 2,
-          "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
-          "contentType": "image/jpeg",
-          "parameters": {
-          },
-          "config": {
-            "proxy_https": null,
-            "cacerts": null,
-            "max_pap": 2,
-            "jobTimeout": 30,
-            "check_tlp": true,
-            "proxy_http": null,
-            "max_tlp": 2,
-            "auto_extract_artifacts": false,
-            "jobCache": 10,
-            "check_pap": true
-          },
-          "pap": 2
-        }
+        "message": "TestResponder has run"
       },
       "success": true,
-      "artifacts": [
+      "artifacts": [],
+      "operations": [
         {
-          "data": "127.0.0.1",
-          "dataType": "ip",
-          "message": null,
-          "tags": [
-            "localhost"
-          ],
-          "tlp": 2
+          "type": "AddTagToCase",
+          "tag": "mail sent"
         },
         {
-          "data": "test",
-          "dataType": "test",
-          "tlp": 2
+          "type": "CreateTask",
+          "title": "task created by action",
+          "description": "yop !"
         }
-      ],
-      "operations": [
       ]
     },
     "tlp": 2,
-    "workerDefinitionId": "testAnalyzer_1_0",
+    "workerDefinitionId": "testResponder_1_0",
     "_id": "AWu78Q1OCVNz03gXK4df",
-    "workerName": "testAnalyzer_1_0",
+    "workerName": "testResponder_1_0",
     "parameters": {
     },
     "startDate": 1562157321892,

@@ -4,16 +4,18 @@ import gremlin.scala.Graph
 import javax.inject.Inject
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.connector.cortex.models.{ActionOperation, ActionOperationStatus, AddTagToArtifact, AddTagToCase}
+import org.thp.thehive.connector.cortex.models._
+import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.Case
-import org.thp.thehive.services.{CaseSrv, ObservableSrv}
+import org.thp.thehive.services.{CaseSrv, ObservableSrv, TaskSrv}
 import play.api.Logger
 
 import scala.util.{Failure, Try}
 
 class ActionOperationSrv @Inject()(
     caseSrv: CaseSrv,
-    observableSrv: ObservableSrv
+    observableSrv: ObservableSrv,
+    taskSrv: TaskSrv
 ) {
   private[ActionOperationSrv] lazy val logger = Logger(getClass)
 
@@ -31,6 +33,8 @@ class ActionOperationSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[ActionOperation] = {
+    import org.thp.thehive.controllers.v0.TaskConversion._
+
     operation match {
       case AddTagToCase(tag, _, _) =>
         for {
@@ -43,7 +47,12 @@ class ActionOperationSrv @Inject()(
           obs <- observableSrv.getOrFail(entity._id)
           _   <- observableSrv.addTags(obs, Set(tag))
         } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
-      // TODO add rest of operations
+      case CreateTask(title, description, _, _) =>
+        for {
+          c           <- Try(relatedCase.get)
+          createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)))
+          _           <- caseSrv.addTask(c, createdTask)
+        } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"
         logger.error(m)

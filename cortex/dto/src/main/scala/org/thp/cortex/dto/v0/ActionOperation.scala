@@ -1,6 +1,6 @@
 package org.thp.cortex.dto.v0
 
-import play.api.libs.json.{Format, JsObject, Json, OFormat}
+import play.api.libs.json._
 
 object CortexOperationType extends Enumeration {
   type Type = Value
@@ -27,5 +27,35 @@ case class CortexOutputOperation(
 )
 
 object CortexOutputOperation {
-  implicit val format: OFormat[CortexOutputOperation] = Json.format[CortexOutputOperation]
+  implicit val writes: Writes[CortexOutputOperation] = Json.writes[CortexOutputOperation]
+  implicit val reads: Reads[CortexOutputOperation] = Reads[CortexOutputOperation](
+    json =>
+      for {
+        t <- (json \ "type").validate[CortexOperationType.Type].orElse(JsSuccess(CortexOperationType.Unknown))
+        tag         = (json \ "tag").asOpt[String]
+        title       = (json \ "title").asOpt[String]
+        description = (json \ "description").asOpt[String]
+        name        = (json \ "name").asOpt[String]
+        tpe         = (json \ "tpe").asOpt[String]
+        value       = (json \ "value").asOpt[JsObject]
+        content     = (json \ "content").asOpt[String]
+        owner       = (json \ "owner").asOpt[String]
+        data        = (json \ "data").asOpt[String]
+        dataType    = (json \ "dataType").asOpt[String]
+        message     = (json \ "message").asOpt[String]
+      } yield CortexOutputOperation(
+        t,
+        tag,
+        title,
+        description,
+        name,
+        tpe,
+        value,
+        content,
+        owner,
+        data,
+        dataType,
+        message
+      )
+  )
 }

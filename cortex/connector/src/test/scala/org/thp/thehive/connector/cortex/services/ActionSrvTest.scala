@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
+import org.thp.cortex.dto.v0.{CortexJobType, CortexOutputJob}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
@@ -20,6 +21,7 @@ import play.api.libs.json.Json
 import play.api.test.{NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
+import scala.io.Source
 import scala.util.Try
 
 class ActionSrvTest extends PlaySpecification with Mockito {
@@ -82,7 +84,36 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           richAction must beAnInstanceOf[RichAction]
           richAction.responderId shouldEqual "respTest1"
 
-        // TODO test finished method
+          val cortexOutputJobOpt = {
+            val dataSource = Source.fromResource("cortex-jobs.json")
+            val data       = dataSource.mkString
+            dataSource.close()
+            Json.parse(data).as[List[CortexOutputJob]].find(_.id == "AWu78Q1OCVNz03gXK4df")
+          }
+
+          cortexOutputJobOpt must beSome
+
+          val updatedActionTry = actionSrv.finished(richAction._id, cortexOutputJobOpt.get)(dummyUserSrv.authContext)
+
+          updatedActionTry must beSuccessfulTry
+
+          val updatedAction = updatedActionTry.get
+
+          updatedAction.status shouldEqual JobStatus.Success
+          updatedAction.operations must beSome
+          updatedAction.operations.get shouldEqual Json.parse("""[
+                                                                        {
+                                                                          "tag": "mail sent",
+                                                                          "status": "Success",
+                                                                          "message": "Success"
+                                                                        },
+                                                                        {
+                                                                          "title": "task created by action",
+                                                                          "description": "yop !",
+                                                                          "status": "Success",
+                                                                          "message": "Success"
+                                                                        }
+                                                                      ]""".stripMargin).toString
         }
       }
     }
