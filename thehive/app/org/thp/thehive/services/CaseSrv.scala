@@ -51,24 +51,7 @@ class CaseSrv @Inject()(
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[Task]
-  )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-
-    def createCustomFields(`case`: Case with Entity, customFields: Map[String, Option[Any]]) =
-      customFields
-        .toTry {
-          case (name, Some(value)) =>
-            for {
-              cf              <- customFieldSrv.getOrFail(name)
-              ccf             <- cf.`type`.setValue(CaseCustomField(), value)
-              caseCustomField <- caseCustomFieldSrv.create(ccf, `case`, cf)
-            } yield CustomFieldWithValue(cf, caseCustomField)
-          case (name, _) =>
-            for {
-              cf              <- customFieldSrv.getOrFail(name)
-              caseCustomField <- caseCustomFieldSrv.create(CaseCustomField(), `case`, cf)
-            } yield CustomFieldWithValue(cf, caseCustomField)
-        }
-
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
       createdCase  <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
       _            <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
@@ -86,16 +69,39 @@ class CaseSrv @Inject()(
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
       _ <- auditSrv.`case`.create(createdCase)
     } yield RichCase(createdCase, allTags, None, None, user.map(_.login), cfs)
-  }
+
+  def createCustomFields(
+      `case`: Case with Entity,
+      customFields: Map[String, Option[Any]]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[CustomFieldWithValue]] =
+    customFields
+      .toTry {
+        case (name, Some(value)) =>
+          for {
+            cf              <- customFieldSrv.getOrFail(name)
+            ccf             <- cf.`type`.setValue(CaseCustomField(), value)
+            caseCustomField <- caseCustomFieldSrv.create(ccf, `case`, cf)
+          } yield CustomFieldWithValue(cf, caseCustomField)
+        case (name, _) =>
+          for {
+            cf              <- customFieldSrv.getOrFail(name)
+            caseCustomField <- caseCustomFieldSrv.create(CaseCustomField(), `case`, cf)
+          } yield CustomFieldWithValue(cf, caseCustomField)
+      }
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
-  override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
-    Success(idOrNumber)
-      .filter(_.headOption.contains('#'))
-      .map(_.tail.toInt)
-      .map(initSteps.getByNumber(_))
-      .getOrElse(super.getByIds(idOrNumber))
+  def addTask(`case`: Case with Entity, task: Task with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      share <- get(`case`)
+        .getOrganisationShare
+        .getOrFail()
+      _ = shareTaskSrv.create(ShareTask(), share, task)
+      _ <- auditSrv.task.create(task, `case`)
+    } yield ()
 
   override def update(
       steps: CaseSteps,
@@ -160,18 +166,6 @@ class CaseSrv @Inject()(
       _ <- auditSrv.observable.create(observable, `case`)
     } yield ()
 
-  def addTask(`case`: Case with Entity, task: Task with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    for {
-      share <- get(`case`)
-        .getOrganisationShare
-        .getOrFail()
-      _ = shareTaskSrv.create(ShareTask(), share, task)
-      _ <- auditSrv.task.create(task, `case`)
-    } yield ()
-
   def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       _ <- get(`case`).tasks.toIterator.toTry(taskSrv.cascadeRemove(_))
@@ -183,6 +177,13 @@ class CaseSrv @Inject()(
 
   def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(caseIdOrNumber).visible.exists()
+
+  override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
+    Success(idOrNumber)
+      .filter(_.headOption.contains('#'))
+      .map(_.tail.toInt)
+      .map(initSteps.getByNumber(_))
+      .getOrElse(super.getByIds(idOrNumber))
 
   def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(`case`, cf, value))
@@ -328,8 +329,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
   )
 
-  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
-
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
     newInstance(
       raw.filter(
@@ -343,40 +342,10 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       )
     )
 
+  override def newInstance(raw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(raw)
+
   def getLast: CaseSteps =
     newInstance(raw.order(By(Key[Int]("number"), Order.desc)))
-
-  def richCase: ScalarSteps[RichCase] =
-    ScalarSteps(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-              .toSeq
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]).toSeq,
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues
-            )
-        }
-    )
 
   def richCaseWithCustomRenderer[A](
       entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
@@ -495,6 +464,38 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
       }
   }
+
+  def richCase: ScalarSteps[RichCase] =
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseTag].fold))
+            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+        )
+        .map {
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             => throw InternalError("Not possible")
+              }
+              .toSeq
+            RichCase(
+              caze.as[Case],
+              tags.asScala.map(_.as[Tag]).toSeq,
+              atMostOneOf[String](impactStatus),
+              atMostOneOf[String](resolutionStatus),
+              atMostOneOf[String](user),
+              customFieldValues
+            )
+        }
+    )
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 

@@ -146,6 +146,12 @@
           "type": "CreateTask",
           "title": "task created by action",
           "description": "yop !"
+        },
+        {
+          "type": "AddCustomFields",
+          "name": "custom field from action",
+          "value": false,
+          "tpe": "boolean"
         }
       ]
     },

@@ -35,24 +35,34 @@ class ActionOperationSrv @Inject()(
   ): Try[ActionOperation] = {
     import org.thp.thehive.controllers.v0.TaskConversion._
 
+    def updateOperation(operation: ActionOperation) = operation.updateStatus(ActionOperationStatus.Success, "Success")
+
     operation match {
       case AddTagToCase(tag, _, _) =>
         for {
           c <- Try(relatedCase.get)
           _ <- caseSrv.addTags(c, Set(tag))
-        } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
+        } yield updateOperation(operation)
 
       case AddTagToArtifact(tag, _, _) =>
         for {
           obs <- observableSrv.getOrFail(entity._id)
           _   <- observableSrv.addTags(obs, Set(tag))
-        } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
+        } yield updateOperation(operation)
+
       case CreateTask(title, description, _, _) =>
         for {
           c           <- Try(relatedCase.get)
           createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)))
           _           <- caseSrv.addTask(c, createdTask)
-        } yield operation.updateStatus(ActionOperationStatus.Success, "Success")
+        } yield updateOperation(operation)
+
+      case AddCustomFields(name, _, value,  _, _) =>
+        for {
+          c <- Try(relatedCase.get)
+          _ <- caseSrv.createCustomFields(c, Map(name -> Some(value)))
+        }  yield updateOperation(operation)
+
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"
         logger.error(m)

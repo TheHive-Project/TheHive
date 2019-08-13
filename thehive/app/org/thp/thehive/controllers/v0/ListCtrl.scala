@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.Hasher
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
@@ -55,7 +55,13 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
     Success(Results.Locked(""))
   }
 
-  def itemExists(listName: String): Action[AnyContent] = entryPoint("check if item exist in list") { _ =>
-    Success(Results.Locked(""))
+  def itemExists(listName: String): Action[AnyContent] = entryPoint("check if item exist in list")
+    .extract("key", FieldsParser.string)
+    .extract("value", FieldsParser.string)
+    .auth { _ =>
+    listName match {
+      case "custom_fields" => Success(Results.Locked(""))
+      case _               => Success(Results.Locked(""))
+    }
   }
 }
