@@ -118,6 +118,20 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                                                                           "value": "1562157321892",
                                                                           "message": "Success",
                                                                           "status": "Success"
+                                                                        },
+                                                                        {
+                                                                          "name": "float1",
+                                                                          "tpe": "float",
+                                                                          "value": "15.54",
+                                                                          "message": "Success",
+                                                                          "status": "Success"
+                                                                        },
+                                                                        {
+                                                                          "name": "boolean1",
+                                                                          "tpe": "boolean",
+                                                                          "value": "false",
+                                                                          "message": "Success",
+                                                                          "status": "Success"
                                                                         }
                                                                       ]""".stripMargin).toString
           val relatedCaseTry = caseSrv.initSteps.get("#1").richCase.getOrFail()
@@ -141,6 +155,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
               dueDate = None
             )
           )
+          relatedCase.customFields.find(_.value.contains(new Date(1562157321892L))) must beSome
+          relatedCase.customFields.find(_.value.contains(15.54.toFloat)) must beSome
         }
       }
     }

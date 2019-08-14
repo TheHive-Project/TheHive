@@ -152,6 +152,18 @@
           "name": "date1",
           "value": 1562157321892,
           "tpe": "date"
+        },
+        {
+          "type": "AddCustomFields",
+          "name": "float1",
+          "value": 15.54,
+          "tpe": "float"
+        },
+        {
+          "type": "AddCustomFields",
+          "name": "boolean1",
+          "value": false,
+          "tpe": "boolean"
         }
       ]
     },
