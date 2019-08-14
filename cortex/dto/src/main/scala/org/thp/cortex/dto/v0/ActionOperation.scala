@@ -18,7 +18,7 @@ case class CortexOutputOperation(
     description: Option[String],
     name: Option[String],
     tpe: Option[String],
-    value: Option[JsObject],
+    value: Option[JsValue],
     content: Option[String],
     owner: Option[String],
     data: Option[String],
@@ -27,7 +27,9 @@ case class CortexOutputOperation(
 )
 
 object CortexOutputOperation {
-  implicit val writes: Writes[CortexOutputOperation] = Json.writes[CortexOutputOperation]
+  implicit val writes: Writes[CortexOutputOperation] = (o: CortexOutputOperation) => Json.obj(
+    "type" -> o.`type`.toString
+  )
   implicit val reads: Reads[CortexOutputOperation] = Reads[CortexOutputOperation](
     json =>
       for {
@@ -37,7 +39,7 @@ object CortexOutputOperation {
         description = (json \ "description").asOpt[String]
         name        = (json \ "name").asOpt[String]
         tpe         = (json \ "tpe").asOpt[String]
-        value       = (json \ "value").asOpt[JsObject]
+        value       = (json \ "value").asOpt[JsValue]
         content     = (json \ "content").asOpt[String]
         owner       = (json \ "owner").asOpt[String]
         data        = (json \ "data").asOpt[String]

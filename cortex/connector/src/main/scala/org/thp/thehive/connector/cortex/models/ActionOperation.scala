@@ -36,7 +36,7 @@ case class CreateTask(title: String, description: String, status: ActionOperatio
 case class AddCustomFields(
     name: String,
     tpe: String,
-    value: JsValue,
+    value: Any,
     status: ActionOperationStatus = ActionOperationStatus.Waiting,
     message: String = ""
 ) extends ActionOperation {
@@ -82,10 +82,19 @@ case class AssignCase(owner: String, status: ActionOperationStatus = ActionOpera
 }
 
 object ActionOperation {
-  val addTagToCaseWrites: OWrites[AddTagToCase]           = Json.writes[AddTagToCase]
-  val addTagToArtifactWrites: OWrites[AddTagToArtifact]   = Json.writes[AddTagToArtifact]
-  val createTaskWrites: OWrites[CreateTask]               = Json.writes[CreateTask]
-  val addCustomFieldsWrites: OWrites[AddCustomFields]     = Json.writes[AddCustomFields]
+  val addTagToCaseWrites: OWrites[AddTagToCase]         = Json.writes[AddTagToCase]
+  val addTagToArtifactWrites: OWrites[AddTagToArtifact] = Json.writes[AddTagToArtifact]
+  val createTaskWrites: OWrites[CreateTask]             = Json.writes[CreateTask]
+
+  val addCustomFieldsWrites: OWrites[AddCustomFields] = new OWrites[AddCustomFields] {
+    override def writes(o: AddCustomFields): JsObject = Json.obj(
+      "name"    -> o.name,
+      "tpe"     -> o.tpe,
+      "value"   -> o.value.toString,
+      "message" -> o.message,
+      "status"  -> o.status.toString
+    )
+  }
   val closeTaskWrites: OWrites[CloseTask]                 = Json.writes[CloseTask]
   val markAlertAsReadWrites: OWrites[MarkAlertAsRead]     = Json.writes[MarkAlertAsRead]
   val addLogToTaskWrites: OWrites[AddLogToTask]           = Json.writes[AddLogToTask]

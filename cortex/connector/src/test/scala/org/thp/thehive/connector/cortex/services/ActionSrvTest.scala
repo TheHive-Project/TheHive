@@ -113,11 +113,11 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                                                                           "message": "Success"
                                                                         },
                                                                         {
-                                                                          "name": "custom field from action",
-                                                                          "tpe": "boolean",
-                                                                          "value": false,
-                                                                          "status": "Success",
-                                                                          "message": "Success"
+                                                                          "name": "date1",
+                                                                          "tpe": "date",
+                                                                          "value": "1562157321892",
+                                                                          "message": "Success",
+                                                                          "status": "Success"
                                                                         }
                                                                       ]""".stripMargin).toString
           val relatedCaseTry = caseSrv.initSteps.get("#1").richCase.getOrFail()

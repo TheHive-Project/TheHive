@@ -2,7 +2,6 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import org.thp.cortex.dto.v0.{CortexOperationType, CortexOutputOperation}
 import org.thp.thehive.connector.cortex.models._
-import play.api.libs.json.JsObject
 
 import scala.language.implicitConversions
 
@@ -20,7 +19,7 @@ object ActionOperationConversion {
       AddCustomFields(
         o.name.getOrElse("unknown name"),
         o.tpe.getOrElse("unknown tpe"),
-        o.value.getOrElse(JsObject.empty)
+        o.value.getOrElse("unknown value")
       )
     case CortexOperationType.CloseTask       => CloseTask()
     case CortexOperationType.MarkAlertAsRead => MarkAlertAsRead()

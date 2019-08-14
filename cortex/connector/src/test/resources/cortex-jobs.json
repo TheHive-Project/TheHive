@@ -149,9 +149,9 @@
         },
         {
           "type": "AddCustomFields",
-          "name": "custom field from action",
-          "value": false,
-          "tpe": "boolean"
+          "name": "date1",
+          "value": 1562157321892,
+          "tpe": "date"
         }
       ]
     },
