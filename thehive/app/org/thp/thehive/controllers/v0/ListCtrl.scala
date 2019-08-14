@@ -55,13 +55,21 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
     Success(Results.Locked(""))
   }
 
-  def itemExists(listName: String): Action[AnyContent] = entryPoint("check if item exist in list")
-    .extract("key", FieldsParser.string)
-    .extract("value", FieldsParser.string)
-    .auth { _ =>
-    listName match {
-      case "custom_fields" => Success(Results.Locked(""))
-      case _               => Success(Results.Locked(""))
-    }
-  }
+  def itemExists(listName: String): Action[AnyContent] =
+    entryPoint("check if item exist in list")
+      .extract("key", FieldsParser.string.on("key"))
+      .extract("value", FieldsParser.string.on("value"))
+      .authRoTransaction(db) { request => implicit graph =>
+        listName match {
+          case "custom_fields" =>
+            val v: String = request.body("value")
+            customFieldSrv
+              .initSteps
+              .get(v)
+              .getOrFail()
+              .map(f => Results.Conflict(Json.obj("found" -> f.toJson)))
+              .orElse(Success(Results.Ok))
+          case _ => Success(Results.Locked(""))
+        }
+      }
 }
