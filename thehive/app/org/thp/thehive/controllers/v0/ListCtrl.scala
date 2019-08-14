@@ -43,6 +43,7 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
         Success(Results.Ok(result))
       }
 
+  // TODO implement those as admin custom fields management seems to use them
   def addItem(listName: String): Action[AnyContent] = entryPoint("add item to list") { _ =>
     Success(Results.Locked(""))
   }
