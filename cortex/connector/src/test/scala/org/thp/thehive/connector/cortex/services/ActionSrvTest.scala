@@ -143,6 +143,11 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                                                                           "dataMessage": "test observable from action",
                                                                           "status": "Success",
                                                                           "message": "Success"
+                                                                        },
+                                                                        {
+                                                                          "owner": "user2",
+                                                                          "status": "Success",
+                                                                          "message": "Success"
                                                                         }
                                                                       ]""".stripMargin).toString
           val relatedCaseTry = caseSrv.initSteps.get("#1").richCase.getOrFail()
@@ -151,6 +156,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
           val relatedCase = relatedCaseTry.get
 
+          caseSrv.initSteps.get(relatedCase._id).richCase.getOrFail() must beSuccessfulTry.which(richCase => richCase.user must beSome("user2"))
           relatedCase.tags must contain(Tag("mail sent"))
           caseSrv.initSteps.tasks(authContextUser1).toList.filter(_.title == "task created by action") must contain(
             Task(

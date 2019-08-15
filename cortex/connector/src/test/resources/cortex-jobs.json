@@ -170,6 +170,10 @@
           "data": "testObservable",
           "dataType": "mail_subject",
           "message": "test observable from action"
+        },
+        {
+          "type": "AssignCase",
+          "owner": "user2"
         }
       ]
     },

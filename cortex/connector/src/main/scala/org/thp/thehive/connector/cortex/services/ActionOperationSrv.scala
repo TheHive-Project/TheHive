@@ -8,8 +8,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{Alert, Case, Log, Observable, Task, TaskStatus}
-import org.thp.thehive.services.{AlertSrv, CaseSrv, LogSrv, ObservableSrv, ObservableTypeSrv, TaskSrv}
+import org.thp.thehive.models._
+import org.thp.thehive.services._
 import play.api.Logger
 
 import scala.util.{Failure, Try}
@@ -20,7 +20,8 @@ class ActionOperationSrv @Inject()(
     taskSrv: TaskSrv,
     alertSrv: AlertSrv,
     logSrv: LogSrv,
-    observableTypeSrv: ObservableTypeSrv
+    observableTypeSrv: ObservableTypeSrv,
+    userSrv: UserSrv
 ) {
   private[ActionOperationSrv] lazy val logger = Logger(getClass)
 
@@ -88,10 +89,18 @@ class ActionOperationSrv @Inject()(
 
       case AddArtifactToCase(_, dataType, dataMessage, _, _) =>
         for {
-          c <- Try(relatedCase.get)
+          c       <- Try(relatedCase.get)
           obsType <- observableTypeSrv.getOrFail(dataType)
-          obs <- observableSrv.create(Observable(Some(dataMessage), 2, ioc = false, sighted = false), obsType, dataMessage, Set[String](), Nil)
-          _ <- caseSrv.addObservable(c, obs.observable)
+          obs     <- observableSrv.create(Observable(Some(dataMessage), 2, ioc = false, sighted = false), obsType, dataMessage, Set[String](), Nil)
+          _       <- caseSrv.addObservable(c, obs.observable)
+        } yield updateOperation(operation)
+
+      case AssignCase(owner, _, _) =>
+        for {
+          c <- Try(relatedCase.get)
+          u <- userSrv.get(owner).getOrFail()
+          _ <- Try(caseSrv.initSteps.get(c._id).unassign())
+          _ <- caseSrv.assign(c, u)
         } yield updateOperation(operation)
 
       case x =>
