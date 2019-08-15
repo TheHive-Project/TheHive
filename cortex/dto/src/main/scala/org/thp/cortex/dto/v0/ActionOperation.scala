@@ -27,9 +27,10 @@ case class CortexOutputOperation(
 )
 
 object CortexOutputOperation {
-  implicit val writes: Writes[CortexOutputOperation] = (o: CortexOutputOperation) => Json.obj(
-    "type" -> o.`type`.toString
-  )
+  implicit val writes: Writes[CortexOutputOperation] = (o: CortexOutputOperation) =>
+    Json.obj(
+      "type" -> o.`type`.toString
+    )
   implicit val reads: Reads[CortexOutputOperation] = Reads[CortexOutputOperation](
     json =>
       for {

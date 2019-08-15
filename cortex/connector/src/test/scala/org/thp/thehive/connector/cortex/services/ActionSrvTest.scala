@@ -136,6 +136,13 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                                                                           "value": "false",
                                                                           "message": "Success",
                                                                           "status": "Success"
+                                                                        },
+                                                                        {
+                                                                          "data": "testObservable",
+                                                                          "dataType": "mail_subject",
+                                                                          "dataMessage": "test observable from action",
+                                                                          "status": "Success",
+                                                                          "message": "Success"
                                                                         }
                                                                       ]""".stripMargin).toString
           val relatedCaseTry = caseSrv.initSteps.get("#1").richCase.getOrFail()
@@ -160,6 +167,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           )
           relatedCase.customFields.find(_.value.contains(new Date(1562157321892L))) must beSome
           relatedCase.customFields.find(_.value.contains(15.54.toFloat)) must beSome
+          caseSrv.get(relatedCase._id).observables(authContextUser1).toList.find(_.message.contains("test observable from action")) must beSome
         }
       }
 

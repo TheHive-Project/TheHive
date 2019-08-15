@@ -164,6 +164,12 @@
           "name": "boolean1",
           "value": false,
           "tpe": "boolean"
+        },
+        {
+          "type": "AddArtifactToCase",
+          "data": "testObservable",
+          "dataType": "mail_subject",
+          "message": "test observable from action"
         }
       ]
     },
