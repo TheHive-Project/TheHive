@@ -103,6 +103,12 @@ class ActionOperationSrv @Inject()(
           _ <- caseSrv.assign(c, u)
         } yield updateOperation(operation)
 
+      case AddTagToAlert(tag, _, _) =>
+        entity match {
+          case a: Alert => alertSrv.addTags(a, Set(tag)).map(_ => updateOperation(operation))
+          case x        => Failure(new Exception(s"Wrong entity for AddTagToAlert: ${x.getClass}"))
+        }
+
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"
         logger.error(m)

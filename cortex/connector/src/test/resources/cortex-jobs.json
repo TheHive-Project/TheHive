@@ -288,6 +288,10 @@
       "operations": [
         {
           "type": "MarkAlertAsRead"
+        },
+        {
+          "type": "AddTagToAlert",
+          "tag": "test tag from action"
         }
       ]
     },

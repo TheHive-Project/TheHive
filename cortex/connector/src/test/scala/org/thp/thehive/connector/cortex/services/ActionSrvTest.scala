@@ -280,6 +280,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
         app.instanceOf[Database].roTransaction { implicit graph =>
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert: Alert with Entity =>
             alert.read must beTrue
+            alertSrv.initSteps.get(alert._id).tags.toList must contain(Tag("test tag from action"))
           }
         }
       }
