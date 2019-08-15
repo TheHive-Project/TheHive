@@ -19,7 +19,8 @@ class EntityHelper @Inject()(
     observableSrv: ObservableSrv,
     logSrv: LogSrv,
     db: Database,
-    schema: TheHiveSchema
+    schema: TheHiveSchema,
+    userSrv: UserSrv
 ) {
 
   lazy val logger = Logger(getClass)
@@ -55,6 +56,17 @@ class EntityHelper @Inject()(
     case c: Case  => Some(c)
     case l: Log   => logSrv.get(l).`case`.headOption()
     case _: Alert => None
+    case _        => None
+  }
+
+  /**
+    * Retrieves an optional parent Case
+    * @param entity the child entity
+    * @param graph db traversal
+    * @return
+    */
+  def parentTask(entity: Entity)(implicit graph: Graph): Option[Task with Entity] = entity match {
+    case l: Log   => logSrv.get(l).task.headOption()
     case _        => None
   }
 

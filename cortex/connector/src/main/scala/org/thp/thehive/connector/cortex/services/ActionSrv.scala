@@ -15,7 +15,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{Case, TheHiveSchema}
+import org.thp.thehive.models.{Case, Task, TheHiveSchema}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -137,7 +137,8 @@ class ActionSrv @Inject()(
             updatedOperation <- actionOperationSrv.execute(
               action.context,
               operation,
-              relatedCase(actionId)
+              relatedCase(actionId),
+              relatedTask(actionId)
             )
           } yield updatedOperation)
             .fold(t => operation.updateStatus(ActionOperationStatus.Failure, t.getMessage), identity)
@@ -163,6 +164,12 @@ class ActionSrv @Inject()(
       richAction  <- initSteps.getByIds(id).richAction.getOrFail().toOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
+
+  def relatedTask(id: String)(implicit graph: Graph): Option[Task with Entity] =
+    for {
+      richAction  <- initSteps.getByIds(id).richAction.getOrFail().toOption
+      relatedTask <- entityHelper.parentTask(richAction.context)
+    } yield relatedTask
 
   // TODO to be tested
   def listForEntity(id: String)(implicit graph: Graph): List[Action with Entity] = initSteps.forEntity(id).toList

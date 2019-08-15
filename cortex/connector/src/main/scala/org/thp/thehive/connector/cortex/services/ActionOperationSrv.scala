@@ -6,7 +6,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.Case
+import org.thp.thehive.models.{Case, Task, TaskStatus}
 import org.thp.thehive.services.{CaseSrv, ObservableSrv, TaskSrv}
 import play.api.Logger
 
@@ -29,7 +29,7 @@ class ActionOperationSrv @Inject()(
     * @param authContext auth for access check
     * @return
     */
-  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity])(
+  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[ActionOperation] = {
@@ -57,11 +57,17 @@ class ActionOperationSrv @Inject()(
           _           <- caseSrv.addTask(c, createdTask)
         } yield updateOperation(operation)
 
-      case AddCustomFields(name, _, value,  _, _) =>
+      case AddCustomFields(name, _, value, _, _) =>
         for {
           c <- Try(relatedCase.get)
           _ <- caseSrv.createCustomFields(c, Map(name -> Some(value)))
-        }  yield updateOperation(operation)
+        } yield updateOperation(operation)
+
+      case CloseTask(_, _) =>
+        for {
+          t <- Try(relatedTask.get)
+          _ <- taskSrv.get(t).update("status" -> TaskStatus.Completed)
+        } yield updateOperation(operation)
 
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"

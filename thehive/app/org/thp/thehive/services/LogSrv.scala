@@ -61,12 +61,17 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
 
   def visible(implicit authContext: AuthContext): LogSteps =
     newInstance(
-      raw
-        .inTo[TaskLog]
-        .inTo[ShareTask]
-        .inTo[OrganisationShare]
-        .has(Key("name") of authContext.organisation)
+      raw.filter(
+        _.inTo[TaskLog]
+          .inTo[ShareTask]
+          .inTo[OrganisationShare]
+          .has(Key("name") of authContext.organisation)
+      )
     )
+
+  def test = new OrganisationSteps(raw.inTo[TaskLog]
+    .inTo[ShareTask]
+    .inTo[OrganisationShare])
 
   def attachments = new AttachmentSteps(raw.outTo[LogAttachment])
 
