@@ -31,7 +31,7 @@
     "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
     "analyzerId": "da4bdbecae5b1f6d4180e25450b65459",
     "createdBy": "billotei",
-    "organization": "test",
+    "organization": "cert",
     "report": {
       "summary": {
         "taxonomies": [
@@ -129,7 +129,7 @@
     "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
     "analyzerId": "da4bdbecae5b1f6d4180e25450b65459",
     "createdBy": "billotei",
-    "organization": "test",
+    "organization": "cert",
     "report": {
       "summary": {},
       "full": {
@@ -170,6 +170,116 @@
     "tlp": 2,
     "workerDefinitionId": "testResponder_1_0",
     "_id": "AWu78Q1OCVNz03gXK4df",
+    "workerName": "testResponder_1_0",
+    "parameters": {
+    },
+    "startDate": 1562157321892,
+    "status": "Success"
+  },
+  {
+    "date": 1565859747991,
+    "endDate": 1565859772001,
+    "type": "responder",
+    "cacheTag": "99bf872b81f82fe224fa450604d7cefa",
+    "createdAt": 1565859747991,
+    "_parent": null,
+    "attachment": {
+      "name": "imageedit_2_3904987689.jpg",
+      "hashes": [
+        "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71",
+        "ae935b4669d03994d0fe60e9255b81abeb4f0299",
+        "b0e0792b9ea92b16a49dfcbe06cd2a88"
+      ],
+      "size": 16824,
+      "contentType": "image/jpeg",
+      "id": "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71"
+    },
+    "id": "FDs5Q1ODXCz03gXK4df",
+    "_version": 3,
+    "pap": 2,
+    "updatedAt": 1565859772001,
+    "_routing": "FDs5Q1ODXCz03gXK4df",
+    "workerId": "da4bdbecae5b1f6d4180e25450b65459",
+    "updatedBy": "billotei",
+    "analyzerName": "testResponder_1_0",
+    "analyzerDefinitionId": "testResponder_1_0",
+    "dataType": "file",
+    "_type": "job",
+    "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
+    "analyzerId": "da4bdbecae5b1f6d4180e25450b65459",
+    "createdBy": "billotei",
+    "organization": "default",
+    "report": {
+      "summary": {},
+      "full": {
+        "message": "TestResponder has run"
+      },
+      "success": true,
+      "artifacts": [],
+      "operations": [
+        {
+          "type": "CloseTask"
+        }
+      ]
+    },
+    "tlp": 2,
+    "workerDefinitionId": "testResponder_1_0",
+    "_id": "FDs5Q1ODXCz03gXK4df",
+    "workerName": "testResponder_1_0",
+    "parameters": {
+    },
+    "startDate": 1562157321892,
+    "status": "Success"
+  },
+  {
+    "date": 1565859757991,
+    "endDate": 1565859782001,
+    "type": "responder",
+    "cacheTag": "99bf872b81f82fe224fa450604d7cefa",
+    "createdAt": 1565859757991,
+    "_parent": null,
+    "attachment": {
+      "name": "imageedit_2_3904987689.jpg",
+      "hashes": [
+        "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71",
+        "ae935b4669d03994d0fe60e9255b81abeb4f0299",
+        "b0e0792b9ea92b16a49dfcbe06cd2a88"
+      ],
+      "size": 16824,
+      "contentType": "image/jpeg",
+      "id": "cd86f8b78fc9ce4c31e6fca6595b97d9ff49f12c246a0fafdc5081dac99f2e71"
+    },
+    "id": "FGv4E3ODXCz03gXK6jk",
+    "_version": 3,
+    "pap": 1,
+    "updatedAt": 1565859782001,
+    "_routing": "FGv4E3ODXCz03gXK6jk",
+    "workerId": "da4bdbecae5b1f6d4180e25450b65459",
+    "updatedBy": "billotei",
+    "analyzerName": "testResponder_1_0",
+    "analyzerDefinitionId": "testResponder_1_0",
+    "dataType": "file",
+    "_type": "job",
+    "message": "179e85c4-4170-45fe-9d2d-3173539554a6",
+    "analyzerId": "da4bdbecae5b1f6d4180e25450b65459",
+    "createdBy": "billotei",
+    "organization": "default",
+    "report": {
+      "summary": {},
+      "full": {
+        "message": "TestResponder has run"
+      },
+      "success": true,
+      "artifacts": [],
+      "operations": [
+        {
+          "type": "MarkAlertAsRead"
+        }
+      ]
+    },
+    "tlp": 3,
+    "workerDefinitionId": "testResponder_1_0",
+    "_id": "FGv4E3ODXCz03gXK6jk",
     "workerName": "testResponder_1_0",
     "parameters": {
     },

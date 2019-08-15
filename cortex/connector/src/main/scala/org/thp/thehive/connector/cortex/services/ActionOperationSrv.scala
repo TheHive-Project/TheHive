@@ -6,8 +6,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{Case, Task, TaskStatus}
-import org.thp.thehive.services.{CaseSrv, ObservableSrv, TaskSrv}
+import org.thp.thehive.models.{Alert, Case, Task, TaskStatus}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, ObservableSrv, TaskSrv}
 import play.api.Logger
 
 import scala.util.{Failure, Try}
@@ -15,7 +15,8 @@ import scala.util.{Failure, Try}
 class ActionOperationSrv @Inject()(
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
-    taskSrv: TaskSrv
+    taskSrv: TaskSrv,
+    alertSrv: AlertSrv
 ) {
   private[ActionOperationSrv] lazy val logger = Logger(getClass)
 
@@ -68,6 +69,12 @@ class ActionOperationSrv @Inject()(
           t <- Try(relatedTask.get)
           _ <- taskSrv.get(t).update("status" -> TaskStatus.Completed)
         } yield updateOperation(operation)
+
+      case MarkAlertAsRead(_, _) =>
+        entity match {
+          case a: Alert => alertSrv.markAsRead(a._id).map(_ => updateOperation(operation))
+          case x        => Failure(new Exception(s"Wrong entity for MarkAlertAsRead: ${x.getClass}"))
+        }
 
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"

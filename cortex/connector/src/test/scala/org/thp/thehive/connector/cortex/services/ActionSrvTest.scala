@@ -3,6 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import java.util.Date
 
 import akka.stream.Materializer
+import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
@@ -18,7 +19,7 @@ import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
 import org.thp.thehive.controllers.v0.LogCtrl
 import org.thp.thehive.dto.v0.OutputLog
 import org.thp.thehive.models.{DatabaseBuilder, _}
-import org.thp.thehive.services.{CaseSrv, LocalUserSrv, LogSrv, TaskSrv}
+import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -51,31 +52,17 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
-  def getTaskLog(id: String, app: AppBuilder): OutputLog = {
-    val logCtrl = app.instanceOf[LogCtrl]
-    val request = FakeRequest("POST", s"/api/case/task/$id/log")
-      .withHeaders("user" -> "user2", "X-Organisation" -> "default")
-      .withJsonBody(Json.parse("""
-              {"message":"log for action test", "deleted":false}
-            """.stripMargin))
-    val result = logCtrl.create(id)(request)
-
-    status(result) shouldEqual 201
-
-    contentAsJson(result).as[OutputLog]
-  }
-
   def specs(name: String, app: AppBuilder): Fragment =
     s"[$name] action service" should {
-      val taskSrv = app.instanceOf[TaskSrv]
-      val actionSrv = app.instanceOf[ActionSrv]
+      val taskSrv    = app.instanceOf[TaskSrv]
+      val actionSrv  = app.instanceOf[ActionSrv]
       val actionCtrl = app.instanceOf[ActionCtrl]
-      val caseSrv = app.instanceOf[CaseSrv]
+      val caseSrv    = app.instanceOf[CaseSrv]
 
       "execute, create and handle finished action operations" in {
         app.instanceOf[Database].roTransaction { implicit graph =>
           val authContextUser1 = AuthContextImpl("user1", "user1", "cert", "testRequest", Permissions.all)
-          val t1 = taskSrv.initSteps.toList.find(_.title == "case 1 task 1")
+          val t1               = taskSrv.initSteps.toList.find(_.title == "case 1 task 1")
           t1 must beSome
           val task1 = t1.get
 
@@ -102,7 +89,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
           val cortexOutputJobOpt = {
             val dataSource = Source.fromResource("cortex-jobs.json")
-            val data = dataSource.mkString
+            val data       = dataSource.mkString
             dataSource.close()
             Json.parse(data).as[List[CortexOutputJob]].find(_.id == "AWu78Q1OCVNz03gXK4df")
           }
@@ -117,8 +104,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
           updatedAction.status shouldEqual JobStatus.Success
           updatedAction.operations must beSome
-          updatedAction.operations.get shouldEqual Json.parse(
-            """[
+          updatedAction.operations.get shouldEqual Json.parse("""[
                                                                         {
                                                                           "tag": "mail sent",
                                                                           "status": "Success",
@@ -179,12 +165,12 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "handle action related to Task and Log" in {
         app.instanceOf[Database].roTransaction { implicit graph =>
-          val logSrv = app.instanceOf[LogSrv]
+          val logSrv           = app.instanceOf[LogSrv]
           val authContextUser2 = AuthContextImpl("user2", "user2", "default", "testRequest", Permissions.all)
 
           val t1 = taskSrv.initSteps.toList.find(_.title == "case 4 task 1")
           t1 must beSome
-          val task1 = t1.get
+          val task1   = t1.get
           val log1Try = logSrv.get(getTaskLog(task1._id, app)._id).getOrFail()
 
           log1Try must beSuccessfulTry
@@ -209,7 +195,92 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           val richAction = await(actionSrv.execute(inputAction, log1)(actionCtrl.entityWrites, authContextUser2))
 
           richAction must beAnInstanceOf[RichAction]
+
+          val cortexOutputJobOpt = {
+            val dataSource = Source.fromResource("cortex-jobs.json")
+            val data       = dataSource.mkString
+            dataSource.close()
+            Json.parse(data).as[List[CortexOutputJob]].find(_.id == "FDs5Q1ODXCz03gXK4df")
+          }
+
+          cortexOutputJobOpt must beSome
+
+          val updatedActionTry = actionSrv.finished(richAction._id, cortexOutputJobOpt.get)(authContextUser2)
+
+          updatedActionTry must beSuccessfulTry
+
+          val updatedAction = updatedActionTry.get
+
+          updatedAction.status shouldEqual JobStatus.Success
+          updatedAction.operations must beSome
+        }
+
+        val t1Updated = app.instanceOf[Database].roTransaction { implicit graph =>
+          taskSrv.initSteps.toList.find(_.title == "case 4 task 1")
+        }
+        t1Updated must beSome
+        t1Updated.get.status shouldEqual TaskStatus.Completed
+      }
+
+      "handle action related to an Alert" in {
+        val alertSrv = app.instanceOf[AlertSrv]
+        app.instanceOf[Database].roTransaction { implicit graph =>
+          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert: Alert with Entity =>
+            alert.read must beFalse
+
+            val authContextUser2 = AuthContextImpl("user2", "user2", "default", "testRequest", Permissions.all)
+
+            val inputAction = Action(
+              responderId = "respTest1",
+              responderName = Some("respTest1"),
+              responderDefinition = None,
+              status = JobStatus.Unknown,
+              objectType = "Alert",
+              objectId = alert._id,
+              parameters = Json.obj(),
+              startDate = new Date(),
+              endDate = None,
+              report = None,
+              cortexId = None,
+              cortexJobId = None,
+              operations = None
+            )
+
+            val richAction = await(actionSrv.execute(inputAction, alert)(actionCtrl.entityWrites, authContextUser2))
+
+            richAction must beAnInstanceOf[RichAction]
+
+            {
+              val dataSource = Source.fromResource("cortex-jobs.json")
+              val data       = dataSource.mkString
+              dataSource.close()
+              Json.parse(data).as[List[CortexOutputJob]].find(_.id == "FGv4E3ODXCz03gXK6jk")
+            } must beSome.which { cortexOutputJob: CortexOutputJob =>
+              val updatedActionTry = actionSrv.finished(richAction._id, cortexOutputJob)(authContextUser2)
+
+              updatedActionTry must beSuccessfulTry
+            }
+          }
+        }
+        app.instanceOf[Database].roTransaction { implicit graph =>
+          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert: Alert with Entity =>
+            alert.read must beTrue
+          }
         }
       }
     }
+
+  def getTaskLog(id: String, app: AppBuilder): OutputLog = {
+    val logCtrl = app.instanceOf[LogCtrl]
+    val request = FakeRequest("POST", s"/api/case/task/$id/log")
+      .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+      .withJsonBody(Json.parse("""
+              {"message":"log for action test", "deleted":false}
+            """.stripMargin))
+    val result = logCtrl.create(id)(request)
+
+    status(result) shouldEqual 201
+
+    contentAsJson(result).as[OutputLog]
+  }
 }
