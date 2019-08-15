@@ -218,6 +218,10 @@
       "artifacts": [],
       "operations": [
         {
+          "type": "AddLogToTask",
+          "content": "test log from action"
+        },
+        {
           "type": "CloseTask"
         }
       ]

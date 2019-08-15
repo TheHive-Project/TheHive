@@ -214,12 +214,13 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           updatedAction.status shouldEqual JobStatus.Success
           updatedAction.operations must beSome
         }
-
-        val t1Updated = app.instanceOf[Database].roTransaction { implicit graph =>
-          taskSrv.initSteps.toList.find(_.title == "case 4 task 1")
+        app.instanceOf[Database].roTransaction { implicit graph =>
+          val t1Updated = taskSrv.initSteps.toList.find(_.title == "case 4 task 1")
+          t1Updated must beSome.which { task =>
+            task.status shouldEqual TaskStatus.Completed
+            taskSrv.get(task._id).logs.toList.find(_.message == "test log from action") must beSome
+          }
         }
-        t1Updated must beSome
-        t1Updated.get.status shouldEqual TaskStatus.Completed
       }
 
       "handle action related to an Alert" in {

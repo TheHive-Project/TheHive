@@ -1,13 +1,15 @@
 package org.thp.thehive.connector.cortex.services
 
+import java.util.Date
+
 import gremlin.scala.Graph
 import javax.inject.Inject
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{Alert, Case, Task, TaskStatus}
-import org.thp.thehive.services.{AlertSrv, CaseSrv, ObservableSrv, TaskSrv}
+import org.thp.thehive.models.{Alert, Case, Log, Task, TaskStatus}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, LogSrv, ObservableSrv, TaskSrv}
 import play.api.Logger
 
 import scala.util.{Failure, Try}
@@ -16,7 +18,8 @@ class ActionOperationSrv @Inject()(
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     taskSrv: TaskSrv,
-    alertSrv: AlertSrv
+    alertSrv: AlertSrv,
+    logSrv: LogSrv
 ) {
   private[ActionOperationSrv] lazy val logger = Logger(getClass)
 
@@ -75,6 +78,12 @@ class ActionOperationSrv @Inject()(
           case a: Alert => alertSrv.markAsRead(a._id).map(_ => updateOperation(operation))
           case x        => Failure(new Exception(s"Wrong entity for MarkAlertAsRead: ${x.getClass}"))
         }
+
+      case AddLogToTask(content, _, _, _) =>
+        for {
+          t <- Try(relatedTask.get)
+          _ <- logSrv.create(Log(content, new Date(), deleted = false), t)
+        } yield updateOperation(operation)
 
       case x =>
         val m = s"ActionOperation ${x.toString} unknown"
