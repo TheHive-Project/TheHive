@@ -2,18 +2,25 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json._
-
 import org.scalactic.Accumulation._
 import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
+import play.api.libs.json._
 
-case class InputCustomField(name: String, description: String, `type`: String)
+case class InputCustomField(
+                             name: String,
+                             description: String,
+                             `type`: String,
+                             options: List[JsValue] = Nil,
+                             reference: String
+                           )
 
 object InputCustomField {
-  implicit val writes: Writes[InputCustomField] = Json.writes[InputCustomField]
+  implicit val format: Format[InputCustomField] = Json.format[InputCustomField]
 }
+
+case class InputCustomFieldOption(value: Any)
 
 case class OutputCustomField(name: String, reference: String, description: String, `type`: String, options: Seq[JsValue])
 
