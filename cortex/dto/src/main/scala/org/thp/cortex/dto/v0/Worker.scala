@@ -8,8 +8,8 @@ case class OutputCortexWorker(
     version: String,
     description: String,
     dataTypeList: Seq[String],
-    maxTlp: Long,
-    maxPap: Long
+    maxTlp: Option[Long],
+    maxPap: Option[Long]
 )
 
 object OutputCortexWorker {

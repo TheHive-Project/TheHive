@@ -25,6 +25,7 @@ class Router @Inject()(
 
     case POST(p"/action")                                    => actionCtrl.create
     case POST(p"/action/_search")                            => cortexQueryExecutor.action.search
+    case POST(p"/action/_stats")                             => cortexQueryExecutor.action.stats
     case GET(p"/action")                                     => cortexQueryExecutor.action.search
     case GET(p"/action/$entityType<[^/]*>/$entityId<[^/]*>") => actionCtrl.getByEntity(entityType, entityId)
 

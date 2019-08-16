@@ -5,6 +5,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.Permissions
 import play.api.Logger
 
@@ -12,7 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @Singleton
-class ResponderSrv @Inject()(cortexConfig: CortexConfig, implicit val ec: ExecutionContext, entityHelper: EntityHelper) {
+class ResponderSrv @Inject()(cortexConfig: CortexConfig, db: Database, implicit val ec: ExecutionContext, entityHelper: EntityHelper) {
+  import org.thp.thehive.connector.cortex.controllers.v0.ActionConversion._
 
   lazy val logger = Logger(getClass)
 
@@ -32,8 +34,8 @@ class ResponderSrv @Inject()(cortexConfig: CortexConfig, implicit val ec: Execut
       entityId: String
   )(implicit graph: Graph, authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     for {
-      entity        <- Future.fromTry(entityHelper.get(entityType, entityId, Permissions.manageAction))
-      (_, tlp, pap) <- Future.fromTry(entityHelper.entityInfo(entity))
+      entity        <- Future.fromTry(entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction))
+      (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <- Future
         .traverse(cortexConfig.instances.values)(
           client =>
@@ -50,7 +52,7 @@ class ResponderSrv @Inject()(cortexConfig: CortexConfig, implicit val ec: Execut
       .groupBy(_._1.name)      // Map[workerName, Seq[(worker, cortexId)]]
       .values                  // Seq[Seq[(worker, cortexId)]]
       .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-      .filter(w => w._1.maxTlp >= tlp && w._1.maxPap >= pap)
+      .filter(w => w._1.maxTlp.getOrElse(3L) >= tlp && w._1.maxPap.getOrElse(3L) >= pap) // TODO double check those default maxTlp and maxPap
       .toMap
 
 }

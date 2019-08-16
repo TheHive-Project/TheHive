@@ -50,7 +50,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       "get a list of Cortex workers" in {
         val r = await(analyzerSrv.listAnalyzer)
         val outputWorker2 =
-          OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), 2, 2)
+          OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), Some(2), Some(2))
         val outputWorker1 =
           OutputCortexWorker(
             "anaTest1",
@@ -58,8 +58,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "1",
             "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test"),
-            3,
-            3
+            Some(3),
+            Some(3)
           )
 
         r shouldEqual Map(outputWorker2 -> Seq("test"), outputWorker1 -> Seq("test"))
@@ -68,7 +68,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       "get Cortex worker by id" in {
         val r = await(analyzerSrv.getAnalyzer("anaTest2"))
         val outputWorker =
-          OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), 2, 2)
+          OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), Some(2), Some(2))
 
         r shouldEqual ((outputWorker, Seq("test")))
       }
