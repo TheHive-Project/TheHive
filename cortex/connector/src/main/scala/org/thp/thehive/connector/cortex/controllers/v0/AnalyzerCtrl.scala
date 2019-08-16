@@ -8,15 +8,14 @@ import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class AnalyzerCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     analyzerSrv: AnalyzerSrv,
-    implicit val system: ActorSystem,
-    implicit val ec: ExecutionContext
+    implicit val system: ActorSystem
 ) {
 
   import WorkerConversion._
@@ -29,5 +28,13 @@ class AnalyzerCtrl @Inject()(
           .map { analyzers =>
             Results.Ok(Json.toJson(analyzers.map(toOutputWorker)))
           }
+      }
+
+  def getById(id: String): Action[AnyContent] =
+    entryPoint("get analyzer by id")
+      .asyncAuth { _ =>
+        analyzerSrv
+          .getAnalyzer(id)
+          .map(a => Results.Ok(Json.toJson(toOutputWorker(a))))
       }
 }

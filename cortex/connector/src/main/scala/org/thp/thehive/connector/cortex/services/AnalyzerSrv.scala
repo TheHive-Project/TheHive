@@ -5,11 +5,12 @@ import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import play.api.Logger
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 @Singleton
-class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: ExecutionContext) {
+class AnalyzerSrv @Inject()(cortexConfig: CortexConfig) {
 
   lazy val logger = Logger(getClass)
 
@@ -38,4 +39,21 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, implicit val ex: Executi
           .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
           .toMap
       }
+
+  def getAnalyzer(id: String): Future[(OutputCortexWorker, Seq[String])] =
+    Future
+      .traverse(cortexConfig.instances.values) { client =>
+        client
+          .getAnalyzer(id)
+          .map(_ -> client.name)
+      }
+      .map(
+        analyzerByClients =>
+          analyzerByClients
+            .groupBy(_._1.name)
+            .values // Seq[Seq[(worker, cortexId)]]
+            .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
+            .toMap
+            .head
+      )
 }

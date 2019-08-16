@@ -43,7 +43,7 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
     case (GET, apiJobIdWaitReport(id))   => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
     case (GET, "/api/analyzers")         => Action(_ => Ok.sendResource("analyzers.json"))
     case (GET, "/api/analyzer")          => Action(Results.Ok.sendResource("analyzers.json"))
-    case (GET, apiAnalyzerId(id))        => Action(Results.Ok(Json.toJson(analyzers.find(_.id == id).get)))
+    case (GET, apiAnalyzerId(id))        => analyzers.find(_.id == id).map(a => Action(Results.Ok(Json.toJson(a)))).getOrElse(Action(Results.NotFound))
     case (POST, "/api/analyzer/_search") => Action(Results.Ok(Json.toJson(analyzers)))
     case (POST, apiAnalyzerIdRun(id))    => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
     case (GET, apiDatastoreId(id)) =>
