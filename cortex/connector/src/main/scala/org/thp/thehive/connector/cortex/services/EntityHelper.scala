@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.services
 
-import gremlin.scala.Graph
+import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -66,8 +66,8 @@ class EntityHelper @Inject()(
     * @return
     */
   def parentTask(entity: Entity)(implicit graph: Graph): Option[Task with Entity] = entity match {
-    case l: Log   => logSrv.get(l).task.headOption()
-    case _        => None
+    case l: Log => logSrv.get(l).task.headOption()
+    case _      => None
   }
 
   /**
@@ -90,4 +90,24 @@ class EntityHelper @Inject()(
           c  <- observableSrv.get(o).`case`.getOrFail()
         } yield (s"[${ro.`type`}] ${ro.data.map(_.data)}", ro.tlp, c.pap) // TODO add attachment info
     }
+
+  /**
+    * Returns the filtered organisations according to the supplied lists (mainly conf based
+    *
+    * @param organisationSteps the organisation steps graph instance
+    * @param includedTheHiveOrganisations the allowed organisation
+    * @param excludedTheHiveOrganisations the excluded ones
+    * @return
+    */
+  def organisationFilter(
+      organisationSteps: OrganisationSteps,
+      includedTheHiveOrganisations: Seq[String],
+      excludedTheHiveOrganisations: Seq[String]
+  ): OrganisationSteps = {
+    val includedOrgs =
+      if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
+      else organisationSteps.has(Key[String]("name"), P.within(includedTheHiveOrganisations))
+    if (excludedTheHiveOrganisations.isEmpty) includedOrgs
+    else includedOrgs.has(Key[String]("name"), P.without(excludedTheHiveOrganisations))
+  }
 }
