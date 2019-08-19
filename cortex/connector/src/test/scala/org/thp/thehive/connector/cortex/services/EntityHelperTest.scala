@@ -10,7 +10,7 @@ import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.{DatabaseBuilder, Organisation, Permissions, TheHiveSchema}
+import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
 import org.thp.thehive.services._
 import play.api.test.{NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -106,31 +106,6 @@ class EntityHelperTest extends PlaySpecification with Mockito {
         val successAlert = entityHelper.get("Alert", alert1._id, Permissions.manageAction)
         successAlert must beSuccessfulTry
       }
-
-      "filter properly organisations according to config" in {
-        val r = db.roTransaction { implicit graph =>
-          entityHelper
-            .organisationFilter(
-              app.instanceOf[OrganisationSrv].initSteps,
-              List("*"),
-              List("cert")
-            )
-            .toList
-        }
-        r must contain(Organisation("default"))
-
-        val r2 = db.roTransaction { implicit graph =>
-          entityHelper
-            .organisationFilter(
-              app.instanceOf[OrganisationSrv].initSteps,
-              Nil,
-              Nil
-            )
-            .toList
-        }
-        r2 must contain(Organisation("default"), Organisation("cert"))
-      }
-
     }
   }
 }

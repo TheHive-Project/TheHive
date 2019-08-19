@@ -6,14 +6,20 @@ import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.models.{Organisation, Permissions}
 import play.api.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @Singleton
-class ResponderSrv @Inject()(cortexConfig: CortexConfig, db: Database, implicit val ec: ExecutionContext, entityHelper: EntityHelper) {
+class ResponderSrv @Inject()(
+    cortexConfig: CortexConfig,
+    db: Database,
+    implicit val ec: ExecutionContext,
+    entityHelper: EntityHelper,
+    serviceHelper: ServiceHelper
+) {
   import org.thp.thehive.connector.cortex.controllers.v0.ActionConversion._
 
   lazy val logger = Logger(getClass)
@@ -37,7 +43,7 @@ class ResponderSrv @Inject()(cortexConfig: CortexConfig, db: Database, implicit 
       entity        <- Future.fromTry(entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction))
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <- Future
-        .traverse(cortexConfig.instances.values)(
+        .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation)))(
           client =>
             client
               .getRespondersByType(entityType)

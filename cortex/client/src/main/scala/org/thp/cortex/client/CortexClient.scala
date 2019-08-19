@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-class CortexClient(val name: String, baseUrl: String, includedTheHiveOrganisations: Seq[String], excludedTheHiveOrganisations: Seq[String])(
+class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganisations: Seq[String], val excludedTheHiveOrganisations: Seq[String])(
     implicit ws: WSClient,
     auth: Authentication
 ) {
