@@ -45,7 +45,7 @@ class ServiceHelperTest extends PlaySpecification with Mockito {
     val serviceHelper = app.instanceOf[ServiceHelper]
     val db            = app.instanceOf[Database]
 
-    s"[$name] entity helper" should {
+    s"[$name] service helper" should {
 
       "filter properly organisations according to supplied config" in {
         val r = db.roTransaction { implicit graph =>

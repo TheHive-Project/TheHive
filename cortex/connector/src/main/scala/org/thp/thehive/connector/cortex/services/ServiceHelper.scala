@@ -6,6 +6,7 @@ import org.thp.cortex.client.{CortexClient, CortexConfig}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
 
 @Singleton
 class ServiceHelper @Inject()(
@@ -20,6 +21,8 @@ class ServiceHelper @Inject()(
     organisationSrv: OrganisationSrv
 ) {
 
+  lazy val logger = Logger(getClass)
+
   /**
     * Returns the filtered CortexClients according to config
     * @param cortexConfig cortex config containing all clients instances
@@ -27,7 +30,7 @@ class ServiceHelper @Inject()(
     * @return
     */
   def availableCortexClients(cortexConfig: CortexConfig, organisation: Organisation): Iterable[CortexClient] = db.roTransaction { implicit graph =>
-    cortexConfig
+    val l = cortexConfig
       .instances
       .values
       .filter(
@@ -39,6 +42,12 @@ class ServiceHelper @Inject()(
           ).toList
             .contains(organisation)
       )
+
+    if (l.isEmpty) {
+      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${cortexConfig.instances.keys}")
+    }
+
+    l
   }
 
   /**
