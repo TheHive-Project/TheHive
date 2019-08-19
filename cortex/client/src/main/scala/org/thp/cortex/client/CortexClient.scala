@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-class CortexClient(val name: String, baseUrl: String)(
+class CortexClient(val name: String, baseUrl: String, includedTheHiveOrganisations: Seq[String], excludedTheHiveOrganisations: Seq[String])(
     implicit ws: WSClient,
     auth: Authentication
 ) {
@@ -150,19 +150,6 @@ class CortexClient(val name: String, baseUrl: String)(
   }
 
   /**
-    * Retrieve version of remote cortex
-    * @return version of cortex
-    */
-  def getVersion: Future[String] =
-    auth(ws.url(s"$strippedUrl/api/status"))
-      .get
-      .transform {
-        case Success(r) if r.status == Status.OK => Try((r.json \ "versions" \ "Cortex").as[String])
-        case Success(r)                          => Failure(ApplicationError(r))
-        case Failure(t)                          => throw t
-      }
-
-  /**
     * Retrieve the name of the cortex user
     * @return user name
     */
@@ -179,4 +166,17 @@ class CortexClient(val name: String, baseUrl: String)(
     case _: Success[_] => Success("Ok")
     case _             => Success("Error")
   }
+
+  /**
+    * Retrieve version of remote cortex
+    * @return version of cortex
+    */
+  def getVersion: Future[String] =
+    auth(ws.url(s"$strippedUrl/api/status"))
+      .get
+      .transform {
+        case Success(r) if r.status == Status.OK => Try((r.json \ "versions" \ "Cortex").as[String])
+        case Success(r)                          => Failure(ApplicationError(r))
+        case Failure(t)                          => throw t
+      }
 }

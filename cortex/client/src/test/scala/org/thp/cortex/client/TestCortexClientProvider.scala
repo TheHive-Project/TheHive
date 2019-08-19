@@ -22,23 +22,12 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
   lazy val analyzers: Seq[OutputCortexWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexWorker]]
   lazy val jobs: Seq[CortexOutputJob]          = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
   lazy val responders: Seq[OutputCortexWorker] = readResourceAsJson("/responders.json").as[Seq[OutputCortexWorker]]
-
-  def readResourceAsJson(name: String): JsValue = {
-    val dataSource = Source.fromFile(getClass.getResource(name).getPath)
-    val data       = dataSource.mkString
-    dataSource.close()
-    Json.parse(data)
-  }
-
-  def fileResource(id: String): Path = Paths.get(getClass.getResource(s"/$id.test.txt").getPath)
-
-  val apiJobIdWaitReport: Regex = "^/api/job/([^/]*)/waitreport$".r
+  val apiJobIdWaitReport: Regex = """^/api/job/([^/]*)/waitreport\?atMost=\d+ \w+$""".r
   val apiAnalyzerId: Regex      = "^/api/analyzer/([^/]*)$".r
   val apiAnalyzerIdRun: Regex   = "^/api/analyzer/([^/]*)/run$".r
   val apiDatastoreId: Regex     = "^/api/datastore/([^/]*)$".r
   val apiResponderId: Regex     = "^/api/responder/([^/]*)$".r
   val apiResponderIdRun: Regex  = "^/api/responder/([^/]*)/run$".r
-
   val ws = MockWS {
     case (GET, apiJobIdWaitReport(id))   => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
     case (GET, "/api/analyzers")         => Action(_ => Ok.sendResource("analyzers.json"))
@@ -59,15 +48,23 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
     case (POST, apiResponderIdRun(id))    => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
     case (method, path)                   => Action(Results.NotFound(s"$method $path"))
   }
-
   val noAuthentication: Authentication = new Authentication {
     override def apply(request: WSRequest): WSRequest = request
   }
 
+  def readResourceAsJson(name: String): JsValue = {
+    val dataSource = Source.fromFile(getClass.getResource(name).getPath)
+    val data       = dataSource.mkString
+    dataSource.close()
+    Json.parse(data)
+  }
+
+  def fileResource(id: String): Path = Paths.get(getClass.getResource(s"/$id.test.txt").getPath)
+
   def apply[T](block: CortexClient => T): T =
     block(get())
 
-  override def get(): CortexClient = new CortexClient("test", "")(ws, noAuthentication)
+  override def get(): CortexClient = new CortexClient("test", "", Seq("*"), Seq())(ws, noAuthentication)
 }
 
 @Singleton

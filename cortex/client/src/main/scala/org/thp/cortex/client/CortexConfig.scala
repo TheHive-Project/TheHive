@@ -67,7 +67,9 @@ class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: Cus
         auth =>
           new CortexClient(
             configuration.getOptional[String]("name").getOrElse("no name"),
-            url
+            url,
+            configuration.getOptional[Seq[String]]("includedTheHiveOrganisations").getOrElse(List("*")),
+            configuration.getOptional[Seq[String]]("excludedTheHiveOrganisations").getOrElse(Nil)
           )(ws, auth)
       )
   }
