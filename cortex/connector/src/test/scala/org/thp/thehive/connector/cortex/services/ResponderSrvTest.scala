@@ -49,11 +49,15 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
       implicit val authContext: AuthContext = dummyUserSrv.authContext
       val db                                = app.instanceOf[Database]
 
-      "fetch responders by type" in db.roTransaction { implicit graph =>
-        val t = taskSrv.initSteps.toList.headOption
+      "fetch responders by type" in {
+        val t = db.roTransaction { graph =>
+          taskSrv.initSteps(graph).toList.headOption
+        }
 
         t must beSome.which { task =>
-          val r = await(responderSrv.getRespondersByType("case_task", task._id))
+          val r = await(db.roTransaction { implicit graph =>
+            responderSrv.getRespondersByType("case_task", task._id)
+          })
 
           r.find(_._1.name == "respTest1") must beSome
         }
