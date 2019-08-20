@@ -7,7 +7,7 @@ import gremlin.scala.{Key, P}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
+import org.thp.cortex.client.{CortexClient, CortexConfig, TestCortexClientProvider, TestCortexConfigProvider}
 import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
@@ -17,7 +17,7 @@ import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.{LocalUserSrv, ObservableSrv}
+import org.thp.thehive.services.{CaseSrv, LocalUserSrv, ObservableSrv}
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 import play.api.{Configuration, Environment}
@@ -40,7 +40,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
       .bind[Schema, TheHiveSchema]
       .bindActor[ConfigActor]("config-actor")
       .bindActor[CortexActor]("cortex-actor")
-      .bindToProvider[CortexClient, TestCortexClientProvider]
+      .bindToProvider[CortexConfig, TestCortexConfigProvider]
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
@@ -57,10 +57,11 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
     val jobSrv: JobSrv               = app.instanceOf[JobSrv]
     val observableSrv: ObservableSrv = app.instanceOf[ObservableSrv]
     val db: Database                 = app.instanceOf[Database]
+    val caseSrv                      = app.instanceOf[CaseSrv]
 
     s"[$name] job service" should {
       implicit val authContext: AuthContext = dummyUserSrv.authContext
-      val client: CortexClient              = app.instanceOf[CortexClient]
+      val cortexConfig: CortexConfig        = app.instanceOf[CortexConfig]
 
       "handle creation and then finished job" in {
         val maybeObservable = db.roTransaction { implicit graph =>
@@ -97,7 +98,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           // org.janusgraph.diskstorage.locking.PermanentLockingException: Local lock contention on importCortexArtifacts
           // i.e. cortex-jobs.json report.artifacts length > 1 succeeds testOnly but fails test with one attachmentType and one dataType
           updatedJob <- jobSrv
-            .finished(createdJob._id, cortexOutputJob, client)
+            .finished(createdJob._id, cortexOutputJob, cortexConfig.instances.values.head)
         } yield {
           updatedJob.status shouldEqual JobStatus.Success
           updatedJob.report must beSome
@@ -109,6 +110,31 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
             jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(1)
           }
         }).await(0, 5.seconds)
+      }
+
+      "submit a job" in {
+        val maybeObservable = db.roTransaction { implicit graph =>
+          observableSrv.initSteps.has(Key("message"), P.eq("Some weird domain")).getOrFail()
+        }
+
+        maybeObservable must beSuccessfulTry
+
+        val observable = maybeObservable.get
+        val c = db.roTransaction { implicit graph =>
+          caseSrv.initSteps.has(Key("title"), P.eq("case#1")).getOrFail()
+        }
+        val obs = db.roTransaction { implicit graph =>
+          observableSrv.get(observable).richObservable.getOrFail()
+        }
+
+        c must beSuccessfulTry.which(case1 => {
+          obs must beSuccessfulTry.which(hfr => {
+            val r = await(jobSrv.submit("test", "anaTest1", hfr, case1))
+
+            r.cortexId shouldEqual "test"
+            r.workerId shouldEqual "anaTest1"
+          })
+        })
       }
     }
   }

@@ -38,7 +38,8 @@ class JobSrv @Inject()(
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer
+    implicit val mat: Materializer,
+    serviceHelper: ServiceHelper
 ) extends VertexSrv[Job, JobSteps] {
 
   import ArtifactConversion._
@@ -49,21 +50,6 @@ class JobSrv @Inject()(
   val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
-
-  /**
-    * Creates a Job with with according ObservableJob edge
-    *
-    * @param job         the job date to create
-    * @param observable  the related observable
-    * @param graph       the implicit graph instance needed
-    * @param authContext the implicit auth needed
-    * @return
-    */
-  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Job with Entity] =
-    for {
-      createdJob <- create(job)
-      _          <- observableJobSrv.create(ObservableJob(), observable, createdJob)
-    } yield createdJob
 
   /**
     * Submits an observable for analysis to cortex client and stores
@@ -80,9 +66,9 @@ class JobSrv @Inject()(
       implicit authContext: AuthContext
   ): Future[Job with Entity] =
     for {
-      cortexClient <- cortexConfig
-        .instances
-        .get(cortexId)
+      cortexClient <- serviceHelper
+        .availableCortexClients(cortexConfig, Organisation(authContext.organisation))
+        .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact <- (observable.attachment, observable.data) match {
@@ -103,6 +89,21 @@ class JobSrv @Inject()(
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient, authContext)
+    } yield createdJob
+
+  /**
+    * Creates a Job with with according ObservableJob edge
+    *
+    * @param job         the job date to create
+    * @param observable  the related observable
+    * @param graph       the implicit graph instance needed
+    * @param authContext the implicit auth needed
+    * @return
+    */
+  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Job with Entity] =
+    for {
+      createdJob <- create(job)
+      _          <- observableJobSrv.create(ObservableJob(), observable, createdJob)
     } yield createdJob
 
   /**
