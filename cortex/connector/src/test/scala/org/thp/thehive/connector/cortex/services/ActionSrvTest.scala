@@ -18,10 +18,11 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContextImpl, AuthSrv, UserSrv}
 import org.thp.scalligraph.controllers.TestAuthSrv
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
+import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import org.thp.thehive.services.TaskSrv
 import org.thp.thehive.controllers.v0.LogCtrl
 import org.thp.thehive.dto.v0.OutputLog
 import org.thp.thehive.models.{DatabaseBuilder, _}

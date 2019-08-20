@@ -2,9 +2,7 @@ package org.thp.thehive.services
 
 import scala.collection.JavaConverters._
 import scala.util.Try
-
 import play.api.libs.json.JsValue
-
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -109,28 +107,6 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
         .asScala
       trigger <- notificationSrv.getTriggers(notifConfig.value[String]("value"))
     } yield (orgId.toString, trigger, Right(user.id().toString))
-//    val userTriggers: Iterator[(String, Trigger, Either[Boolean, String])] = for {
-//      (userOrgs, notifConfig) <- notificationRaw
-//        .project(
-//          _.apply(
-//            By(
-//              __[Vertex]
-//                .inTo[UserConfig]
-//                .project(
-//                  _.apply(By[AnyRef](T.id))                                                  // user
-//                    .and(By(__[Vertex].outTo[UserRole].outTo[RoleOrganisation].id().fold())) // orgs
-//                )
-//                .fold()
-//            )
-//          ).and(By(Key[String]("value"))) // notif
-//        )
-//        .traversal
-//        .asScala
-//      _ = logger.debug(s"userTriggers for $notifConfig: ${userOrgs.asScala} ")
-//      (userId, orgIds) <- userOrgs.asScala
-//      orgId            <- orgIds.asScala
-//      trigger          <- notificationSrv.getTriggers(notifConfig)
-//    } yield (orgId.toString, trigger, Right(userId.toString))
 
     (organisationTriggers ++ userTriggers)
       .toSeq
@@ -147,21 +123,4 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
       }
       .toMap
   }
-
-//  def triggerByOrganisation: Map[String, Set[Trigger]] =
-//    raw
-//      .group(
-//        By(__[Vertex].coalesce(_.inTo[OrganisationConfig], _.inTo[UserConfig].outTo[UserRole].outTo[RoleOrganisation]).value[String]("name")),
-//        By(Key[String]("value"))
-//      )
-//      .traversal
-//      .asScala
-//      .foldLeft(Map.empty[String, Set[Trigger]]) {
-//        case (acc, m) =>
-//          val orgTriggers = m.asScala.flatMap {
-//            case (organisationName, notifConfigs) =>
-//              notifConfigs.asScala.map(s => organisationName -> Trigger(Json.parse(s)).toSet)
-//          }
-//          acc ++ orgTriggers
-//      }
 }
