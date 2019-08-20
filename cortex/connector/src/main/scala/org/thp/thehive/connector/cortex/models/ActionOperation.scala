@@ -86,15 +86,14 @@ object ActionOperation {
   val addTagToArtifactWrites: OWrites[AddTagToArtifact] = Json.writes[AddTagToArtifact]
   val createTaskWrites: OWrites[CreateTask]             = Json.writes[CreateTask]
 
-  val addCustomFieldsWrites: OWrites[AddCustomFields] = new OWrites[AddCustomFields] {
-    override def writes(o: AddCustomFields): JsObject = Json.obj(
+  val addCustomFieldsWrites: OWrites[AddCustomFields] = (o: AddCustomFields) =>
+    Json.obj(
       "name"    -> o.name,
       "tpe"     -> o.tpe,
       "value"   -> o.value.toString,
       "message" -> o.message,
       "status"  -> o.status.toString
     )
-  }
   val closeTaskWrites: OWrites[CloseTask]                 = Json.writes[CloseTask]
   val markAlertAsReadWrites: OWrites[MarkAlertAsRead]     = Json.writes[MarkAlertAsRead]
   val addLogToTaskWrites: OWrites[AddLogToTask]           = Json.writes[AddLogToTask]
@@ -102,17 +101,19 @@ object ActionOperation {
   val addArtifactToCaseWrites: OWrites[AddArtifactToCase] = Json.writes[AddArtifactToCase]
   val assignCaseWrites: OWrites[AssignCase]               = Json.writes[AssignCase]
 
-  implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
-    case a: AddTagToCase      => addTagToCaseWrites.writes(a)
-    case a: AddTagToArtifact  => addTagToArtifactWrites.writes(a)
-    case a: CreateTask        => createTaskWrites.writes(a)
-    case a: AddCustomFields   => addCustomFieldsWrites.writes(a)
-    case a: CloseTask         => closeTaskWrites.writes(a)
-    case a: MarkAlertAsRead   => markAlertAsReadWrites.writes(a)
-    case a: AddLogToTask      => addLogToTaskWrites.writes(a)
-    case a: AddTagToAlert     => addTagToAlertWrites.writes(a)
-    case a: AddArtifactToCase => addArtifactToCaseWrites.writes(a)
-    case a: AssignCase        => assignCaseWrites.writes(a)
-    case a                    => Json.obj("unsupported operation" -> a.toString)
+  implicit val actionOperationWrites: OWrites[ActionOperation] = OWrites[ActionOperation] { operation =>
+    (operation match {
+      case a: AddTagToCase      => addTagToCaseWrites.writes(a)
+      case a: AddTagToArtifact  => addTagToArtifactWrites.writes(a)
+      case a: CreateTask        => createTaskWrites.writes(a)
+      case a: AddCustomFields   => addCustomFieldsWrites.writes(a)
+      case a: CloseTask         => closeTaskWrites.writes(a)
+      case a: MarkAlertAsRead   => markAlertAsReadWrites.writes(a)
+      case a: AddLogToTask      => addLogToTaskWrites.writes(a)
+      case a: AddTagToAlert     => addTagToAlertWrites.writes(a)
+      case a: AddArtifactToCase => addArtifactToCaseWrites.writes(a)
+      case a: AssignCase        => assignCaseWrites.writes(a)
+      case a                    => Json.obj("unsupported operation" -> a.toString)
+    }) + ("type" -> JsString(operation.getClass.getSimpleName))
   }
 }
