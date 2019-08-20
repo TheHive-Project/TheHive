@@ -21,7 +21,7 @@ case class Action(
     report: Option[JsObject],
     cortexId: Option[String],
     cortexJobId: Option[String],
-    operations: Option[String]
+    operations: Seq[JsObject]
 )
 
 case class RichAction(
@@ -37,7 +37,7 @@ case class RichAction(
     report: Option[JsObject],
     cortexId: Option[String],
     cortexJobId: Option[String],
-    operations: Option[String],
+    operations: Seq[JsObject],
     context: Entity
 )
 

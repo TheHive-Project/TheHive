@@ -10,8 +10,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, JobStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.ActionSteps
-import play.api.libs.json.JsObject
-
+import play.api.libs.json.{JsArray, JsObject}
 import scala.language.implicitConversions
 
 object ActionConversion {
@@ -27,7 +26,7 @@ object ActionConversion {
       .withFieldConst(_.endDate, None)
       .withFieldConst(_.report, None)
       .withFieldConst(_.cortexJobId, None)
-      .withFieldConst(_.operations, None)
+      .withFieldConst(_.operations, Nil)
       .withFieldComputed(_.objectType, a => toEntityType(a.objectType))
       .transform
 
@@ -46,7 +45,7 @@ object ActionConversion {
         .withFieldComputed(_.status, _.status.toString)
         .withFieldComputed(_.objectId, _.context._id)
         .withFieldComputed(_.objectType, _.context._model.label)
-        .withFieldComputed(_.operations, _.operations.getOrElse(""))
+        .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
         .withFieldComputed(_.report, _.report.map(_.toString).getOrElse("{}"))
         .transform
     )
