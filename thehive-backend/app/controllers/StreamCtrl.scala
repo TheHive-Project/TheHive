@@ -23,7 +23,7 @@ import services.StreamActor
 import services.StreamActor.StreamMessages
 
 import org.elastic4play.controllers._
-import org.elastic4play.services.{AuxSrv, EventSrv, MigrationSrv}
+import org.elastic4play.services.{ AuxSrv, EventSrv, MigrationSrv, UserSrv }
 import org.elastic4play.Timed
 
 @Singleton
@@ -33,6 +33,7 @@ class StreamCtrl(
     authenticated: Authenticated,
     renderer: Renderer,
     eventSrv: EventSrv,
+    userSrv: UserSrv,
     auxSrv: AuxSrv,
     migrationSrv: MigrationSrv,
     components: ControllerComponents,
@@ -46,6 +47,7 @@ class StreamCtrl(
       authenticated: Authenticated,
       renderer: Renderer,
       eventSrv: EventSrv,
+      userSrv: UserSrv,
       auxSrv: AuxSrv,
       migrationSrv: MigrationSrv,
       components: ControllerComponents,
@@ -58,6 +60,7 @@ class StreamCtrl(
       authenticated,
       renderer,
       eventSrv,
+      userSrv,
       auxSrv,
       migrationSrv,
       components,
@@ -96,7 +99,7 @@ class StreamCtrl(
       Future.successful(BadRequest("Invalid stream id"))
     } else {
       val futureStatus = authenticated.expirationStatus(request) match {
-        case ExpirationError if !migrationSrv.isMigrating ⇒ authenticated.getFromApiKey(request).map(_ ⇒ OK)
+        case ExpirationError if !migrationSrv.isMigrating ⇒ userSrv.getInitialUser(request).recoverWith { case _ => authenticated.getFromApiKey(request)}.map(_ ⇒ OK)
         case _: ExpirationWarning                         ⇒ Future.successful(220)
         case _                                            ⇒ Future.successful(OK)
       }
