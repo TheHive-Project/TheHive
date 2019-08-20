@@ -31,7 +31,7 @@ class ServiceHelper @Inject()(
     */
   def availableCortexClients(cortexConfig: CortexConfig, organisation: Organisation): Iterable[CortexClient] = db.roTransaction { implicit graph =>
     val l = cortexConfig
-      .instances
+      .clients
       .values
       .filter(
         c =>
@@ -44,7 +44,7 @@ class ServiceHelper @Inject()(
       )
 
     if (l.isEmpty) {
-      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${cortexConfig.instances.keys}")
+      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${cortexConfig.clients.keys}")
     }
 
     l

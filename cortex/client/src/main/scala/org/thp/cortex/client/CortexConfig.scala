@@ -56,9 +56,9 @@ class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: Cus
       .get[String]("url")
       .replaceFirst("/*$", "")
 
-    val auth = configuration.get[Authentication](".")
-    val ws   = globalWS.withConfig(configuration)
-    val        includedTheHiveOrganisations =      configuration.getOptional[Seq[String]]("includedTheHiveOrganisations").getOrElse(List("*")),
+    val auth                         = configuration.get[Authentication](".")
+    val ws                           = globalWS.withConfig(configuration)
+    val includedTheHiveOrganisations = configuration.getOptional[Seq[String]]("includedTheHiveOrganisations").getOrElse(List("*"))
     val excludedTheHiveOrganisations = configuration.getOptional[Seq[String]]("excludedTheHiveOrganisations").getOrElse(Nil)
 
     new CortexClient(name, url, includedTheHiveOrganisations, excludedTheHiveOrganisations)(ws, auth)

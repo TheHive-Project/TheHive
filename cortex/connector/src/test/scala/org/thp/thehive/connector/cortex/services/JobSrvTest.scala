@@ -24,7 +24,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
-import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
 class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
@@ -34,6 +34,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
+      .bindToProvider[CortexConfig, TestCortexConfigProvider]
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
@@ -90,7 +91,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           // org.janusgraph.diskstorage.locking.PermanentLockingException: Local lock contention on importCortexArtifacts
           // i.e. cortex-jobs.json report.artifacts length > 1 succeeds testOnly but fails test with one attachmentType and one dataType
           updatedJob <- jobSrv
-            .finished(createdJob._id, cortexOutputJob, cortexConfig.instances.values.head)
+            .finished(createdJob._id, cortexOutputJob, cortexConfig.clients.values.head)
         } yield {
           updatedJob.status shouldEqual JobStatus.Success
           updatedJob.report must beSome

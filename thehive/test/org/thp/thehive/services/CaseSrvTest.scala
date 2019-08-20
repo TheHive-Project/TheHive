@@ -9,7 +9,7 @@ import play.api.test.PlaySpecification
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
+import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 

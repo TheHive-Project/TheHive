@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.util.Try
+import scala.util.{Random, Try}
 
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
