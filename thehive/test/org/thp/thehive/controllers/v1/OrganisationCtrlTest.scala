@@ -1,36 +1,27 @@
 package org.thp.thehive.controllers.v1
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.TestAuthSrv
-import org.thp.scalligraph.models.{Database, DatabaseProviders, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
-import org.thp.thehive.models._
-import org.thp.thehive.services.LocalUserSrv
+import scala.util.Try
+
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import scala.util.Try
+import akka.stream.Materializer
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.models.{Database, DatabaseProviders}
+import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.models._
 
 class OrganisationCtrlTest extends PlaySpecification with Mockito {
   val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[UserSrv, LocalUserSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 

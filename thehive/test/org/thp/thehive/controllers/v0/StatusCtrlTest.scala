@@ -1,22 +1,21 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, UserSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
-import org.thp.thehive.TheHiveModule
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.{Connector, LocalUserSrv}
+import scala.util.Try
+
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AbstractController
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import scala.util.Try
+import akka.stream.Materializer
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.auth.{AuthCapability, AuthSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
+import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import org.thp.thehive.services.Connector
+import org.thp.thehive.{TestAppBuilder, TheHiveModule}
 
 class StatusCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
@@ -43,15 +42,11 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
   }
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .multiBindInstance[Connector](fakeCortexConnector)
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
-      .bindActor[ConfigActor]("config-actor")
-      .bindInstance[AuthSrv](authSrv)
+    val app: AppBuilder = TestAppBuilder(dbProvider)
+      .`override`(
+        _.multiBindInstance[Connector](fakeCortexConnector)
+          .bindInstance[AuthSrv](authSrv)
+      )
 
     specs(dbProvider.name, app)
   }

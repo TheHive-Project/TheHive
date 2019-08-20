@@ -1,28 +1,22 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import play.api.test.PlaySpecification
+
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, UserSrv => SUserSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-
-import scala.util.Try
 
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
   implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bindInstance[SUserSrv](dummyUserSrv)
-      .bindToProvider(dbProvider)
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 

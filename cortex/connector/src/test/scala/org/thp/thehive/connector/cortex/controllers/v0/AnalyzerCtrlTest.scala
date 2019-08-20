@@ -1,22 +1,19 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.util.Try
+
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import play.api.{Configuration, Environment}
+
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.TestAuthSrv
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.dto.v0.OutputWorker
 import org.thp.thehive.connector.cortex.services.CortexActor
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.LocalUserSrv
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
-
-import scala.util.Try
+import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
 class AnalyzerCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
@@ -24,15 +21,8 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

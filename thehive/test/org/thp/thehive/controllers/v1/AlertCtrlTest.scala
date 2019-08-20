@@ -2,23 +2,22 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.{JsString, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.TestAuthSrv
-import org.thp.scalligraph.models.{Database, DatabaseProviders, Entity, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.models.{Database, DatabaseProviders, Entity}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, LocalUserSrv}
-import play.api.libs.json.{JsString, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
+import org.thp.thehive.services.AlertSrv
 
 case class TestAlert(
     `type`: String,
@@ -60,14 +59,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bindToProvider(dbProvider)
-      .bind[UserSrv, LocalUserSrv]
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 

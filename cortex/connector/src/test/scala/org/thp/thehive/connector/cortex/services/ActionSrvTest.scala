@@ -39,16 +39,9 @@ class ActionSrvTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
+    val app = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexConfig, TestCortexConfigProvider]
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

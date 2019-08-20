@@ -1,25 +1,23 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.dto.v0.OutputReportTemplate
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.{FakeTemporaryFile, TestAuthSrv}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.connector.cortex.services.CortexActor
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.LocalUserSrv
+import scala.util.Try
+
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import scala.util.{Random, Try}
+import akka.stream.Materializer
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.cortex.dto.v0.OutputReportTemplate
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.controllers.FakeTemporaryFile
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.cortex.services.CortexActor
+import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
 class ReportCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
@@ -27,15 +25,8 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
@@ -79,12 +70,6 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
         val getResult = reportCtrl.get("JoeSandbox_File_Analysis_Noinet_2_0")(getRequest)
         status(getResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
-
-
-
-
-
-
 
         // FIXME some obscure db conflicts issue again
 

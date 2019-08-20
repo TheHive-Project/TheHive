@@ -4,19 +4,8 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import akka.stream.Materializer
-import io.scalaland.chimney.dsl._
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.auth.{AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.TestAuthSrv
-import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.{AppBuilder, Hasher}
-import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
-import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, DataSrv, LocalUserSrv}
+import scala.util.Try
+
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
@@ -25,7 +14,16 @@ import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
 import play.api.{Configuration, Environment}
 
-import scala.util.Try
+import akka.stream.Materializer
+import io.scalaland.chimney.dsl._
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.models.{DatabaseBuilder => _, _}
+import org.thp.scalligraph.{AppBuilder, Hasher}
+import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
+import org.thp.thehive.models._
+import org.thp.thehive.services.{AlertSrv, DataSrv}
 
 case class TestObservable(
     dataType: String,
@@ -50,14 +48,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 

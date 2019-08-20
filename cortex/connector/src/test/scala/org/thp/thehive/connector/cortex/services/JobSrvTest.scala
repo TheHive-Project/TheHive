@@ -2,6 +2,15 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.io.Source
+import scala.util.Try
+
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+import play.api.{Configuration, Environment}
+
 import akka.actor.Terminated
 import gremlin.scala.{Key, P}
 import org.specs2.concurrent.ExecutionEnv
@@ -10,38 +19,21 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{CortexClient, CortexConfig, TestCortexClientProvider, TestCortexConfigProvider}
 import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, AuthSrv, UserSrv}
-import org.thp.scalligraph.controllers.TestAuthSrv
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
-import org.thp.thehive.models.{DatabaseBuilder, Permissions, TheHiveSchema}
-import org.thp.thehive.services.{CaseSrv, LocalUserSrv, ObservableSrv}
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-import play.api.{Configuration, Environment}
-
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.io.Source
-import scala.util.Try
+import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import org.thp.thehive.services.ObservableSrv
 
 class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
   val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
   val config: Configuration = Configuration.load(Environment.simple())
 
   Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
-    val app: AppBuilder = AppBuilder()
-      .bind[UserSrv, LocalUserSrv]
-      .bindToProvider(dbProvider)
-      .bind[AuthSrv, TestAuthSrv]
-      .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
-      .bindActor[ConfigActor]("config-actor")
+    val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
-      .bindToProvider[CortexConfig, TestCortexConfigProvider]
-      .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
+      .bindToProvider[CortexClient, TestCortexClientProvider]
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
