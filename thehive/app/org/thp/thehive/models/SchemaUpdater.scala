@@ -13,7 +13,7 @@ class SchemaUpdater @Inject()(theHiveSchema: TheHiveSchema, db: Database, userSr
   val currentVersion: Int = db.version("thehive")
   if (currentVersion < latestVersion) {
     Logger(getClass).info(s"TheHive database schema is outdated ($currentVersion). Upgrading to version $latestVersion ...")
-    db.createSchemaFrom(theHiveSchema)(userSrv.initialAuthContext)
+    db.createSchemaFrom(theHiveSchema)(userSrv.getSystemAuthContext)
     db.setVersion("thehive", latestVersion)
   }
 }

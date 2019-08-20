@@ -14,7 +14,7 @@ class SchemaUpdater @Inject()(thehiveSchemaUpdater: TheHiveSchemaUpdater, cortex
   val currentVersion: Int = db.version("cortex")
   if (currentVersion < latestVersion) {
     Logger(getClass).info(s"Cortex database schema is outdated ($currentVersion). Upgrading to version $latestVersion ...")
-    db.createSchemaFrom(cortexSchema)(userSrv.initialAuthContext)
+    db.createSchemaFrom(cortexSchema)(userSrv.getSystemAuthContext)
     db.setVersion("cortex", latestVersion)
   }
 }

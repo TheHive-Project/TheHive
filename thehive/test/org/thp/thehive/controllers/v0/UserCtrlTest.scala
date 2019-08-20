@@ -37,7 +37,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = ()
 

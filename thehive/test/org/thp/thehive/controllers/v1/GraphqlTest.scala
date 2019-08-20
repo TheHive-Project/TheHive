@@ -21,7 +21,7 @@
 //  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
 //    val app: AppBuilder = AppBuilder()
 //      .bindInstance[org.thp.scalligraph.auth.UserSrv](dummyUserSrv)
-//      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.initialAuthContext))
+//      .bindInstance[InitialAuthContext](InitialAuthContext(dummyUserSrv.getSystemAuthContext))
 //      .bindToProvider(dbProvider)
 //      .bindInstance[AuthSrv](mock[AuthSrv])
 //      .bindInstance[AuthenticateSrv](authenticated)
@@ -32,7 +32,7 @@
 //  }
 //
 //  def setupDatabase(app: AppBuilder): Try[Unit] =
-//    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+//    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
 //
 //  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 //

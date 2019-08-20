@@ -2,6 +2,12 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.Json
+import play.api.test.{NoMaterializer, PlaySpecification}
+import play.api.{Configuration, Environment}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -48,7 +54,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 

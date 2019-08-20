@@ -72,7 +72,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], app.instanceOf[UserSrv].initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], app.instanceOf[UserSrv].getSystemAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 

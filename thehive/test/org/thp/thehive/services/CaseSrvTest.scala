@@ -28,14 +28,14 @@ class CaseSrvTest extends PlaySpecification {
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val caseSrv: CaseSrv                  = app.instanceOf[CaseSrv]
     val db: Database                      = app.instanceOf[Database]
-    implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
+    implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
     s"[$name] case service" should {
 
@@ -127,7 +127,7 @@ class CaseSrvTest extends PlaySpecification {
         pending
 //      db.transaction { implicit graph =>
       //        Seq("#2", "#3").toTry(caseSrv.getOrFail) must beSuccessfulTry.which { cases: Seq[Case with Entity] ⇒
-      //          val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.initialAuthContext)
+      //          val mergedCase = caseSrv.merge(cases)(graph, dummyUserSrv.getSystemAuthContext)
       //
       //          mergedCase.title must_=== "case#2 / case#3"
       //          mergedCase.description must_=== "description of case #2\n\ndescription of case #3"

@@ -13,7 +13,7 @@ import scala.util.Try
 
 class UserSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
-  implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
+  implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = AppBuilder()
@@ -27,7 +27,7 @@ class UserSrvTest extends PlaySpecification {
   }
 
   def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.initialAuthContext)
+    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], authContext)
 
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 

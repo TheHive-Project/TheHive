@@ -71,7 +71,7 @@ class UserMigration @Inject()(
         AuthContextImpl(user.login, user.name, defaultOrganisation, Instance.getInternalId, Set.empty)
       case None =>
         if (name != "init") logger.warn(s"User $name not found, using initial user context")
-        userDB.initialAuthContext
+        userDB.getSystemAuthContext
     }
     body(authContext)
   }

@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 import play.api.mvc.RequestHeader
 
@@ -22,13 +22,6 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends Scalligraph
         .orFail(AuthenticationError("Authentication failure"))
     }
 
-  override def getInitialUser(request: RequestHeader): Try[AuthContext] =
-    db.roTransaction { implicit graph =>
-      if (userSrv.count > 0)
-        Failure(AuthenticationError(s"Use of initial user is forbidden because users exist in database"))
-      else Success(initialAuthContext)
-    }
-
-  override val initialAuthContext: AuthContext =
+  override def getSystemAuthContext: AuthContext =
     AuthContextImpl(UserSrv.initUser, "Default admin user", "default", Instance.getInternalId, Permissions.all)
 }
