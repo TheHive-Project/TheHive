@@ -3,6 +3,8 @@ package org.thp.thehive.connector.cortex.services
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.thehive.models.Organisation
 import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,7 +12,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 @Singleton
-class AnalyzerSrv @Inject()(cortexConfig: CortexConfig) {
+class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHelper) {
 
   lazy val logger = Logger(getClass)
 
@@ -19,9 +21,9 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig) {
     *
     * @return
     */
-  def listAnalyzer: Future[Map[OutputCortexWorker, Seq[String]]] =
+  def listAnalyzer(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
-      .traverse(cortexConfig.instances.values) { client =>
+      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
         client
           .listAnalyser
           .transform {
@@ -40,9 +42,9 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig) {
           .toMap
       }
 
-  def getAnalyzer(id: String): Future[(OutputCortexWorker, Seq[String])] =
+  def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(OutputCortexWorker, Seq[String])] =
     Future
-      .traverse(cortexConfig.instances.values) { client =>
+      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
         client
           .getAnalyzer(id)
           .map(_ -> client.name)

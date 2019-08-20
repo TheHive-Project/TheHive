@@ -48,7 +48,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       val analyzerSrv = app.instanceOf[AnalyzerSrv]
 
       "get a list of Cortex workers" in {
-        val r = await(analyzerSrv.listAnalyzer)
+        val r = await(analyzerSrv.listAnalyzer(dummyUserSrv.authContext))
         val outputWorker2 =
           OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), Some(2), Some(2))
         val outputWorker1 =
@@ -66,7 +66,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       }
 
       "get Cortex worker by id" in {
-        val r = await(analyzerSrv.getAnalyzer("anaTest2"))
+        val r = await(analyzerSrv.getAnalyzer("anaTest2")(dummyUserSrv.authContext))
         val outputWorker =
           OutputCortexWorker("anaTest2", "anaTest2", "2", "nos hoc tempore in provinciis decernendis perpetuae pacis", Seq("test", "dummy"), Some(2), Some(2))
 

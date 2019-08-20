@@ -22,7 +22,7 @@ class AnalyzerCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
-      .asyncAuth { _ =>
+      .asyncAuth { implicit req =>
         analyzerSrv
           .listAnalyzer
           .map { analyzers =>
@@ -32,7 +32,7 @@ class AnalyzerCtrl @Inject()(
 
   def getById(id: String): Action[AnyContent] =
     entryPoint("get analyzer by id")
-      .asyncAuth { _ =>
+      .asyncAuth { implicit req =>
         analyzerSrv
           .getAnalyzer(id)
           .map(a => Results.Ok(Json.toJson(toOutputWorker(a))))
