@@ -67,23 +67,21 @@ class NotificationSrv @Inject()(
 
 class NotificationActor @Inject()(
     configuration: Configuration,
-    db: Database,
     eventSrv: EventSrv,
     auditSrv: AuditSrv,
     configSrv: ConfigSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    notificationSrv: NotificationSrv
+    notificationSrv: NotificationSrv,
+    implicit val db: Database
 ) extends Actor {
   import context.dispatcher
   lazy val logger        = Logger(getClass)
   val roles: Set[String] = configuration.get[Seq[String]]("roles").toSet
 
-  def getTriggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] = {
-    val m = db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph))
-    logger.debug(s"Trigger map is $m") // TODO remove debug message
-    m
-  }
+  // TODO this map must be updated (or cached)
+  /* Map of OrganisationId -> Trigger -> (applied for that org ?, list of UserId) */
+  def getTriggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] = db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph))
 
   val triggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] = getTriggerMap
 
@@ -93,46 +91,48 @@ class NotificationActor @Inject()(
     super.preStart()
   }
 
-  def executeForUser(userSteps: UserSteps, audit: Audit with Entity, context: Entity, organisation: Organisation with Entity)(
-      implicit db: Database,
-      graph: Graph
-  ): Unit = { // FIXME doesn't work for organisation based notification
-    userSteps
-      .project(
-        _.and(By[Vertex]())
-          .apply(By(__[Vertex].outTo[UserConfig].has(Key[String]("name"), P.eq[String]("notification")).value[String]("value")))
-      )
-      .map {
-        case (userVertex, notificationConfig) =>
-          Json
-            .parse(notificationConfig)
-            .asOpt[Seq[NotificationConfig]]
-            .getOrElse(Nil)
-            .foreach {
-              case notificationConfig if notificationConfig.roleRestriction.isEmpty || (notificationConfig.roleRestriction & roles).nonEmpty =>
-                val user = userVertex.as[User]
-                for {
-                  trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
-                  if trigger.filter(audit, context, organisation, user)
-                  notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
-                  _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
-                } yield notifier.execute(audit, context, organisation, user)
-              case notificationConfig =>
-                logger.debug(s"Notification has role restriction($notificationConfig.roleRestriction) and it is not applicable here ($roles)")
-                Future
-                  .firstCompletedOf(notificationConfig.roleRestriction.map { role =>
-                    eventSrv.publishAsk(NotificationTopic(role))(Identify(1))(Timeout(2.seconds))
-                  })
-                  .map {
-                    case ActorIdentity(1, Some(notificationActor)) =>
-                      logger.debug(s"Send notification to $notificationActor")
-                      notificationActor ! NotificationExecution(userVertex.id().toString, audit._id, notificationConfig)
-                  }
+  /**
+    * Execute the notification for that user if the trigger is applicable. If the role restriction configured in the
+    * notification configuration, send it to an actor which can execute this notification. The role restriction is
+    * related to the host, not to the user. When TheHive is executed in a cluster, a role can be assigned to each host.
+    * @param user the targeted user
+    * @param notificationConfig the notification config. Contains the trigger, the role restriction and the notifier
+    * @param audit message to be notified
+    * @param context context element of the audit
+    * @param organisation organisation of the user
+    * @param graph the graph
+    */
+  def executeForUser(
+      user: User with Entity,
+      notificationConfig: Seq[NotificationConfig],
+      audit: Audit with Entity,
+      context: Entity,
+      organisation: Organisation with Entity
+  )(
+      implicit graph: Graph
+  ): Unit =
+    notificationConfig
+      .foreach {
+        case notificationConfig if notificationConfig.roleRestriction.isEmpty || (notificationConfig.roleRestriction & roles).nonEmpty =>
+          for {
+            trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
+            if trigger.filter(audit, context, organisation, user)
+            notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
+            _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
+          } yield notifier.execute(audit, context, organisation, user)
+
+        case notificationConfig =>
+          logger.debug(s"Notification has role restriction($notificationConfig.roleRestriction) and it is not applicable here ($roles)")
+          Future
+            .firstCompletedOf(notificationConfig.roleRestriction.map { role =>
+              eventSrv.publishAsk(NotificationTopic(role))(Identify(1))(Timeout(2.seconds))
+            })
+            .map {
+              case ActorIdentity(1, Some(notificationActor)) =>
+                logger.debug(s"Send notification to $notificationActor")
+                notificationActor ! NotificationExecution(user._id, audit._id, notificationConfig)
             }
       }
-      .iterate()
-    ()
-  }
 
   override def receive: Receive = {
     case AuditNotificationMessage(ids @ _*) =>
@@ -150,10 +150,43 @@ class NotificationActor @Inject()(
                 .foreach {
                   case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
                     logger.debug(s"Notification trigger ${trigger.name} is applicable")
-                    executeForUser(userSrv.getByIds(userIds: _*), audit, context, organisation)(db, graph)
+                    userSrv
+                      .getByIds(userIds: _*)
+                      .project(
+                        _.and(By[Vertex]())
+                          .apply(By(__[Vertex].outTo[UserConfig].has(Key[String]("name"), P.eq[String]("notification")).value[String]("value")))
+                      )
+                      .toIterator
+                      .foreach {
+                        case (userVertex, notificationConfig) =>
+                          val user = userVertex.as[User]
+                          val config = Json
+                            .parse(notificationConfig)
+                            .asOpt[Seq[NotificationConfig]]
+                            .getOrElse(Nil)
+                          executeForUser(user, config, audit, context, organisation)
+                      }
                     if (inOrg) {
-                      val users = organisationSrv.get(organisation).users.where(_.config.hasNot(Key[String]("name"), P.eq("notification")))
-                      executeForUser(users, audit, context, organisation)(db, graph)
+                      organisationSrv
+                        .get(organisation)
+                        .config
+                        .has(Key[String]("name"), P.eq("notification"))
+                        .value
+                        .toIterator
+                        .foreach { notificationConfig =>
+                          val config = Json
+                            .parse(notificationConfig)
+                            .asOpt[Seq[NotificationConfig]]
+                            .getOrElse(Nil)
+                          organisationSrv
+                            .get(organisation)
+                            .users
+                            .where(_.config.hasNot(Key[String]("name"), P.eq("notification")))
+                            .toIterator
+                            .foreach { user =>
+                              executeForUser(user, config, audit, context, organisation)
+                            }
+                        }
                     }
                   case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
                 }

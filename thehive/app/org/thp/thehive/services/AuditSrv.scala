@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import akka.actor.ActorRef
+import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
@@ -8,18 +10,18 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import org.thp.thehive.services.notification.AuditNotificationMessage
+import play.api.Logger
 import play.api.libs.json.JsObject
+
 import scala.util.{Success, Try}
 
-import play.api.Logger
-
-import org.thp.thehive.services.notification.{AuditNotificationMessage, NotificationTopic}
-
-case class PendingAudit(audit: Audit, context: Entity, `object`: Option[Entity])
+case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
 @Singleton
 class AuditSrv @Inject()(
     userSrvProvider: Provider[UserSrv],
+    @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
 )(implicit db: Database, schema: TheHiveSchema)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
@@ -51,7 +53,7 @@ class AuditSrv @Inject()(
     result
   }
 
-  def create(audit: Audit, context: Entity, `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
 
     def createLastPending(tx: AnyRef)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
       logger.debug("Store last audit")
@@ -69,7 +71,7 @@ class AuditSrv @Inject()(
             logger.debug("Sending audit to stream bus and to notification actor")
             val auditIds = ids.map(_._2)
             eventSrv.publish(StreamTopic())(AuditStreamMessage(auditIds: _*))
-            eventSrv.publish(NotificationTopic())(AuditNotificationMessage(auditIds: _*))
+            notificationActor ! AuditNotificationMessage(auditIds: _*)
           case _ =>
         }
       }
