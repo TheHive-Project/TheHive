@@ -9,10 +9,10 @@ import scala.concurrent.duration._
 /**
   * Injected CortexConfig containing all client instances
   *
-  * @param instances the CortexClient instances
+  * @param clients the CortexClient instances
   */
 @ProvidedBy(classOf[CortexConfigProvider])
-case class CortexConfig(instances: Map[String, CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int)
+case class CortexConfig(clients: Map[String, CortexClient], refreshDelay: FiniteDuration, maxRetryOnError: Int)
 
 /**
   * The cortex config provider
@@ -20,7 +20,7 @@ case class CortexConfig(instances: Map[String, CortexClient], refreshDelay: Fini
 @Singleton
 class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: CustomWSAPI) extends Provider[CortexConfig] {
   override def get(): CortexConfig = CortexConfig(
-    getInstances(configuration, globalWS),
+    getClients(configuration, globalWS),
     configuration.getOptional[FiniteDuration]("cortex.refreshDelay").getOrElse(1.minute),
     configuration.getOptional[Int]("cortex.maxRetryOnError").getOrElse(3)
   )
@@ -32,15 +32,15 @@ class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: Cus
     * @param globalWS the overridden or not web service client framework WSClient
     * @return
     */
-  def getInstances(configuration: Configuration, globalWS: CustomWSAPI): Map[String, CortexClient] =
-    (for {
-      cfg <- configuration.getOptional[Configuration]("cortex").toSeq
-      cortexWS = globalWS.withConfig(cfg)
-      cfgs <- cfg.getOptional[Seq[Configuration]]("servers").toSeq
-      c    <- cfgs
-      instanceWS = cortexWS.withConfig(c)
-      cic <- getCortexClient(c, instanceWS)
-    } yield cic.name -> cic).toMap
+  def getClients(configuration: Configuration, globalWS: CustomWSAPI): Map[String, CortexClient] = {
+    val cortexWS = globalWS.withConfig(configuration.get[Configuration]("cortex"))
+    configuration
+      .getOptional[Seq[Configuration]]("cortex.servers")
+      .getOrElse(Nil)
+      .map(getCortexClient(_, cortexWS))
+      .map(client => client.name -> client)
+      .toMap
+  }
 
   /**
     * Tries to get a CortexClient according to configuration

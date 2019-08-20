@@ -7,6 +7,7 @@ import play.api.libs.json.JsValue
 
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
@@ -71,6 +72,7 @@ class ConfigSrv @Inject()(
   }
 }
 
+@EntitySteps[Config]
 class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Config, ConfigSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ConfigSteps = new ConfigSteps(raw)
 

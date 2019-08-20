@@ -13,7 +13,7 @@ import scala.util.Try
 
 class OrganisationSrvTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv()
-  implicit val authContext: AuthContext = dummyUserSrv.initialAuthContext
+  implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = AppBuilder()

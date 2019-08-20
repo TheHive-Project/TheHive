@@ -201,7 +201,7 @@ class JobSrv @Inject()(
       .attachment
       .map { attachment =>
         val file = Files.createTempFile(s"job-cortex-${attachment.id}", "")
-        val attach = for {
+        (for {
           src <- cortexClient.getAttachment(attachment.id)
           s   <- src.runWith(FileIO.toPath(file))
           _   <- Future.fromTry(s.status)
@@ -211,19 +211,12 @@ class JobSrv @Inject()(
               for {
                 createdAttachment <- attachmentSrv.create(fFile)
                 richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, artifact.tags, Nil)
-                _ = reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+                _                 <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
               } yield createdAttachment
             }
           }
-          _ = Files.delete(file)
-        } yield savedAttachment
-
-        attach transform {
-          case s @ Success(_) => s
-          case Failure(cause) =>
-            Files.delete(file)
-            Failure(new Exception("Saving attachment failed", cause))
-        }
+        } yield savedAttachment)
+          .andThen { case _ => Files.delete(file) }
       }
       .getOrElse(Future.failed(new Exception(s"Attachment not present for artifact ${artifact.dataType}")))
 

@@ -29,7 +29,7 @@ class Connector @Inject()(
   var cachedHealth: HealthStatus.Value    = HealthStatus.Ok
   private def updateHealth(): Unit =
     Future
-      .traverse(cortexConfig.instances.values)(_.getHealth)
+      .traverse(cortexConfig.clients.values)(_.getHealth)
       .foreach { healthStatus =>
         val distinctStatus = healthStatus.toSet.map(HealthStatus.withName)
         cachedHealth = if (distinctStatus.contains(HealthStatus.Ok)) {
@@ -43,7 +43,7 @@ class Connector @Inject()(
   var cachedStatus: JsObject    = JsObject.empty
   private def updateStatus(): Unit =
     Future
-      .traverse(cortexConfig.instances.values) { client =>
+      .traverse(cortexConfig.clients.values) { client =>
         client.getVersion.transformWith {
           case Success(version) =>
             client.getCurrentUser.transform {
