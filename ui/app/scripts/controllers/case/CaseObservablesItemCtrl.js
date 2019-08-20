@@ -23,6 +23,7 @@
             $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.cortexServers = $scope.analysisEnabled && appConfig.connectors.cortex.servers;
             $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;
+            $scope.similarArtifactsLimit = 10;
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -123,6 +124,10 @@
                         });
                     }
                 }
+            };
+
+            $scope.showMoreSimilar = function() {
+                $scope.similarArtifactsLimit = $scope.similarArtifactsLimit + 10;
             };
 
             $scope.showReport = function (jobId) {
