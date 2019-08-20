@@ -1,4 +1,4 @@
-package org.thp.cortex.client
+package org.thp.client
 
 import akka.stream.Materializer
 import com.typesafe.sslconfig.ssl.TrustStoreConfig
@@ -11,7 +11,7 @@ import play.api.{Configuration, Environment, Logger}
 import scala.util.control.NonFatal
 
 object CustomWSAPI {
-  private[CustomWSAPI] lazy val logger = Logger(getClass)
+  lazy val logger = Logger(getClass)
 
   def parseProxyConfig(config: Configuration): Option[WSProxyServer] =
     config.getOptional[Configuration]("play.ws.proxy").map { proxyConfig =>
@@ -90,7 +90,7 @@ class CustomWSAPI(
     lifecycle: ApplicationLifecycle,
     mat: Materializer
 ) extends WSClient {
-  private[CustomWSAPI] lazy val logger = Logger(getClass)
+  lazy val logger = Logger(getClass)
 
   override def close(): Unit = ws.close()
 

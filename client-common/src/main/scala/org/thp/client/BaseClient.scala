@@ -1,4 +1,4 @@
-package org.thp.cortex.client
+package org.thp.client
 
 import play.api.Logger
 import play.api.http.Status
@@ -14,16 +14,13 @@ object ApplicationError {
   def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" -> r.body)))
 }
 
-object Client {
-  lazy val logger = Logger(getClass)
-}
-
 class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSClient) {
+  lazy val logger = Logger(getClass)
 
-  def create(input: Input, urlOverride: Option[String])(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
+  def create(input: Input, url: String = baseUrl)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     val body = Json.toJson(input)
-    val url  = urlOverride.getOrElse(baseUrl)
-    Client.logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
+//    val url  = urlOverride.getOrElse(baseUrl)
+    logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
     auth(ws.url(url))
       .post(body)
       .transform {
@@ -36,7 +33,7 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
   def search[SearchInput: Writes](input: SearchInput)(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
     val body = Json.toJson(input)
     val url  = s"$baseUrl/_search"
-    Client.logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
+    logger.debug(s"Request POST $url\n${Json.prettyPrint(body)}")
     auth(ws.url(url))
       .post(body)
       .transform {
@@ -47,7 +44,7 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
   }
 
   def get(id: String, urlFragments: String = "")(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
-    Client.logger.debug(s"Request GET $baseUrl/$id$urlFragments")
+    logger.debug(s"Request GET $baseUrl/$id$urlFragments")
     auth(ws.url(s"$baseUrl/$id$urlFragments"))
       .get()
       .transform {
@@ -58,7 +55,7 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
   }
 
   def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
-    Client.logger.debug(s"Request GET $baseUrl")
+    logger.debug(s"Request GET $baseUrl")
     auth(ws.url(baseUrl))
       .get
       .transform {

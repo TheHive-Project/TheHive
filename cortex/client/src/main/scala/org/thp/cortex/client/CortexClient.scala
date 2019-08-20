@@ -2,6 +2,7 @@ package org.thp.cortex.client
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.thp.client.{ApplicationError, Authentication, BaseClient}
 import org.thp.cortex.dto.v0.{Attachment, _}
 import play.api.Logger
 import play.api.http.Status
@@ -99,7 +100,7 @@ class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganis
     */
   def getAttachment(id: String): Future[Source[ByteString, _]] =
     auth(ws.url(s"$strippedUrl/api/datastore/$id"))
-      .get()
+      .stream()
       .map(r => r.bodyAsSource)
 
   /**

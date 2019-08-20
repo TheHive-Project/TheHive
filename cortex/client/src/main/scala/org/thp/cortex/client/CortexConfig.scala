@@ -2,6 +2,7 @@ package org.thp.cortex.client
 
 import com.google.inject.ProvidedBy
 import javax.inject.{Inject, Provider, Singleton}
+import org.thp.client.{Authentication, CustomWSAPI}
 import play.api.Configuration
 
 import scala.concurrent.duration._
@@ -46,31 +47,20 @@ class CortexConfigProvider @Inject()(configuration: Configuration, globalWS: Cus
     * Tries to get a CortexClient according to configuration
     *
     * @param configuration the .conf
-    * @param ws custom or not web service client
+    * @param globalWS custom or not web service client
     * @return
     */
-  def getCortexClient(configuration: Configuration, ws: CustomWSAPI): Option[CortexClient] = {
-    val url = configuration.getOptional[String]("url").getOrElse(sys.error("url is missing")).replaceFirst("/*$", "")
+  def getCortexClient(configuration: Configuration, globalWS: CustomWSAPI): CortexClient = {
+    val name = configuration.get[String]("name")
+    val url = configuration
+      .get[String]("url")
+      .replaceFirst("/*$", "")
 
-    configuration
-      .getOptional[String]("key")
-      .map(KeyAuthentication)
-      .orElse {
-        for {
-          basicEnabled <- configuration.getOptional[Boolean]("basicAuth")
-          if basicEnabled
-          username <- configuration.getOptional[String]("username")
-          password <- configuration.getOptional[String]("password")
-        } yield PasswordAuthentication(username, password)
-      }
-      .map(
-        auth =>
-          new CortexClient(
-            configuration.getOptional[String]("name").getOrElse("no name"),
-            url,
-            configuration.getOptional[Seq[String]]("includedTheHiveOrganisations").getOrElse(List("*")),
-            configuration.getOptional[Seq[String]]("excludedTheHiveOrganisations").getOrElse(Nil)
-          )(ws, auth)
-      )
+    val auth = configuration.get[Authentication](".")
+    val ws   = globalWS.withConfig(configuration)
+    val        includedTheHiveOrganisations =      configuration.getOptional[Seq[String]]("includedTheHiveOrganisations").getOrElse(List("*")),
+    val excludedTheHiveOrganisations = configuration.getOptional[Seq[String]]("excludedTheHiveOrganisations").getOrElse(Nil)
+
+    new CortexClient(name, url, includedTheHiveOrganisations, excludedTheHiveOrganisations)(ws, auth)
   }
 }

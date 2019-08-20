@@ -3,7 +3,6 @@ import Dependencies._
 lazy val scala212               = "2.12.8"
 lazy val scala213               = "2.13.0"
 lazy val supportedScalaVersions = List(scala212, scala213)
-// format: off
 lazy val commonSettings = Seq(
   organization := "org.thp",
   scalaVersion := scala212,
@@ -16,17 +15,17 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-encoding",
     "UTF-8",
-    "-deprecation",            // Emit warning and location for usages of deprecated APIs.
-    "-feature",                // Emit warning and location for usages of features that should be imported explicitly.
-    "-unchecked",              // Enable additional warnings where generated code depends on assumptions.
-    //"-Xfatal-warnings",      // Fail the compilation if there are any warnings.
-    "-Xlint",                  // Enable recommended additional warnings.
-//    "-Ywarn-adapted-args",     // Warn if an argument list is modified to match the receiver.
-    //"-Ywarn-dead-code",      // Warn when dead code is identified.
-//    "-Ywarn-inaccessible",     // Warn about inaccessible types in method signatures.
-//    "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
-    "-Ywarn-numeric-widen",    // Warn when numerics are widened.
-    "-Ywarn-value-discard",    // Warn when non-Unit expression results are unused
+    "-deprecation",         // Emit warning and location for usages of deprecated APIs.
+    "-feature",             // Emit warning and location for usages of features that should be imported explicitly.
+    "-unchecked",           // Enable additional warnings where generated code depends on assumptions.
+    "-Xlint",               // Enable recommended additional warnings.
+    "-Ywarn-numeric-widen", // Warn when numerics are widened.
+    "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
+    //"-Xfatal-warnings",   // Fail the compilation if there are any warnings.
+    //"-Ywarn-adapted-args",// Warn if an argument list is modified to match the receiver.
+    //"-Ywarn-dead-code",   // Warn when dead code is identified.
+    //"-Ywarn-inaccessible",// Warn about inaccessible types in method signatures.
+    //"-Ywarn-nullary-override",// Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
     //"-Ylog-classpath",
     //"-Xlog-implicits",
     //"-Yshow-trees-compact",
@@ -52,12 +51,14 @@ lazy val commonSettings = Seq(
     }
   }
 )
-// format: on
+
+lazy val scalligraph = (project in file("ScalliGraph"))
+  .settings(name := "scalligraph")
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(thehiveCore, thehiveCortex)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex)
+  .dependsOn(thehiveCore, thehiveCortex, thehiveMisp)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex, thehiveMisp)
   .settings(commonSettings)
   .settings(
     name := "thehive",
@@ -67,9 +68,6 @@ lazy val thehive = (project in file("."))
       (Compile / run).evaluated
     }
   )
-
-lazy val scalligraph = (project in file("ScalliGraph"))
-  .settings(name := "scalligraph")
 
 lazy val thehiveCore = (project in file("thehive"))
   .enablePlugins(PlayScala)
@@ -91,20 +89,6 @@ lazy val thehiveCore = (project in file("thehive"))
     )
   )
 
-lazy val thehiveCortex = (project in file("cortex/connector"))
-  .dependsOn(thehiveCore)
-  .dependsOn(cortexClient)
-  .dependsOn(cortexClient % "test -> test")
-  .dependsOn(thehiveCore % "test -> test")
-  .dependsOn(scalligraph % "test -> test")
-  .settings(commonSettings)
-  .settings(
-    name := "thehive-cortex",
-    libraryDependencies ++= Seq(
-      specs % Test
-    )
-  )
-
 lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
   .settings(commonSettings)
@@ -114,6 +98,7 @@ lazy val thehiveDto = (project in file("dto"))
 
 lazy val thehiveClient = (project in file("client"))
   .dependsOn(thehiveDto)
+  .dependsOn(clientCommon)
   .settings(commonSettings)
   .settings(
     name := "thehive-client",
@@ -121,50 +106,6 @@ lazy val thehiveClient = (project in file("client"))
       ws
     )
   )
-
-lazy val cortexDto = (project in file("cortex/dto"))
-  .dependsOn(scalligraph)
-  .settings(commonSettings)
-  .settings(
-    name := "cortex-dto",
-    libraryDependencies ++= Seq(
-      chimney
-    )
-  )
-
-lazy val cortexClient = (project in file("cortex/client"))
-  .dependsOn(cortexDto)
-  .dependsOn(scalligraph % "test -> test")
-  .settings(commonSettings)
-  .settings(
-    name := "cortex-client",
-    libraryDependencies ++= Seq(
-      ws,
-      specs       % Test,
-      playFilters % Test,
-      playMockws  % Test
-    )
-  )
-
-//lazy val thehiveMigration = (project in file("migration"))
-//  .enablePlugins(JavaAppPackaging)
-//  .dependsOn(scalligraph)
-//  .dependsOn(thehiveCore)
-//  .settings(commonSettings)
-//  .settings(
-//    name := "thehive-migration",
-//    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
-//    crossScalaVersions := Seq(scala212),
-//    libraryDependencies ++= Seq(
-//      elastic4play,
-//      ehcache,
-//      specs % Test
-//    ),
-//    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
-//    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
-//    fork := true,
-//    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
-//  )
 
 lazy val npm        = taskKey[Unit]("Install npm dependencies")
 lazy val bower      = taskKey[Unit]("Install bower dependencies")
@@ -225,3 +166,95 @@ lazy val thehiveFrontend = (project in file("frontend"))
       baseDirectory.value / "node_modules"
     )
   )
+
+lazy val clientCommon = (project in file("client-common"))
+  .settings(
+    name := "client-common",
+    libraryDependencies ++= Seq(
+      ws,
+      specs % Test
+    )
+  )
+
+lazy val thehiveCortex = (project in file("cortex/connector"))
+  .dependsOn(thehiveCore)
+  .dependsOn(cortexClient)
+  .dependsOn(cortexClient % "test -> test")
+  .dependsOn(thehiveCore % "test -> test")
+  .dependsOn(scalligraph % "test -> test")
+  .settings(commonSettings)
+  .settings(
+    name := "thehive-cortex",
+    libraryDependencies ++= Seq(
+      specs % Test
+    )
+  )
+
+lazy val cortexDto = (project in file("cortex/dto"))
+  .dependsOn(scalligraph)
+  .settings(commonSettings)
+  .settings(
+    name := "cortex-dto",
+    libraryDependencies ++= Seq(
+      chimney
+    )
+  )
+
+lazy val cortexClient = (project in file("cortex/client"))
+  .dependsOn(cortexDto)
+  .dependsOn(clientCommon)
+  .dependsOn(scalligraph % "test -> test")
+  .settings(commonSettings)
+  .settings(
+    name := "cortex-client",
+    libraryDependencies ++= Seq(
+      ws,
+      specs       % Test,
+      playFilters % Test,
+      playMockws  % Test
+    )
+  )
+
+lazy val thehiveMisp = (project in file("misp/connector"))
+  .dependsOn(thehiveCore)
+  .dependsOn(mispClient)
+  .settings(commonSettings)
+  .settings(
+    name := "thehive-misp",
+    libraryDependencies ++= Seq(
+      specs % Test
+    )
+  )
+
+lazy val mispClient = (project in file("misp/client"))
+  .dependsOn(scalligraph)
+  .dependsOn(clientCommon)
+  .settings(commonSettings)
+  .settings(
+    name := "misp-client",
+    libraryDependencies ++= Seq(
+      ws,
+      specs      % Test,
+      playMockws % Test
+    )
+  )
+
+//lazy val thehiveMigration = (project in file("migration"))
+//  .enablePlugins(JavaAppPackaging)
+//  .dependsOn(scalligraph)
+//  .dependsOn(thehiveCore)
+//  .settings(commonSettings)
+//  .settings(
+//    name := "thehive-migration",
+//    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
+//    crossScalaVersions := Seq(scala212),
+//    libraryDependencies ++= Seq(
+//      elastic4play,
+//      ehcache,
+//      specs % Test
+//    ),
+//    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+//    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
+//    fork := true,
+//    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
+//  )
