@@ -15,7 +15,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{Case, Task, TheHiveSchema}
+import org.thp.thehive.models.{Case, Organisation, Task, TheHiveSchema}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,7 +28,8 @@ class ActionSrv @Inject()(
     @Named("cortex-actor") cortexActor: ActorRef,
     actionOperationSrv: ActionOperationSrv,
     schema: TheHiveSchema,
-    entityHelper: EntityHelper
+    entityHelper: EntityHelper,
+    serviceHelper: ServiceHelper
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
@@ -51,21 +52,20 @@ class ActionSrv @Inject()(
   def execute(
       action: Action,
       entity: Entity
-  )(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] =
+  )(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] = {
+    val cortexClients = serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))
     for {
       client <- action.cortexId match {
         case Some(cortexId) =>
-          cortexConfig
-            .instances
-            .get(cortexId)
+          cortexClients
+            .find(_.name == cortexId)
             .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-        case None if cortexConfig.instances.nonEmpty =>
+        case None if cortexClients.nonEmpty =>
           Future.firstCompletedOf {
-            cortexConfig
-              .instances
-              .values
+            cortexClients
               .map(client => client.getResponder(action.responderId).map(_ => client))
           }
+
         case None => Future.failed(NotFoundError(s"Responder ${action.responderId} not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
@@ -87,6 +87,7 @@ class ActionSrv @Inject()(
 
       _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client, authContext)
     } yield createdAction
+  }
 
   def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): InputCortexAction =
     action
