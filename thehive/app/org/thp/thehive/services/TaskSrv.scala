@@ -46,7 +46,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
       case0 <- get(task).`case`.getOrFail()
       _     <- get(task).logs.toIterator.toTry(logSrv.cascadeRemove(_))
       _ = get(task).remove()
-      _ <- auditSrv.task.delete(task, case0)
+      _ <- auditSrv.task.delete(task, Some(case0))
     } yield ()
 }
 

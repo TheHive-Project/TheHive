@@ -50,7 +50,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
       _     <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
       case0 <- get(log).`case`.getOrFail()
       _ = get(log).remove()
-      _ <- auditSrv.log.delete(log, case0)
+      _ <- auditSrv.log.delete(log, Some(case0))
     } yield ()
 }
 

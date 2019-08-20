@@ -75,7 +75,7 @@ class AuditSrv @Inject()(
       }
     }
 
-    def createFromPending(tx: AnyRef, audit: Audit, context: Entity, `object`: Option[Entity])(
+    def createFromPending(tx: AnyRef, audit: Audit, context: Option[Entity], `object`: Option[Entity])(
         implicit graph: Graph,
         authContext: AuthContext
     ): Try[Unit] = {
@@ -84,7 +84,7 @@ class AuditSrv @Inject()(
         user         <- userSrv.current.getOrFail()
         createdAudit <- create(audit)
         _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
-        _            <- auditContextSrv.create(AuditContext(), createdAudit, context)
+        _            <- context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip
         _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
       } yield transactionAuditIdsLock.synchronized {
         transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
@@ -124,27 +124,25 @@ class AuditSrv @Inject()(
   class ObjectAudit[E <: Product, C <: Product] {
 
     def create(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity), context, Some(entity))
+      auditSrv.create(Audit(Audit.create, entity), Some(context), Some(entity))
 
     def update(entity: E with Entity, context: C with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), context, Some(entity))
+      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(context), Some(entity))
 
-    def delete(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
-    // FIXME there is no context
-//      auditSrv.create(Audit("update", entity), context, Some(entity))
+    def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.delete, entity, None), context, None)
   }
 
   class SelfContextObjectAudit[E <: Product] {
 
     def create(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity), entity, Some(entity))
+      auditSrv.create(Audit(Audit.create, entity), Some(entity), Some(entity))
 
     def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), entity, Some(entity))
+      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
-    // FIXME there is no context
-//      auditSrv.create(Audit("update", entity, None), entity, Some(entity))
+    def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.delete, entity, None), None, None)
   }
 
   def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] = get(audit).`object`.headOption()
