@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexConfig
 import org.thp.cortex.dto.v0.OutputCortexWorker
@@ -9,14 +8,14 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.{Organisation, Permissions}
 import play.api.Logger
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 @Singleton
 class ResponderSrv @Inject()(
     cortexConfig: CortexConfig,
     db: Database,
-    implicit val ec: ExecutionContext,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper
 ) {
@@ -54,10 +53,10 @@ class ResponderSrv @Inject()(
               }
         )
     } yield responders.flatten // Seq[(worker, cortexId)]
-      .groupBy(_._1.name)      // Map[workerName, Seq[(worker, cortexId)]]
+      .groupBy(r => r._1.name) // Map[workerName, Seq[(worker, cortexId)]]
       .values                  // Seq[Seq[(worker, cortexId)]]
       .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-      .filter(w => w._1.maxTlp.getOrElse(3L) >= tlp && w._1.maxPap.getOrElse(3L) >= pap) // TODO double check those default maxTlp and maxPap
+      .filter(w => w._1.maxTlp >= tlp && w._1.maxPap >= pap)
       .toMap
 
 }

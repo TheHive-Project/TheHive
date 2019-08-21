@@ -45,8 +45,8 @@ class CortexClientTest extends PlaySpecification with Mockito {
           version = "1",
           description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
           dataTypeList = Seq("test"),
-          maxTlp = Some(3),
-          maxPap = Some(3)
+          maxTlp = 3,
+          maxPap = 3
         )
       )
 
@@ -151,8 +151,8 @@ class CortexClientTest extends PlaySpecification with Mockito {
           version = "1",
           description = "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
           dataTypeList = Seq("test", "case_task"),
-          maxPap = Some(3),
-          maxTlp = Some(2)
+          maxPap = 3,
+          maxTlp = 2
 //          cortexIds = List("test")
         )
       )
@@ -166,8 +166,8 @@ class CortexClientTest extends PlaySpecification with Mockito {
           version = "2",
           description = "nos hoc tempore in provinciis decernendis perpetuae pacis",
           dataTypeList = Seq("test", "dummy"),
-          maxPap = Some(3), // FIXME
-          maxTlp = Some(2)  // FIXME
+          maxPap = 3,
+          maxTlp = 2
 //          cortexIds = List("test", "test2")
         )
       )
