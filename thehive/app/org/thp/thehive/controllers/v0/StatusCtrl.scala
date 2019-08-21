@@ -5,15 +5,15 @@ import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
+
 import scala.collection.immutable
 import scala.util.Success
-
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 @Singleton
 class StatusCtrl @Inject()(
@@ -26,7 +26,6 @@ class StatusCtrl @Inject()(
 ) {
 
   val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
-  def password: String                   = passwordConfig.get
 
   def get: Action[AnyContent] =
     entryPoint("status") { _ =>
@@ -54,19 +53,23 @@ class StatusCtrl @Inject()(
       )
     }
 
+  def password: String = passwordConfig.get
+
   private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
-  def health: Action[AnyContent] = entryPoint("health") { _ =>
-    val dbStatus = db
-      .roTransaction(graph => userSrv.getOrFail("admin")(graph))
-      .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
-    val connectorStatus = connectors.map(c => c.health)
-    val distinctStatus  = connectorStatus + dbStatus
-    val globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
-      if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-    } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-    else HealthStatus.Warning
+  def health: Action[AnyContent] =
+    entryPoint("health")
+      .auth { implicit req =>
+        val dbStatus = db
+          .roTransaction(graph => userSrv.getOrFail("admin")(graph))
+          .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
+        val connectorStatus = connectors.map(c => c.health)
+        val distinctStatus  = connectorStatus + dbStatus
+        val globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
 
-    Success(Results.Ok(globalStatus.toString))
-  }
+        Success(Results.Ok(globalStatus.toString))
+      }
 }
