@@ -3,7 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import scala.util.Try
 
 import play.api.test.{NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -17,10 +16,9 @@ import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
 class AnalyzerSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
-  val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexConfig, TestCortexConfigProvider]

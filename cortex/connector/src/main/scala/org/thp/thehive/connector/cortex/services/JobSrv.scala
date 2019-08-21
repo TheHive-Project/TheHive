@@ -3,6 +3,12 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -22,11 +28,6 @@ import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObserv
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject()(
@@ -170,7 +171,7 @@ class JobSrv @Inject()(
                 db.tryTransaction { implicit graph =>
                   observableSrv
                     .create(artifact, dataType, artifact.data.get, artifact.tags, Nil)
-                    .map { richObservable =>
+                    .flatMap { richObservable =>
                       reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
                     }
                 }

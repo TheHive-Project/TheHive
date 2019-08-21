@@ -54,7 +54,7 @@ class MispConfigProvider @Inject()(configuration: Configuration, globalWS: Custo
       .get[String]("url")
       .replaceFirst("/*$", "")
 
-    val auth = configuration.get[Authentication](".")
+    val auth = configuration.get[Authentication]("")
     val ws   = globalWS.withConfig(configuration)
 
     val artifactTags          = configuration.getOptional[Seq[String]]("tags").getOrElse(defaultArtifactTags)

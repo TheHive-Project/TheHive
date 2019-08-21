@@ -4,7 +4,6 @@ import scala.util.{Success, Try}
 
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -30,10 +29,9 @@ class DummyAuthSrv extends AuthSrv {
 }
 
 class UserCtrlTest extends PlaySpecification with Mockito {
-  val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))

@@ -3,7 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import scala.util.Try
 
 import play.api.test.{NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
@@ -18,10 +17,9 @@ import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
 
 class EntityHelperTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

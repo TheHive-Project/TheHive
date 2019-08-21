@@ -6,7 +6,6 @@ import scala.util.Try
 
 import play.api.libs.json.{JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -56,20 +55,8 @@ object TestCase {
 class CaseCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
-  val config: Configuration      = Configuration.load(Environment.simple()) /*++
-    Configuration(ConfigFactory.parseString("""
-                                           |db {
-                                           |  provider: janusgraph
-                                           |  janusgraph {
-                                           |    storage.backend: berkeleyje
-                                           |    storage.directory: /tmp/thehive-test.db
-                                           |  }
-                                           |}
-                                         """.stripMargin))*/
 
-//  sequential
-
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

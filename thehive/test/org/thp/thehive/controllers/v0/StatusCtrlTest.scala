@@ -39,7 +39,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
     override def health(implicit authContext: AuthContext): HealthStatus.Value = HealthStatus.Warning
   }
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .multiBindInstance[Connector](fakeCortexConnector)
 
