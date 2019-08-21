@@ -31,16 +31,15 @@ class ResponderSrv @Inject()(
     *
     * @param entityType the entity
     * @param entityId its id
-    * @param graph necessary graph db
     * @param authContext the auth context for visibility check
     * @return
     */
   def getRespondersByType(
       entityType: String,
       entityId: String
-  )(implicit graph: Graph, authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  )(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     for {
-      entity        <- Future.fromTry(entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction))
+      entity        <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction)))
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <- Future
         .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation)))(
