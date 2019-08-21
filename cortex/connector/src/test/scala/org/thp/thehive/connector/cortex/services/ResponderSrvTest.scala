@@ -45,9 +45,7 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
         }
 
         t must beSome.which { task =>
-          val r = await(db.roTransaction { implicit graph =>
-            responderSrv.getRespondersByType("case_task", task._id)
-          })
+          val r = await(responderSrv.getRespondersByType("case_task", task._id))
 
           r.find(_._1.name == "respTest1") must beSome
         }

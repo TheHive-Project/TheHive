@@ -171,7 +171,7 @@ class JobSrv @Inject()(
                 db.tryTransaction { implicit graph =>
                   observableSrv
                     .create(artifact, dataType, artifact.data.get, artifact.tags, Nil)
-                    .map { richObservable =>
+                    .flatMap { richObservable =>
                       reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
                     }
                 }

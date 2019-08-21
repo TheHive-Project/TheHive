@@ -2,14 +2,13 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 import scala.io.Source
 import scala.util.Try
 
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
-import play.api.{Configuration, Environment}
 
 import akka.actor.Terminated
 import gremlin.scala.{Key, P}
@@ -27,10 +26,9 @@ import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
 class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
-  val dummyUserSrv          = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration = Configuration.load(Environment.simple())
+  val dummyUserSrv = DummyUserSrv(permissions = Permissions.all)
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
@@ -82,27 +80,23 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           Json.parse(data).as[List[CortexOutputJob]].find(_.id == "ZWu85Q1OCVNx03hXK4df")
         }
 
-        (for {
-          cortexOutputJob <- Future(cortexOutputJobOpt.get)
-          createdJob <- Future.fromTry(db.tryTransaction { implicit graph =>
-            jobSrv.create(job, observable)
-          })
-          // FIXME mixing db transaction tries and futures does not seem to work when running full test suite
-          // org.janusgraph.diskstorage.locking.PermanentLockingException: Local lock contention on importCortexArtifacts
-          // i.e. cortex-jobs.json report.artifacts length > 1 succeeds testOnly but fails test with one attachmentType and one dataType
-          updatedJob <- jobSrv
-            .finished(createdJob._id, cortexOutputJob, cortexConfig.clients.values.head)
-        } yield {
-          updatedJob.status shouldEqual JobStatus.Success
-          updatedJob.report must beSome
-          updatedJob.report.get \ "artifacts" must beEmpty
-          (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
+        val cortexOutputJob = cortexOutputJobOpt.get
+        val createdJob = db.tryTransaction { implicit graph =>
+          jobSrv.create(job, observable)
+        }
+        val updatedJob = Await.result(
+          jobSrv.finished(createdJob.get._id, cortexOutputJob, cortexConfig.clients.values.head),
+          20.seconds
+        )
+        updatedJob.status shouldEqual JobStatus.Success
+        updatedJob.report must beSome
+        updatedJob.report.get \ "artifacts" must beEmpty
+        (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
-          db.roTransaction { implicit graph =>
-            jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
-            jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(1)
-          }
-        }).await(0, 5.seconds)
+        db.roTransaction { implicit graph =>
+          jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
+          jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
+        }
       }
 
       "submit a job" in {
