@@ -6,13 +6,13 @@ import java.util.UUID
 
 import scala.util.Try
 
+import play.api.Configuration
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
@@ -44,10 +44,9 @@ object TestObservable {
 
 class ObservableCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
-  val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

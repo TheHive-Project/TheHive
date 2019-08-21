@@ -4,7 +4,6 @@ import scala.util.Try
 
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-import play.api.{Configuration, Environment}
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -17,10 +16,9 @@ import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
 
 class OrganisationCtrlTest extends PlaySpecification with Mockito {
-  val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }

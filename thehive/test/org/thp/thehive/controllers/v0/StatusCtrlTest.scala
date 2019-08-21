@@ -25,7 +25,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
   authSrv.capabilities returns Set(AuthCapability.changePassword)
   authSrv.name returns "authSrvName"
 
-  val fakeCortexConnector = new Connector {
+  val fakeCortexConnector: Connector = new Connector {
     override val name: String = "cortex"
     override def status: JsObject =
       Json.obj(
@@ -41,7 +41,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
       )
   }
 
-  Fragments.foreach(new DatabaseProviders(config).list) { dbProvider =>
+  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .`override`(
         _.multiBindInstance[Connector](fakeCortexConnector)
