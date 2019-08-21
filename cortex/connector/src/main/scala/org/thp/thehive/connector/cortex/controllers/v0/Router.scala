@@ -20,8 +20,9 @@ class Router @Inject()(
     case POST(p"/job/_stats")       => cortexQueryExecutor.job.stats
     case POST(p"/job")              => jobCtrl.create
 
-    case GET(p"/analyzer/$analyzerId<[^/]*>") => analyzerCtrl.getById(analyzerId)
-    case GET(p"/analyzer")                    => analyzerCtrl.list
+    case GET(p"/analyzer/$analyzerId<[^/]*>")    => analyzerCtrl.getById(analyzerId)
+    case GET(p"/analyzer")                       => analyzerCtrl.list
+    case GET(p"/analyzer/type/$dataType<[^/]*>") => analyzerCtrl.listByType(dataType)
 
     case POST(p"/action")                                    => actionCtrl.create
     case POST(p"/action/_search")                            => cortexQueryExecutor.action.search

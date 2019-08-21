@@ -30,6 +30,16 @@ class AnalyzerCtrl @Inject()(
           }
       }
 
+  def listByType(dataType: String): Action[AnyContent] =
+    entryPoint("list analyzer by dataType")
+      .asyncAuth { implicit req =>
+        analyzerSrv
+          .listAnalyzerByType(dataType)
+          .map { analyzers =>
+            Results.Ok(Json.toJson(analyzers.map(toOutputWorker)))
+          }
+      }
+
   def getById(id: String): Action[AnyContent] =
     entryPoint("get analyzer by id")
       .asyncAuth { implicit req =>

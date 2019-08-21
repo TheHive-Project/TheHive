@@ -33,14 +33,29 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHe
               Success(Nil)
           }
       }
-      .map { listOfListOfAnalyzers =>
-        listOfListOfAnalyzers // Iterable[Seq[(worker, cortexId)]]
-        .flatten              // Seq[(worker, cortexId)]
-          .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
-          .values             // Seq[Seq[(worker, cortexId)]]
-          .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-          .toMap
+      .map(flattenList)
+
+  def listAnalyzerByType(dataType: String)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+    Future
+      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
+        client
+          .listAnalyzersByType(dataType)
+          .transform {
+            case Success(analyzers) => Success(analyzers.map(_ -> client.name))
+            case Failure(error) =>
+              logger.error(s"List Cortex analyzers by dataType fails on ${client.name}", error)
+              Success(Nil)
+          }
       }
+      .map(flattenList)
+
+  private def flattenList(l: Iterable[Seq[(OutputCortexWorker, String)]]) =
+    l                     // Iterable[Seq[(worker, cortexId)]]
+    .flatten              // Seq[(worker, cortexId)]
+      .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
+      .values             // Seq[Seq[(worker, cortexId)]]
+      .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
+      .toMap
 
   def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(OutputCortexWorker, Seq[String])] =
     Future

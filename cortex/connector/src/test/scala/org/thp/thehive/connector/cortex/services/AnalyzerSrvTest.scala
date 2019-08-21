@@ -76,5 +76,31 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
 
         r shouldEqual ((outputWorker, Seq("test")))
       }
+
+      "get a list of Cortex workers by dataType" in {
+        val r = await(analyzerSrv.listAnalyzerByType("test")(dummyUserSrv.authContext))
+        val outputWorker2 =
+          OutputCortexWorker(
+            "anaTest2",
+            "anaTest2",
+            "2",
+            "nos hoc tempore in provinciis decernendis perpetuae pacis",
+            Seq("test", "dummy"),
+            Some(2),
+            Some(2)
+          )
+        val outputWorker1 =
+          OutputCortexWorker(
+            "anaTest1",
+            "anaTest1",
+            "1",
+            "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
+            Seq("test"),
+            Some(3),
+            Some(3)
+          )
+
+        r shouldEqual Map(outputWorker2 -> Seq("test"), outputWorker1 -> Seq("test"))
+      }
     }
 }
