@@ -58,7 +58,7 @@ lazy val scalligraph = (project in file("ScalliGraph"))
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore, thehiveCortex, thehiveMisp)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex, thehiveMisp)
+  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex, thehiveMisp, cortexClient, mispClient)
   .settings(commonSettings)
   .settings(
     name := "thehive",
