@@ -171,6 +171,10 @@ class CortexClientTest extends PlaySpecification with Mockito {
 //          cortexIds = List("test", "test2")
         )
       )
+
+      val analyzersByType = await(client.listAnalyzersByType("test"))
+
+      analyzersByType.length shouldEqual 2
     }
   }
 //  }

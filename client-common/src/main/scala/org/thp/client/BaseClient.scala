@@ -54,9 +54,9 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
       }
   }
 
-  def list(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
+  def list(urlFragments: String = "")(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
     logger.debug(s"Request GET $baseUrl")
-    auth(ws.url(baseUrl))
+    auth(ws.url(s"$baseUrl$urlFragments"))
       .get
       .transform {
         case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[Output]])

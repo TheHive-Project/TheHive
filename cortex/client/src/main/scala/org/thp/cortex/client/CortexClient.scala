@@ -30,7 +30,7 @@ class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganis
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputCortexWorker]] = analyser.list
+  def listAnalyser: Future[Seq[OutputCortexWorker]] = analyser.list()
 
   /**
     * GET analyzer by id
@@ -39,6 +39,14 @@ class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganis
     * @return
     */
   def getAnalyzer(id: String): Future[OutputCortexWorker] = analyser.get(id)
+
+  /**
+    * GET analyzer by dataType
+    *
+    * @param dataType guess
+    * @return
+    */
+  def listAnalyzersByType(dataType: String): Future[Seq[OutputCortexWorker]] = analyser.list(s"/type/$dataType")
 
   /**
     * Search an analyzer by name
