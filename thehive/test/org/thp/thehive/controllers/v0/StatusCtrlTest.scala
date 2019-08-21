@@ -3,7 +3,6 @@ package org.thp.thehive.controllers.v0
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
 import org.thp.thehive.models.{DatabaseBuilder, HealthStatus, Permissions}
@@ -36,7 +35,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
         )
       )
 
-    override def health(implicit authContext: AuthContext): HealthStatus.Value = HealthStatus.Warning
+    override def health: HealthStatus.Value = HealthStatus.Warning
   }
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>

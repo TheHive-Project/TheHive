@@ -163,9 +163,9 @@ class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganis
         case Failure(t)                          => throw t
       }
 
-  def getHealth: Future[(String, String)] = getVersion.transform {
-    case _: Success[_] => Success((name, "Ok"))
-    case _             => Success((name, "Error"))
+  def getHealth: Future[String] = getVersion.transform {
+    case _: Success[_] => Success("Ok")
+    case _             => Success("Error")
   }
 
   /**

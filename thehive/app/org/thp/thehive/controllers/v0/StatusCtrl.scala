@@ -58,18 +58,17 @@ class StatusCtrl @Inject()(
   private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def health: Action[AnyContent] =
-    entryPoint("health")
-      .auth { implicit req =>
-        val dbStatus = db
-          .roTransaction(graph => userSrv.getOrFail("admin")(graph))
-          .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
-        val connectorStatus = connectors.map(c => c.health)
-        val distinctStatus  = connectorStatus + dbStatus
-        val globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
-          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-        } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-        else HealthStatus.Warning
+    entryPoint("health") { _ =>
+      val dbStatus = db
+        .roTransaction(graph => userSrv.getOrFail("admin")(graph))
+        .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
+      val connectorStatus = connectors.map(c => c.health)
+      val distinctStatus  = connectorStatus + dbStatus
+      val globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
+        if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+      } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+      else HealthStatus.Warning
 
-        Success(Results.Ok(globalStatus.toString))
-      }
+      Success(Results.Ok(globalStatus.toString))
+    }
 }
