@@ -47,6 +47,7 @@ class CortexQueryExecutor @Inject()(
       reportCtrl.pageQuery ::
       reportCtrl.outputQuery ::
       Nil
+  override lazy val filterQuery    = new CortexParentFilterQuery(publicProperties)
   override val version: (Int, Int) = 0 -> 0
   val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
   val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
