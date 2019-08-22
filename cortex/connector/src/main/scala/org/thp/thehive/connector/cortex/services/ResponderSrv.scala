@@ -7,6 +7,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.{Organisation, Permissions}
 import play.api.Logger
+import play.api.libs.json.JsObject
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -52,11 +53,26 @@ class ResponderSrv @Inject()(
                   Success(Nil)
               }
         )
-    } yield responders.flatten // Seq[(worker, cortexId)]
-      .groupBy(r => r._1.name) // Map[workerName, Seq[(worker, cortexId)]]
-      .values                  // Seq[Seq[(worker, cortexId)]]
-      .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-      .filter(w => w._1.maxTlp >= tlp && w._1.maxPap >= pap)
-      .toMap
+    } yield serviceHelper.flattenList(responders, w => w._1.maxTlp >= tlp && w._1.maxPap >= pap)
 
+  /**
+    * Search responders, not used as of 08/19
+    * @param query the raw query from frontend
+    * @param authContext auth context for organisation filter
+    * @return
+    */
+  def searchResponders(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+    Future
+      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation)))(
+        client =>
+          client
+            .searchResponders(query)
+            .transform {
+              case Success(analyzers) => Success(analyzers.map(_ -> client.name))
+              case Failure(error) =>
+                logger.error(s"List Cortex analyzers fails on ${client.name}", error)
+                Success(Nil)
+            }
+      )
+      .map(serviceHelper.flattenList(_, _ => true))
 }

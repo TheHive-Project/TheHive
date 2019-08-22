@@ -1,10 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.services.ResponderSrv
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
@@ -25,6 +25,18 @@ class ResponderCtrl @Inject()(
         db.roTransaction { implicit graph =>
           responderSrv
             .getRespondersByType(entityType, entityId)
+            .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))
+        }
+      }
+
+  def searchResponders: Action[AnyContent] =
+    entryPoint("search responders")
+      .extract("query", FieldsParser.jsObject)
+      .asyncAuth { implicit req =>
+        val query: JsObject = req.body("query")
+        db.roTransaction { implicit graph =>
+          responderSrv
+            .searchResponders(query)
             .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))
         }
       }

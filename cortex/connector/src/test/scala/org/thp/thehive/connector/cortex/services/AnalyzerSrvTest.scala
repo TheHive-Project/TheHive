@@ -44,8 +44,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "2",
             "nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test", "dummy"),
-            Some(2),
-            Some(2)
+            2,
+            2
           )
         val outputWorker1 =
           OutputCortexWorker(
@@ -54,8 +54,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "1",
             "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test"),
-            Some(3),
-            Some(3)
+            3,
+            3
           )
 
         r shouldEqual Map(outputWorker2 -> Seq("test"), outputWorker1 -> Seq("test"))
@@ -70,8 +70,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "2",
             "nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test", "dummy"),
-            Some(2),
-            Some(2)
+            2,
+            2
           )
 
         r shouldEqual ((outputWorker, Seq("test")))
@@ -86,8 +86,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "2",
             "nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test", "dummy"),
-            Some(2),
-            Some(2)
+            2,
+            2
           )
         val outputWorker1 =
           OutputCortexWorker(
@@ -96,8 +96,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             "1",
             "Ego vero sic intellego, Patres conscripti, nos hoc tempore in provinciis decernendis perpetuae pacis",
             Seq("test"),
-            Some(3),
-            Some(3)
+            3,
+            3
           )
 
         r shouldEqual Map(outputWorker2 -> Seq("test"), outputWorker1 -> Seq("test"))

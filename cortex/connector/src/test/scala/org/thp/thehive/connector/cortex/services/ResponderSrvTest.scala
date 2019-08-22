@@ -1,10 +1,9 @@
 package org.thp.thehive.connector.cortex.services
 
 import scala.util.Try
-
 import play.api.test.{NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
+import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
@@ -14,6 +13,7 @@ import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.Json
 
 class ResponderSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
@@ -41,14 +41,21 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
 
       "fetch responders by type" in {
         val t = db.roTransaction { graph =>
-          taskSrv.initSteps(graph).toList.headOption
+          taskSrv.initSteps(graph).has(Key("title"), P.eq("case 1 task 1")).getOrFail()
         }
 
-        t must beSome.which { task =>
+        t must successfulTry.which { task =>
           val r = await(responderSrv.getRespondersByType("case_task", task._id))
 
           r.find(_._1.name == "respTest1") must beSome
         }
+      }
+
+      "search responders" in {
+        val r = await(responderSrv.searchResponders(Json.obj("query" -> Json.obj())))
+
+        r.size must be greaterThan(0)
+        r.head._2 shouldEqual Seq("test")
       }
     }
 }

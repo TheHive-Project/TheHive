@@ -39,5 +39,6 @@ class Router @Inject()(
     case PATCH(p"/report/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId)
 
     case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") => responderCtrl.getResponders(entityType, entityId)
+    case POST(p"/responder/_search")                            => responderCtrl.searchResponders
   }
 }

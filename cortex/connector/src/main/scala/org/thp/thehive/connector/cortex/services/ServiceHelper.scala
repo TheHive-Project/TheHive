@@ -3,6 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexConfig}
+import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -69,4 +70,22 @@ class ServiceHelper @Inject()(
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
     else includedOrgs.has(Key[String]("name"), P.without(excludedTheHiveOrganisations))
   }
+
+  /**
+    * After querying several Cortex clients,
+    * it is necessary to group worker results
+    * @param l the list of workers list by client
+    * @return
+    */
+  def flattenList(
+      l: Iterable[Seq[(OutputCortexWorker, String)]],
+      f: ((OutputCortexWorker, Seq[String])) => Boolean
+  ): Map[OutputCortexWorker, Seq[String]] =
+    l                     // Iterable[Seq[(worker, cortexId)]]
+    .flatten              // Seq[(worker, cortexId)]
+      .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
+      .values             // Seq[Seq[(worker, cortexId)]]
+      .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
+      .filter(w => f(w))
+      .toMap
 }
