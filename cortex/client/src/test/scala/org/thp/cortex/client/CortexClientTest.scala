@@ -175,6 +175,10 @@ class CortexClientTest extends PlaySpecification with Mockito {
       val analyzersByType = await(client.listAnalyzersByType("test"))
 
       analyzersByType.length shouldEqual 2
+
+      val responders = await(client.searchResponders(Json.obj("query" -> Json.obj())))
+
+      responders.length must beGreaterThan(0)
     }
   }
 //  }

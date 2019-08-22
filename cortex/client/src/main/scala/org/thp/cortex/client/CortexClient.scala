@@ -6,7 +6,7 @@ import org.thp.client.{ApplicationError, Authentication, BaseClient}
 import org.thp.cortex.dto.v0.{Attachment, _}
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
@@ -139,6 +139,15 @@ class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganis
   def getRespondersByType(entityType: String): Future[Seq[OutputCortexWorker]] =
     responder
       .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "0-200"))
+
+  /**
+    * Search responders according to a formatted query
+    * @param query the query that should look like {query: {...}}
+    * @return
+    */
+  def searchResponders(query: JsObject): Future[Seq[OutputCortexWorker]] =
+    responder
+      .search[SearchQuery](SearchQuery("", "", "all", Some(query)))
 
   /**
     * Materializes an action as a job on Cortex client server
