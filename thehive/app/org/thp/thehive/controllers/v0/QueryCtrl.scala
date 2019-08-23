@@ -84,7 +84,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
   val statsParser: FieldsParser[Seq[Query]] = FieldsParser[Seq[Query]]("stats") {
     case (_, field) =>
       for {
-        maybeInputFilter <- inputFilterParser.optional(field.get("filter"))
+        maybeInputFilter <- inputFilterParser.optional(field.get("query"))
         filteredQuery = maybeInputFilter
           .map(inputFilter => filterQuery.toQuery(inputFilter))
           .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
