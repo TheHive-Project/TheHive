@@ -23,7 +23,7 @@ class TaskCtrl @Inject()(
   import TaskConversion._
 
   lazy val logger                                           = Logger(getClass)
-  override val entityName: String                           = "log"
+  override val entityName: String                           = "task"
   override val publicProperties: List[PublicProperty[_, _]] = taskProperties(taskSrv, userSrv) ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
