@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList, Set => JSet}
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
@@ -11,10 +16,6 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, FPathElem, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNull, JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -523,9 +524,4 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .inTo[ShareCase]
         .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
     )
-
-  def remove(): Unit = {
-    newInstance(raw.drop().iterate())
-    ()
-  }
 }

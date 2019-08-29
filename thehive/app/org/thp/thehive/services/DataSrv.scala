@@ -1,14 +1,16 @@
 package org.thp.thehive.services
 
+import java.lang.{Long => JLong}
+
+import scala.util.{Success, Try}
+
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services.{VertexSrv, _}
 import org.thp.thehive.models._
-
-import scala.util.{Success, Try}
 
 @Singleton
 class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
@@ -22,11 +24,6 @@ class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSte
 }
 
 class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Data, DataSteps](raw) {
-
-  def remove(): Unit = {
-    raw.drop().iterate()
-    ()
-  }
 
   def observables = new ObservableSteps(raw.inTo[ObservableData])
 
@@ -44,4 +41,6 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   override def newInstance(raw: GremlinScala[Vertex]): DataSteps = new DataSteps(raw)
 
   def getByData(data: String): DataSteps = newInstance(raw.has(Key("data") of data))
+
+  def useCount: ScalarSteps[JLong] = ScalarSteps(raw.inTo[ObservableData].count())
 }

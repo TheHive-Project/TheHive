@@ -104,9 +104,4 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     raw.outToE[TaskUser].drop().iterate()
     ()
   }
-
-  def remove(): Unit = {
-    raw.drop().iterate()
-    ()
-  }
 }

@@ -2,6 +2,9 @@ package org.thp.thehive.services
 
 import java.util.{Set => JSet}
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
@@ -11,9 +14,6 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject()(
@@ -128,7 +128,7 @@ class ObservableSrv @Inject()(
 
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph): Try[Unit] =
     for {
-      _ <- Try(get(observable).data.remove())
+      _ <- Try(get(observable).data.where(_.useCount.filter(_.is(P.eq(0L)))).remove())
       _ <- Try(get(observable).attachments.remove())
       _ <- Try(get(observable).keyValues.remove())
       r <- Try(get(observable).remove())
@@ -136,6 +136,24 @@ class ObservableSrv @Inject()(
 }
 
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
+
+  def filterOnType(`type`: String): ObservableSteps =
+    filter(_.outTo[ObservableObservableType].has(Key("name") of `type`))
+
+  def filterOnData(data: String): ObservableSteps =
+    filter(_.outTo[ObservableData].has(Key("data") of data))
+
+  def filterOnAttachmentName(name: String): ObservableSteps =
+    filter(_.outTo[ObservableAttachment].has(Key("name") of name))
+
+  def filterOnAttachmentSize(size: Long): ObservableSteps =
+    filter(_.outTo[ObservableAttachment].has(Key("size") of size))
+
+  def filterOnAttachmentContentType(contentType: String): ObservableSteps =
+    filter(_.outTo[ObservableAttachment].has(Key("contentType") of contentType))
+
+  def filterOnAttachmentHash(hash: String): ObservableSteps =
+    filter(_.outTo[ObservableAttachment].has(Key("hashes") of hash))
 
   def visible(implicit authContext: AuthContext): ObservableSteps = newInstance(
     raw.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
@@ -233,11 +251,6 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   }
 
   override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
-
-  def remove(): Unit = {
-    raw.drop().iterate()
-    ()
-  }
 
   def data        = new DataSteps(raw.outTo[ObservableData])
   def attachments = new AttachmentSteps(raw.outTo[ObservableAttachment])
