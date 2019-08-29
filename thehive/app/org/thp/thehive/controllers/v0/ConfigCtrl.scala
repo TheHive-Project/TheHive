@@ -24,7 +24,7 @@ class ConfigCtrl @Inject()(
     db: Database
 ) {
 
-  implicit val configWrites: Writes[ConfigItem[_]] = Writes[ConfigItem[_]](
+  implicit val configWrites: Writes[ConfigItem[_, _]] = Writes[ConfigItem[_, _]](
     item =>
       Json.obj(
         "path"         -> item.path,

@@ -1,23 +1,24 @@
 package org.thp.thehive.controllers.v1
 
+import scala.util.Success
+
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.thehive.TheHiveModule
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-import scala.util.Success
-
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.thehive.TheHiveModule
 
 @Singleton
 class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
-  val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
-  def password: String                   = passwordConfig.get
+  val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
+  def password: String                           = passwordConfig.get
 
   def get: Action[AnyContent] =
     entryPoint("status") { _ =>

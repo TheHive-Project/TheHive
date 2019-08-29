@@ -4,10 +4,12 @@ import play.api.Configuration
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 
+import org.thp.scalligraph.services.config.ApplicationConfig.configurationFormat
+
 case class NotificationConfig(triggerConfig: Configuration, notifierConfig: Configuration, roleRestriction: Set[String])
 
 object NotificationConfig {
-  import org.thp.scalligraph.services.config.ConfigItemType._
+
   implicit val reads: Reads[NotificationConfig] =
     ((JsPath \ "trigger").read[Configuration] and
       (JsPath \ "notifier").read[Configuration] and

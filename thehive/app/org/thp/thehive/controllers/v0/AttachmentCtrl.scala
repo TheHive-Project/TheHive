@@ -2,6 +2,11 @@ package org.thp.thehive.controllers.v0
 
 import java.nio.file.Files
 
+import scala.util.{Success, Try}
+
+import play.api.http.HttpEntity
+import play.api.mvc._
+
 import akka.stream.scaladsl.{FileIO, StreamConverters}
 import javax.inject.{Inject, Singleton}
 import net.lingala.zip4j.ZipFile
@@ -9,18 +14,14 @@ import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.services.StorageSrv
-import play.api.http.HttpEntity
-import play.api.mvc._
-import scala.util.{Success, Try}
-
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 @Singleton
 class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfig, storageSrv: StorageSrv) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
-  val passwordConfig: ConfigItem[String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
-  def password: String                   = passwordConfig.get
+  val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
+  def password: String                           = passwordConfig.get
 
   def download(id: String, name: Option[String]): Action[AnyContent] =
     entryPoint("download attachment")

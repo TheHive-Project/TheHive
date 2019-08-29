@@ -1,18 +1,20 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.VertexSrv
-import org.thp.thehive.models.Tag
-import scala.util.Try
-
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.thehive.models.Tag
 
 @Singleton
 class TagSrv @Inject()(appConfig: ApplicationConfig)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
-  val autoCreateConfig: ConfigItem[Boolean]                                      = appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
+
+  val autoCreateConfig: ConfigItem[Boolean, Boolean] =
+    appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
   def autoCreate: Boolean                                                        = autoCreateConfig.get
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TagSteps = new TagSteps(raw)
 

@@ -20,6 +20,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 
 sealed trait StreamMessage extends Serializable
 
@@ -145,19 +146,19 @@ class StreamSrv @Inject()(
   val streamLength                             = 20
   val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
 
-  val refreshConfig: ConfigItem[FiniteDuration] =
+  val refreshConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("stream.longPolling.refresh", "Response time when there is no message")
   def refresh: FiniteDuration = refreshConfig.get
 
-  val maxWaitConfig: ConfigItem[FiniteDuration] =
+  val maxWaitConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("stream.longPolling.maxWait", "Maximum latency when a message is ready to send")
   def maxWait: FiniteDuration = maxWaitConfig.get
 
-  val graceDurationConfig: ConfigItem[FiniteDuration] = appConfig
+  val graceDurationConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig
     .item[FiniteDuration]("stream.longPolling.graceDuration", "When a message is ready to send, wait this time to include potential other messages")
   def graceDuration: FiniteDuration = graceDurationConfig.get
 
-  val keepAliveConfig: ConfigItem[FiniteDuration] =
+  val keepAliveConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("stream.longPolling.keepAlive", "Remove the stream after this time of inactivity")
   val keepAlive: FiniteDuration = keepAliveConfig.get
 
