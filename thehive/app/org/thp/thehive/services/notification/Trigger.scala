@@ -12,9 +12,9 @@ import org.thp.thehive.models.{Audit, Organisation, User}
 trait Trigger {
   val name: String
 
-  def preFilter(audit: Audit with Entity, context: Entity, organisation: Organisation with Entity): Boolean
+  def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean
 
-  def filter(audit: Audit with Entity, context: Entity, organisation: Organisation with Entity, user: User with Entity)(
+  def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
   ): Boolean = !user.locked
 

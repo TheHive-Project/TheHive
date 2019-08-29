@@ -18,10 +18,10 @@ class LogInMyTaskProvider @Inject()(logSrv: LogSrv) extends TriggerProvider {
 class LogInMyTask(logSrv: LogSrv) extends Trigger {
   override val name: String = "LogInMyTask"
 
-  override def preFilter(audit: Audit with Entity, context: Entity, organisation: Organisation with Entity): Boolean =
+  override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =
     audit.action == Audit.create && audit.objectType.contains("Log")
 
-  override def filter(audit: Audit with Entity, context: Entity, organisation: Organisation with Entity, user: User with Entity)(
+  override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
   ): Boolean =
     super.filter(audit, context, organisation, user) &&

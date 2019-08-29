@@ -25,7 +25,7 @@ class AppendToFileProvider @Inject() extends NotifierProvider {
 class AppendToFile(filename: String, charset: Charset) extends Notifier {
   override val name: String = "AppendToFile"
 
-  override def execute(audit: Audit with Entity, context: Entity, organisation: Organisation with Entity, user: User with Entity)(
+  override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
   ): Try[Unit] = {
     val message =
@@ -33,7 +33,7 @@ class AppendToFile(filename: String, charset: Charset) extends Notifier {
          |Audit (${audit.requestId}):
          |  ${audit.action} ${audit.objectType} ${audit.objectId}
          |  by ${audit._createdBy} at ${audit._createdAt}
-         |Context ${context._model.label} ${context._id} (${organisation.name})
+         |Context ${context.map(_._model.label)} ${context.map(_._id)} (${organisation.name})
          |For user ${user.login}
          |----------------
          |""".stripMargin

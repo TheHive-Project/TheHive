@@ -1,5 +1,11 @@
 package org.thp.thehive.services
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.JsObject
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -11,10 +17,6 @@ import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
-import play.api.Logger
-import play.api.libs.json.JsObject
-
-import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -86,8 +88,8 @@ class AuditSrv @Inject()(
         user         <- userSrv.current.getOrFail()
         createdAudit <- create(audit)
         _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
-        _            <- context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip
         _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
+        _ = context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip // this could fail on delete (context doesn't exist)
       } yield transactionAuditIdsLock.synchronized {
         transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
       }
@@ -179,16 +181,17 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         //          BranchOtherwise(_)
       )
 
-  def auditContextOrganisation: ScalarSteps[(Audit with Entity, Entity, Organisation with Entity)] =
+  def auditContextOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Organisation with Entity])] =
     ScalarSteps(
       raw
         .project(
           _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[AuditContext]))
-            .and(By(getOrganisation(__[Vertex])))
+            .and(By(__[Vertex].outTo[AuditContext].fold()))
+            .and(By(getOrganisation(__[Vertex]).fold()))
         )
         .map {
-          case (audit, context, organisation) => (audit.as[Audit], context.asEntity, organisation.as[Organisation])
+          case (audit, context, organisation) =>
+            (audit.as[Audit], context.asScala.headOption.map(_.asEntity), organisation.asScala.headOption.map(_.as[Organisation]))
         }
     )
 

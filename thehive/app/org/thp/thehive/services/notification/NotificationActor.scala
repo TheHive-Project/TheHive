@@ -106,7 +106,7 @@ class NotificationActor @Inject()(
       user: User with Entity,
       notificationConfig: Seq[NotificationConfig],
       audit: Audit with Entity,
-      context: Entity,
+      context: Option[Entity],
       organisation: Organisation with Entity
   )(
       implicit graph: Graph
@@ -143,7 +143,7 @@ class NotificationActor @Inject()(
           .auditContextOrganisation
           .toIterator
           .foreach {
-            case (audit, context, organisation) =>
+            case (audit, context, Some(organisation)) =>
               logger.debug(s"Notification is related to $audit, $context, $organisation")
               triggerMap
                 .getOrElse(organisation._id, Map.empty)
@@ -190,12 +190,13 @@ class NotificationActor @Inject()(
                     }
                   case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
                 }
+            case _ =>
           }
       }
     case NotificationExecution(userId, auditId, notificationConfig) =>
       db.roTransaction { implicit graph =>
         auditSrv.getByIds(auditId).auditContextOrganisation.getOrFail().foreach {
-          case (audit, context, organisation) =>
+          case (audit, context, Some(organisation)) =>
             for {
               user    <- userSrv.getOrFail(userId)
               trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
@@ -203,6 +204,7 @@ class NotificationActor @Inject()(
               notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
               _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
             } yield notifier.execute(audit, context, organisation, user)
+          case _ => // TODO
         }
       }
   }
