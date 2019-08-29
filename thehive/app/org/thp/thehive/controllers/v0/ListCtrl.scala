@@ -1,14 +1,15 @@
 package org.thp.thehive.controllers.v0
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.Hasher
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Failure, Success}
 
 @Singleton
 class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
@@ -45,23 +46,23 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
       }
 
   // TODO implement those as admin custom fields management seems to use them
-  def addItem(listName: String): Action[AnyContent] = entryPoint("add item to list")
-    .extract("value", FieldsParser.jsObject.on("value"))
-    .authRoTransaction(db) { request => implicit graph =>
-      val value: JsObject = request.body("value")
-      listName match {
-        case "custom_fields" =>
-          {
+  def addItem(listName: String): Action[AnyContent] =
+    entryPoint("add item to list")
+      .extract("value", FieldsParser.jsObject.on("value"))
+      .auth { request =>
+        val value: JsObject = request.body("value")
+        listName match {
+          case "custom_fields" => {
             for {
               inputCustomField <- value.validate[InputCustomField]
             } yield inputCustomField
-          } fold(
+          } fold (
             errors => Failure(new Exception(errors.mkString)),
             res => Success(Results.Ok(Json.toJson(res)))
           )
-        case _ => Success(Results.Locked(""))
+          case _ => Success(Results.Locked(""))
+        }
       }
-  }
 
   def deleteItem(itemId: String): Action[AnyContent] = entryPoint("delete list item") { _ =>
     Success(Results.Locked(""))

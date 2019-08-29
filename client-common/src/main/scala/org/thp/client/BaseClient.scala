@@ -1,17 +1,17 @@
 package org.thp.client
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
+
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSResponse}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
 case class ApplicationError(status: Int, body: JsValue) extends Exception(s"ApplicationError($status):\n${Json.prettyPrint(body)}")
 
 object ApplicationError {
-  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.body[JsValue]).getOrElse(Json.obj("body" -> r.body)))
+  def apply(r: WSResponse): ApplicationError = ApplicationError(r.status, Try(r.json).getOrElse(Json.obj("body" -> r.body)))
 }
 
 class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSClient) {
