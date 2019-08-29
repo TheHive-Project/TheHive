@@ -9,13 +9,27 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.ssl.{KeyStoreConfig, SSLConfigFactory, SSLConfigSettings, SSLDebugConfig, SSLLooseConfig, TrustStoreConfig}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 
-case class ProxyWSConfig(wsConfig: AhcWSClientConfig, proxyConfig: Option[WSProxyServer])
+case class ProxyWSConfig(wsConfig: AhcWSClientConfig = AhcWSClientConfig(), proxyConfig: Option[WSProxyServer])
 
 object ProxyWSConfig {
   implicit val defaultWSProxyServerFormat: Format[DefaultWSProxyServer] = Json.format[DefaultWSProxyServer]
 
   implicit val wsProxyServerFormat: Format[WSProxyServer] =
-    Format[WSProxyServer](Reads(json => JsSuccess(json.as[DefaultWSProxyServer])), Writes(duration => JsString(duration.toString)))
+    Format[WSProxyServer](
+      defaultWSProxyServerFormat.widen[WSProxyServer],
+      Writes { c =>
+        Json.obj(
+          "host"          -> c.host,
+          "port"          -> c.port,
+          "protocol"      -> c.protocol,
+          "principal"     -> c.principal,
+          "password"      -> c.password,
+          "ntlmDomain"    -> c.ntlmDomain,
+          "encoding"      -> c.encoding,
+          "nonProxyHosts" -> c.nonProxyHosts
+        )
+      }
+    )
 
   implicit val sslDebugConfigWrites: Writes[SSLDebugConfig] = Writes[SSLDebugConfig](
     conf =>
@@ -96,11 +110,11 @@ object ProxyWSConfig {
     }
   )
 
-  implicit val wsClientConfigReads: Format[WSClientConfig] = Json.format[WSClientConfig]
+  implicit val wsClientConfigReads: Format[WSClientConfig] = Json.using[Json.WithDefaultValues].format[WSClientConfig]
 
-  implicit val ahcWSClientConfigReads: Format[AhcWSClientConfig] = Json.format[AhcWSClientConfig]
+  implicit val ahcWSClientConfigReads: Format[AhcWSClientConfig] = Json.using[Json.WithDefaultValues].format[AhcWSClientConfig]
 
-  implicit val reads: Format[ProxyWSConfig] = Json.format[ProxyWSConfig]
+  implicit val reads: Format[ProxyWSConfig] = Json.using[Json.WithDefaultValues].format[ProxyWSConfig]
 }
 
 class ProxyWS(ws: AhcWSClient, val proxy: Option[WSProxyServer]) extends WSClient {
@@ -108,6 +122,8 @@ class ProxyWS(ws: AhcWSClient, val proxy: Option[WSProxyServer]) extends WSClien
   def this(wsConfig: AhcWSClientConfig, proxyConfig: Option[WSProxyServer], mat: Materializer) = this(AhcWSClient(wsConfig)(mat), proxyConfig)
 
   def this(config: ProxyWSConfig, mat: Materializer) = this(config.wsConfig, config.proxyConfig, mat)
+
+  def this(mat: Materializer) = this(AhcWSClient()(mat), None)
 
   override def underlying[T]: T = ws.underlying
 

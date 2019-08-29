@@ -18,10 +18,9 @@ class Connector @Inject()(appConfig: ApplicationConfig, system: ActorSystem, mat
     extends TheHiveConnector {
   override val name: String = "misp"
 
-  val clientsConfig: ConfigItem[Seq[TheHiveMispClientConfig], Seq[TheHiveMispClientConfig]] =
-    appConfig.item[Seq[TheHiveMispClientConfig]]("misp.servers", "")
-  private var _clients                = clientsConfig.get.map(c => new TheHiveMispClient(c, mat))
-  def clients: Seq[TheHiveMispClient] = _clients
+  val clientsConfig: ConfigItem[Seq[TheHiveMispClientConfig], Seq[TheHiveMispClient]] =
+    appConfig.mapItem[Seq[TheHiveMispClientConfig], Seq[TheHiveMispClient]]("misp.servers", "", _.map(new TheHiveMispClient(_, mat)))
+  def clients: Seq[TheHiveMispClient] = clientsConfig.get
 
   val attributeConvertersConfig: ConfigItem[Seq[AttributeConverter], Seq[AttributeConverter]] =
     appConfig.item[Seq[AttributeConverter]]("misp.attribute.mapping", "Describe how to map MISP attribute to observable")

@@ -9,6 +9,7 @@ import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{Format, JsObject, JsString, Json}
 import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.AhcWSClientConfig
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
 import akka.stream.Materializer
@@ -19,15 +20,15 @@ import org.thp.cortex.dto.v0.{Attachment, _}
 
 case class CortexClientConfig(
     name: String,
-    baseUrl: String,
-    includedTheHiveOrganisations: Seq[String],
-    excludedTheHiveOrganisations: Seq[String],
-    wsConfig: ProxyWSConfig,
+    url: String,
+    includedTheHiveOrganisations: Seq[String] = Seq("*"),
+    excludedTheHiveOrganisations: Seq[String] = Nil,
+    wsConfig: ProxyWSConfig = ProxyWSConfig(AhcWSClientConfig(), None),
     auth: Authentication
 )
 
 object CortexClientConfig {
-  implicit val format: Format[CortexClientConfig] = Json.format[CortexClientConfig]
+  implicit val format: Format[CortexClientConfig] = Json.using[Json.WithDefaultValues].format[CortexClientConfig]
 }
 
 class CortexClient(
@@ -42,7 +43,7 @@ class CortexClient(
   def this(config: CortexClientConfig, mat: Materializer) =
     this(
       config.name,
-      config.baseUrl,
+      config.url,
       config.includedTheHiveOrganisations,
       config.excludedTheHiveOrganisations,
       new ProxyWS(config.wsConfig, mat),

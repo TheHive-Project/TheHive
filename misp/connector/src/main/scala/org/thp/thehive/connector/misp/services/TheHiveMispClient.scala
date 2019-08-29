@@ -5,6 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.{Format, JsObject, JsString, Json}
 import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.AhcWSClientConfig
 
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
@@ -16,26 +17,24 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 
 case class TheHiveMispClientConfig(
     name: String,
-    baseUrl: String,
+    url: String,
     auth: Authentication,
-    wsConfig: ProxyWSConfig,
+    wsConfig: ProxyWSConfig = ProxyWSConfig(AhcWSClientConfig(), None),
     maxAge: Option[Duration],
-    maxAttributes: Option[Int],
-    maxSize: Option[Long],
-    excludedOrganisations: Seq[String],
-    excludedTags: Set[String],
-    whitelistTags: Set[String],
-    purpose: MispPurpose.Value,
+    excludedOrganisations: Seq[String] = Nil,
+    excludedTags: Set[String] = Set.empty,
+    whitelistTags: Set[String] = Set.empty,
+    purpose: MispPurpose.Value = MispPurpose.ImportAndExport,
     caseTemplate: Option[String],
-    artifactTags: Seq[String],
-    exportCaseTags: Boolean,
-    includedTheHiveOrganisations: Seq[String],
-    excludedTheHiveOrganisations: Seq[String]
+    artifactTags: Seq[String] = Nil,
+    exportCaseTags: Boolean = false,
+    includedTheHiveOrganisations: Seq[String] = Seq("*"),
+    excludedTheHiveOrganisations: Seq[String] = Nil
 )
 
 object TheHiveMispClientConfig {
   implicit val purposeFormat: Format[MispPurpose.Value] = Json.formatEnum(MispPurpose)
-  implicit val format: Format[TheHiveMispClientConfig]  = Json.format[TheHiveMispClientConfig]
+  implicit val format: Format[TheHiveMispClientConfig]  = Json.using[Json.WithDefaultValues].format[TheHiveMispClientConfig]
 }
 
 class TheHiveMispClient(
@@ -44,8 +43,6 @@ class TheHiveMispClient(
     auth: Authentication,
     ws: WSClient,
     maxAge: Option[Duration],
-    maxAttributes: Option[Int],
-    maxSize: Option[Long],
     excludedOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String],
@@ -61,8 +58,6 @@ class TheHiveMispClient(
       auth,
       ws,
       maxAge,
-      maxAttributes,
-      maxSize,
       excludedOrganisations,
       excludedTags,
       whitelistTags
@@ -70,12 +65,10 @@ class TheHiveMispClient(
 
   def this(config: TheHiveMispClientConfig, mat: Materializer) = this(
     config.name,
-    config.baseUrl,
+    config.url,
     config.auth,
     new ProxyWS(config.wsConfig, mat),
     config.maxAge,
-    config.maxAttributes,
-    config.maxSize,
     config.excludedOrganisations,
     config.excludedTags,
     config.whitelistTags,

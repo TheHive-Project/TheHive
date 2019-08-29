@@ -28,13 +28,12 @@ class MispClient(
     auth: Authentication,
     ws: WSClient,
     maxAge: Option[Duration],
-    maxAttributes: Option[Int],
-    maxSize: Option[Long],
     excludedOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String]
 ) {
-  lazy val logger = Logger(getClass)
+  lazy val logger         = Logger(getClass)
+  val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
   private def configuredProxy: Option[String] = ws match {
     case c: ProxyWS => c.proxy.map(p => s"http://${p.host}:${p.port}")
@@ -45,36 +44,34 @@ class MispClient(
                  |  proxy:            ${configuredProxy.getOrElse("<not set>")}
                  |  filters:
                  |    max age:        ${maxAge.fold("<not set>")(_.toCoarsest.toString)}
-                 |    max attributes: ${maxAttributes.getOrElse("<not set>")}
-                 |    max size:       ${maxSize.getOrElse("<not set>")}
                  |    excluded orgs:  ${excludedOrganisations.mkString}
                  |    excluded tags:  ${excludedTags.mkString}
                  |    whitelist tags: ${whitelistTags.mkString}
                  |""".stripMargin)
 
   private def request(url: String): WSRequest =
-    auth(ws.url(s"$baseUrl/$url").withHttpHeaders("Accept" -> "application/json"))
+    auth(ws.url(s"$strippedUrl/$url").withHttpHeaders("Accept" -> "application/json"))
 
-  private def get(url: String)(implicit ec: ExecutionContext): Future[JsValue] = // TODO add size restriction
+  private def get(url: String)(implicit ec: ExecutionContext): Future[JsValue] =
     request(url).get().transform {
       case Success(r) if r.status == Status.OK => Success(r.json)
       case Success(r)                          => Try(r.json)
       case Failure(t)                          => throw t
     }
 
-  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] = // TODO add size restriction
-    request(url).post(body).transform {
-      case Success(r) if r.status == Status.OK => Success(r.json)
-      case Success(r)                          => Try(r.json)
-      case Failure(t)                          => throw t
-    }
-
-  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
-    request(url).withMethod("GET").stream().transform {
-      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
-      case Success(r)                          => Try(r.bodyAsSource)
-      case Failure(t)                          => throw t
-    }
+//  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] =
+//    request(url).post(body).transform {
+//      case Success(r) if r.status == Status.OK => Success(r.json)
+//      case Success(r)                          => Try(r.json)
+//      case Failure(t)                          => throw t
+//    }
+//
+//  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
+//    request(url).withMethod("GET").stream().transform {
+//      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
+//      case Success(r)                          => Try(r.bodyAsSource)
+//      case Failure(t)                          => throw t
+//    }
 
   private def postStream(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
     request(url).withMethod("POST").withBody(body).stream().transform {
