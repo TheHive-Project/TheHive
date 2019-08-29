@@ -1,13 +1,14 @@
 package org.thp.thehive.connector.cortex.services
 
+import play.api.Logger
+
 import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.{CortexClient, CortexConfig}
+import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
 
 @Singleton
 class ServiceHelper @Inject()(
@@ -26,14 +27,12 @@ class ServiceHelper @Inject()(
 
   /**
     * Returns the filtered CortexClients according to config
-    * @param cortexConfig cortex config containing all clients instances
+    * @param clients cortex clients instances
     * @param organisation the concerned organisation to get available clients for
     * @return
     */
-  def availableCortexClients(cortexConfig: CortexConfig, organisation: Organisation): Iterable[CortexClient] = db.roTransaction { implicit graph =>
-    val l = cortexConfig
-      .clients
-      .values
+  def availableCortexClients(clients: Seq[CortexClient], organisation: Organisation): Iterable[CortexClient] = db.roTransaction { implicit graph =>
+    val l = clients
       .filter(
         c =>
           organisationFilter(
@@ -45,7 +44,7 @@ class ServiceHelper @Inject()(
       )
 
     if (l.isEmpty) {
-      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${cortexConfig.clients.keys}")
+      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${clients.map(_.name)}")
     }
 
     l

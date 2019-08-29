@@ -11,10 +11,10 @@ import org.thp.thehive.models.{SchemaUpdater => TheHiveSchemaUpdater}
 class SchemaUpdater @Inject()(thehiveSchemaUpdater: TheHiveSchemaUpdater, cortexSchema: CortexSchema, db: Database, userSrv: UserSrv) {
   val latestVersion: Int = 1
 
-  val currentVersion: Int = db.version("cortex")
+  val currentVersion: Int = db.version("thehive-cortex")
   if (currentVersion < latestVersion) {
     Logger(getClass).info(s"Cortex database schema is outdated ($currentVersion). Upgrading to version $latestVersion ...")
     db.createSchemaFrom(cortexSchema)(userSrv.getSystemAuthContext)
-    db.setVersion("cortex", latestVersion)
+    db.setVersion("thehive-cortex", latestVersion)
   }
 }

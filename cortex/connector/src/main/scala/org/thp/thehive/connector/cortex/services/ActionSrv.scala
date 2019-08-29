@@ -2,12 +2,17 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json, OWrites}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.Inject
-import org.thp.cortex.client.{CortexClient, CortexConfig}
+import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{CortexOutputJob, CortexOutputOperation, InputCortexAction}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
@@ -16,20 +21,16 @@ import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models.{Case, Organisation, Task, TheHiveSchema}
-import play.api.libs.json.{JsObject, Json, OWrites}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 class ActionSrv @Inject()(
-    implicit db: Database,
-    cortexConfig: CortexConfig,
-    implicit val ex: ExecutionContext,
     @Named("cortex-actor") cortexActor: ActorRef,
     actionOperationSrv: ActionOperationSrv,
-    schema: TheHiveSchema,
     entityHelper: EntityHelper,
-    serviceHelper: ServiceHelper
+    serviceHelper: ServiceHelper,
+    connector: Connector,
+    implicit val schema: TheHiveSchema,
+    implicit val db: Database,
+    implicit val ec: ExecutionContext
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
@@ -53,7 +54,7 @@ class ActionSrv @Inject()(
       action: Action,
       entity: Entity
   )(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] = {
-    val cortexClients = serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))
+    val cortexClients = serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation))
     for {
       client <- action.cortexId match {
         case Some(cortexId) =>
@@ -85,7 +86,7 @@ class ActionSrv @Inject()(
         }
       }
 
-      _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client, authContext)
+      _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client.name, authContext)
     } yield createdAction
   }
 

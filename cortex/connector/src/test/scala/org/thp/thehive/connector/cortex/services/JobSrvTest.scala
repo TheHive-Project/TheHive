@@ -12,10 +12,9 @@ import play.api.test.PlaySpecification
 
 import akka.actor.Terminated
 import gremlin.scala.{Key, P}
-import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.{CortexClient, CortexConfig, TestCortexClientProvider, TestCortexConfigProvider}
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
@@ -25,15 +24,14 @@ import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
-class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification with Mockito {
+class JobSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv = DummyUserSrv(permissions = Permissions.all)
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
-      .bindToProvider[CortexConfig, TestCortexConfigProvider]
-
+      .bind[Connector, TestConnector]
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app)) ^ step(shutdownActorSystem(app))
   }
 
@@ -52,7 +50,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
 
     s"[$name] job service" should {
       implicit val authContext: AuthContext = dummyUserSrv.authContext
-      val cortexConfig: CortexConfig        = app.instanceOf[CortexConfig]
+      val client                            = app.instanceOf[CortexClient]
 
       "handle creation and then finished job" in {
         val maybeObservable = db.roTransaction { implicit graph =>
@@ -85,7 +83,7 @@ class JobSrvTest(implicit executionEnv: ExecutionEnv) extends PlaySpecification 
           jobSrv.create(job, observable)
         }
         val updatedJob = Await.result(
-          jobSrv.finished(createdJob.get._id, cortexOutputJob, cortexConfig.clients.values.head),
+          jobSrv.finished(client.name, createdJob.get._id, cortexOutputJob),
           20.seconds
         )
         updatedJob.status shouldEqual JobStatus.Success

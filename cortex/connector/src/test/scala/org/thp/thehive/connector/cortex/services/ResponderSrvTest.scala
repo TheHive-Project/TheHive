@@ -1,7 +1,10 @@
 package org.thp.thehive.connector.cortex.services
 
 import scala.util.Try
+
+import play.api.libs.json.Json
 import play.api.test.{NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -13,7 +16,6 @@ import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.Json
 
 class ResponderSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
@@ -22,8 +24,8 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
-      .bindToProvider[CortexConfig, TestCortexConfigProvider]
-
+      .bindToProvider[CortexClient, TestCortexClientProvider]
+      .bind[Connector, TestConnector]
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
 
@@ -54,7 +56,7 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
       "search responders" in {
         val r = await(responderSrv.searchResponders(Json.obj("query" -> Json.obj())))
 
-        r.size must be greaterThan(0)
+        r.size must be greaterThan (0)
         r.head._2 shouldEqual Seq("test")
       }
     }

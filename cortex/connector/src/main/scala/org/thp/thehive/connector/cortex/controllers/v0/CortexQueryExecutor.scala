@@ -1,5 +1,8 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.language.existentials
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -11,18 +14,6 @@ import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0._
-
-import scala.language.existentials
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
-///**
-//  * Range param case class for search query parsing
-//  *
-//  * @param from the start
-//  * @param to the end nb
-//  * @param withSize with or without the total length
-//  */
-//case class RangeParams(from: Long, to: Long, withSize: Option[Boolean])
 
 @Singleton
 class CortexQueryExecutor @Inject()(

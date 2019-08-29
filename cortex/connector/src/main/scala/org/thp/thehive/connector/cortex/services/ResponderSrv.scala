@@ -1,21 +1,21 @@
 package org.thp.thehive.connector.cortex.services
 
-import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.v0.OutputCortexWorker
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
-import org.thp.thehive.models.{Organisation, Permissions}
-import play.api.Logger
-import play.api.libs.json.JsObject
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import play.api.Logger
+import play.api.libs.json.JsObject
+
+import javax.inject.{Inject, Singleton}
+import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.models.{Organisation, Permissions}
+
 @Singleton
 class ResponderSrv @Inject()(
-    cortexConfig: CortexConfig,
+    connector: Connector,
     db: Database,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper
@@ -42,7 +42,7 @@ class ResponderSrv @Inject()(
       entity        <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction)))
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <- Future
-        .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation)))(
+        .traverse(serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation)))(
           client =>
             client
               .getRespondersByType(entityType)
@@ -63,7 +63,7 @@ class ResponderSrv @Inject()(
     */
   def searchResponders(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation)))(
+      .traverse(serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation)))(
         client =>
           client
             .searchResponders(query)

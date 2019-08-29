@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
 import play.api.test.{NoMaterializer, PlaySpecification}
@@ -8,7 +7,7 @@ import play.api.test.{NoMaterializer, PlaySpecification}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client.{CortexClient, CortexConfig, TestCortexClientProvider}
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
@@ -61,13 +60,11 @@ class ServiceHelperTest extends PlaySpecification with Mockito {
       }
 
       "return the correct filtered CortexClient list" in {
-        val client       = app.instanceOf[CortexClient]
-        val cortexConfig = CortexConfig(Map("test" -> client), 1.second, 0)
-        val r            = serviceHelper.availableCortexClients(cortexConfig, Organisation("default"))
+        val client = app.instanceOf[CortexClient]
+        val r      = serviceHelper.availableCortexClients(Seq(client), Organisation("default"))
 
         r must contain(client)
       }
-
     }
   }
 }

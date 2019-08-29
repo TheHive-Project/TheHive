@@ -1,35 +1,42 @@
 package org.thp.client
 
-import scala.util.control.Exception.catching
-
-import play.api.ConfigLoader
+import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.shaded.ahc.io.netty.handler.codec.http.HttpHeaders
-
-import com.typesafe.config.{Config, ConfigException}
 
 trait Authentication {
   def apply(request: WSRequest): WSRequest
 }
 
 object Authentication {
-  implicit val configLoader: ConfigLoader[Authentication] = { (config: Config, path: String) =>
-    val pathPrefix = if (path.isEmpty) path else s"$path."
-    catching(classOf[ConfigException.Missing])
-      .opt(config.getString(s"${pathPrefix}authType"))
-      .fold[Authentication](NoAuthentication) {
-        case "basic" => PasswordAuthentication(config.getString(s"${pathPrefix}username"), config.getString(s"${pathPrefix}password"))
-        case "key"   => KeyAuthentication(config.getString(s"${pathPrefix}key"))
-      }
+
+  val reads: Reads[Authentication] = Reads[Authentication] { json =>
+    (json \ "type").asOpt[String].fold[JsResult[Authentication]](JsSuccess(NoAuthentication)) {
+      case "basic" =>
+        for {
+          username <- (json \ "username").validate[String]
+          password <- (json \ "password").validate[String]
+        } yield PasswordAuthentication(username, password)
+      case "bearer" => (json \ "key").validate[String].map(KeyAuthentication(_, "Bearer "))
+      case "key"    => (json \ "key").validate[String].map(KeyAuthentication(_, ""))
+      case other    => JsError(s"Unknown authentication type: $other")
+    }
   }
+
+  val writes: Writes[Authentication] = Writes[Authentication] {
+    case PasswordAuthentication(username, password) => Json.obj("type" -> "basic", "username" -> username, "password" -> password)
+    case KeyAuthentication(key, "")                 => Json.obj("type" -> "key", "key"        -> key)
+    case KeyAuthentication(key, "Bearer ")          => Json.obj("type" -> "bearer", "key"     -> key)
+  }
+  implicit val format: Format[Authentication] = Format(reads, writes)
 }
 
 case class PasswordAuthentication(username: String, password: String) extends Authentication {
   override def apply(request: WSRequest): WSRequest = request.withAuth(username, password, WSAuthScheme.BASIC)
 }
 
-case class KeyAuthentication(key: String) extends Authentication {
-  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HttpHeaders.Names.AUTHORIZATION -> s"Bearer $key")
+case class KeyAuthentication(key: String, prefix: String) extends Authentication {
+  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HttpHeaders.Names.AUTHORIZATION -> s"$prefix$key")
 }
 
 object NoAuthentication extends Authentication {

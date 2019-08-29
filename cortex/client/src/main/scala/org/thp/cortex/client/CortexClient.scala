@@ -1,24 +1,54 @@
 package org.thp.cortex.client
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import org.thp.client.{ApplicationError, Authentication, BaseClient}
-import org.thp.cortex.dto.v0.{Attachment, _}
-import play.api.Logger
-import play.api.http.Status
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.libs.ws.WSClient
-import play.api.mvc.MultipartFormData.{DataPart, FilePart}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-class CortexClient(val name: String, baseUrl: String, val includedTheHiveOrganisations: Seq[String], val excludedTheHiveOrganisations: Seq[String])(
-    implicit ws: WSClient,
+import play.api.Logger
+import play.api.http.Status
+import play.api.libs.json.{Format, JsObject, JsString, Json}
+import play.api.libs.ws.WSClient
+import play.api.mvc.MultipartFormData.{DataPart, FilePart}
+
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import org.thp.client._
+import org.thp.cortex.dto.v0.{Attachment, _}
+
+case class CortexClientConfig(
+    name: String,
+    baseUrl: String,
+    includedTheHiveOrganisations: Seq[String],
+    excludedTheHiveOrganisations: Seq[String],
+    wsConfig: ProxyWSConfig,
     auth: Authentication
+)
+
+object CortexClientConfig {
+  implicit val format: Format[CortexClientConfig] = Json.format[CortexClientConfig]
+}
+
+class CortexClient(
+    val name: String,
+    val baseUrl: String,
+    val includedTheHiveOrganisations: Seq[String],
+    val excludedTheHiveOrganisations: Seq[String],
+    implicit val ws: WSClient,
+    implicit val auth: Authentication
 ) {
+
+  def this(config: CortexClientConfig, mat: Materializer) =
+    this(
+      config.name,
+      config.baseUrl,
+      config.includedTheHiveOrganisations,
+      config.excludedTheHiveOrganisations,
+      new ProxyWS(config.wsConfig, mat),
+      config.auth
+    )
+
   lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
   lazy val analyser       = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/analyzer")
   lazy val responder      = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/responder")

@@ -1,18 +1,18 @@
 package org.thp.thehive.connector.cortex.services
 
-import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.CortexConfig
-import org.thp.cortex.dto.v0.OutputCortexWorker
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.thehive.models.Organisation
-import play.api.Logger
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import play.api.Logger
+
+import javax.inject.{Inject, Singleton}
+import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.thehive.models.Organisation
+
 @Singleton
-class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHelper) {
+class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper) {
 
   lazy val logger = Logger(getClass)
 
@@ -23,7 +23,7 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHe
     */
   def listAnalyzer(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
+      .traverse(serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation))) { client =>
         client
           .listAnalyser
           .transform {
@@ -37,7 +37,7 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHe
 
   def listAnalyzerByType(dataType: String)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
+      .traverse(serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation))) { client =>
         client
           .listAnalyzersByType(dataType)
           .transform {
@@ -51,7 +51,7 @@ class AnalyzerSrv @Inject()(cortexConfig: CortexConfig, serviceHelper: ServiceHe
 
   def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(OutputCortexWorker, Seq[String])] =
     Future
-      .traverse(serviceHelper.availableCortexClients(cortexConfig, Organisation(authContext.organisation))) { client =>
+      .traverse(serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation))) { client =>
         client
           .getAnalyzer(id)
           .map(_ -> client.name)

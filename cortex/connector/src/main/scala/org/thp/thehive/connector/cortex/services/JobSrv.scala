@@ -16,7 +16,7 @@ import akka.stream.scaladsl.{FileIO, StreamConverters}
 import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.client.{CortexClient, CortexConfig}
+import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
@@ -31,13 +31,13 @@ import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, 
 
 @Singleton
 class JobSrv @Inject()(
-    implicit db: Database,
-    cortexConfig: CortexConfig,
+    connector: Connector,
     storageSrv: StorageSrv,
     @Named("cortex-actor") cortexActor: ActorRef,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
+    implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer,
     serviceHelper: ServiceHelper
@@ -68,7 +68,7 @@ class JobSrv @Inject()(
   ): Future[Job with Entity] =
     for {
       cortexClient <- serviceHelper
-        .availableCortexClients(cortexConfig, Organisation(authContext.organisation))
+        .availableCortexClients(connector.clients, Organisation(authContext.organisation))
         .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
@@ -89,7 +89,7 @@ class JobSrv @Inject()(
       createdJob <- Future.fromTry(db.tryTransaction { implicit graph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
-      _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient, authContext)
+      _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
 
   /**
@@ -112,16 +112,20 @@ class JobSrv @Inject()(
     * the report is processed here: each report's artifacts
     * are stored as separate Observable with the appropriate edge ObservableJob
     *
+    * @param cortexId     Id of cortex
     * @param jobId        the job db id
     * @param cortexJob    the CortexOutputJob
-    * @param cortexClient client for Cortex api
     * @param authContext  the auth context for db queries
     * @return the updated job
     */
-  def finished(jobId: String, cortexJob: CortexOutputJob, cortexClient: CortexClient)(
+  def finished(cortexId: String, jobId: String, cortexJob: CortexOutputJob)(
       implicit authContext: AuthContext
   ): Future[Job with Entity] =
     for {
+      cortexClient <- serviceHelper
+        .availableCortexClients(connector.clients, Organisation(authContext.organisation))
+        .find(_.name == cortexId)
+        .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
       _   <- importCortexArtifacts(job, cortexJob, cortexClient)
     } yield job

@@ -12,7 +12,7 @@ import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client._
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.CortexOutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContextImpl
@@ -31,7 +31,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
     val app = TestAppBuilder(dbProvider)
       .`override`(
         _.bindActor[CortexActor]("cortex-actor")
-          .bindToProvider[CortexConfig, TestCortexConfigProvider]
+          .bindToProvider[CortexClient, TestCortexClientProvider]
+          .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
 

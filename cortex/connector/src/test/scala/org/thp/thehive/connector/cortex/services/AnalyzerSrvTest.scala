@@ -7,7 +7,7 @@ import play.api.test.{NoMaterializer, PlaySpecification}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.client._
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models._
@@ -21,7 +21,8 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app = TestAppBuilder(dbProvider)
       .bindActor[CortexActor]("cortex-actor")
-      .bindToProvider[CortexConfig, TestCortexConfigProvider]
+      .bindToProvider[CortexClient, TestCortexClientProvider]
+      .bind[Connector, TestConnector]
 
     step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
   }
