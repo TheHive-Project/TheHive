@@ -11,10 +11,12 @@ import play.api.http.Status
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{WSClient, WSRequest}
 
-import akka.stream.scaladsl.Source
+import akka.NotUsed
+import akka.stream.alpakka.json.scaladsl.JsonReader
+import akka.stream.scaladsl.{JsonFraming, Source}
 import akka.util.ByteString
-import org.thp.client.{ApplicationError, Authentication, CustomWSAPI}
-import org.thp.misp.dto.{Attribute, Event}
+import org.thp.client.{ApplicationError, Authentication, ProxyWS}
+import org.thp.misp.dto.{Attribute, Event, Organisation, User}
 
 object MispPurpose extends Enumeration {
   val ImportOnly, ExportOnly, ImportAndExport = Value
@@ -22,7 +24,7 @@ object MispPurpose extends Enumeration {
 
 class MispClient(
     val name: String,
-    baseUrl: String,
+    val baseUrl: String,
     auth: Authentication,
     ws: WSClient,
     maxAge: Option[Duration],
@@ -35,8 +37,8 @@ class MispClient(
   lazy val logger = Logger(getClass)
 
   private def configuredProxy: Option[String] = ws match {
-    case c: CustomWSAPI => c.proxy.map(p => s"http://${p.host}:${p.port}")
-    case _              => None
+    case c: ProxyWS => c.proxy.map(p => s"http://${p.host}:${p.port}")
+    case _          => None
   }
   logger.info(s"""Add MISP connection $name
                  |  url:              $baseUrl
@@ -51,8 +53,7 @@ class MispClient(
                  |""".stripMargin)
 
   private def request(url: String): WSRequest =
-    auth(ws.url(s"$baseUrl/$url"))
-      .withHttpHeaders("Accept" -> "application/json")
+    auth(ws.url(s"$baseUrl/$url").withHttpHeaders("Accept" -> "application/json"))
 
   private def get(url: String)(implicit ec: ExecutionContext): Future[JsValue] = // TODO add size restriction
     request(url).get().transform {
@@ -68,12 +69,34 @@ class MispClient(
       case Failure(t)                          => throw t
     }
 
-//  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
-//    request(url).stream().transform {
-//      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
-//      case Success(r)                               => Try(r.bodyAsSource)
-//      case Failure(t)                               => throw t
-//    }
+  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
+    request(url).withMethod("GET").stream().transform {
+      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
+      case Success(r)                          => Try(r.bodyAsSource)
+      case Failure(t)                          => throw t
+    }
+
+  private def postStream(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
+    request(url).withMethod("POST").withBody(body).stream().transform {
+      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
+      case Success(r)                          => Try(r.bodyAsSource)
+      case Failure(t)                          => throw t
+    }
+
+  def getCurrentUser(implicit ec: ExecutionContext): Future[User] = {
+    logger.debug("Get current user")
+    get("/users/view/me")
+      .map(u => (u \ "User").as[User])
+  }
+
+  def getOrganisation(organisationId: String)(implicit ec: ExecutionContext): Future[Organisation] = {
+    logger.debug(s"Get organisation $organisationId")
+    get(s"/organisations/view/$organisationId")
+      .map(o => (o \ "Organisation").as[Organisation])
+  }
+
+  def getCurrentOrganisationName(implicit ec: ExecutionContext): Future[String] =
+    getCurrentUser.flatMap(user => getOrganisation(user.orgId)).map(_.name)
 
   def getEvent(eventId: String)(implicit ec: ExecutionContext): Future[Event] = {
     logger.debug(s"Get MISP event $eventId")
@@ -82,11 +105,27 @@ class MispClient(
       .map(e => (e \ "Event").as[Event])
   }
 
-  def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Future[Seq[Event]] = {
+  def getVersion(implicit ec: ExecutionContext): Future[String] =
+    get("servers/getVersion")
+      .map(s => (s \ "version").as[String])
+
+  def getStatus(implicit ec: ExecutionContext): Future[JsObject] =
+    getVersion
+      .map(version => Json.obj("name" -> name, "version" -> version, "status" -> "OK", "url" -> baseUrl))
+      .recover { case _ => Json.obj("name" -> name, "version" -> "", "status" -> "ERROR", "url" -> baseUrl) }
+
+  def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
     val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> (d.getTime / 1000)))
     logger.debug(s"Search MISP events ")
-    post("events/index", query)
-      .map(_.as[Seq[Event]].filterNot(isExcluded))
+    Source
+      .fromFutureSource(postStream("events/index", query))
+      .via(JsonFraming.objectScanner(Int.MaxValue))
+      .mapConcat { data =>
+        val maybeEvent = Try(Json.parse(data.toArray[Byte]).as[Event])
+        maybeEvent.fold(error => { logger.warn(s"Event has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
+      }
+      .filterNot(isExcluded)
+      .mapMaterializedValue(_ => NotUsed)
   }
 
   def isExcluded(event: Event): Boolean = {
@@ -106,15 +145,24 @@ class MispClient(
     }
   }
 
-  def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Future[Seq[Attribute]] =
-    post("attributes/restSearch/json", Json.obj("request" -> Json.obj("timestamp" -> publishDate.fold(0L)(_.getTime / 1000), "eventid" -> eventId)))
-    // add ("deleted" → 1) to see also deleted attributes
-    // add ("deleted" → "only") to see only deleted attributes
-      .map { jsBody =>
-        (jsBody \ "response" \\ "Attribute")
-          .flatMap(_.as[Seq[Attribute]])
-//            .filter(_.date after refDate)
+  def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] =
+    Source
+      .fromFutureSource(
+        postStream(
+          "attributes/restSearch/json",
+          Json.obj("request" -> Json.obj("timestamp" -> publishDate.fold(0L)(_.getTime / 1000), "eventid" -> eventId))
+        )
+      )
+      // add ("deleted" → 1) to see also deleted attributes
+      // add ("deleted" → "only") to see only deleted attributes
+//      .via(JsonFraming.objectScanner(Int.MaxValue))
+      .via(JsonReader.select("$.response.Attribute[*]"))
+      .mapConcat { data =>
+        val maybeAttribute = Try(Json.parse(data.toArray[Byte]).as[Attribute])
+        maybeAttribute.fold(error => { logger.warn(s"Attribute has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
+      .mapMaterializedValue(_ => NotUsed)
+//            .filter(_.date after refDate)
 
   private val fileNameExtractor = """attachment; filename="(.*)"""".r
 

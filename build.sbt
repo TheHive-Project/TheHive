@@ -169,6 +169,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
   )
 
 lazy val clientCommon = (project in file("client-common"))
+  .dependsOn(scalligraph)
   .settings(
     name := "client-common",
     libraryDependencies ++= Seq(
@@ -235,6 +236,7 @@ lazy val mispClient = (project in file("misp/client"))
     name := "misp-client",
     libraryDependencies ++= Seq(
       ws,
+      alpakka,
       specs      % Test,
       playMockws % Test
     )
