@@ -10,6 +10,7 @@ case class InputAlert(
     `type`: String,
     source: String,
     sourceRef: String,
+    externalLink: Option[String],
     title: String,
     description: String,
     severity: Option[Int] = None,
@@ -27,7 +28,6 @@ object InputAlert {
 }
 
 case class OutputAlert(
-    _id: String,
     id: String,
     createdBy: String,
     updatedBy: Option[String] = None,
@@ -36,6 +36,7 @@ case class OutputAlert(
     `type`: String,
     source: String,
     sourceRef: String,
+    externalLink: Option[String],
     title: String,
     description: String,
     severity: Int,

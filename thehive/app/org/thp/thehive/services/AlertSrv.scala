@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.util.{Date, List => JList}
 
 import scala.collection.JavaConverters._
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 import play.api.libs.json.{JsObject, Json}
 
@@ -14,7 +14,7 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, _}
-import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
 import shapeless.HNil
 
@@ -22,6 +22,7 @@ import shapeless.HNil
 class AlertSrv @Inject()(
     caseSrv: CaseSrv,
     tagSrv: TagSrv,
+    organisationSrv: OrganisationSrv,
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
@@ -43,6 +44,12 @@ class AlertSrv @Inject()(
     case Array(tpe, source, sourceRef) => initSteps.getBySourceId(tpe, source, sourceRef)
     case _                             => super.getByIds(idOrSource)
   }
+
+  def create(organisation: Organisation with Entity, alert: Alert)(implicit graph: Graph, authContext: AuthContext): Try[Alert with Entity] =
+    organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).headOption() match {
+      case None    => create(alert)
+      case Some(_) => Failure(CreateError("Alert already exists", JsObject.empty))
+    }
 
   def create(
       alert: Alert,
@@ -73,7 +80,7 @@ class AlertSrv @Inject()(
         }
 
     for {
-      createdAlert <- create(alert)
+      createdAlert <- create(organisation, alert)
       _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
       _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
       tags         <- tagNames.toTry(t => tagSrv.getOrCreate(t))
@@ -248,6 +255,13 @@ class AlertSrv @Inject()(
           .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
       }
       .map(_ => ())
+
+  def cascadeRemove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _ <- get(alert).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
+      _ = get(alert).remove()
+      _ <- auditSrv.alert.delete(alert)
+    } yield ()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
 }

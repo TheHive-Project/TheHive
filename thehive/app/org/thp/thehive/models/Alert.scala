@@ -37,11 +37,12 @@ case class AlertCaseTemplate()
 case class AlertTag()
 
 @VertexEntity
-@DefineIndex(IndexType.unique, "type", "source", "sourceRef")
+@DefineIndex(IndexType.standard, "type", "source", "sourceRef")
 case class Alert(
     `type`: String,
     source: String,
     sourceRef: String,
+    externalLink: Option[String],
     title: String,
     description: String,
     severity: Int,
@@ -62,24 +63,25 @@ case class RichAlert(
     caseId: Option[String],
     caseTemplate: Option[String]
 ) {
-  val _id: String                = alert._id
-  val _createdAt: Date           = alert._createdAt
-  val _createdBy: String         = alert._createdBy
-  val _updatedAt: Option[Date]   = alert._updatedAt
-  val _updatedBy: Option[String] = alert._updatedBy
-  val `type`: String             = alert.`type`
-  val source: String             = alert.source
-  val sourceRef: String          = alert.sourceRef
-  val title: String              = alert.title
-  val description: String        = alert.description
-  val severity: Int              = alert.severity
-  val date: Date                 = alert.date
-  val lastSyncDate: Date         = alert.lastSyncDate
-  val flag: Boolean              = alert.flag
-  val tlp: Int                   = alert.tlp
-  val pap: Int                   = alert.pap
-  val read: Boolean              = alert.read
-  val follow: Boolean            = alert.follow
+  val _id: String                  = alert._id
+  val _createdAt: Date             = alert._createdAt
+  val _createdBy: String           = alert._createdBy
+  val _updatedAt: Option[Date]     = alert._updatedAt
+  val _updatedBy: Option[String]   = alert._updatedBy
+  val `type`: String               = alert.`type`
+  val source: String               = alert.source
+  val sourceRef: String            = alert.sourceRef
+  val externalLink: Option[String] = alert.externalLink
+  val title: String                = alert.title
+  val description: String          = alert.description
+  val severity: Int                = alert.severity
+  val date: Date                   = alert.date
+  val lastSyncDate: Date           = alert.lastSyncDate
+  val flag: Boolean                = alert.flag
+  val tlp: Int                     = alert.tlp
+  val pap: Int                     = alert.pap
+  val read: Boolean                = alert.read
+  val follow: Boolean              = alert.follow
 }
 
 object RichAlert {

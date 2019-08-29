@@ -75,7 +75,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "create a new alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
-          .withJsonBody(Json.toJson(InputAlert("test", "source1", "sourceRef1", "new alert", "test alert")))
+          .withJsonBody(Json.toJson(InputAlert("test", "source1", "sourceRef1", None, "new alert", "test alert")))
           .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 201
@@ -89,6 +89,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           `type` = "test",
           source = "source1",
           sourceRef = "sourceRef1",
+          externalLink = None,
           title = "new alert",
           description = "test alert",
           severity = 2,
@@ -107,7 +108,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "fail to create a duplicated alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
-          .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref1", "new alert", "test alert")))
+          .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref1", None, "new alert", "test alert")))
           .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 400
@@ -116,7 +117,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "create an alert with a case template" in {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(
-            Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", "new alert", "test alert"))
+            Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", None, "new alert", "test alert"))
               + ("caseTemplate" -> JsString("spam"))
           )
           .withHeaders("user" -> "user1")
@@ -132,6 +133,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           `type` = "test",
           source = "source1",
           sourceRef = "sourceRef1Template",
+          externalLink = None,
           title = "new alert",
           description = "test alert",
           severity = 2,

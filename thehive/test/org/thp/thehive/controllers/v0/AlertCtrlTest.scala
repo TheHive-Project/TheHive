@@ -111,6 +111,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 `type` = "test",
                 source = "alert_creation_test",
                 sourceRef = "#1",
+                externalLink = None,
                 title = "alert title (create alert test)",
                 description = "alert description (create alert test)",
                 severity = Some(2),

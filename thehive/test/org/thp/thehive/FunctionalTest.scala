@@ -2,17 +2,8 @@ package org.thp.thehive
 
 import java.util.Date
 
-import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
-import com.typesafe.config.ConfigFactory
-import org.specs2.specification.core.Fragments
-import org.thp.client.{ApplicationError, Authentication, PasswordAuthentication}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
-import org.thp.thehive.client.TheHiveClient
-import org.thp.thehive.controllers.v1.{TestCase, TestUser}
-import org.thp.thehive.dto.v1._
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.UserSrv
+import scala.concurrent.{ExecutionContext, Promise}
+
 import play.api.cache.caffeine.CaffeineCacheModule
 import play.api.i18n.{I18nModule => PlayI18nModule}
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -24,7 +15,17 @@ import play.api.mvc.{CookiesModule => PlayCookiesModule}
 import play.api.test.{Helpers, PlaySpecification, TestServer}
 import play.api.{Configuration, Environment}
 
-import scala.concurrent.{ExecutionContext, Promise}
+import _root_.controllers.{AssetsConfiguration, AssetsConfigurationProvider, AssetsMetadata, AssetsMetadataProvider}
+import com.typesafe.config.ConfigFactory
+import org.specs2.specification.core.Fragments
+import org.thp.client.{ApplicationError, Authentication, PasswordAuthentication}
+import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.{ScalligraphApplicationLoader, ScalligraphModule}
+import org.thp.thehive.client.TheHiveClient
+import org.thp.thehive.controllers.v1.{TestCase, TestUser}
+import org.thp.thehive.dto.v1._
+import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.UserSrv
 
 case class TestTask(
     title: String,
@@ -394,7 +395,7 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "create an alert" in {
-          val asyncResp = client.alert.create(InputAlert("test", "source1", "sourceRef1", "new alert", "test alert"))
+          val asyncResp = client.alert.create(InputAlert("test", "source1", "sourceRef1", None, "new alert", "test alert"))
           val alert     = await(asyncResp)
           alert must_== OutputAlert(
             _id = alert._id,
@@ -403,6 +404,7 @@ class FunctionalTest extends PlaySpecification {
             `type` = "test",
             source = "source1",
             sourceRef = "sourceRef1",
+            externalLink = None,
             title = "new alert",
             description = "test alert",
             severity = 2,

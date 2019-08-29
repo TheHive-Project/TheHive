@@ -45,12 +45,12 @@ class AlertCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, alertSteps, _) =>
       alertSteps
-        .richPage(range.from, range.to, true)(_.richAlert.raw)
+        .richPage(range.from, range.to, withTotal = true)(_.richAlert.raw)
         .map { richAlert =>
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: Query = Query.output[RichAlert, OutputAlert]
+  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable]), OutputAlert]
 
   def create: Action[AnyContent] =
     entryPoint("create alert")
