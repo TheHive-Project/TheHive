@@ -66,7 +66,7 @@
 
                         NotificationSrv.log('The case has been successfully exported, but '+ failure +' observable(s) failed', 'warning');
                     } else {
-                        success = angular.isObject(response.data) ? 1 : response.data.length;
+                        success = angular.isArray(response.data) ? response.data.length : 1 ;
                         NotificationSrv.log('The case has been successfully exported with ' + success+ ' observable(s)', 'success');
                         $uibModalInstance.close();
                     }
@@ -85,6 +85,6 @@
                     }
                     self.loading = false;
                 });
-            }
+            };
         });
 })();
