@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import scala.language.implicitConversions
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldWithValue}

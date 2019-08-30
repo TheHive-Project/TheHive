@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
@@ -9,8 +8,9 @@ import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{CaseCustomField, CaseTemplate, CaseTemplateTag, RichCaseTemplate}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
 import play.api.libs.json.Json
-
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object CaseTemplateConversion {
   import CustomFieldConversion._

@@ -7,7 +7,8 @@ import play.api.mvc.RequestHeader
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.{AuthenticationError, Instance}
+import org.thp.scalligraph.AuthenticationError
+import org.thp.scalligraph.utils.Instance
 import org.thp.thehive.models.Permissions
 
 @Singleton

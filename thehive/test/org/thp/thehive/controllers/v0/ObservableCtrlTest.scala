@@ -19,7 +19,8 @@ import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.{AppBuilder, Hasher}
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._

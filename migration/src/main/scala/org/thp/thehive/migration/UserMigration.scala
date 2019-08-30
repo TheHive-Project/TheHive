@@ -5,17 +5,17 @@ import scala.concurrent.duration.Duration
 
 import play.api.Configuration
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{ JsPath, Reads }
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{search, RichString}
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.Instance
-import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
-import org.thp.scalligraph.models.{Database, Entity}
+import com.sksamuel.elastic4s.ElasticDsl.{ RichString, search }
+import javax.inject.{ Inject, Singleton }
+import org.thp.scalligraph.auth.{ AuthContext, AuthContextImpl, UserSrv => UserDB }
+import org.thp.scalligraph.models.{ Database, Entity }
+import org.thp.scalligraph.utils.Instance
 import org.thp.thehive.models._
-import org.thp.thehive.services.{ProfileSrv, UserSrv}
+import org.thp.thehive.services.{ ProfileSrv, UserSrv }
 
 import org.elastic4play.database.DBFind
 

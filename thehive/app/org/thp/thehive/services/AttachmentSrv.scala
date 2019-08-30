@@ -17,7 +17,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.{EntitySteps, Hasher}
+import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 
 @Singleton

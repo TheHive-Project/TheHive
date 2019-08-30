@@ -4,14 +4,14 @@ import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.Hash
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.query.PublicProperty
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.Success
+
+import org.thp.scalligraph.utils.Hash
 
 @Singleton
 class DescribeCtrl @Inject()(

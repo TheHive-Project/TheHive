@@ -3,9 +3,9 @@ package org.thp.thehive.controllers.v1
 import java.util.Date
 
 import scala.language.implicitConversions
+
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
@@ -13,6 +13,8 @@ import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, AlertTag, RichAlert}
 import org.thp.thehive.services.{AlertSrv, AlertSteps}
 import play.api.libs.json.Json
+
+import org.thp.scalligraph.controllers.Output
 
 object AlertConversion {
   import CustomFieldConversion._

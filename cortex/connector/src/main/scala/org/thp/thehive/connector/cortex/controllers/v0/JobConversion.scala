@@ -2,14 +2,14 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.{CortexJobStatus, CortexOutputJob}
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.connector.cortex.services.JobSteps
-
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object JobConversion {
 

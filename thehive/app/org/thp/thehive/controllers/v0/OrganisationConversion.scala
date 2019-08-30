@@ -3,10 +3,10 @@ package org.thp.thehive.controllers.v0
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.Organisation
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
-
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.services.OrganisationSteps
 

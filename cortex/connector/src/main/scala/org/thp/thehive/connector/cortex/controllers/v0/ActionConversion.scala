@@ -3,7 +3,6 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
@@ -12,6 +11,8 @@ import org.thp.thehive.connector.cortex.models.{Action, ActionContext, JobStatus
 import org.thp.thehive.connector.cortex.services.ActionSteps
 import play.api.libs.json.{JsArray, JsObject}
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object ActionConversion {
 

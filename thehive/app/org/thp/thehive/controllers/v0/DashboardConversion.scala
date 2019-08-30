@@ -2,12 +2,14 @@ package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
+
 import play.api.libs.json.Json
+
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.controllers.FString
+import org.thp.scalligraph.controllers.{FString, Output}
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.{InvalidFormatAttributeError, Output}
+import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.thehive.dto.v0.{InputDashboard, OutputDashboard}
 import org.thp.thehive.models.Dashboard
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps}

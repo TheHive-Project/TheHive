@@ -5,9 +5,9 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.Hasher
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 

@@ -5,7 +5,7 @@ import java.util.Date
 import scala.language.implicitConversions
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldWithValue}

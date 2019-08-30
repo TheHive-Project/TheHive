@@ -3,8 +3,9 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.language.implicitConversions
+
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}

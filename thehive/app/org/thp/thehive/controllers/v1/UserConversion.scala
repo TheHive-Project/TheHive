@@ -5,12 +5,13 @@ import scala.util.{Failure, Success}
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.{Output, UnsupportedAttributeError}
+import org.thp.scalligraph.UnsupportedAttributeError
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 import play.api.libs.json.Json
 
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 
 object UserConversion {

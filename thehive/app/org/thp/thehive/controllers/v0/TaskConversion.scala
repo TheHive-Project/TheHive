@@ -4,13 +4,14 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{Output, RichOptionTry}
+import org.thp.scalligraph.RichOptionTry
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
 import play.api.libs.json.Json
-
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object TaskConversion {
 

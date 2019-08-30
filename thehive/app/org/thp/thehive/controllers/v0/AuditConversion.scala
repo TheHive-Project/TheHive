@@ -6,7 +6,7 @@ import play.api.libs.json.{JsObject, Json}
 
 import gremlin.scala.{__, BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex}
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._

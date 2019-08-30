@@ -10,13 +10,13 @@ import play.api.libs.json._
 import gremlin.scala._
 import org.apache.hadoop.ipc.RemoteException
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{ Database, Entity }
 import org.thp.scalligraph.services.StorageSrv
-import org.thp.scalligraph.{Hasher, Retry}
+import org.thp.scalligraph.utils.{ Hasher, Retry }
 import org.thp.thehive.models._
 import org.thp.thehive.services.AttachmentSrv
 
-import org.elastic4play.services.{Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv}
+import org.elastic4play.services.{ Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv }
 
 trait Utils {
   val logger: Logger = Logger(getClass)

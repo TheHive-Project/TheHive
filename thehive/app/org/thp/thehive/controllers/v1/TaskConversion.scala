@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v1.{InputTask, OutputTask}
 import org.thp.thehive.models.{Task, TaskStatus}
 import org.thp.thehive.services.TaskSteps
-
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object TaskConversion {
   implicit def fromInputTask(inputTask: InputTask): Task =

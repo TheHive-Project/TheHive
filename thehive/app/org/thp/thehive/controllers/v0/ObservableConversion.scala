@@ -4,7 +4,6 @@ import java.util.Date
 
 import gremlin.scala.{By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.Output
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
@@ -13,9 +12,10 @@ import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models.{Observable, ObservableData, ObservableObservableType, ObservableTag, RichObservable}
 import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
 import play.api.libs.json.{JsObject, Json}
-
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
+
+import org.thp.scalligraph.controllers.Output
 
 object ObservableConversion {
   import AlertConversion._

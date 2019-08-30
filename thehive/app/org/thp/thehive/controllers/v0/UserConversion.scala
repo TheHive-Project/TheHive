@@ -3,15 +3,14 @@ package org.thp.thehive.controllers.v0
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
-import org.thp.scalligraph.controllers.FString
+import org.thp.scalligraph.controllers.{FString, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.{InvalidFormatAttributeError, Output}
+import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
 import play.api.libs.json.Json
-
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
