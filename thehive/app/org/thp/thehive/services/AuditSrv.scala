@@ -1,11 +1,5 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.JsObject
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -17,6 +11,11 @@ import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
+import play.api.Logger
+import play.api.libs.json.JsObject
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -32,12 +31,22 @@ class AuditSrv @Inject()(
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
   val auditContextSrv                                     = new EdgeSrv[AuditContext, Audit, Product]
-  private var pendingAudits: Map[AnyRef, PendingAudit]    = Map.empty
+  val `case`            = new SelfContextObjectAudit[Case]
+  val task              = new ObjectAudit[Task, Case]
+  val observable        = new ObjectAudit[Observable, Case]
+  val log               = new ObjectAudit[Log, Case]
+  val caseTemplate      = new SelfContextObjectAudit[CaseTemplate]
+  val taskInTemplate    = new ObjectAudit[Task, CaseTemplate]
+  val alert             = new SelfContextObjectAudit[Alert]
+  val observableInAlert = new ObjectAudit[Observable, Alert]
+  val user              = new SelfContextObjectAudit[User]
+  val dashboard         = new SelfContextObjectAudit[Dashboard]
   private val pendingAuditsLock                           = new Object
-  private var transactionAuditIds: List[(AnyRef, String)] = Nil
   private val transactionAuditIdsLock                     = new Object
-  private var unauditedTransactions: Set[AnyRef]          = Set.empty
   private val unauditedTransactionsLock                   = new Object
+  private var pendingAudits: Map[AnyRef, PendingAudit]    = Map.empty
+  private var transactionAuditIds: List[(AnyRef, String)] = Nil
+  private var unauditedTransactions: Set[AnyRef]          = Set.empty
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
 
@@ -46,13 +55,13 @@ class AuditSrv @Inject()(
     unauditedTransactionsLock.synchronized {
       unauditedTransactions = unauditedTransactions + tx
     }
-    val result = body.flatMap { r =>
-      auditCreator(r).map(_ => r)
-    }
+    val result = body
     unauditedTransactionsLock.synchronized {
       unauditedTransactions = unauditedTransactions - tx
     }
-    result
+    result.flatMap { r =>
+      auditCreator(r).map(_ => r)
+    }
   }
 
   def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -125,6 +134,8 @@ class AuditSrv @Inject()(
     }
   }
 
+  def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] = get(audit).`object`.headOption()
+
   class ObjectAudit[E <: Product, C <: Product] {
 
     def create(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
@@ -148,19 +159,6 @@ class AuditSrv @Inject()(
     def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), None, None)
   }
-
-  def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] = get(audit).`object`.headOption()
-
-  val `case`            = new SelfContextObjectAudit[Case]
-  val task              = new ObjectAudit[Task, Case]
-  val observable        = new ObjectAudit[Observable, Case]
-  val log               = new ObjectAudit[Log, Case]
-  val caseTemplate      = new SelfContextObjectAudit[CaseTemplate]
-  val taskInTemplate    = new ObjectAudit[Task, CaseTemplate]
-  val alert             = new SelfContextObjectAudit[Alert]
-  val observableInAlert = new ObjectAudit[Observable, Alert]
-  val user              = new SelfContextObjectAudit[User]
-  val dashboard         = new SelfContextObjectAudit[Dashboard]
 }
 
 @EntitySteps[Audit]
