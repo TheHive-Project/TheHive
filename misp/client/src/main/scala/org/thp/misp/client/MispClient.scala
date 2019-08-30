@@ -82,13 +82,13 @@ class MispClient(
 
   def getCurrentUser(implicit ec: ExecutionContext): Future[User] = {
     logger.debug("Get current user")
-    get("/users/view/me")
+    get("users/view/me")
       .map(u => (u \ "User").as[User])
   }
 
   def getOrganisation(organisationId: String)(implicit ec: ExecutionContext): Future[Organisation] = {
     logger.debug(s"Get organisation $organisationId")
-    get(s"/organisations/view/$organisationId")
+    get(s"organisations/view/$organisationId")
       .map(o => (o \ "Organisation").as[Organisation])
   }
 
@@ -112,7 +112,7 @@ class MispClient(
       .recover { case _ => Json.obj("name" -> name, "version" -> "", "status" -> "ERROR", "url" -> baseUrl) }
 
   def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
-    val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> (d.getTime / 1000)))
+    val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
     logger.debug(s"Search MISP events ")
     Source
       .fromFutureSource(postStream("events/index", query))

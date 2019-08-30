@@ -189,7 +189,7 @@ class MispActor @Inject()(
                 .inTo[AlertOrganisation]
                 .has(Key[String]("source"), P.eq[String](mispOrganisation))
                 .has(Key[String]("type"), P.eq[String]("misp"))
-                .value[Date]("date")
+                .value[Date]("lastSyncDate")
                 .max[Date]
             )
           )
@@ -363,12 +363,13 @@ class MispActor @Inject()(
             .map(_.alert)
         case Some(richAlert) =>
           val updateFields = (if (richAlert.title != alert.title) Seq("title" -> alert.title) else Nil) ++
-            (if (richAlert.description != alert.description) Seq("description" -> alert.description) else Nil) ++
-            (if (richAlert.severity != alert.severity) Seq("severity"          -> alert.severity) else Nil) ++
-            (if (richAlert.date != alert.date) Seq("date"                      -> alert.date) else Nil) ++
-            (if (richAlert.flag != alert.flag) Seq("flag"                      -> alert.flag) else Nil) ++
-            (if (richAlert.tlp != alert.tlp) Seq("tlp"                         -> alert.tlp) else Nil) ++
-            (if (richAlert.pap != alert.pap) Seq("pap"                         -> alert.pap) else Nil)
+            (if (richAlert.lastSyncDate != alert.lastSyncDate) Seq("lastSyncDate" -> alert.lastSyncDate) else Nil) ++
+            (if (richAlert.description != alert.description) Seq("description"    -> alert.description) else Nil) ++
+            (if (richAlert.severity != alert.severity) Seq("severity"             -> alert.severity) else Nil) ++
+            (if (richAlert.date != alert.date) Seq("date"                         -> alert.date) else Nil) ++
+            (if (richAlert.flag != alert.flag) Seq("flag"                         -> alert.flag) else Nil) ++
+            (if (richAlert.tlp != alert.tlp) Seq("tlp"                            -> alert.tlp) else Nil) ++
+            (if (richAlert.pap != alert.pap) Seq("pap"                            -> alert.pap) else Nil)
           for {
             updatedAlert <- if (updateFields.nonEmpty) alertSrv.get(richAlert.alert).update(updateFields: _*) else Success(richAlert.alert)
             _            <- alertSrv.updateTags(updatedAlert, event.tags.map(_.name).toSet)
