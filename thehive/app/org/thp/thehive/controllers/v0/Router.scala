@@ -56,16 +56,16 @@ class Router @Inject()(
     case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId) // Audit ok
 
     case GET(p"/user")                          => queryExecutor.user.search
-    case POST(p"/user")                         => userCtrl.create
+    case POST(p"/user")                         => userCtrl.create // Audit ok
     case GET(p"/user/current")                  => userCtrl.current
     case GET(p"/user/$userId")                  => userCtrl.get(userId)
-    case PATCH(p"/user/$userId")                => userCtrl.update(userId)
-    case DELETE(p"/user/$userId")               => userCtrl.delete(userId)
-    case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId)
-    case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId)
+    case PATCH(p"/user/$userId")                => userCtrl.update(userId) // Audit ok
+    case DELETE(p"/user/$userId")               => userCtrl.delete(userId) // Audit ok
+    case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId) // Audit ok
+    case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId) // Audit ok
     case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
-    case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
-    case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
+    case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId) // Audit ok
+    case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId) // Audit ok
     case POST(p"/user/_search")                 => queryExecutor.user.search
 
     case GET(p"/list")                    => listCtrl.list

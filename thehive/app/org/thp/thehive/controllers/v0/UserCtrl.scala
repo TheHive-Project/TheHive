@@ -10,6 +10,7 @@ import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
@@ -64,7 +65,7 @@ class UserCtrl @Inject()(
               profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail("admin")
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail("analyst")
               else if (inputUser.roles.contains("read")) profileSrv.getOrFail("read-only")
-              else ???
+              else profileSrv.getOrFail("read-only")
               user <- userSrv.create(inputUser, organisation, profile)
             } yield user
           }
@@ -109,39 +110,43 @@ class UserCtrl @Inject()(
       .extract("user", FieldsParser.update("user", userProperties(userSrv)))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
-        userSrv // Authorisation is managed in public properties
-          .update(_.get(userId), propertyUpdaters)
-          .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
-          .map(user => Results.Ok(user.toJson))
+        for {
+          user <- userSrv.get(userId).richUser(request.authContext.organisation).getOrFail()
+          _ <- userSrv // Authorisation is managed in public properties
+            .update(_.get(userId), propertyUpdaters)
+            .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
+          _ <- auditSrv.user.update(user.user, user.toJson.as[JsObject])
+        } yield Results.Ok(user.toJson)
+
       }
 
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
       .extract("password", FieldsParser[String].on("password"))
-      .auth { implicit request =>
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
-          _ <- db.roTransaction { implicit graph =>
-            userSrv
-              .current
-              .organisations(Permissions.manageUser)
-              .users
-              .get(userId)
-              .existsOrFail()
-          }
-          _ <- authSrv
-            .setPassword(userId, request.body("password"))
+          user <- userSrv
+            .current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .getOrFail()
+          _ <- authSrv.setPassword(userId, request.body("password"))
+          _ <- auditSrv.user.update(user, Json.obj("user" -> user.id, "admin" -> request.authContext.userId, "action" -> "setPassword"))
         } yield Results.NoContent
       }
 
   def changePassword(userId: String): Action[AnyContent] =
     entryPoint("change password")
-      .extract("password", FieldsParser[String])
-      .extract("currentPassword", FieldsParser[String])
+      .extract("password", FieldsParser[String].on("password"))
+      .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
         if (userId == request.userId) {
-          authSrv
-            .changePassword(userId, request.body("currentPassword"), request.body("password"))
-            .map(_ => Results.NoContent)
+          for {
+            user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail())
+            _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
+            _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "changePassword")))
+          } yield Results.NoContent
         } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
 
@@ -166,7 +171,7 @@ class UserCtrl @Inject()(
     entryPoint("remove key")
       .auth { implicit request =>
         for {
-          _ <- db.roTransaction { implicit graph =>
+          user <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)
@@ -174,8 +179,8 @@ class UserCtrl @Inject()(
               .get(userId)
               .getOrFail()
           }
-          _ <- authSrv
-            .removeKey(userId)
+          _ <- authSrv.removeKey(userId)
+          _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "removeKey")))
         } yield Results.NoContent
 //          Failure(AuthorizationError(s"User $userId doesn't exist or permission is insufficient"))
       }
@@ -184,16 +189,16 @@ class UserCtrl @Inject()(
     entryPoint("renew key")
       .auth { implicit request =>
         for {
-          _ <- db.roTransaction { implicit graph =>
+          user <- db.roTransaction { implicit graph =>
             userSrv
               .current
               .organisations(Permissions.manageUser)
               .users
               .get(userId)
-              .existsOrFail()
+              .getOrFail()
           }
-          key <- authSrv
-            .renewKey(userId)
+          key <- authSrv.renewKey(userId)
+          _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "renewKey")))
         } yield Results.Ok(key)
       }
 }
