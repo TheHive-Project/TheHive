@@ -10,7 +10,7 @@ import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
@@ -111,11 +111,9 @@ class UserCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         for {
-          user <- userSrv.get(userId).richUser(request.authContext.organisation).getOrFail()
-          _ <- userSrv // Authorisation is managed in public properties
-            .update(_.get(userId), propertyUpdaters)
+          user <- userSrv
+            .update(_.get(userId), propertyUpdaters) // Authorisation is managed in public properties
             .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
-          _ <- auditSrv.user.update(user.user, user.toJson.as[JsObject])
         } yield Results.Ok(user.toJson)
 
       }
@@ -132,7 +130,7 @@ class UserCtrl @Inject()(
             .get(userId)
             .getOrFail()
           _ <- authSrv.setPassword(userId, request.body("password"))
-          _ <- auditSrv.user.update(user, Json.obj("user" -> user.id, "admin" -> request.authContext.userId, "action" -> "setPassword"))
+          _ <- auditSrv.user.update(user, Json.obj("password" -> "<hidden>"))
         } yield Results.NoContent
       }
 
@@ -145,7 +143,7 @@ class UserCtrl @Inject()(
           for {
             user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail())
             _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
-            _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "changePassword")))
+            _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
           } yield Results.NoContent
         } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
@@ -180,7 +178,7 @@ class UserCtrl @Inject()(
               .getOrFail()
           }
           _ <- authSrv.removeKey(userId)
-          _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "removeKey")))
+          _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.NoContent
 //          Failure(AuthorizationError(s"User $userId doesn't exist or permission is insufficient"))
       }
@@ -198,7 +196,7 @@ class UserCtrl @Inject()(
               .getOrFail()
           }
           key <- authSrv.renewKey(userId)
-          _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("user" -> user.id, "action" -> "renewKey")))
+          _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.Ok(key)
       }
 }

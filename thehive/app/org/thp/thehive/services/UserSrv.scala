@@ -4,9 +4,11 @@ import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError}
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
 
 import scala.util.{Failure, Success, Try}
 
@@ -19,10 +21,6 @@ object UserSrv {
 @Singleton
 class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
 
-  val userRoleSrv = new EdgeSrv[UserRole, User, Role]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
-
   override val initialValues: Seq[User] = Seq(
     User(
       login = UserSrv.initUser,
@@ -32,10 +30,9 @@ class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: D
       password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
     )
   )
+  val userRoleSrv = new EdgeSrv[UserRole, User, Role]
 
-  override def get(idOrName: String)(implicit graph: Graph): UserSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -55,23 +52,41 @@ class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: D
       .headOption()
       .fold[Try[Organisation with Entity]](Failure(InternalError(s"The user $user (${user._id}) has no organisation.")))(Success.apply)
 
+  override def get(idOrName: String)(implicit graph: Graph): UserSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
+
   def getProfile(userId: String, organizationName: String)(implicit graph: Graph): UserSteps =
     get(userId)
+
+  override def update(
+      steps: UserSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(UserSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (userSteps, updatedFields) =>
+        userSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.user.update(_, updatedFields))
+    }
 }
 
 @EntitySteps[User]
 class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[User, UserSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
-
   def current(authContext: AuthContext): UserSteps = get(authContext.userId)
 
   def get(idOrName: String): UserSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else getByName(idOrName)
 
+  def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
+
   def visible(implicit authContext: AuthContext): UserSteps = newInstance(
     raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
   )
+
+  override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
   def can(permission: Permission)(implicit authContext: AuthContext): UserSteps = newInstance(
     raw
@@ -83,8 +98,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .inTo[UserRole]
       .has(Key("login") of authContext.userId)
   )
-
-  def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 

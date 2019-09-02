@@ -7,10 +7,11 @@ import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -84,6 +85,18 @@ class CaseTemplateSrv @Inject()(
       _ <- auditSrv.taskInTemplate.create(task, caseTemplate)
     } yield ()
 
+  override def update(
+      steps: CaseTemplateSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(CaseTemplateSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (templateSteps, updatedFields) =>
+        templateSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.caseTemplate.update(_, updatedFields))
+    }
+
   def updateTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(caseTemplate)
       .tags
@@ -118,8 +131,6 @@ class CaseTemplateSrv @Inject()(
 @EntitySteps[CaseTemplate]
 class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     extends BaseVertexSteps[CaseTemplate, CaseTemplateSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
-
   def get(idOrName: String): CaseTemplateSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else getByName(idOrName)
@@ -128,6 +139,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def visible(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+
+  override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(
