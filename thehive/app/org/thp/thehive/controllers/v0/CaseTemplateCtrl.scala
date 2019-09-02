@@ -10,6 +10,8 @@ import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, Organisatio
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
+import scala.util.Try
+
 @Singleton
 class CaseTemplateCtrl @Inject()(
     entryPoint: EntryPoint,
@@ -70,5 +72,16 @@ class CaseTemplateCtrl @Inject()(
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
+      }
+
+  def delete(caseTemplateNameOrId: String): Action[AnyContent] =
+    entryPoint("delete case template")
+      .authTransaction(db) { implicit request => implicit graph =>
+        Try(
+          caseTemplateSrv
+            .get(caseTemplateNameOrId)
+            .visible
+            .remove()
+        ).map(_ => Results.Ok)
       }
 }

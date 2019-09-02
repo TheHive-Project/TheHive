@@ -37,23 +37,23 @@ class Router @Inject()(
 //    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
     case GET(p"/case")                  => queryExecutor.`case`.search
-    case POST(p"/case")                 => caseCtrl.create
+    case POST(p"/case")                 => caseCtrl.create // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
-    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
-    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds)
-    case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId)
+    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId) // Audit ok
+    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
+    case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by frontend
     case POST(p"/case/_search")         => queryExecutor.`case`.search
-    case PATCH(p"api/case/_bulk")       => caseCtrl.bulkUpdate
+    case PATCH(p"api/case/_bulk")       => caseCtrl.bulkUpdate // Not used by the frontend
     case POST(p"/case/_stats")          => queryExecutor.`case`.stats
-    case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId)
+    case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId) // Audit ok
     case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)
 
     case GET(p"/case/template")                   => queryExecutor.caseTemplate.search
-    case POST(p"/case/template")                  => caseTemplateCtrl.create
+    case POST(p"/case/template")                  => caseTemplateCtrl.create // Audit ok
     case GET(p"/case/template/$caseTemplateId")   => caseTemplateCtrl.get(caseTemplateId)
     case PATCH(p"/case/template/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
     case POST(p"/case/template/_search")          => queryExecutor.caseTemplate.search
-    //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
+    case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId)
 
     case GET(p"/user")                          => queryExecutor.user.search
     case POST(p"/user")                         => userCtrl.create
