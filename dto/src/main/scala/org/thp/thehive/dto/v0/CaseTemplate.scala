@@ -42,7 +42,7 @@ case class OutputCaseTemplate(
     tlp: Option[Int],
     pap: Option[Int],
     summary: Option[String],
-    task: Seq[OutputTask],
+    tasks: Seq[OutputTask],
     status: String,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
     metrics: JsObject = JsObject.empty

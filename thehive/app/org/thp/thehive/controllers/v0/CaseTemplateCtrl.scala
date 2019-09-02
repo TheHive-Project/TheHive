@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
-import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
+import org.thp.thehive.services._
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -18,7 +18,8 @@ class CaseTemplateCtrl @Inject()(
     db: Database,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv
+    userSrv: UserSrv,
+    auditSrv: AuditSrv
 ) extends QueryableCtrl {
   import CaseTemplateConversion._
   import CustomFieldConversion._
@@ -77,11 +78,15 @@ class CaseTemplateCtrl @Inject()(
   def delete(caseTemplateNameOrId: String): Action[AnyContent] =
     entryPoint("delete case template")
       .authTransaction(db) { implicit request => implicit graph =>
-        Try(
-          caseTemplateSrv
-            .get(caseTemplateNameOrId)
-            .visible
-            .remove()
-        ).map(_ => Results.Ok)
+        for {
+          template <- caseTemplateSrv.get(caseTemplateNameOrId).getOrFail()
+          _ <- Try(
+            caseTemplateSrv
+              .get(template)
+              .visible
+              .remove()
+          )
+          _ <- auditSrv.caseTemplate.delete(template)
+        } yield Results.Ok
       }
 }

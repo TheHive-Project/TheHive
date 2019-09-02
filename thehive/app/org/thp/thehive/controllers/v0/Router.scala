@@ -51,9 +51,9 @@ class Router @Inject()(
     case GET(p"/case/template")                   => queryExecutor.caseTemplate.search
     case POST(p"/case/template")                  => caseTemplateCtrl.create // Audit ok
     case GET(p"/case/template/$caseTemplateId")   => caseTemplateCtrl.get(caseTemplateId)
-    case PATCH(p"/case/template/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
+    case PATCH(p"/case/template/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId) // Audit ok
     case POST(p"/case/template/_search")          => queryExecutor.caseTemplate.search
-    case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId)
+    case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId) // Audit ok
 
     case GET(p"/user")                          => queryExecutor.user.search
     case POST(p"/user")                         => userCtrl.create

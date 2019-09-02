@@ -35,7 +35,7 @@ object CaseTemplateConversion {
         .withFieldConst(_.status, "Ok")
         .withFieldConst(_._type, "caseTemplate")
         .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
-        .withFieldComputed(_.task, _.tasks.map(toOutputTask(_).toOutput))
+        .withFieldComputed(_.tasks, _.tasks.map(toOutputTask(_).toOutput))
         .transform
     )
 
