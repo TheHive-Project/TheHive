@@ -1,14 +1,14 @@
-package org.elastic4play.controllers
-
-import javax.inject.{Inject, Singleton}
+package controllers
 
 import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 
+import javax.inject.{Inject, Singleton}
 import models.Roles
 
+import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser, Renderer}
 import org.elastic4play.services.DBLists
 import org.elastic4play.{MissingAttributeError, Timed}
 
