@@ -1,16 +1,16 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
-import play.api.libs.json.{JsNull, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, JsObject, Json}
+
+import scala.util.Try
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -48,6 +48,18 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
       _ = get(task).remove()
       _ <- auditSrv.task.delete(task, Some(case0))
     } yield ()
+
+  override def update(
+      steps: TaskSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(TaskSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (taskSteps, updatedFields) =>
+        for {
+          c <- taskSteps.clone().`case`.getOrFail()
+          t <- taskSteps.getOrFail()
+        } yield auditSrv.task.update(t, c, updatedFields)
+    }
 }
 
 @EntitySteps[Task]

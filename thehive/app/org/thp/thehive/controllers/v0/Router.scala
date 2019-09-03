@@ -86,9 +86,9 @@ class Router @Inject()(
 //    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
     case GET(p"/case/task")           => queryExecutor.task.search
-    case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId)
+    case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
     case GET(p"/case/task/$taskId")   => taskCtrl.get(taskId)
-    case PATCH(p"/case/task/$taskId") => taskCtrl.update(taskId)
+    case PATCH(p"/case/task/$taskId") => taskCtrl.update(taskId) // Audit ok
     case POST(p"/case/task/_search")  => queryExecutor.task.search
     //case POST(p"/case/$caseId/task/_search") => taskCtrl.search
     case POST(p"/case/task/_stats") => queryExecutor.task.stats
