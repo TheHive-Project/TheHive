@@ -8,7 +8,7 @@ import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponen
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.http.ElasticDsl.search
+import com.sksamuel.elastic4s.http.ElasticDsl.{ search, termsAggregation }
 import javax.inject.{ Inject, Singleton }
 import models.Roles
 
@@ -43,14 +43,14 @@ class CustomFieldsCtrl @Inject()(
           .flatMap { customFieldType ⇒
             val filter = and("relations" in ("case", "alert", "caseTemplate"), contains(s"customFields.$customField.$customFieldType"))
             dbfind(
-              indexName ⇒ search(indexName).query(filter.query).size(0)
+              indexName ⇒ search(indexName).query(filter.query).aggregations(termsAggregation("t").field("relations"))
             ).map { searchResponse ⇒
-              Ok(JsNumber(searchResponse.totalHits))
-            }
+                val result = JsObject(searchResponse.aggregations.terms("t").buckets.map { b ⇒
+                  b.key → JsNumber(b.docCount)
+                })
+                Ok(result)
+              }
+              .recover { case _ ⇒ Ok(JsObject.empty) }
           }
       }
-
-  /*
-{"query":{"_and":[{"_not":{"_field":"customFields.cf1.string","_value":"ss"}},{"_not":{"status":"Deleted"}}]}}
- */
 }
