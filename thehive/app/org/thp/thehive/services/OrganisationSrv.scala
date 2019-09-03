@@ -5,23 +5,22 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
 
 import scala.util.Try
 
 @Singleton
-class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implicit db: Database) extends VertexSrv[Organisation, OrganisationSteps] {
+class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
+    extends VertexSrv[Organisation, OrganisationSteps] {
 
+  override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
   val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
 
-  override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
-
-  override def get(idOrName: String)(implicit graph: Graph): OrganisationSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
 
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
@@ -30,13 +29,27 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv)(implic
     } yield createdOrganisation
 
   def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
+
+  override def get(idOrName: String)(implicit graph: Graph): OrganisationSteps =
+    if (db.isValidId(idOrName)) getByIds(idOrName)
+    else initSteps.getByName(idOrName)
+
+  override def update(
+      steps: OrganisationSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(OrganisationSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (orgSteps, updatedFields) =>
+        orgSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.organisation.update(_, updatedFields))
+    }
 }
 
 @EntitySteps[Case]
 class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     extends BaseVertexSteps[Organisation, OrganisationSteps](raw) {
-
-  override def newInstance(raw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(raw)
 
   def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
 
@@ -66,4 +79,6 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     else getByName(idOrName)
 
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
+
+  override def newInstance(raw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(raw)
 }

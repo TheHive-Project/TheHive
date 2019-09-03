@@ -76,9 +76,9 @@ class Router @Inject()(
     case POST(p"/list/$listName/_exists") => listCtrl.itemExists(listName)
 
     case GET(p"/organisation")                   => organisationCtrl.list
-    case POST(p"/organisation")                  => organisationCtrl.create
+    case POST(p"/organisation")                  => organisationCtrl.create // Audit ok
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
-    case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
+    case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId) // Audit ok
 
 //    case GET(p"/share")            ⇒ shareCtrl.list
 //    case POST(p"/share")           ⇒ shareCtrl.create
