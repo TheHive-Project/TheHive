@@ -51,17 +51,16 @@ class MispExport @Inject()(
   }
 
   def removeDuplicateAttributes(attributes: Seq[ExportedMispAttribute]): Seq[ExportedMispAttribute] = {
-    val attrIndex = attributes.zipWithIndex
-
-    attrIndex
-      .filter {
-        case (ExportedMispAttribute(_, category, tpe, _, value, _), index) ⇒
-          attrIndex.exists {
-            case (ExportedMispAttribute(_, `category`, `tpe`, _, `value`, _), otherIndex) ⇒ otherIndex >= index
-            case _                                                                        ⇒ true
-          }
+    var attrSet = Set.empty[(String, String, String)]
+    val builder = Seq.newBuilder[ExportedMispAttribute]
+    attributes.foreach { attr ⇒
+      val tuple = (attr.category, attr.tpe, attr.value.fold(identity, _.name))
+      if (!attrSet.contains(tuple)) {
+        builder += attr
+        attrSet += tuple
       }
-      .map(_._1)
+    }
+    builder.result()
   }
 
   def createEvent(
