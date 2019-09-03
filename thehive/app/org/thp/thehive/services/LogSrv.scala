@@ -1,18 +1,18 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.Json
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
@@ -50,9 +50,21 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     for {
       _     <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
       case0 <- get(log).`case`.getOrFail()
-      _ = get(log).remove()
-      _ <- auditSrv.log.delete(log, Some(case0))
+      _     <- Try(get(log._id).remove())
+      _     <- auditSrv.log.delete(log, Some(case0))
     } yield ()
+
+  override def update(
+      steps: LogSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(LogSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (logSteps, updatedFields) =>
+        for {
+          c <- logSteps.clone().`case`.getOrFail()
+          l <- logSteps.getOrFail()
+        } yield auditSrv.log.update(l, c, updatedFields)
+    }
 }
 
 @EntitySteps[Log]

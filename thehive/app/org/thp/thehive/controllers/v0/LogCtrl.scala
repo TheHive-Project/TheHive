@@ -64,13 +64,11 @@ class LogCtrl @Inject()(
       }
 
   def delete(logId: String): Action[AnyContent] =
-    entryPoint("update log")
-      .authTransaction(db) { _ => implicit graph =>
-        logSrv
-          .getOrFail(logId)
-          .map { log =>
-            logSrv.get(log).remove()
-            Results.NoContent
-          }
+    entryPoint("delete log")
+      .authTransaction(db) { implicit req => implicit graph =>
+        for {
+          log <- logSrv.getOrFail(logId)
+          _ <- logSrv.cascadeRemove(log)
+        } yield Results.NoContent
       }
 }
