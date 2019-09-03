@@ -4,18 +4,21 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
+        .controller('AuthenticationCtrl', function($scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, appConfig) {
             $scope.params = {};
+            $scope.ssoLogingIn = false;
 
             $uibModalStack.dismissAll();
 
             $scope.ssoLogin = function (code) {
+                $scope.ssoLogingIn = true;
                 AuthenticationSrv.ssoLogin(code)
                     .then(function(response) {
                         var redirectLocation = response.headers().location;
                         if(angular.isDefined(redirectLocation)) {
                             window.location = redirectLocation;
                         } else {
+                            $location.search('code', null);
                             $state.go('app.cases');
                         }
                     })
@@ -25,6 +28,7 @@
                         } else {
                             NotificationSrv.log(err.data.message, 'error');
                         }
+                        $scope.ssoLogingIn = false;
                         $location.url($location.path());
                     });
             };
@@ -49,8 +53,8 @@
                 });
             };
 
-            var code = UtilsSrv.extractQueryParam('code', UrlParser('query', $location.absUrl()));
-            if(angular.isDefined(code) || $stateParams.autoLogin) {
+            var code = $location.search().code;
+            if(angular.isDefined(code) || (appConfig.config.ssoAutoLogin && !$stateParams.disableSsoAutoLogin)) {
                 $scope.ssoLogin(code);
             }
         });

@@ -58,7 +58,7 @@ angular.module('thehive', [
                     }
                 },
                 params: {
-                    autoLogin: false
+                    disableSsoAutoLogin: false
                 },
                 title: 'Login'
             })

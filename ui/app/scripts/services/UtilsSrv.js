@@ -101,23 +101,6 @@
                         scope.value = scope.oldValue;
                         scope.updatable.updating = false;
                     };
-                },
-
-                extractQueryParam: function(paramName, queryString) {
-                    if (!queryString || !paramName) {
-                        return;
-                    }
-
-                    var param = $location.search()[paramName];
-
-                    if (param) {
-                        return param;
-                    } else {
-                        var parsedQuery = _.find(queryString.split('&'), function(str) {
-                            return str.startsWith(paramName + '=');
-                        });
-                        return parsedQuery ? parsedQuery.substr(paramName.length + 1) : undefined;
-                    }
                 }
             };
 
