@@ -20,8 +20,8 @@ class SimpleUserMapper(
 
   @Inject() def this(configuration: Configuration, ec: ExecutionContext) =
     this(
-      configuration.getOptional[String]("auth.sso.attributes.login").getOrElse("name"),
-      configuration.getOptional[String]("auth.sso.attributes.name").getOrElse("username"),
+      configuration.getOptional[String]("auth.sso.attributes.login").getOrElse("sub"),
+      configuration.getOptional[String]("auth.sso.attributes.name").getOrElse("name"),
       configuration.getOptional[String]("auth.sso.attributes.roles"),
       configuration.getOptional[Seq[String]]("auth.sso.defaultRoles").getOrElse(Seq()),
       ec
