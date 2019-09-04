@@ -229,7 +229,7 @@ class AlertSrv @Inject()(
       _           <- importObservables(alert.alert, createdCase.`case`)
       _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
       _           <- markAsRead(alert._id)
-      _           <- auditSrv.`case`.create(createdCase.`case`) // TODO add from alert ?
+      _           <- auditSrv.`case`.create(createdCase.`case`, Some(Json.obj("operation" -> "createFromAlert")))
     } yield createdCase
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =

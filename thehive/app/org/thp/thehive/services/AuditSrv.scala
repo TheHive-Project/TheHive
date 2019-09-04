@@ -151,8 +151,8 @@ class AuditSrv @Inject()(
 
   class SelfContextObjectAudit[E <: Product] {
 
-    def create(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity), Some(entity), Some(entity))
+    def create(entity: E with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.create, entity, details.map(_.toString)), Some(entity), Some(entity))
 
     def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
