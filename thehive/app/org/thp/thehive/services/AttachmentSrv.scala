@@ -52,7 +52,10 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
 
   def stream(attachment: Attachment with Entity): InputStream = storageSrv.loadBinary(attachment._id)
 
-  def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = ??? // TODO
+  def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    // TODO handle Storage data removal
+    Try(get(attachment).remove())
+
 }
 
 @EntitySteps[Attachment]
