@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
@@ -18,6 +13,10 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable}
 import org.thp.thehive.services.CaseSrv
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 case class TestAlert(
     `type`: String,
@@ -317,6 +316,22 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       )
     }
 
-    "merge an alert with a case" in todo
+    "merge an alert with a case" in {
+      val request1 = FakeRequest("POST", "/api/v0/alert/test;alert_creation_test;#1/merge/#1")
+        .withHeaders("user" -> "user1")
+      val result1 = alertCtrl.mergeWithCase("test;alert_creation_test;#1", "#1")(request1)
+      status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
+
+      val resultCase       = contentAsJson(result1)
+      val resultCaseOutput = resultCase.as[OutputCase]
+
+      resultCaseOutput.description.contains("Merged with alert ##1") must beTrue
+//      val db = app.instanceOf[Database]
+//      db.roTransaction{implicit g =>
+//        val observables = app.instanceOf[CaseSrv].get("#1").observables(dummyUserSrv.authContext).toList
+//
+//        observables.fin
+//      }
+    }
   }
 }

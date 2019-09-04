@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
@@ -17,6 +12,10 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -131,7 +130,18 @@ class AlertCtrl @Inject()(
           }
       }
 
-  def mergeWithCase(alertId: String, caseId: String) = ???
+  def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
+    entryPoint("merge alert with case")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          _ <- alertSrv
+            .get(alertId)
+            .can(Permissions.manageAlert)
+            .existsOrFail()
+          _        <- alertSrv.mergeInCase(alertId, caseId)
+          richCase <- caseSrv.get(caseId).richCase.getOrFail()
+        } yield Results.Ok(richCase.toJson)
+      }
 
   def markAsRead(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as read")

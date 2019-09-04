@@ -232,14 +232,14 @@ class AlertSrv @Inject()(
       _           <- auditSrv.`case`.create(createdCase.`case`, Some(Json.obj("operation" -> "createFromAlert")))
     } yield createdCase
 
-  def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {
       alert <- getOrFail(alertId)
       case0 <- caseSrv.getOrFail(caseId)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      _ <- caseSrv.get(caseId).update("description" -> description)
+      c <- caseSrv.get(caseId).update("description" -> description)
       _ <- importObservables(alert, case0)
-    } yield () // TODO add special audit ?
+    } yield c // TODO add special audit ?
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(
       implicit graph: Graph,

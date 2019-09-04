@@ -116,19 +116,19 @@ class Router @Inject()(
     case POST(p"/customField") => customFieldCtrl.create
 
     case GET(p"/alert")                        => queryExecutor.alert.search
-    case POST(p"/alert")                       => alertCtrl.create
+    case POST(p"/alert")                       => alertCtrl.create // Audit ok
     case GET(p"/alert/$alertId")               => alertCtrl.get(alertId)
-    case PATCH(p"/alert/$alertId")             => alertCtrl.update(alertId)
-    case POST(p"/alert/$alertId/markAsRead")   => alertCtrl.markAsRead(alertId)
-    case POST(p"/alert/$alertId/markAsUnread") => alertCtrl.markAsUnread(alertId)
-    case POST(p"/alert/$alertId/follow")       => alertCtrl.followAlert(alertId)
-    case POST(p"/alert/$alertId/unfollow")     => alertCtrl.unfollowAlert(alertId)
-    case POST(p"/alert/$alertId/createCase")   => alertCtrl.createCase(alertId)
+    case PATCH(p"/alert/$alertId")             => alertCtrl.update(alertId) // Audit ok
+    case POST(p"/alert/$alertId/markAsRead")   => alertCtrl.markAsRead(alertId) // Audit ok
+    case POST(p"/alert/$alertId/markAsUnread") => alertCtrl.markAsUnread(alertId) // Audit ok
+    case POST(p"/alert/$alertId/follow")       => alertCtrl.followAlert(alertId) // Audit ok
+    case POST(p"/alert/$alertId/unfollow")     => alertCtrl.unfollowAlert(alertId) // Audit ok
+    case POST(p"/alert/$alertId/createCase")   => alertCtrl.createCase(alertId) // Audit ok
     case POST(p"/alert/_search")               => queryExecutor.alert.search
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate
     case POST(p"/alert/_stats") => queryExecutor.alert.stats
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
-//    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
+    case POST(p"/alert/$alertId/merge/$caseId") => alertCtrl.mergeWithCase(alertId, caseId)
 
     case GET(p"/dashboard")                 => queryExecutor.dashboard.search
     case POST(p"/dashboard/_search")        => queryExecutor.dashboard.search
