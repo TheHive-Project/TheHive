@@ -3,27 +3,27 @@ package services
 import java.nio.file.Files
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 import play.api.libs.json._
-import play.api.{ Configuration, Logger }
+import play.api.{Configuration, Logger}
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import connectors.ConnectorRouter
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import models._
 
-import org.elastic4play.controllers.{ Fields, FileInputValue }
+import org.elastic4play.controllers.{Fields, FileInputValue}
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.QueryDSL.{ groupByField, parent, selectCount, withId }
+import org.elastic4play.services.QueryDSL.{groupByField, parent, selectCount, withId}
 import org.elastic4play.services._
 import org.elastic4play.utils.Collection
-import org.elastic4play.{ ConflictError, InternalError }
+import org.elastic4play.{ConflictError, InternalError}
 
 trait AlertTransformer {
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
@@ -312,7 +312,7 @@ class AlertSrv(
       .create(caze, artifactsFields)
       .flatMap { artifacts ⇒
         Future.traverse(artifacts) {
-          case Success(_) => Future.successful(())
+          case Success(_) ⇒ Future.successful(())
           case Failure(ConflictError(_, attributes)) ⇒ // if it already exists, add tags from alert
             import org.elastic4play.services.QueryDSL._
             (for {
@@ -340,7 +340,7 @@ class AlertSrv(
             Future.successful(())
         }
       }
-        .map(_ => caze)
+      .map(_ ⇒ caze)
     updatedCase.onComplete { _ ⇒
       // remove temporary files
       artifactsFields
