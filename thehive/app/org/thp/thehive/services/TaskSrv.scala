@@ -58,7 +58,8 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
         for {
           c <- taskSteps.clone().`case`.getOrFail()
           t <- taskSteps.getOrFail()
-        } yield auditSrv.task.update(t, c, updatedFields)
+          _ <- auditSrv.task.update(t, c, updatedFields)
+        } yield ()
     }
 }
 
@@ -73,9 +74,9 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   )
 
-  def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
-
   override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
+
+  def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
   def can(permission: Permission)(implicit authContext: AuthContext): TaskSteps =
     newInstance(

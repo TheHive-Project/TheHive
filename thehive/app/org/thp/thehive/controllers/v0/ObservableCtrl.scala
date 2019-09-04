@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, OrganisationSrv}
+import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -133,8 +133,7 @@ class ObservableCtrl @Inject()(
             .getByIds(obsId)
             .can(Permissions.manageCase)
             .getOrFail()
-          _ = observableSrv.get(observable).remove()
-//          _ <- auditSrv.deleteObservable(obs, Json.obj("id" → obs._id, "type" → obs.`type`, "message" → obs.message))(graph, request.authContext)
+          _ <- observableSrv.cascadeRemove(observable)
         } yield Results.NoContent
       }
 }

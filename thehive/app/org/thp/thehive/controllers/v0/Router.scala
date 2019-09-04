@@ -48,11 +48,11 @@ class Router @Inject()(
     case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId) // Audit ok
     case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)
 
-    case GET(p"/case/template")                   => queryExecutor.caseTemplate.search
-    case POST(p"/case/template")                  => caseTemplateCtrl.create // Audit ok
-    case GET(p"/case/template/$caseTemplateId")   => caseTemplateCtrl.get(caseTemplateId)
-    case PATCH(p"/case/template/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId) // Audit ok
-    case POST(p"/case/template/_search")          => queryExecutor.caseTemplate.search
+    case GET(p"/case/template")                    => queryExecutor.caseTemplate.search
+    case POST(p"/case/template")                   => caseTemplateCtrl.create // Audit ok
+    case GET(p"/case/template/$caseTemplateId")    => caseTemplateCtrl.get(caseTemplateId)
+    case PATCH(p"/case/template/$caseTemplateId")  => caseTemplateCtrl.update(caseTemplateId) // Audit ok
+    case POST(p"/case/template/_search")           => queryExecutor.caseTemplate.search
     case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId) // Audit ok
 
     case GET(p"/user")                          => queryExecutor.user.search
@@ -99,17 +99,17 @@ class Router @Inject()(
     case POST(p"/case/task/log/_stats")   => queryExecutor.log.stats
     case POST(p"/case/task/$taskId/log")  => logCtrl.create(taskId) // Audit ok
     case PATCH(p"/case/task/log/$logId")  => logCtrl.update(logId) // Audit ok
-    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId) // Audit ok, weird logs/silent errors though
+    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId) // Audit ok, weird logs/silent errors though (stream related)
 //    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
 
     case POST(p"/case/artifact/_search") => queryExecutor.observable.search
 //    case POST(p"/case/:caseId/artifact/_search")    ⇒ observableCtrl.findInCase(caseId)
     case POST(p"/case/artifact/_stats")               => queryExecutor.observable.stats
-    case POST(p"/case/$caseId/artifact")              => observableCtrl.create(caseId)
+    case POST(p"/case/$caseId/artifact")              => observableCtrl.create(caseId) // Audit ok
     case GET(p"/case/artifact/$observableId")         => observableCtrl.get(observableId)
-    case DELETE(p"/case/artifact/$observableId")      => observableCtrl.delete(observableId)
-    case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate
-    case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId)
+    case DELETE(p"/case/artifact/$observableId")      => observableCtrl.delete(observableId) // Audit ok
+    case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
+    case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
 
     case GET(p"/customField")  => customFieldCtrl.list
