@@ -86,15 +86,15 @@
                               ];
 
                             if(usage.case) {
-                                segs.push('<li>' + usage.case + ' cases</li>');
+                                segs.push('<li>' + usage.case + ' ' + (usage.case > 1 ? 'cases' : 'case') + '</li>');
                             }
 
                             if(usage.alert) {
-                                segs.push('<li>' + usage.alert + ' alerts</li>');
+                                segs.push('<li>' + usage.alert + ' ' + (usage.alert > 1 ? 'alerts' : 'alert') + '</li>');
                             }
 
                             if(usage.caseTemplate) {
-                                segs.push('<li>' + usage.caseTemplate + ' case templates</li>');
+                                segs.push('<li>' + usage.caseTemplate + ' case ' + ' ' + (usage.caseTemplate > 1 ? 'templates' : 'template') + '</li>');
                             }
 
                             segs.push('</ul>');
@@ -109,13 +109,16 @@
                             isHtml: isHtml
                         });
                     })
-                    .then(function(response) {
+                    .then(function(/*response*/) {
                         return CustomFieldsSrv.removeField(customField);
                     })
                     .then(function() {
                         self.initCustomfields();
                         CustomFieldsCacheSrv.clearCache();
                         $scope.$emit('custom-fields:refresh');
+                    })
+                    .catch(function(err) {
+                        console.log(err);
                     });
             };
 
