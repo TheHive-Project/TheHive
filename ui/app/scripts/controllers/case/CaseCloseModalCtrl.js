@@ -43,15 +43,20 @@
                 }), 'name');
 
                 return result;
-            }
+            };
 
             $scope.initialize = function() {
                 CustomFieldsCacheSrv.all().then(function(fields) {
                     $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
-                    $scope.allCustomFields = fields;                    
+                    $scope.allCustomFields = fields;
 
                     $scope.mandatoryFields = _.without(_.map($scope.orderedFields, function(cf) {
                         var fieldDef = fields[cf];
+
+                        if(!fieldDef) {
+                            return;
+                        }
+
                         var fieldValue = $scope.caze.customFields[cf][cf.type];
 
                         if((fieldValue === undefined || fieldValue === null) && fieldDef.mandatory === true) {

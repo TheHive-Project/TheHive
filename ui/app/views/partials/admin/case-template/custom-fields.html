@@ -20,7 +20,7 @@
                     <a href ng-click="$vm.removeCustomField(cf)"><span class="pull-right text-danger"><i class="fa fa-trash"></i> Delete</span></a>
                 </div>
                 <div class="col-sm-6">
-                    <select class="form-control" ng-model="cf.name" ng-options="item.reference as item.name for (key, item) in $vm.fields" required></select>
+                    <select class="form-control" ng-model="cf.name" ng-options="item.reference as item.name for (key, item) in $vm.fields | orderObjectBy:'name'" required></select>
                 </div>
                 <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length > 0">
                     <select class="form-control" ng-model="cf.value" ng-options="v for v in $vm.fields[cf.name].options">
