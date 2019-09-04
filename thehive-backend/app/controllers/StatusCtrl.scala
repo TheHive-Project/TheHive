@@ -33,8 +33,8 @@ class StatusCtrl @Inject()(
 ) extends AbstractController(components) {
 
   private[controllers] def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
-  private var clusterStatusName: String = "Init"
-  val checkStatusInterval: FiniteDuration = configuration.getOptional[FiniteDuration]("statusCheckInterval").getOrElse(1.minute)
+  private var clusterStatusName: String            = "Init"
+  val checkStatusInterval: FiniteDuration          = configuration.getOptional[FiniteDuration]("statusCheckInterval").getOrElse(1.minute)
   private def updateStatus(): Unit = {
     clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
     system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())

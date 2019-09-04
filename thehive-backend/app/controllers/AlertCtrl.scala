@@ -128,8 +128,9 @@ class AlertCtrl @Inject()(
   @Timed
   def bulkDelete(): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
     request.body.getStrings("ids").fold(Future.successful(NoContent)) { ids ⇒
-      Future.traverse(ids)(alertSrv.delete(_, request.body.getBoolean("force").getOrElse(false)))
-        .map(_ => NoContent)
+      Future
+        .traverse(ids)(alertSrv.delete(_, request.body.getBoolean("force").getOrElse(false)))
+        .map(_ ⇒ NoContent)
     }
   }
 
@@ -180,7 +181,9 @@ class AlertCtrl @Inject()(
   def createCase(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
     for {
       alert ← alertSrv.get(id)
-      customCaseTemplate = request.body.getString("caseTemplate")
+      customCaseTemplate = request
+        .body
+        .getString("caseTemplate")
         .orElse(alert.caseTemplate())
       caze ← alertSrv.createCase(alert, customCaseTemplate)
     } yield renderer.toOutput(CREATED, caze)

@@ -1,15 +1,15 @@
 package controllers
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.http.Status
-import play.api.libs.json.{ JsNumber, JsObject }
-import play.api.mvc.{ AbstractController, Action, AnyContent, ControllerComponents }
+import play.api.libs.json.{JsNumber, JsObject, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.http.ElasticDsl.{ search, termsAggregation }
-import javax.inject.{ Inject, Singleton }
+import com.sksamuel.elastic4s.http.ElasticDsl.{search, termsAggregation}
+import javax.inject.{Inject, Singleton}
 import models.Roles
 
 import org.elastic4play.NotFoundError
@@ -45,12 +45,12 @@ class CustomFieldsCtrl @Inject()(
             dbfind(
               indexName ⇒ search(indexName).query(filter.query).aggregations(termsAggregation("t").field("relations"))
             ).map { searchResponse ⇒
-                val result = JsObject(searchResponse.aggregations.terms("t").buckets.map { b ⇒
-                  b.key → JsNumber(b.docCount)
-                })
-                Ok(result)
+                val buckets = searchResponse.aggregations.terms("t").buckets
+                val total   = buckets.map(_.docCount).sum
+                val result  = buckets.map(b ⇒ b.key → JsNumber(b.docCount)) :+ ("total" → JsNumber(total))
+                Ok(JsObject(result))
               }
-              .recover { case _ ⇒ Ok(JsObject.empty) }
+              .recover { case _ ⇒ Ok(Json.obj("total" → 0)) }
           }
       }
 }
