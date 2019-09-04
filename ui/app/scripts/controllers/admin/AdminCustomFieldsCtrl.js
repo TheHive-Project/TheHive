@@ -113,12 +113,16 @@
                         return CustomFieldsSrv.removeField(customField);
                     })
                     .then(function() {
+                        NotificationSrv.log('The custom field has been removed successfully', 'success');
+                        
                         self.initCustomfields();
                         CustomFieldsCacheSrv.clearCache();
                         $scope.$emit('custom-fields:refresh');
                     })
                     .catch(function(err) {
-                        console.log(err);
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('AdminCustomFields', err.data, err.status);
+                        }
                     });
             };
 
