@@ -80,30 +80,6 @@ class AlertCtrl @Inject()(
         } yield Results.Created((richAlert -> richObservables.flatten).toJson)
       }
 
-  private def importObservable(alert: Alert with Entity, observable: InputObservable)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Seq[RichObservable]] =
-    observableTypeSrv
-      .getOrFail(observable.dataType)
-      .flatMap {
-        case attachmentType if attachmentType.isAttachment =>
-          observable.data.map(_.split(';')).toTry {
-            case Array(filename, contentType, value) =>
-              val data = Base64.getDecoder.decode(value)
-              attachmentSrv
-                .create(filename, contentType, data)
-                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, observable.tags, Nil))
-            case data =>
-              Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
-          }
-        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
-      }
-      .map(_.map { richObservable =>
-        alertSrv.addObservable(alert, richObservable.observable)
-        richObservable
-      })
-
   def get(alertId: String): Action[AnyContent] =
     entryPoint("get alert")
       .authRoTransaction(db) { implicit request => implicit graph =>
@@ -128,6 +104,18 @@ class AlertCtrl @Inject()(
           .map { richAlert =>
             Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson)
           }
+      }
+
+  def delete(alertId: String): Action[AnyContent] =
+    entryPoint("delete alert")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          alert <- alertSrv
+            .get(alertId)
+            .visible
+            .getOrFail()
+          _ <- alertSrv.cascadeRemove(alert)
+        } yield Results.NoContent
       }
 
   def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
@@ -207,4 +195,28 @@ class AlertCtrl @Inject()(
             Results.NoContent
           }
       }
+
+  private def importObservable(alert: Alert with Entity, observable: InputObservable)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Seq[RichObservable]] =
+    observableTypeSrv
+      .getOrFail(observable.dataType)
+      .flatMap {
+        case attachmentType if attachmentType.isAttachment =>
+          observable.data.map(_.split(';')).toTry {
+            case Array(filename, contentType, value) =>
+              val data = Base64.getDecoder.decode(value)
+              attachmentSrv
+                .create(filename, contentType, data)
+                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, observable.tags, Nil))
+            case data =>
+              Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+          }
+        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
+      }
+      .map(_.map { richObservable =>
+        alertSrv.addObservable(alert, richObservable.observable)
+        richObservable
+      })
 }

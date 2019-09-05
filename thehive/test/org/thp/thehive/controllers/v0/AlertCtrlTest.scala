@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import akka.stream.Materializer
+import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -12,7 +13,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable}
-import org.thp.thehive.services.CaseSrv
+import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
@@ -58,6 +59,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val alertCtrl: AlertCtrl = app.instanceOf[AlertCtrl]
+    val db                   = app.instanceOf[Database]
 
     "create an alert" in {
       val now = new Date()
@@ -299,7 +301,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       )
 
       TestCase(resultCaseOutput) must_=== expected
-      val observables = app.instanceOf[Database].roTransaction { implicit graph =>
+      val observables = db.roTransaction { implicit graph =>
         val authContext = mock[AuthContext]
         authContext.organisation returns "cert"
         app.instanceOf[CaseSrv].get(resultCaseOutput._id).observables(authContext).richObservable.toList
@@ -327,8 +329,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       resultCaseOutput.description.contains("Merged with alert ##1") must beTrue
 
-      val db = app.instanceOf[Database]
-      db.roTransaction { implicit g =>
+      db.roTransaction { implicit graph =>
         val observables = app
           .instanceOf[CaseSrv]
           .get("#1")
@@ -337,6 +338,30 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
         observables.find(_.message.contains("coucou")) must beSome
       }
+    }
+
+    "delete an alert" in db.roTransaction { implicit graph =>
+      val observableSrv = app.instanceOf[ObservableSrv]
+
+      observableSrv
+        .initSteps
+        .has(Key("message"), P.eq("coucou"))
+        .alert
+        .getOrFail() must beSuccessfulTry
+
+      val request1 = FakeRequest("DELETE", "/api/v0/alert/test;alert_creation_test;#1")
+        .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
+      val result1 = alertCtrl.delete("test;alert_creation_test;#1")(request1)
+
+      status(result1) must equalTo(204)
+      db.roTransaction(
+        graph =>
+          observableSrv
+            .initSteps(graph)
+            .has(Key("message"), P.eq("coucou"))
+            .alert
+            .getOrFail() must beFailedTry
+      )
     }
   }
 }
