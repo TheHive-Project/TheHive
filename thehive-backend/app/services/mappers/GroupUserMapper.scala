@@ -9,15 +9,15 @@ import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 
-import org.elastic4play.AuthenticationError
+import org.elastic4play.{AuthenticationError, AuthorizationError}
 import org.elastic4play.controllers.Fields
 
 class GroupUserMapper(
     loginAttrName: String,
     nameAttrName: String,
-    groupAttrName: String,
+    groupsAttrName: String,
     defaultRoles: Seq[String],
-    groupsUrl: String,
+    groupsUrl: Option[String],
     mappings: Map[String, Seq[String]],
     ws: WSClient,
     implicit val ec: ExecutionContext
@@ -29,7 +29,7 @@ class GroupUserMapper(
       configuration.getOptional[String]("auth.sso.attributes.name").getOrElse("name"),
       configuration.getOptional[String]("auth.sso.attributes.groups").getOrElse(""),
       configuration.getOptional[Seq[String]]("auth.sso.defaultRoles").getOrElse(Seq()),
-      configuration.getOptional[String]("auth.sso.groups.url").getOrElse(""),
+      configuration.getOptional[String]("auth.sso.groups.url"),
       configuration.getOptional[Map[String, Seq[String]]]("auth.sso.groups.mappings").getOrElse(Map()),
       ws,
       ec
@@ -45,51 +45,53 @@ class GroupUserMapper(
     val realStr = ("\""~>strSpc<~"\"" | "'"~>strSpc<~"'" | str)
 
     def expr: Parser[Seq[String]] = {
-      "[" ~ opt(realStr ~ rep(("," | ",") ~ realStr)) ~ "]" ^^ {
-        case _ ~ Some(firstRole ~ list) ~ _ => list.foldLeft(Seq(firstRole)) {
-          case (queue, _ ~ role) => role +: queue
+      "[" ~ opt(realStr ~ rep("," ~ realStr)) ~ "]" ^^ {
+        case _ ~ Some(firstRole ~ list) ~ _ ⇒ list.foldLeft(Seq(firstRole)) {
+          case (queue, _ ~ role) ⇒ role +: queue
         }
-        case _ ~ _      => Seq.empty[String]
+        case _ ~ _      ⇒ Seq.empty[String]
       } | opt(realStr) ^^ {
-        case Some(role) => Seq(role)
-        case None       => Seq.empty[String]
+        case Some(role) ⇒ Seq(role)
+        case None       ⇒ Seq.empty[String]
       }
     }
 
-    def apply(input: String, logger: Logger): Seq[String] = parseAll(expr, input) match {
-      case Success(result, _)  => result
-      case failure : NoSuccess => {
-        logger.error(failure.msg)
+    def apply(input: String): Seq[String] = parseAll(expr, input) match {
+      case Success(result, _)  ⇒ result
+      case failure : NoSuccess ⇒ {
+        logger.error(s"Can't parse groups list: ${failure.msg}")
         Seq.empty[String]
       }
     }
   }
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] = {
-    if (groupsUrl == "") {
-      logger.debug(s"No groups endpoint provided (auth.sso.groups.url). Assuming groups were already received.")
-
-      val jsonGroups: Seq[String] = {
-        val groups: JsValue = (jsValue \ groupAttrName).get
-        // Groups received as valid JSON array
-        if (groups.isInstanceOf[JsArray]) {
-          groups.as[Seq[String]]
-        // Group list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
-        } else if (groups.isInstanceOf[JsString]) {
-          (new RoleListParser).apply(groups.as[String], logger)
-        // Invalid group list
-        } else {
-          logger.error(s"Invalid group list (${groupAttrName} attribute, value '${groups}', type ${groups.getClass})")
-          Seq.empty[String]
+    groupsUrl match {
+      case Some(groupsEndpointUrl) ⇒ {
+        logger.debug(s"Retreiving groups from ${groupsEndpointUrl}")
+        val apiCall = authHeader.fold(ws.url(groupsEndpointUrl))(headers ⇒ ws.url(groupsEndpointUrl).addHttpHeaders(headers))
+        apiCall.get.flatMap { r ⇒
+          val jsonGroups = (r.json \ groupsAttrName).as[Seq[String]]
+          mapGroupsAndBuildUserFields(jsValue, jsonGroups)
         }
       }
-
-      mapGroupsAndBuildUserFields(jsValue, jsonGroups)
-
-    } else {
-      val apiCall = authHeader.fold(ws.url(groupsUrl))(headers ⇒ ws.url(groupsUrl).addHttpHeaders(headers))
-      apiCall.get.flatMap { r ⇒
-        val jsonGroups = (r.json \ groupAttrName).as[Seq[String]]
+      case None ⇒ {
+        val jsonGroups: Seq[String] = (jsValue \ groupsAttrName) match {
+          // Groups received as valid JSON array
+          case JsDefined(JsArray(groupsList)) ⇒ groupsList.map(_.as[String]).toList
+          // Groups list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
+          case JsDefined(JsString(groupsStr)) ⇒ (new RoleListParser).apply(groupsStr)
+          // Invalid group list
+          case JsDefined(error) ⇒ {
+            logger.error(s"Invalid groups list received in user info: '${error}' of type ${error.getClass}")
+            Seq.empty[String]
+          }
+          // Groups field is undefined
+          case _: JsUndefined ⇒ {
+            logger.error(s"OAuth2 not configured properly: groups attribute ${groupsAttrName} doesn't exist in user info")
+            Seq.empty[String]
+          }
+        }
         mapGroupsAndBuildUserFields(jsValue, jsonGroups)
       }
     }
@@ -100,10 +102,10 @@ class GroupUserMapper(
     val roles       = if (mappedRoles.nonEmpty) mappedRoles else defaultRoles
 
     if (roles.isEmpty) {
-      Future.failed(AuthenticationError(s"No matched roles for user."))
+      Future.failed(AuthorizationError(s"No matched roles for user."))
 
     } else {
-      logger.debug(s"Computed roles : ${roles}")
+      logger.debug(s"Computed roles: ${roles}")
 
       val fields = for {
         login ← (jsValue \ loginAttrName).validate[String]
