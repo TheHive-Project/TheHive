@@ -79,7 +79,7 @@ class OAuth2Srv(
     }
 
   private def getAuthTokenAndAuthenticate(clientId: String, code: String)(implicit request: RequestHeader): Future[AuthContext] = {
-    logger.debug("Getting user token with the code from the response!")
+    logger.debug("Getting user token with the code from the response")
     withOAuth2Config { cfg ⇒
       ws.url(cfg.tokenUrl)
         .post(
@@ -99,6 +99,7 @@ class OAuth2Srv(
         .flatMap { r ⇒
           r.status match {
             case Status.OK ⇒
+              logger.debug("Getting user info using access token")
               val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
               val authHeader  = "Authorization" → s"bearer $accessToken"
               ws.url(cfg.userUrl)
@@ -106,15 +107,15 @@ class OAuth2Srv(
                 .get()
                 .flatMap { userResponse ⇒
                   if (userResponse.status != Status.OK) {
-                    Future.failed(AuthenticationError(s"unexpected response from server: ${userResponse.status} ${userResponse.body}"))
+                    Future.failed(AuthenticationError(s"Unexpected response from server: ${userResponse.status} ${userResponse.body}"))
                   } else {
                     val response = userResponse.json.asInstanceOf[JsObject]
                     getOrCreateUser(response, authHeader)
                   }
                 }
             case _ ⇒
-              logger.error(s"unexpected response from server: ${r.status} ${r.body}")
-              Future.failed(AuthenticationError("unexpected response from server"))
+              logger.error(s"Unexpected response from server: ${r.status} ${r.body}")
+              Future.failed(AuthenticationError("Unexpected response from server"))
           }
         }
     }

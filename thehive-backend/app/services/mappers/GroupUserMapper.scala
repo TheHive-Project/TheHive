@@ -55,14 +55,6 @@ class GroupUserMapper(
         case None       ⇒ Seq.empty[String]
       }
     }
-
-    def apply(input: String): Seq[String] = parseAll(expr, input) match {
-      case Success(result, _)  ⇒ result
-      case failure : NoSuccess ⇒ {
-        logger.error(s"Can't parse groups list: ${failure.msg}")
-        Seq.empty[String]
-      }
-    }
   }
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] = {
@@ -70,30 +62,36 @@ class GroupUserMapper(
       case Some(groupsEndpointUrl) ⇒ {
         logger.debug(s"Retreiving groups from ${groupsEndpointUrl}")
         val apiCall = authHeader.fold(ws.url(groupsEndpointUrl))(headers ⇒ ws.url(groupsEndpointUrl).addHttpHeaders(headers))
-        apiCall.get.flatMap { r ⇒
-          val jsonGroups = (r.json \ groupsAttrName).as[Seq[String]]
-          mapGroupsAndBuildUserFields(jsValue, jsonGroups)
-        }
+        apiCall.get.flatMap { r ⇒ extractGroupsThenBuildUserFields(jsValue, r.json) }
       }
       case None ⇒ {
-        val jsonGroups: Seq[String] = (jsValue \ groupsAttrName) match {
-          // Groups received as valid JSON array
-          case JsDefined(JsArray(groupsList)) ⇒ groupsList.map(_.as[String]).toList
-          // Groups list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
-          case JsDefined(JsString(groupsStr)) ⇒ (new RoleListParser).apply(groupsStr)
-          // Invalid group list
-          case JsDefined(error) ⇒ {
-            logger.error(s"Invalid groups list received in user info: '${error}' of type ${error.getClass}")
-            Seq.empty[String]
-          }
-          // Groups field is undefined
-          case _: JsUndefined ⇒ {
-            logger.error(s"OAuth2 not configured properly: groups attribute ${groupsAttrName} doesn't exist in user info")
-            Seq.empty[String]
-          }
-        }
-        mapGroupsAndBuildUserFields(jsValue, jsonGroups)
+        logger.debug(s"Extracting groups from user info")
+        extractGroupsThenBuildUserFields(jsValue, jsValue)
       }
+    }
+  }
+
+  private def extractGroupsThenBuildUserFields(jsValue: JsValue, groupsContainer: JsValue): Future[Fields] = {
+    (groupsContainer \ groupsAttrName) match {
+      // Groups received as valid JSON array
+      case JsDefined(JsArray(groupsList)) ⇒ mapGroupsAndBuildUserFields(jsValue, groupsList.map(_.as[String]).toList)
+
+      // Groups list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
+      case JsDefined(JsString(groupsStr)) ⇒ {
+        val parser = new RoleListParser
+        parser.parseAll(parser.expr, groupsStr) match {
+          case parser.Success(result, _) ⇒ mapGroupsAndBuildUserFields(jsValue, result)
+          case err: parser.NoSuccess     ⇒ Future.failed(AuthenticationError(s"User info fails: can't parse groups list (${err.msg})"))
+        }
+      }
+
+      // Invalid group list
+      case JsDefined(error) ⇒
+        Future.failed(AuthenticationError(s"User info fails: invalid groups list received in user info ('${error}' of type ${error.getClass})"))
+
+      // Groups field is undefined
+      case _: JsUndefined ⇒
+        Future.failed(AuthenticationError(s"User info fails: groups attribute ${groupsAttrName} doesn't exist in user info"))
     }
   }
 
@@ -102,10 +100,10 @@ class GroupUserMapper(
     val roles       = if (mappedRoles.nonEmpty) mappedRoles else defaultRoles
 
     if (roles.isEmpty) {
-      Future.failed(AuthorizationError(s"No matched roles for user."))
+      Future.failed(AuthorizationError(s"No matched roles for user"))
 
     } else {
-      logger.debug(s"Computed roles: ${roles}")
+      logger.debug(s"Computed roles: ${roles.mkString(", ")}")
 
       val fields = for {
         login ← (jsValue \ loginAttrName).validate[String]
@@ -113,7 +111,7 @@ class GroupUserMapper(
       } yield Fields(Json.obj("login" → login, "name" → name, "roles" → roles))
       fields match {
         case JsSuccess(f, _) ⇒ Future.successful(f)
-        case JsError(errors) ⇒ Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._1).mkString}"))
+        case JsError(errors) ⇒ Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
       }
     }
   }
