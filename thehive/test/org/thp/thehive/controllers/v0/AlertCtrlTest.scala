@@ -318,7 +318,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "merge an alert with a case" in {
       val request1 = FakeRequest("POST", "/api/v0/alert/test;alert_creation_test;#1/merge/#1")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
       val result1 = alertCtrl.mergeWithCase("test;alert_creation_test;#1", "#1")(request1)
       status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
@@ -326,12 +326,17 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       val resultCaseOutput = resultCase.as[OutputCase]
 
       resultCaseOutput.description.contains("Merged with alert ##1") must beTrue
-//      val db = app.instanceOf[Database]
-//      db.roTransaction{implicit g =>
-//        val observables = app.instanceOf[CaseSrv].get("#1").observables(dummyUserSrv.authContext).toList
-//
-//        observables.fin
-//      }
+
+      val db = app.instanceOf[Database]
+      db.roTransaction { implicit g =>
+        val observables = app
+          .instanceOf[CaseSrv]
+          .get("#1")
+          .observables(DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all).getSystemAuthContext)
+          .toList
+
+        observables.find(_.message.contains("coucou")) must beSome
+      }
     }
   }
 }
