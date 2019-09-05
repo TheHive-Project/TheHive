@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -16,7 +11,11 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, _}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject()(
@@ -156,24 +155,6 @@ class AlertSrv @Inject()(
         auditSrv.alert.update(alert, Json.obj(s"customField.${customField.name}" -> value.toString))
       }
 
-  private def addCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    for {
-      alertCustomField <- customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value)
-      _                <- alertCustomFieldSrv.create(alertCustomField, alert, customField)
-    } yield ()
-
-  private def updateCustomField(alert: Alert with Entity, customFieldWithValue: CustomFieldWithValue, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    alertCustomFieldSrv
-      .get(customFieldWithValue.customFieldValue._id)
-      .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
-      .map(_ => ())
-
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
     get(alert).customFields(Some(customFieldName)).headOption()
 
@@ -239,7 +220,8 @@ class AlertSrv @Inject()(
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
       c <- caseSrv.get(caseId).update("description" -> description)
       _ <- importObservables(alert, case0)
-    } yield c // TODO add special audit ?
+      _ <- auditSrv.alertToCase.merge(alert, c)
+    } yield c
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(
       implicit graph: Graph,
@@ -264,6 +246,24 @@ class AlertSrv @Inject()(
     } yield ()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
+
+  private def addCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      alertCustomField <- customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value)
+      _                <- alertCustomFieldSrv.create(alertCustomField, alert, customField)
+    } yield ()
+
+  private def updateCustomField(alert: Alert with Entity, customFieldWithValue: CustomFieldWithValue, value: Any)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    alertCustomFieldSrv
+      .get(customFieldWithValue.customFieldValue._id)
+      .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
+      .map(_ => ())
 }
 
 @EntitySteps[Alert]

@@ -38,6 +38,7 @@ class AuditSrv @Inject()(
   val caseTemplate                                        = new SelfContextObjectAudit[CaseTemplate]
   val taskInTemplate                                      = new ObjectAudit[Task, CaseTemplate]
   val alert                                               = new SelfContextObjectAudit[Alert]
+  val alertToCase                                         = new ObjectAudit[Alert, Case]
   val observableInAlert                                   = new ObjectAudit[Observable, Alert]
   val user                                                = new SelfContextObjectAudit[User]
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]
@@ -147,6 +148,9 @@ class AuditSrv @Inject()(
 
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
+
+    def merge(entity: E with Entity, destination: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.merge, entity), Some(destination), None)
   }
 
   class SelfContextObjectAudit[E <: Product] {
@@ -167,18 +171,6 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
 
   def organisation: OrganisationSteps =
     new OrganisationSteps(getOrganisation(raw))
-
-  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
-    r.outTo[AuditContext]
-      .choose[Label, Vertex](
-        on = _.label(),
-        BranchCase("Case", new CaseSteps(_).organisations.raw),
-        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
-        BranchCase("Alert", new AlertSteps(_).organisation.raw),
-        BranchCase("User", new UserSteps(_).organisations.raw),
-        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
-        //          BranchOtherwise(_)
-      )
 
   def auditContextOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Organisation with Entity])] =
     ScalarSteps(
@@ -254,4 +246,16 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
   )
 
   def `object`: ScalarSteps[Entity] = ScalarSteps(raw.outTo[Audited].map(_.asEntity))
+
+  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
+    r.outTo[AuditContext]
+      .choose[Label, Vertex](
+        on = _.label(),
+        BranchCase("Case", new CaseSteps(_).organisations.raw),
+        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
+        BranchCase("Alert", new AlertSteps(_).organisation.raw),
+        BranchCase("User", new UserSteps(_).organisations.raw),
+        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
+        //          BranchOtherwise(_)
+      )
 }
