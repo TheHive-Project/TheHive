@@ -40,7 +40,7 @@ angular.module('thehive', [
     })
     .config(function($compileProvider) {
         'use strict';
-        $compileProvider.debugInfoEnabled(false);        
+        $compileProvider.debugInfoEnabled(false);
     })
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
@@ -80,7 +80,7 @@ angular.module('thehive', [
                 templateUrl: 'views/app.html',
                 controller: 'RootCtrl',
                 resolve: {
-                    currentUser: function($q, $state, AuthenticationSrv) {
+                    currentUser: function($q, $state, AuthenticationSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current()
@@ -88,7 +88,9 @@ angular.module('thehive', [
                             return deferred.resolve(userData);
                           })
                           .catch( function(err) {
-                            return deferred.resolve(err.status === 520 ? err.status : null);
+                            NotificationSrv.error('App', err.data, err.status);
+                            return deferred.reject(err);
+                            //return deferred.resolve(err.status === 520 ? err.status : null);
                           });
 
                         return deferred.promise;
@@ -148,19 +150,20 @@ angular.module('thehive', [
                 controller: 'SettingsCtrl',
                 title: 'Personal settings',
                 resolve: {
-                    currentUser: function($q, $state, $timeout, AuthenticationSrv) {
+                    currentUser: function($q, $state, $timeout, AuthenticationSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current()
                           .then(function(userData) {
                             return deferred.resolve(userData);
                           })
-                          .catch( function(/*err*/) {
-                            $timeout(function() {
-                                $state.go('login');
-                            });
+                          .catch( function(err) {
+                            NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                            // $timeout(function() {
+                            //     $state.go('login');
+                            // });
 
-                            return deferred.reject();
+                            return deferred.reject(err);
                           });
 
                         return deferred.promise;

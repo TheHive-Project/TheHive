@@ -1,7 +1,25 @@
 # Change Log
 
-## [3.4.0-4C1](https://github.com/TheHive-Project/TheHive/tree/3.4.0-RC1) (2019-07-09)
+## [3.4.0](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-09-05)
 
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.4.0-RC2...3.4.0)
+
+**Implemented enhancements:**
+
+- Removing custom fields [\#954](https://github.com/TheHive-Project/TheHive/issues/954)
+
+**Fixed bugs:**
+
+- Cosmetic Bug: wrong number of exported observables displayed [\#1071](https://github.com/TheHive-Project/TheHive/issues/1071)
+- Update Database button does not appear in training appliance [\#1067](https://github.com/TheHive-Project/TheHive/issues/1067)
+- bulk merge alerts into case lose description's alert [\#1065](https://github.com/TheHive-Project/TheHive/issues/1065)
+- Incorrect number of related observables returned [\#1062](https://github.com/TheHive-Project/TheHive/issues/1062)
+- Incorrect tag filter results when observables with tags are added then deleted [\#1061](https://github.com/TheHive-Project/TheHive/issues/1061)
+- Cannot setup TheHive 3.4.0-RC2 using Docker [\#1051](https://github.com/TheHive-Project/TheHive/issues/1051)
+- Case statistics dashboard loads with an error message and the case over time panel fails to display any data [\#1050](https://github.com/TheHive-Project/TheHive/issues/1050)
+- Can't secure ElasticSearch connection [\#1046](https://github.com/TheHive-Project/TheHive/issues/1046)
+
+## [3.4.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.4.0-RC2) (2019-07-10)
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.4.0-RC1...3.4.0-RC2)
 
 **Implemented enhancements:**
@@ -25,7 +43,7 @@
 - Cannot add custom fields to case template [\#1042](https://github.com/TheHive-Project/TheHive/issues/1042)
 - sample hive does not connect to cortex and prints no helpful error message [\#1028](https://github.com/TheHive-Project/TheHive/issues/1028)
 
-## [3.4.0-4C1](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-06-05)
+## [3.4.0-RC1](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-06-05)
 
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.1...3.4.0-4C1)
 

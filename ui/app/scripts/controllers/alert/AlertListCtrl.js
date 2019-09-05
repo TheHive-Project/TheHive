@@ -225,7 +225,8 @@
                         templates: function() {
                             return CaseTemplateSrv.list();
                         },
-                        isAdmin: self.isAdmin
+                        isAdmin: self.isAdmin,
+                        readonly: false
                     }
                 });
             };

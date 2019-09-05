@@ -246,8 +246,8 @@
                   self.caseResponders = responders;
               })
               .catch(function(err) {
-                  NotificationSrv.error('CaseList', response.data, response.status);
-              })
+                  NotificationSrv.error('CaseList', err.data, err.status);
+              });
         };
 
         this.runResponder = function(responderId, responderName, caze) {

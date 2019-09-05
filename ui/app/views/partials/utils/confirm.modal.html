@@ -3,7 +3,8 @@
       <h3 class="modal-title">{{$modal.title}}</h3>
   </div>
   <div class="modal-body">
-      <p>{{$modal.message}}</p>
+      <p ng-if="!$modal.config.isHtml">{{$modal.message}}</p>
+      <p ng-if="$modal.config.isHtml" ng-bind-html="$modal.message"></p>
   </div>
   <div class="modal-footer text-left">
       <button class="btn btn-default" ng-click="$modal.cancel()" type="button">Cancel</button>
