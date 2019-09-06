@@ -67,7 +67,7 @@ class DashboardCtrl @Inject()(entryPoint: EntryPoint, db: Database, dashboardSrv
         dashboardSrv
           .getOrFail(dashboardId)
           .map { dashboard =>
-            dashboardSrv.get(dashboard).remove
+            dashboardSrv.remove(dashboard)
             Results.NoContent
           }
       }

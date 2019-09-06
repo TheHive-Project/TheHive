@@ -4,8 +4,10 @@ import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
+import play.api.libs.json.{JsObject, Json}
 
 import scala.util.Try
 
@@ -25,6 +27,30 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
       _                <- organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
       _                <- auditSrv.dashboard.create(createdDashboard)
     } yield createdDashboard
+
+  override def update(
+      steps: DashboardSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(DashboardSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (dashboardSteps, updatedFields) =>
+        dashboardSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.dashboard.update(_, updatedFields))
+    }
+
+  def shareUpdate(dashboard: Dashboard with Entity, status: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Dashboard with Entity] =
+    for {
+      d <- get(dashboard).update("shared" -> status)
+      _ <- auditSrv.dashboard.update(d, Json.obj("shared" -> status))
+    } yield d
+
+  def remove(dashboard: Dashboard with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _ <- Try(get(dashboard).remove)
+      _ <- auditSrv.dashboard.delete(dashboard)
+    } yield ()
 }
 
 class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Dashboard, DashboardSteps](raw) {
@@ -34,11 +60,7 @@ class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Gr
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationDashboard])
 
-  def share(implicit authContext: AuthContext): Try[Dashboard with Entity] = update("shared" -> true) // TODO add audit
-
-  def unshare(implicit authContext: AuthContext): Try[Dashboard with Entity] = update("shared" -> false) // TODO add audit
-
-  def remove(implicit authContext: AuthContext): Unit = { // TODO add audit
+  def remove(implicit authContext: AuthContext): Unit = {
     raw.drop().iterate()
     ()
   }

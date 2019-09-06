@@ -1,18 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import scala.language.implicitConversions
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.Json
-
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{FString, Output}
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.thehive.dto.v0.{InputDashboard, OutputDashboard}
 import org.thp.thehive.models.Dashboard
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps}
+import play.api.libs.json.Json
+
+import scala.language.implicitConversions
+import scala.util.Failure
 
 object DashboardConversion {
   implicit def toOutputDashboard(dashboard: Dashboard with Entity): Output[OutputDashboard] =
@@ -44,14 +43,23 @@ object DashboardConversion {
       .property("definition", UniMapping.string)(_.simple.updatable)
       .property("status", UniMapping.string)(_.derived(_.value[Boolean]("shared").map(shared => if (shared) "Shared" else "Private")).custom {
         case (_, "Shared", vertex, _, graph, authContext) =>
-          dashboardSrv.get(vertex)(graph).share(authContext)
-          Success(Json.obj("status" -> "Shared"))
+          for {
+            d <- dashboardSrv.get(vertex)(graph).getOrFail()
+            _ <- dashboardSrv.shareUpdate(d, status = true)(graph, authContext)
+          } yield Json.obj("status" -> "Shared")
+
         case (_, "Private", vertex, _, graph, authContext) =>
-          dashboardSrv.get(vertex)(graph).unshare(authContext)
-          Success(Json.obj("status" -> "Private"))
+          for {
+            d <- dashboardSrv.get(vertex)(graph).getOrFail()
+            _ <- dashboardSrv.shareUpdate(d, status = false)(graph, authContext)
+          } yield Json.obj("status" -> "Private")
+
         case (_, "Deleted", vertex, _, graph, authContext) =>
-          dashboardSrv.get(vertex)(graph).remove(authContext)
-          Success(Json.obj("status" -> "Deleted"))
+          for {
+            d <- dashboardSrv.get(vertex)(graph).getOrFail()
+            _ <- dashboardSrv.remove(d)(graph, authContext)
+          } yield Json.obj("status" -> "Deleted")
+
         case (_, status, _, _, _, _) =>
           Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
       })

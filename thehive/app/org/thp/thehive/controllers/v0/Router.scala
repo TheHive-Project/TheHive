@@ -133,10 +133,10 @@ class Router @Inject()(
     case GET(p"/dashboard")                 => queryExecutor.dashboard.search
     case POST(p"/dashboard/_search")        => queryExecutor.dashboard.search
     case POST(p"/dashboard/_stats")         => queryExecutor.dashboard.stats
-    case POST(p"/dashboard")                => dashboardCtrl.create
+    case POST(p"/dashboard")                => dashboardCtrl.create // Audit ok
     case GET(p"/dashboard/$dashboardId")    => dashboardCtrl.get(dashboardId)
-    case PATCH(p"/dashboard/$dashboardId")  => dashboardCtrl.update(dashboardId)
-    case DELETE(p"/dashboard/$dashboardId") => dashboardCtrl.delete(dashboardId)
+    case PATCH(p"/dashboard/$dashboardId")  => dashboardCtrl.update(dashboardId) // Audit ok
+    case DELETE(p"/dashboard/$dashboardId") => dashboardCtrl.delete(dashboardId) // Audit ok
 
     case GET(p"/audit")                                                 => auditCtrl.flow(None, None)
     case GET(p"/flow" ? q_o"rootId=$rootId" & q_o"count=${int(count)}") => auditCtrl.flow(rootId, count)
