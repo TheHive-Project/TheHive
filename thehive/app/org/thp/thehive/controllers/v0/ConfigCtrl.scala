@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.ConfigLoader
-import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import com.typesafe.config.{Config, ConfigRenderOptions}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
@@ -14,6 +8,11 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{ConfigSrv, UserConfigContext}
+import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, AnyContent, Results}
+import play.api.{ConfigLoader, Logger}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ConfigCtrl @Inject()(
@@ -23,6 +22,8 @@ class ConfigCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database
 ) {
+
+  lazy val logger = Logger(getClass)
 
   implicit val configWrites: Writes[ConfigItem[_, _]] = Writes[ConfigItem[_, _]](
     item =>
@@ -47,9 +48,10 @@ class ConfigCtrl @Inject()(
 
   def set(path: String): Action[AnyContent] =
     entryPoint("set configuration item")
-      .extract("value", FieldsParser.json)
+      .extract("value", FieldsParser.json.on("value"))
       .auth {
         case request if request.permissions.contains(Permissions.manageConfig) =>
+          logger.info(s"app config value set: $path ${request.body("value")}")
           appConfig.set(path, request.body("value"))(request).map(_ => Results.NoContent)
         case _ => Failure(AuthorizationError("You need manageConfig permission to set configuration"))
       }
@@ -59,6 +61,7 @@ class ConfigCtrl @Inject()(
       .extract("value", FieldsParser.json.on("value"))
       .authTransaction(db) { implicit request => implicit graph =>
         val config = appConfig.context(userConfigContext).item[JsValue](path, "")
+        logger.info(s"user config value set: $path ${request.body("value")}")
         config.setJson(request, request.body("value")).map { _ =>
           Results.Ok(
             Json.obj(
