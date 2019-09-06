@@ -161,12 +161,6 @@ class Router @Inject()(
 }
 /*
 
-
-
-
-
-
-
 POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
 #POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash
 
@@ -176,10 +170,6 @@ PATCH    /list/:itemId                        org.elastic4play.dBListCtrl.update
 POST     /list/:listName                      org.elastic4play.dBListCtrl.addItem(listName)
 GET      /list/:listName                      org.elastic4play.dBListCtrl.listItems(listName)
 POST     /list/:listName/_exists              org.elastic4play.dBListCtrl.itemExists(listName)
-
-
-
-
 
 ->       /connector                           connectors.ConnectorRouter
 
