@@ -18,13 +18,13 @@ class Router @Inject()(
     case GET(p"/job/$jobId<[^/]*>") => jobCtrl.get(jobId)
     case POST(p"/job/_search")      => cortexQueryExecutor.job.search
     case POST(p"/job/_stats")       => cortexQueryExecutor.job.stats
-    case POST(p"/job")              => jobCtrl.create
+    case POST(p"/job")              => jobCtrl.create // Audit ok
 
     case GET(p"/analyzer/$analyzerId<[^/]*>")    => analyzerCtrl.getById(analyzerId)
     case GET(p"/analyzer")                       => analyzerCtrl.list
     case GET(p"/analyzer/type/$dataType<[^/]*>") => analyzerCtrl.listByType(dataType)
 
-    case POST(p"/action")                                    => actionCtrl.create
+    case POST(p"/action")                                    => actionCtrl.create // Audit ok
     case POST(p"/action/_search")                            => cortexQueryExecutor.action.search
     case POST(p"/action/_stats")                             => cortexQueryExecutor.action.stats
     case GET(p"/action")                                     => cortexQueryExecutor.action.search

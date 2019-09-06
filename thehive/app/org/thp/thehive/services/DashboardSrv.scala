@@ -48,7 +48,7 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
 
   def remove(dashboard: Dashboard with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- Try(get(dashboard).remove)
+      _ <- Try(get(dashboard).remove())
       _ <- auditSrv.dashboard.delete(dashboard)
     } yield ()
 }
@@ -59,9 +59,4 @@ class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Gr
   def visible(implicit authContext: AuthContext): DashboardSteps = filter(_.inTo[OrganisationDashboard].has(Key("name") of authContext.organisation))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationDashboard])
-
-  def remove(implicit authContext: AuthContext): Unit = {
-    raw.drop().iterate()
-    ()
-  }
 }

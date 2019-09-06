@@ -59,7 +59,7 @@ class ConfigCtrl @Inject()(
   def userSet(path: String): Action[AnyContent] =
     entryPoint("set user configuration item")
       .extract("value", FieldsParser.json.on("value"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => _ =>
         val config = appConfig.context(userConfigContext).item[JsValue](path, "")
         logger.info(s"user config value set: $path ${request.body("value")}")
         config.setJson(request, request.body("value")).map { _ =>
@@ -75,7 +75,7 @@ class ConfigCtrl @Inject()(
 
   def userGet(path: String): Action[AnyContent] =
     entryPoint("get user configuration item")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => _ =>
         Try {
           val config = appConfig.context(userConfigContext).item[JsValue](path, "")
           Results.Ok(

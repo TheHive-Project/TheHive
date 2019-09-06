@@ -3,12 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -28,6 +22,11 @@ import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObserv
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject()(
@@ -40,7 +39,8 @@ class JobSrv @Inject()(
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer,
-    serviceHelper: ServiceHelper
+    serviceHelper: ServiceHelper,
+    auditSrv: CortexAuditSrv
 ) extends VertexSrv[Job, JobSteps] {
 
   import ArtifactConversion._
@@ -88,6 +88,9 @@ class JobSrv @Inject()(
       cortexOutputJob <- cortexClient.analyse(analyzer.id, cortexArtifact)
       createdJob <- Future.fromTry(db.tryTransaction { implicit graph =>
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
+      })
+      _ <- Future.fromTry(db.tryTransaction { implicit graph =>
+        auditSrv.job.create(createdJob, `case`)
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
