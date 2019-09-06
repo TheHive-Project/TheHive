@@ -124,6 +124,7 @@ auth {
 
     # Autologin user using SSO?
     #autologin = false
+
     # Attributes mappings
     #attributes {
     #  login = "sub"
