@@ -78,13 +78,22 @@ class CaseCtrl @Inject()(
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("get case")
+      .extract("stats", FieldsParser.boolean.optional.on("nstats"))
       .authRoTransaction(db) { implicit request => implicit graph =>
-        caseSrv
+        val c = caseSrv
           .get(caseIdOrNumber)
           .visible
-          .richCase
-          .getOrFail()
-          .map(richCase => Results.Ok(richCase.toJson))
+        if (request.body("stats").contains(true)) {
+          c.richCaseWithCustomRenderer(caseStatsRenderer(request, db, graph))
+            .getOrFail()
+            .map {
+              case (richCase, stats) => Results.Ok(richCase.toJson.as[JsObject] + ("stats" -> stats))
+            }
+        } else {
+          c.richCase
+            .getOrFail()
+            .map(richCase => Results.Ok(richCase.toJson))
+        }
       }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
