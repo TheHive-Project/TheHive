@@ -77,13 +77,13 @@ class ReportCtrl @Inject()(
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete template")
-      .authTransaction(db) { request => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
           reportTemplateSrv
             .get(id)
             .getOrFail()
             .map { reportTemplate =>
-              reportTemplateSrv.get(reportTemplate).remove()
+              reportTemplateSrv.remove(reportTemplate)
               Results.NoContent
             }
         } else Success(Results.Unauthorized)
