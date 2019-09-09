@@ -1,15 +1,16 @@
 package org.thp.thehive.connector.cortex.services
 
+import scala.util.{Failure, Try}
+
+import play.api.Logger
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-
-import scala.util.{Failure, Try}
 
 @Singleton
 class EntityHelper @Inject()(
@@ -19,7 +20,7 @@ class EntityHelper @Inject()(
     observableSrv: ObservableSrv,
     logSrv: LogSrv,
     db: Database,
-    schema: TheHiveSchema,
+    schema: Schema,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) {

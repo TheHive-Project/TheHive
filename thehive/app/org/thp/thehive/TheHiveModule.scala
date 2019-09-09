@@ -6,11 +6,11 @@ import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.SchemaUpdater
+import org.thp.thehive.models.{SchemaUpdater, TheHiveSchema}
 import org.thp.thehive.services.notification.{AppendToFileProvider, LogInMyTaskProvider, NotificationActor, NotifierProvider, TriggerProvider}
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
@@ -67,11 +67,13 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV0]
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
     ScalaMultibinder.newSetBinder[Connector](binder)
+    val schemaBindings = ScalaMultibinder.newSetBinder[Schema](binder)
+    schemaBindings.addBinding.to[TheHiveSchema]
 
     bindActor[ConfigActor]("config-actor")
     bindActor[NotificationActor]("notification-actor")
 
-    bind(classOf[SchemaUpdater]).asEagerSingleton()
+    bind[SchemaUpdater].asEagerSingleton()
     ()
   }
 }

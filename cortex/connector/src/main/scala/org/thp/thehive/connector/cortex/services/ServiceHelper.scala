@@ -6,7 +6,7 @@ import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputCortexWorker
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 
@@ -18,7 +18,7 @@ class ServiceHelper @Inject()(
     observableSrv: ObservableSrv,
     logSrv: LogSrv,
     db: Database,
-    schema: TheHiveSchema,
+    schema: Schema,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) {

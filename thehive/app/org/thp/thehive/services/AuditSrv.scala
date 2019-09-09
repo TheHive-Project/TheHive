@@ -1,5 +1,11 @@
 package org.thp.thehive.services
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.JsObject
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -11,11 +17,6 @@ import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
-import play.api.Logger
-import play.api.libs.json.JsObject
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -24,7 +25,7 @@ class AuditSrv @Inject()(
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
-)(implicit db: Database, schema: TheHiveSchema)
+)(implicit db: Database, schema: Schema)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
   lazy val logger                                         = Logger(getClass)
   lazy val userSrv: UserSrv                               = userSrvProvider.get
