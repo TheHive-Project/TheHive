@@ -31,12 +31,12 @@ class Router @Inject()(
     case GET(p"/action/$entityType<[^/]*>/$entityId<[^/]*>") => actionCtrl.getByEntity(entityType, entityId)
 
     case GET(p"/report/template/content/$analyzerId<[^/]*>/?.*") => reportCtrl.get(analyzerId)
-    case POST(p"/report/template/_import")                       => reportCtrl.importTemplates
+    case POST(p"/report/template/_import")                       => reportCtrl.importTemplates // Audit ok
     case POST(p"/report/template/_search")                       => cortexQueryExecutor.report.search
-    case POST(p"/report/template")                               => reportCtrl.create()
-    case DELETE(p"/report/template/$reportTemplateId<[^/]*>")    => reportCtrl.delete(reportTemplateId)
+    case POST(p"/report/template")                               => reportCtrl.create() // Audit ok
+    case DELETE(p"/report/template/$reportTemplateId<[^/]*>")    => reportCtrl.delete(reportTemplateId) // Audit ok
     case GET(p"/report/template/$reportTemplateId<[^/]*>")       => reportCtrl.get(reportTemplateId)
-    case PATCH(p"/report/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId)
+    case PATCH(p"/report/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId) // Audit ok
 
     case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") => responderCtrl.getResponders(entityType, entityId)
     case POST(p"/responder/_search")                            => responderCtrl.searchResponders
