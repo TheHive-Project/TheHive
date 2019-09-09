@@ -22,7 +22,7 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
   lazy val analyzers: Seq[OutputCortexWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexWorker]]
   lazy val jobs: Seq[CortexOutputJob]          = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
   lazy val responders: Seq[OutputCortexWorker] = readResourceAsJson("/responders.json").as[Seq[OutputCortexWorker]]
-  val apiJobIdWaitReport: Regex                = """^/api/job/([^/]*)/waitreport\?atMost=\d+ \w+$""".r
+  val apiJobIdWaitReport: Regex                = "^/api/job/([^/]*)/waitreport\\?atMost=\\d+ \\w+$".r
   val apiAnalyzerId: Regex                     = "^/api/analyzer/([^/]*)$".r
   val apiAnalyzerDataType: Regex               = "^/api/analyzer/type/([^/]*)$".r
   val apiAnalyzerIdRun: Regex                  = "^/api/analyzer/([^/]*)/run$".r
@@ -32,10 +32,10 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
 
   val ws = MockWS {
     case (GET, apiJobIdWaitReport(id))        => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
-    case (GET, "/api/analyzers")              => Action(_ => Ok.sendResource("analyzers.json"))
+    case (GET, "/api/analyzers")              => Action(Ok.sendResource("analyzers.json"))
     case (GET, "/api/analyzer")               => Action(Results.Ok.sendResource("analyzers.json"))
     case (GET, apiAnalyzerDataType(dataType)) => Action(Results.Ok(Json.toJson(analyzers.filter(_.dataTypeList.contains(dataType)))))
-    case (GET, apiAnalyzerId(id))             => analyzers.find(_.id == id).map(a => Action(Results.Ok(Json.toJson(a)))).getOrElse(Action(Results.NotFound))
+    case (GET, apiAnalyzerId(id))             => Action(analyzers.find(_.id == id).map(a => Results.Ok(Json.toJson(a))).getOrElse(Results.NotFound))
     case (POST, "/api/analyzer/_search")      => Action(Results.Ok(Json.toJson(analyzers)))
     case (POST, apiAnalyzerIdRun(id))         => Action(Results.Created(Json.toJson(jobs.find(_.workerId == id).get)))
     case (GET, apiDatastoreId(id)) =>

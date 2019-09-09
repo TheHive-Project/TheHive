@@ -69,7 +69,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationCon
                 )
               ),
               body = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip"))
-            )
+            ) // FIXME remove temporary file (but when ?)
           }
       }
 }
