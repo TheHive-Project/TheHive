@@ -72,13 +72,16 @@ object AuditConversion {
 
   def auditRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
     (_: GremlinScala[Vertex])
-      .outTo[Audited]
-      .choose[Label, (String, JsObject)](
-        on = _.label(),
-        BranchCase("Case", caseToJson),
-        BranchCase("Task", taskToJson),
-        BranchCase("Log", logToJson),
-        BranchOtherwise(_.constant("" -> JsObject.empty))
+      .coalesce(
+        _.outTo[Audited]
+          .choose[Label, (String, JsObject)](
+            on = _.label(),
+            BranchCase("Case", caseToJson),
+            BranchCase("Task", taskToJson),
+            BranchCase("Log", logToJson),
+            BranchOtherwise(_.constant("" -> JsObject.empty))
+          ),
+        _.constant("" -> JsObject.empty)
       )
 
   val auditProperties: List[PublicProperty[_, _]] =
