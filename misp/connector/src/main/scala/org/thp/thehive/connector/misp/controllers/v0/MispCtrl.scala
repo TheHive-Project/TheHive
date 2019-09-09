@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.misp.controllers.v0
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 import play.api.mvc.{Action, AnyContent, Results}
@@ -10,18 +11,39 @@ import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.connector.misp.services.MispActor
-import org.thp.thehive.services.AlertSrv
+import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv, MispImportSrv}
+import org.thp.thehive.services.{AlertSrv, CaseSrv}
 
 @Singleton
-class MispCtrl @Inject()(entryPoint: EntryPoint, alertSrv: AlertSrv, db: Database, @Named("misp-actor") mispActor: ActorRef) {
+class MispCtrl @Inject()(
+    entryPoint: EntryPoint,
+    mispImportSrv: MispImportSrv,
+    mispExportSrv: MispExportSrv,
+    alertSrv: AlertSrv,
+    caseSrv: CaseSrv,
+    db: Database,
+    @Named("misp-actor") mispActor: ActorRef,
+    implicit val ec: ExecutionContext
+) {
 
   def sync: Action[AnyContent] =
     entryPoint("sync MISP events")
       .auth { _ =>
-        println(s"sendding Synchro to ${mispActor}")
         mispActor ! MispActor.Synchro
         Success(Results.NoContent)
+      }
+
+  def exportCase(mispId: String, caseIdOrNumber: String): Action[AnyContent] =
+    entryPoint("export case into MISP")
+      .asyncAuth { implicit authContext =>
+        for {
+          c <- Future.fromTry(db.roTransaction { implicit graph =>
+            caseSrv
+              .get(caseIdOrNumber)
+              .getOrFail()
+          })
+          _ <- mispExportSrv.export(mispId, c)
+        } yield Results.NoContent
       }
 
   def cleanMispAlerts: Action[AnyContent] =

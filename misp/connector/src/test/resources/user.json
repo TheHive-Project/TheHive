@@ -1,0 +1,26 @@
+{
+  "User": {
+    "id": "1",
+    "password": "*****",
+    "org_id": "1",
+    "email": "admin@admin.test",
+    "autoalert": false,
+    "authkey": "aTw7pt4HclA4H2rUIy79QVjwtSlBV23w3WUvoEAO",
+    "invited_by": "0",
+    "gpgkey": null,
+    "certif_public": "",
+    "nids_sid": "4000000",
+    "termsaccepted": false,
+    "newsread": "0",
+    "role_id": "1",
+    "change_pw": "0",
+    "contactalert": false,
+    "disabled": false,
+    "expiration": null,
+    "current_login": "1567609904",
+    "last_login": "1567605289",
+    "force_logout": false,
+    "date_created": null,
+    "date_modified": "1566557788"
+  }
+}

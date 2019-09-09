@@ -1,0 +1,359 @@
+[
+  {
+    "id": "3",
+    "event_id": "1",
+    "object_id": "2",
+    "object_relation": "malware-sample",
+    "category": "Payload delivery",
+    "type": "malware-sample",
+    "to_ids": true,
+    "uuid": "5d600728-0b44-4ec3-8279-0965c0a83866",
+    "timestamp": "1566574376",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "Alert_statistics.json|cda4ed7585956f2bc1318cf85751f0b8",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Object": {
+      "id": "2",
+      "distribution": "5",
+      "sharing_group_id": "0"
+    }
+  },
+  {
+    "id": "5",
+    "event_id": "1",
+    "object_id": "2",
+    "object_relation": "md5",
+    "category": "Payload delivery",
+    "type": "md5",
+    "to_ids": true,
+    "uuid": "5d600728-5178-4c82-b6e3-0965c0a83866",
+    "timestamp": "1566574376",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "cda4ed7585956f2bc1318cf85751f0b8",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Object": {
+      "id": "2",
+      "distribution": "5",
+      "sharing_group_id": "0"
+    }
+  },
+  {
+    "id": "6",
+    "event_id": "1",
+    "object_id": "2",
+    "object_relation": "sha1",
+    "category": "Payload delivery",
+    "type": "sha1",
+    "to_ids": true,
+    "uuid": "5d600728-69e0-4d4e-b574-0965c0a83866",
+    "timestamp": "1566574376",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "07f34cedcda85c61e599366a3e6e57eefe95de84",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Object": {
+      "id": "2",
+      "distribution": "5",
+      "sharing_group_id": "0"
+    }
+  },
+  {
+    "id": "7",
+    "event_id": "1",
+    "object_id": "2",
+    "object_relation": "sha256",
+    "category": "Payload delivery",
+    "type": "sha256",
+    "to_ids": true,
+    "uuid": "5d600728-cf80-4127-923d-0965c0a83866",
+    "timestamp": "1566574376",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "4fcdf1490652c25e4c2d5fae284b1cb73a84fa82bd2d09f545796d6bf18e654a",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Object": {
+      "id": "2",
+      "distribution": "5",
+      "sharing_group_id": "0"
+    }
+  },
+  {
+    "id": "8",
+    "event_id": "1",
+    "object_id": "2",
+    "object_relation": "size-in-bytes",
+    "category": "Other",
+    "type": "size-in-bytes",
+    "to_ids": false,
+    "uuid": "5d600728-7b50-4f97-a37f-0965c0a83866",
+    "timestamp": "1566574376",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": true,
+    "value": "1647",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Object": {
+      "id": "2",
+      "distribution": "5",
+      "sharing_group_id": "0"
+    }
+  },
+  {
+    "id": "9",
+    "event_id": "1",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Payload delivery",
+    "type": "attachment",
+    "to_ids": false,
+    "uuid": "5d60074c-f608-45fa-b032-094fc0a83866",
+    "timestamp": "1566574412",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "test",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "Job_statistics.json",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    }
+  },
+  {
+    "id": "12",
+    "event_id": "1",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Artifacts dropped",
+    "type": "filename",
+    "to_ids": false,
+    "uuid": "5d63a539-0924-4791-b0c5-3d1bc0a83866",
+    "timestamp": "1566811449",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "plop",
+    "Event": {
+      "org_id": "1",
+      "distribution": "1",
+      "id": "1",
+      "info": "test1 -> 1.2",
+      "orgc_id": "1",
+      "uuid": "5d5fd392-1528-457a-bb8a-0453c0a83866"
+    },
+    "Tag": [
+      {
+        "id": "1",
+        "name": "TH-test",
+        "colour": "#36a3a3",
+        "numerical_value": null
+      }
+    ]
+  },
+  {
+    "id": "13",
+    "event_id": "3",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Persistence mechanism",
+    "type": "filename",
+    "to_ids": true,
+    "uuid": "5d6f8017-e118-4bca-afb5-61b0c0a83866",
+    "timestamp": "1567588375",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "aze",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "azeaze",
+    "Event": {
+      "org_id": "1",
+      "distribution": "0",
+      "id": "3",
+      "info": "c3",
+      "orgc_id": "1",
+      "uuid": "5d6f8017-e210-4854-b01c-61b0c0a83866"
+    }
+  },
+  {
+    "id": "14",
+    "event_id": "4",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Persistence mechanism",
+    "type": "filename",
+    "to_ids": true,
+    "uuid": "5d6fb6af-6f9c-47df-9757-65b1c0a83866",
+    "timestamp": "1567602351",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "aze",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "azeaze",
+    "Event": {
+      "org_id": "1",
+      "distribution": "0",
+      "id": "4",
+      "info": "c3",
+      "orgc_id": "1",
+      "uuid": "5d6fb6af-1c60-482d-86db-65b1c0a83866"
+    }
+  },
+  {
+    "id": "15",
+    "event_id": "5",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Persistence mechanism",
+    "type": "filename",
+    "to_ids": true,
+    "uuid": "5d6fc22d-6fb8-4c70-a0ab-61ecc0a83866",
+    "timestamp": "1567605293",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "aze",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "azeaze",
+    "Event": {
+      "org_id": "1",
+      "distribution": "0",
+      "id": "5",
+      "info": "c3",
+      "orgc_id": "1",
+      "uuid": "5d6fc22d-4c10-49c1-828b-61ecc0a83866"
+    },
+    "Tag": [
+      {
+        "id": "2",
+        "name": "TH-test-2",
+        "colour": "#1ac7c7",
+        "numerical_value": null
+      }
+    ]
+  },
+  {
+    "id": "16",
+    "event_id": "5",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Payload delivery",
+    "type": "ip-dst",
+    "to_ids": true,
+    "uuid": "5d6fc22d-2b5c-424a-87a0-61ecc0a83866",
+    "timestamp": "1567605293",
+    "distribution": "5",
+    "sharing_group_id": "0",
+    "comment": "test",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "8.8.8.8",
+    "Event": {
+      "org_id": "1",
+      "distribution": "0",
+      "id": "5",
+      "info": "c3",
+      "orgc_id": "1",
+      "uuid": "5d6fc22d-4c10-49c1-828b-61ecc0a83866"
+    },
+    "Tag": [
+      {
+        "id": "1",
+        "name": "TH-test",
+        "colour": "#36a3a3",
+        "numerical_value": null
+      }
+    ]
+  },
+  {
+    "id": "17",
+    "event_id": "5",
+    "object_id": "0",
+    "object_relation": null,
+    "category": "Network activity",
+    "type": "ip-src",
+    "to_ids": false,
+    "uuid": "5d6fd591-79d0-439d-bddd-61b0c0a83866",
+    "timestamp": "1567610257",
+    "distribution": "0",
+    "sharing_group_id": "0",
+    "comment": "",
+    "deleted": false,
+    "disable_correlation": false,
+    "value": "1.1.1.1",
+    "Event": {
+      "org_id": "1",
+      "distribution": "0",
+      "id": "5",
+      "info": "c3",
+      "orgc_id": "1",
+      "uuid": "5d6fc22d-4c10-49c1-828b-61ecc0a83866"
+    },
+    "Tag": [
+      {
+        "id": "2",
+        "name": "TH-test-2",
+        "colour": "#1ac7c7",
+        "numerical_value": null
+      }
+    ]
+  }
+]

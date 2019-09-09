@@ -10,7 +10,7 @@ import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
-import org.thp.thehive.models.HealthStatus
+import org.thp.thehive.models.{HealthStatus, ObservableType}
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 
 @Singleton
@@ -26,7 +26,10 @@ class Connector @Inject()(appConfig: ApplicationConfig, system: ActorSystem, mat
     appConfig.item[Seq[AttributeConverter]]("misp.attribute.mapping", "Describe how to map MISP attribute to observable")
 
   def attributeConverter(attributeCategory: String, attributeType: String): Option[AttributeConverter] =
-    attributeConvertersConfig.get.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
+    attributeConvertersConfig.get.reverseIterator.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
+
+  def attributeConverter(`type`: ObservableType): Option[(String, String)] =
+    attributeConvertersConfig.get.reverseIterator.find(_.`type` == `type`.name).map(a => a.mispCategory -> a.mispType)
 
   val syncIntervalConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig.item[FiniteDuration]("misp.syncInterval", "")
   def syncInterval: FiniteDuration                                   = syncIntervalConfig.get

@@ -3,7 +3,7 @@ package org.thp.misp.dto
 import java.awt.Color
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{JsPath, JsString, Json, Reads, Writes}
 
 case class Tag(
     id: Option[String],
@@ -21,4 +21,9 @@ object Tag {
         case _                                     => None
       } and
       (JsPath \ "exportable").readNullable[Boolean])(Tag.apply _)
+
+  implicit val writes: Writes[Tag] = Writes[Tag] {
+    case Tag(Some(id), name, colour, _) => Json.obj("id" -> id, "name" -> name, "colour" -> colour.map(c => "#" + c.getRGB.toHexString))
+    case Tag(_, name, _, _)             => JsString(name)
+  }
 }
