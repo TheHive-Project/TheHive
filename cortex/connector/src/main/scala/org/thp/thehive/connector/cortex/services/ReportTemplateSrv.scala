@@ -2,21 +2,24 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.zip.{ZipEntry, ZipFile}
 
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.util.Try
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.thehive.connector.cortex.models.ReportTemplate
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.io.Source
+import scala.util.Try
 
 @Singleton
 class ReportTemplateSrv @Inject()(
-    implicit db: Database
+    implicit db: Database,
+    auditSrv: CortexAuditSrv
 ) extends VertexSrv[ReportTemplate, ReportTemplateSteps] {
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ReportTemplateSteps = new ReportTemplateSteps(raw)
@@ -30,6 +33,24 @@ class ReportTemplateSrv @Inject()(
       val stream = file.getInputStream(entry)
       try Source.fromInputStream(stream).mkString
       finally stream.close()
+    }
+
+  override def create(reportTemplate: ReportTemplate)(implicit graph: Graph, authContext: AuthContext): Try[ReportTemplate with Entity] =
+    for {
+      created <- super.create(reportTemplate)
+      _       <- auditSrv.reportTemplate.create(created)
+    } yield created
+
+  override def update(
+      steps: ReportTemplateSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(ReportTemplateSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (reportTemplateSteps, updatedFields) =>
+        reportTemplateSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.reportTemplate.update(_, updatedFields))
     }
 
   /**
@@ -52,9 +73,18 @@ class ReportTemplateSrv @Inject()(
           val reportTemplate = readZipEntry(file, entry)
             .flatMap { content =>
               db.tryTransaction { implicit graph =>
-                get(analyzerId)
-                  .update("content" -> content)
-                  .recoverWith { case _ => create(ReportTemplate(analyzerId, content)) }
+                {
+                  for {
+                    updated <- get(analyzerId).update("content" -> content)
+                    _       <- auditSrv.reportTemplate.update(updated, Json.obj("content" -> content))
+                  } yield updated
+                } recoverWith {
+                  case _ =>
+                    for {
+                      created <- create(ReportTemplate(analyzerId, content))
+                      _       <- auditSrv.reportTemplate.create(created)
+                    } yield created
+                }
               }
             }
           templateMap + (analyzerId -> reportTemplate)

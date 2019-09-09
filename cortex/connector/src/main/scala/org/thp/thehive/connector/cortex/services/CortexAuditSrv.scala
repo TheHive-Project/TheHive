@@ -6,7 +6,7 @@ import com.google.inject.name.Named
 import javax.inject.{Inject, Provider}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
-import org.thp.thehive.connector.cortex.models.{Action, Job}
+import org.thp.thehive.connector.cortex.models.{Action, Job, ReportTemplate}
 import org.thp.thehive.models.{Case, TheHiveSchema}
 import org.thp.thehive.services.{AuditSrv, UserSrv}
 
@@ -18,7 +18,8 @@ class CortexAuditSrv @Inject()(
 )(implicit db: Database, schema: TheHiveSchema)
     extends AuditSrv(userSrvProvider, notificationActor, eventSrv) {
 
-  val job = new ObjectAudit[Job, Case]
-  val action = new ObjectAudit[Action, Entity]
+  val job            = new ObjectAudit[Job, Case]
+  val action         = new ObjectAudit[Action, Entity]
+  val reportTemplate = new SelfContextObjectAudit[ReportTemplate]
 
 }
