@@ -3,7 +3,7 @@ package org.thp.misp.dto
 import java.util.Date
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsObject, JsPath, Reads}
+import play.api.libs.json.{JsArray, JsObject, JsPath, JsString, Json, OWrites, Reads, Writes}
 
 case class Event(
     id: String,
@@ -40,6 +40,18 @@ object Event {
       (JsPath \ "distribution").read[String].map(_.toInt) and
       (JsPath \ "attributes").readWithDefault[Seq[Attribute]](Nil) and
       (JsPath \ "EventTag").read[Seq[JsObject]].map(_.map(eventTag => (eventTag \ "Tag").as[Tag])))(Event.apply _)
+
+  implicit val writes: OWrites[Event] = OWrites[Event] { event =>
+    Json.obj(
+      "distribution"    -> event.distribution,
+      "threat_level_id" -> event.threatLevel,
+      "analysis"        -> event.analysis,
+      "info"            -> event.info,
+      "date"            -> simpleDateFormat.format(event.date),
+      "published"       -> false,
+      "Tag"             -> event.tags.map(t => JsString(t.name))
+    )
+  }
 }
 
 //

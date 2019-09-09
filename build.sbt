@@ -224,7 +224,8 @@ lazy val thehiveMisp = (project in file("misp/connector"))
   .settings(
     name := "thehive-misp",
     libraryDependencies ++= Seq(
-      specs % Test
+      specs      % Test,
+      playMockws % Test
     )
   )
 

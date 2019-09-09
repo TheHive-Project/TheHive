@@ -120,7 +120,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
       }
 
   def stats: Action[AnyContent] =
-    entryPoint("case stats")
+    entryPoint(s"${ctrl.entityName} stats")
       .extract("query", statsParser)
       .authRoTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body("query")

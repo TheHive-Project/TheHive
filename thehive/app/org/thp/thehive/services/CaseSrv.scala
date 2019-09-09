@@ -525,4 +525,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .inTo[ShareCase]
         .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
     )
+
+  def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
 }

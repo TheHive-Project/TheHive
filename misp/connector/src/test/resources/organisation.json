@@ -1,0 +1,18 @@
+{
+  "Organisation": {
+    "id": "1",
+    "name": "ORGNAME",
+    "date_created": "2019-08-21 10:53:03",
+    "date_modified": "2019-08-21 10:53:03",
+    "type": "ADMIN",
+    "nationality": "Not specified",
+    "sector": null,
+    "contacts": null,
+    "description": "Automatically generated admin organisation",
+    "local": true,
+    "uuid": "5d5d066f-cfa4-49da-995c-6d5b68257ab4",
+    "restricted_to_domain": [],
+    "created_by": "0",
+    "user_count": "1"
+  }
+}

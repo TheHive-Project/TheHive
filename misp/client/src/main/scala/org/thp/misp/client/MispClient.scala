@@ -2,13 +2,13 @@ package org.thp.misp.client
 
 import java.util.Date
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.libs.ws.{WSClient, WSRequest}
 
 import akka.NotUsed
@@ -17,6 +17,7 @@ import akka.stream.scaladsl.{JsonFraming, Source}
 import akka.util.ByteString
 import org.thp.client.{ApplicationError, Authentication, ProxyWS}
 import org.thp.misp.dto.{Attribute, Event, Organisation, User}
+import org.thp.scalligraph.InternalError
 
 object MispPurpose extends Enumeration {
   val ImportOnly, ExportOnly, ImportAndExport = Value
@@ -32,8 +33,18 @@ class MispClient(
     excludedTags: Set[String],
     whitelistTags: Set[String]
 ) {
-  lazy val logger         = Logger(getClass)
-  val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
+  lazy val logger                                      = Logger(getClass)
+  val strippedUrl: String                              = baseUrl.replaceFirst("/*$", "")
+  private var _currentOrganisationName: Future[String] = getCurrentOrganisationName(ExecutionContext.global)
+
+  def currentOrganisationName: Try[String] =
+    _currentOrganisationName.value match {
+      case Some(s: Success[_]) => s
+      case None                => Try(Await.result(_currentOrganisationName, 1.second)) // Failure(InternalError(s"MISP server $name is not yet inaccessible"))
+      case Some(Failure(t)) =>
+        _currentOrganisationName = getCurrentOrganisationName(ExecutionContext.global)
+        Failure(InternalError(s"MISP server $name is inaccessible", t))
+    }
 
   private def configuredProxy: Option[String] = ws match {
     case c: ProxyWS => c.proxy.map(p => s"http://${p.host}:${p.port}")
@@ -59,12 +70,19 @@ class MispClient(
       case Failure(t)                          => throw t
     }
 
-//  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] =
-//    request(url).post(body).transform {
-//      case Success(r) if r.status == Status.OK => Success(r.json)
-//      case Success(r)                          => Try(r.json)
-//      case Failure(t)                          => throw t
-//    }
+  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] =
+    request(url).post(body).transform {
+      case Success(r) if r.status == Status.OK => Success(r.json)
+      case Success(r)                          => Try(r.json)
+      case Failure(t)                          => throw t
+    }
+
+  private def post(url: String, body: Source[ByteString, _])(implicit ec: ExecutionContext): Future[JsValue] =
+    request(url).post(body).transform {
+      case Success(r) if r.status == Status.OK => Success(r.json)
+      case Success(r)                          => Try(r.json)
+      case Failure(t)                          => throw t
+    }
 //
 //  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
 //    request(url).withMethod("GET").stream().transform {
@@ -113,7 +131,7 @@ class MispClient(
 
   def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
     val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
-    logger.debug(s"Search MISP events ")
+    logger.debug(s"Search MISP events")
     Source
       .fromFutureSource(postStream("events/index", query))
       .via(JsonFraming.objectScanner(Int.MaxValue))
@@ -142,7 +160,8 @@ class MispClient(
     }
   }
 
-  def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] =
+  def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] = {
+    logger.debug(s"Search MISP attributes for event #$eventId ${publishDate.fold("")("from " + _)}")
     Source
       .fromFutureSource(
         postStream(
@@ -158,8 +177,17 @@ class MispClient(
         val maybeAttribute = Try(Json.parse(data.toArray[Byte]).as[Attribute])
         maybeAttribute.fold(error => { logger.warn(s"Attribute has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
+      .mapAsyncUnordered(2) {
+        case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) => // TODO need to unzip malware samples ?
+          downloadAttachment(id).map {
+            case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
+          }
+        case attribute => Future.successful(attribute)
+      }
       .mapMaterializedValue(_ => NotUsed)
-//            .filter(_.date after refDate)
+  }
+
+  //            .filter(_.date after refDate)
 
   private val fileNameExtractor = """attachment; filename="(.*)"""".r
 
@@ -171,9 +199,64 @@ class MispClient(
           .get("Content-Disposition")
           .flatMap(_.collectFirst { case fileNameExtractor(name) => name })
           .getOrElse("noname")
-        val contentType = r.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
+        val contentType = r.headers.get("Content-Type").flatMap(_.headOption).getOrElse("application/octet-stream")
         Success((filename, contentType, r.bodyAsSource))
       case Success(r) => Failure(ApplicationError(r))
       case Failure(t) => throw t
     }
+
+  def uploadAttachment(eventId: String, comment: String, filename: String, data: Source[ByteString, _])(
+      implicit ec: ExecutionContext
+  ): Future[JsValue] = {
+    val stream = data
+      .via(Base64Flow.encode())
+      .intersperse(
+        ByteString(
+          s"""{"request":{"category":"Payload delivery","type":"malware-sample","comment":${JsString(comment).toString},"files":[{"filename":${JsString(
+            filename
+          ).toString},"data":""""
+        ),
+        ByteString.empty,
+        ByteString(""""}]}}""")
+      )
+    post(s"events/upload_sample/$eventId", stream)
+  }
+
+  def createEvent(
+      info: String,
+      date: Date,
+      threatLevel: Int,
+      published: Boolean,
+      analysis: Int,
+      distribution: Int,
+      attributes: Seq[Attribute],
+      extendsEvent: Option[String] = None
+  )(implicit ec: ExecutionContext): Future[String] = {
+    logger.debug(s"Create MISP event $info, with ${attributes.size} attributes")
+
+    val (stringAttributes, fileAttribtutes) = attributes.partition(_.data.isEmpty)
+    val event = Json.obj(
+      "Event" -> Json.obj(
+        "date"            -> Event.simpleDateFormat.format(date),
+        "threat_level_id" -> threatLevel.toString,
+        "info"            -> info,
+        "published"       -> published,
+        "analysis"        -> analysis.toString,
+        "distribution"    -> distribution,
+        "Attribute"       -> stringAttributes,
+        "extends_uuid"    -> extendsEvent
+      )
+    )
+    post("events", event)
+      .map { e =>
+        (e \ "Event" \ "id").as[String]
+      }
+      .flatMap { eventId =>
+        Future
+          .traverse(fileAttribtutes) { attr =>
+            uploadAttachment(eventId, attr.comment.getOrElse(attr.value), attr.value, attr.data.get._3)
+          }
+          .map(_ => eventId)
+      }
+  }
 }

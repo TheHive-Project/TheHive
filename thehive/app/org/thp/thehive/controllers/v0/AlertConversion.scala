@@ -109,10 +109,10 @@ object AlertConversion {
             _.apply(By(Key[Boolean]("read")))
               .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
           ).map {
+            case (false, caseCount) if caseCount == 0 => "New"
+            case (false, _)                           => "Updated"
             case (true, caseCount) if caseCount == 0  => "Ignored"
-            case (true, caseCount) if caseCount == 1  => "New"
-            case (false, caseCount) if caseCount == 0 => "Ignored"
-            case (false, caseCount) if caseCount == 1 => "Imported"
+            case (true, _)                            => "Imported"
           }
         ).readonly
       )
