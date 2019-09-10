@@ -220,6 +220,7 @@ lazy val cortexClient = (project in file("cortex/client"))
 lazy val thehiveMisp = (project in file("misp/connector"))
   .dependsOn(thehiveCore)
   .dependsOn(mispClient)
+  .dependsOn(thehiveCore % "test -> test")
   .settings(commonSettings)
   .settings(
     name := "thehive-misp",
