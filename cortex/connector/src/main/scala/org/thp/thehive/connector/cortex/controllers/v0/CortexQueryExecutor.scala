@@ -27,7 +27,7 @@ class CortexQueryExecutor @Inject()(
   override lazy val publicProperties
       : List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
   override lazy val queries: Seq[ParamQuery[_]] =
-    new CortexParentFilterQuery(publicProperties) ::
+    new CortexParentFilterQuery(db, publicProperties) ::
       actionCtrl.initialQuery ::
       actionCtrl.pageQuery ::
       actionCtrl.outputQuery ::
@@ -38,7 +38,7 @@ class CortexQueryExecutor @Inject()(
       reportCtrl.pageQuery ::
       reportCtrl.outputQuery ::
       Nil
-  override lazy val filterQuery    = new CortexParentFilterQuery(publicProperties)
+  override lazy val filterQuery    = new CortexParentFilterQuery(db, publicProperties)
   override val version: (Int, Int) = 0 -> 0
   val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
   val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
@@ -52,19 +52,18 @@ class CortexQueryExecutor @Inject()(
   */
 class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
   override def apply[S <: ScalliSteps[_, _, _]](
+      db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext
   ): S = {
-    val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
-
-    implicit val db: Database = vertexSteps.db
-    implicit val graph: Graph = vertexSteps.graph
+    val vertexSteps  = step.asInstanceOf[BaseVertexSteps[Product, _]]
+    val graph: Graph = vertexSteps.graph
     vertexSteps
       .filter { s =>
         if (stepType =:= ru.typeOf[JobSteps])
-          parentFilter.apply(publicProperties, ru.typeOf[JobSteps], new JobSteps(s).observable, authContext).raw
+          parentFilter.apply(db, publicProperties, ru.typeOf[JobSteps], new JobSteps(s)(db, graph).observable, authContext).raw
         else ???
       }
       .asInstanceOf[S]
@@ -76,7 +75,7 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
   *
   * @param publicProperties the models properties
   */
-class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
+class CortexParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(db, publicProperties) {
   override val name: String = "filter"
 
   override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
@@ -95,6 +94,7 @@ class CortexParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) exte
   override def toType(t: ru.Type): ru.Type    = t
   override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
     inputFilter(
+      db,
       publicProperties,
       rm.classSymbol(from.getClass).toType,
       from.asInstanceOf[X forSome { type X <: BaseVertexSteps[_, X] }],

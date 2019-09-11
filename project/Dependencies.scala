@@ -14,6 +14,7 @@ object Dependencies {
   lazy val janusGraph                     = "org.janusgraph"           % "janusgraph-core"                     % janusVersion
   lazy val janusGraphBerkeleyDB           = "org.janusgraph"           % "janusgraph-berkeleyje"               % janusVersion
   lazy val janusGraphHBase                = "org.janusgraph"           % "janusgraph-hbase"                    % janusVersion
+  lazy val janusGraphLucene               = "org.janusgraph"           % "janusgraph-lucene"                   % janusVersion
   lazy val cassandra                      = "org.janusgraph"           % "janusgraph-cql"                      % janusVersion
   lazy val gremlinScala                   = "com.michaelpollmeier"     %% "gremlin-scala"                      % "3.4.1.6"
   lazy val gremlinOrientdb                = "com.orientechnologies"    % "orientdb-gremlin"                    % "3.0.18"

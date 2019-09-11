@@ -35,7 +35,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
   lazy val logger = Logger(getClass)
 
   val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
-  val filterQuery: FilterQuery                     = new FilterQuery(publicProperties)
+  val filterQuery: FilterQuery                     = new FilterQuery(db, publicProperties)
   val queryType: ru.Type                           = ctrl.initialQuery.toType(ru.typeOf[Graph])
 
   val inputFilterParser: FieldsParser[InputFilter] = queryExecutor
@@ -100,7 +100,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
           .map(inputFilter => filterQuery.toQuery(inputFilter))
           .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
         inputSort <- sortParser(field.get("sort"))
-        sortedQuery = filteredQuery andThen new SortQuery(publicProperties).toQuery(inputSort)
+        sortedQuery = filteredQuery andThen new SortQuery(db, publicProperties).toQuery(inputSort)
         outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false)))
         outputQuery = ctrl.pageQuery.toQuery(outputParam)
       } yield sortedQuery andThen outputQuery

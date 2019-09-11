@@ -37,7 +37,7 @@ case class AlertCaseTemplate()
 case class AlertTag()
 
 @VertexEntity
-@DefineIndex(IndexType.standard, "type", "source", "sourceRef")
+@DefineIndex(IndexType.basic, "type", "source", "sourceRef")
 case class Alert(
     `type`: String,
     source: String,

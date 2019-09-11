@@ -17,6 +17,7 @@ case class OutputParam(from: Long, to: Long, withStats: Boolean)
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(
+    override val db: Database,
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,
     logCtrl: LogCtrl,
@@ -34,7 +35,7 @@ class TheHiveQueryExecutor @Inject()(
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
 
-  override lazy val filterQuery = new ParentFilterQuery(publicProperties)
+  override lazy val filterQuery = new ParentFilterQuery(db, publicProperties)
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
       controllers.map(_.pageQuery) :::
@@ -63,6 +64,7 @@ object ParentIdFilter {
 
 class ParentIdInputFilter(parentId: String) extends InputFilter {
   override def apply[S <: ScalliSteps[_, _, _]](
+      db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
@@ -90,31 +92,30 @@ object ParentQueryFilter {
 
 class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
   override def apply[S <: ScalliSteps[_, Vertex, S]](
+      db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext
   ): S = {
-    val vertexSteps = step.asInstanceOf[BaseVertexSteps[Product, _]]
-
-    implicit val db: Database = vertexSteps.db
-    implicit val graph: Graph = vertexSteps.graph
+    val vertexSteps  = step.asInstanceOf[BaseVertexSteps[Product, _]]
+    val graph: Graph = vertexSteps.graph
 
     vertexSteps
       .filter { s =>
         if (stepType =:= ru.typeOf[TaskSteps])
-          parentFilter.apply(publicProperties, ru.typeOf[CaseSteps], new TaskSteps(s).`case`, authContext).raw
+          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new TaskSteps(s)(db, graph).`case`, authContext).raw
         else if (stepType =:= ru.typeOf[ObservableSteps])
-          parentFilter.apply(publicProperties, ru.typeOf[CaseSteps], new ObservableSteps(s).`case`, authContext).raw
+          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new ObservableSteps(s)(db, graph).`case`, authContext).raw
         else if (stepType =:= ru.typeOf[LogSteps])
-          parentFilter.apply(publicProperties, ru.typeOf[TaskSteps], new LogSteps(s).task, authContext).raw
+          parentFilter.apply(db, publicProperties, ru.typeOf[TaskSteps], new LogSteps(s)(db, graph).task, authContext).raw
         else ???
       }
       .asInstanceOf[S]
   }
 }
 
-class ParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(publicProperties) {
+class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(db, publicProperties) {
   override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
     FieldsParser("parentIdFilter") {
       case (path, FObjOne("_and", FSeq(fields))) =>
@@ -137,6 +138,7 @@ class ParentFilterQuery(publicProperties: List[PublicProperty[_, _]]) extends Fi
   override def toType(t: ru.Type): ru.Type    = t
   override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
     inputFilter(
+      db,
       publicProperties,
       rm.classSymbol(from.getClass).toType,
       from.asInstanceOf[X forSome { type X <: BaseVertexSteps[_, X] }],
