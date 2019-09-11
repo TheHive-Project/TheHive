@@ -4,6 +4,7 @@ import org.thp.scalligraph.auth.Permission
 
 object Permissions {
   val manageCase: Permission           = Permission("manageCase")
+  val manageObservable: Permission     = Permission("manageObservable")
   val manageAlert: Permission          = Permission("manageAlert")
   val manageUser: Permission           = Permission("manageUser")
   val manageOrganisation: Permission   = Permission("manageOrganisation")
@@ -14,5 +15,16 @@ object Permissions {
   val manageConfig: Permission         = Permission("manageConfig")
 
   val all: Set[Permission] =
-    Set(manageCase, manageAlert, manageUser, manageOrganisation, manageCaseTemplate, manageTask, manageReportTemplate, manageAction, manageConfig)
+    Set(
+      manageCase,
+      manageObservable,
+      manageAlert,
+      manageUser,
+      manageOrganisation,
+      manageCaseTemplate,
+      manageTask,
+      manageReportTemplate,
+      manageAction,
+      manageConfig
+    )
 }

@@ -53,7 +53,7 @@ class ObservableCtrl @Inject()(
         for {
           case0 <- caseSrv
             .get(caseId)
-            .can(Permissions.manageCase)
+            .can(Permissions.manageObservable)
             .getOrFail()
           observableType      <- observableTypeSrv.getOrFail(inputObservable.dataType)
           observablesWithData <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, inputObservable.tags, Nil))
@@ -89,7 +89,7 @@ class ObservableCtrl @Inject()(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.getByIds(observableId).can(Permissions.manageCase),
+            _.getByIds(observableId).can(Permissions.manageObservable),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
@@ -120,7 +120,7 @@ class ObservableCtrl @Inject()(
         ids
           .toTry { id =>
             observableSrv
-              .update(_.getByIds(id).can(Permissions.manageCase), properties)
+              .update(_.getByIds(id).can(Permissions.manageObservable), properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -131,7 +131,7 @@ class ObservableCtrl @Inject()(
         for {
           observable <- observableSrv
             .getByIds(obsId)
-            .can(Permissions.manageCase)
+            .can(Permissions.manageObservable)
             .getOrFail()
           _ <- observableSrv.cascadeRemove(observable)
         } yield Results.NoContent
