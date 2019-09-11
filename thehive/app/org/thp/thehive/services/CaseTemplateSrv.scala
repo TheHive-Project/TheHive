@@ -131,6 +131,7 @@ class CaseTemplateSrv @Inject()(
 @EntitySteps[CaseTemplate]
 class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     extends BaseVertexSteps[CaseTemplate, CaseTemplateSteps](raw) {
+
   def get(idOrName: String): CaseTemplateSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else getByName(idOrName)

@@ -11,6 +11,6 @@ class MispRouter @Inject()(routerV0: v0.Router, actionBuilder: DefaultActionBuil
 
   lazy val logger      = Logger(getClass)
   lazy val get: Router =
-  //routerV1.withPrefix("/api/misp/v1/") orElse
+    //routerV1.withPrefix("/api/misp/v1/") orElse
     routerV0.withPrefix("/api/connector/misp/")
 }

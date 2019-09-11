@@ -16,9 +16,9 @@ import scala.util.Try
 class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
     extends VertexSrv[Organisation, OrganisationSteps] {
 
-  override val initialValues: Seq[Organisation]                                           = Seq(Organisation("default"))
-  val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
+  override val initialValues: Seq[Organisation] = Seq(Organisation("default"))
+  val organisationOrganisationSrv               = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv                      = new EdgeSrv[OrganisationShare, Organisation, Share]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
 

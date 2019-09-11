@@ -9,12 +9,12 @@ import org.thp.scalligraph.controllers._
 import play.api.libs.json._
 
 case class InputCustomField(
-                             name: String,
-                             description: String,
-                             `type`: String,
-                             options: List[JsValue] = Nil,
-                             reference: String
-                           )
+    name: String,
+    description: String,
+    `type`: String,
+    options: List[JsValue] = Nil,
+    reference: String
+)
 
 object InputCustomField {
   implicit val format: Format[InputCustomField] = Json.format[InputCustomField]

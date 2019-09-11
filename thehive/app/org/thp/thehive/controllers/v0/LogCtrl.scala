@@ -68,7 +68,7 @@ class LogCtrl @Inject()(
       .authTransaction(db) { implicit req => implicit graph =>
         for {
           log <- logSrv.getOrFail(logId)
-          _ <- logSrv.cascadeRemove(log)
+          _   <- logSrv.cascadeRemove(log)
         } yield Results.NoContent
       }
 }
