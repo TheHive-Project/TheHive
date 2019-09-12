@@ -16,11 +16,11 @@ import org.thp.thehive.models._
 class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DataSteps = new DataSteps(raw)
 
-  override def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
+  def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     initSteps
       .getByData(e.data)
       .headOption()
-      .fold(super.create(e))(Success(_))
+      .fold(createEntity(e))(Success(_))
 }
 
 class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Data, DataSteps](raw) {

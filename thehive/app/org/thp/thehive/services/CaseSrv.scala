@@ -55,7 +55,7 @@ class CaseSrv @Inject()(
       additionalTasks: Seq[Task]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
-      createdCase  <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
+      createdCase  <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
       _            <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
       _            <- shareSrv.create(createdCase, organisation, profileSrv.admin)
       _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip

@@ -46,7 +46,7 @@ class AlertSrv @Inject()(
 
   def create(organisation: Organisation with Entity, alert: Alert)(implicit graph: Graph, authContext: AuthContext): Try[Alert with Entity] =
     organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).headOption() match {
-      case None    => create(alert)
+      case None    => createEntity(alert)
       case Some(_) => Failure(CreateError("Alert already exists", JsObject.empty))
     }
 

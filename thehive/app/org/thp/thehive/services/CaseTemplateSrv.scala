@@ -64,7 +64,7 @@ class CaseTemplateSrv @Inject()(
         }
 
     for {
-      createdCaseTemplate <- create(caseTemplate)
+      createdCaseTemplate <- createEntity(caseTemplate)
       _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
       _                   <- createCustomFields(createdCaseTemplate, customFields)
       createdTasks        <- tasks.toTry(taskSrv.create)

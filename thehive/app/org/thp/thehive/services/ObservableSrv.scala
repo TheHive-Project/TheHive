@@ -58,7 +58,7 @@ class ObservableSrv @Inject()(
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- create(observable)
+      createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
       _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
       tags              <- addTags(createdObservable, tagNames)
@@ -70,7 +70,7 @@ class ObservableSrv @Inject()(
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- create(observable)
+      createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
       data              <- dataSrv.create(Data(dataValue))
       _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
@@ -121,7 +121,7 @@ class ObservableSrv @Inject()(
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- create(richObservable.observable)
+      createdObservable <- createEntity(richObservable.observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
       _                 <- richObservable.data.map(data => observableDataSrv.create(ObservableData(), createdObservable, data)).flip
       _                 <- richObservable.attachment.map(attachment => observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)).flip

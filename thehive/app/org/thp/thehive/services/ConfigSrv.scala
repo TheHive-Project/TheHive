@@ -34,7 +34,7 @@ class ConfigSrv @Inject()(
         case Some(config) => get(config).update("value" -> value).map(_ => ())
         case None =>
           for {
-            createdConfig <- create(Config(name, value))
+            createdConfig <- createEntity(Config(name, value))
             organisation  <- organisationSrv.get(organisationName).getOrFail()
             _             <- organisationConfigSrv.create(OrganisationConfig(), organisation, createdConfig)
           } yield ()
@@ -55,7 +55,7 @@ class ConfigSrv @Inject()(
         case Some(config) => get(config).update("value" -> value).map(_ => ())
         case None =>
           for {
-            createdConfig <- create(Config(name, value))
+            createdConfig <- createEntity(Config(name, value))
             user          <- userSrv.get(userName).getOrFail()
             _             <- userConfigSrv.create(UserConfig(), user, createdConfig)
           } yield ()

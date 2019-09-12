@@ -39,7 +39,7 @@ class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: D
       authContext: AuthContext
   ): Try[RichUser] =
     for {
-      createdUser <- create(user)
+      createdUser <- createEntity(user)
       _           <- roleSrv.create(createdUser, organisation, profile)
       _           <- auditSrv.user.create(createdUser)
     } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)

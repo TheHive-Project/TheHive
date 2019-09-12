@@ -35,9 +35,9 @@ class ReportTemplateSrv @Inject()(
       finally stream.close()
     }
 
-  override def create(reportTemplate: ReportTemplate)(implicit graph: Graph, authContext: AuthContext): Try[ReportTemplate with Entity] =
+  def create(reportTemplate: ReportTemplate)(implicit graph: Graph, authContext: AuthContext): Try[ReportTemplate with Entity] =
     for {
-      created <- super.create(reportTemplate)
+      created <- createEntity(reportTemplate)
       _       <- auditSrv.reportTemplate.create(created)
     } yield created
 

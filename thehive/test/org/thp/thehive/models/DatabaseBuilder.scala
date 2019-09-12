@@ -175,7 +175,7 @@ class DatabaseBuilder @Inject()(
   )(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
     readJsonFile(s"data/${srv.model.label}.json").flatMap { fields =>
       parser(fields - "id")
-        .flatMap(e => Or.from(srv.create(e)))
+        .flatMap(e => Or.from(srv.createEntity(e)))
         .map(v => fields.getString("id").map(_ -> v._id))
         .recover(e => warn(s"creation of $fields fails: $e"))
         .get

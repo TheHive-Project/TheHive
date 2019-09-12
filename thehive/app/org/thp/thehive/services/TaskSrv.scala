@@ -21,6 +21,8 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
   val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
 
+  def create(e: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = createEntity(e)
+
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =

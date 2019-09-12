@@ -22,7 +22,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
 
   def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] =
     for {
-      createdLog <- create(log)
+      createdLog <- createEntity(log)
       _          <- taskLogSrv.create(TaskLog(), task, createdLog)
       case0      <- get(createdLog).`case`.getOrFail()
       _          <- auditSrv.log.create(createdLog, case0)
