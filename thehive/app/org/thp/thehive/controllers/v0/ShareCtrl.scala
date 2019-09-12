@@ -1,70 +1,35 @@
-//package org.thp.thehive.controllers.v0
-//
-//import play.api.libs.json.Json
-//import play.api.mvc.{Action, AnyContent, Results}
-//
-//import io.scalaland.chimney.dsl._
-//import javax.inject.{Inject, Singleton}
-//import org.thp.scalligraph.NotFoundError
-//import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser, UpdateFieldsParser}
-//import org.thp.scalligraph.models.Database
-//import org.thp.thehive.dto.v1.{InputShare, OutputShare}
-//import org.thp.thehive.models._
-//import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv}
-//
-//@Singleton
-//class ShareCtrl @Inject()(
-//                           entryPoint: EntryPoint,
-//                           db: Database,
-//                           shareSrv: ShareSrv,
-//                           organisationSrv: OrganisationSrv,
-//                           caseSrv: CaseSrv) extends ShareConversion {
-//
-//  def create: Action[AnyContent] =
-//    entryPoint("create share")
-//      .extract("share", FieldsParser[InputShare])
-//      .authenticated { implicit request =>
-//        db.transaction { implicit graph =>
-//          val inputShare: InputShare = request.body("share")
-//          val organisation           = organisationSrv.getOrFail(inputShare.organisationName)
-//          val `case`                 = caseSrv.getOrFail(inputShare.caseId)
-//          val richShare              = shareSrv.create(`case`, organisation)
-//          val outputShare            = toOutputShare(richShare)
-//          Results.Created(Json.toJson(outputShare))
-//        }
-//      }
-//
-//  def get(shareId: String): Action[AnyContent] =
-//    entryPoint("get share")
-//      .authenticated { _ =>
-//        db.transaction { implicit graph =>
-//          val share = shareSrv
-//            .get(shareId)
-//            .richShare
-//            .headOption()
-//            .getOrElse(throw NotFoundError(s"share $shareId not found"))
-//          val outputShare = toOutputShare(share)
-//          Results.Ok(Json.toJson(outputShare))
-//        }
-//      }
-//
-//  def list: Action[AnyContent] =
-//    entryPoint("list share")
-//      .authenticated { _ =>
-//        db.transaction { implicit graph =>
-//          val shares = shareSrv.initSteps.richShare.toList
-//            .map(toOutputShare)
-//          Results.Ok(Json.toJson(shares))
-//        }
-//      }
-//
-//  def update(shareId: String): Action[AnyContent] =
-//    entryPoint("update share")
-//      .extract("share", UpdateFieldsParser[InputShare])
-//      .authenticated { implicit request =>
-//        db.transaction { implicit graph =>
-//          shareSrv.update(shareId, request.body("share"))
-//          Results.NoContent
-//        }
-//      }
-//}
+package org.thp.thehive.controllers.v0
+
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.dto.v0.{InputShare, OutputShare}
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ProfileSrv, ShareSrv}
+
+@Singleton
+class ShareCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    shareSrv: ShareSrv,
+    organisationSrv: OrganisationSrv,
+    caseSrv: CaseSrv,
+    profileSrv: ProfileSrv
+) {
+
+  def create: Action[AnyContent] =
+    entryPoint("create share")
+      .extract("share", FieldsParser[InputShare])
+      .authTransaction(db) { implicit request => implicit graph =>
+        val inputShare: InputShare = request.body("share")
+        for {
+          organisation <- organisationSrv.getOrFail(inputShare.organisationName)
+          case0        <- caseSrv.getOrFail(inputShare.caseId)
+          profile      <- profileSrv.getOrFail(inputShare.profile)
+          _            <- shareSrv.create(case0, organisation, profile)
+          outputShare = OutputShare(case0._id, organisation.name, profile.name)
+        } yield Results.Created(Json.toJson(outputShare))
+      }
+}
