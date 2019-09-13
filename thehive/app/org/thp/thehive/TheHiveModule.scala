@@ -1,7 +1,6 @@
 package org.thp.thehive
 
 import play.api.libs.concurrent.AkkaGuiceSupport
-
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
@@ -11,6 +10,7 @@ import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.{SchemaUpdater, TheHiveSchema}
+import org.thp.thehive.services.notification.email.EmailerProvider
 import org.thp.thehive.services.notification.{AppendToFileProvider, LogInMyTaskProvider, NotificationActor, NotifierProvider, TriggerProvider}
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
@@ -47,6 +47,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
+    notifierBindings.addBinding.to[EmailerProvider]
 
     configuration.get[String]("db.provider") match {
       case "janusgraph" => bind(classOf[Database]).to(classOf[JanusDatabase])
