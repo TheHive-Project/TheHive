@@ -98,7 +98,7 @@ class AuditSrv @Inject()(
       logger.debug(s"Store audit entity: $audit")
       for {
         user         <- userSrv.current.getOrFail()
-        createdAudit <- create(audit)
+        createdAudit <- createEntity(audit)
         _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
         _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
         _ = context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip // this could fail on delete (context doesn't exist)

@@ -123,7 +123,7 @@ class ActionSrv @Inject()(
       context: Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[RichAction] =
     for {
-      createdAction <- create(action)
+      createdAction <- createEntity(action)
       _             <- actionContextSrv.create(ActionContext(), createdAction, context)
     } yield RichAction(createdAction, context)
 

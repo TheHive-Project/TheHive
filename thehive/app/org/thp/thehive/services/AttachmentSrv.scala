@@ -30,10 +30,11 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AttachmentSteps = new AttachmentSteps(raw)
 
   def create(file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
-    val hs     = hashers.fromPath(file.filepath)
-    val id     = hs.head.toString
-    val is     = Files.newInputStream(file.filepath)
-    val result = storageSrv.saveBinary(id, is).flatMap(_ => create(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
+    val hs = hashers.fromPath(file.filepath)
+    val id = hs.head.toString
+    val is = Files.newInputStream(file.filepath)
+    val result =
+      storageSrv.saveBinary(id, is).flatMap(_ => createEntity(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
     is.close()
     result
   }
@@ -44,7 +45,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
-    storageSrv.saveBinary(id, data).flatMap(_ => create(Attachment(filename, data.length.toLong, contentType, hs, id)))
+    storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =

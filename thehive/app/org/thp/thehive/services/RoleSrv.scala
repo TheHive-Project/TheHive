@@ -24,7 +24,7 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
       authContext: AuthContext
   ): Try[Role with Entity] =
     for {
-      createdRole <- create(Role())
+      createdRole <- createEntity(Role())
       _           <- roleOrganisationSrv.create(RoleOrganisation(), createdRole, organisation)
       _           <- userRoleSrv.create(UserRole(), user, createdRole)
       _           <- roleProfileSrv.create(RoleProfile(), createdRole, profile)

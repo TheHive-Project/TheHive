@@ -1,10 +1,12 @@
 package org.thp.thehive.services
 
-import scala.util.Try
+import scala.util.{Failure, Try}
+
+import play.api.libs.json.JsObject
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
@@ -25,20 +27,27 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share] =
-    for {
-      createdShare <- create(Share())
-      _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
-      _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
-      _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
-    } yield createdShare
+    if (get(`case`, organisation).profile.exists())
+      Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}", JsObject.empty))
+    else
+      for {
+        createdShare <- createEntity(Share())
+        _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
+        _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
+        _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
+      } yield createdShare
+
+  def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
+    initSteps.relatedTo(`case`).relatedTo(organisation)
 }
 
 @EntitySteps[Share]
 class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Share, ShareSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
 
-//  def visible(implicit authContext: AuthContext): ShareSteps =
-//    newInstance(raw.filter(_.inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+  def relatedTo(`case`: Case with Entity): ShareSteps = where(_.`case`.get(`case`._id))
+
+  def relatedTo(organisation: Organisation with Entity): ShareSteps = where(_.organisation.get(organisation._id))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 
@@ -47,4 +56,6 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
 
   def `case`: CaseSteps = new CaseSteps(raw.outTo[ShareCase])
+
+  def profile: ProfileSteps = new ProfileSteps(raw.outTo[ShareProfile])
 }

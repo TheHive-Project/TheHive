@@ -23,7 +23,7 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
       organisation: Organisation with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Dashboard with Entity] =
     for {
-      createdDashboard <- super.create(dashboard)
+      createdDashboard <- createEntity(dashboard)
       _                <- organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
       _                <- auditSrv.dashboard.create(createdDashboard)
     } yield createdDashboard

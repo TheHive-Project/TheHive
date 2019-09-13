@@ -55,7 +55,7 @@ class CaseSrv @Inject()(
       additionalTasks: Seq[Task]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
-      createdCase  <- create(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
+      createdCase  <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
       _            <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
       _            <- shareSrv.create(createdCase, organisation, profileSrv.admin)
       _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
@@ -99,7 +99,7 @@ class CaseSrv @Inject()(
   ): Try[Unit] =
     for {
       share <- get(`case`)
-        .getOrganisationShare
+        .share
         .getOrFail()
       _ = shareTaskSrv.create(ShareTask(), share, task)
       _ <- auditSrv.task.create(task, `case`)
@@ -162,7 +162,7 @@ class CaseSrv @Inject()(
   ): Try[Unit] =
     for {
       share <- get(`case`)
-        .getOrganisationShare
+        .share
         .getOrFail()
       _ = shareObservableSrv.create(ShareObservable(), share, observable)
       _ <- auditSrv.observable.create(observable, `case`)
@@ -396,11 +396,14 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   }
 
-  def getOrganisationShare(implicit authContext: AuthContext): ShareSteps = new ShareSteps(
-    raw
-      .inTo[ShareCase]
-      .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-  )
+  def share(implicit authContext: AuthContext): ShareSteps =
+    new ShareSteps(
+      raw
+        .inTo[ShareCase]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+    )
+
+  def shares: ShareSteps = new ShareSteps(raw.inTo[ShareCase])
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
 
@@ -517,13 +520,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .inTo[ShareCase]
         .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
         .outTo[ShareObservable]
-    )
-
-  def share(implicit authContext: AuthContext): ShareSteps =
-    new ShareSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
     )
 
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])

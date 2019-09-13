@@ -106,7 +106,7 @@ class JobSrv @Inject()(
     */
   def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Job with Entity] =
     for {
-      createdJob <- create(job)
+      createdJob <- createEntity(job)
       _          <- observableJobSrv.create(ObservableJob(), observable, createdJob)
     } yield createdJob
 

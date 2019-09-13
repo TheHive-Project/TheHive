@@ -27,7 +27,7 @@ class TagSrv @Inject()(appConfig: ApplicationConfig)(implicit db: Database) exte
       .getByName(tagName)
       .getOrFail()
       .recoverWith {
-        case _ if autoCreate => create(Tag(tagName))
+        case _ if autoCreate => createEntity(Tag(tagName))
       }
 }
 
