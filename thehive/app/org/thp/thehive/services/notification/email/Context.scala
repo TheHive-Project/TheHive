@@ -1,4 +1,4 @@
-package org.thp.thehive.services.notification.email.templates
+package org.thp.thehive.services.notification.email
 
 import org.thp.scalligraph.models.Entity
 

@@ -38,6 +38,8 @@ object Dependencies {
   lazy val zip4j                          = "net.lingala.zip4j"        % "zip4j"                               % "2.1.1"
   lazy val alpakka                        = "com.lightbend.akka"       %% "akka-stream-alpakka-json-streaming" % "1.1.1"
   lazy val handlebars                     = "com.github.jknack"        % "handlebars"                          % "4.1.2"
+  lazy val playMailer                     = "com.typesafe.play"        %% "play-mailer"                        % "6.0.1"
+  lazy val playMailerGuice                = "com.typesafe.play"        %% "play-mailer-guice"                  % "6.0.1"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang"           % "scala-reflect"                       % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang"           % "scala-compiler"                      % scalaVersion

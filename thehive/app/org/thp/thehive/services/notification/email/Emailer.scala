@@ -5,34 +5,46 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.notification.email.templates.Context
 import org.thp.thehive.services.notification.{Notifier, NotifierProvider}
 import play.api.Configuration
+import play.api.libs.mailer.MailerClient
 
 import scala.collection.JavaConverters.mapAsJavaMap
 import scala.util.Try
 
 @Singleton
-class EmailerProvider @Inject() extends NotifierProvider {
+class EmailerProvider @Inject()(mailerClient: MailerClient) extends NotifierProvider {
   override val name: String = "Emailer"
 
   override def apply(config: Configuration): Try[Notifier] =
     for {
       template <- config.getOrFail[String]("message")
-    } yield new Emailer(new Handlebars(), template)
+      subj = config.getOptional[String]("subject")
+      from = config.getOptional[String]("from")
+    } yield new Emailer(mailerClient, new Handlebars(), NotificationEmail(subj, from, template))
 }
 
-class Emailer(handlebars: Handlebars, template: String) extends Notifier {
+class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEmail: NotificationEmail) extends Notifier {
   override val name: String = "Emailer"
 
   override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
   ): Try[Unit] = {
     val model = notificationMap(audit, Context(context), organisation, user)
+
     Try(
-      handlebars
-        .compileInline(template)
-        .apply(model)
+      mailerClient.send(
+        notificationEmail
+          .toEmail
+          .copy(
+            bodyText = Some(
+              handlebars
+                .compileInline(notificationEmail.template)
+                .apply(model)
+            ),
+            to = Seq(user.login)
+          )
+      )
     )
   }
 

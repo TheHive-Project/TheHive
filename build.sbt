@@ -87,7 +87,9 @@ lazy val thehiveCore = (project in file("thehive"))
       zip4j,
       ws    % Test,
       specs % Test,
-      handlebars
+      handlebars,
+      playMailer,
+      playMailerGuice
     )
   )
 
