@@ -133,9 +133,10 @@ class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _
       case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
         paramParser(tpe, properties).apply(path, queryField).map(query => new ParentQueryInputFilter(query))
     }.orElse(InputFilter.fieldsParser(tpe, properties))
-  override val name: String                   = "filter"
-  override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[TaskSteps] || t <:< ru.typeOf[ObservableSteps] || t <:< ru.typeOf[LogSteps]
-  override def toType(t: ru.Type): ru.Type    = t
+  override val name: String = "filter"
+  override def checkFrom(t: ru.Type): Boolean =
+    SubType(t, ru.typeOf[TaskSteps]) || SubType(t, ru.typeOf[ObservableSteps]) || SubType(t, ru.typeOf[LogSteps])
+  override def toType(t: ru.Type): ru.Type = t
   override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
     inputFilter(
       db,

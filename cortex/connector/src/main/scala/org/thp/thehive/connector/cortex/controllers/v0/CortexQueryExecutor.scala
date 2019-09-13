@@ -90,7 +90,7 @@ class CortexParentFilterQuery(db: Database, publicProperties: List[PublicPropert
         paramParser(tpe, properties).apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
     }.orElse(InputFilter.fieldsParser(tpe, properties))
 
-  override def checkFrom(t: ru.Type): Boolean = t <:< ru.typeOf[JobSteps]
+  override def checkFrom(t: ru.Type): Boolean = SubType(t, ru.typeOf[JobSteps])
   override def toType(t: ru.Type): ru.Type    = t
   override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
     inputFilter(
