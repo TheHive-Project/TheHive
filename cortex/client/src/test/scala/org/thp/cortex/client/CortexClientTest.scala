@@ -28,7 +28,6 @@ class CortexClientTest extends PlaySpecification with Mockito {
       val analyzers: Seq[OutputCortexWorker] = await(client.listAnalyser)
 
       analyzers.length shouldEqual 2
-//      analyzers.head.cortexIds must contain(exactly(client.name))
       analyzers.head.name shouldEqual "anaTest1"
 
       val oneAnalyzer: OutputCortexWorker = await(client.getAnalyzer("anaTest2"))
@@ -153,7 +152,6 @@ class CortexClientTest extends PlaySpecification with Mockito {
           dataTypeList = Seq("test", "case_task"),
           maxPap = 3,
           maxTlp = 2
-//          cortexIds = List("test")
         )
       )
 
@@ -168,7 +166,6 @@ class CortexClientTest extends PlaySpecification with Mockito {
           dataTypeList = Seq("test", "dummy"),
           maxPap = 3,
           maxTlp = 2
-//          cortexIds = List("test", "test2")
         )
       )
 
@@ -181,5 +178,4 @@ class CortexClientTest extends PlaySpecification with Mockito {
       responders.length must beGreaterThan(0)
     }
   }
-//  }
 }

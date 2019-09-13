@@ -36,22 +36,5 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
 class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Role, RoleSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(raw)
 
-//  def richRole: GremlinScala[RichRole] =
-//    raw
-//      .project(
-//        _.apply(By(__[Vertex].outTo[RoleCase]))
-//          .and(By(__[Vertex].inTo[OrganisationRole]))
-//          .and(By(__[Vertex].outTo[RoleProfile])))
-//      .map {
-//        case (`case`, organisation, profile) =>
-//          RichRole(`case`.as[Case], organisation, profile)
-////            onlyOneOf[String](m.get[JList[String]]("case")),
-////            onlyOneOf[String](m.get[JList[String]]("organisation"))
-////          )
-//        //def apply(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity): RichRole =
-//      }
-
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[RoleOrganisation])
-
-//  def `case`: CaseSteps = new CaseSteps(raw.outTo[RoleCase])
 }

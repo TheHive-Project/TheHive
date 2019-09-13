@@ -44,7 +44,6 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
 //      }
 
       "import valid templates contained in a zip file and fetch them by id and type" in {
-//        val archive = SingletonTemporaryFileCreator.create(new File(getClass.getResource("/report-templates.zip").toURI).toPath)
         val file = FilePart("templates", "report-templates.zip", Option("application/zip"), FakeTemporaryFile.fromResource("/report-templates.zip"))
         val request = FakeRequest("POST", s"/api/connector/cortex/report/template/_import")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
@@ -68,8 +67,6 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
         val getResult = reportCtrl.get("JoeSandbox_File_Analysis_Noinet_2_0")(getRequest)
         status(getResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
-
-        // FIXME some obscure db conflicts issue again
 
         val createRequest = FakeRequest("POST", "/api/connector/cortex/report/template")
           .withHeaders("user" -> "user2", "X-Organisation" -> "default")
