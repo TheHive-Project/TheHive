@@ -37,6 +37,8 @@ object Dependencies {
   lazy val hadoopClient                   = "org.apache.hadoop"        % "hadoop-client"                       % "3.2.0"
   lazy val zip4j                          = "net.lingala.zip4j"        % "zip4j"                               % "2.1.1"
   lazy val alpakka                        = "com.lightbend.akka"       %% "akka-stream-alpakka-json-streaming" % "1.1.1"
+  lazy val handlebars                     = "com.github.jknack"        % "handlebars"                          % "4.1.2"
+
   def scalaReflect(scalaVersion: String)  = "org.scala-lang"           % "scala-reflect"                       % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang"           % "scala-compiler"                      % scalaVersion
 }
