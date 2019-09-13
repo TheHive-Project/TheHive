@@ -12,7 +12,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseSrv
+import org.thp.thehive.services.{CaseSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
@@ -33,8 +33,12 @@ case class TestTask(
 
 object TestTask {
 
+  import TaskConversion._
+
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform
+
+  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
 }
 
 class TaskCtrlTest extends PlaySpecification with Mockito {
@@ -53,28 +57,21 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val taskCtrl: TaskCtrl   = app.instanceOf[TaskCtrl]
+    val taskSrv: TaskSrv     = app.instanceOf[TaskSrv]
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
     val db                   = app.instanceOf[Database]
     val caseSrv              = app.instanceOf[CaseSrv]
 
-    def tasksList: Seq[OutputTask] = {
-      val requestList = FakeRequest("GET", "/api/case/task/_search").withHeaders("user" -> "user1")
-      val resultList  = theHiveQueryExecutor.task.search(requestList)
-
-      status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
-
-      contentAsJson(resultList).as[Seq[OutputTask]]
+    def getTaskByTitle(title: String): Try[RichTask] = db.roTransaction { implicit graph =>
+      taskSrv.initSteps.has(Key("title"), P.eq(title)).richTask.getOrFail()
     }
 
     s"[$name] task controller" should {
 
       "list available tasks and get one task" in {
-        val t1 = tasksList.find(_.title == "case 1 task 1")
-        t1 should beSome.setMessage("Task 1 not found")
-
-        val task1      = t1.get
-        val request    = FakeRequest("GET", s"/api/case/task/${task1.id}").withHeaders("user" -> "user1")
-        val result     = taskCtrl.get(task1.id)(request)
+        val task1      = getTaskByTitle("case 1 task 1").get
+        val request    = FakeRequest("GET", s"/api/case/task/${task1._id}").withHeaders("user" -> "user1")
+        val result     = taskCtrl.get(task1._id)(request)
         val resultTask = contentAsJson(result)
 
         status(result) shouldEqual 200
@@ -94,57 +91,53 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
       }
 
       "patch a task" in {
-        val t2 = tasksList.find(_.title == "case 1 task 2")
-        t2 should beSome.setMessage("Task 2 not found")
-
-        val task2 = t2.get
-        val request = FakeRequest("PATCH", s"/api/case/task/${task2.id}")
-          .withHeaders("user" -> "user1")
+        val task2 = getTaskByTitle("case 4 task 1").get
+        val request = FakeRequest("PATCH", s"/api/case/task/${task2._id}")
+          .withHeaders("user" -> "user3")
           .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1", "status": "InProgress"}"""))
-        val result = taskCtrl.update(task2.id)(request)
+        val result = taskCtrl.update(task2._id)(request)
 
         status(result) shouldEqual 204
 
         val expected = TestTask(
           title = "new title task 2",
-          description = Some("description task 2"),
+          description = Some("description task 4"),
           owner = Some("user1"),
           startDate = None,
           flag = true,
           status = "InProgress",
-          order = 1,
+          order = 0,
           group = Some("group1"),
           endDate = None,
           dueDate = None
         )
 
-        val newList = tasksList
-        val newTask = newList.find(_.title == "new title task 2").map(TestTask.apply)
-        newTask must beSome(expected)
+        val newTask = getTaskByTitle("new title task 2").map(TestTask.apply)
+        newTask must beASuccessfulTry(expected)
       }
 
       "create a new task for an existing case" in {
-        val request = FakeRequest("POST", "/api/case/#1/task?flag=true")
+        val request = FakeRequest("POST", "/api/case/#4/task?flag=true")
           .withJsonBody(
             Json
               .parse(
                 """{
-                    "title": "case 1 task",
+                    "title": "case 4 task",
                     "group": "group1",
                     "description": "description task 1",
                     "status": "Waiting"
                 }"""
               )
           )
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user3")
 
-        val result     = taskCtrl.create("#1")(request)
+        val result     = taskCtrl.create("#4")(request)
         val resultTask = contentAsJson(result)
-        status(result) shouldEqual 201
+        status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
         val resultTaskOutput = resultTask.as[OutputTask]
         val expected = TestTask(
-          title = "case 1 task",
+          title = "case 4 task",
           description = Some("description task 1"),
           owner = None, // FIXME
           startDate = None,
@@ -157,26 +150,22 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         TestTask(resultTaskOutput) must_=== expected
 
-        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" -> "user1")
+        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" -> "user3")
         val resultGet  = taskCtrl.get(resultTaskOutput.id)(requestGet)
 
         status(resultGet) shouldEqual 200
       }
 
       "unset task owner" in {
-        val t3 = tasksList.find(_.title == "case 3 task 1")
-        t3 should beSome.setMessage("Task 3 not found")
-
-        val task3 = t3.get
-        val request = FakeRequest("PATCH", s"/api/case/task/${task3.id}")
+        val task3 = getTaskByTitle("case 3 task 1").get
+        val request = FakeRequest("PATCH", s"/api/case/task/${task3._id}")
           .withHeaders("user" -> "user1")
           .withJsonBody(Json.parse("""{"owner": null}"""))
-        val result = taskCtrl.update(task3.id)(request)
+        val result = taskCtrl.update(task3._id)(request)
 
         status(result) shouldEqual 204
 
-        val newList = tasksList
-        val newTask = newList.find(_.title == "case 3 task 1").map(TestTask.apply)
+        val newTask = getTaskByTitle("case 3 task 1").map(TestTask.apply)
 
         val expected = TestTask(
           title = "case 3 task 1",
@@ -190,7 +179,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           dueDate = None
         )
 
-        newTask must beSome(expected)
+        newTask must beSuccessfulTry(expected)
 
       }
 

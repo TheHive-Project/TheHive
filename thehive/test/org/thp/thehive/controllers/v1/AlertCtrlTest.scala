@@ -108,7 +108,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       "fail to create a duplicated alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
-          .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref1", None, "new alert", "test alert")))
+          .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref2", None, "new alert", "test alert")))
           .withHeaders("user" -> "user1")
         val result = alertCtrl.create(request)
         status(result) must_=== 400

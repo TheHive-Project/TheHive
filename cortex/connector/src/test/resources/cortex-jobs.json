@@ -175,7 +175,7 @@
         {
           "type": "AddArtifactToCase",
           "data": "testObservable",
-          "dataType": "mail_subject",
+          "dataType": "mail-subject",
           "message": "test observable from action"
         },
         {

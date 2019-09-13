@@ -319,15 +319,15 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
     }
 
     "merge an alert with a case" in {
-      val request1 = FakeRequest("POST", "/api/v0/alert/test;alert_creation_test;#1/merge/#1")
+      val request1 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref5/merge/#1")
         .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
-      val result1 = alertCtrl.mergeWithCase("test;alert_creation_test;#1", "#1")(request1)
+      val result1 = alertCtrl.mergeWithCase("testType;testSource;ref5", "#1")(request1)
       status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       val resultCase       = contentAsJson(result1)
       val resultCaseOutput = resultCase.as[OutputCase]
 
-      resultCaseOutput.description.contains("Merged with alert ##1") must beTrue
+      resultCaseOutput.description.contains("Merged with alert #ref5") must beTrue
 
       db.roTransaction { implicit graph =>
         val observables = app
@@ -336,7 +336,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           .observables(DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all).getSystemAuthContext)
           .toList
 
-        observables.find(_.message.contains("coucou")) must beSome
+        observables.flatMap(_.message) must contain("This domain", "hello world")
       }
     }
 
@@ -345,20 +345,20 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       observableSrv
         .initSteps
-        .has(Key("message"), P.eq("coucou"))
+        .has(Key("message"), P.eq("if you are lost"))
         .alert
         .getOrFail() must beSuccessfulTry
 
-      val request1 = FakeRequest("DELETE", "/api/v0/alert/test;alert_creation_test;#1")
+      val request1 = FakeRequest("DELETE", "/api/v0/alert/testType;testSource;ref4")
         .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
-      val result1 = alertCtrl.delete("test;alert_creation_test;#1")(request1)
+      val result1 = alertCtrl.delete("testType;testSource;ref4")(request1)
 
       status(result1) must equalTo(204)
       db.roTransaction(
         graph =>
           observableSrv
             .initSteps(graph)
-            .has(Key("message"), P.eq("coucou"))
+            .has(Key("message"), P.eq("if you are lost"))
             .alert
             .getOrFail() must beFailedTry
       )

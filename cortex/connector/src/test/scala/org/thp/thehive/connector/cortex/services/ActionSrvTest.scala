@@ -132,7 +132,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                 "status"      -> "Success",
                 "message"     -> "Success",
                 "data"        -> "testObservable",
-                "dataType"    -> "mail_subject",
+                "dataType"    -> "mail-subject",
                 "dataMessage" -> "test observable from action"
               )
             )

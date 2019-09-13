@@ -4,6 +4,10 @@
     "to": "h.fr"
   },
   {
+    "from": "alert4",
+    "to": "perdu.com"
+  },
+  {
     "from": "alert5",
     "to": "c.fr"
   },

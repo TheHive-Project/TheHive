@@ -26,20 +26,14 @@ class UserSrvTest extends PlaySpecification {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val userSrv: UserSrv                 = app.instanceOf[UserSrv]
-    val db: Database                     = app.instanceOf[Database]
-    val organisationSrv: OrganisationSrv = app.instanceOf[OrganisationSrv]
-    val profileSrv: ProfileSrv           = app.instanceOf[ProfileSrv]
+    val userSrv: UserSrv = app.instanceOf[UserSrv]
+    val db: Database     = app.instanceOf[Database]
 
     s"[$name] user service" should {
 
       "create and get an user by his id" in db.transaction { implicit graph =>
-        val organisation = organisationSrv.initSteps.head()
-        val profile      = profileSrv.admin
-        userSrv.create(
-          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None),
-          organisation,
-          profile
+        userSrv.createEntity(
+          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None)
         ) must beSuccessfulTry
           .which { user =>
             userSrv.getOrFail(user._id) must beSuccessfulTry(user)
@@ -47,13 +41,8 @@ class UserSrvTest extends PlaySpecification {
       }
 
       "create and get an user by his login" in db.transaction { implicit graph =>
-        val organisation = organisationSrv.initSteps.head()
-        val profile      = profileSrv.admin
-
-        userSrv.create(
-          User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None),
-          organisation,
-          profile
+        userSrv.createEntity(
+          User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None)
         ) must beSuccessfulTry
           .which { user =>
             userSrv.getOrFail(user.login) must beSuccessfulTry(user)

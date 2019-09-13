@@ -19,5 +19,12 @@
     "tlp": 1,
     "ioc": false,
     "sighted": false
+  },
+  {
+    "id": "perdu.com",
+    "message": "if you are lost",
+    "tlp": 1,
+    "ioc": false,
+    "sighted": true
   }
 ]

@@ -44,12 +44,6 @@ class AlertSrv @Inject()(
     case _                             => super.getByIds(idOrSource)
   }
 
-  def create(organisation: Organisation with Entity, alert: Alert)(implicit graph: Graph, authContext: AuthContext): Try[Alert with Entity] =
-    organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).headOption() match {
-      case None    => createEntity(alert)
-      case Some(_) => Failure(CreateError("Alert already exists", JsObject.empty))
-    }
-
   def create(
       alert: Alert,
       organisation: Organisation with Entity,
@@ -78,15 +72,19 @@ class AlertSrv @Inject()(
             } yield CustomFieldWithValue(cf, alertCustomField)
         }
 
-    for {
-      createdAlert <- create(organisation, alert)
-      _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
-      _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
-      tags         <- tagNames.toTry(t => tagSrv.getOrCreate(t))
-      _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-      cfs          <- createCustomFields(createdAlert)
-      _            <- auditSrv.alert.create(createdAlert)
-    } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
+    val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).count
+    if (alertAlreadyExist > 0)
+      Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
+    else
+      for {
+        createdAlert <- createEntity(alert)
+        _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
+        _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
+        tags         <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+        _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
+        cfs          <- createCustomFields(createdAlert)
+        _            <- auditSrv.alert.create(createdAlert)
+      } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
   }
 
   override def update(

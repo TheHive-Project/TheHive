@@ -5,7 +5,8 @@
       "manageCase",
       "manageAlert",
       "manageTask",
-      "manageAction"
+      "manageAction",
+      "manageObservable"
     ]
   },
   {

@@ -1,16 +1,14 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.models._
+
+import scala.util.{Failure, Try}
 
 @Singleton
 class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, ShareSteps] {
@@ -28,7 +26,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
       authContext: AuthContext
   ): Try[Share] =
     if (get(`case`, organisation).profile.exists())
-      Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}", JsObject.empty))
+      Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
     else
       for {
         createdShare <- createEntity(Share())
