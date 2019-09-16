@@ -30,37 +30,59 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
   override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
   ): Try[Unit] = {
-    val model = notificationMap(audit, Context(context), organisation, user)
-
-    Try(
-      mailerClient.send(
-        notificationEmail
-          .toEmail
-          .copy(
-            bodyText = Some(
-              handlebars
-                .compileInline(notificationEmail.template)
-                .apply(model)
-            ),
-            to = Seq(user.login)
+    val nonContextualEntities = List("audit", "organisation", "user")
+    for {
+      model <- Try(
+        context
+          .fold(notificationMap(List(audit, organisation, user), nonContextualEntities))(
+            c => notificationMap(List(c, audit, organisation, user), nonContextualEntities)
           )
       )
-    )
+      _ <- Try(
+        mailerClient.send(
+          notificationEmail
+            .toEmail
+            .copy(
+              bodyText = Some(
+                handlebars
+                  .compileInline(notificationEmail.template)
+                  .apply(model)
+              ),
+              to = Seq(user.login)
+            )
+        )
+      )
+    } yield ()
   }
 
-  private def notificationMap(audit: Audit with Entity, context: Context, organisation: Organisation with Entity, user: User with Entity) =
+  private def notificationMap(entities: List[Entity], nonContextualEntities: List[String]) =
     mapAsJavaMap(
-      Map(
-        "name"             -> user.name,
-        "requestId"        -> audit.requestId,
-        "action"           -> audit.action,
-        "objectType"       -> audit.objectType.getOrElse(""),
-        "objectId"         -> audit.objectId.getOrElse(""),
-        "createdBy"        -> audit._createdBy,
-        "createdAt"        -> audit._createdAt,
-        "contextLabel"     -> context.label,
-        "contextId"        -> context.id,
-        "organisationName" -> organisation.name
-      )
+      entities
+        .flatMap(getMap(_, nonContextualEntities))
+        .map(e => (e._1, mapAsJavaMap(e._2)))
+        .toMap
     )
+
+  private def getMap(cc: Entity, nonContextualEntities: List[String]) = {
+    val baseFields = {
+      for {
+        field <- cc.getClass.getDeclaredFields
+        _     = field.setAccessible(true)
+        name  = field.getName
+        value = field.get(cc)
+      } yield name -> value.toString
+    } toMap
+
+    val fields = cc
+      ._model
+      .fields
+      .keys
+      .map { f =>
+        f -> cc.getClass.getSuperclass.getDeclaredMethod(f).invoke(cc).toString
+    } toMap
+    val l     = cc._model.label.toLowerCase
+    val label = if (nonContextualEntities.contains(l)) l else "context"
+
+    Map(label -> baseFields.++(fields))
+  }
 }
