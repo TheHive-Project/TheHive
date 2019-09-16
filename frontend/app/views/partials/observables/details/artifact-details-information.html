@@ -98,7 +98,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
+                <tr ng-repeat="a in similarArtifacts | limitTo:similarArtifactsLimit" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
                     <td align="center">
                         <span class="clickable fa"
                           ng-class="{true: 'fa-star', false: 'fa-star-o'}[a.ioc]"
@@ -116,5 +116,8 @@
                 </tr>
             </tbody>
         </table>
+        <div class="mt-xxs text-center" ng-if="similarArtifactsLimit < similarArtifacts.length">
+            <a href ng-click="showMoreSimilar()"><i class="fa fa-angle-down"></i> Show more</a>
+        </div>
     </div>
 </div>

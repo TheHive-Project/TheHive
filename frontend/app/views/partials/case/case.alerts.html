@@ -91,6 +91,7 @@
                     <i ng-show="sorting.field === '-date'" class="fa fa-caret-down"></i>
                   </a>
                 </th>
+                <th style="width: 60px"></th>
             </tr>
         </thead>
         <tbody>
@@ -129,6 +130,11 @@
                 </td>
                 <td class="text-center">{{::event.artifacts.length || 0}}</td>
                 <td>{{event.date | showDate}}</td>
+                <td>
+                    <a class="btn btn-xs btn-icon btn-clear" href ng-click="previewEvent(event)" uib-tooltip="Preview">
+                        <i class="text-info text-20 fa fa-file-text-o"></i>
+                    </a>
+                </td>
             </tr>
         </tbody>
     </table>
