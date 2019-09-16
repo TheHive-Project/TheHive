@@ -143,31 +143,31 @@
 
 
     <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsRead(dialog.event)"
+        ng-if="dialog.canMarkAsRead(dialog.event) && !dialog.readonly"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope"></i> Mark as read
     </button>
     <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsUnread(dialog.event)"
+        ng-if="dialog.canMarkAsUnread(dialog.event) && !dialog.readonly"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope-open-o"></i> Mark as unread
     </button>
 
-    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.follow()">
         <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
 
-    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.merge()">
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.merge()">
         <i class="fa fa-compress"></i> Merge into case
     </button>
 
-    <button ng-if="dialog.isAdmin" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
+    <button ng-if="dialog.isAdmin && !dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
         <i class="fa fa-trash"></i> Delete
     </button>
 
-    <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
+    <form ng-if="!dialog.readonly" name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
         <div class="form-group">
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">

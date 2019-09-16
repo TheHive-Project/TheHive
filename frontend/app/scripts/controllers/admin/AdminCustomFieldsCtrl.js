@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCustomFieldsCtrl',
-        function($scope, $uibModal, ListSrv, CustomFieldsCacheSrv, NotificationSrv) {
+        function($scope, $uibModal, ListSrv, CustomFieldsCacheSrv, NotificationSrv, ModalUtilsSrv, CustomFieldsSrv) {
             var self = this;
 
             self.reference = {
@@ -64,6 +64,66 @@
                     CustomFieldsCacheSrv.clearCache();
                     $scope.$emit('custom-fields:refresh');
                 });
+            };
+
+            self.deleteField = function(customField) {
+                CustomFieldsSrv.usage(customField)
+                    .then(function(response) {
+                        var usage = response.data,
+                            message,
+                            isHtml = false;
+
+
+                        if (usage.total === 0) {
+                            message = 'Are you sure you want to delete this custom field?';
+                        } else {
+                            var segs = [
+                                'Are you sure you want to delete this custom field?',
+                                '<br />',
+                                '<br />',
+                                'This custom field is used by:',
+                                '<ul>'
+                              ];
+
+                            if(usage.case) {
+                                segs.push('<li>' + usage.case + ' ' + (usage.case > 1 ? 'cases' : 'case') + '</li>');
+                            }
+
+                            if(usage.alert) {
+                                segs.push('<li>' + usage.alert + ' ' + (usage.alert > 1 ? 'alerts' : 'alert') + '</li>');
+                            }
+
+                            if(usage.caseTemplate) {
+                                segs.push('<li>' + usage.caseTemplate + ' case ' + ' ' + (usage.caseTemplate > 1 ? 'templates' : 'template') + '</li>');
+                            }
+
+                            segs.push('</ul>');
+
+                            message = segs.join('');
+                            isHtml = true;
+                        }
+
+                        return ModalUtilsSrv.confirm('Remove custom field', message, {
+                            okText: 'Yes, remove it',
+                            flavor: 'danger',
+                            isHtml: isHtml
+                        });
+                    })
+                    .then(function(/*response*/) {
+                        return CustomFieldsSrv.removeField(customField);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The custom field has been removed successfully', 'success');
+                        
+                        self.initCustomfields();
+                        CustomFieldsCacheSrv.clearCache();
+                        $scope.$emit('custom-fields:refresh');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('AdminCustomFields', err.data, err.status);
+                        }
+                    });
             };
 
             self.initCustomfields();
