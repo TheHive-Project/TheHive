@@ -59,7 +59,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get a visible organisation" in {
-        val request = FakeRequest("GET", s"/api/v0/organisation/cert").withHeaders("user" -> "user3")
+        val request = FakeRequest("GET", s"/api/v0/organisation/cert").withHeaders("user" -> "user1")
         val result  = organisationCtrl.get("cert")(request)
         status(result) must_=== 200
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]

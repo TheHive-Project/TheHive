@@ -33,6 +33,7 @@ case class CaseTemplateTask()
 @DefineIndex(IndexType.unique, "name")
 case class CaseTemplate(
     name: String,
+    comment: String,
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int],
@@ -55,6 +56,7 @@ case class RichCaseTemplate(
   val _createdAt: Date            = caseTemplate._createdAt
   val _updatedAt: Option[Date]    = caseTemplate._updatedAt
   val name: String                = caseTemplate.name
+  val comment: String             = caseTemplate.comment
   val titlePrefix: Option[String] = caseTemplate.titlePrefix
   val description: Option[String] = caseTemplate.description
   val severity: Option[Int]       = caseTemplate.severity

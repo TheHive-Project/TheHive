@@ -19,6 +19,7 @@ object CaseTemplateConversion {
   implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
     inputCaseTemplate
       .into[CaseTemplate]
+      .withFieldComputed(_.comment, _.comment.getOrElse(""))
       .withFieldComputed(_.flag, _.flag.getOrElse(false))
       .transform
 

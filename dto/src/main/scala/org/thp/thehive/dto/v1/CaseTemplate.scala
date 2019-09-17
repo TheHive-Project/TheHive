@@ -8,6 +8,7 @@ import org.thp.scalligraph.controllers.WithParser
 
 case class InputCaseTemplate(
     name: String,
+    comment: Option[String],
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int] = None,
