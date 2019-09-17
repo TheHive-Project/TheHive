@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
-import org.thp.thehive.models.Organisation
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.models.{Entity, UniMapping}
 import scala.language.implicitConversions
 
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.models.Organisation
 import org.thp.thehive.services.OrganisationSteps
 
 object OrganisationConversion {
@@ -18,10 +18,14 @@ object OrganisationConversion {
 
   implicit def toOutputOrganisation(organisation: Organisation with Entity): Output[OutputOrganisation] =
     Output(
-      organisation
-        .asInstanceOf[Organisation]
-        .into[OutputOrganisation]
-        .transform
+      OutputOrganisation(
+        organisation.name,
+        organisation._id,
+        organisation._createdAt,
+        organisation._createdBy,
+        organisation._updatedAt,
+        organisation._updatedBy
+      )
     )
 
   val organisationProperties: List[PublicProperty[_, _]] =
