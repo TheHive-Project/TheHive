@@ -9,7 +9,7 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import scala.language.implicitConversions
 
 import org.thp.scalligraph.controllers.Output
@@ -26,6 +26,8 @@ object CaseConversion {
         .withFieldComputed(_.status, _.status.toString)
         .transform
     )
+  implicit def toOutputCaseWithStats(richCaseWithStats: (RichCase, JsObject)): Output[OutputCase] =
+    toOutputCase(richCaseWithStats._1) // TODO add stats
 
   implicit def fromInputCase(inputCase: InputCase): Case =
     inputCase

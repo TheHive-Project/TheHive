@@ -1,23 +1,50 @@
 package org.thp.thehive.controllers.v1
 
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
-import org.thp.thehive.dto.v1.InputAlert
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{AlertSrv, CaseTemplateSrv, UserSrv}
-import play.api.mvc.{Action, AnyContent, Results}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
+import org.thp.thehive.models.{Permissions, RichAlert}
+import org.thp.thehive.services._
 
 @Singleton
-class AlertCtrl @Inject()(entryPoint: EntryPoint, db: Database, alertSrv: AlertSrv, caseTemplateSrv: CaseTemplateSrv, userSrv: UserSrv) {
+class AlertCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    alertSrv: AlertSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    userSrv: UserSrv,
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
 
   import AlertConversion._
   import CaseConversion._
   import CustomFieldConversion._
 
-  val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv)
+  override val entityName: String                           = "alert"
+  override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
+  override val initialQuery: Query =
+    Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AlertSteps](
+    "getAlert",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, AlertSteps, PagedResult[RichAlert]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, alertSteps, _) =>
+      alertSteps
+        .richPage(range.from, range.to, withTotal = true)(_.richAlert.raw)
+  )
+  override val outputQuery: Query = Query.output[RichAlert, OutputAlert]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create alert")

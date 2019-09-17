@@ -2,14 +2,13 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
-import org.thp.thehive.dto.v1.InputCaseTemplate
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv, UserSrv}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.thehive.dto.v1.{InputCaseTemplate, OutputCaseTemplate}
+import org.thp.thehive.models.{Permissions, RichCaseTemplate}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.util.Success
 
 @Singleton
@@ -19,13 +18,30 @@ class CaseTemplateCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
-) {
+) extends QueryableCtrl {
 
   import CaseTemplateConversion._
   import CustomFieldConversion._
   import TaskConversion._
 
-  val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv)
+  override val entityName: String                           = "caseTemplate"
+  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv) ::: metaProperties[CaseTemplateSteps]
+  override val initialQuery: Query =
+    Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseTemplateSteps](
+    "getCaseTemplate",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => caseTemplateSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate.raw)
+  )
+  override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create case template")

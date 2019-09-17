@@ -3,15 +3,14 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
-import org.thp.thehive.dto.v1.InputUser
+import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
+import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv, UserSteps}
 import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
-
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
 
@@ -25,11 +24,28 @@ class UserCtrl @Inject()(
     profileSrv: ProfileSrv,
     errorHandler: HttpErrorHandler,
     implicit val ec: ExecutionContext
-) {
+) extends QueryableCtrl {
 
   import UserConversion._
 
-  val publicProperties: Seq[PublicProperty[_, _]] = userProperties(userSrv)
+  override val entityName: String                           = "user"
+  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
+  override val initialQuery: Query =
+    Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
+    "getUser",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
+  )
+  override val outputQuery: Query = Query.output[RichUser, OutputUser]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
+  )
 
   def current: Action[AnyContent] =
     entryPoint("current user")

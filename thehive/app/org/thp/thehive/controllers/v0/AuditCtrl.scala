@@ -23,6 +23,7 @@ class AuditCtrl @Inject()(
     val userSrv: UserSrv,
     implicit val db: Database
 ) extends QueryableCtrl {
+
   import AuditConversion._
 
   val entityName: String = "audit"

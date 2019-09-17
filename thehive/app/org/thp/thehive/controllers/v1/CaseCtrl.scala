@@ -1,12 +1,14 @@
 package org.thp.thehive.controllers.v1
 
+import play.api.libs.json.JsObject
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{PropertyUpdater, PublicProperty}
+import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.{NotFoundError, RichOptionTry, RichSeq}
-import org.thp.thehive.dto.v1.InputCase
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.dto.v1.{InputCase, OutputCase}
+import org.thp.thehive.models.{Permissions, RichCase}
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -20,11 +22,37 @@ class CaseCtrl @Inject()(
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv
-) {
+) extends QueryableCtrl {
   import CaseConversion._
   import CustomFieldConversion._
 
-  val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv)
+  override val entityName: String                           = "case"
+  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv) ::: metaProperties[CaseSteps]
+  override val initialQuery: Query =
+    Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
+    "getCase",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+    "page",
+    FieldsParser[OutputParam], {
+      case (OutputParam(from, to, withStats), caseSteps, authContext) =>
+        caseSteps
+          .richPage(from, to, withTotal = true) {
+            case c if withStats =>
+//              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
+              c.richCase.raw.map(_ -> JsObject.empty) // TODO add stats
+            case c =>
+              c.richCase.raw.map(_ -> JsObject.empty)
+          }
+    }
+  )
+  override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create case")

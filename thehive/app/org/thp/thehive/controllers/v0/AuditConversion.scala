@@ -11,13 +11,13 @@ import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.{AuditContext, Audited, RichAudit, ShareCase, ShareTask, TaskLog}
-import org.thp.thehive.services.{CaseSteps, LogSteps, TaskSteps}
+import org.thp.thehive.models._
+import org.thp.thehive.services.{AuditSteps, CaseSteps, LogSteps, TaskSteps}
 
 object AuditConversion {
   import CaseConversion._
-  import TaskConversion._
   import LogConversion._
+  import TaskConversion._
 
   def actionToOperation(action: String): String = action match {
     case "create" => "Creation"
@@ -85,7 +85,7 @@ object AuditConversion {
       )
 
   val auditProperties: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[LogSteps]
+    PublicPropertyListBuilder[AuditSteps]
       .property("operation", UniMapping.string)(_.rename("action").readonly)
       .property("details", UniMapping.string)(_.simple.readonly)
       .property("objectType", UniMapping.string.optional)(_.simple.readonly)

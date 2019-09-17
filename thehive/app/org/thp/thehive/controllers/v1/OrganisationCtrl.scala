@@ -2,13 +2,15 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v1.InputOrganisation
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{OrganisationSrv, UserSrv}
+import org.thp.thehive.models.{Organisation, Permissions}
+import org.thp.thehive.services.{CaseTemplateSteps, OrganisationSrv, OrganisationSteps, UserSrv, UserSteps}
 import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
+
+import org.thp.thehive.dto.v1.OutputOrganisation
 
 @Singleton
 class OrganisationCtrl @Inject()(
@@ -17,9 +19,30 @@ class OrganisationCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     errorHandler: HttpErrorHandler,
     userSrv: UserSrv
-) {
+) extends QueryableCtrl {
 
   import OrganisationConversion._
+
+  override val entityName: String                           = "organisation"
+  override val publicProperties: List[PublicProperty[_, _]] = organisationProperties
+  override val initialQuery: Query =
+    Query.init[OrganisationSteps]("listOrganisation", (graph, authContext) => organisationSrv.initSteps(graph).visible(authContext))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[Organisation with Entity]](
+    "page",
+    FieldsParser[OutputParam],
+    (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
+  )
+  override val outputQuery: Query = Query.output[Organisation with Entity, OutputOrganisation]
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
+    "getOrganisation",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisations),
+    Query[OrganisationSteps, UserSteps]("users", (organisationSteps, _) => organisationSteps.users),
+    Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create organisation")

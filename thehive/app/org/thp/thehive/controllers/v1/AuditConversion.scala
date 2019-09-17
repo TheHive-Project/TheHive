@@ -3,11 +3,15 @@ package org.thp.thehive.controllers.v1
 import scala.language.implicitConversions
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.services._
 import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v1.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.RichAudit
+import org.thp.thehive.models.{AuditContext, RichAudit}
+import org.thp.thehive.services.AuditSteps
 
-trait AuditConversion {
+object AuditConversion {
   implicit def toOutputAudit(audit: RichAudit): Output[OutputAudit] =
     Output[OutputAudit](
       audit
@@ -33,4 +37,15 @@ trait AuditConversion {
         .transform
     )
 
+  val auditProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[AuditSteps]
+      .property("operation", UniMapping.string)(_.rename("action").readonly)
+      .property("details", UniMapping.string)(_.simple.readonly)
+      .property("objectType", UniMapping.string.optional)(_.simple.readonly)
+      .property("objectId", UniMapping.string.optional)(_.simple.readonly)
+      .property("base", UniMapping.boolean)(_.rename("mainAction").readonly)
+      .property("startDate", UniMapping.date)(_.rename("_createdAt").readonly)
+      .property("requestId", UniMapping.string)(_.simple.readonly)
+      .property("rootId", UniMapping.string)(_.derived(_.outTo[AuditContext].id().map(_.toString)).readonly)
+      .build
 }

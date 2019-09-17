@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v1
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.models.{Entity, UniMapping}
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.thehive.dto.v1.{InputTask, OutputTask}
-import org.thp.thehive.models.{Task, TaskStatus}
-import org.thp.thehive.services.TaskSteps
 import scala.language.implicitConversions
 
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.dto.v1.{InputTask, OutputTask}
+import org.thp.thehive.models.{RichTask, Task, TaskStatus}
+import org.thp.thehive.services.TaskSteps
 
 object TaskConversion {
   implicit def fromInputTask(inputTask: InputTask): Task =
@@ -18,10 +18,9 @@ object TaskConversion {
       .withFieldComputed(_.order, _.order.getOrElse(0))
       .transform
 
-  implicit def toOutputTask(task: Task with Entity): Output[OutputTask] =
+  implicit def toOutputTask(task: RichTask): Output[OutputTask] =
     Output[OutputTask](
       task
-        .asInstanceOf[Task]
         .into[OutputTask]
         .withFieldComputed(_.status, _.status.toString)
         .transform

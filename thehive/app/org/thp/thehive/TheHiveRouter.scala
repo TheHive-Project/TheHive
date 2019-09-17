@@ -15,6 +15,7 @@ class TheHiveRouter @Inject()(routerV0: v0.Router, routerV1: v1.Router, assets: 
 
   lazy val logger = Logger(getClass)
   lazy val get: Router = routerV1.withPrefix("/api/v1/") orElse
+    routerV0.withPrefix("/api/v0/") orElse
     routerV0.withPrefix("/api/") orElse // default version
     SimpleRouter {
       case GET(p"/")                                   => actionBuilder(Results.PermanentRedirect("/index.html"))
