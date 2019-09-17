@@ -29,7 +29,9 @@ tmp
 .classpath
 
 # IntelliJ IDEA
-/.idea
 /*.iml
 /out
 /.idea_modules
+/.idea/**
+!/.idea/runConfigurations/
+!/.idea/runConfigurations/*
