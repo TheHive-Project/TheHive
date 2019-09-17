@@ -53,6 +53,9 @@ class CaseCtrl @Inject()(
     }
   )
   override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create case")

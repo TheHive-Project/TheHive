@@ -56,6 +56,9 @@ class AlertCtrl @Inject()(
         }
   )
   override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable]), OutputAlert]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create alert")

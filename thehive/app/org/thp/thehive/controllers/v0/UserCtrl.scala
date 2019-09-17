@@ -36,7 +36,7 @@ class UserCtrl @Inject()(
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
-    "get",
+    "getUser",
     FieldsParser[IdOrName],
     (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
   )

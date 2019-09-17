@@ -43,6 +43,9 @@ class AuditCtrl @Inject()(
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit.raw)
     )
   val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit, OutputAudit]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
+  )
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")

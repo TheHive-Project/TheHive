@@ -38,6 +38,9 @@ class TaskCtrl @Inject()(
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query = Query.output[RichTask, OutputTask]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
+  )
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create task")

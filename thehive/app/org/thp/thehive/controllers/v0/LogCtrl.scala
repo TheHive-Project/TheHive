@@ -37,6 +37,9 @@ class LogCtrl @Inject()(
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog.raw)
   )
   override val outputQuery: Query = Query.output[RichLog, OutputLog]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[LogSteps, List[RichLog]]("toList", (logSteps, _) => logSteps.richLog.toList)
+  )
 
   def create(taskId: String): Action[AnyContent] =
     entryPoint("create log")

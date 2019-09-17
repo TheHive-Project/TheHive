@@ -41,6 +41,9 @@ class CaseTemplateCtrl @Inject()(
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate.raw)
   )
   override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create case template")

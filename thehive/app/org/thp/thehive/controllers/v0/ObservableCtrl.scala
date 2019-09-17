@@ -49,6 +49,9 @@ class ObservableCtrl @Inject()(
     }
   )
   override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
+  )
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
