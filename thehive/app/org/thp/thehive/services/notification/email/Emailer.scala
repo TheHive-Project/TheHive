@@ -11,6 +11,7 @@ import play.api.libs.mailer.MailerClient
 
 import scala.collection.JavaConverters.mapAsJavaMap
 import scala.util.Try
+import scala.language.postfixOps
 
 @Singleton
 class EmailerProvider @Inject()(mailerClient: MailerClient) extends NotifierProvider {
@@ -29,7 +30,30 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
 
   override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
-  ): Try[Unit] = {
+  ): Try[Unit] =
+    for {
+      message <- getMessage(audit, context, organisation, user)
+      _ <- Try(
+        mailerClient.send(
+          notificationEmail
+            .toEmail
+            .copy(
+              bodyText = Some(message),
+              to = Seq(user.login)
+            )
+        )
+      )
+    } yield ()
+
+  /**
+    * Gets the formatted message string to be sent as user's notification
+    * @param audit audit data
+    * @param context optional context entity for additional data
+    * @param organisation orga data
+    * @param user user data
+    * @return
+    */
+  def getMessage(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity): Try[String] = {
     val nonContextualEntities = List("audit", "organisation", "user")
     for {
       model <- Try(
@@ -38,23 +62,16 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
             c => notificationMap(List(c, audit, organisation, user), nonContextualEntities)
           )
       )
-      _ <- Try(
-        mailerClient.send(
-          notificationEmail
-            .toEmail
-            .copy(
-              bodyText = Some(
-                handlebars
-                  .compileInline(notificationEmail.template)
-                  .apply(model)
-              ),
-              to = Seq(user.login)
-            )
-        )
-      )
-    } yield ()
+      message <- Try(handlebars.compileInline(notificationEmail.template).apply(model))
+    } yield message
   }
 
+  /**
+    * Gets a map of Entities values
+    * @param entities the data to summarize
+    * @param nonContextualEntities the entity names not considered as a Context one
+    * @return
+    */
   private def notificationMap(entities: List[Entity], nonContextualEntities: List[String]) =
     mapAsJavaMap(
       entities
@@ -63,6 +80,12 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
         .toMap
     )
 
+  /**
+    * Retrieves the data from an Entity db model (XXX with Entity) as a scala Map
+    * @param cc the entity
+    * @param nonContextualEntities the entity names not considered as a Context one
+    * @return
+    */
   private def getMap(cc: Entity, nonContextualEntities: List[String]) = {
     val baseFields = {
       for {
