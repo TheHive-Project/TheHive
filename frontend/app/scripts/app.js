@@ -193,6 +193,41 @@ angular.module('thehive', [
                     return true;
                 }
             })
+            .state('app.administration.profiles', {
+                url: '/profiles',
+                templateUrl: 'views/partials/admin/profile/list.html',
+                controller: 'AdminProfilesCtrl',
+                controllerAs: '$vm',
+                title: 'Profiles administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
+            })
+            .state('app.administration.organisations', {
+                url: '/organisations',
+                templateUrl: 'views/partials/admin/organisation/list.html',
+                controller: 'OrgListCtrl',
+                controllerAs: '$vm',
+                title: 'Organisations administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
+            })
+            .state('app.administration.organisations-details', {
+                url: '/organisations/{orgId}/details',
+                templateUrl: 'views/partials/admin/organisation/details.html',
+                controller: 'OrgDetailsCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    organisation: function($stateParams, OrganisationSrv) {
+                        return OrganisationSrv.get($stateParams.orgId);
+                    }
+                }
+            })
             .state('app.administration.users', {
                 url: '/users',
                 templateUrl: 'views/partials/admin/users.html',

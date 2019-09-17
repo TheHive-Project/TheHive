@@ -15,12 +15,16 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
 
+case class IdOrName(idOrName: String)
+
 trait QueryableCtrl {
   val entityName: String
   val publicProperties: List[PublicProperty[_, _]]
   val initialQuery: Query
   val pageQuery: ParamQuery[OutputParam]
   val outputQuery: Query
+  val getQuery: ParamQuery[IdOrName]
+  val extraQueries: Seq[ParamQuery[_]] = Nil
 
   def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[S]

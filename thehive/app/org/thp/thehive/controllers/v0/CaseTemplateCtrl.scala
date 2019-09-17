@@ -30,12 +30,20 @@ class CaseTemplateCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv) ::: metaProperties[CaseTemplateSteps]
   override val initialQuery: Query =
     Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseTemplateSteps](
+    "getCaseTemplate",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => caseTemplateSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
     "page",
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate.raw)
   )
   override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
+  )
 
   def create: Action[AnyContent] =
     entryPoint("create case template")

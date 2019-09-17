@@ -32,13 +32,13 @@ class OrganisationSrvTest extends PlaySpecification {
     s"[$name] organisation service" should {
 
       "create and get an organisation by his id" in db.transaction { implicit graph =>
-        organisationSrv.create(Organisation(name = "orga1")) must beSuccessfulTry.which { organisation =>
+        organisationSrv.create(Organisation(name = "orga1", "no description")) must beSuccessfulTry.which { organisation =>
           organisationSrv.getOrFail(organisation._id) must beSuccessfulTry(organisation)
         }
       }
 
       "create and get an organisation by its name" in db.transaction { implicit graph =>
-        organisationSrv.create(Organisation(name = "orga2")) must beSuccessfulTry.which { organisation =>
+        organisationSrv.create(Organisation(name = "orga2", "no description")) must beSuccessfulTry.which { organisation =>
           organisationSrv.getOrFail(organisation.name) must beSuccessfulTry(organisation)
         }
       }

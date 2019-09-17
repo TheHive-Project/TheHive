@@ -3,7 +3,7 @@ package org.thp.thehive.connector.misp.services
 import scala.io.Source
 
 import play.api.http.FileMimeTypes
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{DefaultActionBuilder, Results}
 import play.api.test.Helpers.{GET, POST}
 

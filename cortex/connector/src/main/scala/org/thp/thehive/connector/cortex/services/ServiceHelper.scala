@@ -7,7 +7,6 @@ import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
@@ -28,10 +27,10 @@ class ServiceHelper @Inject()(
   /**
     * Returns the filtered CortexClients according to config
     * @param clients cortex clients instances
-    * @param organisation the concerned organisation to get available clients for
+    * @param organisationName the concerned organisation to get available clients for
     * @return
     */
-  def availableCortexClients(clients: Seq[CortexClient], organisation: Organisation): Iterable[CortexClient] = db.roTransaction { implicit graph =>
+  def availableCortexClients(clients: Seq[CortexClient], organisationName: String): Iterable[CortexClient] = db.roTransaction { implicit graph =>
     val l = clients
       .filter(
         c =>
@@ -40,11 +39,11 @@ class ServiceHelper @Inject()(
             c.includedTheHiveOrganisations,
             c.excludedTheHiveOrganisations
           ).toList
-            .contains(organisation)
+            .exists(_.name == organisationName)
       )
 
     if (l.isEmpty) {
-      logger.warn(s"No CortexClient found for Organisation ${organisation.name} in list ${clients.map(_.name)}")
+      logger.warn(s"No CortexClient found for organisation $organisationName in list ${clients.map(_.name)}")
     }
 
     l

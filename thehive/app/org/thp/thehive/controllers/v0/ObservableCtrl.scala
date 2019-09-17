@@ -30,6 +30,11 @@ class ObservableCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = observableProperties(observableSrv) ::: metaProperties[ObservableSteps]
   override val initialQuery: Query =
     Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ObservableSteps](
+    "getObservable",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => observableSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
@@ -44,6 +49,9 @@ class ObservableCtrl @Inject()(
     }
   )
   override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
+  )
 
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")

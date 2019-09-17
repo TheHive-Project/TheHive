@@ -20,6 +20,7 @@ object OrganisationConversion {
     Output(
       OutputOrganisation(
         organisation.name,
+        organisation.description,
         organisation._id,
         organisation._createdAt,
         organisation._createdBy,

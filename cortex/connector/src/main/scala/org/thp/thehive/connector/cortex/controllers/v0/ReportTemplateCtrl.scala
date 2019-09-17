@@ -2,6 +2,12 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.zip.ZipFile
 
+import scala.util.{Failure, Success}
+
+import play.api.Logger
+import play.api.libs.json.{JsFalse, JsObject, JsTrue}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
@@ -9,16 +15,11 @@ import org.thp.scalligraph.models.{Database, Entity, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.models.ReportTemplate
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
-import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
+import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
-import play.api.Logger
-import play.api.libs.json.{JsFalse, JsObject, JsTrue}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Failure, Success}
 
 @Singleton
-class ReportCtrl @Inject()(
+class ReportTemplateCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     reportTemplateSrv: ReportTemplateSrv
@@ -27,10 +28,15 @@ class ReportCtrl @Inject()(
   import ReportTemplateConversion._
 
   lazy val logger                                           = Logger(getClass)
-  override val entityName: String                           = "report"
+  override val entityName: String                           = "reportTemplate"
   override val publicProperties: List[PublicProperty[_, _]] = reportTemplateProperties
   override val initialQuery: Query =
     Query.init[ReportTemplateSteps]("listReportTemplate", (graph, _) => reportTemplateSrv.initSteps(graph))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ReportTemplateSteps](
+    "getReportTemplace",
+    FieldsParser[IdOrName],
+    (param, graph, _) => reportTemplateSrv.get(param.idOrName)(graph)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ReportTemplateSteps, PagedResult[ReportTemplate with Entity]](
     "page",
     FieldsParser[OutputParam],

@@ -1,0 +1,71 @@
+<div class="row case-page">
+    <div class="col-md-12">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="box box-default">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">
+                            <span class="wrap">[Organisation] - {{$vm.org.name}}</span>
+                        </h3>
+                        <div class="box-tools pull-right">
+                            <span class="ml-xs">
+                                <a ui-sref="app.administration.organisations">
+                                    <i class="fa fa-chevron-left"></i> Back to list
+                                </a>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="box-body">
+                        <div class="org-description text-muted mb-xxs">
+                            {{$vm.org.description || 'No description'}}
+                        </div>
+                        <div class="org-summary">
+                            <span>
+                                <i class="glyphicon glyphicon-user"></i>
+                                Created by <span ng-bind="$vm.getUserInfo.get($vm.org._createdBy) | getField: 'name'"></span>
+                            </span>
+                            <span class="ml-xxs">
+                                <i class="glyphicon glyphicon-calendar"></i>
+                                <span class="mr-xxxs">{{$vm.org._createdAt | showDate}}</span>
+                            </span>
+                        </div>
+
+
+                        <!-- Right side -->
+                        <!-- <span class="ml-xxs pull-right">
+                            <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
+                                <i class="text-danger fa fa-times"></i>
+                                Remove
+                            </a>
+                        </span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <uib-tabset type="tabs" active="tabSrv.activeIndex" class="nav-tabs-custom main-tabset">
+                    <uib-tab>
+                        <uib-tab-heading>
+                            <span>
+                                <i class="fa fa-users"></i>&nbsp;&nbsp;
+                                Users
+                            </span>
+                        </uib-tab-heading>
+                    </uib-tab>
+                    <uib-tab>
+                        <uib-tab-heading>
+                            <span>
+                                <i class="fa fa-file-text"></i>&nbsp;&nbsp;
+                                Case Templates
+                            </span>
+                        </uib-tab-heading>
+                    </uib-tab>
+                </uib-tabset>
+                <div ui-view class="case-page-content"></div>
+            </div>
+        </div>
+    </div>
+</div>

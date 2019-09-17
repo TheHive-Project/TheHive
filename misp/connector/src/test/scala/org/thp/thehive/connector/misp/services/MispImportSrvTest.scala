@@ -12,7 +12,6 @@ import play.api.test.PlaySpecification
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import akka.util.Timeout
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.misp.dto.{Event, Organisation, Tag, User}

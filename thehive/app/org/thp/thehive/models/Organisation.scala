@@ -4,7 +4,7 @@ import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @VertexEntity
 @DefineIndex(IndexType.unique, "name")
-case class Organisation(name: String)
+case class Organisation(name: String, description: String)
 
 @EdgeEntity[Organisation, Share]
 case class OrganisationShare()

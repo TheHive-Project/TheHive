@@ -26,11 +26,13 @@ class TheHiveQueryExecutor @Inject()(
     userCtrl: UserCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     dashboardCtrl: DashboardCtrl,
+    organisationCtrl: OrganisationCtrl,
+    auditCtrl: AuditCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: Nil
+    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: Nil
   override val version: (Int, Int) = 0 -> 0
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
@@ -38,17 +40,21 @@ class TheHiveQueryExecutor @Inject()(
   override lazy val filterQuery = new ParentFilterQuery(db, publicProperties)
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
+      controllers.map(_.getQuery) :::
       controllers.map(_.pageQuery) :::
-      controllers.map(_.outputQuery)
+      controllers.map(_.outputQuery) :::
+      controllers.flatMap(_.extraQueries)
 
-  val `case`: QueryCtrl       = queryCtrlBuilder.apply(caseCtrl, this)
-  val task: QueryCtrl         = queryCtrlBuilder.apply(taskCtrl, this)
-  val log: QueryCtrl          = queryCtrlBuilder.apply(logCtrl, this)
-  val alert: QueryCtrl        = queryCtrlBuilder.apply(alertCtrl, this)
-  val user: QueryCtrl         = queryCtrlBuilder.apply(userCtrl, this)
-  val caseTemplate: QueryCtrl = queryCtrlBuilder.apply(caseTemplateCtrl, this)
-  val observable: QueryCtrl   = queryCtrlBuilder.apply(observableCtrl, this)
-  val dashboard: QueryCtrl    = queryCtrlBuilder.apply(dashboardCtrl, this)
+  val `case`: QueryCtrl       = queryCtrlBuilder(caseCtrl, this)
+  val task: QueryCtrl         = queryCtrlBuilder(taskCtrl, this)
+  val log: QueryCtrl          = queryCtrlBuilder(logCtrl, this)
+  val alert: QueryCtrl        = queryCtrlBuilder(alertCtrl, this)
+  val user: QueryCtrl         = queryCtrlBuilder(userCtrl, this)
+  val caseTemplate: QueryCtrl = queryCtrlBuilder(caseTemplateCtrl, this)
+  val observable: QueryCtrl   = queryCtrlBuilder(observableCtrl, this)
+  val dashboard: QueryCtrl    = queryCtrlBuilder(dashboardCtrl, this)
+  val organisation: QueryCtrl = queryCtrlBuilder(organisationCtrl, this)
+  val audit: QueryCtrl        = queryCtrlBuilder(auditCtrl, this)
 }
 
 object ParentIdFilter {

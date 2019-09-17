@@ -35,12 +35,20 @@ class UserCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
+    "getUser",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[RichUser, OutputUser]
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
+  )
 
   def current: Action[AnyContent] =
     entryPoint("current user")

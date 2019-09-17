@@ -1,0 +1,83 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">List of organisations</h3>
+            </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/admin/organisation/list/toolbar.html'"></div>
+
+                <!-- <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
+
+                <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div> -->
+
+                <!-- Filters preview  -->
+                <!-- <div class="row mt-s">
+                    <div class="col-md-12 clearfix">
+                        <div class="active-filters">
+                            <ul ng-if="$vm.filtering.countFilters() > 0">
+                                <li>{{$vm.filtering.countFilters()}}
+                                    filter(s) applied:
+                                </li>
+                                <li class="filter-item" ng-repeat="(field,filter) in $vm.filtering.filters">
+                                    <span>
+                                        <strong>{{filter.label}}:</strong>
+                                        {{filter.value | filterValue}}</span>
+                                    <a href ng-click="$vm.removeFilter(field)">
+                                        <span class="filter-close fa fa-times text-danger"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div> -->
+
+                <!-- Datalist  -->
+                <div class="row mt-s">
+                    <div class="col-md-12">
+                        <table class="table table-striped case-list">
+                            <thead>
+                                <tr>
+                                    <th width="150px">ID</th>
+                                    <th>Name</th>
+                                    <th style="width: 160px">Created By</th>
+                                    <th style="width: 160px">Created At</th>
+                                    <th style="width: 80px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="org in $vm.list">
+                                    <td>
+                                        <strong>
+                                            <span>{{::org._id}}</span>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <div class="org-name">
+                                            <a ui-sref="app.administration.organisations-details({orgId: org._id})">{{::org.name}}</a>
+                                        </div>
+                                        <div class="org-description text-muted">
+                                            {{::org.description || 'No description'}}
+                                        </div>
+                                    </td>
+                                    <td class="clearfix">
+                                      <user user-id="org._createdBy" icon-only="true" icon-size="m"></user>
+                                    </td>
+                                    <td>{{org._createdAt | showDate}}</td>
+                                    <td>
+                                        <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.showNewOrg('edit', org)" >
+                                            <i class="text-info text-20 fa fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
