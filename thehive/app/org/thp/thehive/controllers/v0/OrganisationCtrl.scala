@@ -53,18 +53,12 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def get(organisationId: String): Action[AnyContent] =
     entryPoint("get an organisation")
-      .authRoTransaction(db) { implicit req => implicit gr =>
-        {
-          val r = userSrv
-            .current
-            .organisations
-            .visibleOrganisations
-            .get(organisationId)
-            .getOrFail()
-            .map(organisation => Results.Ok(organisation.toJson))
-
-          r
-        }
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        organisationSrv
+          .get(organisationId)
+          .visible
+          .getOrFail()
+          .map(organisation => Results.Ok(organisation.toJson))
       }
 
   def list: Action[AnyContent] =
