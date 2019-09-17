@@ -13,11 +13,14 @@ import scala.util.{Failure, Success, Try}
 
 trait Notifier {
 
-  val name: String
+  implicit class MapConverter(m: Map[String, Map[String, String]]) {
 
-  def asJavaMap(m: Map[String, Map[String, String]]): util.Map[String, util.Map[String, String]] = mapAsJavaMap(
-    m.map(v => (v._1, mapAsJavaMap(v._2)))
-  )
+    def asJavaMap: util.Map[String, util.Map[String, String]] = mapAsJavaMap(
+      m.map(v => (v._1, mapAsJavaMap(v._2)))
+    )
+  }
+
+  val name: String
 
   def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph

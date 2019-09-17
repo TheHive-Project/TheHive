@@ -60,7 +60,7 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
             c => notificationMap(List(c, audit, organisation, user), nonContextualEntities)
           )
       )
-      message <- Try(handlebars.compileInline(notificationEmail.template).apply(asJavaMap(model)))
+      message <- Try(handlebars.compileInline(notificationEmail.template).apply(model.asJavaMap))
     } yield message
   }
 }
