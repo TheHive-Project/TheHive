@@ -149,7 +149,7 @@ class FunctionalTest extends PlaySpecification {
               bind[StorageSrv].to[LocalFileSystemStorageSrv],
               bind[MailerClient].to[MockMailer]
 
-            //              bind[Database].to[AuditedDatabase]
+              //              bind[Database].to[AuditedDatabase]
             )
           )
         val application = applicationBuilder
@@ -321,14 +321,14 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "create a new organisation" in {
-          val asyncResp = client.organisation.create(InputOrganisation("test"))
-          await(asyncResp) must_=== OutputOrganisation("test")
+          val asyncResp = client.organisation.create(InputOrganisation("test", "no description"))
+          await(asyncResp) must_=== OutputOrganisation("test", "no description")
         }
 
         "list organisations" in {
           val asyncResp     = client.query(Json.obj("_name" -> "listOrganisation"), Json.obj("_name" -> "toList"))
           val organisations = (await(asyncResp) \ "result").as[Seq[OutputOrganisation]]
-          organisations must contain(exactly(OutputOrganisation("test"), OutputOrganisation("default")))
+          organisations must contain(exactly(OutputOrganisation("test", "no description"), OutputOrganisation("default", "initial organisation")))
         }
 
         "create a new user in the test organisation" in {

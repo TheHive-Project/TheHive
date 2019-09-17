@@ -68,7 +68,7 @@ class JobSrv @Inject()(
   ): Future[Job with Entity] =
     for {
       cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, Organisation(authContext.organisation))
+        .availableCortexClients(connector.clients, authContext.organisation)
         .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
@@ -126,7 +126,7 @@ class JobSrv @Inject()(
   ): Future[Job with Entity] =
     for {
       cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, Organisation(authContext.organisation))
+        .availableCortexClients(connector.clients, authContext.organisation)
         .find(_.name == cortexId)
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))

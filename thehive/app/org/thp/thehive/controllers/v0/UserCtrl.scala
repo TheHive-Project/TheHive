@@ -35,6 +35,11 @@ class UserCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
+    "get",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],

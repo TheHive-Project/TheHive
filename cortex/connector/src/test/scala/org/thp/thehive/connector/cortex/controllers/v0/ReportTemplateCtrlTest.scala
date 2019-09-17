@@ -18,7 +18,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
-class ReportCtrlTest extends PlaySpecification with Mockito {
+class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
@@ -35,8 +35,8 @@ class ReportCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val reportCtrl: ReportCtrl = app.instanceOf[ReportCtrl]
-    val cortexQueryExecutor    = app.instanceOf[CortexQueryExecutor]
+    val reportCtrl: ReportTemplateCtrl = app.instanceOf[ReportTemplateCtrl]
+    val cortexQueryExecutor            = app.instanceOf[CortexQueryExecutor]
 
     s"[$name] report controller" should {
 //      "create, fetch, update and delete a template" in {

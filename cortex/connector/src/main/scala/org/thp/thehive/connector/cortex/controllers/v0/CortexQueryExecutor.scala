@@ -21,7 +21,7 @@ class CortexQueryExecutor @Inject()(
     jobSrv: JobSrv,
     queryCtrlBuilder: QueryCtrlBuilder,
     implicit val db: Database,
-    reportCtrl: ReportCtrl,
+    reportCtrl: ReportTemplateCtrl,
     actionCtrl: ActionCtrl
 ) extends QueryExecutor {
   override lazy val publicProperties

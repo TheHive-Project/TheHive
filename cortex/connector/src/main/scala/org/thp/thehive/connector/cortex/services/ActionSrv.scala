@@ -20,7 +20,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
-import org.thp.thehive.models.{Case, Organisation, Task}
+import org.thp.thehive.models.{Case, Task}
 
 class ActionSrv @Inject()(
     @Named("cortex-actor") cortexActor: ActorRef,
@@ -55,7 +55,7 @@ class ActionSrv @Inject()(
       action: Action,
       entity: Entity
   )(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] = {
-    val cortexClients = serviceHelper.availableCortexClients(connector.clients, Organisation(authContext.organisation))
+    val cortexClients = serviceHelper.availableCortexClients(connector.clients, authContext.organisation)
     for {
       client <- action.cortexId match {
         case Some(cortexId) =>
@@ -214,6 +214,8 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
           .hasId(entityId)
       )
     )
+
+  def visible(authContext: AuthContext): ActionSteps = ???
 
   override def newInstance(raw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(raw)
 }

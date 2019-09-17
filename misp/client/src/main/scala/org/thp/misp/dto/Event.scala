@@ -3,7 +3,7 @@ package org.thp.misp.dto
 import java.util.Date
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsArray, JsObject, JsPath, JsString, Json, OWrites, Reads, Writes}
+import play.api.libs.json._
 
 case class Event(
     id: String,

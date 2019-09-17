@@ -35,7 +35,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
       "create a new organisation" in {
         val request = FakeRequest("POST", "/api/v1/organisation")
-          .withJsonBody(Json.toJson(InputOrganisation(name = "orga1")))
+          .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
           .withHeaders("user" -> "admin")
         val result = organisationCtrl.create(request)
         status(result) must_=== 201
@@ -45,7 +45,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
       "refuse to create an user if the permission doesn't contain ManageOrganisation right" in {
         val request = FakeRequest("POST", "/api/v1/organisation")
-          .withJsonBody(Json.toJson(InputOrganisation(name = "orga2")))
+          .withJsonBody(Json.toJson(InputOrganisation(name = "orga2", "no description")))
           .withHeaders("user" -> "user1")
         val result = organisationCtrl.create(request)
         status(result) must_=== 403

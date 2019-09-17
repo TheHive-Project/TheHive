@@ -20,6 +20,12 @@ class DashboardCtrl @Inject()(entryPoint: EntryPoint, db: Database, dashboardSrv
   val initialQuery: Query =
     Query.init[DashboardSteps]("listDashboard", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).dashboards)
 
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, DashboardSteps](
+    "getDashboard",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => dashboardSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, DashboardSteps, PagedResult[Dashboard with Entity]](
     "page",
     FieldsParser[OutputParam],

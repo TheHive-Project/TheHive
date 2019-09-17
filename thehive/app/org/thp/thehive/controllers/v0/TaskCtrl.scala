@@ -32,6 +32,11 @@ class TaskCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask.raw)
   )
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
+    "getTask",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val outputQuery: Query = Query.output[RichTask, OutputTask]
 
   def create(caseId: String): Action[AnyContent] =

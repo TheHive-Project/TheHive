@@ -1,6 +1,7 @@
 [
   {
     "id": "cert",
-    "name": "cert"
+    "name": "cert",
+    "description": "cert"
   }
 ]

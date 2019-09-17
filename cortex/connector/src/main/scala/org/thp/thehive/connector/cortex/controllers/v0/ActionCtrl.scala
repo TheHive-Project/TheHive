@@ -1,5 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.concurrent.{ExecutionContext, Future}
+
+import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, PagedResult}
@@ -7,13 +12,9 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{RichAction, Action => CortexAction}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
-import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
-import org.thp.thehive.models.{Alert, Case, Log, Observable, Permissions, Task}
-import org.thp.thehive.services.{AlertSrv, CaseSrv, LogSrv, ObservableSrv, TaskSrv}
-import play.api.libs.json.{JsObject, Json, OWrites}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.{ExecutionContext, Future}
+import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
+import org.thp.thehive.models._
+import org.thp.thehive.services._
 
 @Singleton
 class ActionCtrl @Inject()(
@@ -29,11 +30,11 @@ class ActionCtrl @Inject()(
     implicit val executionContext: ExecutionContext
 ) extends QueryableCtrl {
   import ActionConversion._
+  import org.thp.thehive.controllers.v0.AlertConversion._
   import org.thp.thehive.controllers.v0.CaseConversion._
+  import org.thp.thehive.controllers.v0.LogConversion._
   import org.thp.thehive.controllers.v0.ObservableConversion._
   import org.thp.thehive.controllers.v0.TaskConversion._
-  import org.thp.thehive.controllers.v0.LogConversion._
-  import org.thp.thehive.controllers.v0.AlertConversion._
 
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
@@ -52,6 +53,11 @@ class ActionCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = actionProperties
   override val initialQuery: Query =
     Query.init[ActionSteps]("listAction", (graph, _) => actionSrv.initSteps(graph))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ActionSteps](
+    "getAction",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => actionSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
     "page",
     FieldsParser[OutputParam],

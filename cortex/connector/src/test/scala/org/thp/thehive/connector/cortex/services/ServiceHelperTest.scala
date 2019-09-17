@@ -45,7 +45,7 @@ class ServiceHelperTest extends PlaySpecification with Mockito {
             )
             .toList
         }
-        r must contain(Organisation("default"))
+        r must contain(Organisation("default", "initial organisation"))
 
         val r2 = db.roTransaction { implicit graph =>
           serviceHelper
@@ -56,12 +56,12 @@ class ServiceHelperTest extends PlaySpecification with Mockito {
             )
             .toList
         }
-        r2 must contain(Organisation("default"), Organisation("cert"))
+        r2 must contain(Organisation("default", "initial organisation"), Organisation("cert", "cert"))
       }
 
       "return the correct filtered CortexClient list" in {
         val client = app.instanceOf[CortexClient]
-        val r      = serviceHelper.availableCortexClients(Seq(client), Organisation("default"))
+        val r      = serviceHelper.availableCortexClients(Seq(client), "default")
 
         r must contain(client)
       }

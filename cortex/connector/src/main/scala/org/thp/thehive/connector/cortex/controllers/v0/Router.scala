@@ -11,7 +11,7 @@ class Router @Inject()(
     analyzerCtrl: AnalyzerCtrl,
     actionCtrl: ActionCtrl,
     cortexQueryExecutor: CortexQueryExecutor,
-    reportCtrl: ReportCtrl,
+    reportCtrl: ReportTemplateCtrl,
     responderCtrl: ResponderCtrl
 ) extends SimpleRouter {
   override def routes: Routes = {

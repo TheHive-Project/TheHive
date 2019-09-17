@@ -1,5 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ErrorHandler
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -8,12 +13,8 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
-import org.thp.thehive.controllers.v0.{OutputParam, QueryableCtrl}
+import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.services.ObservableSrv
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class JobCtrl @Inject()(
@@ -30,6 +31,11 @@ class JobCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = jobProperties
   override val initialQuery: Query =
     Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, JobSteps](
+    "getJob",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => jobSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, JobSteps, PagedResult[Job with Entity]](
     "page",
     FieldsParser[OutputParam],

@@ -34,6 +34,11 @@ class CaseCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
   override val initialQuery: Query =
     Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
+    "getCase",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
+  )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
