@@ -9,9 +9,7 @@ import org.thp.thehive.services.notification.{Notifier, NotifierProvider}
 import play.api.Configuration
 import play.api.libs.mailer.MailerClient
 
-import scala.collection.JavaConverters.mapAsJavaMap
 import scala.util.Try
-import scala.language.postfixOps
 
 @Singleton
 class EmailerProvider @Inject()(mailerClient: MailerClient) extends NotifierProvider {
@@ -62,50 +60,7 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
             c => notificationMap(List(c, audit, organisation, user), nonContextualEntities)
           )
       )
-      message <- Try(handlebars.compileInline(notificationEmail.template).apply(model))
+      message <- Try(handlebars.compileInline(notificationEmail.template).apply(asJavaMap(model)))
     } yield message
-  }
-
-  /**
-    * Gets a map of Entities values
-    * @param entities the data to summarize
-    * @param nonContextualEntities the entity names not considered as a Context one
-    * @return
-    */
-  private def notificationMap(entities: List[Entity], nonContextualEntities: List[String]) =
-    mapAsJavaMap(
-      entities
-        .flatMap(getMap(_, nonContextualEntities))
-        .map(e => (e._1, mapAsJavaMap(e._2)))
-        .toMap
-    )
-
-  /**
-    * Retrieves the data from an Entity db model (XXX with Entity) as a scala Map
-    * @param cc the entity
-    * @param nonContextualEntities the entity names not considered as a Context one
-    * @return
-    */
-  private def getMap(cc: Entity, nonContextualEntities: List[String]) = {
-    val baseFields = {
-      for {
-        field <- cc.getClass.getDeclaredFields
-        _     = field.setAccessible(true)
-        name  = field.getName
-        value = field.get(cc)
-      } yield name -> value.toString
-    } toMap
-
-    val fields = cc
-      ._model
-      .fields
-      .keys
-      .map { f =>
-        f -> cc.getClass.getSuperclass.getDeclaredMethod(f).invoke(cc).toString
-    } toMap
-    val l     = cc._model.label.toLowerCase
-    val label = if (nonContextualEntities.contains(l)) l else "context"
-
-    Map(label -> baseFields.++(fields))
   }
 }
