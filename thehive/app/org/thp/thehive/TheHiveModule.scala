@@ -7,12 +7,13 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.thehive.services.notification.mattermost.MattermostProvider
+import org.thp.thehive.services.notification.triggers.{LogInMyTaskProvider, TriggerProvider}
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.{SchemaUpdater, TheHiveSchema}
 import org.thp.thehive.services.notification.email.EmailerProvider
-import org.thp.thehive.services.notification.{AppendToFileProvider, LogInMyTaskProvider, NotificationActor, NotifierProvider, TriggerProvider}
+import org.thp.thehive.services.notification.{AppendToFileProvider, NotificationActor, NotifierProvider}
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase

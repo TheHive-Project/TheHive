@@ -10,7 +10,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.models._
-import org.thp.thehive.services.notification.{NotificationSrv, Trigger}
+import org.thp.thehive.services.notification.NotificationSrv
+import org.thp.thehive.services.notification.triggers.Trigger
 import shapeless.HNil
 
 @Singleton

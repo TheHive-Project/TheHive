@@ -1,13 +1,12 @@
-package org.thp.thehive.services.notification
-
-import scala.util.{Failure, Success, Try}
-
-import play.api.{ConfigLoader, Configuration}
+package org.thp.thehive.services.notification.triggers
 
 import gremlin.scala.Graph
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.{ConfigLoader, Configuration}
+
+import scala.util.{Failure, Success, Try}
 
 trait Trigger {
   val name: String

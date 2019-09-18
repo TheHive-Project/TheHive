@@ -8,6 +8,7 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.notification._
 import org.thp.thehive.services.notification.email.EmailerProvider
+import org.thp.thehive.services.notification.triggers.{LogInMyTaskProvider, TriggerProvider}
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 
 object TestAppBuilder {
