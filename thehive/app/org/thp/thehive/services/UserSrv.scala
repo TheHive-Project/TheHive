@@ -143,7 +143,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         )
         .map {
           case (userId, userName, profile) =>
-            AuthContextImpl(userId, userName, organisationName, requestId, profile.as[Profile].permissions)
+            val permissions =
+              if (organisationName == "default") profile.as[Profile].permissions
+              else profile.as[Profile].permissions -- Permissions.restrictedPermissions
+            AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
     )
 
