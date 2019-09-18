@@ -44,7 +44,7 @@ object TestCase {
 }
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -98,7 +98,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
               .as[JsObject] + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
 
         val result = caseCtrl.create(request)
         status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -149,7 +149,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
               .as[JsObject]
           )
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
 
         val result = caseCtrl.create(request)
         status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -171,7 +171,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           )
         )
 
-        val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
+        val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1@thehive.local")
         val resultList  = theHiveQueryExecutor.task.search(requestList)
 
         status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
@@ -181,7 +181,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "try to get a case" in {
         val request = FakeRequest("GET", s"/api/v0/case/#2")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = caseCtrl.get("#145")(request)
 
         status(result) shouldEqual 404
@@ -204,7 +204,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           status = "Open",
           tags = Set.empty,
           summary = None,
-          owner = Some("user2"),
+          owner = Some("user2@thehive.local"),
           customFields = Set.empty,
           stats = Json.obj()
         )
@@ -214,7 +214,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "update a case properly" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#1")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(
             Json.obj(
               "title" -> "new title",
@@ -231,7 +231,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "update a bulk of cases properly" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/_bulk")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(
             Json.obj(
               "ids"         -> List("#1", "#3"),
@@ -250,14 +250,14 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCases.map(_.pap) must contain(be_==(1)).forall
 
         val requestGet1 = FakeRequest("GET", s"/api/v0/case/#1")
-          .withHeaders("user" -> "user2")
+          .withHeaders("user" -> "user2@thehive.local")
         val resultGet1 = caseCtrl.get("#1")(requestGet1)
         status(resultGet1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet1)}")
         // Ignore title and flag for case#1 because it can be updated by previous test
         val case1 = contentAsJson(resultGet1).as[OutputCase].copy(title = resultCases.head.title, flag = resultCases.head.flag)
 
         val requestGet3 = FakeRequest("GET", s"/api/v0/case/#3")
-          .withHeaders("user" -> "user2")
+          .withHeaders("user" -> "user2@thehive.local")
         val resultGet3 = caseCtrl.get("#3")(requestGet3)
         status(resultGet3) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet3)}")
         val case3 = contentAsJson(resultGet3).as[OutputCase]
@@ -267,7 +267,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "search cases" in {
         val request = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(
             Json.parse("""{"query":{"severity":2}}""")
           )
@@ -281,7 +281,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "get and aggregate properly case stats" in {
         val request = FakeRequest("POST", s"/api/v0/case/_stats")
-          .withHeaders("user" -> "user3")
+          .withHeaders("user" -> "user3@thehive.local")
           .withJsonBody(
             Json.parse("""{
                             "query": {},
@@ -313,14 +313,14 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "assign a case to an user" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#4")
-          .withHeaders("user" -> "user2")
-          .withJsonBody(Json.obj("owner" -> "user2"))
+          .withHeaders("user" -> "user2@thehive.local")
+          .withJsonBody(Json.obj("owner" -> "user2@thehive.local"))
         val result = caseCtrl.update("#4")(request)
         status(result) must_=== 200
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
 
-        resultCaseOutput.owner should beSome("user2")
+        resultCaseOutput.owner should beSome("user2@thehive.local")
       }
 
       "force delete a case" in {
@@ -332,7 +332,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         tasks must have size 2
 
         val requestDel = FakeRequest("DELETE", s"/api/v0/case/#4/force")
-          .withHeaders("user" -> "user3")
+          .withHeaders("user" -> "user3@thehive.local")
         val resultDel = caseCtrl.realDelete("#4")(requestDel)
         status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 

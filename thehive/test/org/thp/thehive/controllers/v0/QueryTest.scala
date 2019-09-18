@@ -38,7 +38,7 @@ class QueryTest extends PlaySpecification with Mockito {
                                |         "_values": ["Waiting", "InProgress"]
                                |       }
                                |     }, {
-                               |       "owner": "admin"
+                               |       "owner": "admin@thehive.local"
                                |     }]
                                |   },
                                |   "stats": [{

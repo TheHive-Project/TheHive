@@ -18,7 +18,7 @@ import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services._
 
 class ResponderSrvTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>

@@ -16,7 +16,7 @@ import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import scala.util.Try
 
 class JobCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -46,7 +46,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
 
         val observable = maybeObservable.get
         val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                  "query":{
@@ -70,7 +70,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
 
       "get stats for a job" in {
         val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
                                    {
                                      "query": {

@@ -50,7 +50,7 @@ class OrganisationCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation = request.body("organisation")
         for {
-          _            <- userSrv.current.organisations(Permissions.manageOrganisation).get("default").existsOrFail()
+          _            <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.default.name).existsOrFail()
           user         <- userSrv.current.getOrFail()
           organisation <- organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
         } yield Results.Created(organisation.toJson)

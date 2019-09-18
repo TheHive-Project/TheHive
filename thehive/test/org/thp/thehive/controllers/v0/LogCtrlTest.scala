@@ -15,7 +15,7 @@ import org.thp.thehive.dto.v0.{OutputLog, OutputTask}
 import org.thp.thehive.models._
 
 class LogCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -33,7 +33,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
 
     def tasksList: Seq[OutputTask] = {
-      val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1")
+      val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1@thehive.local")
       val resultList  = theHiveQueryExecutor.task.search(requestList)
 
       status(resultList) shouldEqual 200
@@ -46,7 +46,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
       "be able to create, retrieve and patch a log" in {
         val task = tasksList.find(_.title == "case 1 task 1").get
         val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse("""
               {"message":"log 1\n\n### yeahyeahyeahs", "deleted":false}
             """.stripMargin))
@@ -55,7 +55,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         status(result) shouldEqual 201
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -90,19 +90,19 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val expected = OutputLog(
           _id = log._id,
           id = log.id,
-          createdBy = "user1",
+          createdBy = "user1@thehive.local",
           createdAt = log.createdAt,
           _type = "case_task_log",
           message = "log 1\n\n### yeahyeahyeahs",
           startDate = log.createdAt,
           status = "Ok",
-          owner = "user1"
+          owner = "user1@thehive.local"
         )
 
         logJson.toString shouldEqual Json.toJson(Seq(expected)).toString
 
         val requestPatch = FakeRequest("PATCH", s"/api/case/task/log/${log.id}")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse(s"""
               {
                 "message":"yeah",
@@ -118,7 +118,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val task = tasksList.find(_.title == "case 1 task 1").get
 
         val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -151,7 +151,7 @@ class LogCtrlTest extends PlaySpecification with Mockito {
         val logJson = contentAsJson(resultSearch)
         val log     = logJson.as[Seq[OutputLog]].head
 
-        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" -> "user1")
+        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" -> "user1@thehive.local")
         val resultDelete  = logCtrl.delete(log.id)(requestDelete)
 
         status(resultDelete) shouldEqual 204

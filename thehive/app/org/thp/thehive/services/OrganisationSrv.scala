@@ -12,11 +12,15 @@ import play.api.libs.json.JsObject
 
 import scala.util.Try
 
+object OrganisationSrv {
+  val default = Organisation("default", "initial organisation")
+}
+
 @Singleton
 class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
     extends VertexSrv[Organisation, OrganisationSteps] {
 
-  override val initialValues: Seq[Organisation] = Seq(Organisation("default", "initial organisation"))
+  override val initialValues: Seq[Organisation] = Seq(OrganisationSrv.default)
   val organisationOrganisationSrv               = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv                      = new EdgeSrv[OrganisationShare, Organisation, Share]
 

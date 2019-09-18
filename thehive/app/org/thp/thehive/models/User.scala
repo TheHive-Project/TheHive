@@ -14,6 +14,8 @@ case class UserRole()
 case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String]) extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
+
+  override def toString: String = s"User($login,$name,$locked)"
 }
 
 //    avatar: Array[Byte],

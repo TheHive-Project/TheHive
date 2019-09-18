@@ -24,5 +24,5 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends Scalligraph
     }
 
   override def getSystemAuthContext: AuthContext =
-    AuthContextImpl(UserSrv.initUser, "Default admin user", "default", Instance.getInternalId, Permissions.all)
+    AuthContextImpl(UserSrv.initUser.login, UserSrv.initUser.name, OrganisationSrv.default.name, Instance.getInternalId, Permissions.all)
 }

@@ -15,7 +15,7 @@ import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
 class AnalyzerCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -35,7 +35,7 @@ class AnalyzerCtrlTest extends PlaySpecification with Mockito {
 
     s"[$name] analyzer controller" should {
       "list analyzers" in {
-        val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "user1")
+        val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "user1@thehive.local")
         val result  = analyzerCtrl.list(request)
 
         status(result) shouldEqual 200

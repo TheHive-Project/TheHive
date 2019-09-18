@@ -14,7 +14,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 
 class CaseSrvTest extends PlaySpecification {
-  val dummyUserSrv = DummyUserSrv()
+  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local")
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
@@ -59,7 +59,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = None,
           resolutionStatus = None,
-          user = Some("user1"),
+          user = Some("user1@thehive.local"),
           Nil
         )
       }
@@ -86,7 +86,7 @@ class CaseSrvTest extends PlaySpecification {
           summary = None,
           impactStatus = Some("NoImpact"),
           resolutionStatus = None,
-          user = Some("user2"),
+          user = Some("user2@thehive.local"),
           Nil
         )
         richCase._createdBy must_=== dummyUserSrv.userId
@@ -107,7 +107,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.status must_=== CaseStatus.Open
         richCase.summary must beNone
         richCase.impactStatus must beNone
-        richCase.user must beSome("user1")
+        richCase.user must beSome("user1@thehive.local")
         CustomField("boolean1", "boolean custom field", CustomFieldBoolean)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](

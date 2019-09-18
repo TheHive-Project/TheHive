@@ -57,9 +57,9 @@ class TheHiveSchema @Inject()(injector: Injector) extends Schema {
 
   override def init(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      adminUser           <- injector.instanceOf[UserSrv].getOrFail("admin")
-      adminProfile        <- injector.instanceOf[ProfileSrv].getOrFail("admin")
-      defaultOrganisation <- injector.instanceOf[OrganisationSrv].getOrFail("default")
+      adminUser           <- injector.instanceOf[UserSrv].getOrFail(UserSrv.initUser.login)
+      adminProfile        <- injector.instanceOf[ProfileSrv].getOrFail(ProfileSrv.admin.name)
+      defaultOrganisation <- injector.instanceOf[OrganisationSrv].getOrFail(OrganisationSrv.default.name)
       _                   <- injector.instanceOf[RoleSrv].create(adminUser, defaultOrganisation, adminProfile)
     } yield ()
 }

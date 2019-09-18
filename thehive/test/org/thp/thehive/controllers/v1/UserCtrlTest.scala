@@ -49,12 +49,12 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "return current user information" in {
         val request = FakeRequest("GET", "/api/v1/user/current")
-          .withHeaders("user" -> "admin")
+          .withHeaders("user" -> "admin@thehive.local")
         val result = userCtrl.current(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
         val expected = TestUser(
-          login = "admin",
+          login = "admin@thehive.local",
           name = "Default admin user",
           profile = "admin",
           permissions = Permissions.all.map(_.toString),
@@ -69,7 +69,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(
             Json.toJson(
               InputUser(
-                login = "test_user_1",
+                login = "test_user_1@thehive.local",
                 name = "create user test",
                 password = Some("azerty"),
                 profile = "read-only",
@@ -77,12 +77,12 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "admin")
+          .withHeaders("user" -> "admin@thehive.local")
         val result = userCtrl.create(request)
         status(result) must_=== 201
         val resultCase = contentAsJson(result).as[OutputUser]
         val expected = TestUser(
-          login = "test_user_1",
+          login = "test_user_1@thehive.local",
           name = "create user test",
           profile = "read-only",
           permissions = Set.empty,
@@ -105,18 +105,18 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "user2")
+          .withHeaders("user" -> "user2@thehive.local")
         val result = userCtrl.create(request)
         status(result) must_=== 403
       }
 
       "get a user in the same organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/user2").withHeaders("user" -> "user1")
-        val result  = userCtrl.get("user2")(request)
+        val request = FakeRequest("GET", s"/api/v1/user/user2@thehive.local").withHeaders("user" -> "user1@thehive.local")
+        val result  = userCtrl.get("user2@thehive.local")(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
         val expected = TestUser(
-          login = "user2",
+          login = "user2@thehive.local",
           name = "U",
           profile = "read-only",
           permissions = Set.empty,
@@ -127,12 +127,12 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get a user of a visible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/user1").withHeaders("user" -> "user2")
-        val result  = userCtrl.get("user1")(request)
+        val request = FakeRequest("GET", s"/api/v1/user/user1@thehive.local").withHeaders("user" -> "user2@thehive.local")
+        val result  = userCtrl.get("user1@thehive.local")(request)
         status(result) must_=== 200
         val resultCase = contentAsJson(result).as[OutputUser]
         val expected = TestUser(
-          login = "user1",
+          login = "user1@thehive.local",
           name = "Thomas",
           profile = "analyst",
           permissions = Set(Permissions.manageAlert, Permissions.manageCase),
@@ -143,8 +143,8 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }.pendingUntilFixed("Organisation visibility needs to be fixed")
 
       "refuse to get a user of an invisible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/admin").withHeaders("user" -> "user1")
-        val result  = userCtrl.get("admin")(request)
+        val request = FakeRequest("GET", s"/api/v1/user/admin@thehive.local").withHeaders("user" -> "user1@thehive.local")
+        val result  = userCtrl.get("admin@thehive.local")(request)
         status(result) must_=== 404
       }
 

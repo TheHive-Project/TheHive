@@ -1,48 +1,54 @@
 package org.thp.thehive.services
 
+import scala.util.matching.Regex
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{EntitySteps, InternalError}
+import org.thp.scalligraph.{BadRequestError, EntitySteps, InternalError}
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
-
 import scala.util.{Failure, Success, Try}
 
 object UserSrv {
-  val initUser: String         = "admin"
   val initUserPassword: String = "secret"
+
+  val initUser: User = User(
+    login = "admin@thehive.local",
+    name = "Default admin user",
+    apikey = None,
+    locked = false,
+    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
+  )
 
 }
 
 @Singleton
 class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
 
-  override val initialValues: Seq[User] = Seq(
-    User(
-      login = UserSrv.initUser,
-      name = "Default admin user",
-      apikey = None,
-      locked = false,
-      password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
-    )
-  )
-  val userRoleSrv = new EdgeSrv[UserRole, User, Role]
+  override val initialValues: Seq[User] = Seq(UserSrv.initUser)
+  val userRoleSrv                       = new EdgeSrv[UserRole, User, Role]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
+
+  val validationRegex: Regex = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r
+
+  def isValid(user: User): Boolean = validationRegex.pattern.matcher(user.login).matches()
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    for {
-      createdUser <- createEntity(user)
-      _           <- roleSrv.create(createdUser, organisation, profile)
-      _           <- auditSrv.user.create(createdUser)
-    } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
+    if (!isValid(user)) Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+    else
+      for {
+        createdUser <- createEntity(user)
+        _           <- roleSrv.create(createdUser, organisation, profile)
+        _           <- auditSrv.user.create(createdUser)
+      } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 
@@ -128,7 +134,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .value[String]("name")
           .headOption()
       )
-      .getOrElse("default")
+      .getOrElse(OrganisationSrv.default.name)
     getAuthContext(requestId, organisationName)
   }
 
@@ -144,7 +150,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .map {
           case (userId, userName, profile) =>
             val permissions =
-              if (organisationName == "default") profile.as[Profile].permissions
+              if (organisationName == OrganisationSrv.default.name) profile.as[Profile].permissions
               else profile.as[Profile].permissions -- Permissions.restrictedPermissions
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }

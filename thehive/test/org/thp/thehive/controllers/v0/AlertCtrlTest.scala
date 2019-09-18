@@ -44,7 +44,7 @@ object TestAlert {
 }
 
 class AlertCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -128,7 +128,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
             ("caseTemplate" -> JsString("spam")) +
             ("artifacts"    -> Json.toJson(inputObservables))
         )
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
 
       val result = alertCtrl.create(request)
       status(result) should equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -158,7 +158,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "get an alert" in {
       val request = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref1")
-        .withHeaders("user" -> "user3")
+        .withHeaders("user" -> "user3@thehive.local")
       val result = alertCtrl.get("testType;testSource;ref1")(request)
       status(result) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultAlert       = contentAsJson(result)
@@ -202,7 +202,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
             "tlp" -> 3
           )
         )
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result = alertCtrl.update("testType;testSource;ref2")(request)
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultAlert       = contentAsJson(result)
@@ -212,29 +212,29 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "mark an alert as read/unread" in {
       val request1 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result1 = alertCtrl.get("testType;testSource;ref3")(request1)
       status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
       contentAsJson(result1).as[OutputAlert].status must beEqualTo("New")
 
       val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsRead")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result2 = alertCtrl.markAsRead("testType;testSource;ref3")(request2)
       status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result3 = alertCtrl.get("testType;testSource;ref3")(request3)
       status(result3) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result3)}")
       contentAsJson(result3).as[OutputAlert].status must beEqualTo("Ignored")
 
       val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsUnread")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result4 = alertCtrl.markAsUnread("testType;testSource;ref3")(request4)
       status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
       val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result5 = alertCtrl.get("testType;testSource;ref3")(request5)
       status(result5) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result5)}")
       contentAsJson(result5).as[OutputAlert].status must beEqualTo("New")
@@ -242,29 +242,29 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "follow/unfollow an alert" in {
       val request1 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result1 = alertCtrl.get("testType;testSource;ref3")(request1)
       status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
       contentAsJson(result1).as[OutputAlert].follow must beTrue
 
       val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/unfollow")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result2 = alertCtrl.unfollowAlert("testType;testSource;ref3")(request2)
       status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result3 = alertCtrl.get("testType;testSource;ref3")(request3)
       status(result3) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result3)}")
       contentAsJson(result3).as[OutputAlert].follow must beFalse
 
       val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/follow")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result4 = alertCtrl.followAlert("testType;testSource;ref3")(request4)
       status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
       val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result5 = alertCtrl.get("testType;testSource;ref3")(request5)
       status(result5) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result5)}")
       contentAsJson(result5).as[OutputAlert].follow must beTrue
@@ -272,7 +272,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "create a case from an alert" in {
       val request1 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref5/createCase")
-        .withHeaders("user" -> "user1")
+        .withHeaders("user" -> "user1@thehive.local")
       val result1 = alertCtrl.createCase("testType;testSource;ref5")(request1)
       status(result1) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
@@ -320,7 +320,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
     "merge an alert with a case" in {
       val request1 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref5/merge/#1")
-        .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
       val result1 = alertCtrl.mergeWithCase("testType;testSource;ref5", "#1")(request1)
       status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
@@ -333,7 +333,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         val observables = app
           .instanceOf[CaseSrv]
           .get("#1")
-          .observables(DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all).getSystemAuthContext)
+          .observables(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all).getSystemAuthContext)
           .toList
 
         observables.flatMap(_.message) must contain("This domain", "hello world")
@@ -350,7 +350,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         .getOrFail() must beSuccessfulTry
 
       val request1 = FakeRequest("DELETE", "/api/v0/alert/testType;testSource;ref4")
-        .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
       val result1 = alertCtrl.delete("testType;testSource;ref4")(request1)
 
       status(result1) must equalTo(204)

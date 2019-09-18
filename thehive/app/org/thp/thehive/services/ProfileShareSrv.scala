@@ -7,13 +7,19 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 
+object ProfileSrv {
+  val admin    = Profile("admin", Permissions.all)
+  val analyst  = Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask))
+  val readonly = Profile("read-only", Set.empty)
+}
+
 @Singleton
 class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
-  lazy val admin: Profile with Entity = db.roTransaction(graph => getOrFail("admin")(graph)).get
+  lazy val admin: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.admin.name)(graph)).get
   override val initialValues: Seq[Profile] = Seq(
-    Profile("admin", Permissions.all),
-    Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask)),
-    Profile("read-only", Set.empty)
+    ProfileSrv.admin,
+    ProfileSrv.analyst,
+    ProfileSrv.readonly
   )
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ProfileSteps = new ProfileSteps(raw)
