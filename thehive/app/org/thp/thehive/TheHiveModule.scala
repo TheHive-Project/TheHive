@@ -6,6 +6,7 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.thehive.services.notification.mattermost.MattermostProvider
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
@@ -48,6 +49,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
     notifierBindings.addBinding.to[EmailerProvider]
+    notifierBindings.addBinding.to[MattermostProvider]
 
     configuration.get[String]("db.provider") match {
       case "janusgraph" => bind(classOf[Database]).to(classOf[JanusDatabase])
