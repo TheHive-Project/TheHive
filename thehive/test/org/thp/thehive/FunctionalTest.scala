@@ -309,7 +309,7 @@ class FunctionalTest extends PlaySpecification {
 
         "list task for case 2" in {
           val asyncResp =
-            client.query(Json.obj("_name" -> "getCase", "id" -> case2Id), Json.obj("_name" -> "listTask"), Json.obj("_name" -> "toList"))
+            client.query(Json.obj("_name" -> "getCase", "idOrName" -> case2Id), Json.obj("_name" -> "tasks"), Json.obj("_name" -> "toList"))
           val tasks = (await(asyncResp) \ "result").as[Seq[OutputTask]].map(TestTask.apply)
           tasks must contain(exactly(task1))
         }

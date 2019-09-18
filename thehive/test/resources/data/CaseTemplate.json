@@ -1,7 +1,7 @@
 [
   {
     "name": "spam",
-    "comment": "Spam case template",
+    "displayName": "Spam case template",
     "titlePrefix": "[SPAM] ",
     "description": "description of SPAM case",
     "severity": 1,

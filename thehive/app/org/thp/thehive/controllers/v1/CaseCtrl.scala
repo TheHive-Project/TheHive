@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.libs.json.JsObject
+import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -10,7 +10,6 @@ import org.thp.scalligraph.{NotFoundError, RichOptionTry, RichSeq}
 import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models.{Permissions, RichCase}
 import org.thp.thehive.services._
-import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -35,22 +34,24 @@ class CaseCtrl @Inject()(
     FieldsParser[IdOrName],
     (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[RichCase]](
     "page",
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, withStats), caseSteps, authContext) =>
         caseSteps
-          .richPage(from, to, withTotal = true) {
-            case c if withStats =>
-//              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
-              c.richCase.raw.map(_ -> JsObject.empty) // TODO add stats
-            case c =>
-              c.richCase.raw.map(_ -> JsObject.empty)
+          .richPage(from, to, withTotal = true) { c =>
+            c.richCase.raw
+//            case c if withStats =>
+////              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
+//              c.richCase.raw.map(_ -> JsObject.empty) // TODO add stats
+//            case c =>
+//              c.richCase.raw.map(_ -> JsObject.empty)
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
+  override val outputQuery: Query = Query.output[RichCase, OutputCase]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList)
   )
 
