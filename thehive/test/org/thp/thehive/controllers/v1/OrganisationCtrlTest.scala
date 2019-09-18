@@ -36,7 +36,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       "create a new organisation" in {
         val request = FakeRequest("POST", "/api/v1/organisation")
           .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
-          .withHeaders("user" -> "admin")
+          .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.create(request)
         status(result) must_=== 201
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
@@ -46,13 +46,13 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       "refuse to create an user if the permission doesn't contain ManageOrganisation right" in {
         val request = FakeRequest("POST", "/api/v1/organisation")
           .withJsonBody(Json.toJson(InputOrganisation(name = "orga2", "no description")))
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = organisationCtrl.create(request)
         status(result) must_=== 403
       }
 
       "get an organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/organisation/cert").withHeaders("user" -> "user1")
+        val request = FakeRequest("GET", s"/api/v1/organisation/cert").withHeaders("user" -> "user1@thehive.local")
         val result  = organisationCtrl.get("cert")(request)
         status(result) must_=== 200
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
@@ -60,7 +60,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get a visible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/organisation/cert").withHeaders("user" -> "user3")
+        val request = FakeRequest("GET", s"/api/v1/organisation/cert").withHeaders("user" -> "user3@thehive.local")
         val result  = organisationCtrl.get("cert")(request)
         status(result) must_=== 200
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
@@ -68,7 +68,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       }
 
       "refuse to get a invisible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/default").withHeaders("user" -> "user1")
+        val request = FakeRequest("GET", s"/api/v1/user/default").withHeaders("user" -> "user1@thehive.local")
         val result  = organisationCtrl.get("default")(request)
         status(result) must_=== 404
       }

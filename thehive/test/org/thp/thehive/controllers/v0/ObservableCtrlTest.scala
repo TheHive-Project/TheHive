@@ -44,7 +44,7 @@ object TestObservable {
 }
 
 class ObservableCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -67,7 +67,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create an observable with string data" in {
         val request = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -94,7 +94,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and search 2 observables with data array" in {
         val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" -> "user3")
+          .withHeaders("user" -> "user3@thehive.local")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -119,14 +119,14 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
         createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
-        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2")
+        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local")
         val resultCaseGet = caseCtrl.get("#4")(requestCase)
 
         status(resultCaseGet) shouldEqual 200
 
         val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
         val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-          .withHeaders("user" -> "user2", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
@@ -178,7 +178,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
           val request = FakeRequest(
             "POST",
             s"/api/case/#1/artifact",
-            Headers("user" -> "user1"),
+            Headers("user" -> "user1@thehive.local"),
             body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
           )
           val result = observableCtrl.create("#1")(request)
@@ -217,7 +217,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         maybeObservable must beSome
         val observableId = maybeObservable.get._id
         val getRequest = FakeRequest("GET", s"/api/case/artifact/$observableId")
-          .withHeaders("user" -> "user3")
+          .withHeaders("user" -> "user3@thehive.local")
         val getResult = observableCtrl.get(observableId)(getRequest)
 
         status(getResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
@@ -236,7 +236,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
       "be able to update and bulk update observables" in {
         val resObservable = createDummyObservable(observableCtrl)
         val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse(s"""
               {
                 "ids":${Json.toJson(resObservable.map(_._id))},
@@ -261,7 +261,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "create 2 observables with the same data" in {
         val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"hostname",
@@ -275,7 +275,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         getData("localhost", app) must have size 1
 
         val request2 = FakeRequest("POST", s"/api/case/#3/artifact")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"domain",
@@ -293,7 +293,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         val resObservable = createDummyObservable(observableCtrl)
         val observableId  = resObservable.head._id
         val requestDelete = FakeRequest("DELETE", s"/api/case/artifact/$observableId")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val resultDelete = observableCtrl.delete(observableId)(requestDelete)
 
         status(resultDelete) shouldEqual 204
@@ -303,7 +303,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
   def getObservable(id: String, observableCtrl: ObservableCtrl): OutputObservable = {
     val requestGet = FakeRequest("GET", s"/api/case/artifact/$id")
-      .withHeaders("user" -> "user1")
+      .withHeaders("user" -> "user1@thehive.local")
     val resultGet = observableCtrl.get(id)(requestGet)
 
     status(resultGet) shouldEqual 200
@@ -312,7 +312,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
   def createDummyObservable(observableCtrl: ObservableCtrl): Seq[OutputObservable] = {
     val request = FakeRequest("POST", s"/api/case/#1/artifact")
-      .withHeaders("user" -> "user1")
+      .withHeaders("user" -> "user1@thehive.local")
       .withJsonBody(Json.parse(s"""
               {
                 "dataType":"autonomous-system",

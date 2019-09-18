@@ -42,7 +42,7 @@ object TestTask {
 }
 
 class TaskCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -70,7 +70,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
       "list available tasks and get one task" in {
         val task1      = getTaskByTitle("case 1 task 1").get
-        val request    = FakeRequest("GET", s"/api/case/task/${task1._id}").withHeaders("user" -> "user1")
+        val request    = FakeRequest("GET", s"/api/case/task/${task1._id}").withHeaders("user" -> "user1@thehive.local")
         val result     = taskCtrl.get(task1._id)(request)
         val resultTask = contentAsJson(result)
 
@@ -79,7 +79,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val expected = TestTask(
           title = "case 1 task 1",
           description = Some("description task 1"),
-          owner = Some("user1"),
+          owner = Some("user1@thehive.local"),
           startDate = None,
           status = "Waiting",
           group = Some("group1"),
@@ -93,8 +93,8 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
       "patch a task" in {
         val task2 = getTaskByTitle("case 4 task 1").get
         val request = FakeRequest("PATCH", s"/api/case/task/${task2._id}")
-          .withHeaders("user" -> "user3")
-          .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1", "status": "InProgress"}"""))
+          .withHeaders("user" -> "user3@thehive.local")
+          .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1@thehive.local", "status": "InProgress"}"""))
         val result = taskCtrl.update(task2._id)(request)
 
         status(result) shouldEqual 204
@@ -102,7 +102,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val expected = TestTask(
           title = "new title task 2",
           description = Some("description task 4"),
-          owner = Some("user1"),
+          owner = Some("user1@thehive.local"),
           startDate = None,
           flag = true,
           status = "InProgress",
@@ -129,7 +129,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
                 }"""
               )
           )
-          .withHeaders("user" -> "user3")
+          .withHeaders("user" -> "user3@thehive.local")
 
         val result     = taskCtrl.create("#4")(request)
         val resultTask = contentAsJson(result)
@@ -150,7 +150,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
 
         TestTask(resultTaskOutput) must_=== expected
 
-        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" -> "user3")
+        val requestGet = FakeRequest("GET", s"/api/case/task/${resultTaskOutput.id}").withHeaders("user" -> "user3@thehive.local")
         val resultGet  = taskCtrl.get(resultTaskOutput.id)(requestGet)
 
         status(resultGet) shouldEqual 200
@@ -159,7 +159,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
       "unset task owner" in {
         val task3 = getTaskByTitle("case 3 task 1").get
         val request = FakeRequest("PATCH", s"/api/case/task/${task3._id}")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(Json.parse("""{"owner": null}"""))
         val result = taskCtrl.update(task3._id)(request)
 
@@ -191,7 +191,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
         val c = case1.get
 
         val request = FakeRequest("POST", "/api/case/task/_stats")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
           .withJsonBody(
             Json.parse(
               s"""{

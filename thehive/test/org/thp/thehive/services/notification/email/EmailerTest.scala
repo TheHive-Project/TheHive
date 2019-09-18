@@ -15,7 +15,7 @@ import play.api.test.PlaySpecification
 import scala.util.Try
 
 class EmailerTest extends PlaySpecification {
-  val dummyUserSrv                      = DummyUserSrv()
+  val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local")
   implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -65,7 +65,7 @@ class EmailerTest extends PlaySpecification {
           db.roTransaction { implicit graph =>
             val user = app
               .instanceOf[UserSrv]
-              .get("user1")
+              .get("user1@thehive.local")
               .getOrFail()
 
             user must beSuccessfulTry

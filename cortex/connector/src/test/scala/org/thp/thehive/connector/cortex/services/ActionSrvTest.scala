@@ -24,7 +24,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, CaseSrv, TaskSrv}
 
 class ActionSrvTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -54,7 +54,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "execute, create and handle finished action operations" in {
         db.roTransaction { implicit graph =>
-          val authContextUser1 = AuthContextImpl("user1", "user1", "cert", "testRequest", Permissions.all)
+          val authContextUser1 = AuthContextImpl("user1@thehive.local", "user1@thehive.local", "cert", "testRequest", Permissions.all)
           val t1               = taskSrv.initSteps.has(Key("title"), P.eq("case 1 task 1")).headOption()
           t1 must beSome
           val task1 = t1.get
@@ -126,7 +126,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                 "tpe"     -> "boolean",
                 "value"   -> "false"
               ),
-              Json.obj("type" -> "AssignCase", "status" -> "Success", "message" -> "Success", "owner" -> "user2"),
+              Json.obj("type" -> "AssignCase", "status" -> "Success", "message" -> "Success", "owner" -> "user2@thehive.local"),
               Json.obj(
                 "type"        -> "AddArtifactToCase",
                 "status"      -> "Success",
@@ -143,7 +143,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
           val relatedCase = relatedCaseTry.get
 
-          caseSrv.get(relatedCase._id).richCase.getOrFail() must beSuccessfulTry.which(richCase => richCase.user must beSome("user2"))
+          caseSrv.get(relatedCase._id).richCase.getOrFail() must beSuccessfulTry.which(richCase => richCase.user must beSome("user2@thehive.local"))
           relatedCase.tags must contain(Tag("mail sent"))
           caseSrv.initSteps.tasks(authContextUser1).has(Key("title"), P.eq("task created by action")).toList must contain(
             Task(
@@ -166,7 +166,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "handle action related to Task and Log" in {
         db.roTransaction { implicit graph =>
-          val authContextUser2 = AuthContextImpl("user2", "user2", "default", "testRequest", Permissions.all)
+          val authContextUser2 = AuthContextImpl("user2@thehive.local", "user2@thehive.local", "default", "testRequest", Permissions.all)
 
           val l1 = taskSrv.initSteps.has(Key("title"), P.eq("case 4 task 1")).logs.headOption()
           l1 must beSome
@@ -224,7 +224,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert =>
             alert.read must beFalse
 
-            val authContextUser2 = AuthContextImpl("user2", "user2", "default", "testRequest", Permissions.all)
+            val authContextUser2 = AuthContextImpl("user2@thehive.local", "user2@thehive.local", "default", "testRequest", Permissions.all)
 
             val inputAction = Action(
               responderId = "respTest1",

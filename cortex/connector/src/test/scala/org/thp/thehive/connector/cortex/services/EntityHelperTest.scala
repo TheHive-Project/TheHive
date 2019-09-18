@@ -16,7 +16,7 @@ import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
 
 class EntityHelperTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -33,8 +33,8 @@ class EntityHelperTest extends PlaySpecification with Mockito {
     val entityHelper = app.instanceOf[EntityHelper]
     val db           = app.instanceOf[Database]
     implicit val authContext: AuthContext = new AuthContext {
-      override def userId: String               = "user1"
-      override def userName: String             = "user1"
+      override def userId: String               = "user1@thehive.local"
+      override def userName: String             = "user1@thehive.local"
       override def organisation: String         = "cert"
       override def requestId: String            = ""
       override def permissions: Set[Permission] = Permissions.all

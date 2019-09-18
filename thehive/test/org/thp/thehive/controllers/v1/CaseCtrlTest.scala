@@ -53,7 +53,7 @@ object TestCase {
 }
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -88,7 +88,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "admin")
+          .withHeaders("user" -> "admin@thehive.local")
         val result     = caseCtrl.create(request)
         val resultCase = contentAsJson(result).as[OutputCase]
         val expected = TestCase(
@@ -127,7 +127,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
             ) + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = caseCtrl.create(request)
         status(result) must_=== 201
         val resultCase = contentAsJson(result).as[OutputCase]
@@ -155,7 +155,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "get a case" in {
         val request = FakeRequest("GET", s"/api/v1/case/#1")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result     = caseCtrl.get("#1")(request)
         val resultCase = contentAsJson(result).as[OutputCase]
         val expected = TestCase(
@@ -169,7 +169,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 2,
           pap = 2,
           status = "Open",
-          user = Some("user1")
+          user = Some("user1@thehive.local")
         )
 
         TestCase(resultCase) must_=== expected
@@ -185,7 +185,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 //              "pap"    → 1,
 //              "status" → "resolved"
 //            ))
-//          .withHeaders("user" → "user1")
+//          .withHeaders("user" → "user1@thehive.local")
 //        val updateResult = caseCtrl.update("#2")(updateRequest)
 //        status(updateResult) must_=== 204
 //

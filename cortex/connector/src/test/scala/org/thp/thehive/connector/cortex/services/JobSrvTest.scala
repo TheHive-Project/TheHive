@@ -25,7 +25,7 @@ import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
 class JobSrvTest extends PlaySpecification with Mockito {
-  val dummyUserSrv = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)

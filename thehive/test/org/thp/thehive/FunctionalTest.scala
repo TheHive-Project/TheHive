@@ -171,18 +171,18 @@ class FunctionalTest extends PlaySpecification {
       var task1: TestTask     = null
 
       {
-        implicit val auth: Authentication = PasswordAuthentication(UserSrv.initUser, UserSrv.initUserPassword)
+        implicit val auth: Authentication = PasswordAuthentication(UserSrv.initUser.login, UserSrv.initUserPassword)
 
         "get admin user" in {
-          val asyncResp = client.user.get("admin")
+          val asyncResp = client.user.get("admin@thehive.local")
           adminUser = TestUser(await(asyncResp))
-          adminUser.login must_=== "admin"
+          adminUser.login must_=== "admin@thehive.local"
         }
 
         "create new user" in {
-          val asyncResp = client.user.create(InputUser("toom", "Thomas", Some("secret"), "analyst"))
+          val asyncResp = client.user.create(InputUser("toom@thehive.local", "Thomas", Some("secret"), "analyst"))
           user2 = TestUser(await(asyncResp))
-          val expected = TestUser("toom", "Thomas", "analyst", Set("manageAlert", "manageCase", "manageTask"), "default")
+          val expected = TestUser("toom@thehive.local", "Thomas", "analyst", Set("manageAlert", "manageCase", "manageTask"), "default")
           user2 must_=== expected
         }
 
@@ -194,7 +194,7 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "return an authentication error if password is wrong" in {
-          val wrongAuth = PasswordAuthentication("admin", "nopassword")
+          val wrongAuth = PasswordAuthentication("admin@thehive.local", "nopassword")
           val asyncResp = client.query(Json.obj("_name" -> "listUser"), Json.obj("_name" -> "toList"))(ec, wrongAuth)
           val expected  = ApplicationError(401, Json.obj("type" -> "AuthenticationError", "message" -> "Authentication failure"))
           await(asyncResp) must throwA(expected)
@@ -333,15 +333,15 @@ class FunctionalTest extends PlaySpecification {
 
         "create a new user in the test organisation" in {
           val asyncResp =
-            client.user.create(InputUser("testAdmin", "Admin user in test organisation", Some("secret"), "admin", Some("test")))
+            client.user.create(InputUser("testAdmin@thehive.local", "Admin user in test organisation", Some("secret"), "admin", Some("test")))
           user3 = TestUser(await(asyncResp))
-          val expected = TestUser("testAdmin", "Admin user in test organisation", "admin", Permissions.all.map(_.toString), "test")
+          val expected = TestUser("testAdmin@thehive.local", "Admin user in test organisation", "admin", Permissions.all.map(_.toString), "test")
           user3 must_== expected
         }
       }
 
       {
-        implicit val auth: Authentication = PasswordAuthentication("testAdmin", "secret")
+        implicit val auth: Authentication = PasswordAuthentication("testAdmin@thehive.local", "secret")
 
         "list cases in test organisation" in {
           val asyncResp = client.query(Json.obj("_name" -> "listCase"), Json.obj("_name" -> "toList"))
@@ -351,7 +351,9 @@ class FunctionalTest extends PlaySpecification {
 
         "create a case in test organisation" in {
           val asyncResp =
-            client.`case`.create(InputCase("test case", "Case in test organisation", severity = Some(1), pap = Some(1), user = Some("testAdmin")))
+            client
+              .`case`
+              .create(InputCase("test case", "Case in test organisation", severity = Some(1), pap = Some(1), user = Some("testAdmin@thehive.local")))
           case3 = TestCase(await(asyncResp))
           val expected = TestCase(
             title = "test case",
@@ -362,7 +364,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 1,
             status = "Open",
-            user = Some("testAdmin")
+            user = Some("testAdmin@thehive.local")
           )
 
           case3 must_=== expected
@@ -386,7 +388,7 @@ class FunctionalTest extends PlaySpecification {
       }
 
       {
-        implicit val auth: Authentication = PasswordAuthentication("testAdmin", "secret")
+        implicit val auth: Authentication = PasswordAuthentication("testAdmin@thehive.local", "secret")
 
         "list cases in test organisation (should contain shared case)" in {
 //          val asyncResp = client.query(Json.obj("_name" -> "listCase"), Json.obj("_name" -> "toList"))
@@ -400,7 +402,7 @@ class FunctionalTest extends PlaySpecification {
           val alert     = await(asyncResp)
           alert must_== OutputAlert(
             _id = alert._id,
-            _createdBy = "testAdmin",
+            _createdBy = "testAdmin@thehive.local",
             _createdAt = alert._createdAt,
             `type` = "test",
             source = "source1",

@@ -76,7 +76,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "create a new alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(Json.toJson(InputAlert("test", "source1", "sourceRef1", None, "new alert", "test alert")))
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = alertCtrl.create(request)
         status(result) must_=== 201
         val createdAlert = contentAsJson(result).as[OutputAlert]
@@ -109,7 +109,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "fail to create a duplicated alert" in {
         val request = FakeRequest("POST", "/api/v1/alert")
           .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref2", None, "new alert", "test alert")))
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = alertCtrl.create(request)
         status(result) must_=== 400
       }
@@ -120,7 +120,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
             Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", None, "new alert", "test alert"))
               + ("caseTemplate" -> JsString("spam"))
           )
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = alertCtrl.create(request)
         status(result) must_=== 201
         val createdAlert = contentAsJson(result).as[OutputAlert]
@@ -156,7 +156,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         app.instanceOf[Database].roTransaction { implicit graph =>
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail()
         } must beSuccessfulTry.which { alert: Alert with Entity =>
-          val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "user2")
+          val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "user2@thehive.local")
           val result  = alertCtrl.get(alert._id)(request)
           status(result) must_=== 200
           val resultAlert = contentAsJson(result).as[OutputAlert]

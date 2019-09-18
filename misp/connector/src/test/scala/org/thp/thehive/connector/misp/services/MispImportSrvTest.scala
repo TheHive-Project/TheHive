@@ -22,7 +22,7 @@ import org.thp.thehive.models.{Alert, DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with Mockito {
-  val dummyUserSrv                    = DummyUserSrv(userId = "user1", organisation = "cert", permissions = Permissions.all)
+  val dummyUserSrv                    = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
   implicit val sys: ActorSystem       = ActorSystem("MispTest")
   implicit val mat: ActorMaterializer = ActorMaterializer()
 

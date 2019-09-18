@@ -70,10 +70,10 @@ class UserCtrl @Inject()(
             for {
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
-              profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail("admin")
-              else if (inputUser.roles.contains("write")) profileSrv.getOrFail("analyst")
-              else if (inputUser.roles.contains("read")) profileSrv.getOrFail("read-only")
-              else profileSrv.getOrFail("read-only")
+              profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(ProfileSrv.admin.name)
+              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
+              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(ProfileSrv.readonly.name)
+              else profileSrv.getOrFail(ProfileSrv.readonly.name)
               user <- userSrv.create(inputUser, organisation, profile)
             } yield user
           }

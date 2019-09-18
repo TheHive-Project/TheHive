@@ -56,12 +56,12 @@ class StatusCtrl @Inject()(
 
   def password: String = passwordConfig.get
 
-  private def getVersion(c: Class[_]) = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
+  private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def health: Action[AnyContent] =
     entryPoint("health") { _ =>
       val dbStatus = db
-        .roTransaction(graph => userSrv.getOrFail("admin")(graph))
+        .roTransaction(graph => userSrv.getOrFail(UserSrv.initUser.login)(graph))
         .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
       val connectorStatus = connectors.map(c => c.health)
       val distinctStatus  = connectorStatus + dbStatus

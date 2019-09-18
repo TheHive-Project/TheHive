@@ -16,7 +16,7 @@ import play.api.{Configuration, Environment}
 import scala.util.Try
 
 class StatusCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   val config: Configuration      = Configuration.load(Environment.simple())
   implicit val mat: Materializer = NoMaterializer
 
@@ -57,7 +57,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
 
       "return proper status" in {
         val request = FakeRequest("GET", s"/api/v0/status")
-          .withHeaders("user" -> "user1")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = statusCtrl.get()(request)
 
         status(result) shouldEqual 200
@@ -97,7 +97,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
 
       "be healthy" in {
         val request = FakeRequest("GET", s"/api/v0/health")
-          .withHeaders("user" -> "user1", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         val result = statusCtrl.health(request)
 
         status(result) shouldEqual 200
