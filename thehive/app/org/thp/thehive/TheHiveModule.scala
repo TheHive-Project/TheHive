@@ -7,7 +7,7 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.thehive.services.notification.mattermost.MattermostProvider
-import org.thp.thehive.services.notification.triggers.{LogInMyTaskProvider, TriggerProvider}
+import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TriggerProvider}
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
@@ -46,6 +46,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
     triggerBindings.addBinding.to[LogInMyTaskProvider]
+    triggerBindings.addBinding.to[CaseCreatedProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
