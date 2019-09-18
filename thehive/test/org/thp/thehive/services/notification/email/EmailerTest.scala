@@ -76,9 +76,9 @@ class EmailerTest extends PlaySpecification {
               .getOrFail()
 
             orga must beSuccessfulTry
-            emailer.execute(audit.get, Some(c4), orga.get, user.get) must beSuccessfulTry
+            emailer.execute(audit.get, Some(c4), orga.get, user.get)
 
-            emailer.getMessage(audit.get, Some(c4), orga.get, user.get) must beSuccessfulTry.which(message => {
+            emailer.message(audit.get, Some(c4), orga.get, user.get, template) must beSuccessfulTry.which(message => {
               message.contains(c4._id) must beTrue
               message.contains(c4._model.label) must beTrue
               message.contains(orga.get.name) must beTrue

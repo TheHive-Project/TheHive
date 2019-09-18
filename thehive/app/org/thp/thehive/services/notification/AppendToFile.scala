@@ -2,14 +2,15 @@ package org.thp.thehive.services.notification
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
-import scala.util.Try
-
-import play.api.Configuration
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.Configuration
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.Try
 
 @Singleton
 class AppendToFileProvider @Inject() extends NotifierProvider {
@@ -27,7 +28,7 @@ class AppendToFile(filename: String, charset: Charset) extends Notifier {
 
   override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
-  ): Try[Unit] = {
+  ): Future[Unit] = {
     val message =
       s"""
          |Audit (${audit.requestId}):
@@ -37,7 +38,7 @@ class AppendToFile(filename: String, charset: Charset) extends Notifier {
          |For user ${user.login}
          |----------------
          |""".stripMargin
-    Try {
+    Future {
       Files.write(Paths.get(filename), message.getBytes(charset), StandardOpenOption.APPEND, StandardOpenOption.CREATE)
       ()
     }

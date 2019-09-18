@@ -5,10 +5,12 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.notification.{Notifier, NotifierProvider}
+import org.thp.thehive.services.notification.{Notifier, NotifierProvider, TemplatedNotifier}
 import play.api.Configuration
 import play.api.libs.mailer.MailerClient
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.Try
 
 @Singleton
@@ -23,15 +25,16 @@ class EmailerProvider @Inject()(mailerClient: MailerClient) extends NotifierProv
     } yield new Emailer(mailerClient, new Handlebars(), NotificationEmail(subj, from, template))
 }
 
-class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEmail: NotificationEmail) extends Notifier {
-  override val name: String = "Emailer"
+class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEmail: NotificationEmail) extends TemplatedNotifier(handlebars) {
+  override val name: String                                  = "Emailer"
+  override protected val nonContextualEntities: List[String] = List("audit", "organisation", "user")
 
   override def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
       implicit graph: Graph
-  ): Try[Unit] =
+  ): Future[Unit] =
     for {
-      message <- getMessage(audit, context, organisation, user)
-      _ <- Try(
+      message <- Future.fromTry(message(audit, context, organisation, user, notificationEmail.template))
+      _ <- Future(
         mailerClient.send(
           notificationEmail
             .toEmail
@@ -42,25 +45,4 @@ class Emailer(mailerClient: MailerClient, handlebars: Handlebars, notificationEm
         )
       )
     } yield ()
-
-  /**
-    * Gets the formatted message string to be sent as user's notification
-    * @param audit audit data
-    * @param context optional context entity for additional data
-    * @param organisation orga data
-    * @param user user data
-    * @return
-    */
-  def getMessage(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity): Try[String] = {
-    val nonContextualEntities = List("audit", "organisation", "user")
-    for {
-      model <- Try(
-        context
-          .fold(notificationMap(List(audit, organisation, user), nonContextualEntities))(
-            c => notificationMap(List(c, audit, organisation, user), nonContextualEntities)
-          )
-      )
-      message <- Try(handlebars.compileInline(notificationEmail.template).apply(model.asJavaMap))
-    } yield message
-  }
 }
