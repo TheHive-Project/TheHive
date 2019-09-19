@@ -29,6 +29,7 @@ case class RichUser(user: User with Entity, profile: String, permissions: Set[Pe
   val _updatedAt: Option[Date]   = user._updatedAt
   val login: String              = user.login
   val name: String               = user.name
+  val hasPassword: Boolean       = user.password.isDefined
   val apikey: Option[String]     = user.apikey
   val locked: Boolean            = user.locked
 }
