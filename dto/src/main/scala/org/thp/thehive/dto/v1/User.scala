@@ -18,6 +18,7 @@ case class OutputUser(
     _updatedAt: Option[Date] = None,
     login: String,
     name: String,
+    locked: Boolean,
     profile: String,
     permissions: Set[String],
     organisation: String
