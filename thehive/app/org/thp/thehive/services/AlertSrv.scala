@@ -283,7 +283,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .has(Key("sourceRef") of sourceRef)
     )
 
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[AlertOrganisation])
+  def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[AlertOrganisation])
 
   def tags: TagSteps = new TagSteps(raw.outTo[AlertTag])
 

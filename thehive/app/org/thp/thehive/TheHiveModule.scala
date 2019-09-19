@@ -6,7 +6,7 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.thehive.services.notification.mattermost.MattermostProvider
-import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TaskAssignedProvider, TriggerProvider}
+import org.thp.thehive.services.notification.triggers.{AlertCreatedProvider, CaseCreatedProvider, LogInMyTaskProvider, TaskAssignedProvider, TriggerProvider}
 import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
@@ -47,6 +47,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     triggerBindings.addBinding.to[LogInMyTaskProvider]
     triggerBindings.addBinding.to[CaseCreatedProvider]
     triggerBindings.addBinding.to[TaskAssignedProvider]
+    triggerBindings.addBinding.to[AlertCreatedProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
