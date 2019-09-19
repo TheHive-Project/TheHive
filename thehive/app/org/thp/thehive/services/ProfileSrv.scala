@@ -1,8 +1,11 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
@@ -14,7 +17,14 @@ object ProfileSrv {
 }
 
 @Singleton
-class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
+class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
+
+  def create(profile: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] =
+    for {
+      createdProfile <- createEntity(profile)
+      _              <- auditSrv.profile.create(createdProfile, None)
+    } yield createdProfile
+
   lazy val admin: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.admin.name)(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     ProfileSrv.admin,
@@ -27,6 +37,12 @@ class ProfileSrv @Inject()(implicit val db: Database) extends VertexSrv[Profile,
   override def get(idOrName: String)(implicit graph: Graph): ProfileSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
+
+  def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _ <- Try(get(profile).remove())
+      _ <- auditSrv.profile.delete(profile)
+    } yield ()
 }
 
 @EntitySteps[Profile]

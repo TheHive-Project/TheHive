@@ -44,6 +44,7 @@ class AuditSrv @Inject()(
   val user                                                = new SelfContextObjectAudit[User]
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]
   val organisation                                        = new SelfContextObjectAudit[Organisation]
+  val profile                                             = new SelfContextObjectAudit[Profile]
   private val pendingAuditsLock                           = new Object
   private val transactionAuditIdsLock                     = new Object
   private val unauditedTransactionsLock                   = new Object
