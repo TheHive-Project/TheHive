@@ -30,6 +30,7 @@ object UserConversion {
       user
         .into[OutputUser]
         .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
+        .withFieldComputed(_.hasKey, _.apikey.isDefined)
         //        .withFieldComputed(_.permissions, _.permissions)
         //        .withFieldConst(_.permissions, Set.empty[String]
         .transform
