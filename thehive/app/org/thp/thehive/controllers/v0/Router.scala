@@ -25,6 +25,7 @@ class Router @Inject()(
     attachmentCtrl: AttachmentCtrl,
     describeCtrl: DescribeCtrl,
     configCtrl: ConfigCtrl,
+    profileCtrl: ProfileCtrl,
     queryExecutor: TheHiveQueryExecutor
 ) extends SimpleRouter {
 
@@ -157,6 +158,14 @@ class Router @Inject()(
     case PUT(p"/config/$path")      => configCtrl.set(path)
     case GET(p"/config/user/$path") => configCtrl.userGet(path)
     case PUT(p"/config/user/$path") => configCtrl.userSet(path)
+
+    case GET(p"/profile")               => queryExecutor.profile.search
+    case POST(p"/profile/_search")      => queryExecutor.profile.search
+    case POST(p"/profile/_stats")       => queryExecutor.profile.stats
+    case POST(p"/profile")              => profileCtrl.create
+    case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)
+    case PATCH(p"/profile/$profileId")  => profileCtrl.update(profileId)
+    case DELETE(p"/profile/$profileId") => profileCtrl.delete(profileId)
   }
 }
 /*

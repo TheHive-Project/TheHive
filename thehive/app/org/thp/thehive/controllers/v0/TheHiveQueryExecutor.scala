@@ -28,6 +28,7 @@ class TheHiveQueryExecutor @Inject()(
     dashboardCtrl: DashboardCtrl,
     organisationCtrl: OrganisationCtrl,
     auditCtrl: AuditCtrl,
+    profileCtrl: ProfileCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
@@ -55,6 +56,7 @@ class TheHiveQueryExecutor @Inject()(
   val dashboard: QueryCtrl    = queryCtrlBuilder(dashboardCtrl, this)
   val organisation: QueryCtrl = queryCtrlBuilder(organisationCtrl, this)
   val audit: QueryCtrl        = queryCtrlBuilder(auditCtrl, this)
+  val profile: QueryCtrl      = queryCtrlBuilder(profileCtrl, this)
 }
 
 object ParentIdFilter {

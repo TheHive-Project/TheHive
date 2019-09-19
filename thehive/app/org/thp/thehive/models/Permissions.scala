@@ -13,8 +13,9 @@ object Permissions {
   val manageTask: Permission           = Permission("manageTask")
   val manageAction: Permission         = Permission("manageAction")
   val manageConfig: Permission         = Permission("manageConfig")
+  val manageProfile: Permission        = Permission("manageProfile")
 
-  val restrictedPermissions: Set[Permission] = Set(manageOrganisation, manageReportTemplate, manageConfig)
+  val restrictedPermissions: Set[Permission] = Set(manageOrganisation, manageReportTemplate, manageConfig, manageProfile)
 
   val all: Set[Permission] =
     Set(
@@ -27,6 +28,7 @@ object Permissions {
       manageTask,
       manageReportTemplate,
       manageAction,
-      manageConfig
+      manageConfig,
+      manageProfile
     )
 }
