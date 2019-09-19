@@ -22,7 +22,7 @@ object ProfileConversion {
         .withFieldConst(_._updatedBy, profile._updatedBy)
         .withFieldConst(_._createdAt, profile._createdAt)
         .withFieldConst(_._createdBy, profile._createdBy)
-        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
+        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
         .transform
     )
 

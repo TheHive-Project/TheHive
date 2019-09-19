@@ -17,7 +17,7 @@ case class OutputProfile(
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
     name: String,
-    permissions: Set[String]
+    permissions: Seq[String]
 )
 
 object OutputProfile {
