@@ -2,5 +2,9 @@
   {
     "from": "case1-cert",
     "to": "h.fr"
+  },
+  {
+    "from": "case1-cert",
+    "to": "helloworld"
   }
 ]

@@ -144,11 +144,18 @@ class JobSrv @Inject()(
   def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
-        get(job).update(
-          "report"  -> cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts"),
-          "status"  -> fromCortexJobStatus(cortexJob.status),
-          "endDate" -> new Date()
-        )
+        val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts")
+        val status  = fromCortexJobStatus(cortexJob.status)
+        val endDate = new Date()
+        for {
+          j <- get(job).update(
+            "report"  -> report,
+            "status"  -> status,
+            "endDate" -> endDate
+          )
+          c <- get(j).observable.`case`.getOrFail()
+          _ <- auditSrv.job.update(j, c, Json.obj("report" -> report, "status" -> status, "endDate" -> endDate))
+        } yield j
       }
     }
 
