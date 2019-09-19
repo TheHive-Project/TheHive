@@ -9,7 +9,7 @@
             this.mode = mode;
 
             self.initForm = function(org) {
-                this.formData = _.defaults(
+                self.formData = _.defaults(
                     _.pick(org || {}, '_id', 'name', 'description'), {
                         name: null
                     }

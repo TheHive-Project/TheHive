@@ -1,0 +1,117 @@
+div.flex-header {
+  background-color: #fff;
+  border-bottom: 2px solid #ecf0f5;
+  font-size: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+div.flex-row:hover {
+  border: 1px dotted #3c8dbc !important;
+}
+
+div.flex-row,
+div.flex-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+}
+div.flex-row:nth-child(odd),
+div.flex-header:nth-child(odd) {
+  background: #f9f9f9;
+  border: 1px dotted #f9f9f9;
+}
+div.flex-row:nth-child(even),
+div.flex-header:nth-child(even) {
+  background: #ecf0f5;
+  border: 1px dotted #ecf0f5;
+}
+div.flex-row > div.flex-col,
+div.flex-header > div.flex-col {
+  margin: 0 5px;
+  padding: 4px;
+}
+div.flex-row > div.flex-col .label.label-lg,
+div.flex-header > div.flex-col .label.label-lg {
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1;
+}
+div.flex-row > div.flex-col > *,
+div.flex-header > div.flex-col > * {
+  flex: 1;
+}
+div.flex-row > div.flex-col > span.label,
+div.flex-header > div.flex-col > span.label {
+  flex: none;
+}
+div.flex-row > div.flex-col.vertical,
+div.flex-header > div.flex-col.vertical {
+  display: flex;
+  align-items: center;
+}
+div.flex-row > div.flex-col.vertical.centered,
+div.flex-header > div.flex-col.vertical.centered {
+  justify-content: center;
+}
+div.flex-row > div.flex-col:first-child,
+div.flex-header > div.flex-col:first-child {
+  margin-left: 0;
+}
+div.flex-row > div.flex-col:last-child,
+div.flex-header > div.flex-col:last-child {
+  margin-right: 0;
+}
+div.flex-row > div.flex-col.flex-1,
+div.flex-header > div.flex-col.flex-1 {
+  flex: 1;
+}
+div.flex-row > div.flex-col.flex-2,
+div.flex-header > div.flex-col.flex-2 {
+  flex: 2;
+}
+div.flex-row > div.flex-col.flex-3,
+div.flex-header > div.flex-col.flex-3 {
+  flex: 3;
+}
+div.flex-row > div.flex-col.flex-4,
+div.flex-header > div.flex-col.flex-4 {
+  flex: 4;
+}
+div.flex-row > div.flex-col.flex-5,
+div.flex-header > div.flex-col.flex-5 {
+  flex: 5;
+}
+div.flex-row > div.flex-col.flex-w-80,
+div.flex-header > div.flex-col.flex-w-80 {
+  width: 80px;
+}
+div.flex-row > div.flex-col.flex-w-100,
+div.flex-header > div.flex-col.flex-w-100 {
+  width: 100px;
+}
+div.flex-row > div.flex-col.flex-w-120,
+div.flex-header > div.flex-col.flex-w-120 {
+  width: 120px;
+}
+div.flex-row > div.flex-col.flex-w-150,
+div.flex-header > div.flex-col.flex-w-150 {
+  width: 150px;
+}
+div.flex-row > div.flex-col.flex-w-200,
+div.flex-header > div.flex-col.flex-w-200 {
+  width: 200px;
+}
+div.flex-row > div.flex-col.flex-icon,
+div.flex-header > div.flex-col.flex-icon {
+  padding-left: 10px;
+  padding-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+div.flex-row > div.flex-col.flex-icon i,
+div.flex-header > div.flex-col.flex-icon i {
+  margin-right: 5px;
+}

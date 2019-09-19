@@ -1,0 +1,99 @@
+<!-- <p class="lead mb-xs clearfix">
+  <a class="btn btn-primary pull-right" href ng-click="$ctrl.openModal('create', {})"><i class="fa fa-plus"></i> Add user</a>
+</p> -->
+
+<div class="row" ng-if="$ctrl.users.length === 0">
+    <div class="col-md-12">
+        <div class="empty-message">No users defined.</div>
+    </div>
+</div>
+
+<div class="row" ng-if="$ctrl.users.length > 0">
+    <div class="col-md-12">
+        <table class="table table-striped case-list">
+            <thead>
+                <tr>
+                    <th style="width: 120px">Status</th>
+                    <th>User details</th>
+                    <th></th>
+                    <th>Password</th>
+                    <th>API Key</th>
+                    <th style="width: 180px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="user in $ctrl.users track by user._id">
+                    <td>
+                        <span class="label label-default label-lg" ng-class="{false: 'label-success', true: 'label-danger'}[user.locked]">{{user.locked === false ? 'Active' : 'Locked'}}</span>
+                    </td>
+                    <td>
+                        <h4 class="media-heading">
+                            <small class="mr-xxs">
+                                <strong>Login:</strong> {{user.login}}</small>
+                        </h4>
+                        <h4 class="media-heading">
+                            <small class="mr-xxs">
+                                <strong>Profile:</strong> {{user.profile}}</small>
+                        </h4>
+                    </td>
+                    <td>
+                        <h4 class="media-heading">
+                            <small class="mr-xxs">
+                                <strong>Full name:</strong> {{user.name}}</small>
+                            <!-- <span class="mr-m text-primary">{{user.name}}</span> -->
+                        </h4>
+                        <h4 class="media-heading">
+                            <small class="mr-xxs">
+                                <strong>Roles:</strong> {{user.roles.join(', ') || 'None'}}</small>
+                        </h4>
+                    </td>
+                    <td>
+                        <span>
+                            <span class="btn btn-sm btn-default" ng-class="{ true: 'disabled', false: ''}[user.locked]" ng-click="$ctrl.showPassword(user, true)" ng-hide="$ctrl.showPwdForm[user._id]">{{user.hasPassword ? 'Edit password' : 'New password'}}</span>
+                            <form ng-show="$ctrl.showPwdForm[user._id]" ng-submit="$ctrl.setPassword(user, newValue); $ctrl.showPassword(user, false);">
+                                <div class="input-group input-group-sm">
+                                    <input auto-focus="user-showPassword-{{user._id}}" class="form-control input-sm" ng-model="newValue" type="password">
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-default" type="button" ng-click="$ctrl.showPassword(user, false)">
+                                            <i class="fa fa-times text-danger"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </form>
+                        </span>
+                    </td>
+                    <td>
+                        <span ng-if="!user.hasKey">
+                            <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.createKey(user)">Create API Key</span>
+                        </span>
+                        <span ng-if="user.hasKey">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-btn">
+                                    <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.createKey(user)">Renew</span>
+                                    <span class="btn btn-sm btn-danger" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.revokeKey(user)">Revoke</span>
+                                    <span class="btn btn-sm btn-primary" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.getKey(user)" ng-if="!$ctrl.userKeyCache[user._id]">Reveal</span>
+                                </span>
+                                <input class="form-control" readonly ng-model="$ctrl.userKeyCache[user._id]" ng-if="$ctrl.userKeyCache[user._id]">
+                                <span class="input-group-btn" ng-if="$ctrl.userKeyCache[user._id]">
+                                    <button class="btn btn-primary" type="button" ng-click="$ctrl.copyKey(user)">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </span>
+                    </td>
+                    <td>
+                        <a href class="text-primary" ng-click="$vm.showProfile('edit', user)">
+                            <i class="fa fa-edit"></i>Edit</a>
+
+                        <a href class="text-danger" ng-if="user._id !== $ctrl.main.currentUser.id">
+                            <i class="fa fa-ban"></i>Lock</a>
+
+                        <a href class="text-success" ng-if="user._id !== $ctrl.main.currentUser.id">
+                            <i class="fa fa-refresh"></i>Unlock</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

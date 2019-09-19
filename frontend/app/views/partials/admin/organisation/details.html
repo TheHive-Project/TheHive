@@ -46,25 +46,42 @@
 
         <div class="row">
             <div class="col-md-12">
-                <uib-tabset type="tabs" active="tabSrv.activeIndex" class="nav-tabs-custom main-tabset">
-                    <uib-tab>
+                <uib-tabset  active="active" class="nav-tabs-custom">
+                    <uib-tab index="0">
                         <uib-tab-heading>
                             <span>
                                 <i class="fa fa-users"></i>&nbsp;&nbsp;
                                 Users
                             </span>
                         </uib-tab-heading>
+                        <div class="row mb-xs">
+                            <div class="col-md-12">
+                                <div class="btn-toolbar" role="toolbar">
+                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
+                                        <i class="fa fa-link"></i>
+                                        Add existing user
+                                    </button>
+
+                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.newUser()">
+                                        <i class="fa fa-plus"></i>
+                                        Create new user
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <org-user-list users="$vm.users"></org-user-list>
                     </uib-tab>
-                    <uib-tab>
+                    <uib-tab index="1">
                         <uib-tab-heading>
                             <span>
                                 <i class="fa fa-file-text"></i>&nbsp;&nbsp;
                                 Case Templates
                             </span>
                         </uib-tab-heading>
+                        temapltes
                     </uib-tab>
                 </uib-tabset>
-                <div ui-view class="case-page-content"></div>
+                <!-- <div ui-view class="case-page-content"></div> -->
             </div>
         </div>
     </div>

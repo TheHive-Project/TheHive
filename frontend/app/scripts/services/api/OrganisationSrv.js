@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('OrganisationSrv', function($q, $http) {
+        .factory('OrganisationSrv', function($q, $http, QuerySrv) {
 
             var baseUrl = './api/organisation';
 
@@ -27,9 +27,24 @@
                 },
 
                 users: function(orgId) {
+                    return QuerySrv.query('v1', [
+                        {'_name': 'getOrganisation', 'idOrName': orgId},
+                        {'_name': 'users'},
+                        {'_name': 'toList'}
+                    ]).then(function(response) {
+                        return $q.resolve(response.data.result);
+                    });
+                },
 
+                caseTemplates: function(orgId) {
+                    return QuerySrv.query('v0', [
+                        {'_name': 'getOrganisation', 'idOrName': orgId},
+                        {'_name': 'caseTemplates'},
+                        {'_name': 'toList'}
+                    ]).then(function(response) {
+                        return $q.resolve(response.data.result);
+                    });
                 }
-
             };
 
             return factory;

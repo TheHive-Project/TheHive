@@ -33,7 +33,7 @@
 
                 modal.result
                     .then(function(org) {
-                        if (self.mode === 'edit') {
+                        if (mode === 'edit') {
                             self.update(org._id, org);
                         } else {
                             self.create(org);

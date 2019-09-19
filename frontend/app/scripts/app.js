@@ -196,7 +196,7 @@ angular.module('thehive', [
             .state('app.administration.profiles', {
                 url: '/profiles',
                 templateUrl: 'views/partials/admin/profile/list.html',
-                controller: 'AdminProfilesCtrl',
+                controller: 'ProfileListCtrl',
                 controllerAs: '$vm',
                 title: 'Profiles administration',
                 resolve: {
@@ -225,6 +225,12 @@ angular.module('thehive', [
                 resolve: {
                     organisation: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.get($stateParams.orgId);
+                    },
+                    users: function($stateParams, OrganisationSrv) {
+                        return OrganisationSrv.users($stateParams.orgId);
+                    },
+                    caseTemplates: function($stateParams, OrganisationSrv) {
+                        return OrganisationSrv.caseTemplates($stateParams.orgId);
                     }
                 }
             })

@@ -139,7 +139,7 @@ dashboard-item .box {
 
 .dashboard-serie > .form-inline {
     display: flex;
-    justify-content: start;
+    justify-content: flex-start;
     align-items: stretch;
 }
 
@@ -158,7 +158,7 @@ dashboard-item .box {
 .dashboard-period > div{
     height: 34px;
     display:flex;
-    justify-content:start;
+    justify-content:flex-start;
     align-items:stretch;
 }
 
