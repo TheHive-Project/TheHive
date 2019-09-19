@@ -8,7 +8,7 @@ import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.notification._
 import org.thp.thehive.services.notification.email.EmailerProvider
-import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TriggerProvider}
+import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TaskAssignedProvider, TriggerProvider}
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 
 object TestAppBuilder {
@@ -24,6 +24,7 @@ object TestAppBuilder {
       .multiBind[NotifierProvider](classOf[EmailerProvider])
       .multiBind[TriggerProvider](classOf[LogInMyTaskProvider])
       .multiBind[TriggerProvider](classOf[CaseCreatedProvider])
+      .multiBind[TriggerProvider](classOf[TaskAssignedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
       .bindActor[ConfigActor]("config-actor")
       .bindActor[NotificationActor]("notification-actor")

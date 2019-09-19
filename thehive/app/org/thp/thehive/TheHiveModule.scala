@@ -1,13 +1,13 @@
 package org.thp.thehive
 
-import play.api.libs.concurrent.AkkaGuiceSupport
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.thehive.services.notification.mattermost.MattermostProvider
-import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TriggerProvider}
+import org.thp.thehive.services.notification.triggers.{CaseCreatedProvider, LogInMyTaskProvider, TaskAssignedProvider, TriggerProvider}
+import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
@@ -17,12 +17,11 @@ import org.thp.thehive.services.notification.{AppendToFileProvider, Notification
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import play.api.routing.{Router => PlayRouter}
-import play.api.{Configuration, Environment, Logger}
-
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
 import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
+import play.api.routing.{Router => PlayRouter}
+import play.api.{Configuration, Environment, Logger}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   lazy val logger = Logger(getClass)
@@ -47,6 +46,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
     triggerBindings.addBinding.to[LogInMyTaskProvider]
     triggerBindings.addBinding.to[CaseCreatedProvider]
+    triggerBindings.addBinding.to[TaskAssignedProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
