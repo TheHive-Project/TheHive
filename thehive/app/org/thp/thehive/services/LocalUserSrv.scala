@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 import play.api.mvc.RequestHeader
 
@@ -14,13 +14,26 @@ import org.thp.thehive.models.Permissions
 @Singleton
 class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends ScalligraphUserSrv {
 
-  override def getFromId(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
+  override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
     db.roTransaction { implicit graph =>
-      userSrv
+      val requestId = Instance.getRequestId(request)
+      val userSteps = userSrv
         .initSteps
         .get(userId)
-        .getAuthContext(Instance.getRequestId(request), organisationName)
-        .orFail(AuthenticationError("Authentication failure"))
+
+      userSteps
+        .clone()
+        .getAuthContext(requestId, organisationName)
+        .headOption()
+        .orElse {
+          organisationName.flatMap { org =>
+            userSteps
+              .getAuthContext(requestId, OrganisationSrv.default.name)
+              .headOption()
+              .map(_.changeOrganisation(org))
+          }
+        }
+        .fold[Try[AuthContext]](Failure(AuthenticationError("Authentication failure")))(Success.apply)
     }
 
   override def getSystemAuthContext: AuthContext =

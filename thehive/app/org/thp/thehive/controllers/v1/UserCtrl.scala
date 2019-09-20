@@ -65,7 +65,8 @@ class UserCtrl @Inject()(
         db.tryTransaction { implicit graph =>
             val organisationName = inputUser.organisation.getOrElse(request.organisation)
             for {
-              _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
+              _ <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail() orElse
+                userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile      <- profileSrv.getOrFail(inputUser.profile)
               user         <- userSrv.create(inputUser, organisation, profile)
@@ -90,18 +91,6 @@ class UserCtrl @Inject()(
           .map(user => Results.Ok(user.toJson))
       }
 
-//  def list: Action[AnyContent] =
-//    entryPoint("list user")
-//      .extract("organisation", FieldsParser[String].optional.on("organisation"))
-//      .authTransaction(db) { request ⇒ implicit graph ⇒
-//          val organisation = request.body("organisation").getOrElse(request.organisation)
-//          val users = userSrv.initSteps
-//            .richUser(organisation)
-//            .map(_.toJson)
-//            .toList
-//          Results.Ok(Json.toJson(users))
-//        }
-
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
       .extract("user", FieldsParser.update("user", publicProperties))
@@ -117,12 +106,8 @@ class UserCtrl @Inject()(
       .extract("password", FieldsParser[String])
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
-          _ <- userSrv
-            .current
-            .organisations(Permissions.manageUser)
-            .users
-            .get(userId)
-            .existsOrFail()
+          _ <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).existsOrFail() orElse
+            userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
           _ <- authSrv.setPassword(userId, request.body("password")) // FIXME
         } yield Results.NoContent
       }

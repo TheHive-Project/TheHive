@@ -88,41 +88,38 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
-  def visible(implicit authContext: AuthContext): UserSteps = newInstance(
-    raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation))
-  )
+  def visible(implicit authContext: AuthContext): UserSteps =
+    if (authContext.permissions.contains(Permissions.manageOrganisation)) this
+    else newInstance(raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation)))
 
   override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
 
-  def can(permission: Permission)(implicit authContext: AuthContext): UserSteps = newInstance(
-    raw
-      .outTo[UserRole]
-      .outTo[RoleOrganisation]
-      .has(Key("name") of authContext.organisation)
-      .inTo[RoleOrganisation]
-      .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-      .inTo[UserRole]
-      .has(Key("login") of authContext.userId)
-  )
+  def can(requiredPermission: Permission)(implicit authContext: AuthContext): UserSteps =
+    where(_.organisations(requiredPermission).get(authContext.organisation))
 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
 
-  def organisations(requiredPermission: String): OrganisationSteps = new OrganisationSteps(
-    raw
+  def organisations(requiredPermission: String): OrganisationSteps = {
+    val isInDefaultOrganisation = raw
+      .clone()
       .outTo[UserRole]
       .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
       .outTo[RoleOrganisation]
-  )
+      .has(Key("name") of OrganisationSrv.default.name)
+      .exists()
+    if (isInDefaultOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
+    else
+      new OrganisationSteps(
+        raw
+          .outTo[UserRole]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
+          .outTo[RoleOrganisation]
+      )
+  }
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])
-
-  //  def availableFor(authContext: AuthContext): UserSteps = ???
-//    availableFor(authContext.organisation)
-
-//  def availableFor(organisation: String): UserSteps = ???
-//  newInstance(raw.filter(_.outTo[UserOrganisation].value("name").is(organisation)))
 
   def getAuthContext(requestId: String, organisation: Option[String]): ScalarSteps[AuthContext] = {
     val organisationName = organisation

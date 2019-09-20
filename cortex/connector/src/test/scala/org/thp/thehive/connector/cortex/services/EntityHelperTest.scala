@@ -9,7 +9,7 @@ import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, Permission}
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
@@ -30,15 +30,9 @@ class EntityHelperTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val entityHelper = app.instanceOf[EntityHelper]
-    val db           = app.instanceOf[Database]
-    implicit val authContext: AuthContext = new AuthContext {
-      override def userId: String               = "user1@thehive.local"
-      override def userName: String             = "user1@thehive.local"
-      override def organisation: String         = "cert"
-      override def requestId: String            = ""
-      override def permissions: Set[Permission] = Permissions.all
-    }
+    val entityHelper                      = app.instanceOf[EntityHelper]
+    val db                                = app.instanceOf[Database]
+    implicit val authContext: AuthContext = AuthContextImpl("user1@thehive.local", "user1", "cert", "", Permissions.all)
 
     s"[$name] entity helper" should {
 

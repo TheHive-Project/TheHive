@@ -68,7 +68,8 @@ class UserCtrl @Inject()(
         db.tryTransaction { implicit graph =>
             val organisationName = inputUser.organisation.getOrElse(request.organisation)
             for {
-              _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
+              _ <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail() orElse
+                userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(ProfileSrv.admin.name)
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
@@ -90,22 +91,19 @@ class UserCtrl @Inject()(
     entryPoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          _ <- userSrv
-            .current
-            .can(Permissions.manageUser)
-            .getOrFail()
-          u <- userSrv
-            .get(userId)
-            .update("locked" -> true)
+          _ <- userSrv.current.can(Permissions.manageUser).getOrFail() orElse
+            userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
+          u <- userSrv.get(userId).update("locked" -> true)
           _ <- auditSrv.user.delete(u)
         } yield Results.NoContent
       }
 
   def get(userId: String): Action[AnyContent] =
     entryPoint("get user")
-      .authRoTransaction(db) { request => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .get(userId)
+          .visible
           .richUser(request.organisation) // FIXME what if user is not in the same org ?
           .getOrFail()
           .map { user =>
