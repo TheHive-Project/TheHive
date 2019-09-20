@@ -2,14 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.io.Source
-import scala.util.Try
-
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
 import akka.actor.Terminated
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -22,7 +14,15 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
-import org.thp.thehive.services.{CaseSrv, ObservableSrv}
+import org.thp.thehive.services.notification.triggers.JobFinished
+import org.thp.thehive.services._
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+import scala.io.Source
+import scala.util.Try
 
 class JobSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
@@ -47,6 +47,9 @@ class JobSrvTest extends PlaySpecification with Mockito {
     val observableSrv: ObservableSrv = app.instanceOf[ObservableSrv]
     val db: Database                 = app.instanceOf[Database]
     val caseSrv                      = app.instanceOf[CaseSrv]
+    val userSrv                      = app.instanceOf[UserSrv]
+    val auditSrv                     = app.instanceOf[AuditSrv]
+    val orgSrv                       = app.instanceOf[OrganisationSrv]
 
     s"[$name] job service" should {
       implicit val authContext: AuthContext = dummyUserSrv.authContext
@@ -94,6 +97,22 @@ class JobSrvTest extends PlaySpecification with Mockito {
         db.roTransaction { implicit graph =>
           jobSrv.get(updatedJob).observable.toList.map(_._id) must contain(exactly(observable._id))
           jobSrv.get(updatedJob).reportObservables.toList.length must equalTo(2)
+
+          val jobFinished = new JobFinished()
+
+          val audit = auditSrv.initSteps.has(Key("objectId"), P.eq(updatedJob._id)).getOrFail()
+
+          audit must beSuccessfulTry
+
+          val orga = orgSrv.get("cert").getOrFail()
+
+          orga must beSuccessfulTry
+
+          val user1 = userSrv.initSteps.getByName("user1@thehive.local").getOrFail()
+
+          user1 must beSuccessfulTry
+
+          jobFinished.filter(audit.get, Some(updatedJob), orga.get, user1.get) must beTrue
         }
       }
 
