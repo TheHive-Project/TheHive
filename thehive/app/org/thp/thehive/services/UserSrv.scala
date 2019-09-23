@@ -42,14 +42,16 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
   val basicUserNameRegex: Pattern = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
 
   def checkUser(user: User): Try[User] =
-    if (fullUserNameRegex.matcher(user.login).matches()) {
-      Success(user)
-    } else {
-      if (basicUserNameRegex.matcher(user.login).matches && defaultUserDomain.isDefined)
-        Success(user.copy(login = s"${user.login}@${defaultUserDomain.get}"))
-      else
-        Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
-    }
+    if (fullUserNameRegex.matcher(user.login).matches()) Success(user)
+    else if (basicUserNameRegex.matcher(user.login).matches && defaultUserDomain.isDefined)
+      Success(user.copy(login = s"${user.login}@${defaultUserDomain.get}"))
+    else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+
+  def checkUserName(login: String): Try[String] =
+    if (fullUserNameRegex.matcher(login).matches()) Success(login)
+    else if (basicUserNameRegex.matcher(login).matches && defaultUserDomain.isDefined)
+      Success(s"$login}@${defaultUserDomain.get}")
+    else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: $login)"))
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -66,7 +68,11 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
 
   override def get(idOrName: String)(implicit graph: Graph): UserSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+    else
+      defaultUserDomain.fold(initSteps.getByName(idOrName)) {
+        case d if !idOrName.contains('@') => initSteps.getByName(s"$idOrName@$d")
+        case _                            => initSteps.getByName(idOrName)
+      }
 
   override def update(
       steps: UserSteps,

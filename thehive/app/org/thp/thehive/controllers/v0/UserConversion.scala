@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.language.implicitConversions
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.Json
+
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.InvalidFormatAttributeError
@@ -10,10 +15,6 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, RoleProfile, User}
 import org.thp.thehive.services.{ProfileSrv, RoleSrv, UserSrv, UserSteps}
-import play.api.libs.json.Json
-
-import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
 
 object UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -93,7 +94,7 @@ object UserConversion {
             .get(vertex)
             .getOrFail()
           r <- userSrv.get(u)(graph).role.getOrFail()
-          _ <- Try(roleSrv.get(r)(graph).roleProfile(roleSrv.roleProfileSrv).remove())
+          _ = roleSrv.get(r)(graph).roleProfile(roleSrv.roleProfileSrv).remove()
           _ <- roleSrv.roleProfileSrv.create(RoleProfile(), r, p)(graph, authContext)
         } yield Json.obj("profile" -> p.toJson)
       })
