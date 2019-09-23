@@ -3,11 +3,11 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, UserInfoSrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
-        this.getUserInfo = UserInfoSrv;
+        this.getUserInfo = UserSrv.getCache;
         this.CaseResolutionStatus = CaseResolutionStatus;
         this.caseResponders = null;
 

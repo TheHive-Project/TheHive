@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveDirectives')
-        .directive('searchItem', function($uibModal, UserInfoSrv) {
+        .directive('searchItem', function($uibModal, UserSrv) {
             return {
                 restrict: 'E',
                 replace: true,
@@ -25,7 +25,7 @@
                             size: 'lg'
                         });
                     };
-                    scope.getUserInfo = UserInfoSrv;
+                    scope.getUserInfo = UserSrv.getCache;
                 },
                 templateUrl: 'views/directives/search/search-item.html'
             };

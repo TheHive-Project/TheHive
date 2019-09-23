@@ -1,6 +1,6 @@
 <div class="mb-xs">
     <i class="glyphicon glyphicon-user"></i>
-    <span>by {{getUserInfo.get(value.createdBy) | getField: 'name'}}</span>
+    by <user-info value="value.createdBy" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
     Occurred on <span ng-bind="value.startDate | showDate"> </span>
@@ -23,8 +23,8 @@
             </a>
         </div>
         <div>
-            <i class="glyphicon glyphicon-user"></i>
-            <span>{{getUserInfo.get(value.stats.owner) | getField: 'name'}}</span>
+            <i class="glyphicon glyphicon-user"></i>            
+            <user-info value="value.stats.owner" field="name"></user-info>
 
             <i class="glyphicon glyphicon-calendar ml-xxs"></i>
             <span ng-bind="value.stats.startDate | showDate"></span>

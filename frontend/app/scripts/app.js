@@ -234,17 +234,17 @@ angular.module('thehive', [
                     }
                 }
             })
-            .state('app.administration.users', {
-                url: '/users',
-                templateUrl: 'views/partials/admin/users.html',
-                controller: 'AdminUsersCtrl',
-                title: 'Users administration',
-                resolve: {
-                    appConfig: function(VersionSrv) {
-                        return VersionSrv.get();
-                    }
-                }
-            })
+            // .state('app.administration.users', {
+            //     url: '/users',
+            //     templateUrl: 'views/partials/admin/users.html',
+            //     controller: 'AdminUsersCtrl',
+            //     title: 'Users administration',
+            //     resolve: {
+            //         appConfig: function(VersionSrv) {
+            //             return VersionSrv.get();
+            //         }
+            //     }
+            // })
             .state('app.administration.case-templates', {
                 url: '/case-templates',
                 templateUrl: 'views/partials/admin/case-templates.html',

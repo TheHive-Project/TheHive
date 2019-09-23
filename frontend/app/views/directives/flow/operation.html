@@ -11,7 +11,8 @@
             </span>
         </span>
     </span>
-    <span class="operation-user">{{getUserInfo.get(base.createdBy) | getField: 'name'}}</span>
+    <!-- <user user-id="base.createdBy" icon-only="false" icon-size="xs"></user>{{base | json}} -->
+    <user-info class="operation-user" value="base.createdBy" field="name"></user-info>
 
     <span class="operation-timer pull-right">
         <i class="text-default glyphicon glyphicon-time"></i>

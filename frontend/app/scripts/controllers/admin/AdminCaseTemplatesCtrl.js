@@ -12,8 +12,7 @@
             ListSrv,
             MetricsCacheSrv,
             CustomFieldsCacheSrv,
-            UserSrv,
-            UserInfoSrv,
+            UserSrv,            
             ModalUtilsSrv,
             templates,
             fields
@@ -28,7 +27,7 @@
             self.templateCustomFields = [];
             self.templateMetrics = [];
             self.templateIndex = -1;
-            self.getUserInfo = UserInfoSrv;
+            self.getUserInfo = UserSrv.getCache;
 
             /**
              * Convert the template custom fields definition to a list of ordered field names

@@ -1,7 +1,7 @@
 <div class="flow-task-log log-entry">
     <div class="flow-item-title wrap">
-        <i class="glyphicon glyphicon-comment"></i>
-        <span ng-bind="getUserInfo.get(base.createdBy) | getField: 'name'"></span>
+        <i class="glyphicon glyphicon-comment"></i>        
+        <user-info value="base.createdBy" field="name"></user-info>
     </div>
     <div class="flow-item-updates wrap">
         <span ng-bind="base.details.message| limitTo: 250"></span>

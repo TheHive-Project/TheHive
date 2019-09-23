@@ -1,0 +1,73 @@
+<form class="form-horizontal" name="userForm" ng-submit="$modal.saveUser(userForm)" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">{{$modal.isEdit ? 'Update' : 'Add'}} user</h3>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label class="col-sm-3 control-label">
+                Organisation
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="organisation"
+                    ng-disabled="true"
+                    ng-model="$modal.formData.organisation"
+                    required type="text">
+            </div>
+        </div>
+        <div class="form-group" ng-class="{ 'has-error' : userForm.login.$invalid && !userForm.login.$pristine }">
+            <label class="col-sm-3 control-label">
+                Login
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="login"
+                    placeholder="User's login"
+                    ng-disabled="$modal.isEdit"
+                    ng-model="$modal.formData.login"
+                    required type="email">
+                <p class="help-block" ng-show="userForm.login.$error.required && !userForm.login.$pristine">This field is required.</p>
+                <p class="help-block" ng-show="userForm.login.$error.email && !userForm.login.$pristine">This field must be a valid email.</p>
+            </div>
+        </div>
+
+        <div class="form-group" ng-class="{ 'has-error' : userForm.name.$invalid && !userForm.name.$pristine }">
+            <label class="col-sm-3 control-label">
+                Full name
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="name"
+                    placeholder="User's name"
+                    ng-model="$modal.formData.name"
+                    required type="text">
+                <p class="help-block" ng-show="userForm.name.$invalid && !userForm.name.$pristine">This field is required.</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-3 control-label">
+                Roles
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+
+                <select class="form-control" ng-model="$modal.formData.profile"
+                    ng-options="name for (name, profile) in $modal.profiles"
+                    ng-change="permissions = $modal.profiles[$modal.formData.profile.name].permissions">
+                        <option value="" disabled selected>-- Select profile --</option>
+                </select>
+                <div class="wrap">
+                    <em ng-if="permissions.length === 0" class="text-muted">No Permissions</em>
+                    <strong ng-if="permissions.length > 0">Permissions: </strong>
+                    <span class="label label-default mr-xxs" ng-repeat="permission in permissions">{{permission}}</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$modal.cancel()" type="button">Cancel</button>
+        <button class="btn btn-primary pull-right" ng-disabled="userForm.$invalid" type="submit">Save user</button>
+    </div>
+</form>

@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveDirectives')
-        .directive('flowItem', function($uibModal, $state, $window, UserInfoSrv) {
+        .directive('flowItem', function($uibModal, $state, $window, UserSrv) {
             return {
                 restrict: 'E',
                 replace: true,
@@ -19,7 +19,7 @@
                     scope.getContentUrl = function() {
                         return 'views/directives/flow/' + scope.type + '.html';
                     };
-                    scope.gtime = function(startdate) {                        
+                    scope.gtime = function(startdate) {
                         return moment(startdate).toDate().getTime();
                     };
                     scope.isImage = function(contentType) {
@@ -31,7 +31,7 @@
                             size: 'lg'
                         });
                     };
-                    scope.getUserInfo = UserInfoSrv;
+                    scope.getUserInfo = UserSrv.getCache;
 
                     scope.openState = function(state, params) {
                         scope.openLink($state.href(state, params));

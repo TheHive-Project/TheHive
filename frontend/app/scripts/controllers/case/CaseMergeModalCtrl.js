@@ -4,7 +4,7 @@
     angular.module('theHiveControllers')
         .controller('CaseMergeModalCtrl', CaseMergeModalCtrl);
 
-    function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserInfoSrv, NotificationSrv, source, title, prompt) {
+    function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserSrv, NotificationSrv, source, title, prompt) {
         var me = this;
 
         this.source = source;
@@ -18,7 +18,7 @@
             input: null,
             cases: []
         };
-        this.getUserInfo = UserInfoSrv;
+        this.getUserInfo = UserSrv.getCache;
 
         this.getCaseByTitle = function(type, input) {
             var defer = $q.defer();

@@ -1,5 +1,5 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <span class="updatable-value" ng-bind="getUserInfo.get(value) | getField:'name'" style="vertical-align:top"></span>
+    <user-info class="updatable-value" style="vertical-align:top" value="value" field="name"></user-info>
     <small ng-show="active">
         <a class="clickable" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
             <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
@@ -10,8 +10,8 @@
 </span>
 <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
     <span class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
-        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
-            {{getUserInfo.get(value) | getField:'name'}}
+        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">            
+            <user-info value="value" field="name"></user-info>
             <span class="caret"></span>
         </button>
         <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>

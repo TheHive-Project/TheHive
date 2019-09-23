@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserInfoSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
+        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
                 {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
@@ -14,7 +14,7 @@
                 {name: 'audit', label: 'Audit Logs', icon: 'glyphicon glyphicon-list-alt'}
             ];
 
-            $scope.getUserInfo = UserInfoSrv;
+            $scope.getUserInfo = UserSrv.getCache;
             $scope.config = GlobalSearchSrv.restore();
 
             $scope.openEntity = EntitySrv.open;

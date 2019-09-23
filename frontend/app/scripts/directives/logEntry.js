@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($uibModal, TaskLogSrv, UserInfoSrv, NotificationSrv) {
+        .directive('logEntry', function($uibModal, TaskLogSrv, UserSrv, NotificationSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
                 controller: function($scope, CortexSrv, PSearchSrv) {
@@ -99,7 +99,7 @@
                             size: 'lg'
                         });
                     };
-                    scope.getUserInfo = UserInfoSrv;
+                    scope.getUserInfo = UserSrv.getCache;
                 },
                 restrict: 'EA',
                 scope: {

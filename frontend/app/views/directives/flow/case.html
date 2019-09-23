@@ -47,8 +47,8 @@
                 {{k}}: <tlp format="'static'" value="v" namespace="PAP"></tlp>
             </div>
             <div ng-switch-when="owner">
-                {{k}}:
-                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
+                {{k}}:                
+                <em><user-info value="v" field="name"></user-info></em>
             </div>
             <div ng-switch-default>
                 {{k}}: <em>{{v | limitTo: 250}}</em>

@@ -1,137 +1,240 @@
-angular.module('theHiveServices')
-    .factory('UserSrv', function($resource, $http, $q, NotificationSrv, UtilsSrv) {
-        'use strict';
-        var res = $resource('./api/user/:userId', {}, {
-            query: {
-                method: 'POST',
-                url: './api/user/_search',
-                isArray: true
-            },
-            update: {
-                method: 'PATCH'
-            },
-            changePass: {
-                method: 'POST',
-                url: './api/user/:userId/password/change'
-            },
-            setPass: {
-                method: 'POST',
-                url: './api/user/:userId/password/set'
-            },
-            // getKey: {
-            //     method: 'GET',
-            //     url: './api/user/:userId/key'
-            // },
-            setKey: {
-                method: 'POST',
-                url: './api/user/:userId/key/renew'
-            },
-            revokeKey: {
-                method: 'DELETE',
-                url: './api/user/:userId/key'
-            }
-        });
-        /**
-         * @Deprecated
-         */
-        res.getInfo = function(login) {
-            if (!angular.isString(login)) {
-                return login;
-            }
+(function() {
+    'use strict';
+    angular.module('theHiveServices')
+        .service('UserSrv', function($http, $q, $uibModal) {
 
-            if (login === 'init') {
-                return {
-                    id: login,
-                    name: 'System'
-                };
-            } else {
-                var ret = {
-                    'name': login,
-                    'id': login
-                };
-                res.get({
-                    'userId': login
-                }, function(data) {
-                    UtilsSrv.shallowClearAndCopy(data, ret);
-                }, function(data, status) {
-                    ret.name = '***unknown***';
-                    NotificationSrv.error('UserSrv', data, status);
-                });
-                return ret;
-            }
+            var self = this;
 
-        };
-        res.getUserInfo = function(login) {
-            var defer = $q.defer();
+            this.userCache = {};
 
-            if (login === 'init') {
-                defer.resolve({
-                    name: 'System'
-                });
-            } else {
-                res.get({
-                    'userId': login
-                }, function(user) {
-                    defer.resolve(user);
-                }, function(data, status) {
-                    data.name = '***unknown***';
-                    defer.reject(data, status);
-                });
-            }
-
-            return defer.promise;
-        };
-
-        res.getKey = function(userId) {
-            var defer = $q.defer();
-
-            $http.get('./api/user/'+userId+'/key')
-                .then(function(response) {
-                    defer.resolve(response.data);
-                });
-
-            return defer.promise;
-        };
-
-        res.list = function(query) {
-            var defer = $q.defer();
-
-            var post = {
-                range: 'all',
-                query: query
+            this.query = function(config) {
+                return $http.post('./api/v1/user/_search', config)
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
             };
 
-            $http.post('./api/user/_search', post)
-                .then(function(response) {
-                    defer.resolve(response.data);
-                });
+            this.get = function(user) {
+                if (!user) {
+                    return;
+                }
+                return $http
+                    .get('./api/v1/user/' + user)
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
 
-            return defer.promise;
-        };
+            this.save = function(user) {
+                return $http
+                    .post('./api/v1/user', user)
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
 
-        res.autoComplete = function(query) {
-            return res.list({
-                _and: [
-                    {
-                        status: 'Ok'
+            this.update = function(id, user) {
+                var defer = $q.defer();
+
+                $http
+                    .patch('./api/v1/user/' + id, user)
+                    .then(function(response) {
+                        defer.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+
+                return defer.promise;
+            };
+
+            this.changePass = function(id, currentPassword, password) {
+                return $http
+                    .post('./api/v1/user/' + id + '/password/change', {
+                        currentPassword: currentPassword,
+                        password: password
+                    })
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.setPass = function(id, password) {
+                return $http
+                    .post('./api/v1/user/' + id + '/password/set', {
+                        password: password
+                    })
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.setKey = function(id) {
+                return $http
+                    .post('./api/v1/user/' + id + '/key/renew')
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.revokeKey = function(id) {
+                return $http
+                    .delete('./api/v1/user/' + id + '/key')
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.getUserInfo = function(login) {
+                var defer = $q.defer();
+
+                if (login === 'init') {
+                    defer.resolve({
+                        name: 'System'
+                    });
+                } else {
+                    if(!login) {
+                        defer.reject(undefined);
+                        return;
                     }
-                ]
-            }).then(function(data) {
-                return _.map(data, function(user) {
-                    return {
-                        label: user.name,
-                        text: user.id
-                    };
-                });
-            }).then(function(users) {
-                var filtered = _.filter(users, function(user) {
-                    var regex = new RegExp(query, 'gi');
-                    return regex.test(user.label);
+
+                    self.get(login)
+                        .then(function(user) {
+                            defer.resolve(user);
+                        })
+                        .catch(function(err) {
+                            err.data.name = '***unknown***';
+                            defer.reject(err);
+                        });
+                }
+
+                return defer.promise;
+            };
+
+            this.getKey = function(userId) {
+                return $http
+                    .get('./api/v1/user/' + userId + '/key')
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.list = function(query) {
+                var post = {
+                    range: 'all',
+                    query: query
+                };
+
+                return this.$http
+                    .post('./api/v1/user/_search', post)
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
+            this.autoComplete = function(query) {
+                return this.list({
+                        _and: [{
+                            status: 'Ok'
+                        }]
+                    })
+                    .then(function(data) {
+                        return _.map(data, function(user) {
+                            return {
+                                label: user.name,
+                                text: user.id
+                            };
+                        });
+                    })
+                    .then(function(users) {
+                        return _.filter(users, function(user) {
+                            var regex = new RegExp(query, 'gi');
+
+                            return regex.test(user.label);
+                        });
+                    });
+            };
+
+            this.getCache = function(userId) {
+                if(!userId) {
+                    debugger;
+                }
+                console.log('Searching in user cache for ' + userId);
+                if (angular.isDefined(self.userCache[userId])) {
+                    return $q.resolve(self.userCache[userId]);
+                } else {
+                    var defer = $q.defer();
+
+                    self.getUserInfo(userId)
+                        .then(function(userInfo) {
+                            self.userCache[userId] = userInfo;
+                            defer.resolve(userInfo);
+                        })
+                        .catch(function(/*err*/) {
+                            defer.resolve(undefined);
+                        });
+
+                    return defer.promise;
+                }
+            };
+
+            this.clearCache = function() {
+                self.userCache = {};
+            };
+
+            this.removeCache = function(userId) {
+                delete self.userCache[userId];
+            };
+
+            this.updateCache = function(userId, userData) {
+                self.userCache[userId] = userData;
+            };
+
+            this.openModal = function(user, organisation) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'views/partials/admin//organisation/user.modal.html',
+                    controller: 'OrgUserModalCtrl',
+                    controllerAs: '$modal',
+                    size: 'lg',
+                    resolve: {
+                        organisation: $q.resolve(organisation),
+                        user: angular.copy(user) || {},
+                        profiles: function(ProfileSrv) {
+                            return ProfileSrv.map();
+                        },
+                        isEdit: !!user
+                    }
                 });
 
-                return filtered;
-            });
-        };
+                return modalInstance.result;
+            };
 
-        return res;
-    });
+        });
+})();

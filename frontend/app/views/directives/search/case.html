@@ -5,7 +5,7 @@
 </div>
 <div>
     <i class="glyphicon glyphicon-user"></i>
-    <span>{{getUserInfo.get(value.owner) | getField: 'name'}}</span>
+    <user-info value="value.owner" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
     <span ng-bind="value.startDate | showDate"></span>

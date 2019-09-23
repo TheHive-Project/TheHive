@@ -22,8 +22,8 @@
                         </div>
                         <div class="org-summary">
                             <span>
-                                <i class="glyphicon glyphicon-user"></i>
-                                Created by <span ng-bind="$vm.getUserInfo.get($vm.org._createdBy) | getField: 'name'"></span>
+                                <i class="glyphicon glyphicon-user"></i>                                
+                                <user-info value="$vm.org._createdBy" field="name"></user-info>
                             </span>
                             <span class="ml-xxs">
                                 <i class="glyphicon glyphicon-calendar"></i>
@@ -57,19 +57,19 @@
                         <div class="row mb-xs">
                             <div class="col-md-12">
                                 <div class="btn-toolbar" role="toolbar">
-                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
+                                    <!-- <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
                                         <i class="fa fa-link"></i>
                                         Add existing user
-                                    </button>
+                                    </button> -->
 
-                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.newUser()">
+                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
                                         <i class="fa fa-plus"></i>
                                         Create new user
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <org-user-list users="$vm.users"></org-user-list>
+                        <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()"></org-user-list>
                     </uib-tab>
                     <uib-tab index="1">
                         <uib-tab-heading>

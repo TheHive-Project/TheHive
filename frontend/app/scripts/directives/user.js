@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('user', function(UserInfoSrv) {
+        .directive('user', function(UserSrv) {
             return {
                 scope: {
                     user: '=userId',
@@ -10,7 +10,7 @@
                 },
                 templateUrl: 'views/directives/user.html',
                 link: function(scope) {
-                    scope.userInfo = UserInfoSrv;
+                    scope.userInfo = UserSrv.getCache;
                     scope.initials = '';
 
                     scope.$watch('userData.name', function(value) {
@@ -27,9 +27,10 @@
                             .toUpperCase();
                     });
 
-                    scope.$watch('user', function(value) {
-                        scope.userData = scope.userInfo.get(value);
-
+                    scope.$watch('user', function(value) {                        
+                        scope.userInfo(value).then(function(userData) {
+                            scope.userData = userData;
+                        });
                     });
                 }
             };

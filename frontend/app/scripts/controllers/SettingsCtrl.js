@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, UserInfoSrv, currentUser, appConfig) {
+        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, currentUser, appConfig) {
             $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
 
@@ -30,20 +30,20 @@
                     return;
                 }
 
-                UserSrv.update({
-                    userId: $scope.currentUser.id
-                }, {
+                UserSrv.update($scope.currentUser.id, {
                     name: $scope.basicData.name,
                     avatar: $scope.basicData.avatar
-                }, function(data) {
+                })
+                .then(function(data) {
                     $scope.currentUser.name = data.name;
 
-                    UserInfoSrv.update(data._id, data);
+                    UserSrv.updateCache(data._id, data);
 
                     NotificationSrv.log('Your basic information have been successfully updated', 'success');
 
                     $state.reload();
-                }, function(response) {
+                })
+                .catch(function(response) {
                     NotificationSrv.error('SettingsCtrl', response.data, response.status);
                 });
             };
@@ -60,14 +60,14 @@
                 }
 
                 if (updatedFields !== {}) {
-                    UserSrv.changePass({
-                        userId: $scope.currentUser.id
-                    }, updatedFields, function( /*data*/ ) {
-                        NotificationSrv.log('Your password has been successfully updated', 'success');
-                        $state.reload();
-                    }, function(response) {
-                        NotificationSrv.error('SettingsCtrl', response.data, response.status);
-                    });
+                    UserSrv.changePass($scope.currentUser.id, updatedFields)
+                        .then(function( /*data*/ ) {
+                            NotificationSrv.log('Your password has been successfully updated', 'success');
+                            $state.reload();
+                        })
+                        .catch(function(response) {
+                            NotificationSrv.error('SettingsCtrl', response.data, response.status);
+                        });
                 } else {
                     $state.go('app.cases');
                 }

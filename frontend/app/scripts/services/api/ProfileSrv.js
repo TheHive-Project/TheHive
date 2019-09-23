@@ -1,20 +1,25 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('ProfileSrv', function($http) {
-
+        .service('ProfileSrv', function($http) {
+            var self = this;
             var baseUrl = './api/profile';
 
-            var factory = {
-                list: function() {
-                    return $http.get(baseUrl);
-                },
-                get: function(name) {
-                    return $http.get(baseUrl + '/' + name);
-                }
+            this.list = function() {
+                return $http.get(baseUrl);
             };
 
-            return factory;
+            this.get = function(name) {
+                return $http.get(baseUrl + '/' + name);
+            };
+
+            this.map = function() {
+                return self.list()
+                    .then(function(response) {
+                        return _.indexBy(response.data, 'name');
+                    });
+            };
+
         });
 
 })();

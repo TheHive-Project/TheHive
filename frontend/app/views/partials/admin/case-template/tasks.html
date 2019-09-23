@@ -22,7 +22,7 @@
                     </a>
                 </span>
                 <span class="hpad5">[{{t.group || 'default'}}] {{t.title}}</span>
-                <span class="mr-xxs" ng-if="t.owner">(Assigned to <em>{{$vm.getUserInfo.get(t.owner) | getField:'name'}}</em>)</span>
+                <span class="mr-xxs" ng-if="t.owner">(Assigned to <em><user-info value="t.owner" field="name"></user-info></em>)</span>
 
                 <span class="pull-right">
                     <a class="text-default" href ng-click="$vm.editTask(t)">

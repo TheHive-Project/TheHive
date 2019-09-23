@@ -54,6 +54,9 @@
                                 <div class="input-group input-group-sm">
                                     <input auto-focus="user-showPassword-{{user._id}}" class="form-control input-sm" ng-model="newValue" type="password">
                                     <span class="input-group-btn">
+                                        <button class="btn btn-default" type="submit">
+                                            <i class="fa fa-check text-success"></i>
+                                        </button>
                                         <button class="btn btn-default" type="button" ng-click="$ctrl.showPassword(user, false)">
                                             <i class="fa fa-times text-danger"></i>
                                         </button>
@@ -86,10 +89,10 @@
                         <a href class="text-primary" ng-click="$vm.showProfile('edit', user)">
                             <i class="fa fa-edit"></i>Edit</a>
 
-                        <a href class="text-danger" ng-if="user._id !== $ctrl.main.currentUser.id">
+                        <a href class="text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser.id">
                             <i class="fa fa-ban"></i>Lock</a>
 
-                        <a href class="text-success" ng-if="user._id !== $ctrl.main.currentUser.id">
+                        <a href class="text-success" ng-if="user.locked && user._id !== $ctrl.main.currentUser.id">
                             <i class="fa fa-refresh"></i>Unlock</a>
                     </td>
                 </tr>

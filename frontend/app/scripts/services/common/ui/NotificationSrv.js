@@ -8,6 +8,9 @@
             }
 
             return {
+                'success': function(message) {
+                    log(message, 'success');
+                },
                 'log': log,
                 'error': function(moduleName, data, status) {
                     if (status === 401) {

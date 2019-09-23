@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserInfoSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 

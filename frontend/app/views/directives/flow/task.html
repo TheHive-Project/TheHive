@@ -11,8 +11,8 @@
     <div class="flow-item-updates" ng-switch-default>
         <span ng-repeat="(k, v) in base.details" ng-switch="k">
             <div ng-switch-when="owner">
-                {{k}}:
-                <em>{{getUserInfo.get(v) | getField: 'name'}}</em>
+                {{k}}:                
+                <em><user-info value="v" field="name"></user-info></em>
             </div>
             <div ng-switch-when="startDate">
                 {{k}}:

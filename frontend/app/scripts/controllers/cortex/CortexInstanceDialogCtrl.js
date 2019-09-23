@@ -4,8 +4,6 @@
         .controller('CortexInstanceDialogCtrl', CortexInstanceDialogCtrl);
 
         function CortexInstanceDialogCtrl($uibModalInstance, servers) {
-            var self = this;
-            
             this.servers = servers;
             this.selected = null;
 
@@ -16,5 +14,5 @@
             this.cancel = function() {
                 $uibModalInstance.dismiss();
             };
-        }        
+        }
 })();

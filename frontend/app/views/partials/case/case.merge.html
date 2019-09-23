@@ -32,8 +32,8 @@
         <h4>{{c.title}}</h4>
         <div>
             <span>
-                <i class="glyphicon glyphicon-user"></i>
-                <span ng-bind="dialog.getUserInfo.get(c.owner) | getField: 'name'"></span>
+                <i class="glyphicon glyphicon-user"></i>                
+                <user-info value="c.owner" field="name"></user-info>
             </span>
             <span class="ml-xxs">
                 <i class="glyphicon glyphicon-calendar"></i>

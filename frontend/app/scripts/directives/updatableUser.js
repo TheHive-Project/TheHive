@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('updatableUser', function(UserSrv, UserInfoSrv, UtilsSrv, PSearchSrv) {
+        .directive('updatableUser', function(UserSrv, UtilsSrv, PSearchSrv) {
             return {
                 restrict: 'E',
                 link: function(scope, element, attrs, ctrl, transclude) {
@@ -12,7 +12,7 @@
                     scope.setValue = function(value) {
                         scope.value = value;
                     };
-                    scope.getUserInfo = UserInfoSrv;
+                    scope.getUserInfo = UserSrv.getCache;
 
                     scope.$watch('updatable.updating', function(value) {
 

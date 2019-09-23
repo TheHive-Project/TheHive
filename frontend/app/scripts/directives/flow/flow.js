@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveDirectives')
-        .directive('flow', function(AuditSrv, AnalyzerInfoSrv, UserInfoSrv, $window) {
+        .directive('flow', function(AuditSrv, AnalyzerInfoSrv, UserSrv, $window) {
             return {
                 restrict: 'E',
                 templateUrl: 'views/directives/flow/flow.html',
@@ -18,7 +18,7 @@
                         rootId = 'any';
                     }
                     scope.getAnalyzerInfo = AnalyzerInfoSrv;
-                    scope.getUserInfo = UserInfoSrv;
+                    scope.getUserInfo = UserSrv.getCache;
                     scope.values = AuditSrv(rootId, parseInt(scope.max), scope);
 
                     if ($window.opener) {
