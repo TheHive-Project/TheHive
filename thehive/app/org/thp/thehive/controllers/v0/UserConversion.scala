@@ -8,12 +8,12 @@ import org.thp.scalligraph.controllers.{FString, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
-import org.thp.thehive.models.{Permissions, RichUser, RoleProfile, User}
+import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{ProfileSrv, RoleSrv, UserSrv, UserSteps}
 import play.api.libs.json.Json
 
 import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 object UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -92,9 +92,7 @@ object UserConversion {
             .users
             .get(vertex)
             .getOrFail()
-          r <- userSrv.get(u)(graph).role.getOrFail()
-          _ <- Try(roleSrv.get(r)(graph).roleProfile(roleSrv.roleProfileSrv).remove())
-          _ <- roleSrv.roleProfileSrv.create(RoleProfile(), r, p)(graph, authContext)
+          _ <- userSrv.updateRole(u, p)(graph, authContext)
         } yield Json.obj("profile" -> p.toJson)
       })
       .property("apikey", UniMapping.string)(_.simple.readonly)

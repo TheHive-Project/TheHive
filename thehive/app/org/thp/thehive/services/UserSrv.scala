@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.regex.Pattern
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Configuration
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -15,6 +10,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.thehive.models._
+import play.api.Configuration
+import play.api.libs.json.JsObject
+
+import scala.util.{Failure, Success, Try}
 
 object UserSrv {
   val initUserPassword: String = "secret"
@@ -32,14 +31,13 @@ object UserSrv {
 class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database)
     extends VertexSrv[User, UserSteps] {
 
-  val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   override val initialValues: Seq[User] = Seq(UserSrv.initUser)
+  val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val userRoleSrv                       = new EdgeSrv[UserRole, User, Role]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
-
   val fullUserNameRegex: Pattern  = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
   val basicUserNameRegex: Pattern = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
+
+  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   def checkUser(user: User): Try[User] =
     if (fullUserNameRegex.matcher(user.login).matches()) {
@@ -79,6 +77,13 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
           .getOrFail()
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
+
+  def updateRole(user: User with Entity, profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      r <- get(user)(graph).role.getOrFail()
+      _ <- Try(roleSrv.get(r).roleProfile(roleSrv.roleProfileSrv).remove())
+      _ <- roleSrv.roleProfileSrv.create(RoleProfile(), r, profile)
+    } yield ()
 }
 
 @EntitySteps[User]
@@ -103,14 +108,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
-
-  private def organisations0(requiredPermission: String): OrganisationSteps =
-    new OrganisationSteps(
-      raw
-        .outTo[UserRole]
-        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-        .outTo[RoleOrganisation]
-    )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
     val isInDefaultOrganisation = clone().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
@@ -167,4 +164,12 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def role = new RoleSteps(raw.outTo[UserRole])
+
+  private def organisations0(requiredPermission: String): OrganisationSteps =
+    new OrganisationSteps(
+      raw
+        .outTo[UserRole]
+        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
+        .outTo[RoleOrganisation]
+    )
 }
