@@ -42,7 +42,7 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
           .getOrFail(username)
       }
       .filter(user => isValidPassword(user, password))
-      .map(user => localUserSrv.getFromId(request, user.login, organisation))
+      .map(user => localUserSrv.getAuthContext(request, user.login, organisation))
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =

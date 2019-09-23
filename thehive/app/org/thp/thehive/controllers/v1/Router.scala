@@ -27,7 +27,6 @@ class Router @Inject()(
     case POST(p"/login") => authenticationCtrl.login()
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
-//    case GET(p"/case")                  ⇒ caseCtrl.list
     case POST(p"/case")                 => caseCtrl.create
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
@@ -44,19 +43,17 @@ class Router @Inject()(
     case PATCH(p"/caseTemplate/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
     //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
 
-//    case GET(p"/user")           ⇒ userCtrl.list
-    case POST(p"/user")          => userCtrl.create
-    case GET(p"/user/current")   => userCtrl.current
-    case GET(p"/user/$userId")   => userCtrl.get(userId)
-    case PATCH(p"/user/$userId") => userCtrl.update(userId)
-    //    case DELETE(p"/user/$userId") =>                         userCtrl.delete(userId)
+    case POST(p"/user")                         => userCtrl.create
+    case GET(p"/user/current")                  => userCtrl.current
+    case GET(p"/user/$userId")                  => userCtrl.get(userId)
+    case PATCH(p"/user/$userId")                => userCtrl.update(userId)
+    case DELETE(p"/user/$userId")               => userCtrl.delete(userId)
     case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId)
     case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId)
     case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
     case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
     case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
 
-//    case GET(p"/organisation")                   ⇒ organisationCtrl.list
     case POST(p"/organisation")                  => organisationCtrl.create
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
@@ -76,7 +73,6 @@ class Router @Inject()(
     case GET(p"/customField")  => customFieldCtrl.list
     case POST(p"/customField") => customFieldCtrl.create
 
-//    case GET(p"/alert")                    ⇒ alertCtrl.list
     case POST(p"/alert")                   => alertCtrl.create
     case GET(p"/alert/$alertId")           => alertCtrl.get(alertId)
     case PATCH(p"/alert/$alertId")         => alertCtrl.update(alertId)
@@ -86,7 +82,6 @@ class Router @Inject()(
     case POST(p"/alert/$alertId/unfollow") => alertCtrl.unfollowAlert(alertId)
     case POST(p"/alert/$alertId/case")     => alertCtrl.createCase(alertId)
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
-    //POST     /alert/_stats                        controllers.AlertCtrl.stats()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 

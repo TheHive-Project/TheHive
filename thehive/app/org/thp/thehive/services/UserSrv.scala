@@ -23,7 +23,6 @@ object UserSrv {
     locked = false,
     password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
   )
-
 }
 
 @Singleton
@@ -52,18 +51,9 @@ class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: D
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 
-  def getOrganisation(user: User with Entity)(implicit graph: Graph): Try[Organisation with Entity] =
-    get(user.login)
-      .organisations
-      .headOption()
-      .fold[Try[Organisation with Entity]](Failure(InternalError(s"The user $user (${user._id}) has no organisation.")))(Success.apply)
-
   override def get(idOrName: String)(implicit graph: Graph): UserSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
-
-  def getProfile(userId: String, organizationName: String)(implicit graph: Graph): UserSteps =
-    get(userId)
 
   override def update(
       steps: UserSteps,
@@ -101,22 +91,18 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
 
+  private def organisations0(requiredPermission: String): OrganisationSteps =
+    new OrganisationSteps(
+      raw
+        .outTo[UserRole]
+        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
+        .outTo[RoleOrganisation]
+    )
+
   def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInDefaultOrganisation = raw
-      .clone()
-      .outTo[UserRole]
-      .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-      .outTo[RoleOrganisation]
-      .has(Key("name") of OrganisationSrv.default.name)
-      .exists()
+    val isInDefaultOrganisation = clone().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
     if (isInDefaultOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
-    else
-      new OrganisationSteps(
-        raw
-          .outTo[UserRole]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-          .outTo[RoleOrganisation]
-      )
+    else organisations0(requiredPermission)
   }
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])

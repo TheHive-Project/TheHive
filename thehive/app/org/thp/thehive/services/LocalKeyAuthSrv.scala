@@ -2,15 +2,16 @@ package org.thp.thehive.services
 
 import java.util.Base64
 
-import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.BadRequestError
-import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider, KeyAuthSrv, RequestOrganisation}
-import org.thp.scalligraph.models.Database
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Random, Success, Try}
+
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Random, Success, Try}
+import javax.inject.{Inject, Provider, Singleton}
+import org.thp.scalligraph.NotFoundError
+import org.thp.scalligraph.auth._
+import org.thp.scalligraph.models.Database
 
 class LocalKeyAuthSrv(
     db: Database,
@@ -35,7 +36,7 @@ class LocalKeyAuthSrv(
         .initSteps
         .getByAPIKey(key)
         .getOrFail()
-        .flatMap(user => localUserSrv.getFromId(request, user.login, organisation))
+        .flatMap(user => localUserSrv.getAuthContext(request, user.login, organisation))
     }
 
   override def renewKey(username: String)(implicit authContext: AuthContext): Try[String] =
@@ -51,7 +52,7 @@ class LocalKeyAuthSrv(
     db.roTransaction { implicit graph =>
       userSrv
         .getOrFail(username)
-        .flatMap(_.apikey.fold[Try[String]](Failure(BadRequestError(s"User $username hasn't key")))(Success.apply))
+        .flatMap(_.apikey.fold[Try[String]](Failure(NotFoundError(s"User $username hasn't key")))(Success.apply))
     }
 
   override def removeKey(username: String)(implicit authContext: AuthContext): Try[Unit] =

@@ -68,8 +68,7 @@ class UserCtrl @Inject()(
         db.tryTransaction { implicit graph =>
             val organisationName = inputUser.organisation.getOrElse(request.organisation)
             for {
-              _ <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail() orElse
-                userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
+              _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(ProfileSrv.admin.name)
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
@@ -87,6 +86,9 @@ class UserCtrl @Inject()(
           }
       }
 
+  // FIXME delete = lock or remove from organisation ?
+  // lock make user unusable for all organisation
+  // remove from organisation make the user disappear from organisation admin, and his profile is removed
   def delete(userId: String): Action[AnyContent] =
     entryPoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
@@ -104,11 +106,9 @@ class UserCtrl @Inject()(
         userSrv
           .get(userId)
           .visible
-          .richUser(request.organisation) // FIXME what if user is not in the same org ?
+          .richUser(request.organisation)
           .getOrFail()
-          .map { user =>
-            Results.Ok(user.toJson)
-          }
+          .map(user => Results.Ok(user.toJson))
       }
 
   def update(userId: String): Action[AnyContent] =

@@ -43,7 +43,8 @@ class UserCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val userCtrl: UserCtrl = app.instanceOf[UserCtrl]
+    val userCtrl: UserCtrl                     = app.instanceOf[UserCtrl]
+    val authenticationCtrl: AuthenticationCtrl = app.instanceOf[AuthenticationCtrl]
 
     s"[$name] user controller" should {
 
@@ -97,7 +98,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(
             Json.toJson(
               InputUser(
-                login = "test_user_3",
+                login = "test_user_3@thehive.local",
                 name = "create user test",
                 password = Some("azerty"),
                 profile = "analyst",
@@ -105,9 +106,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "user2@thehive.local")
+          .withHeaders("user" -> "user1@thehive.local")
         val result = userCtrl.create(request)
-        status(result) must_=== 403
+        status(result) must beEqualTo(403).updateMessage(s => s"$s\n${contentAsString(result)}")
       }
 
       "get a user in the same organisation" in {
@@ -149,10 +150,51 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }
 
       "update an user" in pending
-      "set password" in pending
+
+      "set password" in {
+        val requestSetPassword = FakeRequest("POST", s"/user/user1@thehive.local/password/set")
+          .withJsonBody(Json.obj("password" -> "mySecretPassword"))
+          .withHeaders("user" -> "user2@thehive.local")
+        val resultSetPassword = userCtrl.setPassword("user1@thehive.local")(requestSetPassword)
+        status(resultSetPassword) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(resultSetPassword)}")
+
+        val request = FakeRequest("GET", "/api/v1/login")
+          .withJsonBody(Json.obj("user" -> "user1@thehive.local", "password" -> "mySecretPassword"))
+        val resultAuth = authenticationCtrl.login()(request)
+        status(resultAuth) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultAuth)}")
+      }
+
       "change password" in pending
-      "get key" in pending
-      "remove key" in pending
+      "get key" in {
+        val requestRenew = FakeRequest("POST", s"/user/user2@thehive.local/key/renew").withHeaders("user" -> "user2@thehive.local")
+        val resultRenew  = userCtrl.renewKey("user2@thehive.local")(requestRenew)
+        status(resultRenew) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultRenew)}")
+        val key = contentAsString(resultRenew)
+        key.length must beEqualTo(32)
+
+        val requestGet = FakeRequest("GET", s"/user/user2@thehive.local/key").withHeaders("user" -> "user2@thehive.local")
+        val resultGet  = userCtrl.getKey("user2@thehive.local")(requestGet)
+        status(resultGet) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
+        val newKey = contentAsString(resultGet)
+        newKey must beEqualTo(key)
+      }
+
+      "remove key" in {
+        val requestRenew = FakeRequest("POST", s"/user/user1@thehive.local/key/renew").withHeaders("user" -> "user2@thehive.local")
+        val resultRenew  = userCtrl.renewKey("user1@thehive.local")(requestRenew)
+        status(resultRenew) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultRenew)}")
+        val key = contentAsString(resultRenew)
+        key.length must beEqualTo(32)
+
+        val requestRemove = FakeRequest("DELETE", s"/user/user1@thehive.local/key").withHeaders("user" -> "user2@thehive.local")
+        val resultRemove  = userCtrl.removeKey("user1@thehive.local")(requestRemove)
+        status(resultRemove) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(resultRemove)}")
+
+        val requestGet = FakeRequest("GET", s"/user/user1@thehive.local/key").withHeaders("user" -> "user2@thehive.local")
+        val resultGet  = userCtrl.getKey("user1@thehive.local")(requestGet)
+        status(resultGet) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
+      }
+
       "renew key" in pending
     }
   }
