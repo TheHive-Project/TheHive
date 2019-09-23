@@ -119,7 +119,7 @@ class UserCtrl @Inject()(
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
       .extract("password", FieldsParser[String].on("password"))
-      .authRoTransaction(db) { implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
           user <- userSrv.get(userId).getOrFail()
           _    <- userSrv.current.organisations(Permissions.manageUser).users.get(user).existsOrFail()
