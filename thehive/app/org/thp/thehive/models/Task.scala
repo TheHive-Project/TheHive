@@ -23,7 +23,7 @@ case class TaskLog()
 @VertexEntity
 case class Task(
     title: String,
-    group: Option[String],
+    group: String,
     description: Option[String],
     status: TaskStatus.Value,
     flag: Boolean,
@@ -43,7 +43,7 @@ case class RichTask(
   val _createdAt: Date            = task._createdAt
   val _updatedAt: Option[Date]    = task._updatedAt
   val title: String               = task.title
-  val group: Option[String]       = task.group
+  val group: String               = task.group
   val description: Option[String] = task.description
   val status: TaskStatus.Value    = task.status
   val flag: Boolean               = task.flag

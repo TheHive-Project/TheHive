@@ -30,7 +30,7 @@ case class OutputTask(
     updatedAt: Option[Date] = None,
     _type: String,
     title: String,
-    group: Option[String],
+    group: String,
     description: Option[String],
     owner: Option[String],
     status: String,

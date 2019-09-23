@@ -148,7 +148,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           caseSrv.initSteps.tasks(authContextUser1).has(Key("title"), P.eq("task created by action")).toList must contain(
             Task(
               title = "task created by action",
-              group = None,
+              group = "default",
               description = Some("yop !"),
               status = TaskStatus.Waiting,
               flag = false,

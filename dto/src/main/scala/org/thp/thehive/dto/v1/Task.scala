@@ -23,7 +23,7 @@ object InputTask {
 
 case class OutputTask(
     title: String,
-    group: Option[String],
+    group: String,
     description: Option[String],
     status: String,
     flag: Boolean,
