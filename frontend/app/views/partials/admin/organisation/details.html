@@ -22,7 +22,7 @@
                         </div>
                         <div class="org-summary">
                             <span>
-                                <i class="glyphicon glyphicon-user"></i>                                
+                                <i class="glyphicon glyphicon-user"></i>
                                 <user-info value="$vm.org._createdBy" field="name"></user-info>
                             </span>
                             <span class="ml-xxs">
@@ -69,7 +69,7 @@
                                 </div>
                             </div>
                         </div>
-                        <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()"></org-user-list>
+                        <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)"></org-user-list>
                     </uib-tab>
                     <uib-tab index="1">
                         <uib-tab-heading>

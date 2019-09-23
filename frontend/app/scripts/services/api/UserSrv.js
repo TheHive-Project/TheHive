@@ -183,10 +183,6 @@
             };
 
             this.getCache = function(userId) {
-                if(!userId) {
-                    debugger;
-                }
-                console.log('Searching in user cache for ' + userId);
                 if (angular.isDefined(self.userCache[userId])) {
                     return $q.resolve(self.userCache[userId]);
                 } else {

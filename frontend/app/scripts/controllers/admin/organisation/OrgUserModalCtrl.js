@@ -9,15 +9,18 @@
         self.profiles = profiles;
         self.organisation = organisation;
 
-        var formData = _.defaults(_.pick(self.user, '_id', 'name', 'login', 'profile', 'organisation'), {
-            _id: null,
-            login: null,
-            name: null,
-            profile: null,
-            organisation: self.organisation
-        });
+        self.$onInit = function() {
+            var formData = _.defaults(_.pick(self.user, '_id', 'name', 'login', 'organisation'), {
+                _id: null,
+                login: null,
+                name: null,
+                organisation: self.organisation
+            });
 
-        self.formData = formData;
+            formData.profile = self.user.profile ? self.profiles[self.user.profile] : undefined;
+
+            self.formData = formData;
+        };
 
         var onSuccess = function(data) {
             $uibModalInstance.close(data);
@@ -37,7 +40,6 @@
             if (self.user._id) {
                 postData = {
                     name: self.formData.name,
-                    login: self.formData.login.toLowerCase(),
                     profile: self.formData.profile.name,
                     organisation: self.formData.organisation
                 };

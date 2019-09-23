@@ -31,5 +31,9 @@
                         }
                     });
             };
+
+            this.lockUser = function() {
+
+            }
         });
 })();

@@ -86,7 +86,7 @@
                         </span>
                     </td>
                     <td>
-                        <a href class="text-primary" ng-click="$vm.showProfile('edit', user)">
+                        <a href class="text-primary" ng-click="$ctrl.editUser(user)">
                             <i class="fa fa-edit"></i>Edit</a>
 
                         <a href class="text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser.id">

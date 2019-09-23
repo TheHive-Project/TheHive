@@ -7,7 +7,7 @@
                 var self = this;
 
                 self.userKeyCache = {};
-                self.showPwdForm = {};                
+                self.showPwdForm = {};
 
                 self.$onInit = function() {
                     self.canSetPass = true;
@@ -44,7 +44,7 @@
                         })
                         .then(function( /*response*/ ) {
                             delete self.userKeyCache[user._id];
-                            self.reload();
+                            self.onReload();
                             NotificationSrv.success(
                                 'API key of user ' + user.login + ' has been successfully created.'
                             );
@@ -71,7 +71,7 @@
                         })
                         .then(function( /*response*/ ) {
                             delete self.userKeyCache[user._id];
-                            self.reload();
+                            self.onReload();
                             NotificationSrv.success(
                                 'API key of user ' + user.login + ' has been successfully revoked.'
                             );
@@ -108,12 +108,22 @@
                             );
                         });
                 };
+
+                self.editUser = function(user) {
+                    self.onEdit({user: user});
+                };
+
+                self.lockUser = function(user) {
+                    self.onLock(user);
+                };
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/org/user.list.html',
             bindings: {
                 users: '<',
-                onReload: '&'
+                onReload: '&',
+                onLock: '&',
+                onEdit: '&'
             }
         });
 })();
