@@ -177,6 +177,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
         val tasksList = contentAsJson(resultList).as[Seq[OutputTask]]
         tasksList.find(_.title == "task x") must beSome
+
+        val assignee = db.roTransaction(implicit graph => caseSrv.get(outputCase._id).assignee.getOrFail())
+
+        assignee must beSuccessfulTry
+        assignee.get.login shouldEqual "user1@thehive.local"
       }
 
       "try to get a case" in {

@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList, Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
@@ -17,6 +12,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.{EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -68,8 +67,10 @@ class CaseSrv @Inject()(
       tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
-      _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
-      _ <- auditSrv.`case`.create(createdCase)
+      _       <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
+      _       <- auditSrv.`case`.create(createdCase)
+      creator <- userSrv.current.getOrFail()
+      _       <- assign(createdCase, creator)
     } yield RichCase(createdCase, allTags, None, None, user.map(_.login), cfs)
 
   def createCustomFields(
@@ -330,6 +331,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
     raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
   )
+
+  def assignee = new UserSteps(raw.outTo[CaseUser])
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
     newInstance(
