@@ -1,14 +1,15 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import akka.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.models.Database
-import org.thp.thehive.connector.cortex.services.AnalyzerSrv
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import akka.actor.ActorSystem
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 
 @Singleton
 class AnalyzerCtrl @Inject()(
@@ -22,9 +23,11 @@ class AnalyzerCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list analyzer")
-      .asyncAuth { implicit req =>
+      .extract("range", FieldsParser.string.optional.on("range"))
+      .asyncAuth { implicit request =>
+        val range: Option[String] = request.body("range")
         analyzerSrv
-          .listAnalyzer
+          .listAnalyzer(range)
           .map { analyzers =>
             Results.Ok(Json.toJson(analyzers.map(toOutputWorker)))
           }

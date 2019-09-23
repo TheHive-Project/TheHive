@@ -25,7 +25,7 @@ class CortexClientTest extends PlaySpecification with Mockito {
 
   s"CortexClient" should {
     "handle requests properly" in {
-      val analyzers: Seq[OutputCortexWorker] = await(client.listAnalyser)
+      val analyzers: Seq[OutputCortexWorker] = await(client.listAnalyser())
 
       analyzers.length shouldEqual 2
       analyzers.head.name shouldEqual "anaTest1"

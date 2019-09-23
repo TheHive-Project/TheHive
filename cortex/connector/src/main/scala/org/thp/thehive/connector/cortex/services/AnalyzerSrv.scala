@@ -20,11 +20,11 @@ class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper) 
     *
     * @return
     */
-  def listAnalyzer(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  def listAnalyzer(range: Option[String])(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     Future
       .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
         client
-          .listAnalyser
+          .listAnalyser(range)
           .transform {
             case Success(analyzers) => Success(analyzers.map(_ -> client.name))
             case Failure(error) =>

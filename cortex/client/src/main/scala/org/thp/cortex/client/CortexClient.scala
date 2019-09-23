@@ -61,7 +61,7 @@ class CortexClient(
     *
     * @return
     */
-  def listAnalyser: Future[Seq[OutputCortexWorker]] = analyser.list()
+  def listAnalyser(range: Option[String] = None): Future[Seq[OutputCortexWorker]] = analyser.list(range = range)
 
   /**
     * GET analyzer by id
@@ -77,7 +77,7 @@ class CortexClient(
     * @param dataType guess
     * @return
     */
-  def listAnalyzersByType(dataType: String): Future[Seq[OutputCortexWorker]] = analyser.list(s"/type/$dataType")
+  def listAnalyzersByType(dataType: String, range: Option[String] = None): Future[Seq[OutputCortexWorker]] = analyser.list(s"/type/$dataType", range)
 
   /**
     * Search an analyzer by name
@@ -169,7 +169,7 @@ class CortexClient(
     */
   def getRespondersByType(entityType: String): Future[Seq[OutputCortexWorker]] =
     responder
-      .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "0-200"))
+      .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "all"))
 
   /**
     * Search responders according to a formatted query

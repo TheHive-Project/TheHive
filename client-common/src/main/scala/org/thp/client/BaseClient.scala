@@ -54,9 +54,10 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
       }
   }
 
-  def list(urlFragments: String = "")(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
-    logger.debug(s"Request GET $baseUrl")
-    auth(ws.url(s"$baseUrl$urlFragments"))
+  def list(urlFragments: String = "", range: Option[String] = None)(implicit ec: ExecutionContext, auth: Authentication): Future[Seq[Output]] = {
+    val url = range.fold(s"$baseUrl$urlFragments")(r => s"$baseUrl$urlFragments?range=$r")
+    logger.debug(s"Request GET $url")
+    auth(ws.url(s"$url"))
       .get
       .transform {
         case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[Output]])
