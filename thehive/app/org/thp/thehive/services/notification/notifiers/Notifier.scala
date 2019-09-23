@@ -1,19 +1,26 @@
-package org.thp.thehive.services.notification
+package org.thp.thehive.services.notification.notifiers
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
+
+import play.api.{ConfigLoader, Configuration}
 
 import gremlin.scala.Graph
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
-import play.api.{ConfigLoader, Configuration}
-
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 trait Notifier {
 
   val name: String
 
-  def execute(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
+  def execute(
+      audit: Audit with Entity,
+      context: Option[Entity],
+      `object`: Option[Entity],
+      organisation: Organisation with Entity,
+      user: User with Entity
+  )(
       implicit graph: Graph
   ): Future[Unit]
 

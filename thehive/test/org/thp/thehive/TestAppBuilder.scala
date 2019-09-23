@@ -7,7 +7,7 @@ import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.TheHiveSchema
 import org.thp.thehive.services.notification._
-import org.thp.thehive.services.notification.email.EmailerProvider
+import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 

@@ -174,17 +174,23 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
   def organisation: OrganisationSteps =
     new OrganisationSteps(getOrganisation(raw))
 
-  def auditContextOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Organisation with Entity])] =
+  def auditContextObjectOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])] =
     ScalarSteps(
       raw
         .project(
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[AuditContext].fold()))
+            .and(By(__[Vertex].outTo[Audited].fold()))
             .and(By(getOrganisation(__[Vertex]).fold()))
         )
         .map {
-          case (audit, context, organisation) =>
-            (audit.as[Audit], context.asScala.headOption.map(_.asEntity), organisation.asScala.headOption.map(_.as[Organisation]))
+          case (audit, context, obj, organisation) =>
+            (
+              audit.as[Audit],
+              context.asScala.headOption.map(_.asEntity),
+              obj.asScala.headOption.map(_.asEntity),
+              organisation.asScala.headOption.map(_.as[Organisation])
+            )
         }
     )
 

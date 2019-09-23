@@ -4,17 +4,20 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
+
 import play.api.libs.json.{Format, Json}
 import play.api.{Configuration, Logger}
+
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-import gremlin.scala.{By, Graph, Key, P, Vertex, __}
+import gremlin.scala.{__, By, Graph, Key, P, Vertex}
 import javax.inject.Inject
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EventSrv, RichElement, RichVertexGremlinScala}
 import org.thp.thehive.models.{Audit, Organisation, User, UserConfig}
 import org.thp.thehive.services._
+import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}
 
 object NotificationTopic {
@@ -106,6 +109,7 @@ class NotificationActor @Inject()(
       notificationConfig: Seq[NotificationConfig],
       audit: Audit with Entity,
       context: Option[Entity],
+      `object`: Option[Entity],
       organisation: Organisation with Entity
   )(
       implicit graph: Graph
@@ -117,9 +121,10 @@ class NotificationActor @Inject()(
             trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
             if trigger.filter(audit, context, organisation, user)
             notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
-            _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
-          } yield notifier.execute(audit, context, organisation, user)
-
+            _ = logger.info(s"Execution of notifier ${notifier.name} for user $user")
+          } yield notifier.execute(audit, context, `object`, organisation, user).failed.foreach { error =>
+            logger.error(s"Execution of notifier ${notifier.name} has failed for user $user", error)
+          }
         case notificationConfig =>
           logger.debug(s"Notification has role restriction($notificationConfig.roleRestriction) and it is not applicable here ($roles)")
           Future
@@ -139,10 +144,10 @@ class NotificationActor @Inject()(
       db.roTransaction { implicit graph =>
         auditSrv
           .getByIds(ids: _*)
-          .auditContextOrganisation
+          .auditContextObjectOrganisation
           .toIterator
           .foreach {
-            case (audit, context, Some(organisation)) =>
+            case (audit, context, obj, Some(organisation)) =>
               logger.debug(s"Notification is related to $audit, $context, $organisation")
               triggerMap
                 .getOrElse(organisation._id, Map.empty)
@@ -163,7 +168,7 @@ class NotificationActor @Inject()(
                             .parse(notificationConfig)
                             .asOpt[Seq[NotificationConfig]]
                             .getOrElse(Nil)
-                          executeForUser(user, config, audit, context, organisation)
+                          executeForUser(user, config, audit, context, obj, organisation)
                       }
                     if (inOrg) {
                       organisationSrv
@@ -183,7 +188,7 @@ class NotificationActor @Inject()(
                             .where(_.config.hasNot(Key[String]("name"), P.eq("notification")))
                             .toIterator
                             .foreach { user =>
-                              executeForUser(user, config, audit, context, organisation)
+                              executeForUser(user, config, audit, context, obj, organisation)
                             }
                         }
                     }
@@ -194,15 +199,15 @@ class NotificationActor @Inject()(
       }
     case NotificationExecution(userId, auditId, notificationConfig) =>
       db.roTransaction { implicit graph =>
-        auditSrv.getByIds(auditId).auditContextOrganisation.getOrFail().foreach {
-          case (audit, context, Some(organisation)) =>
+        auditSrv.getByIds(auditId).auditContextObjectOrganisation.getOrFail().foreach {
+          case (audit, context, obj, Some(organisation)) =>
             for {
               user    <- userSrv.getOrFail(userId)
               trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
               if trigger.filter(audit, context, organisation, user)
               notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
               _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
-            } yield notifier.execute(audit, context, organisation, user)
+            } yield notifier.execute(audit, context, obj, organisation, user)
           case _ => // TODO
         }
       }

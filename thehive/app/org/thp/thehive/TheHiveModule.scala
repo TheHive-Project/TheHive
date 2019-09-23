@@ -5,15 +5,22 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.thehive.services.notification.mattermost.MattermostProvider
-import org.thp.thehive.services.notification.triggers.{AlertCreatedProvider, CaseCreatedProvider, JobFinishedProvider, LogInMyTaskProvider, TaskAssignedProvider, TriggerProvider}
+import org.thp.thehive.services.notification.triggers.{
+  AlertCreatedProvider,
+  CaseCreatedProvider,
+  JobFinishedProvider,
+  LogInMyTaskProvider,
+  TaskAssignedProvider,
+  TriggerProvider
+}
 import play.api.libs.concurrent.AkkaGuiceSupport
+
+import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider}
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.{SchemaUpdater, TheHiveSchema}
-import org.thp.thehive.services.notification.email.EmailerProvider
-import org.thp.thehive.services.notification.{AppendToFileProvider, NotificationActor, NotifierProvider}
+import org.thp.thehive.services.notification.NotificationActor
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
