@@ -88,10 +88,10 @@ class UserCtrl @Inject()(
     entryPoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          _ <- userSrv.current.can(Permissions.manageUser).getOrFail() orElse
-            userSrv.current.organisations(Permissions.manageUser).get(OrganisationSrv.default.name).existsOrFail()
-          u <- userSrv.get(userId).update("locked" -> true)
-          _ <- auditSrv.user.delete(u)
+          user        <- userSrv.get(userId).getOrFail()
+          _           <- userSrv.current.organisations(Permissions.manageUser).users.get(user).getOrFail()
+          updatedUser <- userSrv.get(user).update("locked" -> true)
+          _           <- auditSrv.user.delete(updatedUser)
         } yield Results.NoContent
       }
 
@@ -112,7 +112,7 @@ class UserCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         userSrv // Authorisation is managed in public properties
-          .update(_.get(userId), propertyUpdaters)
+          .update(userSrv.get(userId), propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 
@@ -121,7 +121,8 @@ class UserCtrl @Inject()(
       .extract("password", FieldsParser[String].on("password"))
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          user <- userSrv.get(userId).getOrFail()
+          _    <- userSrv.current.organisations(Permissions.manageUser).users.get(user).existsOrFail()
           _    <- authSrv.setPassword(userId, request.body("password"))
           _    <- auditSrv.user.update(user, Json.obj("password" -> "<hidden>"))
         } yield Results.NoContent
@@ -145,16 +146,21 @@ class UserCtrl @Inject()(
     entryPoint("get key")
       .auth { implicit request =>
         for {
-          _ <- db.roTransaction { implicit graph =>
+          user <- db.roTransaction { implicit graph =>
             userSrv
-              .current
-              .organisations(Permissions.manageUser)
-              .users
               .get(userId)
-              .existsOrFail()
+              .getOrFail()
+              .flatMap { u =>
+                userSrv
+                  .current
+                  .organisations(Permissions.manageUser)
+                  .users
+                  .get(userId)
+                  .getOrFail()
+              }
           }
           key <- authSrv
-            .getKey(userId)
+            .getKey(user._id)
         } yield Results.Ok(key)
       }
 
@@ -164,11 +170,16 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .current
-              .organisations(Permissions.manageUser)
-              .users
               .get(userId)
               .getOrFail()
+              .flatMap { u =>
+                userSrv
+                  .current
+                  .organisations(Permissions.manageUser)
+                  .users
+                  .get(userId)
+                  .getOrFail()
+              }
           }
           _ <- authSrv.removeKey(userId)
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
@@ -182,11 +193,16 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .current
-              .organisations(Permissions.manageUser)
-              .users
               .get(userId)
               .getOrFail()
+              .flatMap { u =>
+                userSrv
+                  .current
+                  .organisations(Permissions.manageUser)
+                  .users
+                  .get(userId)
+                  .getOrFail()
+              }
           }
           key <- authSrv.renewKey(userId)
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))

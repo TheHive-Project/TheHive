@@ -36,7 +36,7 @@ lazy val commonSettings = Seq(
     "-Xprint-types"
   ),
   fork in Test := true,
-  //        javaOptions += "-Xmx1G",
+  javaOptions += "-Xms512M -Xmx2048M -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256M",
   scalafmtConfig := file(".scalafmt.conf"),
   scalacOptions ++= {
     CrossVersion.partialVersion((Compile / scalaVersion).value) match {

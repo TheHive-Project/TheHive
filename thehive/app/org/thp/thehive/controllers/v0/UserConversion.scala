@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.language.implicitConversions
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.Json
+
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.InvalidFormatAttributeError
