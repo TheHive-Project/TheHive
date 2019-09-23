@@ -1,9 +1,8 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{HashMap => JHashMap, Map => JMap}
+import java.util.{HashMap => JHashMap}
 
 import scala.collection.JavaConverters._
-import scala.language.postfixOps
 import scala.util.Try
 
 import com.github.jknack.handlebars.Handlebars
@@ -12,7 +11,7 @@ import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, User}
 
 trait Template {
-  val handlebars = new Handlebars().registerHelpers(classOf[ConditionalHelpers])
+  val handlebars: Handlebars = new Handlebars().registerHelpers(classOf[ConditionalHelpers])
 
   /**
     * Retrieves the data from an Entity db model (XXX with Entity) as a scala Map

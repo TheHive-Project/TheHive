@@ -1,6 +1,11 @@
 package org.thp.thehive.services
 
-import scala.util.matching.Regex
+import java.util.regex.Pattern
+
+import scala.util.{Failure, Success, Try}
+
+import play.api.Configuration
+import play.api.libs.json.JsObject
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -8,10 +13,8 @@ import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.{BadRequestError, EntitySteps, InternalError}
+import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-import scala.util.{Failure, Success, Try}
 
 object UserSrv {
   val initUserPassword: String = "secret"
@@ -26,28 +29,38 @@ object UserSrv {
 }
 
 @Singleton
-class UserSrv @Inject()(roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database) extends VertexSrv[User, UserSteps] {
+class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database)
+    extends VertexSrv[User, UserSteps] {
 
+  val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   override val initialValues: Seq[User] = Seq(UserSrv.initUser)
   val userRoleSrv                       = new EdgeSrv[UserRole, User, Role]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
-  val validationRegex: Regex = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r
+  val fullUserNameRegex: Pattern  = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
+  val basicUserNameRegex: Pattern = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
 
-  def isValid(user: User): Boolean = validationRegex.pattern.matcher(user.login).matches()
+  def checkUser(user: User): Try[User] =
+    if (fullUserNameRegex.matcher(user.login).matches()) {
+      Success(user)
+    } else {
+      if (basicUserNameRegex.matcher(user.login).matches && defaultUserDomain.isDefined)
+        Success(user.copy(login = s"${user.login}@${defaultUserDomain.get}"))
+      else
+        Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+    }
 
   def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    if (!isValid(user)) Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
-    else
-      for {
-        createdUser <- createEntity(user)
-        _           <- roleSrv.create(createdUser, organisation, profile)
-        _           <- auditSrv.user.create(createdUser)
-      } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
+    for {
+      validUser   <- checkUser(user)
+      createdUser <- createEntity(validUser)
+      _           <- roleSrv.create(createdUser, organisation, profile)
+      _           <- auditSrv.user.create(createdUser)
+    } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 

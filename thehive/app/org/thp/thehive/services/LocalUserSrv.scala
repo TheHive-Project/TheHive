@@ -5,9 +5,9 @@ import scala.util.{Failure, Success, Try}
 import play.api.mvc.RequestHeader
 
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.AuthenticationError
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.AuthenticationError
 import org.thp.scalligraph.utils.Instance
 import org.thp.thehive.models.Permissions
 
@@ -17,9 +17,7 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends Scalligraph
   override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
     db.roTransaction { implicit graph =>
       val requestId = Instance.getRequestId(request)
-      val userSteps = userSrv
-        .initSteps
-        .get(userId)
+      val userSteps = userSrv.get(userId)
 
       userSteps
         .clone()
