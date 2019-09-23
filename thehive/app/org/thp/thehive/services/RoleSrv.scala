@@ -37,4 +37,9 @@ class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   override def newInstance(raw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(raw)
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[RoleOrganisation])
+
+  def roleProfile(roleProfileSrv: EdgeSrv[RoleProfile, Role, Profile]): EdgeSteps[RoleProfile, Role, Profile] = roleProfileSrv.steps(
+    raw
+      .outE("RoleProfile")
+  )
 }

@@ -165,4 +165,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             RichUser(user.as[User], profile.name, profile.permissions, organisation)
         }
     )
+
+  def role = new RoleSteps(raw.outTo[UserRole])
 }

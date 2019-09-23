@@ -25,14 +25,15 @@ class UserCtrl @Inject()(
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    implicit val ec: ExecutionContext
+    implicit val ec: ExecutionContext,
+    roleSrv: RoleSrv
 ) extends QueryableCtrl {
 
   import UserConversion._
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv, profileSrv, roleSrv) ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
@@ -113,12 +114,12 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract("user", FieldsParser.update("user", userProperties(userSrv)))
+      .extract("user", FieldsParser.update("user", userProperties(userSrv, profileSrv, roleSrv)))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         for {
           user <- userSrv
-            .update(_.get(userId), propertyUpdaters) // Authorisation is managed in public properties
+            .update(userSrv.get(userId), propertyUpdaters) // Authorisation is managed in public properties
             .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
         } yield Results.Ok(user.toJson)
 
