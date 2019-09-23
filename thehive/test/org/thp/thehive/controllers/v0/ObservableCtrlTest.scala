@@ -350,6 +350,9 @@ object WithFakeTemporaryFile {
       override def temporaryFileCreator: TemporaryFileCreator = NoTemporaryFileCreator
     }
     try body(fakeTempFile)
-    finally JFiles.deleteIfExists(tempFile)
+    finally {
+      JFiles.deleteIfExists(tempFile)
+      ()
+    }
   }
 }
