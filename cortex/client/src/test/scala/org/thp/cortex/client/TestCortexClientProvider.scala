@@ -8,7 +8,6 @@ import scala.util.matching.Regex
 
 import play.api.http.{FileMimeTypes, HttpEntity}
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.Results._
 import play.api.mvc._
 import play.api.test.Helpers._
 
@@ -24,6 +23,7 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
   lazy val responders: Seq[OutputCortexWorker] = readResourceAsJson("/responders.json").as[Seq[OutputCortexWorker]]
   val apiJobIdWaitReport: Regex                = "^/api/job/([^/]*)/waitreport\\?atMost=\\d+ \\w+$".r
   val apiAnalyzerId: Regex                     = "^/api/analyzer/([^/]*)$".r
+  val apiAnalyzer: Regex                       = "/api/analyzer(?:\\?.*)?".r
   val apiAnalyzerDataType: Regex               = "^/api/analyzer/type/([^/]*)$".r
   val apiAnalyzerIdRun: Regex                  = "^/api/analyzer/([^/]*)/run$".r
   val apiDatastoreId: Regex                    = "^/api/datastore/([^/]*)$".r
@@ -32,8 +32,7 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
 
   val ws = MockWS {
     case (GET, apiJobIdWaitReport(id))        => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
-    case (GET, "/api/analyzers")              => Action(Ok.sendResource("analyzers.json"))
-    case (GET, "/api/analyzer")               => Action(Results.Ok.sendResource("analyzers.json"))
+    case (GET, apiAnalyzer())                 => Action(Results.Ok.sendResource("analyzers.json"))
     case (GET, apiAnalyzerDataType(dataType)) => Action(Results.Ok(Json.toJson(analyzers.filter(_.dataTypeList.contains(dataType)))))
     case (GET, apiAnalyzerId(id))             => Action(analyzers.find(_.id == id).map(a => Results.Ok(Json.toJson(a))).getOrElse(Results.NotFound))
     case (POST, "/api/analyzer/_search")      => Action(Results.Ok(Json.toJson(analyzers)))

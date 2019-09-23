@@ -1,18 +1,17 @@
 package org.thp.thehive.controllers.v1
 
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.util.Success
+
+import play.api.libs.json.Json
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.UnsupportedAttributeError
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{UserSrv, UserSteps}
-import play.api.libs.json.Json
-
-import org.thp.scalligraph.controllers.Output
-import org.thp.scalligraph.models.UniMapping
 
 object UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -39,7 +38,7 @@ object UserConversion {
   def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property("login", UniMapping.string)(_.simple.readonly)
-      .property("name", UniMapping.string)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("name", UniMapping.string)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         def isCurrentUser =
           userSrv
             .current(graph, authContext)
@@ -56,26 +55,22 @@ object UserConversion {
 
         isCurrentUser
           .orElse(isUserAdmin)
-          .flatMap {
-            case _ if path.isEmpty =>
-              db.setProperty(vertex, "name", value, UniMapping.string)
-              Success(Json.obj("name" -> value))
-            case _ => Failure(UnsupportedAttributeError(s"name.$path"))
+          .flatMap { _ =>
+            db.setProperty(vertex, "name", value, UniMapping.string)
+            Success(Json.obj("name" -> value))
           }
       })
       .property("apikey", UniMapping.string)(_.simple.readonly)
-      .property("locked", UniMapping.boolean)(_.simple.custom { (path, value, vertex, db, graph, authContext) =>
+      .property("locked", UniMapping.boolean)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)
           .users
           .get(vertex)
           .existsOrFail()
-          .flatMap {
-            case _ if path.isEmpty =>
-              db.setProperty(vertex, "locked", value, UniMapping.boolean)
-              Success(Json.obj("locked" -> value))
-            case _ => Failure(UnsupportedAttributeError(s"status.$path"))
+          .flatMap { _ =>
+            db.setProperty(vertex, "locked", value, UniMapping.boolean)
+            Success(Json.obj("locked" -> value))
           }
       })
       .build
