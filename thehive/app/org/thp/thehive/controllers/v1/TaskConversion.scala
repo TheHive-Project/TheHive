@@ -16,6 +16,7 @@ object TaskConversion {
       .into[Task]
       .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(TaskStatus.withName))
       .withFieldComputed(_.order, _.order.getOrElse(0))
+      .withFieldComputed(_.group, _.group.getOrElse("default"))
       .transform
 
   implicit def toOutputTask(task: RichTask): Output[OutputTask] =
