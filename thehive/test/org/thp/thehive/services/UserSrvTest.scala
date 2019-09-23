@@ -42,7 +42,7 @@ class UserSrvTest extends PlaySpecification {
 
       "create and get an user by his login" in db.transaction { implicit graph =>
         userSrv.createEntity(
-          User(login = "getByLoginTest", name = "test user (getByLogin)", apikey = None, locked = false, password = None)
+          User(login = "getByLoginTest@thehive.local", name = "test user (getByLogin)", apikey = None, locked = false, password = None)
         ) must beSuccessfulTry
           .which { user =>
             userSrv.getOrFail(user.login) must beSuccessfulTry(user)
