@@ -2,19 +2,19 @@ package org.thp.thehive.connector.cortex.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 case class OutputJob(
     analyzerId: String,
-    analyzerName: Option[String],
-    analyzerDefinition: Option[String],
+    analyzerName: String,
+    analyzerDefinition: String,
     status: String,
     startDate: Date,
-    endDate: Option[Date],
-    report: Option[String],
-    cortexId: Option[String],
-    cortexJobId: Option[String],
-    id: Option[String]
+    endDate: Date,
+    report: Option[JsObject],
+    cortexId: String,
+    cortexJobId: String,
+    id: String
 )
 
 object OutputJob {
