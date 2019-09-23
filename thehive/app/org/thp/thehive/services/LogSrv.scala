@@ -63,7 +63,8 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
         for {
           c <- logSteps.clone().`case`.getOrFail()
           l <- logSteps.getOrFail()
-        } yield auditSrv.log.update(l, c, updatedFields)
+          _ <- auditSrv.log.update(l, c, updatedFields)
+        } yield ()
     }
 }
 
