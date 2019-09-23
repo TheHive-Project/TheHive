@@ -1,17 +1,16 @@
 package org.thp.thehive.services.notification.notifiers
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Success, Try}
-
-import play.api.Configuration
-import play.api.libs.mailer.{Email, MailerClient}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.Configuration
+import play.api.libs.mailer.{Email, MailerClient}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 @Singleton
 class EmailerProvider @Inject()(appConfig: ApplicationConfig, mailerClient: MailerClient) extends NotifierProvider {
@@ -51,6 +50,6 @@ class Emailer(mailerClient: MailerClient, subject: String, from: String, templat
     buildMessage(template, audit, context, `object`, user, baseUrl)
       .fold(
         Future.failed[Unit],
-        message => Future(mailerClient.send(Email(subject = subject, from = from, to = Seq(user.login), bodyText = Some(message))))
+        message => Future(mailerClient.send(Email(subject = subject, from = from, to = Seq(user.login), bodyText = Some(message)))).map(_ => ())
       )
 }
