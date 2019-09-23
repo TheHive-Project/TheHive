@@ -15,17 +15,16 @@ object JobConversion {
 
   implicit def toOutputJob(j: Job with Entity): Output[OutputJob] =
     Output[OutputJob](
-      j.into[OutputJob]
+      j.asInstanceOf[Job]
+        .into[OutputJob]
         .withFieldComputed(_.analyzerId, _.workerId)
-        .withFieldComputed(_.analyzerName, jb => Some(jb.workerName))
-        .withFieldComputed(_.analyzerDefinition, jb => Some(jb.workerDefinition))
+        .withFieldComputed(_.analyzerName, _.workerName)
+        .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
         .withFieldComputed(_.status, _.status.toString)
-        .withFieldComputed(_.report, _.report.map(_.toString))
-        .withFieldComputed(_.endDate, jb => Some(jb.endDate))
-        .withFieldComputed(_.cortexId, jb => Some(jb.cortexId))
-        .withFieldComputed(_.cortexJobId, jb => Some(jb.cortexJobId))
-        .withFieldComputed(_.id, jb => Some(jb._id))
-        .withFieldComputed(_.startDate, _.startDate)
+        .withFieldComputed(_.endDate, _.endDate)
+        .withFieldComputed(_.cortexId, _.cortexId)
+        .withFieldComputed(_.cortexJobId, _.cortexJobId)
+        .withFieldConst(_.id, j._id)
         .transform
     )
 
