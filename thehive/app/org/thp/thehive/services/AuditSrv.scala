@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
 import play.api.Logger
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json}
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
@@ -41,7 +41,7 @@ class AuditSrv @Inject()(
   val alert                                               = new SelfContextObjectAudit[Alert]
   val alertToCase                                         = new ObjectAudit[Alert, Case]
   val observableInAlert                                   = new ObjectAudit[Observable, Alert]
-  val user                                                = new SelfContextObjectAudit[User]
+  val user                                                = new UserAudit
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]
   val organisation                                        = new SelfContextObjectAudit[Organisation]
   val profile                                             = new SelfContextObjectAudit[Profile]
@@ -165,6 +165,19 @@ class AuditSrv @Inject()(
 
     def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), None, None)
+  }
+
+  class UserAudit extends SelfContextObjectAudit[User] {
+
+    def changeProfile(entity: User with Entity, organisation: Organisation, profile: Profile)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, entity, Some(Json.obj("organisation" -> organisation.name, "profile" -> profile.name).toString)),
+        Some(entity),
+        Some(entity)
+      )
   }
 }
 

@@ -1,19 +1,20 @@
 package org.thp.thehive.controllers.v1
 
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichOptionTry}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext
-import scala.util.Failure
 
 @Singleton
 class UserCtrl @Inject()(
@@ -108,14 +109,35 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract("user", FieldsParser.update("user", publicProperties))
-      .authTransaction(db) { req => graph =>
-        val propUpdaters: Seq[PropertyUpdater] = req.body("user")
-        for {
-          user <- userSrv
-            .update(userSrv.get(userId)(graph), propUpdaters)(graph, req.authContext)
-            .flatMap { case (user, _) => user.richUser(req.organisation).getOrFail() }
-        } yield Results.Ok(user.toJson)
+      .extract("name", FieldsParser.string.optional.on("name"))
+      .extract("organisation", FieldsParser.string.optional.on("organisation"))
+      .extract("profile", FieldsParser.string.optional.on("profile"))
+      .extract("locked", FieldsParser.boolean.optional.on("locked"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val maybeName: Option[String]         = request.body("name")
+        val maybeOrganisation: Option[String] = request.body("organisation")
+        val maybeProfile: Option[String]      = request.body("profile")
+        val maybeLocked: Option[Boolean]      = request.body("locked")
+        userSrv.get(userId).getOrFail().flatMap { user =>
+          auditSrv
+            .mergeAudits {
+              for {
+                updateName   <- maybeName.map(name => userSrv.get(user).update("name"       -> name).map(_ => Json.obj("name"     -> name))).flip
+                updateLocked <- maybeLocked.map(locked => userSrv.get(user).update("locked" -> locked).map(_ => Json.obj("locked" -> locked))).flip
+                updateProfile <- maybeProfile.fold[Try[JsObject]](Success(JsObject.empty)) { profileName =>
+                  maybeOrganisation.fold[Try[JsObject]](Failure(BadRequestError("Organisation information is required to update user profile"))) {
+                    organisationName =>
+                      for {
+                        profile      <- profileSrv.getOrFail(profileName)
+                        organisation <- organisationSrv.getOrFail(organisationName)
+                        _            <- userSrv.setProfile(user, organisation, profile)
+                      } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
+                  }
+                }
+              } yield updateName.getOrElse(JsObject.empty) ++ updateLocked.getOrElse(JsObject.empty) ++ updateProfile
+            }(update => auditSrv.user.update(user, update))
+            .map(_ => Results.NoContent)
+        }
       }
 
   def setPassword(userId: String): Action[AnyContent] =

@@ -33,9 +33,8 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
 
   override val initialValues: Seq[User] = Seq(UserSrv.initUser)
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
-  val userRoleSrv                       = new EdgeSrv[UserRole, User, Role]
-  val fullUserNameRegex: Pattern  = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
-  val basicUserNameRegex: Pattern = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
+  val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
+  val basicUserNameRegex: Pattern       = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
@@ -84,11 +83,14 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
 
-  def updateRoleProfile(user: User with Entity, profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def setProfile(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
     for {
-      r <- get(user)(graph).role.getOrFail()
-      _ <- Try(roleSrv.get(r).roleProfile(roleSrv.roleProfileSrv).remove())
-      _ <- roleSrv.roleProfileSrv.create(RoleProfile(), r, profile)
+      role <- get(user).role.where(_.organisation.get(organisation)).getOrFail()
+      _ = roleSrv.updateProfile(role, profile)
+      _ <- auditSrv.user.changeProfile(user, organisation, profile)
     } yield ()
 }
 
@@ -114,6 +116,14 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
+
+  private def organisations0(requiredPermission: String): OrganisationSteps =
+    new OrganisationSteps(
+      raw
+        .outTo[UserRole]
+        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
+        .outTo[RoleOrganisation]
+    )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
     val isInDefaultOrganisation = clone().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
@@ -170,12 +180,4 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def role = new RoleSteps(raw.outTo[UserRole])
-
-  private def organisations0(requiredPermission: String): OrganisationSteps =
-    new OrganisationSteps(
-      raw
-        .outTo[UserRole]
-        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-        .outTo[RoleOrganisation]
-    )
 }

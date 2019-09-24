@@ -43,12 +43,6 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
       _ <- Try(get(profile).remove())
       _ <- auditSrv.profile.delete(profile)
     } yield ()
-
-  def fromStringRoles(value: Set[String])(implicit graph: Graph): Try[Profile with Entity] =
-    if (value.contains("admin")) getOrFail(ProfileSrv.admin.name)(graph)
-    else if (value.contains("write")) getOrFail(ProfileSrv.analyst.name)(graph)
-    else if (value.contains("read")) getOrFail(ProfileSrv.readonly.name)(graph)
-    else getOrFail(ProfileSrv.readonly.name)(graph)
 }
 
 @EntitySteps[Profile]

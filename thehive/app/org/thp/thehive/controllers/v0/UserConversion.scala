@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.language.implicitConversions
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.Json
+
 import gremlin.scala.Key
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.InvalidFormatAttributeError
@@ -10,10 +15,6 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{ProfileSrv, RoleSrv, UserSrv, UserSteps}
-import play.api.libs.json.Json
-
-import scala.language.implicitConversions
-import scala.util.{Failure, Success}
 
 object UserConversion {
   implicit def fromInputUser(inputUser: InputUser): User =
@@ -25,8 +26,6 @@ object UserConversion {
       .withFieldConst(_.locked, false)
 //    .withFieldRenamed(_.roles, _.permissions)
       .transform
-
-  import org.thp.thehive.controllers.v0.ProfileConversion._
 
   implicit def toOutputUser(user: RichUser): Output[OutputUser] = toOutputUser(user, withKeyInfo = true)
 
@@ -77,21 +76,6 @@ object UserConversion {
             Json.obj("name" -> value)
           }
       })
-      .property("roles", UniMapping.string.set)(_.simple.custom { (_, value, vertex, _, graph, authContext) =>
-        val profile = profileSrv.fromStringRoles(value)(graph)
-
-        for {
-          p <- profile
-          u <- userSrv
-            .current(graph, authContext)
-            .organisations(Permissions.manageUser)
-            .users
-            .get(vertex)
-            .getOrFail()
-          _ <- userSrv.updateRoleProfile(u, p)(graph, authContext)
-        } yield Json.obj("profile" -> p.toJson)
-      })
-      .property("apikey", UniMapping.string)(_.simple.readonly)
       .property("status", UniMapping.string)(
         _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
           .custom { (_, value, vertex, db, graph, authContext) =>

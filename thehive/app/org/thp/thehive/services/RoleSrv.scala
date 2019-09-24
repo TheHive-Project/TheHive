@@ -30,16 +30,23 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
       _           <- roleProfileSrv.create(RoleProfile(), createdRole, profile)
     } yield createdRole
   // TODO add audit
+
+  def updateProfile(
+      role: Role with Entity,
+      profile: Profile with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[RoleProfile with Entity] = {
+    get(role).removeProfile()
+    roleProfileSrv.create(RoleProfile(), role, profile)
+  }
 }
 
 @EntitySteps[Role]
 class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Role, RoleSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(raw)
+  def organisation: OrganisationSteps                            = new OrganisationSteps(raw.outTo[RoleOrganisation])
 
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[RoleOrganisation])
-
-  def roleProfile(roleProfileSrv: EdgeSrv[RoleProfile, Role, Profile]): EdgeSteps[RoleProfile, Role, Profile] = roleProfileSrv.steps(
-    raw
-      .outE("RoleProfile")
-  )
+  def removeProfile(): Unit = {
+    raw.outToE[RoleProfile].drop().iterate()
+    ()
+  }
 }

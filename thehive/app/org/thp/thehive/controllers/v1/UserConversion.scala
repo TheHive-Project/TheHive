@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v1
 
+import scala.language.implicitConversions
+import scala.util.Success
+
+import play.api.libs.json.Json
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
@@ -7,13 +12,8 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{ProfileSrv, UserSrv, UserSteps}
-import play.api.libs.json.Json
-
-import scala.language.implicitConversions
-import scala.util.Success
 
 object UserConversion {
-  import org.thp.thehive.controllers.v0.ProfileConversion._
 
   implicit def fromInputUser(inputUser: InputUser): User =
     inputUser
@@ -61,19 +61,6 @@ object UserConversion {
             Success(Json.obj("name" -> value))
           }
       })
-      .property("roles", UniMapping.string.set)(_.simple.custom { (_, value, vertex, _, graph, authContext) =>
-        for {
-          p <- profileSrv.fromStringRoles(value)(graph)
-          u <- userSrv
-            .current(graph, authContext)
-            .organisations(Permissions.manageUser)
-            .users
-            .get(vertex)
-            .getOrFail()
-          _ <- userSrv.updateRoleProfile(u, p)(graph, authContext)
-        } yield Json.obj("profile" -> p.toJson)
-      })
-      .property("apikey", UniMapping.string)(_.simple.readonly)
       .property("locked", UniMapping.boolean)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
         userSrv
           .current(graph, authContext)
