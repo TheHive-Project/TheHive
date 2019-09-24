@@ -128,12 +128,23 @@ class UserCtrl @Inject()(
   def setPassword(userId: String): Action[AnyContent] =
     entryPoint("set password")
       .extract("password", FieldsParser[String].on("password"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .auth { implicit request =>
         for {
-          user <- userSrv.get(userId).getOrFail()
-          _    <- userSrv.current.organisations(Permissions.manageUser).users.get(user).existsOrFail()
-          _    <- authSrv.setPassword(user._id, request.body("password"))
-          _    <- auditSrv.user.update(user, Json.obj("password" -> "<hidden>"))
+          user <- db.roTransaction { implicit graph =>
+            userSrv
+              .get(userId)
+              .getOrFail()
+              .flatMap { u =>
+                userSrv
+                  .current
+                  .organisations(Permissions.manageUser)
+                  .users
+                  .get(u)
+                  .getOrFail()
+              }
+          }
+          _ <- authSrv.setPassword(userId, request.body("password"))
+          _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
         } yield Results.NoContent
       }
 
@@ -164,7 +175,7 @@ class UserCtrl @Inject()(
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .get(userId)
+                  .get(u)
                   .getOrFail()
               }
           }
