@@ -77,9 +77,9 @@
             $scope.groupedTasks = groupedTasks;
         };
 
-        $scope.showTask = function(task) {
+        $scope.showTask = function(taskId) {
             $state.go('app.case.tasks-item', {
-                itemId: task.id
+                itemId: taskId
             });
         };
 
@@ -101,6 +101,7 @@
                 $scope.isNewTask = false;
                 $scope.newTask.title = '';
                 $scope.newTask.group = '';
+                NotificationSrv.success('Task has been successfully added');
             }, function(response) {
                 NotificationSrv.error('taskList', response.data, response.status);
             });
@@ -127,6 +128,7 @@
                     status: 'Cancel'
                 }, function() {
                     $scope.$emit('tasks:task-removed', task);
+                    NotificationSrv.success('Task has been successfully removed');
                 }, function(response) {
                     NotificationSrv.error('taskList', response.data, response.status);
                 });
@@ -136,24 +138,33 @@
 
         // open task tab with its details
         $scope.startTask = function(task) {
+            var taskId = task.id;
+
             if (task.status === 'Waiting') {
-                $scope.updateTaskStatus(task.id, 'InProgress')
-                    .then($scope.showTask);
+                $scope.updateTaskStatus(taskId, 'InProgress')
+                    .then(function(/*response*/) {
+                        $scope.showTask(taskId);
+                    });
             } else {
-                $scope.showTask(task);
+                $scope.showTask(taskId);
             }
         };
 
         $scope.openTask = function(task) {
             if (task.status === 'Completed') {
                 $scope.updateTaskStatus(task.id, 'InProgress')
-                    .then($scope.showTask);
+                    .then(function(/*response*/) {
+                        $scope.showTask(task.id);
+                    });
             }
         };
 
         $scope.closeTask = function(task) {
             if (task.status === 'InProgress') {
-                $scope.updateTaskStatus(task.id, 'Completed');
+                $scope.updateTaskStatus(task.id, 'Completed')
+                    .then(function() {
+                        NotificationSrv.success('Task has been successfully closed');
+                    });
             }
         };
 
@@ -192,7 +203,7 @@
         $scope.runResponder = function(responderId, responderName, task) {
             CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, 'id'))
               .then(function(response) {
-                  NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '), 'success');
+                  NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
               })
               .catch(function(response) {
                   if(response && !_.isString(response)) {
