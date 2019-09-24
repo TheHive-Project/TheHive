@@ -8,12 +8,12 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSrv, OrganisationSrv, ProfileSrv, UserSrv, UserSteps}
+import org.thp.thehive.services._
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
+
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
-
-import play.api.libs.json.Json
 
 @Singleton
 class UserCtrl @Inject()(
@@ -30,7 +30,7 @@ class UserCtrl @Inject()(
   import UserConversion._
 
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv) ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv, profileSrv) ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
@@ -109,11 +109,13 @@ class UserCtrl @Inject()(
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
       .extract("user", FieldsParser.update("user", publicProperties))
-      .authTransaction(db) { implicit request => implicit graph =>
-        val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
-        userSrv // Authorisation is managed in public properties
-          .update(userSrv.get(userId), propertyUpdaters)
-          .map(_ => Results.NoContent)
+      .authTransaction(db) { req => graph =>
+        val propUpdaters: Seq[PropertyUpdater] = req.body("user")
+        for {
+          user <- userSrv
+            .update(userSrv.get(userId)(graph), propUpdaters)(graph, req.authContext)
+            .flatMap { case (user, _) => user.richUser(req.organisation).getOrFail() }
+        } yield Results.Ok(user.toJson)
       }
 
   def setPassword(userId: String): Action[AnyContent] =

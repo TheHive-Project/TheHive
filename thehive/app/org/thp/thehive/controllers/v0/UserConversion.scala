@@ -78,11 +78,7 @@ object UserConversion {
           }
       })
       .property("roles", UniMapping.string.set)(_.simple.custom { (_, value, vertex, _, graph, authContext) =>
-        val profile =
-          if (value.contains("admin")) profileSrv.getOrFail(ProfileSrv.admin.name)(graph)
-          else if (value.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)(graph)
-          else if (value.contains("read")) profileSrv.getOrFail(ProfileSrv.readonly.name)(graph)
-          else profileSrv.getOrFail(ProfileSrv.readonly.name)(graph)
+        val profile = profileSrv.fromStringRoles(value)(graph)
 
         for {
           p <- profile
@@ -92,7 +88,7 @@ object UserConversion {
             .users
             .get(vertex)
             .getOrFail()
-          _ <- userSrv.updateRole(u, p)(graph, authContext)
+          _ <- userSrv.updateRoleProfile(u, p)(graph, authContext)
         } yield Json.obj("profile" -> p.toJson)
       })
       .property("apikey", UniMapping.string)(_.simple.readonly)

@@ -149,7 +149,17 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         status(result) must_=== 404
       }
 
-      "update an user" in pending
+      "update an user" in {
+        val request = FakeRequest("POST", "/api/v1/user/user3@thehive.local")
+          .withJsonBody(Json.parse("""{"name": "new name", "roles": ["read"]}"""))
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+
+        val result = userCtrl.update("user3@thehive.local")(request)
+        status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+        val resultUser = contentAsJson(result).as[OutputUser]
+        resultUser.name must_=== "new name"
+      }
 
       "set password" in {
         val requestSetPassword = FakeRequest("POST", s"/user/user1@thehive.local/password/set")

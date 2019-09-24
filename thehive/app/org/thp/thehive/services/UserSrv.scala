@@ -84,7 +84,7 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
 
-  def updateRole(user: User with Entity, profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def updateRoleProfile(user: User with Entity, profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       r <- get(user)(graph).role.getOrFail()
       _ <- Try(roleSrv.get(r).roleProfile(roleSrv.roleProfileSrv).remove())

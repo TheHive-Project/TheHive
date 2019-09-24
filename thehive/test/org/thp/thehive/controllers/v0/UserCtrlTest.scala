@@ -88,9 +88,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         resultUser must_=== expected
       }
 
-      "update an user" in {
+      "update a user" in {
         val request = FakeRequest("POST", "/api/v0/user/user3@thehive.local")
-          .withJsonBody(Json.parse("""{"name": "new name"}"""))
+          .withJsonBody(Json.parse("""{"name": "new name", "roles": ["read"]}"""))
           .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
 
         val result = userCtrl.update("user3@thehive.local")(request)
@@ -98,6 +98,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.name must_=== "new name"
+        resultUser.roles shouldEqual Set("read")
       }
 
       "lock an user" in {

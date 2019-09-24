@@ -1,19 +1,20 @@
 package org.thp.thehive.controllers.v1
 
-import scala.language.implicitConversions
-import scala.util.Success
-
-import play.api.libs.json.Json
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
-import org.thp.thehive.services.{UserSrv, UserSteps}
+import org.thp.thehive.services.{ProfileSrv, UserSrv, UserSteps}
+import play.api.libs.json.Json
+
+import scala.language.implicitConversions
+import scala.util.Success
 
 object UserConversion {
+  import org.thp.thehive.controllers.v0.ProfileConversion._
+
   implicit def fromInputUser(inputUser: InputUser): User =
     inputUser
       .into[User]
@@ -21,7 +22,7 @@ object UserConversion {
       .withFieldConst(_.apikey, None)
       .withFieldConst(_.password, None)
       .withFieldConst(_.locked, false)
-      //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unkown permissions are ignored
+      //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unknown permissions are ignored
       .transform
 
   implicit def toOutputUser(user: RichUser): Output[OutputUser] =
@@ -35,7 +36,7 @@ object UserConversion {
         .transform
     )
 
-  def userProperties(userSrv: UserSrv): List[PublicProperty[_, _]] =
+  def userProperties(userSrv: UserSrv, profileSrv: ProfileSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property("login", UniMapping.string)(_.simple.readonly)
       .property("name", UniMapping.string)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
@@ -59,6 +60,18 @@ object UserConversion {
             db.setProperty(vertex, "name", value, UniMapping.string)
             Success(Json.obj("name" -> value))
           }
+      })
+      .property("roles", UniMapping.string.set)(_.simple.custom { (_, value, vertex, _, graph, authContext) =>
+        for {
+          p <- profileSrv.fromStringRoles(value)(graph)
+          u <- userSrv
+            .current(graph, authContext)
+            .organisations(Permissions.manageUser)
+            .users
+            .get(vertex)
+            .getOrFail()
+          _ <- userSrv.updateRoleProfile(u, p)(graph, authContext)
+        } yield Json.obj("profile" -> p.toJson)
       })
       .property("apikey", UniMapping.string)(_.simple.readonly)
       .property("locked", UniMapping.boolean)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
