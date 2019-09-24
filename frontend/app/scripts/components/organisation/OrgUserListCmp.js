@@ -52,7 +52,7 @@
                         })
                         .catch(function(err) {
                             if (!_.isString(err)) {
-                                NotificationSrv.error('AdminUsersCtrl', err.data, err.status);
+                                NotificationSrv.error('OrgUserCtrl', err.data, err.status);
                             }
                         });
                 };
@@ -78,8 +78,8 @@
                             );
                         })
                         .catch(function(err) {
-                            if (!_.isString(err)) {
-                                NotificationSrv.error('AdminUsersCtrl', err.data, err.status);
+                            if (err && !_.isString(err)) {
+                                NotificationSrv.error('OrgUserCtrl', err.data, err.status);
                             }
                         });
                 };
@@ -104,7 +104,7 @@
                         })
                         .catch(function(response) {
                             NotificationSrv.error(
-                                'OrganizationUsersListController',
+                                'OrgUserCtrl',
                                 response.data,
                                 response.status
                             );
@@ -112,11 +112,37 @@
                 };
 
                 self.editUser = function(user) {
-                    self.onEdit({user: user});
+                    self.onEdit({
+                        user: user
+                    });
                 };
 
-                self.lockUser = function(user) {
-                    self.onLock(user);
+                self.lockUser = function(user, locked) {
+                    var action = (locked ? 'lock' : 'unlock');
+
+                    var modalInstance = ModalSrv.confirm(
+                        (locked ? 'Lock' : 'Unlock') + ' User',
+                        'Are you sure you want to ' + action +' this user?', {
+                            flavor: 'danger',
+                            okText: 'Yes, proceed'
+                        }
+                    );
+
+                    modalInstance.result
+                        .then(function(/*response*/) {
+                            return UserSrv.update(user._id, {locked: locked});
+                        })
+                        .then(function() {
+                            NotificationSrv.success('User ' + user.login + ' has been successfully updated.');
+                            self.onReload();
+                        })
+                        .catch(function(response) {
+                            NotificationSrv.error(
+                                'OrgUserCtrl',
+                                response.data,
+                                response.status
+                            );
+                        });
                 };
             },
             controllerAs: '$ctrl',
@@ -124,7 +150,6 @@
             bindings: {
                 users: '<',
                 onReload: '&',
-                onLock: '&',
                 onEdit: '&'
             }
         });
