@@ -70,7 +70,7 @@
                     tasks: _.filter(tasks, function(t) {
                         return t.group === group;
                     })
-                })
+                });
             });
 
             $scope.groups = groups;
@@ -184,9 +184,9 @@
               .then(function(responders) {
                   $scope.taskResponders = responders;
               })
-              .catch(function(err) {
+              .catch(function(response) {
                   NotificationSrv.error('taskList', response.data, response.status);
-              })
+              });
         };
 
         $scope.runResponder = function(responderId, responderName, task) {

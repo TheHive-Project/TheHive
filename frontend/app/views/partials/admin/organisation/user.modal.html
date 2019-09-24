@@ -47,7 +47,7 @@
 
         <div class="form-group">
             <label class="col-sm-3 control-label">
-                Roles
+                Profile
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-sm-9">
@@ -68,6 +68,8 @@
     </div>
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="$modal.cancel()" type="button">Cancel</button>
+        <span class="hpad10">
+            <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
         <button class="btn btn-primary pull-right" ng-disabled="userForm.$invalid" type="submit">Save user</button>
     </div>
 </form>

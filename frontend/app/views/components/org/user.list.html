@@ -10,7 +10,7 @@
 
 <div class="row" ng-if="$ctrl.users.length > 0">
     <div class="col-md-12">
-        <table class="table table-striped case-list">
+        <table class="table table-striped case-list valigned">
             <thead>
                 <tr>
                     <th style="width: 120px">Status</th>
@@ -18,7 +18,7 @@
                     <th></th>
                     <th>Password</th>
                     <th>API Key</th>
-                    <th style="width: 180px"></th>
+                    <th style="width: 150px"></th>
                 </tr>
             </thead>
             <tbody>
@@ -40,11 +40,6 @@
                         <h4 class="media-heading">
                             <small class="mr-xxs">
                                 <strong>Full name:</strong> {{user.name}}</small>
-                            <!-- <span class="mr-m text-primary">{{user.name}}</span> -->
-                        </h4>
-                        <h4 class="media-heading">
-                            <small class="mr-xxs">
-                                <strong>Roles:</strong> {{user.roles.join(', ') || 'None'}}</small>
                         </h4>
                     </td>
                     <td>
@@ -86,14 +81,14 @@
                         </span>
                     </td>
                     <td>
-                        <a href class="text-primary" ng-click="$ctrl.editUser(user)">
-                            <i class="fa fa-edit"></i>Edit</a>
+                        <span class="clickable mr-xs text-primary" ng-click="$ctrl.editUser(user)">
+                            <i class="fa fa-edit"></i>Edit</span>
 
-                        <a href class="text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser.id">
-                            <i class="fa fa-ban"></i>Lock</a>
+                        <span class="clickable mr-xs text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser.id" ng-click="$ctrl.lockUser(user, true)">
+                            <i class="fa fa-ban"></i>Lock</span>
 
-                        <a href class="text-success" ng-if="user.locked && user._id !== $ctrl.main.currentUser.id">
-                            <i class="fa fa-refresh"></i>Unlock</a>
+                        <span class="clickable mr-xs text-success" ng-if="user.locked && user._id !== $ctrl.main.currentUser.id" ng-click="$ctrl.lockUser(user, false)">
+                            <i class="fa fa-refresh"></i>Unlock</span>
                     </td>
                 </tr>
             </tbody>

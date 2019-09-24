@@ -168,12 +168,8 @@ object CaseConversion {
             c    <- caseSrv.get(vertex)(graph).getOrFail()
             user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
             _ <- user match {
-              case Some(u) =>
-                for {
-                  _ <- caseSrv.unassign(c)(graph, authContext)
-                  _ <- caseSrv.assign(c, u)(graph, authContext)
-                } yield ()
-              case None => caseSrv.unassign(c)(graph, authContext)
+              case Some(u) => caseSrv.assign(c, u)(graph, authContext)
+              case None    => caseSrv.unassign(c)(graph, authContext)
             }
           } yield Json.obj("owner" -> user.map(_.login))
       })

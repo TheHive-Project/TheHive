@@ -26,7 +26,7 @@ class CaseCtrl @Inject()(
   import CustomFieldConversion._
 
   override val entityName: String                           = "case"
-  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv) ::: metaProperties[CaseSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
   override val initialQuery: Query =
     Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
