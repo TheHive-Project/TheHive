@@ -8,7 +8,7 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, CaseSteps}
+import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
 import play.api.libs.json.{JsObject, Json}
 import scala.language.implicitConversions
 
@@ -57,7 +57,7 @@ object CaseConversion {
         .transform
     }
 
-  def caseProperties(caseSrv: CaseSrv): List[PublicProperty[_, _]] =
+  def caseProperties(caseSrv: CaseSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
       .property("title", UniMapping.string)(_.simple.updatable)
       .property("description", UniMapping.string)(_.simple.updatable)
@@ -79,7 +79,17 @@ object CaseConversion {
       .property("pap", UniMapping.int)(_.simple.updatable)
       .property("status", UniMapping.string)(_.simple.updatable)
       .property("summary", UniMapping.string.optional)(_.simple.updatable)
-      .property("user", UniMapping.string)(_.simple.updatable)
+      .property("user", UniMapping.string.optional)(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
+        (_, login, vertex, _, graph, authContext) =>
+          for {
+            c    <- caseSrv.get(vertex)(graph).getOrFail()
+            user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+            _ <- user match {
+              case Some(u) => caseSrv.assign(c, u)(graph, authContext)
+              case None    => caseSrv.unassign(c)(graph, authContext)
+            }
+          } yield Json.obj("owner" -> user.map(_.login))
+      })
       .property("customFieldName", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
       .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
       .property("customFieldType", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)

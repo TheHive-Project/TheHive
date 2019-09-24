@@ -252,6 +252,7 @@ class CaseSrv @Inject()(
   }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unassign()
     caseUserSrv.create(CaseUser(), `case`, user)
     auditSrv.`case`.update(`case`, Json.obj("owner" -> user.login))
   }
