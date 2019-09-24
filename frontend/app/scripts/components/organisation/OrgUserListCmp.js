@@ -10,6 +10,7 @@
                 self.showPwdForm = {};
 
                 self.$onInit = function() {
+                    // TODO FIX ME
                     self.canSetPass = true;
                 };
 
@@ -98,7 +99,8 @@
 
                     UserSrv.setPass(user._id, password)
                         .then(function() {
-                            NotificationSrv.log('Password of user ' + user.login + ' has been successfully updated.');
+                            NotificationSrv.success('Password of user ' + user.login + ' has been successfully updated.');
+                            self.onReload();
                         })
                         .catch(function(response) {
                             NotificationSrv.error(
