@@ -5,6 +5,7 @@ import java.util.Date
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
@@ -12,10 +13,9 @@ import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, ShareSteps, UserSrv}
 import play.api.libs.json.{JsNumber, JsObject, Json}
+
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
-
-import org.thp.scalligraph.controllers.Output
 
 object CaseConversion {
   import CustomFieldConversion._
@@ -52,6 +52,26 @@ object CaseConversion {
       .withFieldConst(_.number, 0)
       .transform
 
+  implicit def toOutputCaseWithStats(richCaseWithStats: (RichCase, JsObject)): Output[OutputCase] =
+    Output[OutputCase](
+      richCaseWithStats
+        ._1
+        .into[OutputCase]
+        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldConst(_._type, "case")
+        .withFieldComputed(_.id, _._id)
+        .withFieldRenamed(_.number, _.caseId)
+        .withFieldRenamed(_.user, _.owner)
+        .withFieldRenamed(_._updatedAt, _.updatedAt)
+        .withFieldRenamed(_._updatedBy, _.updatedBy)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldConst(_.stats, richCaseWithStats._2)
+        .transform
+    )
+
   def observableStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
       .observables
@@ -85,9 +105,9 @@ object CaseConversion {
           }
           .toSeq
       }
+  // seq({caseId, title})
 
   def mergeFromStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
-  // seq({caseId, title})
 
   def mergeIntoStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
 
@@ -119,26 +139,6 @@ object CaseConversion {
           )
       }
 
-  implicit def toOutputCaseWithStats(richCaseWithStats: (RichCase, JsObject)): Output[OutputCase] =
-    Output[OutputCase](
-      richCaseWithStats
-        ._1
-        .into[OutputCase]
-        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
-        .withFieldComputed(_.status, _.status.toString)
-        .withFieldConst(_._type, "case")
-        .withFieldComputed(_.id, _._id)
-        .withFieldRenamed(_.number, _.caseId)
-        .withFieldRenamed(_.user, _.owner)
-        .withFieldRenamed(_._updatedAt, _.updatedAt)
-        .withFieldRenamed(_._updatedBy, _.updatedBy)
-        .withFieldRenamed(_._createdAt, _.createdAt)
-        .withFieldRenamed(_._createdBy, _.createdBy)
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
-        .withFieldConst(_.stats, richCaseWithStats._2)
-        .transform
-    )
-
   def caseProperties(caseSrv: CaseSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
       .property("caseId", UniMapping.int)(_.rename("number").readonly)
@@ -168,8 +168,12 @@ object CaseConversion {
             c    <- caseSrv.get(vertex)(graph).getOrFail()
             user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
             _ <- user match {
-              case Some(u) => caseSrv.assign(c, u)(graph, authContext)
-              case None    => caseSrv.unassign(c)(graph, authContext)
+              case Some(u) =>
+                for {
+                  _ <- caseSrv.unassign(c)(graph, authContext)
+                  _ <- caseSrv.assign(c, u)(graph, authContext)
+                } yield ()
+              case None => caseSrv.unassign(c)(graph, authContext)
             }
           } yield Json.obj("owner" -> user.map(_.login))
       })
