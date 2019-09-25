@@ -47,6 +47,7 @@
             // Select tab
             $timeout(function() {
                 CaseTabsSrv.activateTab(observableName);
+                $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
             }, 0);
 
             $scope.initScope = function (artifact) {

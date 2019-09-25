@@ -242,7 +242,7 @@
                 }, function(response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
-            }
+            };
 
             // Add tabs
             CaseTabsSrv.addTab($scope.tabName, {
@@ -258,6 +258,7 @@
             // Select tab
             $timeout(function() {
                 CaseTabsSrv.activateTab($scope.tabName);
+                $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
             }, 0);
 
 
