@@ -117,7 +117,7 @@ object OutputAlert {
       "createdAt"    -> outputAlert.createdAt,
       "updatedAt"    -> outputAlert.updatedAt,
       "_type"        -> outputAlert._type,
-      "tpe"          -> outputAlert.`type`,
+      "type"         -> outputAlert.`type`,
       "source"       -> outputAlert.source,
       "sourceRef"    -> outputAlert.sourceRef,
       "externalLink" -> outputAlert.externalLink,
