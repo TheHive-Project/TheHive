@@ -1,7 +1,9 @@
 package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
+
 import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala.{__, BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
@@ -10,13 +12,14 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AuditSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
+import org.thp.thehive.services.{AlertSteps, AuditSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
 
 object AuditConversion {
   import CaseConversion._
   import LogConversion._
   import TaskConversion._
   import ObservableConversion._
+  import AlertConversion._
 
   def actionToOperation(action: String): String = action match {
     case "create" => "Creation"
@@ -62,6 +65,9 @@ object AuditConversion {
       case (task, (rootId, case0)) => rootId -> (task + ("case" -> case0))
     }
 
+  def alertToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
+    new AlertSteps(_).richAlert.map(a => a._id -> a.toJson.as[JsObject]).raw
+
   def logToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
     _.project(
       _.apply(By(new LogSteps(__[Vertex]).richLog.map[JsObject](_.toJson.as[JsObject]).raw))
@@ -73,7 +79,12 @@ object AuditConversion {
   def observableToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
     _.project(
       _.apply(By(new ObservableSteps(__[Vertex]).richObservable.map[JsObject](_.toJson.as[JsObject]).raw))
-        .and(By(caseToJson(db, graph)(__[Vertex].inTo[ShareObservable].outTo[ShareCase])))
+        .and(
+          By(
+            __[Vertex]
+              .coalesce(g => caseToJson(db, graph)(g.inTo[ShareObservable].outTo[ShareCase]), g => alertToJson(db, graph)(g.inTo[AlertObservable]))
+          )
+        )
     ).map {
       case (obs, (rootId, c)) => rootId -> (obs + ("case" -> c))
     }
