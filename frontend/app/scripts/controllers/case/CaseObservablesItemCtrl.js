@@ -156,7 +156,7 @@
                     }, 500);
 
                 }, function(/*err*/) {
-                    NotificationSrv.log('An expected error occured while fetching the job report');
+                    NotificationSrv.error('An expected error occured while fetching the job report');
                 });
             };
 
@@ -188,14 +188,24 @@
                 var field = {};
                 field[fieldName] = newValue;
 
-                return CaseArtifactSrv.api().update({
-                    artifactId: $scope.artifact.id
-                }, field, function (response) {
-                    $scope.artifact = response.toJSON();
-                    NotificationSrv.log('Observable has been updated', 'success');
-                }, function (response) {
-                    NotificationSrv.error('ObservableDetails', response.data, response.status);
-                });
+                return CaseArtifactSrv.api()
+                    .update({
+                        artifactId: $scope.artifact.id
+                    }, field)
+                    .$promise
+                    .then(function () {
+                        NotificationSrv.log('Observable has been updated', 'success');
+                        return CaseArtifactSrv.api()
+                            .get({
+                                artifactId: $scope.artifact.id
+                            }).$promise;
+                    })
+                    .then(function(response) {
+                        $scope.artifact = response.toJSON();
+                    })
+                    .catch(function (response) {
+                        NotificationSrv.error('ObservableDetails', response.data, response.status);
+                    });
             };
 
             $scope._runAnalyzer = function (serverId, analyzerId, artifactId) {
