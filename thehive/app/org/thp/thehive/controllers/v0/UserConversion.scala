@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import play.api.libs.json.Json
 
@@ -48,6 +48,11 @@ object UserConversion {
         .withFieldRenamed(_.login, _.id)
         .withFieldComputed(_.hasKey, u => if (withKeyInfo) Some(u.apikey.isDefined) else None)
         .withFieldComputed(_.status, u => if (u.locked) "Locked" else "Ok")
+        .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._updatedBy, _.updatedBy)
+        .withFieldRenamed(_._updatedAt, _.updatedAt)
+        .withFieldConst(_._type, "user")
         .transform
     )
 
@@ -55,13 +60,13 @@ object UserConversion {
     PublicPropertyListBuilder[UserSteps]
       .property("login", UniMapping.string)(_.simple.readonly)
       .property("name", UniMapping.string)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
-        def isCurrentUser =
+        def isCurrentUser: Try[Unit] =
           userSrv
             .current(graph, authContext)
             .get(vertex)
             .existsOrFail()
 
-        def isUserAdmin =
+        def isUserAdmin: Try[Unit] =
           userSrv
             .current(graph, authContext)
             .organisations(Permissions.manageUser)

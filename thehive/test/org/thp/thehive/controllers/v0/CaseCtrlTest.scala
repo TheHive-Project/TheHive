@@ -88,7 +88,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                   title = "case title (create case test)",
                   description = "case description (create case test)",
                   severity = Some(1),
-//                  startDate = Some(now),
+                  startDate = Some(now),
                   tags = Set("tag1", "tag2"),
                   flag = Some(false),
                   tlp = Some(1),
@@ -109,7 +109,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           title = "[SPAM] case title (create case test)",
           description = "case description (create case test)",
           severity = 1,
-          startDate = resultCaseOutput.startDate, // FIXME when UI will be fixed
+          startDate = now,
           endDate = None,
           flag = false,
           tlp = 1,
@@ -117,7 +117,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           status = "Open",
           tags = Set("spam", "src:mail", "tag1", "tag2"),
           summary = None,
-          owner = None,
+          owner = Some("user1@thehive.local"),
           customFields = outputCustomFields,
           stats = Json.obj()
         )
@@ -166,7 +166,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
             pap = 2,
             status = "Open",
             tags = Set.empty,
-            owner = None,
+            owner = Some("user1@thehive.local"),
             stats = JsObject.empty
           )
         )

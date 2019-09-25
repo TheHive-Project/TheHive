@@ -22,10 +22,12 @@ object OrganisationConversion {
         organisation.name,
         organisation.description,
         organisation._id,
+        organisation._id,
         organisation._createdAt,
         organisation._createdBy,
         organisation._updatedAt,
-        organisation._updatedBy
+        organisation._updatedBy,
+        "organisation"
       )
     )
 

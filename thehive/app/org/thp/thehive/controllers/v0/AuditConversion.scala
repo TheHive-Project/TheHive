@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import scala.language.implicitConversions
 import play.api.libs.json.{JsObject, Json}
-import gremlin.scala.{BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex, __}
+import gremlin.scala.{__, BranchCase, BranchOtherwise, By, Graph, GremlinScala, Label, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Database, UniMapping}
@@ -39,6 +39,7 @@ object AuditConversion {
         .withFieldComputed(_.id, _._id)
         .withFieldComputed(_.createdAt, _._createdAt)
         .withFieldComputed(_.createdBy, _._createdBy)
+        .withFieldConst(_._type, "audit")
         .withFieldComputed(_.`object`, _.`object`.map(OutputEntity.apply)) //objectToJson))
         .withFieldConst(_.base, true)
         .withFieldComputed(_.details, a => Json.parse(a.details.getOrElse("{}")).as[JsObject])

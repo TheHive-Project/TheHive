@@ -24,7 +24,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
   def create(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Share] =
+  ): Try[Share with Entity] =
     if (get(`case`, organisation).profile.exists())
       Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
     else

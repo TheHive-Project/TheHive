@@ -10,7 +10,7 @@ case class InputCase(
     title: String,
     description: String,
     severity: Option[Int] = None,
-//    startDate: Option[Date] = None, // FIXME wait UI fix
+    startDate: Option[Date] = None,
     endDate: Option[Date] = None,
     tags: Set[String] = Set.empty,
     flag: Option[Boolean] = None,
@@ -29,7 +29,7 @@ object InputCase {
 
 case class OutputCase(
     _id: String,
-    id: String, // _id
+    id: String,
     createdBy: String,
     updatedBy: Option[String] = None,
     createdAt: Date,

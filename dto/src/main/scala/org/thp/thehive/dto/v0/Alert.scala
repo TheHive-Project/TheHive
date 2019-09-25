@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, OWrites}
+import play.api.libs.json.{Json, OFormat, OWrites, Reads}
 
 import org.thp.scalligraph.controllers.WithParser
 
@@ -28,11 +28,13 @@ object InputAlert {
 }
 
 case class OutputAlert(
+    _id: String,
     id: String,
     createdBy: String,
     updatedBy: Option[String] = None,
     createdAt: Date,
     updatedAt: Option[Date] = None,
+    _type: String,
     `type`: String,
     source: String,
     sourceRef: String,
@@ -53,5 +55,85 @@ case class OutputAlert(
 )
 
 object OutputAlert {
-  implicit val format: OFormat[OutputAlert] = Json.format[OutputAlert]
+  implicit val reads: Reads[OutputAlert] = Reads[OutputAlert] { json =>
+    for {
+      _id          <- (json \ "_id").validate[String]
+      id           <- (json \ "id").validate[String]
+      createdBy    <- (json \ "createdBy").validate[String]
+      updatedBy    <- (json \ "updatedBy").validateOpt[String]
+      createdAt    <- (json \ "createdAt").validate[Date]
+      updatedAt    <- (json \ "updatedAt").validateOpt[Date]
+      _type        <- (json \ "_type").validate[String]
+      tpe          <- (json \ "tpe").validate[String]
+      source       <- (json \ "source").validate[String]
+      sourceRef    <- (json \ "sourceRef").validate[String]
+      externalLink <- (json \ "externalLink").validateOpt[String]
+      title        <- (json \ "title").validate[String]
+      description  <- (json \ "description").validate[String]
+      severity     <- (json \ "severity").validate[Int]
+      date         <- (json \ "date").validate[Date]
+      tags         <- (json \ "tags").validate[Set[String]]
+      flag         <- (json \ "flag").validate[Boolean]
+      tlp          <- (json \ "tlp").validate[Int]
+      pap          <- (json \ "pap").validate[Int]
+      status       <- (json \ "status").validate[String]
+      follow       <- (json \ "follow").validate[Boolean]
+      customFields <- (json \ "customFields").validate[Set[OutputCustomFieldValue]]
+      caseTemplate <- (json \ "caseTemplate").validateOpt[String]
+      artifacts    <- (json \ "artifacts").validate[Seq[OutputObservable]]
+    } yield OutputAlert(
+      _id,
+      id,
+      createdBy,
+      updatedBy,
+      createdAt,
+      updatedAt,
+      _type,
+      tpe,
+      source,
+      sourceRef,
+      externalLink,
+      title,
+      description,
+      severity,
+      date,
+      tags,
+      flag,
+      tlp,
+      pap,
+      status,
+      follow,
+      customFields,
+      caseTemplate,
+      artifacts
+    )
+  }
+  implicit val writes: OWrites[OutputAlert] = OWrites[OutputAlert] { outputAlert =>
+    Json.obj(
+      "_id"          -> outputAlert._id,
+      "id"           -> outputAlert.id,
+      "createdBy"    -> outputAlert.createdBy,
+      "updatedBy"    -> outputAlert.updatedBy,
+      "createdAt"    -> outputAlert.createdAt,
+      "updatedAt"    -> outputAlert.updatedAt,
+      "_type"        -> outputAlert._type,
+      "tpe"          -> outputAlert.`type`,
+      "source"       -> outputAlert.source,
+      "sourceRef"    -> outputAlert.sourceRef,
+      "externalLink" -> outputAlert.externalLink,
+      "title"        -> outputAlert.title,
+      "description"  -> outputAlert.description,
+      "severity"     -> outputAlert.severity,
+      "date"         -> outputAlert.date,
+      "tags"         -> outputAlert.tags,
+      "flag"         -> outputAlert.flag,
+      "tlp"          -> outputAlert.tlp,
+      "pap"          -> outputAlert.pap,
+      "status"       -> outputAlert.status,
+      "follow"       -> outputAlert.follow,
+      "customFields" -> outputAlert.customFields,
+      "caseTemplate" -> outputAlert.caseTemplate,
+      "artifacts"    -> outputAlert.artifacts
+    )
+  }
 }

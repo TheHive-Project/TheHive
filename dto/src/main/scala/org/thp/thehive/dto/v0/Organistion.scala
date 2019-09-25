@@ -14,10 +14,12 @@ case class OutputOrganisation(
     name: String,
     description: String,
     _id: String,
-    _createdAt: Date,
-    _createdBy: String,
-    _updatedAt: Option[Date],
-    _updatedBy: Option[String]
+    id: String,
+    createdAt: Date,
+    createdBy: String,
+    updatedAt: Option[Date],
+    updatedBy: Option[String],
+    _type: String
 )
 
 object OutputOrganisation {

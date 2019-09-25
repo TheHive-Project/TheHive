@@ -28,8 +28,19 @@ class ShareCtrl @Inject()(
           organisation <- organisationSrv.getOrFail(inputShare.organisationName)
           case0        <- caseSrv.getOrFail(inputShare.caseId)
           profile      <- profileSrv.getOrFail(inputShare.profile)
-          _            <- shareSrv.create(case0, organisation, profile)
-          outputShare = OutputShare(case0._id, organisation.name, profile.name)
+          share        <- shareSrv.create(case0, organisation, profile)
+          outputShare = OutputShare(
+            share._id,
+            share._id,
+            share._createdBy,
+            share._updatedBy,
+            share._createdAt,
+            share._updatedAt,
+            "share",
+            case0._id,
+            organisation.name,
+            profile.name
+          )
         } yield Results.Created(Json.toJson(outputShare))
       }
 }

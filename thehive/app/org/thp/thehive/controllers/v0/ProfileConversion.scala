@@ -18,10 +18,12 @@ object ProfileConversion {
         .asInstanceOf[Profile]
         .into[OutputProfile]
         .withFieldConst(_._id, profile._id)
-        .withFieldConst(_._updatedAt, profile._updatedAt)
-        .withFieldConst(_._updatedBy, profile._updatedBy)
-        .withFieldConst(_._createdAt, profile._createdAt)
-        .withFieldConst(_._createdBy, profile._createdBy)
+        .withFieldConst(_.id, profile._id)
+        .withFieldConst(_.updatedAt, profile._updatedAt)
+        .withFieldConst(_.updatedBy, profile._updatedBy)
+        .withFieldConst(_.createdAt, profile._createdAt)
+        .withFieldConst(_.createdBy, profile._createdBy)
+        .withFieldConst(_._type, "profile")
         .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
         .transform
     )

@@ -55,7 +55,8 @@ class CaseSrv @Inject()(
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
       createdCase  <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-      _            <- user.map(caseUserSrv.create(CaseUser(), createdCase, _)).flip
+      assignee     <- user.fold(userSrv.current.getOrFail())(Success(_))
+      _            <- caseUserSrv.create(CaseUser(), createdCase, assignee)
       _            <- shareSrv.create(createdCase, organisation, profileSrv.admin)
       _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
@@ -67,11 +68,9 @@ class CaseSrv @Inject()(
       tags <- tagNames.toTry(t => tagSrv.getOrCreate(t))
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
-      _       <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
-      _       <- auditSrv.`case`.create(createdCase)
-      creator <- userSrv.current.getOrFail()
-      _       <- assign(createdCase, creator)
-    } yield RichCase(createdCase, allTags, None, None, user.map(_.login), cfs)
+      _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
+      _ <- auditSrv.`case`.create(createdCase)
+    } yield RichCase(createdCase, allTags, None, None, Some(assignee.login), cfs)
 
   def createCustomFields(
       `case`: Case with Entity,

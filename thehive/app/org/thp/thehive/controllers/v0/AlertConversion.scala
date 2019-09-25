@@ -28,6 +28,7 @@ object AlertConversion {
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldRenamed(_._id, _.id)
+        .withFieldConst(_._type, "alert")
         .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(
           _.status,
@@ -51,6 +52,7 @@ object AlertConversion {
         .withFieldRenamed(_._id, _.id)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
+        .withFieldConst(_._type, "alert")
         .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldComputed(
           _.status,

@@ -292,7 +292,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         status = "Open",
         tags = Set("alert", "test", "spam", "src:mail"),
         summary = None,
-        owner = None,
+        owner = Some("user1@thehive.local"),
         customFields = Set(
           OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
           OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))

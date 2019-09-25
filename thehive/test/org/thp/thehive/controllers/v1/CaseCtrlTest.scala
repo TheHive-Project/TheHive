@@ -103,7 +103,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "Open",
           summary = None,
-          user = None,
+          user = Some("admin@thehive.local"),
           customFields = Set.empty
         )
 
@@ -143,7 +143,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "Open",
           summary = None,
-          user = None,
+          user = Some("user1@thehive.local"),
           customFields = Set(
             OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
             OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))

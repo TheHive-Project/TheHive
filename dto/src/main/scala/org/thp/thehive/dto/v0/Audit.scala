@@ -28,6 +28,7 @@ case class OutputAudit(
 //    _updatedBy: Option[String] = None, // can't be set
     createdAt: Date,
 //    _updatedAt: Option[Date] = None, // can't be set
+    _type: String,
     base: Boolean = true, // always true
     details: JsObject,
     objectId: String,

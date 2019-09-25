@@ -14,6 +14,14 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.models._
 
+case class TestUser(login: String, name: String, roles: Set[String], organisation: String, hasKey: Option[Boolean], status: String)
+
+object TestUser {
+
+  def apply(user: OutputUser): TestUser =
+    TestUser(user.login, user.name, user.roles, user.organisation, user.hasKey, user.status)
+}
+
 class UserCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
@@ -46,25 +54,25 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         val resultUsers = contentAsJson(result)
         val expected =
           Seq(
-            OutputUser(
-              id = "user1@thehive.local",
+            TestUser(
               login = "user1@thehive.local",
               name = "Thomas",
-              organisation = "cert",
               roles = Set("read", "write", "alert"),
-              hasKey = Some(false)
+              organisation = "cert",
+              hasKey = Some(false),
+              status = "Ok"
             ),
-            OutputUser(
-              id = "user2@thehive.local",
+            TestUser(
               login = "user2@thehive.local",
               name = "U",
-              organisation = "cert",
               roles = Set("read"),
-              hasKey = Some(false)
+              organisation = "cert",
+              hasKey = Some(false),
+              status = "Ok"
             )
           )
 
-        resultUsers.as[Seq[OutputUser]] shouldEqual expected
+        resultUsers.as[Seq[OutputUser]].map(TestUser.apply) shouldEqual expected
       }
 
       "create a new user" in {
@@ -76,21 +84,21 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         status(result) must_=== 201
 
         val resultUser = contentAsJson(result).as[OutputUser]
-        val expected = OutputUser(
-          id = "user5@thehive.local",
+        val expected = TestUser(
           login = "user5@thehive.local",
           name = "new user",
-          organisation = "default",
           roles = Set("read", "write", "alert"),
-          hasKey = Some(false)
+          organisation = "default",
+          hasKey = Some(false),
+          status = "Ok"
         )
 
-        resultUser must_=== expected
+        TestUser(resultUser) must_=== expected
       }
 
       "update a user" in {
         val request = FakeRequest("POST", "/api/v0/user/user3@thehive.local")
-          .withJsonBody(Json.parse("""{"name": "new name", "roles": ["read"]}"""))
+          .withJsonBody(Json.parse("""{"name": "new name"}"""))
           .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
 
         val result = userCtrl.update("user3@thehive.local")(request)
@@ -98,7 +106,6 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.name must_=== "new name"
-        resultUser.roles shouldEqual Set("read")
       }
 
       "lock an user" in {

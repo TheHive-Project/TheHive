@@ -212,7 +212,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "Open",
-            user = None
+            user = Some(UserSrv.initUser.login)
           )
 
           case1 must_=== expected
@@ -248,7 +248,7 @@ class FunctionalTest extends PlaySpecification {
             tlp = 2,
             pap = 2,
             status = "Open",
-            user = None,
+            user = Some(UserSrv.initUser.login),
             summary = Some("no comment"),
             customFields = Set(OutputCustomFieldValue("businessUnit", "Business unit impacted by the incident", "string", Some("HR")))
           )
