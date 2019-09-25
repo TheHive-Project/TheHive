@@ -34,7 +34,12 @@
                 updateTime(scope);
             });
             scope.$watch('humanDate', function() {
-                scope.isoDate = moment(scope.humanDate, 'DD-MM-YYYY HH:mm').format('YYYYMMDDTHHmmssZZ');
+                //scope.isoDate = moment(scope.humanDate, 'DD-MM-YYYY HH:mm').format('YYYYMMDDTHHmmssZZ');
+                //scope.isoDate = moment(scope.humanDate, 'DD-MM-YYYY HH:mm');
+                var m = moment(scope.humanDate, 'DD-MM-YYYY HH:mm');
+                if (m.isValid()) {
+                    scope.isoDate = m.valueOf();
+                }
             });
         }
 
@@ -43,7 +48,7 @@
             link: link,
             templateUrl: 'views/directives/date-time-picker.html',
             scope: {
-                isoDate: '=date '
+                isoDate: '=date'
             }
         };
     });
