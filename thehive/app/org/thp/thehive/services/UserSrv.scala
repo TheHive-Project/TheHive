@@ -149,7 +149,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getAuthContext(requestId: String, organisationName: String): ScalarSteps[AuthContext] =
     ScalarSteps(
-      raw
+      where(_.organisations.get(organisationName))
+        .raw
         .has(Key("locked") of false)
         .project(
           _.apply(By(__.value[String]("login")))
