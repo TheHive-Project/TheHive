@@ -78,7 +78,7 @@
                 }
 
                 $scope.artifacts.update();
-            }
+            };
 
             $scope.keys = function(obj) {
                 return _.keys(obj || {});

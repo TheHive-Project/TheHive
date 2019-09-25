@@ -27,7 +27,10 @@
                             .toUpperCase();
                     });
 
-                    scope.$watch('user', function(value) {                        
+                    scope.$watch('user', function(value) {
+                        if(!value) {
+                            return;
+                        }                   
                         scope.userInfo(value).then(function(userData) {
                             scope.userData = userData;
                         });
