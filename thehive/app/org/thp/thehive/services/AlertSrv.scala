@@ -218,6 +218,8 @@ class AlertSrv @Inject()(
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
       c <- caseSrv.get(caseId).update("description" -> description)
       _ <- importObservables(alert, case0)
+      _ <- alertCaseSrv.create(AlertCase(), alert, case0)
+      _ <- markAsRead(alert._id)
       _ <- auditSrv.alertToCase.merge(alert, c)
     } yield c
 
