@@ -19,7 +19,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr ng-repeat="profile in $vm.list">
+                                <tr ng-repeat="profile in $vm.list | orderBy:'name'">
                                     <td>
                                         <div class="profile-name">
                                             {{::profile.name}}
@@ -29,9 +29,9 @@
                                         <span class="label label-default mr-xxs mb-xxs" ng-repeat="permission in profile.permissions">{{permission}}</span>
                                     </td>
                                     <td>
-                                        <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.showProfile('edit', profile)">
-                                            <i class="text-info text-20 fa fa-edit"></i>
-                                        </a>
+                                        <!-- To do -->
+                                        <!-- <span class="clickable mr-xs text-primary" ng-click="$vm.showProfile('edit', profile)">
+                                            <i class="fa fa-edit"></i>Edit</span>                                         -->
                                     </td>
                                 </tr>
                             </tbody>
