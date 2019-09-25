@@ -438,40 +438,40 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
     val richCaseLabel        = StepLabel[RichCase]()
     val richObservablesLabel = StepLabel[JList[RichObservable]]()
-    raw
-      .`match`(
-        _.as(originCaseLabel.name)
-          .in("ShareCase")
-          .filter(
-            _.inTo[OrganisationShare]
-              .inTo[RoleOrganisation]
-              .inTo[UserRole]
-              .has(Key("login") of authContext.userId)
-          )
-          .out("ShareObservable")
-          .as(observableLabel.name),
-        _.as(observableLabel.name)
-          .out("ObservableData")
-          .in("ObservableData")
-          .in("ShareObservable")
-          .filter(
-            _.inTo[OrganisationShare]
-              .inTo[RoleOrganisation]
-              .inTo[UserRole]
-              .has(Key("login") of authContext.userId)
-          )
-          .out("ShareCase")
-          .where(JP.neq(originCaseLabel.name))
-          .dedup()
-          .as(linkedCaseLabel.name),
-        c => new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
-        o => new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
-      )
-      .select(richCaseLabel.name, richObservablesLabel.name)
-      .toList()
-      .map { resultMap =>
-        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
-      }
+    ScalarSteps(
+      raw
+        .`match`(
+          _.as(originCaseLabel.name)
+            .in("ShareCase")
+            .filter(
+              _.inTo[OrganisationShare]
+                .inTo[RoleOrganisation]
+                .inTo[UserRole]
+                .has(Key("login") of authContext.userId)
+            )
+            .out("ShareObservable")
+            .as(observableLabel.name),
+          _.as(observableLabel.name)
+            .out("ObservableData")
+            .in("ObservableData")
+            .in("ShareObservable")
+            .filter(
+              _.inTo[OrganisationShare]
+                .inTo[RoleOrganisation]
+                .inTo[UserRole]
+                .has(Key("login") of authContext.userId)
+            )
+            .out("ShareCase")
+            .where(JP.neq(originCaseLabel.name))
+            .as(linkedCaseLabel.name),
+          c => new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
+          o => new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
+        )
+        .dedup(richCaseLabel.name)
+        .select(richCaseLabel.name, richObservablesLabel.name)
+    ).toList.map { resultMap =>
+      resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
+    }
   }
 
   def richCase: ScalarSteps[RichCase] =
