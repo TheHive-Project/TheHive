@@ -35,10 +35,10 @@ object TestTask {
 
   import TaskConversion._
 
+  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
+
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform
-
-  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
 }
 
 class TaskCtrlTest extends PlaySpecification with Mockito {
@@ -112,7 +112,9 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           dueDate = None
         )
 
-        val newTask = getTaskByTitle("new title task 2").map(TestTask.apply)
+        val newTask = getTaskByTitle("new title task 2")
+          .map(TestTask.apply)
+          .map(_.copy(startDate = None))
         newTask must beASuccessfulTry(expected)
       }
 

@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import java.util.Date
+
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -7,10 +9,10 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.thehive.models._
+import org.thp.thehive.models.{TaskStatus, _}
 import play.api.libs.json.{JsNull, JsObject, Json}
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -27,14 +29,6 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     getByIds(taskId).visible(authContext).exists()
-
-  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      case0 <- get(task).`case`.getOrFail()
-      _ = get(task).unassign()
-      _ = taskUserSrv.create(TaskUser(), task, user)
-      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> user.login))
-    } yield ()
 
   def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -63,6 +57,45 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
           _ <- auditSrv.task.update(t, c, updatedFields)
         } yield ()
     }
+
+  /**
+    * Tries to update the status of a task with related fields
+    * according the status value if empty
+    * @param t the task to update
+    * @param o the potential owner
+    * @param s the status to set
+    * @param graph db
+    * @param authContext auth db
+    * @return
+    */
+  def updateStatus(t: Task with Entity, o: User with Entity, s: TaskStatus.Type)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Task with Entity] = {
+    def setStatus() = get(t).update("status" -> s)
+
+    s match {
+      case TaskStatus.Cancel | TaskStatus.Waiting => setStatus()
+      case TaskStatus.Completed =>
+        t.endDate.fold(get(t).update("status" -> s, "endDate" -> Some(new Date())))(_ => setStatus())
+
+      case TaskStatus.InProgress =>
+        for {
+          _       <- get(t).user.headOption().fold(assign(t, o))(_ => Success(()))
+          updated <- t.startDate.fold(get(t).update("status" -> s, "startDate" -> Some(new Date())))(_ => setStatus())
+        } yield updated
+
+      case _ => Failure(new Exception(s"Invalid TaskStatus $s for update"))
+    }
+  }
+
+  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      case0 <- get(task).`case`.getOrFail()
+      _ = get(task).unassign()
+      _ = taskUserSrv.create(TaskUser(), task, user)
+      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> user.login))
+    } yield ()
 }
 
 @EntitySteps[Task]

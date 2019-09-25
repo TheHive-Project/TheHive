@@ -1,17 +1,17 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.RichOptionTry
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.RichOptionTry
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
 import play.api.libs.json.Json
-import scala.language.implicitConversions
 
-import org.thp.scalligraph.controllers.Output
+import scala.language.implicitConversions
 
 object TaskConversion {
 
@@ -44,7 +44,15 @@ object TaskConversion {
     PublicPropertyListBuilder[TaskSteps]
       .property("title", UniMapping.string)(_.simple.updatable)
       .property("description", UniMapping.string.optional)(_.simple.updatable)
-      .property("status", UniMapping.enum(TaskStatus))(_.simple.updatable)
+      .property("status", UniMapping.enum(TaskStatus))(_.simple.custom { (_, value, vertex, _, graph, authContext) =>
+        for {
+          task <- taskSrv.get(vertex)(graph).getOrFail()
+          user <- userSrv
+            .current(graph, authContext)
+            .getOrFail()
+          _ <- taskSrv.updateStatus(task, user, value)(graph, authContext)
+        } yield Json.obj("status" -> value)
+      })
       .property("flag", UniMapping.boolean)(_.simple.updatable)
       .property("startDate", UniMapping.date.optional)(_.simple.updatable)
       .property("endDate", UniMapping.date.optional)(_.simple.updatable)
