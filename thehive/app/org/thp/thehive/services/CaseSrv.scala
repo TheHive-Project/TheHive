@@ -462,6 +462,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           )
           .out("ShareCase")
           .where(JP.neq(originCaseLabel.name))
+          .dedup()
           .as(linkedCaseLabel.name),
         c => new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
         o => new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
