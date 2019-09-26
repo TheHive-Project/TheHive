@@ -58,6 +58,12 @@ class UserCtrl @Inject()(
           .get(request.userId)
           .richUser(request.organisation)
           .getOrFail()
+          .orElse(
+            userSrv
+              .get(request.userId)
+              .richUser(OrganisationSrv.default.name)
+              .getOrFail()
+          )
           .map(user => Results.Ok(user.toJson))
       }
 
