@@ -38,6 +38,8 @@ case class RichAudit(
     action: String,
     mainAction: Boolean,
     requestId: String,
+    objectId: Option[String],
+    objectType: Option[String],
     details: Option[String],
     context: Entity,
     `object`: Option[Entity]
@@ -53,6 +55,8 @@ object RichAudit {
       audit.action,
       audit.mainAction,
       audit.requestId,
+      audit.objectId,
+      audit.objectType,
       audit.details,
       context,
       `object`

@@ -46,37 +46,37 @@ object AuditConversion {
         .withFieldComputed(_.`object`, _.`object`.map(OutputEntity.apply)) //objectToJson))
         .withFieldConst(_.base, true)
         .withFieldComputed(_.details, a => Json.parse(a.details.getOrElse("{}")).as[JsObject])
-        .withFieldComputed(_.objectId, a => a.`object`.getOrElse(a.context)._id)
-        .withFieldComputed(_.objectType, a => objectTypeMapper(a.`object`.getOrElse(a.context)._model.label))
-        .withFieldComputed(_.rootId, _._id)
+        .withFieldComputed(_.objectId, a => a.objectId.getOrElse(a.context._id))
+        .withFieldComputed(_.objectType, a => objectTypeMapper(a.objectType.getOrElse(a.context._model.label)))
+        .withFieldComputed(_.rootId, _.context._id)
         .withFieldComputed(_.startDate, _._createdAt)
         .withFieldComputed(_.summary, a => Map(objectTypeMapper(a.`object`.getOrElse(a.context)._model.label) -> Map(a.action -> 1)))
         .transform
     )
 
-  def caseToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
-    new CaseSteps(_).richCase.map[(String, JsObject)](c => c._id -> c.toJson.as[JsObject]).raw
+  def caseToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
+    new CaseSteps(_).richCase.map[JsObject](_.toJson.as[JsObject]).raw
 
-  def taskToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
+  def taskToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     _.project(
       _.apply(By(new TaskSteps(__[Vertex]).richTask.map[JsObject](_.toJson.as[JsObject]).raw))
         .and(By(caseToJson(db, graph)(__[Vertex].inTo[ShareTask].outTo[ShareCase])))
     ).map {
-      case (task, (rootId, case0)) => rootId -> (task + ("case" -> case0))
+      case (task, case0) => task + ("case" -> case0)
     }
 
-  def alertToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
-    new AlertSteps(_).richAlert.map(a => a._id -> a.toJson.as[JsObject]).raw
+  def alertToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
+    new AlertSteps(_).richAlert.map(_.toJson.as[JsObject]).raw
 
-  def logToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
+  def logToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     _.project(
       _.apply(By(new LogSteps(__[Vertex]).richLog.map[JsObject](_.toJson.as[JsObject]).raw))
         .and(By(taskToJson(db, graph)(__[Vertex].inTo[TaskLog])))
     ).map {
-      case (log, (rootId, task)) => rootId -> (log + ("case_task" -> task))
+      case (log, task) => log + ("case_task" -> task)
     }
 
-  def observableToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
+  def observableToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     _.project(
       _.apply(By(new ObservableSteps(__[Vertex]).richObservable.map[JsObject](_.toJson.as[JsObject]).raw))
         .and(
@@ -86,22 +86,22 @@ object AuditConversion {
           )
         )
     ).map {
-      case (obs, (rootId, c)) => rootId -> (obs + ("case" -> c))
+      case (obs, c) => obs + ((c \ "_type").asOpt[String].getOrElse("???") -> c)
     }
 
-  def auditRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[(String, JsObject)] =
+  def auditRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     (_: GremlinScala[Vertex])
       .coalesce(
         _.outTo[Audited]
-          .choose[Label, (String, JsObject)](
+          .choose[Label, JsObject](
             on = _.label(),
             BranchCase("Case", caseToJson),
             BranchCase("Task", taskToJson),
             BranchCase("Log", logToJson),
             BranchCase("Observable", observableToJson),
-            BranchOtherwise(_.constant("" -> JsObject.empty))
+            BranchOtherwise(_.constant(JsObject.empty))
           ),
-        _.constant("" -> JsObject.empty)
+        _.constant(JsObject.empty)
       )
 
   val auditProperties: List[PublicProperty[_, _]] =

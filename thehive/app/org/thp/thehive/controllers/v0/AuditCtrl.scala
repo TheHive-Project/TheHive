@@ -60,8 +60,8 @@ class AuditCtrl @Inject()(
           .richAuditWithCustomRenderer(auditRenderer)
           .toList
           .map {
-            case (audit, (rootId, obj)) =>
-              audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> rootId)))
+            case (audit, obj) =>
+              audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id)))
           }
 
         Success(Results.Ok(JsArray(audits)))
