@@ -133,8 +133,13 @@ class ObservableSrv @Inject()(
       _ <- Try(get(observable).data.where(_.useCount.filter(_.is(P.eq(0L)))).remove())
       _ <- Try(get(observable).attachments.remove())
       _ <- Try(get(observable).keyValues.remove())
+      ctx = get(observable).`case`.getOrFail().orElse(get(observable).alert.getOrFail())
       r <- Try(get(observable).remove())
-      _ <- auditSrv.observable.delete(observable, get(observable._id).`case`.headOption())
+      _ <- ctx.flatMap {
+        case case0: Case with Entity  => auditSrv.observable.delete(observable, Some(case0))
+        case alert: Alert with Entity => auditSrv.observableInAlert.delete(observable, Some(alert))
+        case _                        => auditSrv.observable.delete(observable, None)
+      }
     } yield r
 
   override def update(
