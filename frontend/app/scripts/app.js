@@ -218,19 +218,19 @@ angular.module('thehive', [
                 }
             })
             .state('app.administration.organisations-details', {
-                url: '/organisations/{orgId}/details',
+                url: '/organisations/{organisation}/details',
                 templateUrl: 'views/partials/admin/organisation/details.html',
                 controller: 'OrgDetailsCtrl',
                 controllerAs: '$vm',
                 resolve: {
                     organisation: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.get($stateParams.orgId);
+                        return OrganisationSrv.get($stateParams.organisation);
                     },
                     users: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.users($stateParams.orgId);
+                        return OrganisationSrv.users($stateParams.organisation);
                     },
                     caseTemplates: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.caseTemplates($stateParams.orgId);
+                        return OrganisationSrv.caseTemplates($stateParams.organisation);
                     }
                 }
             })

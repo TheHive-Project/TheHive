@@ -11,7 +11,7 @@
             this.getUserInfo = UserSrv.getCache;
 
             this.reloadUsers = function() {
-                OrganisationSrv.users(self.org._id)
+                OrganisationSrv.users(self.org.name)
                     .then(function(users) {
                         self.users = users;
                     })
@@ -31,9 +31,5 @@
                         }
                     });
             };
-
-            this.lockUser = function() {
-
-            }
         });
 })();

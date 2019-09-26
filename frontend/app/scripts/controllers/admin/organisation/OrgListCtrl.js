@@ -34,7 +34,7 @@
                 modal.result
                     .then(function(org) {
                         if (mode === 'edit') {
-                            self.update(org._id, org);
+                            self.update(org.name, org);
                         } else {
                             self.create(org);
                         }
@@ -46,8 +46,8 @@
                     });
             };
 
-            self.update = function(orgId, org) {
-                OrganisationSrv.update(orgId, _.pick(org, 'description'))
+            self.update = function(orgName, org) {
+                OrganisationSrv.update(orgName, _.pick(org, 'description'))
                     .then(function(/*response*/) {
                         self.load();
                         NotificationSrv.log('Organisation updated successfully', 'success');
