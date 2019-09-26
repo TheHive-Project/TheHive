@@ -131,11 +131,21 @@ class AlertSrv @Inject()(
   def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Unit] =
-    for {
-      _ <- alertObservableSrv.create(AlertObservable(), alert, observable)
-      _ <- auditSrv.observableInAlert.create(observable, alert)
-    } yield ()
+  ): Try[Unit] = {
+    val alreadyExistInThatCase = observableSrv
+      .get(observable)
+      .similar
+      .alert
+      .hasId(alert._id)
+      .exists()
+    if (alreadyExistInThatCase)
+      Failure(CreateError("Observable already exist"))
+    else
+      for {
+        _ <- alertObservableSrv.create(AlertObservable(), alert, observable)
+        _ <- auditSrv.observableInAlert.create(observable, alert)
+      } yield ()
+  }
 
   def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
       implicit graph: Graph,
@@ -235,6 +245,7 @@ class AlertSrv @Inject()(
         observableSrv
           .duplicate(richObservable)
           .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
+          .recover { case _: CreateError => () } // ignore if case already contains observable
       }
       .map(_ => ())
 
