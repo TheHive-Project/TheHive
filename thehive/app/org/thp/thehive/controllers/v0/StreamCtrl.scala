@@ -7,10 +7,11 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
+
 import scala.concurrent.ExecutionContext
 import scala.util.Success
-
 import gremlin.scala.{Key, P}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 
 @Singleton
 class StreamCtrl @Inject()(
@@ -41,8 +42,7 @@ class StreamCtrl @Inject()(
           case auditIds if auditIds.nonEmpty =>
             db.roTransaction { implicit graph =>
               val audits = auditSrv
-                .getByIds(auditIds: _*)
-                .has(Key("mainAction"), P.eq(true))
+                .getMainByIds(Order.desc, auditIds: _*)
                 .richAuditWithCustomRenderer(auditRenderer)
                 .toIterator
                 .map {

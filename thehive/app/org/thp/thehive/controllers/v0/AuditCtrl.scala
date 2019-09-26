@@ -1,12 +1,13 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
+import java.util.Date
 
+import scala.util.Success
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-
-import gremlin.scala.{Key, P}
+import gremlin.scala.{By, Key, P}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, Query}
@@ -56,6 +57,7 @@ class AuditCtrl @Inject()(
           .filterNot(_ == "any")
           .fold(auditTraversal)(cid => auditTraversal.forCase(cid))
           .visible
+          .order(List(By(Key[Date]("_createdAt"), Order.desc)))
           .range(0, count.getOrElse(10).toLong)
           .richAuditWithCustomRenderer(auditRenderer)
           .toList

@@ -1,15 +1,12 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import java.util.Date
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -17,6 +14,11 @@ import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -53,6 +55,18 @@ class AuditSrv @Inject()(
   private var unauditedTransactions: Set[AnyRef]          = Set.empty
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
+
+  /**
+    * Gets the main action Audits by ids sorted by date
+    * @param order the sort
+    * @param ids the ids
+    * @param graph db
+    * @return
+    */
+  def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): AuditSteps =
+    getByIds(ids: _*)
+      .has(Key("mainAction"), P.eq(true))
+      .order(List(By(Key[Date]("_createdAt"), order)))
 
   def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = {
     val tx = db.currentTransactionId(graph)
@@ -207,6 +221,18 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         }
     )
 
+  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
+    r.outTo[AuditContext]
+      .choose[Label, Vertex](
+        on = _.label(),
+        BranchCase("Case", new CaseSteps(_).organisations.raw),
+        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
+        BranchCase("Alert", new AlertSteps(_).organisation.raw),
+        BranchCase("User", new UserSteps(_).organisations.raw),
+        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
+        //          BranchOtherwise(_)
+      )
+
   def richAudit: ScalarSteps[RichAudit] =
     ScalarSteps(
       raw
@@ -249,8 +275,6 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
       )
     )
 
-  override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
-
   def visible(implicit authContext: AuthContext): AuditSteps = newInstance(
     raw.filter(
       _.outTo[AuditContext]                          // TODO use choose step
@@ -266,17 +290,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
   )
 
-  def `object`: ScalarSteps[Entity] = ScalarSteps(raw.outTo[Audited].map(_.asEntity))
+  override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
 
-  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
-    r.outTo[AuditContext]
-      .choose[Label, Vertex](
-        on = _.label(),
-        BranchCase("Case", new CaseSteps(_).organisations.raw),
-        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
-        BranchCase("Alert", new AlertSteps(_).organisation.raw),
-        BranchCase("User", new UserSteps(_).organisations.raw),
-        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
-        //          BranchOtherwise(_)
-      )
+  def `object`: ScalarSteps[Entity] = ScalarSteps(raw.outTo[Audited].map(_.asEntity))
 }
