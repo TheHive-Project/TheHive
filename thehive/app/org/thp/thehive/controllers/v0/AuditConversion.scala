@@ -24,6 +24,7 @@ object AuditConversion {
   def actionToOperation(action: String): String = action match {
     case "create" => "Creation"
     case "update" => "Update"
+    case "delete" => "Delete"
     case _        => "Unknown"
   }
 
