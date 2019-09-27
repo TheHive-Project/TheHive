@@ -2,9 +2,8 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, OWrites, Reads}
-
 import org.thp.scalligraph.controllers.WithParser
+import play.api.libs.json.{Json, OWrites, Reads}
 
 case class InputAlert(
     `type`: String,
@@ -64,7 +63,7 @@ object OutputAlert {
       createdAt    <- (json \ "createdAt").validate[Date]
       updatedAt    <- (json \ "updatedAt").validateOpt[Date]
       _type        <- (json \ "_type").validate[String]
-      tpe          <- (json \ "tpe").validate[String]
+      tpe          <- (json \ "type").validate[String]
       source       <- (json \ "source").validate[String]
       sourceRef    <- (json \ "sourceRef").validate[String]
       externalLink <- (json \ "externalLink").validateOpt[String]
