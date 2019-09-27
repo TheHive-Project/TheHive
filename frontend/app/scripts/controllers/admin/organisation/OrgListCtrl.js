@@ -40,7 +40,7 @@
                         }
                     })
                     .catch(function(err){
-                        if (!_.isString(err)) {
+                        if (err && !_.isString(err)) {
                             this.NotificationService.error('Unable to save the organisation.');
                         }
                     });
