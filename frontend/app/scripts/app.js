@@ -267,12 +267,12 @@ angular.module('thehive', [
                 controllerAs: 'vm',
                 title: 'Report templates administration'
             })
-            .state('app.administration.metrics', {
-                url: '/metrics',
-                templateUrl: 'views/partials/admin/metrics.html',
-                controller: 'AdminMetricsCtrl',
-                title: 'Metrics administration'
-            })
+            // .state('app.administration.metrics', {
+            //     url: '/metrics',
+            //     templateUrl: 'views/partials/admin/metrics.html',
+            //     controller: 'AdminMetricsCtrl',
+            //     title: 'Metrics administration'
+            // })
             .state('app.administration.custom-fields', {
                 url: '/custom-fields',
                 templateUrl: 'views/partials/admin/custom-fields.html',
