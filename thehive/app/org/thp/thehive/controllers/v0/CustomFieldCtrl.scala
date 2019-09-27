@@ -16,7 +16,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")
-      .extract("customField", FieldsParser[InputCustomField])
+      .extract("customField", FieldsParser[InputCustomField].on("value"))
       .authTransaction(db) { implicit request => implicit graph =>
         val customField: InputCustomField = request.body("customField")
         customFieldSrv
