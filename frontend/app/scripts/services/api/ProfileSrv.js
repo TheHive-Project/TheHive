@@ -5,6 +5,27 @@
             var self = this;
             var baseUrl = './api/profile';
 
+            this.permissions = {
+                keys: [
+                    "manageUser",
+                    "manageCaseTemplate",
+                    "manageAlert",
+                    "manageCase",
+                    "manageObservable",
+                    "manageTask",
+                    "manageAction"
+                ],
+                labels: {
+                    manageUser: 'Manage users',
+                    manageCaseTemplate: 'Manage case templates',
+                    manageAlert: 'Manage alert',
+                    manageCase: 'Manage case',
+                    manageObservable: 'Manage observables',
+                    manageTask: 'Manage tasks',
+                    manageAction: 'Manage actions'
+                }
+            };
+
             this.list = function() {
                 return $http.get(baseUrl);
             };
@@ -20,6 +41,13 @@
                     });
             };
 
+            this.create = function(profile) {
+                return $http.post(baseUrl, profile);
+            };
+
+            this.update = function(id, profile) {
+                return $http.patch(baseUrl + '/' + id, profile);
+            };
         });
 
 })();

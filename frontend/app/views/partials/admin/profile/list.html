@@ -26,12 +26,11 @@
                                         </div>
                                     </td>
                                     <td class="wrap">
-                                        <span class="label label-default mr-xxs mb-xxs" ng-repeat="permission in profile.permissions">{{permission}}</span>
+                                        <span class="label label-default mr-xxs mb-xxs" ng-repeat="permission in profile.permissions | orderBy:identity">{{permission}}</span>
                                     </td>
                                     <td>
-                                        <!-- To do -->
-                                        <!-- <span class="clickable mr-xs text-primary" ng-click="$vm.showProfile('edit', profile)">
-                                            <i class="fa fa-edit"></i>Edit</span>                                         -->
+                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showProfile('edit', profile)">
+                                            <i class="fa fa-edit"></i>Edit</span>
                                     </td>
                                 </tr>
                             </tbody>
