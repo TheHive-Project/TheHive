@@ -1,13 +1,13 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('AdminCustomFieldDialogCtrl', function($scope, $uibModalInstance, ListSrv, NotificationSrv, customField) {
+    angular.module('theHiveControllers').controller('AdminCustomFieldDialogCtrl', function($scope, $uibModalInstance, CustomFieldsSrv, NotificationSrv, customField) {
         var self = this;
         self.config = {
             types: [
-                'string', 'number', 'boolean', 'date'
+                'string', 'integer', 'boolean', 'date', 'float'
             ],
-            referencePattern: '^[a-zA-Z]{1}[a-zA-Z0-9_-]*'
+            namePattern: '^[a-zA-Z]{1}[a-zA-Z0-9_-]*'
         };
 
         self.customField = customField;
@@ -29,10 +29,10 @@
             var type = self.customField.type;
             var values = self.customField.options.split('\n');
 
-            if (type === 'number') {
+            if (type === 'integer' || type === 'float') {
                 return _.without(values.map(function(item) {
                     return Number(item);
-                }), NaN);
+                }), NaN) || [];
             }
 
             return values;
@@ -43,41 +43,48 @@
                 return;
             }
 
-            var postData = _.pick(self.customField, 'name', 'reference', 'description', 'type', 'mandatory');
+            var postData = _.pick(self.customField, 'name', 'displayName', 'description', 'type', 'mandatory');
             postData.options = buildOptionsCollection(self.customField.options);
 
             if (self.customField.id) {
-                ListSrv.update({
-                    'itemId': self.customField.id
-                }, {
-                    'value': postData
-                }, onSuccess, onFailure);
+                CustomFieldsSrv.update(self.customField.id, postData)
+                    .then(onSuccess)
+                    .catch(onFailure);
+                // ListSrv.update({
+                //     'itemId': self.customField.id
+                // }, {
+                //     'value': postData
+                // }, onSuccess, onFailure);
             } else {
 
-                ListSrv.exists({
-                    'listId': 'custom_fields'
-                }, {
-                    key: 'reference',
-                    value: postData.reference
-                }, function(response) {
+                CustomFieldsSrv.create(postData)
+                    .then(onSuccess)
+                    .catch(onFailure);
 
-                    if (response.toJSON().found === true) {
-                        form.reference.$setValidity('unique', false);
-                        form.reference.$setDirty();
-                    } else {
-                        ListSrv.save({
-                            'listId': 'custom_fields'
-                        }, {
-                            'value': postData
-                        }, onSuccess, onFailure);
-                    }
-                }, onFailure);
+                // ListSrv.exists({
+                //     'listId': 'custom_fields'
+                // }, {
+                //     key: 'reference',
+                //     value: postData.reference
+                // }, function(response) {
+                //
+                //     if (response.toJSON().found === true) {
+                //         form.name.$setValidity('unique', false);
+                //         form.name.$setDirty();
+                //     } else {
+                //         ListSrv.save({
+                //             'listId': 'custom_fields'
+                //         }, {
+                //             'value': postData
+                //         }, onSuccess, onFailure);
+                //     }
+                // }, onFailure);
             }
         };
 
-        self.clearUniqueReferenceError = function(form) {
-            form.reference.$setValidity('unique', true);
-            form.reference.$setPristine();
+        self.clearUniqueNameError = function(form) {
+            form.name.$setValidity('unique', true);
+            form.name.$setPristine();
         };
 
         self.cancel = function() {
@@ -85,16 +92,16 @@
         };
 
         self.onNamechanged = function(form) {
-            if (!self.customField.name) {
+            if (!self.customField.displayName) {
                 return;
             }
 
-            var reference = s.trim(s.classify(self.customField.name));
-            reference = reference.charAt(0).toLowerCase() + reference.slice(1);
+            var name = s.trim(s.slugify(self.customField.displayName));
+            name = name.charAt(0).toLowerCase() + name.slice(1);
 
-            self.customField.reference = reference;
+            self.customField.name = name;
 
-            self.clearUniqueReferenceError(form);
+            self.clearUniqueNameError(form);
         };
 
     });
