@@ -2,13 +2,13 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.language.implicitConversions
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.dto.v0.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
-import org.thp.thehive.models.{CustomField, CustomFieldWithValue}
+import org.thp.thehive.dto.v0.{InputCustomField, InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
+import org.thp.thehive.models.{CustomField, CustomFieldString, CustomFieldWithValue}
+
+import scala.language.implicitConversions
 
 object CustomFieldConversion {
 
@@ -27,6 +27,15 @@ object CustomFieldConversion {
         .transform
     )
 
+  implicit def fromInputCField(inputCustomField: InputCustomField): CustomField =
+    inputCustomField
+      .into[CustomField]
+      .withFieldComputed(_.`type`, icf => CustomField.fromString(icf.name).getOrElse(CustomFieldString))
+      .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
+      .withFieldComputed(_.description, _.description)
+      .withFieldComputed(_.name, _.name)
+      .transform
+
   implicit def toOutputCustomField(customField: CustomField with Entity): Output[OutputCustomField] =
     Output[OutputCustomField](
       customField
@@ -35,6 +44,7 @@ object CustomFieldConversion {
         .withFieldComputed(_.`type`, _.`type`.name)
         .withFieldRenamed(_.name, _.reference)
         .withFieldConst(_.options, Nil)
+        .withFieldComputed(_.mandatory, _.mandatory)
         .transform
     )
 }

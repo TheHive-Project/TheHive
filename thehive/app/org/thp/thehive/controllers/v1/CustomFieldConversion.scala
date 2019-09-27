@@ -28,6 +28,7 @@ object CustomFieldConversion {
         .asInstanceOf[CustomField]
         .into[OutputCustomField]
         .withFieldComputed(_.`type`, _.`type`.name)
+        .withFieldComputed(_.mandatory, _.mandatory)
         .transform
     )
 }

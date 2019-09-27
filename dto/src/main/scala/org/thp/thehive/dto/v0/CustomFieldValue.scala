@@ -12,8 +12,8 @@ case class InputCustomField(
     name: String,
     description: String,
     `type`: String,
-    options: List[JsValue] = Nil,
-    reference: String
+    reference: String,
+    mandatory: Option[Boolean]
 )
 
 object InputCustomField {
@@ -22,7 +22,7 @@ object InputCustomField {
 
 case class InputCustomFieldOption(value: Any)
 
-case class OutputCustomField(name: String, reference: String, description: String, `type`: String, options: Seq[JsValue])
+case class OutputCustomField(name: String, reference: String, description: String, `type`: String, options: Seq[JsValue], mandatory: Boolean)
 
 object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]

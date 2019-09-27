@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.models._
+import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
@@ -16,9 +16,9 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")
-      .extract("customField", FieldsParser[CustomField])
+      .extract("customField", FieldsParser[InputCustomField])
       .authTransaction(db) { implicit request => implicit graph =>
-        val customField = request.body("customField")
+        val customField: InputCustomField = request.body("customField")
         customFieldSrv
           .create(customField)
           .map(createdCustomField => Results.Created(createdCustomField.toJson))

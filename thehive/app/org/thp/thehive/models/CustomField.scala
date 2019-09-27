@@ -128,7 +128,19 @@ object CustomFieldDate extends CustomFieldType[Date] {
 }
 
 @VertexEntity
-case class CustomField(name: String, description: String, `type`: CustomFieldType[_])
+case class CustomField(name: String, description: String, `type`: CustomFieldType[_], mandatory: Boolean)
+
+object CustomField {
+
+  def fromString(name: String): Try[CustomFieldType[_]] = name match {
+    case "string"  => Success(CustomFieldString)
+    case "boolean" => Success(CustomFieldBoolean)
+    case "integer" => Success(CustomFieldInteger)
+    case "float"   => Success(CustomFieldFloat)
+    case "date"    => Success(CustomFieldDate)
+    case _         => Failure(new Exception(s"Invalid name $name as CustomFieldType"))
+  }
+}
 
 case class CustomFieldWithValue(customField: CustomField with Entity, customFieldValue: CustomFieldValue[_] with Entity) {
   def name: String        = customField.name

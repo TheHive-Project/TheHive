@@ -9,13 +9,13 @@ import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
 
-case class InputCustomField(name: String, description: String, `type`: String)
+case class InputCustomField(name: String, description: String, `type`: String, mandatory: Option[Boolean])
 
 object InputCustomField {
   implicit val writes: Writes[InputCustomField] = Json.writes[InputCustomField]
 }
 
-case class OutputCustomField(name: String, description: String, `type`: String)
+case class OutputCustomField(name: String, description: String, `type`: String, mandatory: Boolean)
 
 object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]

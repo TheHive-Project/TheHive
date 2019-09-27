@@ -10,7 +10,6 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
 import scala.util.Success
-import gremlin.scala.{Key, P}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 
 @Singleton
