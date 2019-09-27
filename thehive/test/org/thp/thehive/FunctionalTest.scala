@@ -219,8 +219,8 @@ class FunctionalTest extends PlaySpecification {
         }
 
         "create a custom field" in {
-          val asyncResp = client.customFields.create(InputCustomField("businessUnit", "Business unit impacted by the incident", "string"))
-          val expected  = OutputCustomField("businessUnit", "Business unit impacted by the incident", "string")
+          val asyncResp = client.customFields.create(InputCustomField("businessUnit", "Business unit impacted by the incident", "string", Some(false)))
+          val expected  = OutputCustomField("businessUnit", "Business unit impacted by the incident", "string", mandatory = false)
           await(asyncResp) must_=== expected
         }
 

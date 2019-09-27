@@ -108,7 +108,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.summary must beNone
         richCase.impactStatus must beNone
         richCase.user must beSome("user1@thehive.local")
-        CustomField("boolean1", "boolean custom field", CustomFieldBoolean)
+        CustomField("boolean1", "boolean custom field", CustomFieldBoolean, mandatory = false)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),
