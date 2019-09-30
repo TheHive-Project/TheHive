@@ -16,7 +16,7 @@
                         if(angular.isDefined(redirectLocation)) {
                             window.location = redirectLocation;
                         } else {
-                            $state.go('app.cases');
+                            $state.go('app.index');
                         }
                     })
                     .catch(function(err) {
@@ -38,7 +38,7 @@
                 $scope.params.username = $scope.params.username.toLowerCase();
                 AuthenticationSrv.login($scope.params.username, $scope.params.password)
                   .then(function() {
-                      $state.go('app.cases');
+                      $state.go('app.index');
                   })
                   .catch(function(err) {
                     if (err.status === 520) {

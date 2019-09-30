@@ -45,7 +45,7 @@ angular.module('thehive', [
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
 
-        $urlRouterProvider.otherwise('/cases');
+        $urlRouterProvider.otherwise('/index');
 
         $stateProvider
             .state('login', {
@@ -105,6 +105,16 @@ angular.module('thehive', [
                     uiConfig: function($q, UiSettingsSrv) {
                         UiSettingsSrv.all();
                         return $q.resolve();
+                    }
+                }
+            })
+            .state('app.index', {
+                url: 'index',
+                onEnter: function($state, AuthenticationSrv) {
+                    if(AuthenticationSrv.isSuperAdmin()) {
+                        $state.go('app.administration.organisations', {}, {reload: true});
+                    } else {
+                        $state.go('app.cases', {}, {reload: true});
                     }
                 }
             })
@@ -180,14 +190,8 @@ angular.module('thehive', [
                 onEnter: function($state, AuthenticationSrv) {
                     var currentUser = AuthenticationSrv.currentUser;
 
-                    if (!currentUser || !currentUser.roles || _.map(currentUser.roles, function(role) {
-                            return role.toLowerCase();
-                        }).indexOf('admin') === -1) {
-                        if (!$state.is('app.cases')) {
-                            $state.go('app.cases');
-                        } else {
-                            return $state.reload();
-                        }
+                    if (!currentUser || !currentUser.permissions || currentUser.organisation !== 'default') {
+                        $state.go('app.index', {}, {reload: true});
                     }
 
                     return true;
