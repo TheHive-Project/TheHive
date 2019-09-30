@@ -20,7 +20,7 @@
                                 '_values': ['Waiting', 'InProgress']
                             }
                         }, {
-                            'owner': $scope.currentUser.id
+                            'owner': $scope.currentUser._id
                         }]
                     },
                     sort: ['-flag', '-startDate'],

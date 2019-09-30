@@ -84,10 +84,10 @@
                         <span class="clickable mr-xs text-primary" ng-click="$ctrl.editUser(user)">
                             <i class="fa fa-edit"></i>Edit</span>
 
-                        <span class="clickable mr-xs text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser.id" ng-click="$ctrl.lockUser(user, true)">
+                        <span class="clickable mr-xs text-danger" ng-if="!user.locked && user._id !== $ctrl.main.currentUser._id" ng-click="$ctrl.lockUser(user, true)">
                             <i class="fa fa-ban"></i>Lock</span>
 
-                        <span class="clickable mr-xs text-success" ng-if="user.locked && user._id !== $ctrl.main.currentUser.id" ng-click="$ctrl.lockUser(user, false)">
+                        <span class="clickable mr-xs text-success" ng-if="user.locked && user._id !== $ctrl.main.currentUser._id" ng-click="$ctrl.lockUser(user, false)">
                             <i class="fa fa-refresh"></i>Unlock</span>
                     </td>
                 </tr>

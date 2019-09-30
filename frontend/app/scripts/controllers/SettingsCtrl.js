@@ -5,13 +5,13 @@
             $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
 
-            if(!currentUser || !currentUser.id) {
+            if(!currentUser || !currentUser._id) {
                 $state.go('login');
                 return;
             }
 
             $scope.basicData = {
-                username: $scope.currentUser.id,
+                username: $scope.currentUser._id,
                 name: $scope.currentUser.name,
                 avatar: $scope.currentUser.avatar
             };
@@ -30,7 +30,7 @@
                     return;
                 }
 
-                UserSrv.update($scope.currentUser.id, {
+                UserSrv.update($scope.currentUser._id, {
                     name: $scope.basicData.name,
                     avatar: $scope.basicData.avatar
                 })
@@ -60,7 +60,7 @@
                 }
 
                 if (updatedFields !== {}) {
-                    UserSrv.changePass($scope.currentUser.id, updatedFields)
+                    UserSrv.changePass($scope.currentUser._id, updatedFields)
                         .then(function( /*data*/ ) {
                             NotificationSrv.log('Your password has been successfully updated', 'success');
                             $state.reload();

@@ -11,16 +11,6 @@
               user: username,
               password: password
             });
-            // .then(function(data, status, headers, config) {
-            //   if (angular.isFunction(success)) {
-            //     success(data, status, headers, config);
-            //   }
-            // })
-            // .catch(function(data, status, headers, config) {
-            //   if (angular.isFunction(failure)) {
-            //     failure(data, status, headers, config);
-            //   }
-            // });
         },
         logout: function(success, failure) {
           $http
@@ -41,7 +31,7 @@
         current: function() {
           var result = {};
           return $http
-            .get("./api/user/current")
+            .get("./api/v1/user/current")
             .then(function(response) {
               self.currentUser = response.data;
               UtilsSrv.shallowClearAndCopy(response.data, result);
@@ -57,10 +47,24 @@
           var url = angular.isDefined(code) ? "./api/ssoLogin?code=" + code : "./api/ssoLogin";
           return $http.post(url, {});
         },
-        isAdmin: function(user) {
-          var u = user;
-          var re = /admin/i;
-          return re.test(u.roles);
+        // isAdmin: function(user) {
+        //   var u = user;
+        //   var re = /admin/i;
+        //   return re.test(u.roles);
+        // },
+        isSuperAdmin: function() {
+            var user = self.currentUser;
+
+            return user && user.organisation === 'default';
+        },
+        hasPermission: function(permissions) {
+            var user = self.currentUser;
+
+            if (!user) {
+                return false;
+            }
+
+            return !_.isEmpty(_.intersection(user.permissions, permissions));
         }
       };
 

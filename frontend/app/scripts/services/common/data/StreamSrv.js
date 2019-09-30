@@ -102,7 +102,7 @@
                     // Check if the session will expire soon
                     if (res.status === 220) {
                         AfkSrv.prompt().then(function() {
-                            UserSrv.getUserInfo(AuthenticationSrv.currentUser.id)
+                            UserSrv.getUserInfo(AuthenticationSrv.currentUser._id)
                                 .then(function() {
 
                                 }, function(response) {

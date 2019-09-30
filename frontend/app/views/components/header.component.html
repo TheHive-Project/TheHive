@@ -1,4 +1,4 @@
-<nav class="navbar navbar-static-top main-navbar bg-navy" ng-if="!hideStatusBar" ng-show="currentUser.id">
+<nav class="navbar navbar-static-top main-navbar bg-navy" ng-if="!hideStatusBar" ng-show="currentUser._id">
     <div class="container-fluid">
         <div class="navbar-header">
             <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#th-navbar-collapse" data-toggle="collapse" type="button">
@@ -13,8 +13,8 @@
         </div>
 
         <div class="collapse navbar-collapse" id="th-navbar-collapse">
-            <ul class="nav navbar-nav" ng-show="currentUser.id">
-                <li ui-sref-active="active">
+            <ul class="nav navbar-nav" ng-if="!isSuperAdmin()">
+                <li ui-sref-active="active" if-permission="manageCase">
                     <a href ng-click="createNewCase()" ng-if="!templates || templates.length === 0">
                         <i class="fa fa-plus"></i>
                         <span class="hpad5">New Case</span>
@@ -79,7 +79,8 @@
                     </a>
                 </li>
 
-                <li>
+                <!-- Super Admin menu -->
+                <li ng-if="!isSuperAdmin()">
                     <form ng-submit="search(querystring)" style="margin-top : 10px">
                         <div class="input-group" style="width: 100px">
                             <span class="input-group-addon">
@@ -89,7 +90,7 @@
                         </div>
                     </form>
                 </li>
-                <li class="dropdown" uib-dropdown ng-if="isAdmin(currentUser)">
+                <li class="dropdown" uib-dropdown ng-if="isSuperAdmin()">
                     <a class="dropdown-toggle" uib-dropdown-toggle href>
                         <i class="fa fa-cog"></i>
                         <span class="hpad5">Admin</span>
@@ -143,9 +144,18 @@
                         </li>
                     </ul>
                 </li>
+
+                <li class="dropdown" ng-if="!isSuperAdmin()">
+                    <a class="">
+                        <i class="fa fa-cog"></i>
+                        <span class="hpad5">Organisation</span>
+                    </a>
+                </li>
+
+                <!-- User menu -->
                 <li class="dropdown" uib-dropdown>
                     <a class="profile dropdown-toggle" uib-dropdown-toggle href>
-                        <user user-id="currentUser.id"></user>
+                        <user user-id="currentUser._id"></user>
                     </a>
                     <ul class="dropdown-menu" uib-dropdown-menu>
                         <li>

@@ -47,76 +47,80 @@
             </strong>
         </span>
 
-        <!-- Right side -->
-        <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
-            <span class="mr-xxs text-primary">|</span>
+        <div class="pull-right" if-permission="manageCase">
+            <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                <span class="mr-xxs text-primary">|</span>
 
-            <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
-                <i class="text-primary fa fa-cog"></i>
-                Responders
-                <i class="text-primary fa fa-angle-down"></i>
-            </a>
-            <ul class="dropdown-menu" uib-dropdown-menu>
-              <li ng-if="caseResponders && caseResponders.length === 0">
-                <a href ng-click="getCaseResponders(true)">
-                  <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
+                    <i class="text-primary fa fa-cog"></i>
+                    Responders
+                    <i class="text-primary fa fa-angle-down"></i>
                 </a>
-              </li>
-              <li ng-repeat="responder in caseResponders">
-                <a href ng-click="runResponder(responder.id, responder.name)">
-                  <strong>{{responder.name}}</strong>
-                  <br>
-                  <small>{{responder.description}}</small></a>
-              </li>
-            </ul>
-        </span>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                  <li ng-if="caseResponders && caseResponders.length === 0">
+                    <a href ng-click="getCaseResponders(true)">
+                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
+                    </a>
+                  </li>
+                  <li ng-repeat="responder in caseResponders">
+                    <a href ng-click="runResponder(responder.id, responder.name)">
+                      <strong>{{responder.name}}</strong>
+                      <br>
+                      <small>{{responder.description}}</small></a>
+                  </li>
+                </ul>
+            </span>
 
-        <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">
-            <span class="mr-xxs text-primary">|</span>
-            <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
-                <i class="text-primary fa fa-share"></i>
-                Share ({{existingExports}})
-            </a>
-        </span>
+            <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">
+                <span class="mr-xxs text-primary">|</span>
+                <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
+                    <i class="text-primary fa fa-share"></i>
+                    Share ({{existingExports}})
+                </a>
+            </span>
 
-        <span class="ml-xxs pull-right" ng-if="isAdmin(currentUser)">
-            <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
-                <i class="text-danger fa fa-times"></i>
-                Remove
-            </a>
-        </span>
+            <span class="ml-xxs pull-right" ng-if="isAdmin(currentUser)">
+                <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
+                    <i class="text-danger fa fa-times"></i>
+                    Remove
+                </a>
+            </span>
 
-        <span class="ml-xxs pull-right">
-            <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
-                <i class="text-primary fa fa-compress"></i>
-                Merge
-            </a>
-        </span>
+            <span class="ml-xxs pull-right">
+                <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
+                    <i class="text-primary fa fa-compress"></i>
+                    Merge
+                </a>
+            </span>
 
-        <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
-            <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
-                <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>
-                Flag
-            </a>
-        </span>
-        <span class="ml-xxs pull-right" ng-if="caze.flag">
-            <a href ng-click="switchFlag()" class="text-yellow noline" uib-tooltip="Unflag case">
-                <i class="text-yellow fa fa-flag" ng-show="caze.flag"></i>
-                Unflag
-            </a>
-        </span>
-        <span class="ml-xxs pull-right" ng-hide="isCaseClosed()">
-            <a href ng-click="openCloseDialog()" class="text-muted noline" uib-tooltip="Close case">
-                <i class="text-muted fa fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
-                Close
-            </a>
-        </span>
-        <span class="ml-xxs pull-right" ng-show="isCaseClosed()">
-            <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
-                <i class="text-success fa fa-check-circle"></i>
-                Reopen
-            </a>
-        </span>
+            <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
+                <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
+                    <i class="text-muted fa fa-flag" ng-class="setFlag" ng-mouseout="setFlag='text-muted'" ng-mouseover="setFlag='text-yellow'"></i>
+                    Flag
+                </a>
+            </span>
+            <span class="ml-xxs pull-right" ng-if="caze.flag">
+                <a href ng-click="switchFlag()" class="text-yellow noline" uib-tooltip="Unflag case">
+                    <i class="text-yellow fa fa-flag" ng-show="caze.flag"></i>
+                    Unflag
+                </a>
+            </span>
+            <span class="ml-xxs pull-right" ng-hide="isCaseClosed()">
+                <a href ng-click="openCloseDialog()" class="text-muted noline" uib-tooltip="Close case">
+                    <i class="text-muted fa fa-check-circle-o" ng-class="CloseCase" ng-mouseout="CloseCase='text-muted glyphicon-ok-circle'" ng-mouseover="CloseCase='text-success glyphicon-ok-sign'"></i>
+                    Close
+                </a>
+            </span>
+            <span class="ml-xxs pull-right" ng-show="isCaseClosed()">
+                <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
+                    <i class="text-success fa fa-check-circle"></i>
+                    Reopen
+                </a>
+            </span>
+
+        </div>
+
+        <!-- Right side -->
 
     </div>
 </div>

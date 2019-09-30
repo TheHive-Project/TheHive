@@ -24,10 +24,10 @@
                         </h4>
                         <span class="text-muted">{{db.description}}</span>
                     </div>
-                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser.id)">
+                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser._id)">
                         <a href ng-click="$vm.editDashboard(db)"><i class="fa fa-pencil"></i>Edit</a>
                     </div>
-                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser.id)">
+                    <div class="media-right ph-xs text-center" ng-if="isAdmin(currentUser) || (db.createdBy === currentUser._id)">
                         <a href class="text-danger" ng-click="$vm.deleteDashboard(db.id)"><i class="fa fa-trash"></i>Delete</a>
                     </div>
                     <div class="media-right ph-xs text-center">

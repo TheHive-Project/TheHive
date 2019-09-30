@@ -8,7 +8,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         if(currentUser === 520) {
             $state.go('maintenance');
             return;
-        }else if(!currentUser || !currentUser.id) {
+        }else if(!currentUser || !currentUser._id) {
             $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
             return;
         }
@@ -64,7 +64,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
                         }
                     },
                     {
-                        'owner': $scope.currentUser.id
+                        'owner': $scope.currentUser._id
                     }
                 ]
             },
@@ -127,9 +127,17 @@ angular.module('theHiveControllers').controller('RootCtrl',
         $scope.initCustomFieldsCache();
 
         $scope.isAdmin = function(user) {
+            return true;
+
+            /*
             var u = user;
             var re = /admin/i;
             return re.test(u.roles);
+            */
+        };
+
+        $scope.isSuperAdmin = function() {
+            return AuthenticationSrv.isSuperAdmin();
         };
 
         $scope.selectView = function(name) {

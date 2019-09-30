@@ -184,7 +184,7 @@
                             _not: { status: 'Deleted' }
                         },
                         {
-                            _or: [{ status: 'Shared' }, { createdBy: AuthenticationSrv.currentUser.id }]
+                            _or: [{ status: 'Shared' }, { createdBy: AuthenticationSrv.currentUser._id }]
                         }
                     ]
                 }

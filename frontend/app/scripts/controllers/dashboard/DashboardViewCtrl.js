@@ -19,7 +19,7 @@
                 return period === 'custom' ?
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
-            }
+            };
 
             this.loadDashboard = function(dashboard) {
                 this.dashboard = dashboard;
@@ -33,7 +33,7 @@
                     ]
                 };
                 this.periodFilter = this.buildDashboardPeriodFilter(this.definition.period);
-            }
+            };
 
             this.loadDashboard(dashboard);
 
@@ -55,8 +55,9 @@
 
 
             this.canEditDashboard = function() {
-                return (this.createdBy === this.currentUser.id) ||
-                    (this.dashboardStatus = 'Shared' && AuthenticationSrv.isAdmin(this.currentUser));
+                return (this.createdBy === this.currentUser._id) || this.dashboardStatus === 'Shared';
+                // return (this.createdBy === this.currentUser._id) ||
+                //     (this.dashboardStatus = 'Shared' && AuthenticationSrv.isAdmin(this.currentUser));
             };
 
             this.options = {
