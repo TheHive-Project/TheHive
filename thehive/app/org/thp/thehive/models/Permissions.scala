@@ -14,6 +14,7 @@ object Permissions {
   val manageAction: Permission         = Permission("manageAction")
   val manageConfig: Permission         = Permission("manageConfig")
   val manageProfile: Permission        = Permission("manageProfile")
+  val manageCustomField: Permission        = Permission("manageCustomField")
 
   val restrictedPermissions: Set[Permission] = Set(manageOrganisation, manageReportTemplate, manageConfig, manageProfile)
 
@@ -29,6 +30,7 @@ object Permissions {
       manageReportTemplate,
       manageAction,
       manageConfig,
-      manageProfile
+      manageProfile,
+      manageCustomField
     )
 }

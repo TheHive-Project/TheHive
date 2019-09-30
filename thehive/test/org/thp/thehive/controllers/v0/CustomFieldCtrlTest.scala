@@ -8,6 +8,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCustomField
 import org.thp.thehive.models._
+import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsNumber, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
@@ -29,13 +30,14 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val customFieldCtr: CustomFieldCtrl = app.instanceOf[CustomFieldCtrl]
+    val customFieldSrv: CustomFieldSrv  = app.instanceOf[CustomFieldSrv]
+    val db: Database                    = app.instanceOf[Database]
 
     s"[$name] custom field controller" should {
       "create a string custom field with options" in {
         val request = FakeRequest("POST", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(
-            """
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
               {
                   "value": {
                       "name": "test",
@@ -62,9 +64,8 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
       "create a boolean custom field" in {
         val request = FakeRequest("POST", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(
-            """
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
               {
                   "value": {
                       "name": "test bool",
@@ -90,9 +91,8 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
       "create an integer custom field with options" in {
         val request = FakeRequest("POST", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(
-            """
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
               {
                   "value": {
                       "name": "test int",
@@ -119,9 +119,8 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
       "create a float custom field" in {
         val request = FakeRequest("POST", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(
-            """
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
               {
                   "value": {
                       "name": "test float",
@@ -145,9 +144,8 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
       "create a date custom field with options and list all available" in {
         val request = FakeRequest("POST", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(
-            """
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
               {
                   "value": {
                       "name": "test date",
@@ -171,12 +169,30 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
         outputCustomField.mandatory must beFalse
 
         val requestList = FakeRequest("GET", s"/api/customField")
-          .withHeaders("user" -> "user1@thehive.local")
+          .withHeaders("user" -> "admin@thehive.local")
         val res = customFieldCtr.list(requestList)
 
         status(res) shouldEqual 200
 
         contentAsJson(res).as[List[OutputCustomField]] must not(beEmpty)
+      }
+
+      "remove a custom field" in {
+        val l = db.roTransaction(graph => customFieldSrv.initSteps(graph).toList)
+
+        l must not(beEmpty)
+
+        val cf = l.head
+
+        val request = FakeRequest("DELETE", s"/api/customField/${cf._id}")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = customFieldCtr.delete(cf._id)(request)
+
+        status(result) shouldEqual 204
+
+        val newList = db.roTransaction(graph => customFieldSrv.initSteps(graph).toList)
+
+        newList.find(_._id == cf._id) must beNone
       }
     }
   }
