@@ -30,7 +30,7 @@ object CustomFieldConversion {
   implicit def fromInputCField(inputCustomField: InputCustomField): CustomField =
     inputCustomField
       .into[CustomField]
-      .withFieldComputed(_.`type`, icf => CustomField.fromString(icf.name).getOrElse(CustomFieldString))
+      .withFieldComputed(_.`type`, icf => CustomField.fromString(icf.`type`).getOrElse(CustomFieldString))
       .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
       .withFieldComputed(_.description, _.description)
       .withFieldComputed(_.name, _.name)
