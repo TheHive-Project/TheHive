@@ -32,21 +32,15 @@ object CustomFieldConversion {
       .into[CustomField]
       .withFieldComputed(_.`type`, icf => CustomField.fromString(icf.`type`).getOrElse(CustomFieldString))
       .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
-      .withFieldComputed(_.description, _.description)
-      .withFieldComputed(_.name, _.name)
-      .withFieldComputed(_.options, _.options)
       .transform
 
   implicit def toOutputCustomField(customField: CustomField with Entity): Output[OutputCustomField] =
     Output[OutputCustomField](
       customField
+        .asInstanceOf[CustomField]
         .into[OutputCustomField]
         .withFieldComputed(_.`type`, _.`type`.name)
         .withFieldComputed(_.reference, _.name)
-        .withFieldComputed(_.options, _.options)
-        .withFieldComputed(_.mandatory, _.mandatory)
-        .withFieldComputed(_.description, _.description)
-        .withFieldComputed(_.name, _.name)
         .transform
     )
 }
