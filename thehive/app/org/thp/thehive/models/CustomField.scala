@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.Entity
-import play.api.libs.json.{JsBoolean, JsNumber, JsString, Writes}
+import play.api.libs.json._
 
 import scala.util.{Failure, Success, Try}
 
@@ -128,7 +128,13 @@ object CustomFieldDate extends CustomFieldType[Date] {
 }
 
 @VertexEntity
-case class CustomField(name: String, description: String, `type`: CustomFieldType[_], mandatory: Boolean)
+case class CustomField(
+    name: String,
+    description: String,
+    `type`: CustomFieldType[_],
+    mandatory: Boolean,
+    options: Seq[JsValue]
+)
 
 object CustomField {
 

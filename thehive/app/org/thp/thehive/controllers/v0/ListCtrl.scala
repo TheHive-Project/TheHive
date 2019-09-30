@@ -58,7 +58,7 @@ class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: C
             } yield inputCustomField
           } fold (
             errors => Failure(new Exception(errors.mkString)),
-            res => Success(Results.Ok(Json.toJson(res)))
+            _ => Success(Results.Ok)
           )
           case _ => Success(Results.Locked(""))
         }

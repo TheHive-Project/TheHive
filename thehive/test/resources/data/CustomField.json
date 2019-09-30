@@ -3,30 +3,35 @@
     "name": "string1",
     "description": "string custom field",
     "type": "string",
-    "mandatory": false
+    "mandatory": false,
+    "options": []
   },
   {
     "name": "boolean1",
     "description": "boolean custom field",
     "type": "boolean",
-    "mandatory": false
+    "mandatory": false,
+    "options": []
   },
   {
     "name": "integer1",
     "description": "integer custom field",
     "type": "integer",
-    "mandatory": false
+    "mandatory": false,
+    "options": []
   },
   {
     "name": "float1",
     "description": "float custom field",
     "type": "float",
-    "mandatory": false
+    "mandatory": false,
+    "options": []
   },
   {
     "name": "date1",
     "description": "date custom field",
     "type": "date",
-    "mandatory": false
+    "mandatory": false,
+    "options": []
   }
 ]

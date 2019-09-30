@@ -8,20 +8,6 @@ import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{FNull, _}
 import play.api.libs.json._
 
-case class InputCustomField(
-    name: String,
-    description: String,
-    `type`: String,
-    reference: String,
-    mandatory: Option[Boolean],
-    @WithParser(InputCustomFieldValue.simpleParser)
-    options: Seq[InputCustomFieldValue] = Nil
-)
-
-object InputCustomField {
-  implicit val format: Format[InputCustomField] = Json.format[InputCustomField]
-}
-
 case class OutputCustomField(name: String, reference: String, description: String, `type`: String, options: Seq[JsValue], mandatory: Boolean)
 
 object OutputCustomField {
@@ -53,26 +39,6 @@ object InputCustomFieldValue {
     case (_, FUndefined) => Good(Nil)
   }
 
-  val simpleParser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("options") {
-    case (_, FSeq(fields)) =>
-      fields
-        .validatedBy {
-          case FString(value)   => Good(InputCustomFieldValue("name", Some(value)))
-          case FNumber(value)   => Good(InputCustomFieldValue("name", Some(value)))
-          case FBoolean(value)  => Good(InputCustomFieldValue("name", Some(value)))
-          case FAny(value :: _) => Good(InputCustomFieldValue("name", Some(value)))
-          case FNull            => Good(InputCustomFieldValue("name", None))
-          case other =>
-            Bad(
-              One(
-                InvalidFormatAttributeError("name", "CustomFieldValue", Set("string", "number", "boolean", "string"), other)
-              )
-            )
-        }
-        .map(_.toSeq)
-    case (_, FUndefined) => Good(Nil)
-  }
-
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
       case InputCustomFieldValue(name, Some(s: String))  => name -> JsString(s)
@@ -87,16 +53,19 @@ object InputCustomFieldValue {
     }
     JsObject(fields)
   }
+}
 
-  implicit val reads: Reads[Seq[InputCustomFieldValue]] = (json: JsValue) => json
-    .validate[Seq[JsValue]]
-    .map(_.map {
-      case JsString(v) => InputCustomFieldValue("name", Some(v))
-      case JsNumber(value) => InputCustomFieldValue("name", Some(value))
-      case JsBoolean(value) => InputCustomFieldValue("name", Some(value))
-      case JsNull => InputCustomFieldValue("name", None)
-      case other => sys.error(s"The custom field has invalid value: $other (${other.getClass})")
-    })
+case class InputCustomField(
+    name: String,
+    description: String,
+    `type`: String,
+    reference: String,
+    mandatory: Option[Boolean],
+    options: Seq[JsValue] = Nil
+)
+
+object InputCustomField {
+  implicit val reads: Reads[InputCustomField] = Json.reads[InputCustomField]
 }
 
 case class OutputCustomFieldValue(name: String, description: String, tpe: String, value: Option[String])
