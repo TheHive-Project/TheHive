@@ -169,9 +169,6 @@ angular.module('thehive', [
                           })
                           .catch( function(err) {
                             NotificationSrv.error('SettingsCtrl', err.data, err.status);
-                            // $timeout(function() {
-                            //     $state.go('login');
-                            // });
 
                             return deferred.reject(err);
                           });
@@ -187,15 +184,15 @@ angular.module('thehive', [
                 abstract: true,
                 url: 'administration',
                 template: '<ui-view/>',
-                onEnter: function($state, AuthenticationSrv) {
-                    var currentUser = AuthenticationSrv.currentUser;
-
-                    if (!currentUser || !currentUser.permissions || currentUser.organisation !== 'default') {
-                        $state.go('app.index', {}, {reload: true});
-                    }
-
-                    return true;
-                }
+                // onEnter: function($state, AuthenticationSrv) {
+                //     var currentUser = AuthenticationSrv.currentUser;
+                //
+                //     if (!currentUser || !currentUser.permissions || currentUser.organisation !== 'default') {
+                //         $state.go('app.index', {}, {reload: true});
+                //     }
+                //
+                //     return true;
+                // }
             })
             .state('app.administration.profiles', {
                 url: '/profiles',
@@ -207,7 +204,8 @@ angular.module('thehive', [
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
                     }
-                }
+                },
+                permissions: ['manageProfile']
             })
             .state('app.administration.organisations', {
                 url: '/organisations',
@@ -219,7 +217,8 @@ angular.module('thehive', [
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
                     }
-                }
+                },
+                permissions: ['manageOrganisation']
             })
             .state('app.administration.organisations-details', {
                 url: '/organisations/{organisation}/details',
@@ -236,7 +235,8 @@ angular.module('thehive', [
                     caseTemplates: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.caseTemplates($stateParams.organisation);
                     }
-                }
+                },
+                permissions: ['manageOrganisation', 'manageUsers', 'manageCaseTemplate']
             })
             // .state('app.administration.users', {
             //     url: '/users',
@@ -262,14 +262,16 @@ angular.module('thehive', [
                     fields: function(CustomFieldsCacheSrv){
                         return CustomFieldsCacheSrv.all();
                     }
-                }
+                },
+                permissions: ['manageCaseTemplate']
             })
             .state('app.administration.report-templates', {
                 url: '/report-templates',
                 templateUrl: 'views/partials/admin/report-templates.html',
                 controller: 'AdminReportTemplatesCtrl',
                 controllerAs: 'vm',
-                title: 'Report templates administration'
+                title: 'Report templates administration',
+                permissions: ['manageReportTemplate']
             })
             // .state('app.administration.metrics', {
             //     url: '/metrics',
@@ -282,7 +284,8 @@ angular.module('thehive', [
                 templateUrl: 'views/partials/admin/custom-fields.html',
                 controller: 'AdminCustomFieldsCtrl',
                 controllerAs: '$vm',
-                title: 'Custom fields administration'
+                title: 'Custom fields administration',
+                permissions: ['manageCustomField']
             })
             .state('app.administration.observables', {
                 url: '/observables',
@@ -561,9 +564,18 @@ angular.module('thehive', [
             }
         ]);
     })
-    .run(function($rootScope) {
+    .run(function($rootScope, $state, AuthenticationSrv) {
         'use strict';
         $rootScope.async = 0;
+
+        $rootScope.$on('$stateChangeStart', function(event, toState /*toParams*/) {
+            console.log('state Permissions: ' + toState.permissions);
+
+            if(toState.permissions && !AuthenticationSrv.hasPermission(toState.permissions)) {
+                event.preventDefault();
+                $state.go('app.index');
+            }
+        });
 
         $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
             if (_.isFunction(toState.title)) {

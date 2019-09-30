@@ -146,7 +146,7 @@
                 </li>
 
                 <li class="dropdown" ng-if="!isSuperAdmin()">
-                    <a class="">
+                    <a ui-sref="app.administration.organisations-details({'organisation': currentUser.organisation})">
                         <i class="fa fa-cog"></i>
                         <span class="hpad5">Organisation</span>
                     </a>

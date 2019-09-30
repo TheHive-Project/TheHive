@@ -9,9 +9,6 @@
                     return s.trim(item);
                 });
 
-                console.log(attrs);
-                console.log('Checking permissions: ' + attrs.ifPermission);
-
                 if(!AuthenticationSrv.hasPermission(permissions)){
                     element.remove();
                 }
