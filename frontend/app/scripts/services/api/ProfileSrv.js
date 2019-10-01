@@ -60,6 +60,10 @@
             this.update = function(id, profile) {
                 return $http.patch(baseUrl + '/' + id, profile);
             };
+
+            this.remove = function(id) {
+                return $http.delete(baseUrl + '/' + id);
+            };
         });
 
 })();

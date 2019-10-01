@@ -15,7 +15,7 @@
                                 <tr>
                                     <th style="width: 300px">Name</th>
                                     <th>Permissions</th>
-                                    <th style="width: 80px"></th>
+                                    <th style="width: 150px"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -31,6 +31,9 @@
                                     <td>
                                         <span class="clickable mr-xs text-primary" ng-click="$vm.showProfile('edit', profile)">
                                             <i class="fa fa-edit"></i>Edit</span>
+
+                                        <span class="clickable mr-xs text-danger" ng-click="$vm.removeProfile(profile)">
+                                            <i class="fa fa-trash"></i>Delete</span>
                                     </td>
                                 </tr>
                             </tbody>

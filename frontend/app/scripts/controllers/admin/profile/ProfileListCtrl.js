@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ProfileListCtrl',
-        function($uibModal, ProfileSrv, NotificationSrv) {
+        function($uibModal, ProfileSrv, NotificationSrv, ModalSrv) {
             var self = this;
 
             self.load = function() {
@@ -63,6 +63,32 @@
                     })
                     .catch(function(err) {
                         NotificationSrv.error('Error', 'Profile creation failed', err.status);
+                    });
+            };
+
+            self.removeProfile = function(profile) {
+                var modalInstance = ModalSrv.confirm(
+                    'Remove profile',
+                    'Are you sure you want to remove the selected profile?', {
+                        flavor: 'danger',
+                        okText: 'Yes, remove it'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        return ProfileSrv.remove(profile.id);
+                    })
+                    .then(function( /*response*/ ) {
+                        self.load();
+                        NotificationSrv.success(
+                            'Profile ' + profile.name + ' has been successfully removed.'
+                        );
+                    })
+                    .catch(function(err) {
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('ProfileListCtrl', err.data, err.status);
+                        }
                     });
             };
 
