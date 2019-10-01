@@ -3,11 +3,12 @@
 
     angular.module('theHiveControllers')
         .component('orgUserList', {
-            controller: function($scope, UserSrv, NotificationSrv, ModalSrv, clipboard) {
+            controller: function($scope, UserSrv, NotificationSrv, ModalSrv, AuthenticationSrv, clipboard) {
                 var self = this;
 
                 self.userKeyCache = {};
                 self.showPwdForm = {};
+                self.currentUser = AuthenticationSrv.currentUser;
 
                 self.$onInit = function() {
                     // TODO FIX ME
