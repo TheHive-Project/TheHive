@@ -39,13 +39,13 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "name": "test",
                       "reference": "test",
                       "description": "test cf",
                       "type": "string",
                       "options": ["h", "m", "l"]
-                  }
+
               }  
             """.stripMargin))
         val result = customFieldCtr.create(request)
@@ -67,13 +67,13 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "name": "test bool",
                       "reference": "test bool",
                       "description": "test cf bool",
                       "type": "boolean",
                       "mandatory": true
-                  }
+
               }
             """.stripMargin))
         val result = customFieldCtr.create(request)
@@ -94,13 +94,13 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "name": "test int",
                       "reference": "test int",
                       "description": "test cf int",
                       "type": "integer",
                       "options": [1, 2, 3]
-                  }
+
               }
             """.stripMargin))
         val result = customFieldCtr.create(request)
@@ -122,12 +122,12 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "name": "test float",
                       "reference": "test float",
                       "description": "test cf float",
                       "type": "float"
-                  }
+
               }
             """.stripMargin))
         val result = customFieldCtr.create(request)
@@ -147,13 +147,12 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "name": "test date",
                       "reference": "test date",
                       "description": "test cf date",
                       "type": "date",
                       "mandatory": false
-                  }
               }
             """.stripMargin))
         val result = customFieldCtr.create(request)
@@ -208,12 +207,12 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "options": ["fear", "laughing"],
                       "description": "test cf updated",
                       "mandatory": true,
                       "reference": "las vegas"
-                  }
+
               }
             """.stripMargin))
         val result = customFieldCtr.update(cf.get._id)(request)
@@ -243,9 +242,9 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""
               {
-                  "value": {
+
                       "description": "test date cf updated"
-                  }
+
               }
             """.stripMargin))
         val result = customFieldCtr.update(cf.get._id)(request)

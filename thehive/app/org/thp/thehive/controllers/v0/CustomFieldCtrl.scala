@@ -21,7 +21,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")
-      .extract("customField", FieldsParser[InputCustomField].on("value"))
+      .extract("customField", FieldsParser[InputCustomField])
       .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
         val customField: InputCustomField = request.body("customField")
         customFieldSrv
@@ -41,7 +41,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete custom field")
-      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, permissions) { _ => implicit graph =>
         Try(
           customFieldSrv
             .get(id)
@@ -51,7 +51,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def update(id: String): Action[AnyContent] =
     entryPoint("update custom field")
-      .extract("customField", FieldsParser.update("customField", customFieldProperties).on("value"))
+      .extract("customField", FieldsParser.update("customField", customFieldProperties))
       .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
 

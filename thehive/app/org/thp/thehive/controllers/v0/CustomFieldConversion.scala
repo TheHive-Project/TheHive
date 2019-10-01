@@ -8,8 +8,7 @@ import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputCustomField, InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldString, CustomFieldWithValue}
-import org.thp.thehive.services.{CustomFieldSrv, CustomFieldSteps}
-import play.api.libs.json.{JsValue, Json}
+import org.thp.thehive.services.CustomFieldSteps
 
 import scala.language.implicitConversions
 

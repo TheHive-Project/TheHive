@@ -1,12 +1,12 @@
 package org.thp.thehive.services
-import scala.util.Try
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.models.CustomField
+
+import scala.util.Try
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
