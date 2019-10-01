@@ -13,7 +13,7 @@
                     description: field.description,
                     options: field.options,
                     type: field.type,
-                    mandaroty: field.mandaroty
+                    mandatory: field.mandatory
                 };
             };
 
