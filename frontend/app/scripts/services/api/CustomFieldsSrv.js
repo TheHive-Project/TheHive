@@ -23,6 +23,7 @@
             };
 
             this.usage = function(field) {
+                // TODO TEST ME after backend implementation
                 return $http.get('./api/customFields/' + field.reference);
             };
 
