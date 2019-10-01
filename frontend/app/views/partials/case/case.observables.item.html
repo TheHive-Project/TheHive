@@ -27,7 +27,10 @@
 </div>
 <div class="row">
     <!-- Observable analysers short reports -->
-    <div class="col-md-12 flexwrap">
+    <!-- <mini-report-list observable="artifact" reports="artifact.reports" on-item-clicked="showReport(observable, analyzerId)"></mini-report-list> -->
+    <mini-report-list observable="artifact" reports="artifact.reports"></mini-report-list>
+
+    <!-- <div class="col-md-12 flexwrap">
         <report ng-repeat="(analyzerId, summary) in artifact.reports"
             artifact="artifact"
             content="summary"
@@ -35,7 +38,7 @@
             name="analyzerId"
             success="true"
             class="short-report"></report>
-    </div>
+    </div> -->
 </div>
 
 <div class="clearfix">
