@@ -5,7 +5,7 @@
                 <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{alertEvents.count}})</h3>
             </div>
             <div class="box-body">
-                
+
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
 
                 <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
@@ -38,7 +38,11 @@
 
                 <!-- Datalist  -->
                 <div class="row mt-s">
-                    <div class="col-md-12">
+                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+                        <div class="empty-message">No records</div>
+                    </div>
+
+                    <div class="col-md-12" ng-show="$vm.list.total > 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table table-striped case-list">
@@ -194,8 +198,7 @@
                         </table>
 
                         <psearch control="$vm.list"></psearch>
-
-                    </div>
+                    </div>                                    
                 </div>
 
 
