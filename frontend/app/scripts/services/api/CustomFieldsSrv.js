@@ -9,8 +9,8 @@
                     name: field.displayName,
                     description: field.description,
                     options: field.options,
-                    type: field.type
-                    //TODO add Mandaroty
+                    type: field.type,
+                    mandaroty: field.mandaroty                    
                 };
             };
 
@@ -30,6 +30,9 @@
                 },
                 update: function (id, field) {
                     return $http.patch('./api/customField', convert(field));
+                },
+                remove: function (id) {
+                    return $http.delete('./api/customField/' + id);
                 }
 
             };
