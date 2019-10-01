@@ -474,7 +474,7 @@
 **Closed issues:**
 
 - The Hive - MISP SSL configuration: General SSLEngine problem [\#544](https://github.com/TheHive-Project/TheHive/issues/544)
-- Dropdown menu for case templates doesnt have scroll [\#541](https://github.com/TheHive-Project/TheHive/issues/541)
+- Dropdown menu for case templates doesn't have scroll [\#541](https://github.com/TheHive-Project/TheHive/issues/541)
 
 **Merged pull requests:**
 

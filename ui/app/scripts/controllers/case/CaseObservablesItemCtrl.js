@@ -155,7 +155,7 @@
                     }, 500);
 
                 }, function(/*err*/) {
-                    NotificationSrv.log('An expected error occured while fetching the job report');
+                    NotificationSrv.log('An expected error occurred while fetching the job report');
                 });
             };
 
