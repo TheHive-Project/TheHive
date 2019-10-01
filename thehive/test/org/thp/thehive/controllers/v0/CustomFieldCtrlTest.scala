@@ -194,6 +194,69 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
         newList.find(_._id == cf._id) must beNone
       }
+
+      "update a string custom field" in {
+        val l = db.roTransaction(graph => customFieldSrv.initSteps(graph).toList)
+
+        l must not(beEmpty)
+
+        val cf = l.find(_.`type` == CustomFieldString)
+
+        cf must beSome
+
+        val request = FakeRequest("PATCH", s"/api/customField")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
+              {
+                  "value": {
+                      "options": ["fear", "laughing"],
+                      "description": "test cf updated",
+                      "mandatory": true,
+                      "reference": "las vegas"
+                  }
+              }
+            """.stripMargin))
+        val result = customFieldCtr.update(cf.get._id)(request)
+
+        status(result) shouldEqual 200
+
+        val outputCustomField: OutputCustomField = contentAsJson(result).as[OutputCustomField]
+
+        outputCustomField.reference shouldEqual cf.get.name
+        outputCustomField.name shouldEqual cf.get.name
+        outputCustomField.description shouldEqual "test cf updated"
+        outputCustomField.`type` shouldEqual "string"
+        outputCustomField.mandatory must beTrue
+        outputCustomField.options must containAllOf(Seq(JsString("fear"), JsString("laughing")))
+      }
+
+      "update a date custom field" in {
+        val l = db.roTransaction(graph => customFieldSrv.initSteps(graph).toList)
+
+        l must not(beEmpty)
+
+        val cf = l.find(_.`type` == CustomFieldDate)
+
+        cf must beSome
+
+        val request = FakeRequest("PATCH", s"/api/customField")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""
+              {
+                  "value": {
+                      "description": "test date cf updated"
+                  }
+              }
+            """.stripMargin))
+        val result = customFieldCtr.update(cf.get._id)(request)
+
+        status(result) shouldEqual 200
+
+        val outputCustomField: OutputCustomField = contentAsJson(result).as[OutputCustomField]
+
+        outputCustomField.description shouldEqual "test date cf updated"
+        outputCustomField.`type` shouldEqual "date"
+      }
     }
   }
 

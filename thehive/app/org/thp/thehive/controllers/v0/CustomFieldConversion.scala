@@ -4,9 +4,12 @@ import java.util.Date
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, UniMapping}
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputCustomField, InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldString, CustomFieldWithValue}
+import org.thp.thehive.services.{CustomFieldSrv, CustomFieldSteps}
+import play.api.libs.json.{JsValue, Json}
 
 import scala.language.implicitConversions
 
@@ -43,4 +46,14 @@ object CustomFieldConversion {
         .withFieldComputed(_.reference, _.name)
         .transform
     )
+
+  def customFieldProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[CustomFieldSteps]
+      .property("name", UniMapping.string)(_.simple.readonly)
+      .property("description", UniMapping.string)(_.simple.updatable)
+      .property("reference", UniMapping.string)(_.simple.readonly)
+      .property("mandatory", UniMapping.boolean)(_.simple.updatable)
+      .property("type", UniMapping.string)(_.simple.readonly)
+      .property("options", UniMapping.json.sequence)(_.simple.updatable)
+      .build
 }

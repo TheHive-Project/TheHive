@@ -116,6 +116,7 @@ class Router @Inject()(
     case GET(p"/customField")        => customFieldCtrl.list
     case POST(p"/customField")       => customFieldCtrl.create
     case DELETE(p"/customField/$id") => customFieldCtrl.delete(id)
+    case PATCH(p"/customField/$id")  => customFieldCtrl.update(id)
 
     case GET(p"/alert")                        => queryExecutor.alert.search
     case POST(p"/alert")                       => alertCtrl.create // Audit ok

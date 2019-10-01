@@ -4,6 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.CustomFieldSrv
@@ -46,5 +47,17 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
             .get(id)
             .remove()
         ).map(_ => Results.NoContent)
+      }
+
+  def update(id: String): Action[AnyContent] =
+    entryPoint("update custom field")
+      .extract("customField", FieldsParser.update("customField", customFieldProperties).on("value"))
+      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
+
+        for {
+          updated <- customFieldSrv.update(customFieldSrv.get(id), propertyUpdaters)
+          cf      <- updated._1.getOrFail()
+        } yield Results.Ok(cf.toJson)
       }
 }

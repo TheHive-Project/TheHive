@@ -9,7 +9,7 @@ import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.models.CustomField
 
 @Singleton
-class CustomFieldSrv @Inject()(implicit db: Database) extends VertexSrv[CustomField, CustomFieldSteps] {
+class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = createEntity(e)
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
