@@ -11,7 +11,7 @@
             UtilsSrv,
             ListSrv,
             MetricsCacheSrv,
-            CustomFieldsCacheSrv,
+            CustomFieldsSrv,
             UserSrv,            
             ModalUtilsSrv,
             templates,

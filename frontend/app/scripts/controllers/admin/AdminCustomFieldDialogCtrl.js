@@ -97,7 +97,7 @@
             }
 
             var name = s.trim(s.slugify(self.customField.displayName));
-            name = name.charAt(0).toLowerCase() + name.slice(1);
+            //name = name.charAt(0).toLowerCase() + name.slice(1);
 
             self.customField.name = name;
 

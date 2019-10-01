@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, CustomFieldsCacheSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, isAdmin, readonly) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, isAdmin, readonly) {
             var self = this;
             var eventId = event.id;
 
@@ -25,7 +25,7 @@
             self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
             self.currentSimilarFilter = '';
             self.similarCasesStats = [];
-            self.customFieldsCache = CustomFieldsCacheSrv;
+            self.customFieldsCache = CustomFieldsSrv;
 
             self.hideEmptyCaseButton = UiSettingsSrv.hideEmptyCaseButton();
 
@@ -74,7 +74,7 @@
             };
 
             self.updateCustomFieldsList = function() {
-                CustomFieldsCacheSrv.all().then(function(fields) {
+                CustomFieldsSrv.all().then(function(fields) {
                     self.orderedFields = getTemplateCustomFields(self.event.customFields);
                     self.allCustomFields = _.omit(fields, _.keys(self.event.customFields));
                     self.customFieldsAvailable = _.keys(self.allCustomFields).length > 0;

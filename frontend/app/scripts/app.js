@@ -259,8 +259,8 @@ angular.module('thehive', [
                     templates: function(CaseTemplateSrv) {
                         return CaseTemplateSrv.list();
                     },
-                    fields: function(CustomFieldsCacheSrv){
-                        return CustomFieldsCacheSrv.all();
+                    fields: function(CustomFieldsSrv){
+                        return CustomFieldsSrv.all();
                     }
                 },
                 permissions: ['manageCaseTemplate']

@@ -1,42 +1,75 @@
-(function () {
+(function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CustomFieldsSrv', function ($http) {
+        .service('CustomFieldsSrv', function($http, $q) {
+            var self = this;
 
-            var convert = function(field) {
+            this.cache = null;
+
+            this._convert = function(field) {
                 return {
                     reference: field.name,
                     name: field.displayName,
                     description: field.description,
                     options: field.options,
                     type: field.type,
-                    mandaroty: field.mandaroty                    
+                    mandaroty: field.mandaroty
                 };
             };
 
-            var factory = {
 
-                removeField: function (field) {
-                    return $http.delete('./api/list/' + field.id);
-                },
-                usage: function(field) {
-                    return $http.get('./api/customFields/' + field.reference);
-                },
-                list: function () {
-                    return $http.get('./api/customField');
-                },
-                create: function (field) {
-                    return $http.post('./api/customField', convert(field));
-                },
-                update: function (id, field) {
-                    return $http.patch('./api/customField', convert(field));
-                },
-                remove: function (id) {
-                    return $http.delete('./api/customField/' + id);
-                }
-
+            this.removeField = function(field) {
+                return $http.delete('./api/list/' + field.id);
             };
 
-            return factory;
+            this.usage = function(field) {
+                return $http.get('./api/customFields/' + field.reference);
+            };
+
+            this.list = function() {
+                return $http.get('./api/customField');
+            };
+
+            this.create = function(field) {
+                return $http.post('./api/customField', self._convert(field));
+            };
+
+            this.update = function(id, field) {
+                return $http.patch('./api/customField', self._convert(field));
+            };
+
+            this.remove = function(id) {
+                return $http.delete('./api/customField/' + id);
+            };
+
+            this.clearCache = function() {
+                self.cache = null;
+            };
+
+            this.getCache = function(name) {
+                return self.cache[name];
+            };
+
+            this.all = function() {
+                var deferred = $q.defer();
+
+                if (self.cache === null) {
+                    $http.get('./api/customField')
+                        .then(function(response) {
+                            self.cache = {};
+
+                            _.each(response.data, function(field) {
+                                self.cache[field.reference] = field;
+                            });
+
+                            deferred.resolve(self.cache);
+                        });
+                } else {
+                    deferred.resolve(self.cache);
+                }
+
+                return deferred.promise;
+            };
+
         });
 })();

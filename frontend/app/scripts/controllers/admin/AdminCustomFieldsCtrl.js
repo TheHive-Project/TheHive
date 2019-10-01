@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCustomFieldsCtrl',
-        function($scope, $uibModal, ListSrv, CustomFieldsCacheSrv, NotificationSrv, ModalUtilsSrv, CustomFieldsSrv) {
+        function($scope, $uibModal, ListSrv, CustomFieldsSrv, NotificationSrv, ModalUtilsSrv) {
             var self = this;
 
             self.reference = {
@@ -34,18 +34,23 @@
                     options: []
                 };
 
-                ListSrv.query({
-                    'listId': 'custom_fields'
-                }, {}, function(response) {
-
-                    self.customFields = _.map(response.toJSON(), function(value, key) {
-                        value.id = key;
-                        return value;
+                CustomFieldsSrv.list()
+                    .then(function(response) {
+                        self.customFields = response.data;
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('AdminCustomfieldsCtrl', response.data, response.status);
                     });
 
-                }, function(response) {
-                    NotificationSrv.error('AdminCustomfieldsCtrl', response.data, response.status);
-                });
+                // ListSrv.query({
+                //     'listId': 'custom_fields'
+                // }, {}, function(response) {
+                //
+                //
+                //
+                // }, function(response) {
+                //
+                // });
             };
 
             self.showFieldDialog = function(customField) {
@@ -61,7 +66,7 @@
 
                 modalInstance.result.then(function(/*data*/) {
                     self.initCustomfields();
-                    CustomFieldsCacheSrv.clearCache();
+                    CustomFieldsSrv.clearCache();
                     $scope.$emit('custom-fields:refresh');
                 });
             };
@@ -114,9 +119,9 @@
                     })
                     .then(function() {
                         NotificationSrv.log('The custom field has been removed successfully', 'success');
-                        
+
                         self.initCustomfields();
-                        CustomFieldsCacheSrv.clearCache();
+                        CustomFieldsSrv.clearCache();
                         $scope.$emit('custom-fields:refresh');
                     })
                     .catch(function(err) {

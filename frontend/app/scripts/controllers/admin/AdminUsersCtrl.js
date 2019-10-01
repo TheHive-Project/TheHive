@@ -120,9 +120,7 @@
                 });
 
                 modalInstance.result.then(function(/*data*/) {
-                    //self.initCustomfields();
-                    //CustomFieldsCacheSrv.clearCache();
-                    //$scope.$emit('custom-fields:refresh');
+                    // TODO
                 });
             };
 

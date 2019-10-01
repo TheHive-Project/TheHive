@@ -104,7 +104,7 @@
         };
     });
 
-    angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsCacheSrv) {
+    angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsSrv) {
         var getTemplateCustomFields = function(customFields) {
             var result = [];
 
@@ -152,7 +152,7 @@
         };
 
         $scope.updateCustomFieldsList = function() {
-            CustomFieldsCacheSrv.all().then(function(fields) {
+            CustomFieldsSrv.all().then(function(fields) {
                 $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
                 $scope.allCustomFields = _.omit(fields, _.keys($scope.caze.customFields));
                 $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;

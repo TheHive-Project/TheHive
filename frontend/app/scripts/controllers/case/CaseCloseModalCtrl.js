@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCloseModalCtrl',
-        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, CustomFieldsCacheSrv, NotificationSrv, caze) {
+        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, CustomFieldsSrv, NotificationSrv, caze) {
             $scope.caze = caze;
             $scope.tasksValid = false;
             $scope.tasks = [];
@@ -46,7 +46,7 @@
             };
 
             $scope.initialize = function() {
-                CustomFieldsCacheSrv.all().then(function(fields) {
+                CustomFieldsSrv.all().then(function(fields) {
                     $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
                     $scope.allCustomFields = fields;
 
