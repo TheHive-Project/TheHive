@@ -8,7 +8,15 @@ import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{FNull, _}
 import play.api.libs.json._
 
-case class OutputCustomField(name: String, reference: String, description: String, `type`: String, options: Seq[JsValue], mandatory: Boolean)
+case class OutputCustomField(
+    id: String,
+    name: String,
+    reference: String,
+    description: String,
+    `type`: String,
+    options: Seq[JsValue],
+    mandatory: Boolean
+)
 
 object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]

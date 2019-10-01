@@ -130,6 +130,7 @@ object CustomFieldDate extends CustomFieldType[Date] {
 @VertexEntity
 case class CustomField(
     name: String,
+    displayName: String,
     description: String,
     `type`: CustomFieldType[_],
     mandatory: Boolean,

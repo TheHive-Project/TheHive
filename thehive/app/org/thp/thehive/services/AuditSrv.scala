@@ -47,6 +47,7 @@ class AuditSrv @Inject()(
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]
   val organisation                                        = new SelfContextObjectAudit[Organisation]
   val profile                                             = new SelfContextObjectAudit[Profile]
+  val customField                                         = new SelfContextObjectAudit[CustomField]
   private val pendingAuditsLock                           = new Object
   private val transactionAuditIdsLock                     = new Object
   private val unauditedTransactionsLock                   = new Object
@@ -201,6 +202,18 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
   def organisation: OrganisationSteps =
     new OrganisationSteps(getOrganisation(raw))
 
+  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
+    r.outTo[AuditContext]
+      .choose[Label, Vertex](
+        on = _.label(),
+        BranchCase("Case", new CaseSteps(_).organisations.raw),
+        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
+        BranchCase("Alert", new AlertSteps(_).organisation.raw),
+        BranchCase("User", new UserSteps(_).organisations.raw),
+        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
+        //          BranchOtherwise(_)
+      )
+
   def auditContextObjectOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])] =
     ScalarSteps(
       raw
@@ -220,18 +233,6 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
             )
         }
     )
-
-  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
-    r.outTo[AuditContext]
-      .choose[Label, Vertex](
-        on = _.label(),
-        BranchCase("Case", new CaseSteps(_).organisations.raw),
-        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
-        BranchCase("Alert", new AlertSteps(_).organisation.raw),
-        BranchCase("User", new UserSteps(_).organisations.raw),
-        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
-        //          BranchOtherwise(_)
-      )
 
   def richAudit: ScalarSteps[RichAudit] =
     ScalarSteps(

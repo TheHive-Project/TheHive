@@ -10,7 +10,12 @@ import scala.util.Try
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
-  def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = createEntity(e)
+
+  def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
+    for {
+      created <- createEntity(e)
+      _       <- auditSrv.customField.create(created)
+    } yield created
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
 

@@ -1,6 +1,7 @@
 [
   {
     "name": "string1",
+    "displayName": "string1",
     "description": "string custom field",
     "type": "string",
     "mandatory": false,
@@ -8,6 +9,7 @@
   },
   {
     "name": "boolean1",
+    "displayName": "boolean1",
     "description": "boolean custom field",
     "type": "boolean",
     "mandatory": false,
@@ -15,6 +17,7 @@
   },
   {
     "name": "integer1",
+    "displayName": "integer1",
     "description": "integer custom field",
     "type": "integer",
     "mandatory": false,
@@ -22,6 +25,7 @@
   },
   {
     "name": "float1",
+    "displayName": "float1",
     "description": "float custom field",
     "type": "float",
     "mandatory": false,
@@ -29,6 +33,7 @@
   },
   {
     "name": "date1",
+    "displayName": "date1",
     "description": "date custom field",
     "type": "date",
     "mandatory": false,

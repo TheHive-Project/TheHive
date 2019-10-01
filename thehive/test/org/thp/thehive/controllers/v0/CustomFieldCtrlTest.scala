@@ -69,7 +69,7 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
               {
 
                       "name": "test bool",
-                      "reference": "test bool",
+                      "reference": "test-bool",
                       "description": "test cf bool",
                       "type": "boolean",
                       "mandatory": true
@@ -82,7 +82,7 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
         val outputCustomField: OutputCustomField = contentAsJson(result).as[OutputCustomField]
 
-        outputCustomField.reference shouldEqual "test bool"
+        outputCustomField.reference shouldEqual "test-bool"
         outputCustomField.name shouldEqual "test bool"
         outputCustomField.description shouldEqual "test cf bool"
         outputCustomField.`type` shouldEqual "boolean"
