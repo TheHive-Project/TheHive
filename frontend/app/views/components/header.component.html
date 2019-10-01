@@ -98,44 +98,42 @@
                     </a>
                     <ul class="dropdown-menu" uib-dropdown-menu>
                         <li>
+                            <a ui-sref="app.administration.organisations">
+                                <i class="fa fa-building-o"></i>
+                                <span class="hpad5">Organisations</span>
+                            </a>
+                        </li>
+                        <li>
                             <a ui-sref="app.administration.profiles">
                                 <i class="fa fa-users"></i>
                                 <span class="hpad5">Profiles</span>
                             </a>
                         </li>
-                        <li>
-                            <a ui-sref="app.administration.organisations">
-                                <i class="fa fa-users"></i>
-                                <span class="hpad5">Organisations</span>
-                            </a>
-                        </li>
                         <li class="divider"></li>
-                        <li>
+                        <!-- <li>
                             <a ui-sref="app.administration.case-templates">
                                 <i class="fa fa-file-text"></i>
                                 <span class="hpad5">Case templates</span>
                             </a>
-                        </li>
-                        <li>
-                            <a ui-sref="app.administration.report-templates">
-                                <i class="fa fa-file-text"></i>
-                                <span class="hpad5">Report templates</span>
-                            </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <a ui-sref="app.administration.observables">
-                                <i class="glyphicon glyphicon-pushpin"></i>
-                                <span class="hpad5">Observables</span>
-                            </a>
-                        </li>
+                        </li> -->
                         <li>
                             <a ui-sref="app.administration.custom-fields">
                                 <i class="fa fa-edit"></i>
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
-                        <li class="divider"></li>
+                        <li>
+                            <a ui-sref="app.administration.report-templates">
+                                <i class="fa fa-file-text"></i>
+                                <span class="hpad5">Analyzer templates</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="app.administration.observables">
+                                <i class="glyphicon glyphicon-pushpin"></i>
+                                <span class="hpad5">Observable types</span>
+                            </a>
+                        </li>
                         <li>
                             <a ui-sref="app.administration.ui-settings">
                                 <i class="fa fa-cogs"></i>
@@ -147,7 +145,7 @@
 
                 <li class="dropdown" ng-if="!isSuperAdmin()">
                     <a ui-sref="app.administration.organisations-details({'organisation': currentUser.organisation})">
-                        <i class="fa fa-cog"></i>
+                        <i class="fa fa-building-o"></i>
                         <span class="hpad5">Organisation</span>
                     </a>
                 </li>
