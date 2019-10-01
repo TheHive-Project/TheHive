@@ -7,13 +7,19 @@
 
             this.permissions = {
                 keys: [
-                    "manageUser",
-                    "manageCaseTemplate",
-                    "manageAlert",
-                    "manageCase",
-                    "manageObservable",
-                    "manageTask",
-                    "manageAction"
+                    'manageUser',
+                    'manageCaseTemplate',
+                    'manageAlert',
+                    'manageCase',
+                    'manageObservable',
+                    'manageTask',
+                    'manageAction',
+                    'manageOrganisation',
+                    'manageCustomField',
+                    'manageConfig',
+                    'manageTag',
+                    'manageProfile',
+                    'manageReportTemplate'
                 ],
                 labels: {
                     manageUser: 'Manage users',
@@ -22,7 +28,13 @@
                     manageCase: 'Manage case',
                     manageObservable: 'Manage observables',
                     manageTask: 'Manage tasks',
-                    manageAction: 'Manage actions'
+                    manageAction: 'Manage actions',
+                    manageOrganisation: 'Manage organisations',
+                    manageCustomField: 'Manage csutom fields',
+                    manageConfig: 'Manage configurations',
+                    manageTag: 'Manage tags',
+                    manageProfile: 'Manage profiles',
+                    manageReportTemplate: 'Manage report templates'
                 }
             };
 

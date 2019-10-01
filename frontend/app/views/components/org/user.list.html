@@ -33,13 +33,17 @@
                         </h4>
                         <h4 class="media-heading">
                             <small class="mr-xxs">
-                                <strong>Profile:</strong> {{user.profile}}</small>
+                                <strong>Full name:</strong> {{user.name}}</small>
                         </h4>
                     </td>
                     <td>
-                        <h4 class="media-heading">
+                        <h4 class="media-heading"
+                            uib-popover="I appeared on mouse enter!"
+                            popover-trigger="'mouseenter'"
+                            uib-popover-template="'permissionsPopoverTemplate.html'"
+                            popover-title="Permissions">
                             <small class="mr-xxs">
-                                <strong>Full name:</strong> {{user.name}}</small>
+                                <strong>Profile:</strong> {{user.profile}}</small>
                         </h4>
                     </td>
                     <td>
@@ -95,3 +99,9 @@
         </table>
     </div>
 </div>
+<script type="text/ng-template" id="permissionsPopoverTemplate.html">
+    <div class="wrap">
+        <em ng-if="user.permissions.length === 0" class="text-muted">No Permissions</em>
+        <span class="label label-default mr-xxs" ng-repeat="permission in user.permissions">{{permission}}</span>
+    </div>
+</script>
