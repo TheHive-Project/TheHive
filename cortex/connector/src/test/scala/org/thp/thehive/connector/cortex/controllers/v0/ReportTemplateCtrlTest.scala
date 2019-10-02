@@ -46,7 +46,7 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
       "import valid templates contained in a zip file and fetch them by id and type" in {
         val file = FilePart("templates", "report-templates.zip", Option("application/zip"), FakeTemporaryFile.fromResource("/report-templates.zip"))
         val request = FakeRequest("POST", s"/api/connector/cortex/report/template/_import")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withBody(AnyContentAsMultipartFormData(MultipartFormData(Map.empty, Seq(file), Nil)))
 
         val result = reportCtrl.importTemplates(request)
@@ -64,12 +64,12 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
         )
 
         val getRequest = FakeRequest("GET", s"/api/connector/cortex/report/template/content/JoeSandbox_File_Analysis_Noinet_2_0/long")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
         val getResult = reportCtrl.get("JoeSandbox_File_Analysis_Noinet_2_0")(getRequest)
         status(getResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
 
         val createRequest = FakeRequest("POST", "/api/connector/cortex/report/template")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                 "analyzerId": "anaTest1",
@@ -81,26 +81,26 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
 
         val outputReportTemplate = contentAsJson(createResult).as[OutputReportTemplate]
         val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
         val getResult2 = reportCtrl.get(outputReportTemplate.id)(getRequest2)
         status(getResult2) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult2)}")
 
         val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
         val updateResult = reportCtrl.update(outputReportTemplate.id)(updateRequest)
         status(updateResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
         contentAsJson(updateResult).as[OutputReportTemplate].content must equalTo("<br/>")
 
         val deleteRequest = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
         val deleteResult = reportCtrl.delete(outputReportTemplate.id)(deleteRequest)
         status(deleteResult) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
       }
 
       "search templates properly" in {
         val requestSearch = FakeRequest("POST", s"/api/connector/cortex/report/template/_search?range=0-200")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse(s"""
               {
                  "query":{"analyzerId": "Yeti_1_0"}
