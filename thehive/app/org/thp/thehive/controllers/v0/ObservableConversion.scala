@@ -112,7 +112,7 @@ object ObservableConversion {
   def observableLinkRenderer(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     (_: GremlinScala[Vertex])
       .coalesce(
-        new ObservableSteps(_).alert.richAlert.map(a => Json.obj("alert" -> a.toJson)).raw,
-        new ObservableSteps(_).`case`.richCase.map(c => Json.obj("case"  -> c.toJson)).raw
+        new ObservableSteps(_).alert.richAlert.map(a => Json.obj("alert"            -> a.toJson)).raw,
+        new ObservableSteps(_).`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson)).raw
       )
 }

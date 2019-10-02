@@ -39,7 +39,7 @@ class ActionCtrl @Inject()(
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
         entity match {
-          case c: Case       => caseSrv.get(c).richCase.getOrFail().map(_.toJson.as[JsObject])
+          case c: Case       => caseSrv.get(c).richCaseWithoutPerms.getOrFail().map(_.toJson.as[JsObject])
           case t: Task       => taskSrv.get(t).richTask.getOrFail().map(_.toJson.as[JsObject])
           case o: Observable => observableSrv.get(o).richObservable.getOrFail().map(_.toJson.as[JsObject])
           case l: Log        => logSrv.get(l).richLog.getOrFail().map(_.toJson.as[JsObject])

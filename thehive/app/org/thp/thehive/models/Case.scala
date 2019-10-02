@@ -7,6 +7,8 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 import play.api.libs.json.{Format, Json}
 
+import org.thp.scalligraph.auth.Permission
+
 object CaseStatus extends Enumeration {
   type Type = Value
 
@@ -84,7 +86,8 @@ case class RichCase(
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
-    customFields: Seq[CustomFieldWithValue]
+    customFields: Seq[CustomFieldWithValue],
+    userPermissions: Set[Permission]
 ) {
   val _id: String                = `case`._id
   val _createdBy: String         = `case`._createdBy
@@ -112,7 +115,8 @@ object RichCase {
       caseImpactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      customFields: Seq[CustomFieldWithValue]
+      customFields: Seq[CustomFieldWithValue],
+      userPermissions: Set[Permission]
   ): RichCase =
     `case`
       .asInstanceOf[Case]
@@ -123,6 +127,7 @@ object RichCase {
       .withFieldConst(_.resolutionStatus, resolutionStatus)
       .withFieldConst(_.user, user)
       .withFieldConst(_.customFields, customFields)
+      .withFieldConst(_.userPermissions, userPermissions)
       .transform
 
   def apply(
@@ -146,7 +151,8 @@ object RichCase {
       impactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      customFields: Seq[CustomFieldWithValue]
+      customFields: Seq[CustomFieldWithValue],
+      userPermissions: Set[Permission]
   ): RichCase = {
     val `case` = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
       override val _id: String                = __id
@@ -156,6 +162,6 @@ object RichCase {
       override val _createdAt: Date           = __createdAt
       override val _updatedAt: Option[Date]   = __updatedAt
     }
-    RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields)
+    RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields, userPermissions)
   }
 }

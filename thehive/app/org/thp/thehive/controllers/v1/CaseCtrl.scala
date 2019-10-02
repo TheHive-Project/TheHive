@@ -40,7 +40,7 @@ class CaseCtrl @Inject()(
       case (OutputParam(from, to, withStats), caseSteps, authContext) =>
         caseSteps
           .richPage(from, to, withTotal = true) { c =>
-            c.richCase.raw
+            c.richCase(authContext).raw
 //            case c if withStats =>
 ////              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
 //              c.richCase.raw.map(_ -> JsObject.empty) // TODO add stats
@@ -52,7 +52,7 @@ class CaseCtrl @Inject()(
   override val outputQuery: Query = Query.output[RichCase, OutputCase]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList)
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)
   )
 
   def create: Action[AnyContent] =

@@ -8,13 +8,13 @@ import play.api.test.PlaySpecification
 
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 
 class CaseSrvTest extends PlaySpecification {
-  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local")
+  val dummyUserSrv = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert")
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)
@@ -60,7 +60,14 @@ class CaseSrvTest extends PlaySpecification {
           impactStatus = None,
           resolutionStatus = None,
           user = Some("user1@thehive.local"),
-          Nil
+          Nil,
+          Set(
+            Permission("manageTask"),
+            Permission("manageCase"),
+            Permission("manageObservable"),
+            Permission("manageAlert"),
+            Permission("manageAction")
+          )
         )
       }
 
@@ -87,7 +94,14 @@ class CaseSrvTest extends PlaySpecification {
           impactStatus = Some("NoImpact"),
           resolutionStatus = None,
           user = Some("user2@thehive.local"),
-          Nil
+          Nil,
+          Set(
+            Permission("manageTask"),
+            Permission("manageCase"),
+            Permission("manageObservable"),
+            Permission("manageAlert"),
+            Permission("manageAction")
+          )
         )
         richCase._createdBy must_=== dummyUserSrv.userId
       }

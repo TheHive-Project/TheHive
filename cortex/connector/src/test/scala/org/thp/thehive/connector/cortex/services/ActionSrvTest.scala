@@ -137,13 +137,15 @@ class ActionSrvTest extends PlaySpecification with Mockito {
               )
             )
           )
-          val relatedCaseTry = caseSrv.get("#1").richCase.getOrFail()
+          val relatedCaseTry = caseSrv.get("#1").richCase(dummyUserSrv.authContext).getOrFail()
 
           relatedCaseTry must beSuccessfulTry
 
           val relatedCase = relatedCaseTry.get
 
-          caseSrv.get(relatedCase._id).richCase.getOrFail() must beSuccessfulTry.which(richCase => richCase.user must beSome("user2@thehive.local"))
+          caseSrv.get(relatedCase._id).richCase(dummyUserSrv.authContext).getOrFail() must beSuccessfulTry.which(
+            richCase => richCase.user must beSome("user2@thehive.local")
+          )
           relatedCase.tags must contain(Tag("mail sent"))
           caseSrv.initSteps.tasks(authContextUser1).has(Key("title"), P.eq("task created by action")).toList must contain(
             Task(

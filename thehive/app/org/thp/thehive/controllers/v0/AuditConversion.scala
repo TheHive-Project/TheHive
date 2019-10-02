@@ -30,10 +30,10 @@ object AuditConversion {
 
   def objectTypeMapper(objectType: String): String = objectType match {
 //    case "Case" =>"case"
-    case "Task" => "case_task"
-    case "Log"  => "case_task_log"
+    case "Task"       => "case_task"
+    case "Log"        => "case_task_log"
     case "Observable" => "case_artifact"
-    case other  => other.toLowerCase()
+    case other        => other.toLowerCase()
   }
 
   implicit def toOutputAudit(audit: RichAudit): Output[OutputAudit] =
@@ -57,7 +57,7 @@ object AuditConversion {
     )
 
   def caseToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
-    new CaseSteps(_).richCase.map[JsObject](_.toJson.as[JsObject]).raw
+    new CaseSteps(_).richCaseWithoutPerms.map[JsObject](_.toJson.as[JsObject]).raw
 
   def taskToJson(implicit db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
     _.project(

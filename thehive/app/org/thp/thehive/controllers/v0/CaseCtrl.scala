@@ -48,13 +48,13 @@ class CaseCtrl @Inject()(
             case c if withStats =>
               c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
             case c =>
-              c.richCase.raw.map(_ -> JsObject.empty)
+              c.richCase(authContext).raw.map(_ -> JsObject.empty)
           }
     }
   )
   override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, _) => caseSteps.richCase.toList)
+    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)
   )
 
   def create: Action[AnyContent] =

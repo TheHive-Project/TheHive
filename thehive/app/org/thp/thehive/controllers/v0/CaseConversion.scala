@@ -36,6 +36,7 @@ object CaseConversion {
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldConst(_.stats, JsObject.empty)
+        .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
         .transform
     )
 
@@ -69,6 +70,7 @@ object CaseConversion {
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
         .withFieldConst(_.stats, richCaseWithStats._2)
+        .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
         .transform
     )
 

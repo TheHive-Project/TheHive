@@ -71,7 +71,7 @@ class CaseSrv @Inject()(
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
       _ <- auditSrv.`case`.create(createdCase)
-    } yield RichCase(createdCase, allTags, None, None, Some(assignee.login), cfs)
+    } yield RichCase(createdCase, allTags, None, None, Some(assignee.login), cfs, authContext.permissions)
 
   def createCustomFields(
       `case`: Case with Entity,
@@ -394,7 +394,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
-              customFieldValues
+              customFieldValues,
+              Set.empty
             ) -> renderedEntity
         }
     )
@@ -486,7 +487,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     }
   }
 
-  def richCase: ScalarSteps[RichCase] =
+  def richCaseWithoutPerms: ScalarSteps[RichCase] =
     ScalarSteps(
       raw
         .project(
@@ -513,10 +514,68 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
-              customFieldValues
+              customFieldValues,
+              Set.empty
             )
         }
     )
+
+  def richCase(implicit authcontext: AuthContext): ScalarSteps[RichCase] = {
+    val shareLabel        = StepLabel[Vertex]()
+    val shareProfileLabel = StepLabel[Vertex]()
+    ScalarSteps(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[CaseTag].fold))
+            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
+            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+            .and(
+              By(
+                __[Vertex]
+                  .inTo[ShareCase]
+                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authcontext.organisation)))
+                  .outTo[ShareProfile]
+                  .fold
+              )
+            )
+            .and(
+              By(
+                __[Vertex]
+                  .inTo[ShareCase]
+                  .inTo[OrganisationShare]
+                  .has(Key[String]("name"), P.eq[String](authcontext.organisation))
+                  .inTo[RoleOrganisation]
+                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authcontext.userId)))
+                  .outTo[RoleProfile]
+                  .fold
+              )
+            )
+        )
+        .map {
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, shareProfile, roleProfile) =>
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case _             => throw InternalError("Not possible")
+              }
+              .toSeq
+            RichCase(
+              caze.as[Case],
+              tags.asScala.map(_.as[Tag]).toSeq,
+              atMostOneOf[String](impactStatus),
+              atMostOneOf[String](resolutionStatus),
+              atMostOneOf[String](user),
+              customFieldValues,
+              onlyOneOf[Vertex](shareProfile).as[Profile].permissions & onlyOneOf[Vertex](roleProfile).as[Profile].permissions
+            )
+        }
+    )
+  }
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 

@@ -51,7 +51,8 @@ case class OutputCase(
     summary: Option[String] = None,
     owner: Option[String], // user
     customFields: Set[OutputCustomFieldValue] = Set.empty,
-    stats: JsValue
+    stats: JsValue,
+    permissions: Set[String]
 )
 
 object OutputCase {
@@ -81,7 +82,8 @@ object OutputCase {
         "summary"          -> c.summary,
         "owner"            -> c.owner,
         "customFields"     -> c.customFields,
-        "stats"            -> c.stats
+        "stats"            -> c.stats,
+        "permissions"      -> c.permissions
       )
   )
 
@@ -112,6 +114,7 @@ object OutputCase {
         owner            <- (j \ "owner").validateOpt[String]
         customFields     <- (j \ "customFields").validate[Set[OutputCustomFieldValue]]
         stats            <- (j \ "stats").validate[JsValue]
+        permissions      <- (j \ "permissions").validate[Set[String]]
       } yield OutputCase(
         _id,
         id,
@@ -136,7 +139,8 @@ object OutputCase {
         summary,
         owner,
         customFields,
-        stats
+        stats,
+        permissions
       )
   )
   implicit val format: OFormat[OutputCase] = OFormat(reads, writes)
