@@ -236,7 +236,7 @@ angular.module('thehive', [
                         return OrganisationSrv.caseTemplates($stateParams.organisation);
                     }
                 },
-                permissions: ['manageOrganisation', 'manageUsers', 'manageCaseTemplate']
+                permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
             })
             // .state('app.administration.users', {
             //     url: '/users',
