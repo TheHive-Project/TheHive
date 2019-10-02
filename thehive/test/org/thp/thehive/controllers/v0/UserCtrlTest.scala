@@ -45,7 +45,11 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "search users" in {
         val request = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
-          .withJsonBody(Json.parse("""{"query": {"_and": [{"status": "Ok"}, {"_not": {"_is": {"login": "user4@thehive.local"}}}]}}"""))
+          .withJsonBody(
+            Json.parse(
+              """{"query": {"_and": [{"status": "Ok"}, {"_not": {"_is": {"login": "user4@thehive.local"}}}, {"_not": {"_is": {"login": "user2@thehive.local"}}}]}}"""
+            )
+          )
           .withHeaders("user" -> "user1@thehive.local")
 
         val result = theHiveQueryExecutor.user.search(request)
@@ -61,14 +65,6 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               organisation = "cert",
               hasKey = Some(false),
               status = "Ok"
-            ),
-            TestUser(
-              login = "user2@thehive.local",
-              name = "U",
-              roles = Set("read"),
-              organisation = "cert",
-              hasKey = Some(false),
-              status = "Ok"
             )
           )
 
@@ -78,7 +74,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "create a new user" in {
         val request = FakeRequest("POST", "/api/v0/user")
           .withJsonBody(Json.parse("""{"login": "user5@thehive.local", "name": "new user", "roles": ["read", "write", "alert"]}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "default")
 
         val result = userCtrl.create(request)
         status(result) must_=== 201
@@ -97,9 +93,9 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }
 
       "update a user" in {
-        val request = FakeRequest("POST", "/api/v0/user/user3@thehive.local")
+        val request = FakeRequest("POST", "/api/v0/user/user2@thehive.local")
           .withJsonBody(Json.parse("""{"name": "new name"}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "default")
 
         val result = userCtrl.update("user3@thehive.local")(request)
         status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -110,22 +106,22 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "lock an user" in {
         val authRequest1 = FakeRequest("POST", "/api/v0/login")
-          .withJsonBody(Json.parse("""{"user": "user3@thehive.local", "password": "my-secret-password"}"""))
+          .withJsonBody(Json.parse("""{"user": "user2@thehive.local", "password": "my-secret-password"}"""))
         val authResult1 = authenticationCtrl.login(authRequest1)
         status(authResult1) must_=== 200
 
-        val request = FakeRequest("POST", "/api/v0/user/user3@thehive.local")
+        val request = FakeRequest("POST", "/api/v0/user/user2@thehive.local")
           .withJsonBody(Json.parse("""{"status": "Locked"}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "default")
 
-        val result = userCtrl.update("user3@thehive.local")(request)
+        val result = userCtrl.update("user2@thehive.local")(request)
         status(result) must_=== 200
         val resultUser = contentAsJson(result).as[OutputUser]
         resultUser.status must_=== "Locked"
 
         // then authentication must fail
         val authRequest2 = FakeRequest("POST", "/api/v0/login")
-          .withJsonBody(Json.parse("""{"user": "user3@thehive.local", "password": "my-secret-password"}"""))
+          .withJsonBody(Json.parse("""{"user": "user2@thehive.local", "password": "my-secret-password"}"""))
         val authResult2 = authenticationCtrl.login(authRequest2)
         status(authResult2) must_=== 401
       }
@@ -138,7 +134,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val request = FakeRequest("POST", "/api/v0/user/user4@thehive.local")
           .withJsonBody(Json.parse("""{"status": "Ok"}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "cert")
 
         val result = userCtrl.update("user4@thehive.local")(request)
         status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -149,22 +145,22 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       }
 
       "remove a user" in {
-        val request = FakeRequest("DELETE", "/api/v0/user/user3@thehive.local")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        val request = FakeRequest("DELETE", "/api/v0/user/user2@thehive.local")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "default")
 
-        val result = userCtrl.delete("user3@thehive.local")(request)
+        val result = userCtrl.delete("user2@thehive.local")(request)
 
         status(result) must beEqualTo(204)
 
         val requestGet = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
           .withJsonBody(Json.parse("""{"query": {"_and": [{"_not": {"_is": {"login": "user4@thehive.local"}}}]}}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "default")
 
         val resultGet = theHiveQueryExecutor.user.search(requestGet)
 
         status(resultGet) must_=== 200
 
-        val resultUser = contentAsJson(resultGet).as[Seq[OutputUser]].find(_.login == "user3@thehive.local").get
+        val resultUser = contentAsJson(resultGet).as[Seq[OutputUser]].find(_.login == "user2@thehive.local").get
 
         resultUser.status must beEqualTo("Locked")
       }

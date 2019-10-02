@@ -1,15 +1,15 @@
 [
   {
     "from": "case1-cert",
-    "to": "admin"
+    "to": "all"
   },
   {
     "from": "case2-cert",
-    "to": "admin"
+    "to": "all"
   },
   {
     "from": "case3-cert",
-    "to": "admin"
+    "to": "all"
   },
   {
     "from": "case3-default",
@@ -17,6 +17,6 @@
   },
   {
     "from": "case4-default",
-    "to": "admin"
+    "to": "all"
   }
 ]

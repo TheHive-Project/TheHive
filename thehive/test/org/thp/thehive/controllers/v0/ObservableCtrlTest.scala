@@ -94,7 +94,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and search 2 observables with data array" in {
         val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" -> "user3@thehive.local")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -119,7 +119,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
         createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
-        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local")
+        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
         val resultCaseGet = caseCtrl.get("#4")(requestCase)
 
         status(resultCaseGet) shouldEqual 200

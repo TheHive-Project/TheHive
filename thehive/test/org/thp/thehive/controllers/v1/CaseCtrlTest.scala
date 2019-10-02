@@ -88,8 +88,9 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "admin@thehive.local")
-        val result     = caseCtrl.create(request)
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        val result = caseCtrl.create(request)
+        status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultCase = contentAsJson(result).as[OutputCase]
         val expected = TestCase(
           title = "case title (create case test)",
@@ -103,7 +104,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           pap = 3,
           status = "Open",
           summary = None,
-          user = Some("admin@thehive.local"),
+          user = Some("user2@thehive.local"),
           customFields = Set.empty
         )
 

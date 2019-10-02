@@ -255,7 +255,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         resultCases.map(_.pap) must contain(be_==(1)).forall
 
         val requestGet1 = FakeRequest("GET", s"/api/v0/case/#1")
-          .withHeaders("user" -> "user2@thehive.local")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
         val resultGet1 = caseCtrl.get("#1")(requestGet1)
         status(resultGet1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet1)}")
         // Ignore title and flag for case#1 because it can be updated by previous test
@@ -318,14 +318,14 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "assign a case to an user" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#4")
-          .withHeaders("user" -> "user2@thehive.local")
-          .withJsonBody(Json.obj("owner" -> "user2@thehive.local"))
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withJsonBody(Json.obj("owner" -> "user4@thehive.local"))
         val result = caseCtrl.update("#4")(request)
         status(result) must_=== 200
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
 
-        resultCaseOutput.owner should beSome("user2@thehive.local")
+        resultCaseOutput.owner should beSome("user4@thehive.local")
       }
 
       "force delete a case" in {
@@ -337,7 +337,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         tasks must have size 2
 
         val requestDel = FakeRequest("DELETE", s"/api/v0/case/#4/force")
-          .withHeaders("user" -> "user3@thehive.local")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
         val resultDel = caseCtrl.realDelete("#4")(requestDel)
         status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 

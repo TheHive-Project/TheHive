@@ -9,7 +9,8 @@
     "id": "user2",
     "login": "user2@thehive.local",
     "name": "U",
-    "locked": false
+    "locked": false,
+    "password": "*random*seed*,d57cb64654764ab43edfc76a0a84e4e2fda867e761ab5a82859b00ad8412b2a1"
   },
   {
     "id": "user3",

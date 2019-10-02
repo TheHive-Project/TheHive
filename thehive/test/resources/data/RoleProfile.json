@@ -9,7 +9,7 @@
   },
   {
     "from": "user2-default",
-    "to": "admin"
+    "to": "analyst"
   },
   {
     "from": "user3-default",

@@ -93,7 +93,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
       "patch a task" in {
         val task2 = getTaskByTitle("case 4 task 1").get
         val request = FakeRequest("PATCH", s"/api/case/task/${task2._id}")
-          .withHeaders("user" -> "user3@thehive.local")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1@thehive.local", "status": "InProgress"}"""))
         val result = taskCtrl.update(task2._id)(request)
 
