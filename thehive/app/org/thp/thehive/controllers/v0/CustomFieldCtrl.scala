@@ -11,7 +11,7 @@ import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Success, Try}
+import scala.util.Success
 
 @Singleton
 class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
@@ -41,12 +41,11 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete custom field")
-      .authPermittedTransaction(db, permissions) { _ => implicit graph =>
-        Try(
-          customFieldSrv
-            .get(id)
-            .remove()
-        ).map(_ => Results.NoContent)
+      .authPermittedTransaction(db, permissions) { implicit req => implicit graph =>
+        for {
+          cf <- customFieldSrv.getOrFail(id)
+          _  <- customFieldSrv.delete(cf)
+        } yield Results.NoContent
       }
 
   def update(id: String): Action[AnyContent] =

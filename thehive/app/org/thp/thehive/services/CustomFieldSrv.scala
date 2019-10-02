@@ -3,8 +3,10 @@ import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.models.CustomField
+import play.api.libs.json.JsObject
 
 import scala.util.Try
 
@@ -16,6 +18,24 @@ class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extend
       created <- createEntity(e)
       _       <- auditSrv.customField.create(created)
     } yield created
+
+  def delete(e: CustomField with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      _ <- Try(get(e).remove())
+      _ <- auditSrv.customField.delete(e)
+    } yield ()
+
+  override def update(
+      steps: CustomFieldSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(CustomFieldSteps, JsObject)] =
+    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      case (customFieldSteps, updatedFields) =>
+        customFieldSteps
+          .clone()
+          .getOrFail()
+          .flatMap(auditSrv.customField.update(_, updatedFields))
+    }
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
 
