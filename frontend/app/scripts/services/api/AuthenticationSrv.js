@@ -2,7 +2,7 @@
   "use strict";
   angular
     .module("theHiveServices")
-    .factory("AuthenticationSrv", function($http, $q, UtilsSrv) {
+    .factory("AuthenticationSrv", function($http, $q, UtilsSrv, SecuritySrv) {
       var self = {
         currentUser: null,
         login: function(username, password) {
@@ -64,7 +64,9 @@
                 return false;
             }
 
-            return !_.isEmpty(_.intersection(user.permissions, permissions));
+            //return !_.isEmpty(_.intersection(user.permissions, permissions));
+
+            return SecuritySrv.checkPermissions(user.permissions, permissions);
         }
       };
 
