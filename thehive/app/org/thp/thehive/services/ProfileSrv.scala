@@ -14,6 +14,8 @@ object ProfileSrv {
   val admin    = Profile("admin", Permissions.adminPermissions)
   val analyst  = Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask))
   val readonly = Profile("read-only", Set.empty)
+  val orgAdmin = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
+  val all      = Profile("all", Permissions.all)
 }
 
 @Singleton
@@ -22,8 +24,10 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
   lazy val admin: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.admin.name)(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     ProfileSrv.admin,
+    ProfileSrv.orgAdmin,
     ProfileSrv.analyst,
-    ProfileSrv.readonly
+    ProfileSrv.readonly,
+    ProfileSrv.all
   )
 
   def create(profile: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] =
