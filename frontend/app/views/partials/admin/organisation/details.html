@@ -7,7 +7,7 @@
                         <h3 class="box-title">
                             <span class="wrap">[Organisation] - {{$vm.org.name}}</span>
                         </h3>
-                        <div class="box-tools pull-right">
+                        <div class="box-tools pull-right" ng-if="isSuperAdmin()">
                             <span class="ml-xs">
                                 <a ui-sref="app.administration.organisations">
                                     <i class="fa fa-chevron-left"></i> Back to list
@@ -21,11 +21,11 @@
                             {{$vm.org.description || 'No description'}}
                         </div>
                         <div class="org-summary">
-                            <span>
+                            <span class="mr-xxs" ng-if="isSuperAdmin()">
                                 <i class="glyphicon glyphicon-user"></i>
                                 <user-info value="$vm.org.createdBy" field="name"></user-info>
                             </span>
-                            <span class="ml-xxs">
+                            <span>
                                 <i class="glyphicon glyphicon-calendar"></i>
                                 <span class="mr-xxxs">{{$vm.org.createdAt | showDate}}</span>
                             </span>
@@ -47,38 +47,42 @@
         <div class="row">
             <div class="col-md-12">
                 <uib-tabset active="active" class="nav-tabs-custom">
-                    <uib-tab index="0">
+                    <uib-tab index="0" if-permission="manageUser">
                         <uib-tab-heading>
                             <span>
-                                <i class="fa fa-users"></i>&nbsp;&nbsp;
+                                <i class="mr-xxs fa fa-users"></i>
                                 Users
                             </span>
                         </uib-tab-heading>
-                        <div class="row mb-xs">
-                            <div class="col-md-12">
-                                <div class="btn-toolbar" role="toolbar">
-                                    <!-- <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
-                                        <i class="fa fa-link"></i>
-                                        Add existing user
-                                    </button> -->
+                        <div if-permission="manageUser">
+                            <div class="row mb-xs">
+                                <div class="col-md-12">
+                                    <div class="btn-toolbar" role="toolbar">
+                                        <!-- <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
+                                            <i class="fa fa-link"></i>
+                                            Add existing user
+                                        </button> -->
 
-                                    <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
-                                        <i class="fa fa-plus"></i>
-                                        Create new user
-                                    </button>
+                                        <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
+                                            <i class="fa fa-plus"></i>
+                                            Create new user
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+                            <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)"></org-user-list>
                         </div>
-                        <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)"></org-user-list>
                     </uib-tab>
-                    <uib-tab index="1">
+                    <uib-tab index="1" if-permission="manageCaseTemplate">
                         <uib-tab-heading>
                             <span>
-                                <i class="fa fa-file-text"></i>&nbsp;&nbsp;
+                                <i class="mr-xxs fa fa-file-text"></i>
                                 Case Templates
                             </span>
                         </uib-tab-heading>
-                        temapltes
+                        <div if-permission="manageCaseTemplate">
+                            Case templates
+                        </div>                        
                     </uib-tab>
                 </uib-tabset>
                 <!-- <div ui-view class="case-page-content"></div> -->
