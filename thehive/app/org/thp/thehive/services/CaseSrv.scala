@@ -58,7 +58,7 @@ class CaseSrv @Inject()(
       createdCase  <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
       assignee     <- user.fold(userSrv.current.getOrFail())(Success(_))
       _            <- caseUserSrv.create(CaseUser(), createdCase, assignee)
-      _            <- shareSrv.create(createdCase, organisation, profileSrv.admin)
+      _            <- shareSrv.create(createdCase, organisation, profileSrv.all)
       _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
       _            <- createdTasks.toTry(addTask(createdCase, _))
@@ -366,7 +366,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def richCaseWithCustomRenderer[A](
       entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
-  ): ScalarSteps[(RichCase, A)] =
+  )(implicit authContext: AuthContext): ScalarSteps[(RichCase, A)] =
     ScalarSteps(
       raw
         .project(
@@ -377,9 +377,30 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
             .and(By(entityRenderer(__[Vertex])))
+            .and(
+              By(
+                __[Vertex]
+                  .inTo[ShareCase]
+                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authContext.organisation)))
+                  .outTo[ShareProfile]
+                  .fold
+              )
+            )
+            .and(
+              By(
+                __[Vertex]
+                  .inTo[ShareCase]
+                  .inTo[OrganisationShare]
+                  .has(Key[String]("name"), P.eq[String](authContext.organisation))
+                  .inTo[RoleOrganisation]
+                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authContext.userId)))
+                  .outTo[RoleProfile]
+                  .fold
+              )
+            )
         )
         .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity) =>
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, shareProfile, roleProfile) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -395,7 +416,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
               customFieldValues,
-              Set.empty
+              onlyOneOf[Vertex](shareProfile).as[Profile].permissions & onlyOneOf[Vertex](roleProfile).as[Profile].permissions
             ) -> renderedEntity
         }
     )
@@ -520,9 +541,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  def richCase(implicit authcontext: AuthContext): ScalarSteps[RichCase] = {
-    val shareLabel        = StepLabel[Vertex]()
-    val shareProfileLabel = StepLabel[Vertex]()
+  def richCase(implicit authContext: AuthContext): ScalarSteps[RichCase] =
     ScalarSteps(
       raw
         .project(
@@ -536,7 +555,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               By(
                 __[Vertex]
                   .inTo[ShareCase]
-                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authcontext.organisation)))
+                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authContext.organisation)))
                   .outTo[ShareProfile]
                   .fold
               )
@@ -546,9 +565,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
                 __[Vertex]
                   .inTo[ShareCase]
                   .inTo[OrganisationShare]
-                  .has(Key[String]("name"), P.eq[String](authcontext.organisation))
+                  .has(Key[String]("name"), P.eq[String](authContext.organisation))
                   .inTo[RoleOrganisation]
-                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authcontext.userId)))
+                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authContext.userId)))
                   .outTo[RoleProfile]
                   .fold
               )
@@ -575,7 +594,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             )
         }
     )
-  }
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 

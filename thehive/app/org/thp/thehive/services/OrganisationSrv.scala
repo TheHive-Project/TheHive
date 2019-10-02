@@ -31,7 +31,7 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
       createdOrganisation <- create(organisation)
-      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.admin)
+      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.all)
     } yield createdOrganisation
 
   def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)

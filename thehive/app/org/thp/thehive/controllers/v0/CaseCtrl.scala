@@ -46,7 +46,7 @@ class CaseCtrl @Inject()(
         caseSteps
           .richPage(from, to, withTotal = true) {
             case c if withStats =>
-              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
+              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph))(authContext).raw
             case c =>
               c.richCase(authContext).raw.map(_ -> JsObject.empty)
           }
