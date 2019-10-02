@@ -40,7 +40,7 @@ object AuditConversion {
     Output[OutputAudit](
       audit
         .into[OutputAudit]
-        .withFieldComputed(_.operation, a => actionToOperation(a.action)) // TODO map action to operation
+        .withFieldComputed(_.operation, a => actionToOperation(a.action))
         .withFieldComputed(_.id, _._id)
         .withFieldComputed(_.createdAt, _._createdAt)
         .withFieldComputed(_.createdBy, _._createdBy)
@@ -52,7 +52,10 @@ object AuditConversion {
         .withFieldComputed(_.objectType, a => objectTypeMapper(a.objectType.getOrElse(a.context._model.label)))
         .withFieldComputed(_.rootId, _.context._id)
         .withFieldComputed(_.startDate, _._createdAt)
-        .withFieldComputed(_.summary, a => Map(objectTypeMapper(a.objectType.getOrElse(a.context._model.label)) -> Map(a.action -> 1)))
+        .withFieldComputed(
+          _.summary,
+          a => Map(objectTypeMapper(a.objectType.getOrElse(a.context._model.label)) -> Map(actionToOperation(a.action) -> 1))
+        )
         .transform
     )
 
@@ -101,6 +104,7 @@ object AuditConversion {
             BranchCase("Task", taskToJson),
             BranchCase("Log", logToJson),
             BranchCase("Observable", observableToJson),
+            BranchCase("Alert", alertToJson),
             BranchOtherwise(_.constant(JsObject.empty))
           ),
         _.constant(JsObject.empty)

@@ -1,16 +1,22 @@
 package org.thp.thehive.controllers.v0
 
+import java.lang.{Long => JLong}
+import java.util.{Map => JMap}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
+import scala.util.Success
+
+import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import akka.actor.ActorSystem
+import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext
-import scala.util.Success
-import org.apache.tinkerpop.gremlin.process.traversal.Order
 
 @Singleton
 class StreamCtrl @Inject()(
@@ -46,7 +52,26 @@ class StreamCtrl @Inject()(
                 .toIterator
                 .map {
                   case (audit, obj) =>
-                    audit.toJson.as[JsObject].deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id)))
+                    val summary = auditSrv
+                      .initSteps
+                      .has(Key("requestId"), P.eq(audit.requestId))
+                      .has(Key("mainAction"), P.eq(false))
+                      .groupBy(By(Key[String]("objectType")), By(__[Vertex].groupCount(By(Key[String]("action")))))
+                      .headOption()
+                      .fold(JsObject.empty) { m =>
+                        JsObject(
+                          m.asInstanceOf[JMap[String, JMap[String, JLong]]]
+                            .asScala
+                            .map {
+                              case (o, ac) =>
+                                objectTypeMapper(o) -> JsObject(ac.asScala.map { case (a, c) => actionToOperation(a) -> JsNumber(c.toLong) }.toSeq)
+                            }
+                        )
+                      }
+                    audit
+                      .toJson
+                      .as[JsObject]
+                      .deepMerge(Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id), "summary" -> summary))
                 }
               Results.Ok(JsArray(audits.toSeq))
             }

@@ -2,20 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.models.{Database, PagedResult}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject()(
@@ -82,9 +83,10 @@ class AlertCtrl @Inject()(
           organisation <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
           customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
+          richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
-          richObservables <- observables.toTry(observable => importObservable(richAlert.alert, observable))
-        } yield Results.Created((richAlert -> richObservables.flatten).toJson)
+          _               <- richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o.observable))
+        } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
   def get(alertId: String): Action[AnyContent] =
@@ -203,7 +205,7 @@ class AlertCtrl @Inject()(
           }
       }
 
-  private def importObservable(alert: Alert with Entity, observable: InputObservable)(
+  private def createObservable(observable: InputObservable)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
@@ -222,8 +224,4 @@ class AlertCtrl @Inject()(
           }
         case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
       }
-      .map(_.map { richObservable =>
-        alertSrv.addObservable(alert, richObservable.observable)
-        richObservable
-      })
 }
