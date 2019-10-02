@@ -11,8 +11,18 @@ import org.thp.thehive.models._
 import scala.util.Try
 
 object ProfileSrv {
-  val admin    = Profile("admin", Permissions.adminPermissions)
-  val analyst  = Profile("analyst", Set(Permissions.manageCase, Permissions.manageAlert, Permissions.manageTask))
+  val admin = Profile("admin", Permissions.adminPermissions)
+
+  val analyst = Profile(
+    "analyst",
+    Set(
+      Permissions.manageCase,
+      Permissions.manageObservable,
+      Permissions.manageAlert,
+      Permissions.manageTask,
+      Permissions.manageAction
+    )
+  )
   val readonly = Profile("read-only", Set.empty)
   val orgAdmin = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
   val all      = Profile("all", Permissions.all)
