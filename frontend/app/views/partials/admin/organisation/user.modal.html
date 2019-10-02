@@ -45,24 +45,22 @@
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" ng-if="$modal.organisation !== 'default'">
             <label class="col-sm-3 control-label">
                 Profile
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-sm-9">
-
                 <select class="form-control" ng-model="$modal.formData.profile"
                     ng-options="name for (name, profile) in $modal.profiles"
                     ng-change="permissions = $modal.profiles[$modal.formData.profile.name].permissions">
                         <option value="" disabled selected>-- Select profile --</option>
                 </select>
-                <div class="wrap">
+                <div class="wrap" ng-init="permissions = $modal.profiles[$modal.formData.profile.name].permissions">
                     <em ng-if="permissions.length === 0" class="text-muted">No Permissions</em>
                     <strong ng-if="permissions.length > 0">Permissions: </strong>
                     <span class="label label-default mr-xxs" ng-repeat="permission in permissions">{{permission}}</span>
                 </div>
-
             </div>
         </div>
     </div>

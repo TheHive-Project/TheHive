@@ -37,10 +37,12 @@
 
             var postData = {};
 
+            var profile = (self.organisation === 'default') ? 'admin' : self.formData.profile.name;
+
             if (self.user._id) {
                 postData = {
                     name: self.formData.name,
-                    profile: self.formData.profile.name,
+                    profile: profile,
                     organisation: self.formData.organisation
                 };
                 UserSrv.update(self.user._id, postData)
@@ -50,7 +52,7 @@
                 postData = {
                     login: self.formData.login.toLowerCase(),
                     name: self.formData.name,
-                    profile: self.formData.profile.name,
+                    profile: profile,
                     organisation: self.formData.organisation
                 };
                 UserSrv.save(postData)
