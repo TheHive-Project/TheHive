@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group">
+            <div class="btn-group" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">
                 <button class="btn btn-sm btn-primary" ng-click="state.isNewTask = true">
                     <i class="glyphicon glyphicon-plus"></i>
                     Add Task
@@ -73,7 +73,7 @@
                     <th>Task</th>
                     <th style="width: 150px">Date</th>
                     <th style="width: 150px">Assignee</th>
-                    <th style="width: 250px" class="text-right">Actions</th>
+                    <th style="width: 250px" class="text-right" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">Actions</th>
                 </tr>
             </thead>
             <tbody ng-repeat="task in tasks.values">
@@ -114,7 +114,7 @@
                         </span>
                     </td>
                     <!--  class="task-delete" -->
-                    <td align="right" class="task-actions">
+                    <td align="right" class="task-actions" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">
                         <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
                             <i class="fa fa-times"></i>
                             Delete
@@ -181,7 +181,7 @@
                             <th>Task</th>
                             <th style="width: 150px">Date</th>
                             <th style="width: 150px">Assignee</th>
-                            <th style="width: 250px" class="text-right">Actions</th>
+                            <th style="width: 250px" class="text-right" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">Actions</th>
                         </tr>
                     </thead>
                     <tbody ng-repeat="task in group.tasks">
@@ -222,7 +222,7 @@
                                 </span>
                             </td>
                             <!--  class="task-delete" -->
-                            <td align="right" class="task-actions">
+                            <td align="right" class="task-actions" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">
                                 <span class="ml-xs clickable text-danger task-delete" ng-click="removeTask(task)">
                                     <i class="fa fa-times"></i>
                                     Delete

@@ -47,7 +47,7 @@
             </strong>
         </span>
 
-        <div class="pull-right" if-permission="manageCase">
+        <div class="pull-right" if-permission="manageCase" allowed="{{caze.permissions.join(',')}}">
             <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
                 <span class="mr-xxs text-primary">|</span>
 
@@ -79,7 +79,7 @@
                 </a>
             </span>
 
-            <span class="ml-xxs pull-right" ng-if="isAdmin(currentUser)">
+            <span class="ml-xxs pull-right">
                 <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
                     <i class="text-danger fa fa-times"></i>
                     Remove
@@ -121,9 +121,10 @@
         </div>
 
         <!-- Right side -->
-
     </div>
 </div>
+
+<pre>{{caze.permissions}}</pre>
 
 <div class="alert alert-warning text-center" ng-show="caze.mergeInto">
     <h4 class="mb-0">

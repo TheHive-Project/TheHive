@@ -2,7 +2,7 @@
     <h4 class="mb-xs text-primary">
         Basic Information
 
-        <div class="task-actions pull-right">
+        <div class="task-actions pull-right" if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">
             <span class="mr-xxs action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
                 <a href class="text-primary noline" ng-click="getTaskResponders()" uib-dropdown-toggle>
                     <i class="text-primary fa fa-cog"></i>
@@ -125,7 +125,7 @@
         <div class="row clearfix" ng-show="!adding">
             <div class="col-md-12">
                 <div class="btn-toolbar" role="toolbar">
-                    <div class="btn-group" uib-dropdown>
+                    <div class="btn-group" uib-dropdown if-permission="manageTask" allowed="{{caze.permissions.join(',')}}">
                         <button class="btn btn-sm btn-primary" ng-click="showLogEditor()">
                             <i class="fa fa-plus"></i>
                             Add new task log</button>

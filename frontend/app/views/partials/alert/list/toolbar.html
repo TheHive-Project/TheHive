@@ -2,7 +2,7 @@
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
 
-            <div class="btn-group" uib-dropdown>
+            <div class="btn-group" uib-dropdown if-permission="manageAlert">
                 <button type="button" class="btn btn-sm btn-default" uib-dropdown-toggle ng-disabled="$vm.selection.length === 0">
                     <ng-pluralize count="$vm.selection.length" when="{'0': 'No event selected', 'one': '{} selected event', 'other': '{} selected events'}"></ng-pluralize>
                     <span class="caret"></span>

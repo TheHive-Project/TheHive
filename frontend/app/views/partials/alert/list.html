@@ -48,7 +48,9 @@
                         <table class="table table-striped case-list">
                             <thead>
                                 <tr>
-                                    <th width="20px"><input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()"></th>
+                                    <th width="20px" if-permission="manageAlert">
+                                        <input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()">
+                                    </th>
                                     <th width="150px">
                                       <a href class="text-default" ng-click="$vm.sortByField('sourceRef')">
                                         Reference
@@ -109,7 +111,7 @@
 
                             <tbody>
                                 <tr ng-repeat="event in $vm.list.values">
-                                    <td>
+                                    <td if-permission="manageAlert">
                                         <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
                                     </td>
                                     <td class="wrap">
@@ -157,13 +159,7 @@
                                     <td class="text-center">{{::event.artifacts.length || 0}}</td>
                                     <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>
                                     <td class="clearfix">
-                                        <div class="pull-left">
-                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
-                                                <i class="text-info text-20 fa fa-file-text-o"></i>
-                                            </a>
-                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
-                                                <i class="text-info text-20 fa fa-search"></i>
-                                            </a>
+                                        <div class="pull-right" if-permission="manageAlert">
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
                                                 <i class="text-info text-20 fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
                                             </a>
@@ -192,13 +188,22 @@
                                                 </ul>
                                             </span>
                                         </div>
+
+                                        <div class="pull-right">
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
+                                                <i class="text-info text-20 fa fa-file-text-o"></i>
+                                            </a>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
+                                                <i class="text-info text-20 fa fa-search"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
 
                         <psearch control="$vm.list"></psearch>
-                    </div>                                    
+                    </div>
                 </div>
 
 
