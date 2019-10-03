@@ -33,6 +33,7 @@ object AuditConversion {
     case "Task"       => "case_task"
     case "Log"        => "case_task_log"
     case "Observable" => "case_artifact"
+    case "Job"        => "case_artifact_job"
     case other        => other.toLowerCase()
   }
 
