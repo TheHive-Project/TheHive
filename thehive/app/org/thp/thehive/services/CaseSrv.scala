@@ -10,7 +10,6 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
-import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
@@ -464,10 +463,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     ()
   }
 
-  def removeTags(tags: Set[Tag with Entity]): Unit = {
-    raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
-    ()
-  }
+  def removeTags(tags: Set[Tag with Entity]): Unit =
+    this.outToE[CaseTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
     val originCaseLabel = StepLabel[JSet[Vertex]]()
