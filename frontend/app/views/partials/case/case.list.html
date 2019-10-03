@@ -59,7 +59,7 @@
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
                                     <th style="width: 120px;">Date</th>
-                                    <th style="width: 40px;" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
+                                    <th style="width: 40px;" if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
                                 </tr>
                             </thead>
 
@@ -113,7 +113,7 @@
                                             <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                         </a>
                                     </td>
-                                    <td ng-if="appConfig.connectors.cortex.enabled">
+                                    <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
                                         <span class="ml-xs" uib-dropdown>
                                             <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase.id, true)" uib-dropdown-toggle>
                                                 <i class="text-primary fa fa-cog"></i>
