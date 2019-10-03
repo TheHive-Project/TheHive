@@ -156,7 +156,7 @@ class JobSrv @Inject()(
             "endDate" -> endDate
           )
           c <- get(j).observable.`case`.getOrFail()
-          _ <- auditSrv.job.update(j, c, Json.obj("report" -> report, "status" -> status, "endDate" -> endDate))
+          _ <- auditSrv.job.update(j, c, Json.obj("status" -> status, "endDate" -> endDate))
         } yield j
       }
     }
