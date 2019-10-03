@@ -4,14 +4,13 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $uibModalInstance, CaseSrv, NotificationSrv, MetricsCacheSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, NotificationSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
             $scope.activePap = 'active';
             $scope.active = true;
             $scope.pendingAsync = false;
-            $scope.metricsCache = {};
             $scope.temp = {
                 titleSuffix: '',
                 task: ''
@@ -21,34 +20,24 @@
 
             if ($scope.fromTemplate === true) {
 
-                MetricsCacheSrv.all().then(function (list) {
-                    // Set basic info from template
-                    $scope.newCase = _.defaults({
-                        status: 'Open',
-                        title: '',
-                        description: template.description,
-                        tlp: template.tlp,
-                        pap: template.pap,
-                        severity: template.severity
-                    }, {tlp: 2, pap: 2});
+                // Set basic info from template
+                $scope.newCase = _.defaults({
+                    status: 'Open',
+                    title: '',
+                    description: template.description,
+                    tlp: template.tlp,
+                    pap: template.pap,
+                    severity: template.severity
+                }, {tlp: 2, pap: 2});
 
-                    // Set metrics from template
-                    $scope.metricsCache = list;
-                    var metrics = {};
-                    _.each(template.metricNames, function (m) {
-                        metrics[m] = null;
-                    });
-                    $scope.newCase.metrics = metrics;
+                // Set tags from template
+                $scope.tags = template.tags;
 
-                    // Set tags from template
-                    $scope.tags = template.tags;
-
-                    // Set tasks from template
-                    $scope.tasks = _.map(template.tasks, function (t) {
-                        return t.title;
-                    });
+                // Set tasks from template
+                $scope.tasks = _.map(template.tasks, function (t) {
+                    return t.title;
                 });
-
+                
             } else {
                 $scope.tasks = [];
                 $scope.newCase = {

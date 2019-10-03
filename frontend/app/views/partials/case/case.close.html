@@ -120,15 +120,6 @@
                     <p class="help-block" ng-show="caseCloseForm.summary.$invalid && !caseCloseForm.summary.$pristine">The case summary is required.</p>
                 </div>
             </div>
-            <div class="form-group" ng-repeat="(k,v) in caze.metrics" ng-class="{ 'has-error' : caseCloseForm['metrics.' + k].$invalid && !caseCloseForm['metrics.' + k].$pristine }">
-                <label class="col-sm-3 control-label" uib-tooltip="{{metricsCache[k].description}}">{{metricsCache[k].title}}
-                    <i class="fa fa-asterisk text-danger"></i>
-                </label>
-                <div class="col-sm-3">
-                    <input class="form-control" name="{{'metrics.' + k}}" ng-model="caze.metrics[k]" required type="number">
-                    <p class="help-block" ng-show="caseCloseForm['metrics.' + k].$invalid && !caseCloseForm['metrics.' + k].$pristine">This field is required.</p>
-                </div>
-            </div>
             <!-- Custom Fields -->
             <div class="form-group" ng-repeat="k in mandatoryFields" ng-init="fieldDef = allCustomFields[k];" ng-class="{ 'has-error' : caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine }">
                 <label class="col-sm-3 control-label" uib-tooltip="{{allCustomFields[k].description}}">{{fieldDef.name}}

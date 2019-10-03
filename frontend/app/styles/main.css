@@ -310,7 +310,8 @@ ul.observable-reports-summary li {
     padding: 20px 10px 10px 10px;
 }
 
-.case-details dt, .case-metrics dt, .case-custom-fields dt {
+.case-details dt,
+.case-custom-fields dt {
     width: 200px !important;
 }
 

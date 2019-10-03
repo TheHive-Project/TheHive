@@ -10,9 +10,8 @@
             NotificationSrv,
             UtilsSrv,
             ListSrv,
-            MetricsCacheSrv,
             CustomFieldsSrv,
-            UserSrv,            
+            UserSrv,
             ModalUtilsSrv,
             templates,
             fields
@@ -22,10 +21,8 @@
             self.templates = templates;
             self.task = '';
             self.tags = [];
-            self.metrics = [];
             self.fields = fields || [];
             self.templateCustomFields = [];
-            self.templateMetrics = [];
             self.templateIndex = -1;
             self.getUserInfo = UserSrv.getCache;
 
@@ -64,19 +61,6 @@
                 return result;
             };
 
-            var getTemplateMetrics = function(metrics) {
-                var result = [];
-
-                _.each(metrics, function(value, key) {
-                    result.push({
-                        metric: key,
-                        value: value
-                    });
-                });
-
-                return result;
-            };
-
             self.dateOptions = {
                 closeOnDateSelection: true,
                 formatYear: 'yyyy',
@@ -102,13 +86,6 @@
                 }
                 return _.keys(obj);
             };
-
-            self.loadCache = function() {
-                MetricsCacheSrv.all().then(function(metrics) {
-                    self.metrics = metrics;
-                });
-            };
-            self.loadCache();
 
             self.getList = function(id) {
                 CaseTemplateSrv.list().then(function(templates) {
@@ -137,7 +114,6 @@
                 self.template = _.defaults(_.omit(template, filteredKeys), {pap: 2, tlp: 2});
                 self.tags = UtilsSrv.objectify(self.template.tags, 'text');
                 self.templateCustomFields = getTemplateCustomFields(template.customFields);
-                self.templateMetrics = getTemplateMetrics(template.metrics);
 
                 self.templateIndex = index || _.indexOf(self.templates, _.findWhere(self.templates, { id: template.id }));
             };
@@ -159,14 +135,12 @@
                     pap: 2,
                     tags: [],
                     tasks: [],
-                    metrics: {},
                     customFields: {},
                     description: ''
                 };
                 self.tags = [];
                 self.templateIndex = -1;
                 self.templateCustomFields = [];
-                self.templateMetrics = [];
             };
 
             self.reorderTasks = function() {
@@ -227,23 +201,6 @@
                 });
             };
 
-            self.addMetric = function(metric) {
-                self.template.metrics = self.template.metrics || {};
-                self.template.metrics[metric.name] = null;
-            };
-
-            self.addMetricRow = function() {
-                self.templateMetrics.push({
-                    metric: null,
-                    value: null
-                });
-            };
-
-            self.removeMetric = function(metric) {
-                self.templateMetrics = _.without(self.templateMetrics, metric);
-                //delete self.template.metrics[metricName];
-            };
-
             self.addCustomFieldRow = function() {
                 self.templateCustomFields.push({
                     name: null,
@@ -291,13 +248,6 @@
                     self.template.customFields[cf.name] = {};
                     self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
                     self.template.customFields[cf.name].order = index + 1;
-                });
-
-                self.template.metrics = {};
-                _.each(self.templateMetrics, function(value, index) {
-                    var fieldDef = self.fields[value];
-
-                    self.template.metrics[value.metric] = value.value;
                 });
 
                 if (_.isEmpty(self.template.id)) {
@@ -397,12 +347,12 @@
                 }
                 var aReader = new FileReader();
                 aReader.readAsText(self.formData.attachment, 'UTF-8');
-                aReader.onload = function(evt) {
+                aReader.onload = function(/*evt*/) {
                     $scope.$apply(function() {
                         self.formData.fileContent = JSON.parse(aReader.result);
                     });
                 };
-                aReader.onerror = function(evt) {
+                aReader.onerror = function(/*evt*/) {
                     $scope.$apply(function() {
                         self.formData.fileContent = {};
                     });
@@ -422,7 +372,6 @@
                     'status',
                     'titlePrefix',
                     'tasks',
-                    'metrics',
                     'customFields'
                 );
                 $uibModalInstance.close(template);

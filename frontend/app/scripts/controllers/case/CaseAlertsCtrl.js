@@ -84,8 +84,7 @@
                         templates: function() {
                             //return CaseTemplateSrv.list();
                             return [];
-                        },
-                        isAdmin: false,
+                        },                        
                         readonly: true
                     }
                 });

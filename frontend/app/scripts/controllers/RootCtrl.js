@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, MetricsCacheSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -84,24 +84,12 @@ angular.module('theHiveControllers').controller('RootCtrl',
             field: 'status'
         });
 
-        // Get metrics cache
-        MetricsCacheSrv.all().then(function(list) {
-            $scope.metricsCache = list;
-        });
-
         // Get Alert counts
         $scope.alertEvents = AlertingSrv.stats($scope);
 
         $scope.$on('templates:refresh', function(){
             CaseTemplateSrv.list().then(function(templates) {
                 $scope.templates = templates;
-            });
-        });
-
-        $scope.$on('metrics:refresh', function() {
-            // Get metrics cache
-            MetricsCacheSrv.all().then(function(list) {
-                $scope.metricsCache = list;
             });
         });
 
@@ -125,16 +113,6 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
         $scope.initCustomFieldsCache();
-
-        $scope.isAdmin = function(user) {
-            return true;
-
-            /*
-            var u = user;
-            var re = /admin/i;
-            return re.test(u.roles);
-            */
-        };
 
         $scope.isSuperAdmin = function() {
             return AuthenticationSrv.isSuperAdmin();

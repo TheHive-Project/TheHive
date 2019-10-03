@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCloseModalCtrl',
-        function($scope, $uibModalInstance, SearchSrv, MetricsCacheSrv, CustomFieldsSrv, NotificationSrv, caze) {
+        function($scope, $uibModalInstance, SearchSrv, CustomFieldsSrv, NotificationSrv, caze) {
             $scope.caze = caze;
             $scope.tasksValid = false;
             $scope.tasks = [];
@@ -65,22 +65,19 @@
                     }), undefined);
 
                 });
-                MetricsCacheSrv.all().then(function(metricsCache) {
 
-                    $scope.formData = {
-                        status: 'Resolved',
-                        resolutionStatus: $scope.caze.resolutionStatus || 'Indeterminate',
-                        summary: $scope.caze.summary || '',
-                        impactStatus: $scope.caze.impactStatus || null
-                    };
+                $scope.formData = {
+                    status: 'Resolved',
+                    resolutionStatus: $scope.caze.resolutionStatus || 'Indeterminate',
+                    summary: $scope.caze.summary || '',
+                    impactStatus: $scope.caze.impactStatus || null
+                };
 
-                    $scope.metricsCache = metricsCache;
 
-                    $scope.$watchCollection('formData', function(data, oldData) {
-                        if (data.resolutionStatus !== oldData.resolutionStatus) {
-                            data.impactStatus = null;
-                        }
-                    });
+                $scope.$watchCollection('formData', function(data, oldData) {
+                    if (data.resolutionStatus !== oldData.resolutionStatus) {
+                        data.impactStatus = null;
+                    }
                 });
             };
 
@@ -95,7 +92,6 @@
                     data.impactStatus = 'NotApplicable';
                 }
 
-                data.metrics = $scope.caze.metrics;
                 data.customFields = $scope.caze.customFields;
 
                 _.each($scope.mandatoryFields, function(cf) {

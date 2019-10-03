@@ -47,11 +47,6 @@
           var url = angular.isDefined(code) ? "./api/ssoLogin?code=" + code : "./api/ssoLogin";
           return $http.post(url, {});
         },
-        // isAdmin: function(user) {
-        //   var u = user;
-        //   var re = /admin/i;
-        //   return re.test(u.roles);
-        // },
         isSuperAdmin: function() {
             var user = self.currentUser;
 

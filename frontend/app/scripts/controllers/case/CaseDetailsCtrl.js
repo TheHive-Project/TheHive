@@ -65,33 +65,6 @@
             }
         });
 
-        $scope.hasNoMetrics = function(caze) {
-            return !caze.metrics || _.keys(caze.metrics).length === 0 || caze.metrics.length === 0;
-        };
-
-        $scope.addMetric = function(metric) {
-            var modalInstance = $uibModal.open({
-                scope: $scope,
-                templateUrl: 'views/partials/case/case.add.metric.html',
-                controller: 'CaseAddMetadataConfirmCtrl',
-                size: '',
-                resolve: {
-                    data: function() {
-                        return metric;
-                    }
-                }
-            });
-
-            modalInstance.result.then(function() {
-                if (!$scope.caze.metrics) {
-                    $scope.caze.metrics = {};
-                }
-                $scope.caze.metrics[metric.name] = null;
-                $scope.updateField('metrics', $scope.caze.metrics);
-                $scope.updateMetricsList();
-            });
-        };
-
         $scope.openAttachment = function(attachment) {
             $state.go('app.case.tasks-item', {
                 caseId: $scope.caze.id,

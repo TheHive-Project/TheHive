@@ -52,8 +52,7 @@
                         templates: function() {
                             return CaseTemplateSrv.list();
                         },
-                        readonly: true,
-                        isAdmin: false
+                        readonly: true
                     }
                 }).result.then(function(/*response*/) {
                   $scope.searchResults.update();

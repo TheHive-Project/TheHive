@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, MetricsCacheSrv, UserSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, UserSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
             $scope.caseResponders = null;
@@ -35,20 +35,11 @@
             };
             $scope.initExports();
 
-            $scope.updateMetricsList = function() {
-                MetricsCacheSrv.all().then(function(metrics) {
-                    $scope.allMetrics = _.omit(metrics, _.keys($scope.caze.metrics));
-                    $scope.metricsAvailable = _.keys($scope.allMetrics).length > 0;
-                });
-            };
-
             $scope.countIoc = function(link) {
                 return _.filter(link.linkedWith, function(l) {
                     return l.ioc;
                 }).length;
             };
-
-            $scope.updateMetricsList();
 
             CaseSrv.links({
                 caseId: $scope.caseId

@@ -25,7 +25,7 @@
                     <li ng-show="$vm.menu.markAsUnread">
                         <a href ng-click="$vm.bulkMarkAsRead(false)">Mark as unread</a>
                     </li>
-                    <li ng-show="$vm.menu.delete" ng-if="isAdmin(currentUser)">
+                    <li ng-show="$vm.menu.delete">
                         <a href ng-click="$vm.bulkDelete()">
                             <span class="text-danger">Delete</span>
                         </a>

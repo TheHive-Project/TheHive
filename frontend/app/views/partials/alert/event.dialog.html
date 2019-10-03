@@ -163,7 +163,7 @@
         <i class="fa fa-compress"></i> Merge into case
     </button>
 
-    <button ng-if="dialog.isAdmin && !dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
+    <button ng-if="!dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
         <i class="fa fa-trash"></i> Delete
     </button>
 
