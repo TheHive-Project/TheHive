@@ -358,14 +358,23 @@
                 });
             };
 
-            $scope.toggleTEList = function () {
-                if ($scope.switchTEList) {
-                    $scope.switchTEList = false;
-                    $scope.initSelection($scope.selection);
-                } else {
-                    $scope.switchTEList = true;
-                }
+            $scope.showExport = function() {
+                $scope.showExportPanel = true;
             };
+
+            $scope.hideExport = function() {
+                $scope.showExportPanel = false;
+                $scope.initSelection($scope.selection);
+            };
+
+            // $scope.toggleTEList = function () {
+            //     if ($scope.switchTEList) {
+            //         $scope.switchTEList = false;
+            //
+            //     } else {
+            //         $scope.switchTEList = true;
+            //     }
+            // };
 
             /**
              * Returns true if all the observables have the same set of tags.
@@ -654,7 +663,7 @@
             $scope.showReport = function(observable, analyzerId) {
                 CortexSrv.getJobs($scope.caseId, observable.id, analyzerId, 1)
                     .then(function(response) {
-                        return CortexSrv.getJob(response.data[0].id)
+                        return CortexSrv.getJob(response.data[0].id);
                     })
                     .then(function(response){
                         var job = response.data;
@@ -667,14 +676,14 @@
                             endDate: job.endDate
                         };
 
-                        var modalInstance = $uibModal.open({
+                        $uibModal.open({
                             templateUrl: 'views/partials/observables/list/job-report-dialog.html',
                             controller: 'JobReportModalCtrl',
                             controllerAs: '$vm',
                             size: 'max',
                             resolve: {
                                 report: function() {
-                                    return report
+                                    return report;
                                 },
                                 observable: function() {
                                     return observable;
@@ -682,10 +691,10 @@
                             }
                         });
                     })
-                    .catch(function(err) {
+                    .catch(function(/*err*/) {
                         NotificationSrv.error('Unable to fetch the analysis report');
-                    })
-            }
+                    });
+            };
 
             $scope.getObsResponders = function(observableId, force) {
                 if(!force && $scope.obsResponders !== null) {
@@ -698,8 +707,8 @@
                       $scope.obsResponders = responders;
                   })
                   .catch(function(err) {
-                      NotificationSrv.error('observablesList', response.data, response.status);
-                  })
+                      NotificationSrv.error('observablesList', err.data, err.status);
+                  });
             };
 
             $scope.runResponder = function(responderId, responderName, artifact) {
@@ -721,7 +730,7 @@
         this.observable = observable;
         this.close = function() {
             $uibModalInstance.dismiss();
-        }
+        };
     });
 
 })();
