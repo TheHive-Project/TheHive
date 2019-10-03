@@ -257,7 +257,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   def tags: TagSteps = new TagSteps(raw.outTo[ObservableTag])
 
   def removeTags(tags: Set[Tag with Entity]): Unit =
-    this.outToE[AlertTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
+    this.outToE[ObservableTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def similar: ObservableSteps = {
     val originLabel = StepLabel[JSet[Vertex]]()

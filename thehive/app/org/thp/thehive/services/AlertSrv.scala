@@ -10,7 +10,6 @@ import play.api.libs.json.{JsObject, Json}
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
-import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -307,10 +306,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def `case`: CaseSteps = new CaseSteps(raw.outTo[AlertCase])
 
-  def removeTags(tags: Set[Tag with Entity]): Unit = {
-    raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
-    ()
-  }
+  def removeTags(tags: Set[Tag with Entity]): Unit =
+    this.outToE[AlertTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def visible(implicit authContext: AuthContext): AlertSteps =
     this.filter(
