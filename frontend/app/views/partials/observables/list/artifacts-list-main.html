@@ -66,7 +66,7 @@
                     <i ng-show="artifacts.sort === '-startDate'" class="fa fa-caret-down"></i>
                   </a>
                 </th>
-                <th style="width: 40px;" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
+                <th style="width: 40px;" if-permission="manageObservable" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -111,7 +111,7 @@
                 <td>
                     <a href ng-click="addFilterValue('startDate', artifact.startDate)"><span uib-tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>
                 </td>
-                <td ng-if="appConfig.connectors.cortex.enabled">
+                <td ng-if="appConfig.connectors.cortex.enabled" if-permission="manageObservable" allowed="{{userPermissions}}">
                     <span class="ml-xs" uib-dropdown>
                         <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
                             <i class="text-primary fa fa-cog"></i>

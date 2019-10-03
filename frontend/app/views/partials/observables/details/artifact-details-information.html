@@ -4,7 +4,7 @@
         <h4 class="vpad10 text-primary">
             Metadata
             <div class="task-actions pull-right">
-                <span class="mr-xxs action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                <span class="mr-xxs action-button" if-permission="manageObservable" allowed="{{userPermissions}}" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
                     <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
                         <i class="text-primary fa fa-cog"></i>
                         Responders

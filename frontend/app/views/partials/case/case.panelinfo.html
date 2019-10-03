@@ -47,7 +47,7 @@
             </strong>
         </span>
 
-        <div class="pull-right" if-permission="manageCase" allowed="{{caze.permissions.join(',')}}">
+        <div class="pull-right" if-permission="manageCase" allowed="{{userPermissions}}">
             <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
                 <span class="mr-xxs text-primary">|</span>
 
@@ -124,7 +124,7 @@
     </div>
 </div>
 
-<pre>{{caze.permissions}}</pre>
+<pre>{{userPermissions}}</pre>
 
 <div class="alert alert-warning text-center" ng-show="caze.mergeInto">
     <h4 class="mb-0">

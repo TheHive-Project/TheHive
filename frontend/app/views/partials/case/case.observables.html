@@ -6,7 +6,7 @@
                     {{uiSrv.actions[selection.Action]}}
                     <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" uib-dropdown-menu style="font-size:0.9em">
+                <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
                         <a ng-click="selection.Action = 'export';toggleTEList()">Export</a>
                     </li>
@@ -35,7 +35,7 @@
                 </ul>
             </div>
 
-            <div class="btn-group">
+            <div class="btn-group" if-permission="manageObservable" allowed="{{userPermissions}}">
                 <button class="btn btn-sm btn-primary" ng-click="addArtifact()">
                     <i class="glyphicon glyphicon-plus"></i>
                     Add observable(s)
@@ -80,7 +80,7 @@
 <!-- collapse for Tags + TLP + Delete -->
 <div class="row" uib-collapse="!selection.isCollapsed">
     <div ng-include="'views/partials/observables/list/artifacts-list-sighted.html'" ng-if="selection.Action === 'changeSightedFlog'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'changeIOCFlog'"></div>    
+    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'changeIOCFlog'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-tlp.html'" ng-if="selection.Action === 'changeTlp'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-delete.html'" ng-if="selection.Action === 'remove'"></div>
     <div ng-include="'views/partials/observables/list/artifacts-list-tags.html'" ng-if="selection.Action === 'addTags'"></div>

@@ -25,6 +25,7 @@
             $scope.oldestLink = null;
 
             $scope.caze = caze;
+            $scope.userPermissions = (caze.permissions || []).join(',');
             $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
 
             $scope.initExports = function() {
