@@ -1,15 +1,18 @@
 package org.thp.thehive.services
 
-import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
-import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services._
-import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
+import scala.util.Try
+
 import play.api.libs.json.{JsObject, Json}
 
-import scala.util.Try
+import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
+import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
 
 @Singleton
 class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSrv)(implicit db: Database)
@@ -35,7 +38,7 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (dashboardSteps, updatedFields) =>
         dashboardSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.dashboard.update(_, updatedFields))
     }
@@ -53,10 +56,12 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
     } yield ()
 }
 
-class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Dashboard, DashboardSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): DashboardSteps = new DashboardSteps(raw)
+@EntitySteps[Dashboard]
+class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Dashboard](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex] = raw): DashboardSteps = new DashboardSteps(newRaw)
 
-  def visible(implicit authContext: AuthContext): DashboardSteps = filter(_.inTo[OrganisationDashboard].has(Key("name") of authContext.organisation))
+  def visible(implicit authContext: AuthContext): DashboardSteps =
+    this.filter(_.inTo[OrganisationDashboard].has(Key("name"), P.eq(authContext.organisation)))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationDashboard])
 }

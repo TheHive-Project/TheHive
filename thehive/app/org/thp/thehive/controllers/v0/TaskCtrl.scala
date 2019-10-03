@@ -1,15 +1,17 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.RichOptionTry
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.controllers._
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class TaskCtrl @Inject()(
@@ -30,7 +32,7 @@ class TaskCtrl @Inject()(
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
     "page",
     FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask.raw)
+    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask)
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
     "getTask",

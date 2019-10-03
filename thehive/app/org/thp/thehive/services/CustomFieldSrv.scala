@@ -1,14 +1,17 @@
 package org.thp.thehive.services
-import gremlin.scala._
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
-import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.VertexSrv
-import org.thp.thehive.models.CustomField
+import scala.util.Try
+
 import play.api.libs.json.JsObject
 
-import scala.util.Try
+import gremlin.scala._
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.services.VertexSrv
+import org.thp.scalligraph.steps.VertexSteps
+import org.thp.thehive.models.CustomField
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
@@ -32,7 +35,7 @@ class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extend
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (customFieldSteps, updatedFields) =>
         customFieldSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.customField.update(_, updatedFields))
     }
@@ -44,11 +47,13 @@ class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extend
     else initSteps.getByName(idOrName)
 }
 
-class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[CustomField, CustomFieldSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(raw)
+@EntitySteps[CustomField]
+class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[CustomField](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(newRaw)
+  override def newInstance(): CustomFieldSteps                             = new CustomFieldSteps(raw.clone())
 
   def get(idOrName: String): CustomFieldSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): CustomFieldSteps = new CustomFieldSteps(raw.has(Key("name") of name))

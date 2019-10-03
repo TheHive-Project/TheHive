@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.{Graph, Vertex}
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
+
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -8,10 +9,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FSeq, Field, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
+import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.services.{ObservableSteps, _}
-
-import scala.language.existentials
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean)
 
@@ -71,7 +70,7 @@ object ParentIdFilter {
 }
 
 class ParentIdInputFilter(parentId: String) extends InputFilter {
-  override def apply[S <: ScalliSteps[_, _, _]](
+  override def apply[S <: BaseTraversal](
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
@@ -79,9 +78,9 @@ class ParentIdInputFilter(parentId: String) extends InputFilter {
       authContext: AuthContext
   ): S = {
     val s =
-      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].where(_.`case`.getByIds(parentId))
-      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].where(_.`case`.getByIds(parentId))
-      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].where(_.task.getByIds(parentId))
+      if (stepType =:= ru.typeOf[TaskSteps]) step.asInstanceOf[TaskSteps].filter(_.`case`.getByIds(parentId))
+      else if (stepType =:= ru.typeOf[ObservableSteps]) step.asInstanceOf[ObservableSteps].filter(_.`case`.getByIds(parentId))
+      else if (stepType =:= ru.typeOf[LogSteps]) step.asInstanceOf[LogSteps].filter(_.task.getByIds(parentId))
       else ???
     s.asInstanceOf[S]
   }
@@ -99,28 +98,32 @@ object ParentQueryFilter {
 }
 
 class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
-  override def apply[S <: ScalliSteps[_, Vertex, S]](
+  override def apply[S <: BaseTraversal](
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext
-  ): S = {
-    val vertexSteps  = step.asInstanceOf[BaseVertexSteps[Product, _]]
-    val graph: Graph = vertexSteps.graph
+  ): S =
+    if (stepType =:= ru.typeOf[TaskSteps])
+      step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], t.asInstanceOf[TaskSteps].`case`, authContext))
+    else if (stepType =:= ru.typeOf[ObservableSteps])
+      step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], t.asInstanceOf[ObservableSteps].`case`, authContext))
+    else if (stepType =:= ru.typeOf[LogSteps])
+      step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[TaskSteps], t.asInstanceOf[LogSteps].task, authContext))
+    else ???
 
-    vertexSteps
-      .filter { s =>
-        if (stepType =:= ru.typeOf[TaskSteps])
-          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new TaskSteps(s)(db, graph).`case`, authContext).raw
-        else if (stepType =:= ru.typeOf[ObservableSteps])
-          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new ObservableSteps(s)(db, graph).`case`, authContext).raw
-        else if (stepType =:= ru.typeOf[LogSteps])
-          parentFilter.apply(db, publicProperties, ru.typeOf[TaskSteps], new LogSteps(s)(db, graph).task, authContext).raw
-        else ???
-      }
-      .asInstanceOf[S]
-  }
+//    vertexSteps
+//      .filter { s =>
+//        if (stepType =:= ru.typeOf[TaskSteps])
+//          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new TaskSteps(s)(db, graph).`case`, authContext).raw
+//        else if (stepType =:= ru.typeOf[ObservableSteps])
+//          parentFilter.apply(db, publicProperties, ru.typeOf[CaseSteps], new ObservableSteps(s)(db, graph).`case`, authContext).raw
+//        else if (stepType =:= ru.typeOf[LogSteps])
+//          parentFilter.apply(db, publicProperties, ru.typeOf[TaskSteps], new LogSteps(s)(db, graph).task, authContext).raw
+//        else ???
+//      }
+//      .asInstanceOf[S]
 }
 
 class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(db, publicProperties) {
@@ -150,7 +153,7 @@ class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _
       db,
       publicProperties,
       rm.classSymbol(from.getClass).toType,
-      from.asInstanceOf[X forSome { type X <: BaseVertexSteps[_, X] }],
+      from.asInstanceOf[BaseVertexSteps],
       authContext
     )
 }

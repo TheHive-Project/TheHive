@@ -3,18 +3,19 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Long => JLong}
 import java.util.{Date, Map => JMap}
 
+import scala.collection.JavaConverters._
 import scala.util.Success
 
 import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
-import scala.collection.JavaConverters._
 
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.OutputAudit
 import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services._
@@ -46,7 +47,7 @@ class AuditCtrl @Inject()(
     Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
       "page",
       FieldsParser[OutputParam],
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit.raw)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
   val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit, OutputAudit]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

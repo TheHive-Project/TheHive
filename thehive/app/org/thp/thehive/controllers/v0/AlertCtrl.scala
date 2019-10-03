@@ -12,8 +12,9 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -52,7 +53,7 @@ class AlertCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, alertSteps, _) =>
       alertSteps
-        .richPage(range.from, range.to, withTotal = true)(_.richAlert.raw)
+        .richPage(range.from, range.to, withTotal = true)(_.richAlert)
         .map { richAlert =>
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }

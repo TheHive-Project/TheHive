@@ -1,18 +1,20 @@
 package org.thp.thehive.services
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
@@ -61,7 +63,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (logSteps, updatedFields) =>
         for {
-          c <- logSteps.clone().`case`.getOrFail()
+          c <- logSteps.newInstance().`case`.getOrFail()
           l <- logSteps.getOrFail()
           _ <- auditSrv.log.update(l, c, updatedFields)
         } yield ()
@@ -69,7 +71,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
 }
 
 @EntitySteps[Log]
-class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Log, LogSteps](raw) {
+class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Log](raw) {
 
   def task = new TaskSteps(raw.in("TaskLog"))
 
@@ -106,10 +108,11 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
       )
     )
 
-  override def newInstance(raw: GremlinScala[Vertex]): LogSteps = new LogSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): LogSteps = new LogSteps(newRaw)
+  override def newInstance(): LogSteps                             = new LogSteps(raw.clone())
 
-  def richLog: ScalarSteps[RichLog] =
-    ScalarSteps(
+  def richLog: Traversal[RichLog, RichLog] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())

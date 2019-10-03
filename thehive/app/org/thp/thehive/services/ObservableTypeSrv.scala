@@ -3,8 +3,9 @@ package org.thp.thehive.services
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
-import org.thp.scalligraph.models.{BaseVertexSteps, Database}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
 
 @Singleton
@@ -37,13 +38,13 @@ class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) ext
 }
 
 @EntitySteps[ObservableType]
-class ObservableTypeSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[ObservableType, ObservableTypeSteps](raw) {
+class ObservableTypeSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[ObservableType](raw) {
 
-  override def newInstance(raw: GremlinScala[Vertex]): ObservableTypeSteps = new ObservableTypeSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): ObservableTypeSteps = new ObservableTypeSteps(newRaw)
+  override def newInstance(): ObservableTypeSteps                             = new ObservableTypeSteps(raw.clone())
 
   def get(idOrName: String): ObservableTypeSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): ObservableTypeSteps = new ObservableTypeSteps(raw.has(Key("name") of name))

@@ -17,6 +17,7 @@ import org.thp.cortex.dto.v0.{CortexOutputJob, CortexOutputOperation, InputCorte
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
@@ -187,15 +188,15 @@ class ActionSrv @Inject()(
 }
 
 @EntitySteps[Action]
-class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends BaseVertexSteps[Action, ActionSteps](raw) {
+class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends VertexSteps[Action](raw) {
 
   /**
     * Provides a RichAction model with additional Entity context
     *
     * @return
     */
-  def richAction: ScalarSteps[RichAction] =
-    ScalarSteps(
+  def richAction: Traversal[RichAction, RichAction] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -215,7 +216,10 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
       )
     )
 
+  def context: Traversal[Entity, Entity] = Traversal(raw.outTo[ActionContext].map(_.asEntity))
+
   def visible(authContext: AuthContext): ActionSteps = ???
 
-  override def newInstance(raw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(newRaw)
+  override def newInstance(): ActionSteps                             = new ActionSteps(raw.clone())
 }

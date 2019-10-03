@@ -3,12 +3,12 @@ package org.thp.thehive.controllers.v1
 import scala.language.implicitConversions
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.IdMapping
 import org.thp.thehive.dto.v1.{OutputAudit, OutputEntity}
-import org.thp.thehive.models.{AuditContext, RichAudit}
+import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services.AuditSteps
 
 object AuditConversion {
@@ -46,6 +46,6 @@ object AuditConversion {
       .property("base", UniMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UniMapping.date)(_.rename("_createdAt").readonly)
       .property("requestId", UniMapping.string)(_.simple.readonly)
-      .property("rootId", UniMapping.string)(_.derived(_.outTo[AuditContext].id().map(_.toString)).readonly)
+      .property("rootId", IdMapping)(_.derived(_.context._id).readonly)
       .build
 }

@@ -10,16 +10,17 @@ import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.IdMapping
 import org.thp.thehive.dto.v0.{OutputAudit, OutputEntity}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSteps, AuditSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
+import org.thp.thehive.services._
 
 object AuditConversion {
+  import AlertConversion._
   import CaseConversion._
   import LogConversion._
-  import TaskConversion._
   import ObservableConversion._
-  import AlertConversion._
+  import TaskConversion._
 
   def actionToOperation(action: String): String = action match {
     case "create" => "Creation"
@@ -120,6 +121,6 @@ object AuditConversion {
       .property("base", UniMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UniMapping.date)(_.rename("_createdAt").readonly)
       .property("requestId", UniMapping.string)(_.simple.readonly)
-      .property("rootId", UniMapping.string)(_.derived(_.outTo[AuditContext].id().map(_.toString)).readonly)
+      .property("rootId", IdMapping)(_.derived(_.context._id).readonly)
       .build
 }

@@ -13,11 +13,12 @@ import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 
@@ -60,6 +61,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
 }
 
 @EntitySteps[Attachment]
-class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Attachment, AttachmentSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(raw)
+class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Attachment](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(newRaw)
+  override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
 }

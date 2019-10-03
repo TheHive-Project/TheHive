@@ -2,17 +2,19 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
-import play.api.libs.json.{JsNull, JsObject, Json}
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -52,7 +54,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (taskSteps, updatedFields) =>
         for {
-          c <- taskSteps.clone().`case`.getOrFail()
+          c <- taskSteps.newInstance().`case`.getOrFail()
           t <- taskSteps.getOrFail()
           _ <- auditSrv.task.update(t, c, updatedFields)
         } yield ()
@@ -68,7 +70,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
     * @param authContext auth db
     * @return
     */
-  def updateStatus(t: Task with Entity, o: User with Entity, s: TaskStatus.Type)(
+  def updateStatus(t: Task with Entity, o: User with Entity, s: TaskStatus.Value)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Task with Entity] = {
@@ -99,7 +101,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, 
 }
 
 @EntitySteps[Task]
-class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Task, TaskSteps](raw) {
+class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Task](raw) {
 
   def visible(implicit authContext: AuthContext): TaskSteps = newInstance(
     raw.filter(
@@ -109,7 +111,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
   )
 
-  override def newInstance(raw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): TaskSteps = new TaskSteps(newRaw)
+  override def newInstance(): TaskSteps                             = new TaskSteps(raw.clone())
 
   def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
@@ -132,8 +135,8 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def user = new UserSteps(raw.outTo[TaskUser])
 
-  def richTask: ScalarSteps[RichTask] =
-    ScalarSteps(
+  def richTask: Traversal[RichTask, RichTask] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())

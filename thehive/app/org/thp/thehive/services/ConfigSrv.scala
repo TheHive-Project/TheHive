@@ -2,13 +2,16 @@ package org.thp.thehive.services
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+
 import play.api.libs.json.JsValue
+
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
@@ -72,8 +75,9 @@ class ConfigSrv @Inject()(
 }
 
 @EntitySteps[Config]
-class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Config, ConfigSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): ConfigSteps = new ConfigSteps(raw)
+class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Config](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): ConfigSteps = new ConfigSteps(newRaw)
+  override def newInstance(): ConfigSteps                             = new ConfigSteps(raw.clone())
 
   def triggerMap(notificationSrv: NotificationSrv): Map[String, Map[Trigger, (Boolean, Seq[String])]] = {
     def notificationRaw: GremlinScala.Aux[Vertex, HNil] =

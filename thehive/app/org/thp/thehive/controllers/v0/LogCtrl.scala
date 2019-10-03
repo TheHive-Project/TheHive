@@ -1,14 +1,16 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class LogCtrl @Inject()(
@@ -34,7 +36,7 @@ class LogCtrl @Inject()(
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, LogSteps, PagedResult[RichLog]](
     "page",
     FieldsParser[OutputParam],
-    (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog.raw)
+    (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
   override val outputQuery: Query = Query.output[RichLog, OutputLog]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

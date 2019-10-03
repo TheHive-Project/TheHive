@@ -3,6 +3,12 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -14,19 +20,15 @@ import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
 import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObservable}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject()(
@@ -238,7 +240,7 @@ class JobSrv @Inject()(
 }
 
 @EntitySteps[Job]
-class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Job, JobSteps](raw) {
+class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Job](raw) {
 
   /**
     * Checks if a Job is visible from a certain UserRole end
@@ -257,7 +259,8 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     )
   )
 
-  override def newInstance(raw: GremlinScala[Vertex]): JobSteps = new JobSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): JobSteps = new JobSteps(newRaw)
+  override def newInstance(): JobSteps                             = new JobSteps(raw.clone())
 
   def observable: ObservableSteps = new ObservableSteps(raw.inTo[ObservableJob])
 

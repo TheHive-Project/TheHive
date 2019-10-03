@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 
 import play.api.libs.json.Json
 
-import gremlin.scala.Key
+import gremlin.scala.P
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.auth.Permission
@@ -82,7 +82,7 @@ object UserConversion {
           }
       })
       .property("status", UniMapping.string)(
-        _.derived(_.choose(predicate = _.has(Key("locked") of true), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
+        _.derived(_.choose(predicate = _.locked.is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
           .custom { (_, value, vertex, db, graph, authContext) =>
             userSrv
               .current(graph, authContext)

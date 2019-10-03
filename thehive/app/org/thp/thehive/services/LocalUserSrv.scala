@@ -20,7 +20,7 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends Scalligraph
       val userSteps = userSrv.get(userId)
 
       userSteps
-        .clone()
+        .newInstance()
         .getAuthContext(requestId, organisationName)
         .headOption()
         .orElse {

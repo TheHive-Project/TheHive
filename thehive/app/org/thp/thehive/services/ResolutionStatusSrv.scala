@@ -2,8 +2,10 @@ package org.thp.thehive.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.models.{BaseVertexSteps, Database}
+import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.VertexSrv
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.ResolutionStatus
 
 @Singleton
@@ -22,13 +24,14 @@ class ResolutionStatusSrv @Inject()(implicit db: Database) extends VertexSrv[Res
     else initSteps.getByName(idOrName)
 }
 
-class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[ResolutionStatus, ResolutionStatusSteps](raw) {
+@EntitySteps[ResolutionStatus]
+class ResolutionStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[ResolutionStatus](raw) {
 
-  override def newInstance(raw: GremlinScala[Vertex]): ResolutionStatusSteps = new ResolutionStatusSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): ResolutionStatusSteps = new ResolutionStatusSteps(newRaw)
+  override def newInstance(): ResolutionStatusSteps                             = new ResolutionStatusSteps(raw.clone())
 
   def get(idOrName: String): ResolutionStatusSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): ResolutionStatusSteps = new ResolutionStatusSteps(raw.has(Key("value") of name))

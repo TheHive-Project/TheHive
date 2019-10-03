@@ -1,8 +1,10 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.models.{BaseVertexSteps, UniMapping}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, PublicPropertyListBuilder, Query}
 import scala.reflect.runtime.{universe => ru}
+
+import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, PublicPropertyListBuilder, Query}
+import org.thp.scalligraph.steps.BaseVertexSteps
 
 case class IdOrName(idOrName: String)
 
@@ -15,7 +17,7 @@ trait QueryableCtrl {
   val getQuery: ParamQuery[IdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
 
-  def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
+  def metaProperties[S <: BaseVertexSteps: ru.TypeTag]: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[S]
       .property("_createdBy", UniMapping.string)(_.simple.readonly)
       .property("_createdAt", UniMapping.date)(_.simple.readonly)

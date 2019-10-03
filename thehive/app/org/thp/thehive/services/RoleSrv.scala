@@ -1,14 +1,15 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
-
-import scala.util.Try
 
 @Singleton
 class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleSteps] {
@@ -41,9 +42,10 @@ class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleS
 }
 
 @EntitySteps[Role]
-class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Role, RoleSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(raw)
-  def organisation: OrganisationSteps                            = new OrganisationSteps(raw.outTo[RoleOrganisation])
+class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Role](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(newRaw)
+  override def newInstance(): RoleSteps                             = new RoleSteps(raw.clone())
+  def organisation: OrganisationSteps                               = new OrganisationSteps(raw.outTo[RoleOrganisation])
 
   def removeProfile(): Unit = {
     raw.outToE[RoleProfile].drop().iterate()

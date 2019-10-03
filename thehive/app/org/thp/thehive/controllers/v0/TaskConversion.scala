@@ -1,17 +1,17 @@
 package org.thp.thehive.controllers.v0
 
+import scala.language.implicitConversions
+
+import play.api.libs.json.Json
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
-import org.thp.thehive.models.{RichTask, Task, TaskStatus, TaskUser}
+import org.thp.thehive.models.{RichTask, Task, TaskStatus}
 import org.thp.thehive.services.{TaskSrv, TaskSteps, UserSrv}
-import play.api.libs.json.Json
-
-import scala.language.implicitConversions
 
 object TaskConversion {
 
@@ -58,16 +58,18 @@ object TaskConversion {
       .property("endDate", UniMapping.date.optional)(_.simple.updatable)
       .property("order", UniMapping.int)(_.simple.updatable)
       .property("dueDate", UniMapping.date.optional)(_.simple.updatable)
-      .property("owner", UniMapping.string.optional)(_.derived(_.outTo[TaskUser].value[String]("login")).custom {
-        (_, login: Option[String], vertex, _, graph, authContext) =>
-          for {
-            task <- taskSrv.get(vertex)(graph).getOrFail()
-            user <- login.map(userSrv.getOrFail(_)(graph)).flip
-            _ <- user match {
-              case Some(u) => taskSrv.assign(task, u)(graph, authContext)
-              case None    => taskSrv.unassign(task)(graph, authContext)
-            }
-          } yield Json.obj("owner" -> user.map(_.login))
-      })
+      .property("owner", UniMapping.string.optional)(
+        _.derived(_.user.login)
+          .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
+            for {
+              task <- taskSrv.get(vertex)(graph).getOrFail()
+              user <- login.map(userSrv.getOrFail(_)(graph)).flip
+              _ <- user match {
+                case Some(u) => taskSrv.assign(task, u)(graph, authContext)
+                case None    => taskSrv.unassign(task)(graph, authContext)
+              }
+            } yield Json.obj("owner" -> user.map(_.login))
+          }
+      )
       .build
 }

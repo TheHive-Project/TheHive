@@ -1,19 +1,21 @@
 package org.thp.thehive.controllers.v0
 
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, PagedResult, UniMapping}
+import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query._
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Success, Try}
+import org.thp.scalligraph.steps.{BaseVertexSteps, PagedResult}
 
 case class IdOrName(idOrName: String)
 
@@ -26,7 +28,7 @@ trait QueryableCtrl {
   val getQuery: ParamQuery[IdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
 
-  def metaProperties[S <: BaseVertexSteps[_, S]: ru.TypeTag]: List[PublicProperty[_, _]] =
+  def metaProperties[S <: BaseVertexSteps: ru.TypeTag]: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[S]
       .property("createdBy", UniMapping.string)(_.rename("_createdBy").readonly)
       .property("createdAt", UniMapping.date)(_.rename("_createdAt").readonly)
@@ -46,7 +48,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
     .filterQuery
     .paramParser(queryType, publicProperties)
 
-  val aggregationParser: FieldsParser[GroupAggregation[_, _]] = queryExecutor
+  val aggregationParser: FieldsParser[GroupAggregation[_, _, _]] = queryExecutor
     .aggregationQuery
     .paramParser(queryType, publicProperties)
 

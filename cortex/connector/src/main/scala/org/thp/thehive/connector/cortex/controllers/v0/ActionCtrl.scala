@@ -7,8 +7,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{RichAction, Action => CortexAction}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
@@ -61,7 +62,7 @@ class ActionCtrl @Inject()(
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
     "page",
     FieldsParser[OutputParam],
-    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction.raw)
+    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
   override val outputQuery: Query = Query.output[RichAction, OutputAction]
 

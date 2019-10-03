@@ -1,14 +1,15 @@
 package org.thp.thehive.services
 
+import scala.util.{Failure, Try}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.models._
-
-import scala.util.{Failure, Try}
 
 @Singleton
 class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, ShareSteps] {
@@ -40,12 +41,13 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
 }
 
 @EntitySteps[Share]
-class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Share, ShareSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(raw)
+class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Share](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(newRaw)
+  override def newInstance(): ShareSteps                             = new ShareSteps(raw.clone())
 
-  def relatedTo(`case`: Case with Entity): ShareSteps = where(_.`case`.get(`case`._id))
+  def relatedTo(`case`: Case with Entity): ShareSteps = this.filter(_.`case`.get(`case`._id))
 
-  def relatedTo(organisation: Organisation with Entity): ShareSteps = where(_.organisation.get(organisation._id))
+  def relatedTo(organisation: Organisation with Entity): ShareSteps = this.filter(_.organisation.get(organisation._id))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 

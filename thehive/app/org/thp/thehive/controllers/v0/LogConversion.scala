@@ -8,6 +8,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.IdMapping
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Log, RichLog}
 import org.thp.thehive.services.LogSteps
@@ -47,6 +48,6 @@ object LogConversion {
       .property("deleted", UniMapping.boolean)(_.simple.updatable)
       .property("startDate", UniMapping.date)(_.rename("date").readonly)
       .property("status", UniMapping.string)(_.simple.readonly)
-      .property("attachment", UniMapping.string)(_.derived(_.out("LogAttachment").value[String]("id")).readonly)
+      .property("attachment", IdMapping)(_.derived(_.attachments._id).readonly)
       .build
 }

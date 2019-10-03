@@ -1,5 +1,9 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
+import play.api.libs.json.JsObject
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -7,10 +11,8 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-
-import scala.util.Try
 
 object OrganisationSrv {
   val default = Organisation("default", "initial organisation")
@@ -47,15 +49,14 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (orgSteps, updatedFields) =>
         orgSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.organisation.update(_, updatedFields))
     }
 }
 
 @EntitySteps[Case]
-class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[Organisation, OrganisationSteps](raw) {
+class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Organisation](raw) {
 
   def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
 
@@ -91,10 +92,11 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
 
   def get(idOrName: String): OrganisationSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
 
-  override def newInstance(raw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
+  override def newInstance(): OrganisationSteps                             = new OrganisationSteps(raw.clone())
 }

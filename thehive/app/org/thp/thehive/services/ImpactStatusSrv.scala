@@ -2,8 +2,10 @@ package org.thp.thehive.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.models.{BaseVertexSteps, Database}
+import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.VertexSrv
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.ImpactStatus
 
 @Singleton
@@ -21,12 +23,13 @@ class ImpactStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ImpactS
     else initSteps.getByName(idOrName)
 }
 
-class ImpactStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[ImpactStatus, ImpactStatusSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): ImpactStatusSteps = new ImpactStatusSteps(raw)
+@EntitySteps[ImpactStatus]
+class ImpactStatusSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[ImpactStatus](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): ImpactStatusSteps = new ImpactStatusSteps(newRaw)
+  override def newInstance(): ImpactStatusSteps                             = new ImpactStatusSteps(raw.clone())
 
   def get(idOrName: String): ImpactStatusSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): ImpactStatusSteps = new ImpactStatusSteps(raw.has(Key("value") of name))

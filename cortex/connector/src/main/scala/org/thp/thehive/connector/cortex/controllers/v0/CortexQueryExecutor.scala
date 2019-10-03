@@ -1,9 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.language.existentials
 import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -12,8 +10,10 @@ import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0._
+import org.thp.thehive.services.ObservableSteps
 
 @Singleton
 class CortexQueryExecutor @Inject()(
@@ -51,23 +51,16 @@ class CortexQueryExecutor @Inject()(
   * @param parentFilter the query
   */
 class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
-  override def apply[S <: ScalliSteps[_, _, _]](
+  override def apply[S <: BaseTraversal](
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
       stepType: ru.Type,
       step: S,
       authContext: AuthContext
-  ): S = {
-    val vertexSteps  = step.asInstanceOf[BaseVertexSteps[Product, _]]
-    val graph: Graph = vertexSteps.graph
-    vertexSteps
-      .filter { s =>
-        if (stepType =:= ru.typeOf[JobSteps])
-          parentFilter.apply(db, publicProperties, ru.typeOf[JobSteps], new JobSteps(s)(db, graph).observable, authContext).raw
-        else ???
-      }
-      .asInstanceOf[S]
-  }
+  ): S =
+    if (stepType =:= ru.typeOf[JobSteps])
+      step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[ObservableSteps], t.asInstanceOf[JobSteps].observable, authContext))
+    else ???
 }
 
 /**
@@ -97,7 +90,7 @@ class CortexParentFilterQuery(db: Database, publicProperties: List[PublicPropert
       db,
       publicProperties,
       rm.classSymbol(from.getClass).toType,
-      from.asInstanceOf[X forSome { type X <: BaseVertexSteps[_, X] }],
+      from.asInstanceOf[BaseVertexSteps],
       authContext
     )
 }

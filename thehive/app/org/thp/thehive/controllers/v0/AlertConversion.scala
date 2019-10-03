@@ -4,17 +4,18 @@ import java.util.Date
 
 import scala.language.implicitConversions
 
+import play.api.libs.json.Json
+
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.IdMapping
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
-import org.thp.thehive.models.{Alert, AlertCase, AlertCustomField, AlertTag, RichAlert, RichObservable}
+import org.thp.thehive.models.{Alert, AlertCase, RichAlert, RichObservable}
 import org.thp.thehive.services.{AlertSrv, AlertSteps}
-import play.api.libs.json.Json
-
-import org.thp.scalligraph.controllers.Output
 
 object AlertConversion {
   import CustomFieldConversion._
@@ -29,7 +30,7 @@ object AlertConversion {
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldRenamed(_._id, _.id)
         .withFieldConst(_._type, "alert")
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldComputed(
           _.status,
           alert =>
@@ -53,7 +54,7 @@ object AlertConversion {
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldConst(_._type, "alert")
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldComputed(
           _.status,
           alert =>
@@ -91,12 +92,12 @@ object AlertConversion {
       .property("date", UniMapping.date)(_.simple.updatable)
       .property("lastSyncDate", UniMapping.date.optional)(_.simple.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.outTo[AlertTag].value("name"))
+        _.derived(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             alertSrv
               .get(vertex)(graph)
               .getOrFail()
-              .flatMap(alert => alertSrv.updateTags(alert, value)(graph, authContext))
+              .flatMap(alert => alertSrv.updateTagNames(alert, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -120,18 +121,10 @@ object AlertConversion {
       )
       .property("summary", UniMapping.string.optional)(_.simple.updatable)
       .property("user", UniMapping.string)(_.simple.updatable)
-      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value("name")).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[AlertCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.string)(
-        _.derived(
-          _.outToE[AlertCustomField].value("stringValue"),
-          _.outToE[AlertCustomField].value("booleanValue"),
-          _.outToE[AlertCustomField].value("integerValue"),
-          _.outToE[AlertCustomField].value("floatValue"),
-          _.outToE[AlertCustomField].value("dateValue")
-        ).readonly
-      )
-      .property("case", UniMapping.string)(_.derived(_.outTo[AlertCase].id().map(_.toString)).readonly)
+      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
+//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
+      .property("case", IdMapping)(_.derived(_.`case`._id).readonly)
       .build
 }

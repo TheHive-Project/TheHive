@@ -2,6 +2,12 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -12,13 +18,9 @@ import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -197,7 +199,7 @@ class AuditSrv @Inject()(
 }
 
 @EntitySteps[Audit]
-class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schema, graph: Graph) extends BaseVertexSteps[Audit, AuditSteps](raw) {
+class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schema, graph: Graph) extends VertexSteps[Audit](raw) {
 
   def organisation: OrganisationSteps =
     new OrganisationSteps(getOrganisation(raw))
@@ -214,8 +216,11 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         //          BranchOtherwise(_)
       )
 
-  def auditContextObjectOrganisation: ScalarSteps[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])] =
-    ScalarSteps(
+  def auditContextObjectOrganisation: Traversal[
+    (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
+    (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])
+  ] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -234,8 +239,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
         }
     )
 
-  def richAudit: ScalarSteps[RichAudit] =
-    ScalarSteps(
+  def richAudit: Traversal[RichAudit, RichAudit] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -250,8 +255,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
 
   def richAuditWithCustomRenderer[A](
       entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
-  ): ScalarSteps[(RichAudit, A)] =
-    ScalarSteps(
+  ): Traversal[(RichAudit, A), (RichAudit, A)] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -291,7 +296,11 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
   )
 
-  override def newInstance(raw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
+  override def newInstance(): AuditSteps                             = new AuditSteps(raw.clone())
 
-  def `object`: ScalarSteps[Entity] = ScalarSteps(raw.outTo[Audited].map(_.asEntity))
+  def `object`: Traversal[Entity, Entity] = Traversal(raw.outTo[Audited].map(_.asEntity))
+
+  def context: VertexSteps[Entity] = new VertexSteps[Entity](raw.outTo[AuditContext])
+//    Traversal(raw.outTo[AuditContext].map(_.asEntity))
 }

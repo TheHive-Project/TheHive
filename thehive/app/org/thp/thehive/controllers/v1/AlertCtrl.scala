@@ -5,8 +5,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Permissions, RichAlert}
 import org.thp.thehive.services._
@@ -39,7 +40,7 @@ class AlertCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, alertSteps, _) =>
       alertSteps
-        .richPage(range.from, range.to, withTotal = true)(_.richAlert.raw)
+        .richPage(range.from, range.to, withTotal = true)(_.richAlert)
   )
   override val outputQuery: Query = Query.output[RichAlert, OutputAlert]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

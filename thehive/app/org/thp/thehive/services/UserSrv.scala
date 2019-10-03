@@ -13,6 +13,7 @@ import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.thehive.models._
 
@@ -79,7 +80,7 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (userSteps, updatedFields) =>
         userSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
@@ -89,18 +90,18 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      role <- get(user).role.where(_.organisation.get(organisation)).getOrFail()
+      role <- get(user).role.filter(_.organisation.get(organisation)).getOrFail()
       _ = roleSrv.updateProfile(role, profile)
       _ <- auditSrv.user.changeProfile(user, organisation, profile)
     } yield ()
 }
 
 @EntitySteps[User]
-class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[User, UserSteps](raw) {
+class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[User](raw) {
   def current(authContext: AuthContext): UserSteps = get(authContext.userId)
 
   def get(idOrName: String): UserSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
@@ -109,10 +110,11 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     if (authContext.permissions.contains(Permissions.manageOrganisation)) this
     else newInstance(raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation)))
 
-  override def newInstance(raw: GremlinScala[Vertex]): UserSteps = new UserSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): UserSteps = new UserSteps(newRaw)
+  override def newInstance(): UserSteps                             = new UserSteps(raw.clone())
 
   def can(requiredPermission: Permission)(implicit authContext: AuthContext): UserSteps =
-    where(_.organisations(requiredPermission).get(authContext.organisation))
+    this.filter(_.organisations(requiredPermission).get(authContext.organisation))
 
   def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
 
@@ -127,30 +129,31 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInDefaultOrganisation = clone().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
+    val isInDefaultOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
     if (isInDefaultOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
     else organisations0(requiredPermission)
   }
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])
 
-  def getAuthContext(requestId: String, organisation: Option[String]): ScalarSteps[AuthContext] = {
+  def getAuthContext(requestId: String, organisation: Option[String]): Traversal[AuthContext, AuthContext] = {
     val organisationName = organisation
       .orElse(
-        raw
-          .clone()
+        this
+          .newInstance()
           .outTo[UserRole]
           .outTo[RoleOrganisation]
-          .value[String]("name")
+          .value[String](Key("name"))
           .headOption()
       )
       .getOrElse(OrganisationSrv.default.name)
     getAuthContext(requestId, organisationName)
   }
 
-  def getAuthContext(requestId: String, organisationName: String): ScalarSteps[AuthContext] =
-    ScalarSteps(
-      where(_.organisations.get(organisationName))
+  def getAuthContext(requestId: String, organisationName: String): Traversal[AuthContext, AuthContext] =
+    Traversal(
+      this
+        .filter(_.organisations.get(organisationName))
         .raw
         .has(Key("locked") of false)
         .project(
@@ -167,19 +170,20 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  def richUser(organisation: String): ScalarSteps[RichUser] =
-    new ScalarSteps[RichUser](
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
-        )
-        .collect {
-          case (user, profiles) if profiles.size() == 1 =>
-            val profile = profiles.get(0).as[Profile]
-            RichUser(user.as[User], profile.name, profile.permissions, organisation)
-        }
-    )
+  def richUser(organisation: String): Traversal[RichUser, RichUser] =
+//    new Traversal[RichUser](
+//      raw
+    this
+      .project(
+        _.apply(By[Vertex]())
+          .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
+      )
+      .collect {
+        case (user, profiles) if profiles.size() == 1 =>
+          val profile = profiles.get(0).as[Profile]
+          RichUser(user.as[User], profile.name, profile.permissions, organisation)
+      }
+//    )
 
   def role = new RoleSteps(raw.outTo[UserRole])
 }

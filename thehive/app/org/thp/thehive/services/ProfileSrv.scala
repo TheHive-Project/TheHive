@@ -1,14 +1,15 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
-
-import scala.util.Try
 
 object ProfileSrv {
   val admin = Profile("admin", Permissions.adminPermissions)
@@ -62,15 +63,16 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
 }
 
 @EntitySteps[Profile]
-class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Profile, ProfileSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): ProfileSteps = new ProfileSteps(raw)
+class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Profile](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex]): ProfileSteps = new ProfileSteps(newRaw)
+  override def newInstance(): ProfileSteps                             = new ProfileSteps(raw.clone())
 
   def roles = new RoleSteps(raw.inTo[RoleProfile])
 
   def shares = new ShareSteps(raw.inTo[ShareProfile])
 
   def get(idOrName: String): ProfileSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): ProfileSteps = new ProfileSteps(raw.has(Key("name") of name))

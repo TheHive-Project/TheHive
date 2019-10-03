@@ -1,18 +1,20 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph._
-import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
-import org.thp.thehive.models._
-import org.thp.thehive.services._
+import scala.util.Success
+
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph._
+import org.thp.scalligraph.controllers._
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
+import org.thp.thehive.models._
+import org.thp.thehive.services._
 
 @Singleton
 class ObservableCtrl @Inject()(
@@ -42,9 +44,9 @@ class ObservableCtrl @Inject()(
         observableSteps
           .richPage(from, to, withTotal = true) {
             case o if withStats =>
-              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph)).raw
+              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph))
             case o =>
-              o.richObservable.raw.map(_ -> JsObject.empty)
+              o.richObservable.map(_ -> JsObject.empty)
           }
     }
   )

@@ -2,17 +2,17 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.Date
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.models.UniMapping
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
-import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
-import org.thp.thehive.connector.cortex.models.{Action, ActionContext, JobStatus, RichAction}
-import org.thp.thehive.connector.cortex.services.ActionSteps
-import play.api.libs.json.{JsArray, JsObject}
 import scala.language.implicitConversions
 
+import play.api.libs.json.{JsArray, JsObject}
+
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
+import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
+import org.thp.thehive.connector.cortex.services.ActionSteps
 
 object ActionConversion {
 
@@ -54,11 +54,7 @@ object ActionConversion {
   val actionProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ActionSteps]
       .property("responderId", UniMapping.string)(_.simple.readonly)
-      .property("objectType", UniMapping.string)(
-        _.derived(
-          _.outTo[ActionContext].value[String]("_label").map(_.toLowerCase)
-        ).readonly
-      )
+      .property("objectType", UniMapping.string)(_.derived(_.context.map(_._model.label)).readonly) // FIXME convert label to v0 object type
       .property("status", UniMapping.string)(_.simple.readonly)
       .property("startDate", UniMapping.date)(_.simple.readonly)
       .property("objectId", UniMapping.string)(_.simple.readonly)

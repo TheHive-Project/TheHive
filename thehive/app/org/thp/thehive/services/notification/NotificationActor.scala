@@ -178,14 +178,13 @@ class NotificationActor @Inject()(
                         .value
                         .toIterator
                         .foreach { notificationConfig =>
-                          val config = Json
-                            .parse(notificationConfig)
+                          val config = notificationConfig
                             .asOpt[Seq[NotificationConfig]]
                             .getOrElse(Nil)
                           organisationSrv
                             .get(organisation)
                             .users
-                            .where(_.config.hasNot(Key[String]("name"), P.eq("notification")))
+                            .filter(_.config.hasNot(Key[String]("name"), P.eq("notification")))
                             .toIterator
                             .foreach { user =>
                               executeForUser(user, config, audit, context, obj, organisation)

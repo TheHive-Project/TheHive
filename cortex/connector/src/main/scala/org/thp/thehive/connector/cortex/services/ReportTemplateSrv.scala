@@ -2,19 +2,21 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.zip.{ZipEntry, ZipFile}
 
+import scala.collection.JavaConverters._
+import scala.io.Source
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.connector.cortex.models.ReportTemplate
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.util.Try
 
 @Singleton
 class ReportTemplateSrv @Inject()(
@@ -48,7 +50,7 @@ class ReportTemplateSrv @Inject()(
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (reportTemplateSteps, updatedFields) =>
         reportTemplateSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.reportTemplate.update(_, updatedFields))
     }
@@ -98,11 +100,10 @@ class ReportTemplateSrv @Inject()(
 }
 
 @EntitySteps[ReportTemplate]
-class ReportTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[ReportTemplate, ReportTemplateSteps](raw) {
+class ReportTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[ReportTemplate](raw) {
 
   def get(idOrName: String): ReportTemplateSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   /**
@@ -113,5 +114,6 @@ class ReportTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, grap
     */
   def getByName(workerId: String): ReportTemplateSteps = new ReportTemplateSteps(raw.has(Key("workerId") of workerId))
 
-  override def newInstance(raw: GremlinScala[Vertex]): ReportTemplateSteps = new ReportTemplateSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): ReportTemplateSteps = new ReportTemplateSteps(newRaw)
+  override def newInstance(): ReportTemplateSteps                             = new ReportTemplateSteps(raw.clone())
 }

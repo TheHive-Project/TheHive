@@ -1,16 +1,18 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
-import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v1.OutputAudit
 import org.thp.thehive.models.RichAudit
+import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
 
 @Singleton
 class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditSrv) extends QueryableCtrl {
@@ -31,7 +33,7 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
     Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
       "page",
       FieldsParser[OutputParam],
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit.raw)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
   val outputQuery: Query = Query.output[RichAudit, OutputAudit]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
