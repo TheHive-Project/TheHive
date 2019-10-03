@@ -54,10 +54,7 @@ object AuditConversion {
         .withFieldComputed(_.objectType, a => objectTypeMapper(a.objectType.getOrElse(a.context._model.label)))
         .withFieldComputed(_.rootId, _.context._id)
         .withFieldComputed(_.startDate, _._createdAt)
-        .withFieldComputed(
-          _.summary,
-          a => Map(objectTypeMapper(a.objectType.getOrElse(a.context._model.label)) -> Map(actionToOperation(a.action) -> 1))
-        )
+        .withFieldConst(_.summary, Map.empty[String, Map[String, Int]])
         .transform
     )
 
