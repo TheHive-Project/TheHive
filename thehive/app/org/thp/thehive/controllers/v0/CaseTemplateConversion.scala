@@ -1,16 +1,16 @@
 package org.thp.thehive.controllers.v0
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.models.UniMapping
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
-import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
-import org.thp.thehive.models.{CaseCustomField, CaseTemplate, CaseTemplateTag, RichCaseTemplate}
-import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
-import play.api.libs.json.Json
 import scala.language.implicitConversions
 
+import play.api.libs.json.Json
+
+import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
+import org.thp.thehive.models.{CaseTemplate, RichCaseTemplate}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
 
 object CaseTemplateConversion {
   import CustomFieldConversion._
@@ -35,7 +35,7 @@ object CaseTemplateConversion {
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldConst(_.status, "Ok")
         .withFieldConst(_._type, "caseTemplate")
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldComputed(_.tasks, _.tasks.map(toOutputTask(_).toOutput))
         .transform
     )
@@ -47,12 +47,12 @@ object CaseTemplateConversion {
       .property("description", UniMapping.string.optional)(_.simple.updatable)
       .property("severity", UniMapping.int.optional)(_.simple.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.outTo[CaseTemplateTag].value("name"))
+        _.derived(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
               .getOrFail()
-              .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
+              .flatMap(caseTemplate => caseTemplateSrv.updateTagNames(caseTemplate, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -61,17 +61,9 @@ object CaseTemplateConversion {
       .property("pap", UniMapping.int.optional)(_.simple.updatable)
       .property("summary", UniMapping.string.optional)(_.simple.updatable)
       .property("user", UniMapping.string)(_.simple.updatable)
-      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.string)(
-        _.derived(
-          _.outToE[CaseCustomField].value("stringValue"),
-          _.outToE[CaseCustomField].value("booleanValue"),
-          _.outToE[CaseCustomField].value("integerValue"),
-          _.outToE[CaseCustomField].value("floatValue"),
-          _.outToE[CaseCustomField].value("dateValue")
-        ).readonly
-      )
+      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
+//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .build
 }

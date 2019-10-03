@@ -14,10 +14,12 @@ object Permissions {
   val manageAction: Permission         = Permission("manageAction")
   val manageConfig: Permission         = Permission("manageConfig")
   val manageProfile: Permission        = Permission("manageProfile")
+  val manageTag: Permission            = Permission("manageTag")
   val manageCustomField: Permission    = Permission("manageCustomField")
 
   // These permissions are available only if the user is in default organisation, they are removed for other organisations
-  val restrictedPermissions: Set[Permission] = Set(manageOrganisation, manageReportTemplate, manageConfig, manageProfile, manageCustomField)
+  val restrictedPermissions: Set[Permission] =
+    Set(manageOrganisation, manageReportTemplate, manageConfig, manageProfile, manageCustomField, manageTag)
 
   // This is the initial admin permissions
   val adminPermissions: Set[Permission] = restrictedPermissions ++ Set(manageUser)
@@ -35,6 +37,7 @@ object Permissions {
       manageAction,
       manageConfig,
       manageProfile,
+      manageTag,
       manageCustomField
     )
 }

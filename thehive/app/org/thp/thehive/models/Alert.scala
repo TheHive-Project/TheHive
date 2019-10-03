@@ -58,7 +58,7 @@ case class Alert(
 case class RichAlert(
     alert: Alert with Entity,
     organisation: String,
-    tags: Seq[Tag],
+    tags: Seq[Tag with Entity],
     customFields: Seq[CustomFieldWithValue],
     caseId: Option[String],
     caseTemplate: Option[String]
@@ -89,7 +89,7 @@ object RichAlert {
   def apply(
       alert: Alert with Entity,
       organisation: String,
-      tags: Seq[Tag],
+      tags: Seq[Tag with Entity],
       customFields: Seq[CustomFieldWithValue],
       caseId: Option[String],
       caseTemplate: Option[String]

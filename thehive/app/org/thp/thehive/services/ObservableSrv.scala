@@ -1,21 +1,24 @@
 package org.thp.thehive.services
 
+import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
+
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.JsObject
 
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject()(
@@ -82,10 +85,10 @@ class ObservableSrv @Inject()(
     val currentTags = get(observable)
       .tags
       .toList
-      .map(_.name)
+      .map(_.toString)
       .toSet
     for {
-      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
 //      _           <- auditSrv.observable.update(observable, Json.obj("tags" -> (currentTags ++ tags)))
     } yield createdTags
@@ -100,21 +103,23 @@ class ObservableSrv @Inject()(
       _         <- keyValues.toTry(kv => observableKeyValueSrv.create(ObservableKeyValue(), observable, kv))
     } yield keyValues
 
-  def updateTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def updateTags(observable: Observable with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(observable)
       .tags
       .toIterator
-      .foldLeft((tags, Set.empty[String])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
-        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      .foldLeft((tags, Set.empty[Tag with Entity])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
+        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
       }
     for {
-      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
-      _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
       _ = get(observable).removeTags(tagsToRemove)
-//      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
+      //      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
     } yield ()
   }
+
+  def updateTagNames(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(observable, t.toSet))
 
   def duplicate(richObservable: RichObservable)(
       implicit graph: Graph,
@@ -130,7 +135,7 @@ class ObservableSrv @Inject()(
 
   def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- Try(get(observable).data.where(_.useCount.filter(_.is(P.eq(0L)))).remove())
+      _ <- Try(get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove())
       _ <- Try(get(observable).attachments.remove())
       _ <- Try(get(observable).keyValues.remove())
       ctx = get(observable).`case`.getOrFail().orElse(get(observable).alert.getOrFail())
@@ -149,54 +154,53 @@ class ObservableSrv @Inject()(
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (observableSteps, updatedFields) =>
         for {
-          c <- observableSteps.clone().`case`.getOrFail()
+          c <- observableSteps.newInstance().`case`.getOrFail()
           o <- observableSteps.getOrFail()
           _ <- auditSrv.observable.update(o, c, updatedFields)
         } yield ()
     }
 }
 
-class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Observable, ObservableSteps](raw) {
+@EntitySteps[Observable]
+class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Observable](raw) {
 
   def filterOnType(`type`: String): ObservableSteps =
-    filter(_.outTo[ObservableObservableType].has(Key("name") of `type`))
+    this.filter(_.outTo[ObservableObservableType].has(Key("name"), P.eq(`type`)))
 
   def filterOnData(data: String): ObservableSteps =
-    filter(_.outTo[ObservableData].has(Key("data") of data))
+    this.filter(_.outTo[ObservableData].has(Key("data"), P.eq(data)))
 
   def filterOnAttachmentName(name: String): ObservableSteps =
-    filter(_.outTo[ObservableAttachment].has(Key("name") of name))
+    this.filter(_.outTo[ObservableAttachment].has(Key("name"), P.eq(name)))
 
   def filterOnAttachmentSize(size: Long): ObservableSteps =
-    filter(_.outTo[ObservableAttachment].has(Key("size") of size))
+    this.filter(_.outTo[ObservableAttachment].has(Key("size"), P.eq(size)))
 
   def filterOnAttachmentContentType(contentType: String): ObservableSteps =
-    filter(_.outTo[ObservableAttachment].has(Key("contentType") of contentType))
+    this.filter(_.outTo[ObservableAttachment].has(Key("contentType"), P.eq(contentType)))
 
   def filterOnAttachmentHash(hash: String): ObservableSteps =
-    filter(_.outTo[ObservableAttachment].has(Key("hashes") of hash))
+    this.filter(_.outTo[ObservableAttachment].has(Key("hashes"), P.eq(hash)))
 
-  def visible(implicit authContext: AuthContext): ObservableSteps = newInstance(
-    raw.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
-  )
+  def visible(implicit authContext: AuthContext): ObservableSteps =
+    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login"), P.eq(authContext.userId)))
 
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
-    newInstance(
-      raw.filter(
-        _.inTo[ShareObservable]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
-          .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
-      )
+    this.filter(
+      _.inTo[ShareObservable]
+        .filter(_.outTo[ShareProfile].has(Key("permissions"), P.eq(permission)))
+        .inTo[OrganisationShare]
+        .inTo[RoleOrganisation]
+        .filter(_.outTo[RoleProfile].has(Key("permissions"), P.eq(permission)))
+        .inTo[UserRole]
+        .has(Key("login"), P.eq(authContext.userId))
     )
 
-  override def newInstance(raw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(newRaw)
+  override def newInstance(): ObservableSteps                             = new ObservableSteps(raw.clone())
 
-  def richObservable: ScalarSteps[RichObservable] =
-    ScalarSteps(
+  def richObservable: Traversal[RichObservable, RichObservable] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -221,8 +225,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
 
   def richObservableWithCustomRenderer[A](
       entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
-  ): ScalarSteps[(RichObservable, A)] =
-    ScalarSteps(
+  ): Traversal[(RichObservable, A), (RichObservable, A)] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -252,10 +256,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
 
   def tags: TagSteps = new TagSteps(raw.outTo[ObservableTag])
 
-  def removeTags(tagNames: Set[String]): Unit = {
-    raw.outToE[ObservableTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
-    ()
-  }
+  def removeTags(tags: Set[Tag with Entity]): Unit =
+    this.outToE[AlertTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def similar: ObservableSteps = {
     val originLabel = StepLabel[JSet[Vertex]]()
@@ -273,7 +275,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
     )
   }
 
-  def data        = new DataSteps(raw.outTo[ObservableData])
-  def attachments = new AttachmentSteps(raw.outTo[ObservableAttachment])
-  def keyValues   = new KeyValueSteps(raw.outTo[ObservableKeyValue])
+  def data           = new DataSteps(raw.outTo[ObservableData])
+  def attachments    = new AttachmentSteps(raw.outTo[ObservableAttachment])
+  def keyValues      = new KeyValueSteps(raw.outTo[ObservableKeyValue])
+  def observableType = new ObservableTypeSteps(raw.outTo[ObservableObservableType])
 }

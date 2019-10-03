@@ -2,20 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+
+import play.api.libs.json.{JsNumber, JsObject, Json}
+
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.Output
-import org.thp.scalligraph.models.{Database, UniMapping}
+import org.thp.scalligraph.models.{Database, Model, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, ShareSteps, UserSrv}
-import play.api.libs.json.{JsNumber, JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
 
 object CaseConversion {
   import CustomFieldConversion._
@@ -34,7 +35,7 @@ object CaseConversion {
         .withFieldRenamed(_._updatedBy, _.updatedBy)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldConst(_.stats, JsObject.empty)
         .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
         .transform
@@ -68,7 +69,7 @@ object CaseConversion {
         .withFieldRenamed(_._updatedBy, _.updatedBy)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldConst(_.stats, richCaseWithStats._2)
         .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
         .transform
@@ -77,15 +78,14 @@ object CaseConversion {
   def observableStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
       .observables
-      .raw
-      .count()
+      .count
       .map(count => Json.obj("count" -> count.toLong))
+      .raw
 
   def taskStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
       .tasks
       .active
-      .raw
       .groupCount(By(Key[String]("status")))
       .map { statusAgg =>
         val (total, result) = statusAgg.asScala.foldLeft(0L -> JsObject.empty) {
@@ -93,6 +93,7 @@ object CaseConversion {
         }
         result + ("total" -> JsNumber(total))
       }
+      .raw
 
   def alertStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] =
     caseTraversal
@@ -141,6 +142,8 @@ object CaseConversion {
           )
       }
 
+  val tagModel: Model.Vertex[Tag] = Model.vertex[Tag]
+
   def caseProperties(caseSrv: CaseSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
       .property("caseId", UniMapping.int)(_.rename("number").readonly)
@@ -150,12 +153,12 @@ object CaseConversion {
       .property("startDate", UniMapping.date)(_.simple.updatable)
       .property("endDate", UniMapping.date.optional)(_.simple.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.outTo[CaseTag].value("name"))
+        _.derived(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
               .getOrFail()
-              .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
+              .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -164,18 +167,17 @@ object CaseConversion {
       .property("pap", UniMapping.int)(_.simple.updatable)
       .property("status", UniMapping.enum(CaseStatus))(_.simple.updatable)
       .property("summary", UniMapping.string.optional)(_.simple.updatable)
-      .property("owner", UniMapping.string.optional)(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
-        (_, login, vertex, _, graph, authContext) =>
-          for {
-            c    <- caseSrv.get(vertex)(graph).getOrFail()
-            user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
-            _ <- user match {
-              case Some(u) => caseSrv.assign(c, u)(graph, authContext)
-              case None    => caseSrv.unassign(c)(graph, authContext)
-            }
-          } yield Json.obj("owner" -> user.map(_.login))
+      .property("owner", UniMapping.string.optional)(_.derived(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
+        for {
+          c    <- caseSrv.get(vertex)(graph).getOrFail()
+          user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+          _ <- user match {
+            case Some(u) => caseSrv.assign(c, u)(graph, authContext)
+            case None    => caseSrv.unassign(c)(graph, authContext)
+          }
+        } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("resolutionStatus", UniMapping.string.optional)(_.derived(_.outTo[CaseResolutionStatus].value("value")).custom {
+      .property("resolutionStatus", UniMapping.string.optional)(_.derived(_.resolutionStatus.value).custom {
         (_, resolutionStatus, vertex, _, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail()
@@ -185,7 +187,7 @@ object CaseConversion {
             }
           } yield Json.obj("resolutionStatus" -> resolutionStatus)
       })
-      .property("impactStatus", UniMapping.string.optional)(_.derived(_.outTo[CaseImpactStatus].value("value")).custom {
+      .property("impactStatus", UniMapping.string.optional)(_.derived(_.impactStatus.value).custom {
         (_, impactStatus, vertex, _, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail()
@@ -195,21 +197,14 @@ object CaseConversion {
             }
           } yield Json.obj("impactStatus" -> impactStatus)
       })
-      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value("name")).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.string)(
-        _.derived(
-          _.outToE[CaseCustomField].value("stringValue"),
-          _.outToE[CaseCustomField].value("booleanValue"),
-          _.outToE[CaseCustomField].value("integerValue"),
-          _.outToE[CaseCustomField].value("floatValue"),
-          _.outToE[CaseCustomField].value("dateValue")
-        ).readonly
-      )
+      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
+//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .property("computed.handlingDurationInHours", UniMapping.long)(
         _.derived(
           _.coalesce(
+            UniMapping.long,
             _.has(Key("endDate"))
               .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
               .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))

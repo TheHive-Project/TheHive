@@ -138,7 +138,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           severity = 1,
           startDate = now,
           endDate = None,
-          tags = Set("tag1", "tag2", "spam", "src:mail"),
+          tags = Set("tag1", "tag2", "testNamespace.testPredicate=\"spam\"", "testNamespace.testPredicate=\"src:mail\""),
           flag = false,
           tlp = 1,
           pap = 3,

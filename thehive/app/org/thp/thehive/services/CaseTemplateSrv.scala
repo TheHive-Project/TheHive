@@ -2,19 +2,22 @@ package org.thp.thehive.services
 
 import java.util.{List => JList}
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{BaseVertexSteps, Database, Entity, ScalarSteps}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 class CaseTemplateSrv @Inject()(
     customFieldSrv: CustomFieldSrv,
@@ -69,7 +72,7 @@ class CaseTemplateSrv @Inject()(
       _                   <- createCustomFields(createdCaseTemplate, customFields)
       createdTasks        <- tasks.toTry(taskSrv.create)
       _                   <- createdTasks.toTry(addTask(createdCaseTemplate, _))
-      tags                <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+      tags                <- tagNames.toTry(tagSrv.getOrCreate)
       _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
       cfs                 <- createCustomFields(createdCaseTemplate, customFields)
       _                   <- auditSrv.caseTemplate.create(createdCaseTemplate)
@@ -92,35 +95,38 @@ class CaseTemplateSrv @Inject()(
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (templateSteps, updatedFields) =>
         templateSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.caseTemplate.update(_, updatedFields))
     }
 
-  def updateTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def updateTags(caseTemplate: CaseTemplate with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(caseTemplate)
       .tags
       .toIterator
-      .foldLeft((tags, Set.empty[String])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
-        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      .foldLeft((tags, Set.empty[Tag with Entity])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
+        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
       }
     for {
-      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
-      _           <- createdTags.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
+      _ <- tagsToAdd.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
       _ = get(caseTemplate).removeTags(tagsToRemove)
-      _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags))
+      _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags.map(_.toString)))
     } yield ()
+
   }
+
+  def updateTagNames(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(caseTemplate, t.toSet))
 
   def addTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val currentTags = get(caseTemplate)
       .tags
       .toList
-      .map(_.name)
+      .map(_.toString)
       .toSet
     for {
-      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
       _           <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> (currentTags ++ tags)))
     } yield ()
@@ -129,11 +135,10 @@ class CaseTemplateSrv @Inject()(
 }
 
 @EntitySteps[CaseTemplate]
-class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
-    extends BaseVertexSteps[CaseTemplate, CaseTemplateSteps](raw) {
+class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[CaseTemplate](raw) {
 
   def get(idOrName: String): CaseTemplateSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
+    if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
   def getByName(name: String): CaseTemplateSteps = newInstance(raw.has(Key("name") of name))
@@ -141,7 +146,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def visible(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
 
-  override def newInstance(raw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(raw)
+  override def newInstance(newRaw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(newRaw)
+  override def newInstance(): CaseTemplateSteps                             = new CaseTemplateSteps(raw.clone())
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(
@@ -154,17 +160,19 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       )
     )
 
-  def customFields: ScalarSteps[CustomFieldWithValue] =
-    ScalarSteps(
+  def customFields: CustomFieldSteps = new CustomFieldSteps(raw.outTo[CaseCustomField])
+
+  def customFieldsValue: Traversal[CustomFieldWithValue, CustomFieldWithValue] =
+    Traversal(
       raw
-        .outToE[CaseTemplateCustomField]
+        .outToE[CaseCustomField]
         .inV()
         .path
-        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseTemplateCustomField]))
+        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
     )
 
-  def richCaseTemplate: ScalarSteps[RichCaseTemplate] =
-    ScalarSteps(
+  def richCaseTemplate: Traversal[RichCaseTemplate, RichCaseTemplate] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())
@@ -196,8 +204,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTemplateTag])
 
-  def removeTags(tagNames: Set[String]): Unit = {
-    raw.outToE[CaseTemplateTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
+  def removeTags(tags: Set[Tag with Entity]): Unit = {
+    raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
     ()
   }
 }

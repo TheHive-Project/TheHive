@@ -13,7 +13,7 @@ import org.thp.misp.dto.{Attribute, Tag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.{BadRequestError, NotFoundError}
-import org.thp.thehive.models.{Alert, AlertCase, Case, RichAlert, RichObservable}
+import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 
 @Singleton
@@ -47,7 +47,7 @@ class MispExportSrv @Inject()(
             value = observable.data.fold(observable.attachment.get.name)(_.data),
             firstSeen = None,
             lastSeen = None,
-            tags = observable.tags.map(t => Tag(None, t.name, None, None))
+            tags = observable.tags.map(t => Tag(None, t.toString, Some(t.colour), None))
           )
       }
       .orElse {

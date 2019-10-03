@@ -2,20 +2,23 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList}
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, _}
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject()(
@@ -72,7 +75,7 @@ class AlertSrv @Inject()(
             } yield CustomFieldWithValue(cf, alertCustomField)
         }
 
-    val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).count
+    val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
     if (alertAlreadyExist > 0)
       Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
     else
@@ -80,7 +83,7 @@ class AlertSrv @Inject()(
         createdAlert <- createEntity(alert)
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
-        tags         <- tagNames.toTry(t => tagSrv.getOrCreate(t))
+        tags         <- tagNames.toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- createCustomFields(createdAlert)
         _            <- auditSrv.alert.create(createdAlert)
@@ -94,35 +97,39 @@ class AlertSrv @Inject()(
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (alertSteps, updatedFields) =>
         alertSteps
-          .clone()
+          .newInstance()
           .getOrFail()
           .flatMap(auditSrv.alert.update(_, updatedFields))
     }
 
-  def updateTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def updateTags(alert: Alert with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(alert)
       .tags
       .toIterator
-      .foldLeft((tags, Set.empty[String])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t.name) => (toAdd - t.name, toRemove)
-        case ((toAdd, toRemove), t)                           => (toAdd, toRemove + t.name)
+      .foldLeft((tags, Set.empty[Tag with Entity])) {
+        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove) // TODO need check if contains method works
+        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
       }
     for {
-      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate(_))
-      _           <- createdTags.toTry(alertTagSrv.create(AlertTag(), alert, _))
+//      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate)
+      _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _ = get(alert).removeTags(tagsToRemove)
-      _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
+      _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags.map(_.toString)))
     } yield ()
+
   }
+
+  def updateTagNames(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(alert, t.toSet))
 
   def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val currentTags = get(alert)
       .tags
       .toList
-      .map(_.name)
+      .map(_.toString)
       .toSet
     for {
-      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate(_))
+      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _           <- auditSrv.alert.update(alert, Json.obj("tags" -> (currentTags ++ tags)))
     } yield ()
@@ -164,7 +171,7 @@ class AlertSrv @Inject()(
       }
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
-    get(alert).customFields(Some(customFieldName)).headOption()
+    get(alert).customFieldsValue.toIterator.find(_.name == customFieldName)
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -214,7 +221,7 @@ class AlertSrv @Inject()(
         summary = None
       )
 
-      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.map(_.name).toSet, customField, caseTemplate, Nil)
+      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
       _           <- importObservables(alert.alert, createdCase.`case`)
       _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
       _           <- markAsRead(alert._id)
@@ -278,15 +285,13 @@ class AlertSrv @Inject()(
 }
 
 @EntitySteps[Alert]
-class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Alert, AlertSteps](raw) {
-  override def newInstance(raw: GremlinScala[Vertex]): AlertSteps = new AlertSteps(raw)
+class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Alert](raw) {
+  override def newInstance(newRaw: GremlinScala[Vertex] = raw): AlertSteps = new AlertSteps(newRaw)
 
-  def get(idOrSource: String)(implicit graph: Graph): AlertSteps = idOrSource.split(';') match {
+  def get(idOrSource: String): AlertSteps = idOrSource.split(';') match {
     case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
-    case _                             => getByIds(idOrSource)
+    case _                             => this.getByIds(idOrSource)
   }
-
-  override def getByIds(ids: String*): AlertSteps = newInstance(raw.hasId(ids: _*))
 
   def getBySourceId(`type`: String, source: String, sourceRef: String): AlertSteps =
     newInstance(
@@ -300,36 +305,40 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def tags: TagSteps = new TagSteps(raw.outTo[AlertTag])
 
-  def removeTags(tagNames: Set[String]): Unit = {
-    raw.outToE[AlertTag].where(_.otherV().has(Key[String]("name"), P.within(tagNames))).drop().iterate()
+  def `case`: CaseSteps = new CaseSteps(raw.outTo[AlertCase])
+
+  def removeTags(tags: Set[Tag with Entity]): Unit = {
+    raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
     ()
   }
 
   def visible(implicit authContext: AuthContext): AlertSteps =
-    filter(
+    this.filter(
       _.outTo[AlertOrganisation]
         .inTo[RoleOrganisation]
         .inTo[UserRole]
-        .has(Key("login") of authContext.userId)
+        .has(Key("login"), P.eq(authContext.userId))
     )
 
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
-    filter(
+    this.filter(
       _.outTo[AlertOrganisation]
         .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+        .filter(_.outTo[RoleProfile].has(Key("permissions"), P.eq(permission)))
         .inTo[UserRole]
-        .has(Key("login") of authContext.userId)
+        .has(Key("login"), P.eq(authContext.userId))
     )
 
-  def alertUserOrganisation(permission: Permission)(implicit authContext: AuthContext): ScalarSteps[(RichAlert, Organisation with Entity)] = {
+  def alertUserOrganisation(
+      permission: Permission
+  )(implicit authContext: AuthContext): Traversal[(RichAlert, Organisation with Entity), (RichAlert, Organisation with Entity)] = {
     val alertLabel            = StepLabel[Vertex]()
     val organisationLabel     = StepLabel[Vertex]()
     val tagLabel              = StepLabel[JList[Vertex]]()
     val customFieldLabel      = StepLabel[JList[Path]]()
     val caseIdLabel           = StepLabel[JList[AnyRef]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
-    new ScalarSteps(
+    Traversal(
       raw
         .asInstanceOf[GremlinScala.Aux[Vertex, HNil]]
         .`match`(
@@ -370,22 +379,22 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     )
   }
 
-  def customFields(name: Option[String] = None): ScalarSteps[CustomFieldWithValue] = {
-    val acfSteps: GremlinScala[Vertex] = raw
-      .outToE[AlertCustomField]
-      .inV()
-    ScalarSteps(
-      name
-        .fold[GremlinScala[Vertex]](acfSteps)(n => acfSteps.has(Key("name") of n))
+  def customFields: CustomFieldSteps = new CustomFieldSteps(raw.outTo[AlertCustomField])
+
+  def customFieldsValue: Traversal[CustomFieldWithValue, CustomFieldWithValue] =
+    new Traversal(
+      raw
+        .outToE[AlertCustomField]
+        .inV()
         .path
-        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField]))
+        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField])),
+      UniMapping.identity
     )
-  }
 
   def observables: ObservableSteps = new ObservableSteps(raw.outTo[AlertObservable])
 
-  def richAlert: ScalarSteps[RichAlert] =
-    ScalarSteps(
+  def richAlert: Traversal[RichAlert, RichAlert] =
+    Traversal(
       raw
         .project(
           _.apply(By[Vertex]())

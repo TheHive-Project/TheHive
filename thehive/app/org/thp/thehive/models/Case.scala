@@ -2,19 +2,16 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import io.scalaland.chimney.dsl._
-import org.thp.scalligraph._
-import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 import play.api.libs.json.{Format, Json}
 
+import org.thp.scalligraph._
 import org.thp.scalligraph.auth.Permission
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
 
 object CaseStatus extends Enumeration {
-  type Type = Value
-
   val Open, Resolved, Deleted, Duplicated = Value
 
-  implicit val format: Format[CaseStatus.Type] = Json.formatEnum(CaseStatus)
+  implicit val format: Format[CaseStatus.Value] = Json.formatEnum(CaseStatus)
 }
 
 @VertexEntity
@@ -82,7 +79,7 @@ case class Case(
 
 case class RichCase(
     `case`: Case with Entity,
-    tags: Seq[Tag],
+    tags: Seq[Tag with Entity],
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
@@ -110,27 +107,6 @@ case class RichCase(
 object RichCase {
 
   def apply(
-      `case`: Case with Entity,
-      tags: Seq[Tag],
-      caseImpactStatus: Option[String],
-      resolutionStatus: Option[String],
-      user: Option[String],
-      customFields: Seq[CustomFieldWithValue],
-      userPermissions: Set[Permission]
-  ): RichCase =
-    `case`
-      .asInstanceOf[Case]
-      .into[RichCase]
-      .withFieldConst(_.`case`, `case`)
-      .withFieldConst(_.tags, tags)
-      .withFieldConst(_.impactStatus, caseImpactStatus)
-      .withFieldConst(_.resolutionStatus, resolutionStatus)
-      .withFieldConst(_.user, user)
-      .withFieldConst(_.customFields, customFields)
-      .withFieldConst(_.userPermissions, userPermissions)
-      .transform
-
-  def apply(
       __id: String,
       __createdBy: String,
       __updatedBy: Option[String],
@@ -142,7 +118,7 @@ object RichCase {
       severity: Int,
       startDate: Date,
       endDate: Option[Date],
-      tags: Seq[Tag],
+      tags: Seq[Tag with Entity],
       flag: Boolean,
       tlp: Int,
       pap: Int,

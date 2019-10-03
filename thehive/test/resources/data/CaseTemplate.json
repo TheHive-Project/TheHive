@@ -8,6 +8,9 @@
     "flag": false,
     "tlp": 1,
     "pap": 1,
-    "tags": ["spam", "src:mail"]
+    "tags": [
+      "spam",
+      "src:mail"
+    ]
   }
 ]

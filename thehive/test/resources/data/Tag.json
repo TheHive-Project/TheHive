@@ -1,12 +1,72 @@
 [
-  {"name": "t1"},
-  {"name": "t2"},
-  {"name": "t3"},
-  {"name": "alert"},
-  {"name": "test"},
-  {"name": "spam"},
-  {"name": "src:mail"},
-  {"name": "testDomain"},
-  {"name": "hello"},
-  {"name": "world"}
+  {
+    "id": "tagt1",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "t1",
+    "colour": 0
+  },
+  {
+    "id": "tagt2",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "t2",
+    "colour": 0
+  },
+  {
+    "id": "tagt3",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "t3",
+    "colour": 0
+  },
+  {
+    "id": "tagalert",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "alert",
+    "colour": 0
+  },
+  {
+    "id": "tagtest",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "test",
+    "colour": 0
+  },
+  {
+    "id": "tagspam",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "spam",
+    "colour": 0
+  },
+  {
+    "id": "tagsrc:mail",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "src:mail",
+    "colour": 0
+  },
+  {
+    "id": "tagtestDomain",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "testDomain",
+    "colour": 0
+  },
+  {
+    "id": "taghello",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "hello",
+    "colour": 0
+  },
+  {
+    "id": "tagworld",
+    "namespace": "testNamespace",
+    "predicate": "testPredicate",
+    "value": "world",
+    "colour": 0
+  }
 ]

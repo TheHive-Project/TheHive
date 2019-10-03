@@ -115,7 +115,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tlp = 1,
           pap = 3,
           status = "Open",
-          tags = Set("spam", "src:mail", "tag1", "tag2"),
+          tags = Set("testNamespace.testPredicate=\"spam\"", "testNamespace.testPredicate=\"src:mail\"", "tag1", "tag2"),
           summary = None,
           owner = Some("user1@thehive.local"),
           customFields = outputCustomFields,
@@ -312,8 +312,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultCase = contentAsJson(result)
 
         resultCase("count").as[Int] shouldEqual 2
-        (resultCase \ "t1" \ "count").get.as[Int] shouldEqual 2
-        (resultCase \ "t2" \ "count").get.as[Int] shouldEqual 1
+        (resultCase \ "testNamespace.testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
+        (resultCase \ "testNamespace.testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
+        (resultCase \ "testNamespace.testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
+        (resultCase \ "count").asOpt[Int] must beSome(2)
       }
 
       "assign a case to an user" in {

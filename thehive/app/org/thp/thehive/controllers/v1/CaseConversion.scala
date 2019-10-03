@@ -2,17 +2,17 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
+import scala.language.implicitConversions
+
+import play.api.libs.json.{JsObject, Json}
+
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
-import play.api.libs.json.{JsObject, Json}
-import scala.language.implicitConversions
-
-import org.thp.scalligraph.controllers.Output
 
 object CaseConversion {
   import CustomFieldConversion._
@@ -22,7 +22,7 @@ object CaseConversion {
       richCase
         .into[OutputCase]
         .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
-        .withFieldComputed(_.tags, _.tags.map(_.name).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldComputed(_.status, _.status.toString)
         .transform
     )
@@ -65,12 +65,12 @@ object CaseConversion {
       .property("startDate", UniMapping.date)(_.simple.updatable)
       .property("endDate", UniMapping.date.optional)(_.simple.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.outTo[CaseTag].value[String]("name"))
+        _.derived(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
               .getOrFail()
-              .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
+              .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -79,28 +79,19 @@ object CaseConversion {
       .property("pap", UniMapping.int)(_.simple.updatable)
       .property("status", UniMapping.string)(_.simple.updatable)
       .property("summary", UniMapping.string.optional)(_.simple.updatable)
-      .property("user", UniMapping.string.optional)(_.derived(_.outTo[CaseUser].value[String]("login")).custom {
-        (_, login, vertex, _, graph, authContext) =>
-          for {
-            c    <- caseSrv.get(vertex)(graph).getOrFail()
-            user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
-            _ <- user match {
-              case Some(u) => caseSrv.assign(c, u)(graph, authContext)
-              case None    => caseSrv.unassign(c)(graph, authContext)
-            }
-          } yield Json.obj("owner" -> user.map(_.login))
+      .property("user", UniMapping.string.optional)(_.derived(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
+        for {
+          c    <- caseSrv.get(vertex)(graph).getOrFail()
+          user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+          _ <- user match {
+            case Some(u) => caseSrv.assign(c, u)(graph, authContext)
+            case None    => caseSrv.unassign(c)(graph, authContext)
+          }
+        } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("customFieldName", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("name")).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("description")).readonly)
-      .property("customFieldType", UniMapping.string)(_.derived(_.outTo[CaseCustomField].value[String]("type")).readonly)
-      .property("customFieldValue", UniMapping.string)(
-        _.derived(
-          _.outToE[CaseCustomField].value[String]("stringValue"),
-          _.outToE[CaseCustomField].value[String]("booleanValue"),
-          _.outToE[CaseCustomField].value[String]("integerValue"),
-          _.outToE[CaseCustomField].value[String]("floatValue"),
-          _.outToE[CaseCustomField].value[String]("dateValue")
-        ).readonly
-      )
+      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
+//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .build
 }

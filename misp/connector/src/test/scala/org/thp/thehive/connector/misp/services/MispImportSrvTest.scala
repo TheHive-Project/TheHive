@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.misp.services
 
-import java.awt.Color
 import java.util.{Date, UUID}
 
 import scala.concurrent.ExecutionContext
@@ -79,7 +78,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
             attributeCount = Some(11),
             distribution = 1,
             attributes = Nil,
-            tags = Seq(Tag(Some("1"), "TH-test", Some(new Color(0x36a3a3)), None), Tag(Some("2"), "TH-test-2", Some(new Color(0x1ac7c7)), None))
+            tags = Seq(Tag(Some("1"), "TH-test", Some(0x36a3a3), None), Tag(Some("2"), "TH-test-2", Some(0x1ac7c7), None))
           )
         )
       }
@@ -123,10 +122,10 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
               .richObservable
               .toList
           }
-          .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.name).toSet))
+          .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
         println(observables.mkString("\n"))
         observables must contain(
-          ("filename", Some("plop"), 0, Some(""), Set("TH-test", "MISP:category=Artifacts dropped", "MISP:type=filename"))
+          ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
         )
       }
     }

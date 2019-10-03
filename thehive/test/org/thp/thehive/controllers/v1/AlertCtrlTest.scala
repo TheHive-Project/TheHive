@@ -168,7 +168,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
             description = "description of alert #1",
             severity = 2,
             date = new Date(1555359572000L),
-            tags = Set("test", "alert"),
+            tags = Set("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\""),
             flag = false,
             tlp = 2,
             pap = 2,

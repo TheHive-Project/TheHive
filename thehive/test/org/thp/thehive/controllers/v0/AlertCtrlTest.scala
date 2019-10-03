@@ -2,6 +2,11 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
@@ -14,10 +19,6 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions, RichObservable}
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
 
 case class TestAlert(
     `type`: String,
@@ -171,7 +172,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         description = "description of alert #1",
         severity = 2,
         date = new Date(1555359572000L),
-        tags = Set("alert", "test"),
+        tags = Set("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\""),
         flag = false,
         tlp = 2,
         pap = 2,
@@ -187,7 +188,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
           dataType = "domain",
           data = Some("h.fr"),
           tlp = 3,
-          tags = Set("testDomain"),
+          tags = Set("testNamespace.testPredicate=\"testDomain\""),
           ioc = true,
           message = Some("Some weird domain")
         )
@@ -290,7 +291,12 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         tlp = 2,
         pap = 2,
         status = "Open",
-        tags = Set("alert", "test", "spam", "src:mail"),
+        tags = Set(
+          "testNamespace.testPredicate=\"alert\"",
+          "testNamespace.testPredicate=\"test\"",
+          "testNamespace.testPredicate=\"spam\"",
+          "testNamespace.testPredicate=\"src:mail\""
+        ),
         summary = None,
         owner = Some("user1@thehive.local"),
         customFields = Set(

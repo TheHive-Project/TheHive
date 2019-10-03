@@ -14,7 +14,7 @@ import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
-import org.thp.misp.dto.{Attribute, Event, Tag}
+import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
@@ -33,6 +33,7 @@ class MispImportSrv @Inject()(
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    tagSrv: TagSrv,
     db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
@@ -58,10 +59,10 @@ class MispImportSrv @Inject()(
           tlp = event
             .tags
             .collectFirst {
-              case Tag(_, "tlp:white", _, _) => 0
-              case Tag(_, "tlp:green", _, _) => 1
-              case Tag(_, "tlp:amber", _, _) => 2
-              case Tag(_, "tlp:red", _, _)   => 3
+              case MispTag(_, "tlp:white", _, _) => 0
+              case MispTag(_, "tlp:green", _, _) => 1
+              case MispTag(_, "tlp:amber", _, _) => 2
+              case MispTag(_, "tlp:red", _, _)   => 3
             }
             .getOrElse(2),
           pap = 2,
@@ -211,7 +212,7 @@ class MispImportSrv @Inject()(
             (if (richObservable.sighted != observable.sighted) Seq("sighted" -> observable.sighted) else Nil)
           for { // update observable even if updateFields is empty in order to remove unupdated observables
             updatedObservable <- observableSrv.get(richObservable.observable).update(updateFields: _*)
-            _                 <- observableSrv.updateTags(updatedObservable, tags)
+            _                 <- observableSrv.updateTagNames(updatedObservable, tags)
           } yield updatedObservable
       }
     }
@@ -263,7 +264,7 @@ class MispImportSrv @Inject()(
           db.tryTransaction { implicit graph =>
             for { // update observable even if updateFields is empty in order to remove unupdated observables
               updatedObservable <- observableSrv.get(richObservable.observable).update(updateFields: _*)
-              _                 <- observableSrv.updateTags(updatedObservable, tags)
+              _                 <- observableSrv.updateTagNames(updatedObservable, tags)
             } yield updatedObservable
           }
         }
@@ -332,6 +333,8 @@ class MispImportSrv @Inject()(
       }
   }
 
+//  def convertTag(mispTag: MispTag): Tag = tagSrv.parseString(mispTag.name + mispTag.colour.fold("")(c => f"#$c%06X"))
+
   def updateOrCreateAlert(
       client: TheHiveMispClient,
       organisation: Organisation with Entity,
@@ -368,7 +371,7 @@ class MispImportSrv @Inject()(
               (if (richAlert.externalLink != alert.externalLink) Seq("externalLink" -> alert.externalLink) else Nil)
             for {
               updatedAlert <- if (updateFields.nonEmpty) alertSrv.get(richAlert.alert).update(updateFields: _*) else Success(richAlert.alert)
-              _            <- alertSrv.updateTags(updatedAlert, event.tags.map(_.name).toSet)
+              _            <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
             } yield updatedAlert
         }
       }
