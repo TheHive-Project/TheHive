@@ -28,6 +28,7 @@ class AlertCtrl @Inject()(
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     organisationSrv: OrganisationSrv,
+    auditSrv: AuditSrv,
     val userSrv: UserSrv,
     val caseSrv: CaseSrv
 ) extends QueryableCtrl {
@@ -85,7 +86,7 @@ class AlertCtrl @Inject()(
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
-          _               <- richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o.observable))
+          _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o.observable)))(_ => Success(()))
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
