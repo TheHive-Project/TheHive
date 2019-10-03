@@ -99,34 +99,38 @@
             </div>
         </div>
 
-        <h4 class="vpad10 text-primary">Case tasks
-            <small ng-if="fromTemplate">(from [{{template.name}}] template)</small>
-        </h4>
-        <div class="row" ng-if="!fromTemplate">
-            <div class="col-md-12">
-                <div class="input-group input-group-sm">
-                    <input class="form-control task-input" name="task-input" ng-model="temp.task" placeholder="Task title" type="text" />
-                    <span class="input-group-btn">
-                        <button class="btn btn-primary" type="button" ng-disabled="!temp.task" ng-click="addTask(temp.task)">Add task</button>
+        <div if-permission="manageTask">
+            <h4 class="vpad10 text-primary">Case tasks
+                <small ng-if="fromTemplate">(from [{{template.name}}] template)</small>
+            </h4>
+            <div class="row" ng-if="!fromTemplate">
+                <div class="col-md-12">
+                    <div class="input-group input-group-sm">
+                        <input class="form-control task-input" name="task-input" ng-model="temp.task" placeholder="Task title" type="text" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary" type="button" ng-disabled="!temp.task" ng-click="addTask(temp.task)">Add task</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="row vpad5" ng-if="tasks.length === 0">
+                <div class="col-md-12">
+                    <div class="empty-message">
+                        No tasks have been specified
+                    </div>
+                </div>
+            </div>
+            <div class="row vpad5" ng-if="tasks.length !== 0" ng-repeat="t in tasks">
+                <div class="col-md-12">
+                    <span>
+                        <a ng-click="removeTask(t)" ng-if="!fromTemplate" style="cursor:pointer;"><i class="fa fa-times text-danger"></i></a>
+                        <span class="hpad10">{{t}}</span>
                     </span>
                 </div>
             </div>
         </div>
-        <div class="row vpad5" ng-if="tasks.length === 0">
-            <div class="col-md-12">
-                <div class="empty-message">
-                    No tasks have been specified
-                </div>
-            </div>
-        </div>
-        <div class="row vpad5" ng-if="tasks.length !== 0" ng-repeat="t in tasks">
-            <div class="col-md-12">
-                <span>
-                    <a ng-click="removeTask(t)" ng-if="!fromTemplate" style="cursor:pointer;"><i class="fa fa-times text-danger"></i></a>
-                    <span class="hpad10">{{t}}</span>
-                </span>
-            </div>
-        </div>
+
+
 
         <h4 class="vpad10 text-primary" ng-if="fromTemplate">Case metrics <small> (from [{{template.name}}] template)</small></h4>
         <div class="row vpad5" ng-if="fromTemplate">
