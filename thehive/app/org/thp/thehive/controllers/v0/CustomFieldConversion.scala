@@ -2,6 +2,8 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.language.implicitConversions
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
@@ -9,8 +11,6 @@ import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.dto.v0.{InputCustomField, InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
 import org.thp.thehive.models.{CustomField, CustomFieldString, CustomFieldWithValue}
 import org.thp.thehive.services.CustomFieldSteps
-
-import scala.language.implicitConversions
 
 object CustomFieldConversion {
 

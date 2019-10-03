@@ -1,10 +1,11 @@
 package org.thp.thehive.services.notification.triggers
 
-import javax.inject.{Inject, Singleton}
-import org.thp.thehive.models.Audit
+import scala.util.{Success, Try}
+
 import play.api.Configuration
 
-import scala.util.{Success, Try}
+import javax.inject.{Inject, Singleton}
+import org.thp.thehive.models.Audit
 
 @Singleton
 class JobFinishedProvider @Inject() extends TriggerProvider {

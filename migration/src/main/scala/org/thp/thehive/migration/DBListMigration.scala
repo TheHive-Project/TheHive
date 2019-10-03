@@ -4,17 +4,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Reads}
+import play.api.libs.json.{ JsPath, Json, Reads }
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{search, RichString}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
-
-import org.elastic4play.database.DBFind
 
 @Singleton
 class DBListMigration @Inject()(customFieldSrv: CustomFieldSrv, dbFind: DBFind, userMigration: UserMigration, implicit val mat: Materializer)

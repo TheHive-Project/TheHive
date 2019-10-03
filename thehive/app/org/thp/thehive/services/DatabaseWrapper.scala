@@ -3,15 +3,15 @@ package org.thp.thehive.services
 import java.util.Date
 import java.util.function.Consumer
 
+import scala.reflect.runtime.{universe => ru}
+import scala.util.Try
+
 import gremlin.scala._
 import javax.inject.Provider
 import org.apache.tinkerpop.gremlin.structure.Transaction
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Model.Base
 import org.thp.scalligraph.models._
-
-import scala.reflect.runtime.{universe => ru}
-import scala.util.Try
 
 class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   lazy val db: Database                                               = dbProvider.get()

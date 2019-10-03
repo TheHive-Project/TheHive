@@ -6,19 +6,16 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsObject, JsPath, Reads}
+import play.api.libs.json.{ JsObject, JsPath, Reads }
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{search, RichString}
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{ Database, Entity }
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseTemplateSrv, CustomFieldSrv, TaskSrv}
-
-import org.elastic4play.database.DBFind
+import org.thp.thehive.services.{ CaseTemplateSrv, CustomFieldSrv, TaskSrv }
 
 @Singleton
 class CaseTemplateMigration @Inject()(

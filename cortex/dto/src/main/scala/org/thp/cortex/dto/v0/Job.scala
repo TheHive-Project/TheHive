@@ -2,17 +2,15 @@ package org.thp.cortex.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json._
-
 import scala.util.Try
 
+import play.api.libs.json._
+
 object CortexJobStatus extends Enumeration {
-  type Type = Value
   val InProgress, Success, Failure, Waiting, Unknown, Deleted = Value
 }
 
 object CortexJobType extends Enumeration {
-  type JobType = Value
   val unknown, analyzer, responder = Value
 }
 
@@ -36,14 +34,14 @@ case class CortexOutputJob(
     date: Date,
     startDate: Option[Date],
     endDate: Option[Date],
-    status: CortexJobStatus.Type,
+    status: CortexJobStatus.Value,
     data: Option[String],
     attachment: Option[JsObject],
     organization: String,
     dataType: String,
     attributes: JsObject,
     report: Option[CortexOutputReport],
-    `type`: CortexJobType.JobType
+    `type`: CortexJobType.Value
 )
 
 case class CortexOutputAttachment(id: String, name: Option[String], contentType: Option[String])

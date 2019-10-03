@@ -3,14 +3,15 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.EntryPoint
-import org.thp.scalligraph.query.PublicProperty
+import scala.util.Success
+
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
-import scala.util.Success
 
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.query.PublicProperty
 import org.thp.scalligraph.utils.Hash
 
 @Singleton

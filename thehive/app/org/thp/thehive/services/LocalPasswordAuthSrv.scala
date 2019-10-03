@@ -1,15 +1,16 @@
 package org.thp.thehive.services
 
+import scala.util.{Failure, Random, Success, Try}
+
+import play.api.mvc.RequestHeader
+import play.api.{Configuration, Logger}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError}
 import org.thp.thehive.models.User
-import play.api.mvc.RequestHeader
-import play.api.{Configuration, Logger}
-import scala.util.{Failure, Random, Success, Try}
-
-import org.thp.scalligraph.utils.Hasher
 
 object LocalPasswordAuthSrv {
 

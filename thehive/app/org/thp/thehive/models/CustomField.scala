@@ -2,11 +2,12 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.thp.scalligraph._
-import org.thp.scalligraph.models.Entity
+import scala.util.{Failure, Success, Try}
+
 import play.api.libs.json._
 
-import scala.util.{Failure, Success, Try}
+import org.thp.scalligraph._
+import org.thp.scalligraph.models.Entity
 
 abstract class CustomFieldAccessor[T, C] {
   def setValue(value: T): C

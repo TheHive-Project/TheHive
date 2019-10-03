@@ -2,10 +2,11 @@ package org.thp.cortex.dto.v0
 
 import java.util.Date
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 
 case class InputCortexArtifact(
     tlp: Int,

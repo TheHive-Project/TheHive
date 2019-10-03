@@ -16,8 +16,6 @@ import org.thp.scalligraph.utils.{ Hasher, Retry }
 import org.thp.thehive.models._
 import org.thp.thehive.services.AttachmentSrv
 
-import org.elastic4play.services.{ Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv }
-
 trait Utils {
   val logger: Logger = Logger(getClass)
 

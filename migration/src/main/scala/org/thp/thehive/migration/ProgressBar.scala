@@ -1,5 +1,5 @@
 package org.thp.thehive.migration
-import java.io.{PrintWriter, StringWriter}
+import java.io.{ PrintWriter, StringWriter }
 
 import scala.util.Try
 

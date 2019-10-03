@@ -4,8 +4,8 @@ import java.util.Base64
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
 
 object Base64Flow {

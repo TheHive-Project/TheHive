@@ -1,10 +1,8 @@
 package org.thp.thehive.connector.cortex.models
 
-import org.thp.thehive.connector.cortex.models.ActionOperationStatus.ActionOperationStatus
 import play.api.libs.json._
 
 object ActionOperationStatus extends Enumeration {
-  type ActionOperationStatus = Value
   val Waiting, Success, Failure = Value
 }
 
@@ -12,73 +10,78 @@ object ActionOperationStatus extends Enumeration {
   * Base trait for all Action operations available
   */
 trait ActionOperation {
-  val status: ActionOperationStatus
+  val status: ActionOperationStatus.Value
   val message: String
 
-  def updateStatus(newStatus: ActionOperationStatus, newMessage: String): ActionOperation
+  def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): ActionOperation
 }
 
-case class AddTagToCase(tag: String, status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AddTagToCase = copy(status = newStatus, message = newMessage)
-}
-
-case class AddTagToArtifact(tag: String, status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "")
+case class AddTagToCase(tag: String, status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "")
     extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AddTagToArtifact =
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AddTagToCase = copy(status = newStatus, message = newMessage)
+}
+
+case class AddTagToArtifact(tag: String, status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "")
+    extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AddTagToArtifact =
     copy(status = newStatus, message = newMessage)
 }
 
-case class CreateTask(title: String, description: String, status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "")
+case class CreateTask(title: String, description: String, status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "")
     extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): CreateTask = copy(status = newStatus, message = newMessage)
 }
 
 case class AddCustomFields(
     name: String,
     tpe: String,
     value: Any,
-    status: ActionOperationStatus = ActionOperationStatus.Waiting,
+    status: ActionOperationStatus.Value = ActionOperationStatus.Waiting,
     message: String = ""
 ) extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AddCustomFields =
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AddCustomFields =
     copy(status = newStatus, message = newMessage)
 }
 
-case class CloseTask(status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
+case class CloseTask(status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): CloseTask = copy(status = newStatus, message = newMessage)
 }
 
-case class MarkAlertAsRead(status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): MarkAlertAsRead =
+case class MarkAlertAsRead(status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): MarkAlertAsRead =
     copy(status = newStatus, message = newMessage)
 }
 
 case class AddLogToTask(
     content: String,
     owner: Option[String],
-    status: ActionOperationStatus = ActionOperationStatus.Waiting,
+    status: ActionOperationStatus.Value = ActionOperationStatus.Waiting,
     message: String = ""
 ) extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): ActionOperation = copy(status = newStatus, message = newMessage)
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): ActionOperation =
+    copy(status = newStatus, message = newMessage)
 }
 
-case class AddTagToAlert(tag: String, status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AddTagToAlert = copy(status = newStatus, message = newMessage)
+case class AddTagToAlert(tag: String, status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "")
+    extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AddTagToAlert =
+    copy(status = newStatus, message = newMessage)
 }
 
 case class AddArtifactToCase(
     data: String,
     dataType: String,
     dataMessage: String,
-    status: ActionOperationStatus = ActionOperationStatus.Waiting,
+    status: ActionOperationStatus.Value = ActionOperationStatus.Waiting,
     message: String = ""
 ) extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AddArtifactToCase =
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AddArtifactToCase =
     copy(status = newStatus, message = newMessage)
 }
 
-case class AssignCase(owner: String, status: ActionOperationStatus = ActionOperationStatus.Waiting, message: String = "") extends ActionOperation {
-  override def updateStatus(newStatus: ActionOperationStatus, newMessage: String): AssignCase = copy(status = newStatus, message = newMessage)
+case class AssignCase(owner: String, status: ActionOperationStatus.Value = ActionOperationStatus.Waiting, message: String = "")
+    extends ActionOperation {
+  override def updateStatus(newStatus: ActionOperationStatus.Value, newMessage: String): AssignCase = copy(status = newStatus, message = newMessage)
 }
 
 object ActionOperation {

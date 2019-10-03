@@ -1,13 +1,14 @@
 package org.thp.thehive.services.notification.triggers
 
+import scala.util.{Success, Try}
+
+import play.api.Configuration
+
 import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.TaskSrv
-import play.api.Configuration
-
-import scala.util.{Success, Try}
 
 @Singleton
 class TaskAssignedProvider @Inject()(taskSrv: TaskSrv) extends TriggerProvider {

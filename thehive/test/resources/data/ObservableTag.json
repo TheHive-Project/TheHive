@@ -1,6 +1,18 @@
 [
-  {"from": "h.fr", "to": "testDomain"},
-  {"from": "c.fr", "to": "testDomain"},
-  {"from": "helloworld", "to": "hello"},
-  {"from": "helloworld", "to": "world"}
+  {
+    "from": "h.fr",
+    "to": "tagtestDomain"
+  },
+  {
+    "from": "c.fr",
+    "to": "tagtestDomain"
+  },
+  {
+    "from": "helloworld",
+    "to": "taghello"
+  },
+  {
+    "from": "helloworld",
+    "to": "tagworld"
+  }
 ]

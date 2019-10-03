@@ -1,7 +1,7 @@
 [
   {
     "id": "log1",
-    "message":  "log for action test",
+    "message": "log for action test",
     "date": 1566303875000,
     "deleted": false
   }

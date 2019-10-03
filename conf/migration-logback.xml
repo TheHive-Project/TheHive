@@ -2,7 +2,7 @@
 <configuration debug="false">
 
     <conversionRule conversionWord="coloredLevel"
-                    converterClass="play.api.libs.logback.ColoredLevel" />
+                    converterClass="play.api.libs.logback.ColoredLevel"/>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${application.home:-.}/logs/application.log</file>
@@ -27,11 +27,11 @@
     </appender>
 
     <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILE"/>
     </appender>
 
     <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </appender>
 
     <!--
@@ -41,12 +41,12 @@
     <logger name="org.thp.thehive.services.LocalAuthSrv" level="TRACE" />
     <logger name="org.thp.scalligraph.graphql" level="TRACE" />
     -->
-    <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR" />
-    <logger name="org.thp.thehive" level="INFO" />
-    <logger name="org.elastic4play.services" level="DEBUG" />
+    <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR"/>
+    <logger name="org.thp.thehive" level="INFO"/>
+    <logger name="org.elastic4play.services" level="DEBUG"/>
 
     <root level="INFO">
-        <appender-ref ref="ASYNCFILE" />
+        <appender-ref ref="ASYNCFILE"/>
     </root>
 
 </configuration>

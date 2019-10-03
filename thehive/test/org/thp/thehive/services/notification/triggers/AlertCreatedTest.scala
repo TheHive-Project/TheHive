@@ -2,6 +2,11 @@ package org.thp.thehive.services.notification.triggers
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
+
 import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -12,10 +17,6 @@ import org.thp.thehive.controllers.v0.AlertCtrl
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AuditSrv, OrganisationSrv, UserSrv}
-import play.api.libs.json.{JsObject, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-
-import scala.util.Try
 
 class AlertCreatedTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv(userId = "user1@thehive.local")

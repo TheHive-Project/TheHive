@@ -1,5 +1,5 @@
 package org.thp.thehive.migration
-import java.io.{File, OutputStreamWriter, Writer}
+import java.io.{ File, OutputStreamWriter, Writer }
 
 class Terminal(output: Writer) {
   lazy val pathedTput: String = if (new File("/usr/bin/tput").exists()) "/usr/bin/tput" else "tput"

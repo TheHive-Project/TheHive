@@ -3,16 +3,17 @@ package org.thp.thehive.services.notification.notifiers
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.Try
+
+import play.api.Configuration
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
-import play.api.Configuration
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.Try
 
 @Singleton
 class AppendToFileProvider @Inject()(appConfig: ApplicationConfig) extends NotifierProvider {

@@ -19,8 +19,8 @@ import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 sealed trait StreamMessage extends Serializable
 

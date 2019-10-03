@@ -2,10 +2,11 @@ package org.thp.thehive.connector.cortex.models
 
 import java.util.Date
 
+import play.api.libs.json.JsObject
+
 import gremlin.scala.{Edge, Graph, Vertex}
 import org.thp.scalligraph.VertexEntity
 import org.thp.scalligraph.models._
-import play.api.libs.json.JsObject
 
 @VertexEntity
 case class Action(

@@ -1,10 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.language.implicitConversions
+
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.CortexOutputArtifact
 import org.thp.thehive.models.Observable
-
-import scala.language.implicitConversions
 
 object ArtifactConversion {
 

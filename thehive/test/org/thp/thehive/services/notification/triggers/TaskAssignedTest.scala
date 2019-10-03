@@ -1,5 +1,9 @@
 package org.thp.thehive.services.notification.triggers
 
+import scala.util.Try
+
+import play.api.test.PlaySpecification
+
 import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -8,9 +12,6 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.test.PlaySpecification
-
-import scala.util.Try
 
 class TaskAssignedTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv(userId = "user1@thehive.local")

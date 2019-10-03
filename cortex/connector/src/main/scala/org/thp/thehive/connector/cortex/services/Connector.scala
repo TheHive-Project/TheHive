@@ -11,8 +11,8 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexClientConfig}
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 

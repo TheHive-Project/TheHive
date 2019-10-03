@@ -2,7 +2,7 @@
 <configuration debug="false">
 
     <conversionRule conversionWord="coloredLevel"
-                    converterClass="play.api.libs.logback.ColoredLevel" />
+                    converterClass="play.api.libs.logback.ColoredLevel"/>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${application.home:-.}/logs/application.log</file>
@@ -27,14 +27,15 @@
     </appender>
 
     <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILE"/>
     </appender>
 
     <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </appender>
 
-    <logger name="org.thp.scalligraph.models" level="TRACE" />
+    <logger name="org.thp.scalligraph.models" level="TRACE"/>
+    <logger name="org.thp.scalligraph.steps" level="TRACE"/>
     <!--
     <logger name="org.janusgraph.graphdb" level="INFO" />
     <logger name="org.thp.thehive.client" level="DEBUG" />
@@ -42,11 +43,11 @@
     <logger name="org.thp.scalligraph.graphql" level="TRACE" />
     <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR" />
     -->
-    <logger name="org.thp.thehive" level="TRACE" />
+    <logger name="org.thp.thehive" level="TRACE"/>
 
     <root level="INFO">
-        <appender-ref ref="ASYNCFILE" />
-        <appender-ref ref="ASYNCSTDOUT" />
+        <appender-ref ref="ASYNCFILE"/>
+        <appender-ref ref="ASYNCSTDOUT"/>
     </root>
 
 </configuration>

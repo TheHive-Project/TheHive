@@ -4,8 +4,11 @@ import java.lang.reflect.Modifier
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
+import scala.util.Try
+
 import play.api.Logger
 import play.api.inject.Injector
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.reflections.Reflections
@@ -15,8 +18,6 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{HasModel, InitialValue, Model, Schema}
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, RoleSrv, UserSrv}
-
-import scala.util.Try
 
 @Singleton
 class TheHiveSchema @Inject()(injector: Injector) extends Schema {

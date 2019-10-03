@@ -8,8 +8,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ErrorHandler
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}

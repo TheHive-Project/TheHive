@@ -1,7 +1,8 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import play.api.libs.json.JsValue
+
+import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @VertexEntity
 case class Config(name: String, value: JsValue)

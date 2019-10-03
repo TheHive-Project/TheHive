@@ -1,5 +1,11 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.{Action, AnyContent, Results}
+import play.api.{ConfigLoader, Logger}
+
 import com.typesafe.config.{Config, ConfigRenderOptions}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
@@ -8,11 +14,6 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{ConfigSrv, UserConfigContext}
-import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.mvc.{Action, AnyContent, Results}
-import play.api.{ConfigLoader, Logger}
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ConfigCtrl @Inject()(

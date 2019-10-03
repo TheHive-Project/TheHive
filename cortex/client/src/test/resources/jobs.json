@@ -127,7 +127,10 @@
           },
           "dataType": "file",
           "message": null,
-          "tags": ["file", "virus"],
+          "tags": [
+            "file",
+            "virus"
+          ],
           "tlp": 3
         },
         {

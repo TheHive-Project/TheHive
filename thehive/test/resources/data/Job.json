@@ -2,23 +2,23 @@
   {
     "id": "jobTest1",
     "cortexId": "test",
-    "startDate" : 1561625908856,
-    "endDate" : 1561625908856,
-    "cortexJobId" : "AWuYKFatq3Rtqym9DFmL",
-    "workerId" : "anaTest1",
-    "workerDefinition" : "test",
-    "workerName" : "anaTest1",
-    "status" : "Waiting"
+    "startDate": 1561625908856,
+    "endDate": 1561625908856,
+    "cortexJobId": "AWuYKFatq3Rtqym9DFmL",
+    "workerId": "anaTest1",
+    "workerDefinition": "test",
+    "workerName": "anaTest1",
+    "status": "Waiting"
   },
   {
     "id": "jobTest2",
     "cortexId": "test",
-    "startDate" : 1561625908856,
-    "endDate" : 1561625908856,
-    "cortexJobId" : "LVyYKFstq3Rtrdc9DFmL",
-    "workerId" : "anaTest2",
-    "workerDefinition" : "test2",
-    "workerName" : "anaTest2",
-    "status" : "Waiting"
+    "startDate": 1561625908856,
+    "endDate": 1561625908856,
+    "cortexJobId": "LVyYKFstq3Rtrdc9DFmL",
+    "workerId": "anaTest2",
+    "workerDefinition": "test2",
+    "workerName": "anaTest2",
+    "status": "Waiting"
   }
 ]

@@ -11,8 +11,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.connector.cortex.models.ReportTemplate
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}

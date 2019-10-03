@@ -7,8 +7,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._

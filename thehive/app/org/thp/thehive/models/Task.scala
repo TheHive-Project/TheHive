@@ -2,16 +2,15 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.thp.scalligraph._
-import org.thp.scalligraph.models.Entity
 import play.api.libs.json.{Format, Json}
 
-object TaskStatus extends Enumeration {
-  type Type = Value
+import org.thp.scalligraph._
+import org.thp.scalligraph.models.Entity
 
+object TaskStatus extends Enumeration {
   val Waiting, InProgress, Completed, Cancel = Value
 
-  implicit val format: Format[TaskStatus.Type] = Json.formatEnum(TaskStatus)
+  implicit val format: Format[Value] = Json.formatEnum(TaskStatus)
 }
 
 @EdgeEntity[Task, User]

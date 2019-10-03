@@ -1,9 +1,10 @@
 package org.thp.thehive.connector.misp
 
-import javax.inject.{Inject, Provider, Singleton}
 import play.api.Logger
 import play.api.mvc.DefaultActionBuilder
 import play.api.routing.Router
+
+import javax.inject.{Inject, Provider, Singleton}
 import org.thp.thehive.connector.misp.controllers.v0
 
 @Singleton

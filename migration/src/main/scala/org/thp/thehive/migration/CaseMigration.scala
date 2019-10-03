@@ -1,24 +1,17 @@
 package org.thp.thehive.migration
-import java.io.IOException
 import java.util.Date
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{ JsObject, JsPath, Reads }
+import play.api.libs.json.{ JsPath, Reads }
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{ RichString, search }
 import gremlin.scala.Graph
 import javax.inject.{ Inject, Singleton }
 import org.thp.scalligraph.models.{ Database, Entity }
-import org.thp.scalligraph.utils.Retry
 import org.thp.thehive.models.{ Case, CaseStatus, Organisation }
 import org.thp.thehive.services.{ CaseSrv, ImpactStatusSrv, ResolutionStatusSrv }
-
-import org.elastic4play.database.DBFind
 
 @Singleton
 class CaseMigration @Inject()(

@@ -1,16 +1,16 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, PagedResult}
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.thehive.dto.v1.InputOrganisation
-import org.thp.thehive.models.{Organisation, Permissions}
-import org.thp.thehive.services.{CaseTemplateSteps, OrganisationSrv, OrganisationSteps, UserSrv, UserSteps}
 import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
-import org.thp.thehive.dto.v1.OutputOrganisation
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.models.{Organisation, Permissions}
+import org.thp.thehive.services._
 
 @Singleton
 class OrganisationCtrl @Inject()(

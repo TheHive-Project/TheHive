@@ -1,14 +1,14 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.language.implicitConversions
+
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
+import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.{Entity, UniMapping}
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.thehive.connector.cortex.models.ReportTemplate
 import org.thp.thehive.connector.cortex.services.ReportTemplateSteps
-import scala.language.implicitConversions
-
-import org.thp.scalligraph.controllers.Output
 
 object ReportTemplateConversion {
 

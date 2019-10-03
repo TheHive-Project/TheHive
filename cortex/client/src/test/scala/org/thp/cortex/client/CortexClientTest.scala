@@ -2,16 +2,17 @@ package org.thp.cortex.client
 
 import java.util.Date
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.test.PlaySpecification
+
 import akka.actor.Terminated
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.Fragments
 import org.thp.cortex.dto.v0._
 import org.thp.scalligraph.AppBuilder
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.test.PlaySpecification
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class CortexClientTest extends PlaySpecification with Mockito {
   lazy val app = AppBuilder()

@@ -8,8 +8,8 @@ import play.api.libs.json.{JsObject, Json}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{HealthStatus, ObservableType}
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 

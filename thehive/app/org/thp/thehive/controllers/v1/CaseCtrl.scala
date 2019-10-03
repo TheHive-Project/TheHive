@@ -1,14 +1,17 @@
 package org.thp.thehive.controllers.v1
 
+import scala.util.{Success, Try}
+
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.{NotFoundError, RichOptionTry, RichSeq}
-import org.thp.thehive.dto.v1.{InputCase, OutputCase}
-import org.thp.thehive.models.{Permissions, RichCase}
+import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.dto.v1.{InputCase, InputTask, OutputCase}
+import org.thp.thehive.models.{Permissions, RichCase, RichCaseTemplate, User}
 import org.thp.thehive.services._
 
 @Singleton
@@ -19,11 +22,13 @@ class CaseCtrl @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
+    tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv
 ) extends QueryableCtrl {
   import CaseConversion._
   import CustomFieldConversion._
+  import TaskConversion._
 
   override val entityName: String                           = "case"
   override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
@@ -40,12 +45,12 @@ class CaseCtrl @Inject()(
       case (OutputParam(from, to, withStats), caseSteps, authContext) =>
         caseSteps
           .richPage(from, to, withTotal = true) { c =>
-            c.richCase(authContext).raw
+            c.richCase(authContext)
 //            case c if withStats =>
-////              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph)).raw
-//              c.richCase.raw.map(_ -> JsObject.empty) // TODO add stats
+////              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph))
+//              c.richCase.map(_ -> JsObject.empty) // TODO add stats
 //            case c =>
-//              c.richCase.raw.map(_ -> JsObject.empty)
+//              c.richCase.map(_ -> JsObject.empty)
           }
     }
   )
@@ -59,36 +64,27 @@ class CaseCtrl @Inject()(
     entryPoint("create case")
       .extract("case", FieldsParser[InputCase])
       .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
+      .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
       .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
+        val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
-          organisation <- userSrv
-            .current
-            .organisations(Permissions.manageCase)
-            .get(request.organisation)
-            .getOrFail()
-          caseTemplate <- caseTemplateName.map { templateName =>
-            caseTemplateSrv
-              .get(templateName)
-              .visible
-              .richCaseTemplate
-              .getOrFail()
-          }.flip
-          case0 = fromInputCase(inputCase, caseTemplate)
-          user <- inputCase
-            .user
-            .map { u =>
-              userSrv
-                .current
-                .organisations
-                .users(Permissions.manageCase)
-                .get(u)
-                .orFail(NotFoundError(s"User $u doesn't exist or permission is insufficient"))
+          caseTemplate <- caseTemplateName
+            .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName =>
+              caseTemplateSrv
+                .get(templateName)
+                .visible
+                .richCaseTemplate
+                .getOrFail()
+                .map(Some.apply)
             }
-            .flip
           customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
-          richCase <- caseSrv.create(case0, user, organisation, inputCase.tags, customFields, caseTemplate, Nil)
+          case0        = fromInputCase(inputCase, caseTemplate)
+          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
+          user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
+          tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
+          richCase     <- caseSrv.create(case0, user, organisation, tags.toSet, customFields, caseTemplate, inputTasks.map(fromInputTask))
         } yield Results.Created(richCase.toJson)
       }
 

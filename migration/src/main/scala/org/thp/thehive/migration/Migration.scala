@@ -3,30 +3,26 @@ package org.thp.thehive.migration
 import java.io.File
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
-import play.api.{Configuration, Environment, Logger}
+import play.api.inject.{ ApplicationLifecycle, DefaultApplicationLifecycle }
+import play.api.{ Configuration, Environment, Logger }
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ ActorMaterializer, Materializer }
 import com.google.inject.name.Names
 import com.typesafe.config.ConfigFactory
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import net.codingwell.scalaguice.ScalaModule
-import org.thp.scalligraph.auth.{UserSrv => UserDB}
+import org.thp.scalligraph.auth.{ UserSrv => UserDB }
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.{SchemaUpdater => TheHiveSchemaUpdater, _}
+import org.thp.scalligraph.models.{ Database, Schema }
+import org.thp.scalligraph.services.{ LocalFileSystemStorageSrv, StorageSrv }
+import org.thp.thehive.models.{ SchemaUpdater => TheHiveSchemaUpdater, _ }
 // import org.thp.thehive.connector.cortex.models.{SchemaUpdater ⇒ CortexSchemaUpdater} // TODO add cortex schema
 import org.thp.thehive.services._
-
-import org.elastic4play.models.BaseModelDef
-import org.elastic4play.services.{DatabaseState, MigrationOperations, Operation}
 
 @Singleton
 class Migration @Inject()(

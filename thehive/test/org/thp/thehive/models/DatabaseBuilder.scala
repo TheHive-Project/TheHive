@@ -2,6 +2,13 @@ package org.thp.thehive.models
 
 import java.io.File
 
+import scala.io.Source
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Failure, Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Or
@@ -11,11 +18,6 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import scala.io.Source
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class DatabaseBuilder @Inject()(

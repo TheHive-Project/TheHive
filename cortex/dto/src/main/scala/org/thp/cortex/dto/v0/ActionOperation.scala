@@ -3,16 +3,15 @@ package org.thp.cortex.dto.v0
 import play.api.libs.json._
 
 object CortexOperationType extends Enumeration {
-  type Type = Value
 
   val AddTagToCase, AddTagToArtifact, CreateTask, AddCustomFields, CloseTask, MarkAlertAsRead, AddLogToTask, AddArtifactToCase, AssignCase,
       AddTagToAlert, Unknown = Value
 
-  implicit val format: Format[Type] = Json.formatEnum(CortexOperationType)
+  implicit val format: Format[Value] = Json.formatEnum(CortexOperationType)
 }
 
 case class CortexOutputOperation(
-    `type`: CortexOperationType.Type,
+    `type`: CortexOperationType.Value,
     tag: Option[String],
     title: Option[String],
     description: Option[String],
@@ -34,7 +33,7 @@ object CortexOutputOperation {
   implicit val reads: Reads[CortexOutputOperation] = Reads[CortexOutputOperation](
     json =>
       for {
-        t <- (json \ "type").validate[CortexOperationType.Type].orElse(JsSuccess(CortexOperationType.Unknown))
+        t <- (json \ "type").validate[CortexOperationType.Value].orElse(JsSuccess(CortexOperationType.Unknown))
         tag         = (json \ "tag").asOpt[String]
         title       = (json \ "title").asOpt[String]
         description = (json \ "description").asOpt[String]

@@ -9,8 +9,9 @@ import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, PagedResult}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichOptionTry}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._

@@ -8,7 +8,6 @@ import play.api.libs.json.{ JsPath, Reads }
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{ RichString, hasParentQuery, idsQuery, search }
 import gremlin.scala.Graph
 import javax.inject.{ Inject, Singleton }
 import org.thp.scalligraph.models.{ Database, Entity }
@@ -16,10 +15,6 @@ import org.thp.scalligraph.services.{ EdgeSrv, StorageSrv }
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-
-import org.elastic4play.database.DBFind
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{ Attachment => ElasticAttachment, AttachmentSrv => ElasticAttachmentSrv }
 
 @Singleton
 class ObservableMigration @Inject()(

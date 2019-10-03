@@ -1,9 +1,9 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.language.implicitConversions
+
 import org.thp.cortex.dto.v0.{CortexOperationType, CortexOutputOperation}
 import org.thp.thehive.connector.cortex.models._
-
-import scala.language.implicitConversions
 
 object ActionOperationConversion {
 

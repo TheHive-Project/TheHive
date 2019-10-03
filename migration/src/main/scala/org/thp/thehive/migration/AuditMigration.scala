@@ -7,16 +7,13 @@ import play.api.libs.json._
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.ElasticDsl.{boolQuery, search, termQuery, RichString}
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{ Database, Entity }
 import org.thp.scalligraph.services.EdgeSrv
-import org.thp.thehive.models.{Audit, Audited}
+import org.thp.thehive.models.{ Audit, Audited }
 import org.thp.thehive.services.AuditSrv
-
-import org.elastic4play.database.DBFind
 
 @Singleton
 class AuditMigration @Inject()(

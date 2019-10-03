@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Try
+
+import play.api.libs.json.{JsNumber, JsString, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -9,10 +14,6 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCustomField
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
-import play.api.libs.json.{JsNumber, JsString, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
 
 class CustomFieldCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
