@@ -57,11 +57,17 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
       _ <- Try(get(profile).remove())
       _ <- auditSrv.profile.delete(profile)
     } yield ()
+
+  def unused(profile: Profile with Entity)(implicit graph: Graph): Boolean = get(profile).roles.toList.length + get(profile).shares.toList.length <= 0
 }
 
 @EntitySteps[Profile]
 class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends BaseVertexSteps[Profile, ProfileSteps](raw) {
   override def newInstance(raw: GremlinScala[Vertex]): ProfileSteps = new ProfileSteps(raw)
+
+  def roles = new RoleSteps(raw.inTo[RoleProfile])
+
+  def shares = new ShareSteps(raw.inTo[ShareProfile])
 
   def get(idOrName: String): ProfileSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)

@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Failure
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -12,23 +8,25 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.thehive.dto.v0.{InputProfile, OutputProfile}
 import org.thp.thehive.models.{Permissions, Profile}
 import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Failure
 
 @Singleton
 class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, profileSrv: ProfileSrv) extends QueryableCtrl {
 
   import ProfileConversion._
 
-  val entityName: String                           = "profile"
-  val publicProperties: List[PublicProperty[_, _]] = profileProperties ::: metaProperties[ProfileSteps]
-
-  val initialQuery: Query =
-    Query.init[ProfileSteps]("listProfile", (graph, _) => profileSrv.initSteps(graph))
-
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ProfileSteps](
     "getProfile",
     FieldsParser[IdOrName],
     (param, graph, _) => profileSrv.get(param.idOrName)(graph)
   )
+  val entityName: String                           = "profile"
+  val publicProperties: List[PublicProperty[_, _]] = profileProperties ::: metaProperties[ProfileSteps]
+
+  val initialQuery: Query =
+    Query.init[ProfileSteps]("listProfile", (graph, _) => profileSrv.initSteps(graph))
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ProfileSteps, PagedResult[Profile with Entity]](
     "page",
@@ -74,13 +72,15 @@ class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, profileSrv: Pr
       }
 
   def delete(profileId: String): Action[AnyContent] =
-    entryPoint("delete profiole")
+    entryPoint("delete profile")
       .authTransaction(db) { implicit request => implicit graph =>
         profileSrv
           .getOrFail(profileId)
           .map { profile =>
-            profileSrv.remove(profile)
-            Results.NoContent
+            if (profileSrv.unused(profile)) {
+              profileSrv.remove(profile)
+              Results.NoContent
+            } else Results.Forbidden
           }
       }
 }
