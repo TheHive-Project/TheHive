@@ -39,11 +39,11 @@ object DashboardConversion {
 
   def dashboardProperties(dashboardSrv: DashboardSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[DashboardSteps]
-      .property("title", UniMapping.string)(_.simple.updatable)
-      .property("description", UniMapping.string)(_.simple.updatable)
-      .property("definition", UniMapping.string)(_.simple.updatable)
+      .property("title", UniMapping.string)(_.field.updatable)
+      .property("description", UniMapping.string)(_.field.updatable)
+      .property("definition", UniMapping.string)(_.field.updatable)
       .property("status", UniMapping.string)(
-        _.derived(_.shared.map(shared => if (shared) "Shared" else "Private")).custom { // TODO replace by choose step
+        _.select(_.shared.map(shared => if (shared) "Shared" else "Private")).custom { // TODO replace by choose step
           case (_, "Shared", vertex, _, graph, authContext) =>
             for {
               d <- dashboardSrv.get(vertex)(graph).getOrFail()

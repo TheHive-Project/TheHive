@@ -18,10 +18,10 @@ object TagConversion {
   implicit def toOutputTag(tag: Tag with Entity): Output[OutputTag] = ??? // Output(tag.into[OutputTag].transform)
 
   val tagProperties: List[PublicProperty[_, _]] = PublicPropertyListBuilder[TagSteps]
-    .property("namespace", UniMapping.string)(_.simple.readonly)
-    .property("predicate", UniMapping.string)(_.simple.readonly)
-    .property("value", UniMapping.string.optional)(_.simple.readonly)
-    .property("description", UniMapping.string.optional)(_.simple.readonly)
+    .property("namespace", UniMapping.string)(_.field.readonly)
+    .property("predicate", UniMapping.string)(_.field.readonly)
+    .property("value", UniMapping.string.optional)(_.field.readonly)
+    .property("description", UniMapping.string.optional)(_.field.readonly)
     .build
 
   def parseColour(colour: String): Int = if (colour(0) == '#') Try(Integer.parseUnsignedInt(colour.tail, 16)).getOrElse(0) else 0

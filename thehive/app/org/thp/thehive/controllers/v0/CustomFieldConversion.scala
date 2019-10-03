@@ -52,11 +52,11 @@ object CustomFieldConversion {
 
   def customFieldProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CustomFieldSteps]
-      .property("name", UniMapping.string)(_.simple.readonly)
-      .property("description", UniMapping.string)(_.simple.updatable)
-      .property("reference", UniMapping.string)(_.simple.readonly)
-      .property("mandatory", UniMapping.boolean)(_.simple.updatable)
-      .property("type", UniMapping.string)(_.simple.readonly)
-      .property("options", UniMapping.json.sequence)(_.simple.updatable)
+      .property("name", UniMapping.string)(_.field.readonly)
+      .property("description", UniMapping.string)(_.field.updatable)
+      .property("reference", UniMapping.string)(_.field.readonly)
+      .property("mandatory", UniMapping.boolean)(_.field.updatable)
+      .property("type", UniMapping.string)(_.field.readonly)
+      .property("options", UniMapping.json.sequence)(_.field.updatable)
       .build
 }

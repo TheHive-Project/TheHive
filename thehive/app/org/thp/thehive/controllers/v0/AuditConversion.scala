@@ -115,12 +115,12 @@ object AuditConversion {
   val auditProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[AuditSteps]
       .property("operation", UniMapping.string)(_.rename("action").readonly)
-      .property("details", UniMapping.string)(_.simple.readonly)
-      .property("objectType", UniMapping.string.optional)(_.simple.readonly)
-      .property("objectId", UniMapping.string.optional)(_.simple.readonly)
+      .property("details", UniMapping.string)(_.field.readonly)
+      .property("objectType", UniMapping.string.optional)(_.field.readonly)
+      .property("objectId", UniMapping.string.optional)(_.field.readonly)
       .property("base", UniMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UniMapping.date)(_.rename("_createdAt").readonly)
-      .property("requestId", UniMapping.string)(_.simple.readonly)
-      .property("rootId", IdMapping)(_.derived(_.context._id).readonly)
+      .property("requestId", UniMapping.string)(_.field.readonly)
+      .property("rootId", IdMapping)(_.select(_.context._id).readonly)
       .build
 }

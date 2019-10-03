@@ -42,12 +42,12 @@ object CaseTemplateConversion {
 
   def caseTemplateProperties(caseTemplateSrv: CaseTemplateSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
-      .property("name", UniMapping.string)(_.simple.updatable)
-      .property("titlePrefix", UniMapping.string.optional)(_.simple.updatable)
-      .property("description", UniMapping.string.optional)(_.simple.updatable)
-      .property("severity", UniMapping.int.optional)(_.simple.updatable)
+      .property("name", UniMapping.string)(_.field.updatable)
+      .property("titlePrefix", UniMapping.string.optional)(_.field.updatable)
+      .property("description", UniMapping.string.optional)(_.field.updatable)
+      .property("severity", UniMapping.int.optional)(_.field.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.tags.displayName)
+        _.select(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
@@ -56,13 +56,13 @@ object CaseTemplateConversion {
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("flag", UniMapping.boolean)(_.simple.updatable)
-      .property("tlp", UniMapping.int.optional)(_.simple.updatable)
-      .property("pap", UniMapping.int.optional)(_.simple.updatable)
-      .property("summary", UniMapping.string.optional)(_.simple.updatable)
-      .property("user", UniMapping.string)(_.simple.updatable)
-      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+      .property("flag", UniMapping.boolean)(_.field.updatable)
+      .property("tlp", UniMapping.int.optional)(_.field.updatable)
+      .property("pap", UniMapping.int.optional)(_.field.updatable)
+      .property("summary", UniMapping.string.optional)(_.field.updatable)
+      .property("user", UniMapping.string)(_.field.updatable)
+      .property("customFieldName", UniMapping.string)(_.select(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.select(_.customFields.description).readonly)
 //      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
 //      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .build

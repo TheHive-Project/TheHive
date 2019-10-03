@@ -147,13 +147,13 @@ object CaseConversion {
   def caseProperties(caseSrv: CaseSrv, userSrv: UserSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseSteps]
       .property("caseId", UniMapping.int)(_.rename("number").readonly)
-      .property("title", UniMapping.string)(_.simple.updatable)
-      .property("description", UniMapping.string)(_.simple.updatable)
-      .property("severity", UniMapping.int)(_.simple.updatable)
-      .property("startDate", UniMapping.date)(_.simple.updatable)
-      .property("endDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("title", UniMapping.string)(_.field.updatable)
+      .property("description", UniMapping.string)(_.field.updatable)
+      .property("severity", UniMapping.int)(_.field.updatable)
+      .property("startDate", UniMapping.date)(_.field.updatable)
+      .property("endDate", UniMapping.date.optional)(_.field.updatable)
       .property("tags", UniMapping.string.set)(
-        _.derived(_.tags.displayName)
+        _.select(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
@@ -162,12 +162,12 @@ object CaseConversion {
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("flag", UniMapping.boolean)(_.simple.updatable)
-      .property("tlp", UniMapping.int)(_.simple.updatable)
-      .property("pap", UniMapping.int)(_.simple.updatable)
-      .property("status", UniMapping.enum(CaseStatus))(_.simple.updatable)
-      .property("summary", UniMapping.string.optional)(_.simple.updatable)
-      .property("owner", UniMapping.string.optional)(_.derived(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
+      .property("flag", UniMapping.boolean)(_.field.updatable)
+      .property("tlp", UniMapping.int)(_.field.updatable)
+      .property("pap", UniMapping.int)(_.field.updatable)
+      .property("status", UniMapping.enum(CaseStatus))(_.field.updatable)
+      .property("summary", UniMapping.string.optional)(_.field.updatable)
+      .property("owner", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail()
           user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
@@ -177,7 +177,7 @@ object CaseConversion {
           }
         } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("resolutionStatus", UniMapping.string.optional)(_.derived(_.resolutionStatus.value).custom {
+      .property("resolutionStatus", UniMapping.string.optional)(_.select(_.resolutionStatus.value).custom {
         (_, resolutionStatus, vertex, _, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail()
@@ -187,7 +187,7 @@ object CaseConversion {
             }
           } yield Json.obj("resolutionStatus" -> resolutionStatus)
       })
-      .property("impactStatus", UniMapping.string.optional)(_.derived(_.impactStatus.value).custom {
+      .property("impactStatus", UniMapping.string.optional)(_.select(_.impactStatus.value).custom {
         (_, impactStatus, vertex, _, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail()
@@ -197,12 +197,12 @@ object CaseConversion {
             }
           } yield Json.obj("impactStatus" -> impactStatus)
       })
-      .property("customFieldName", UniMapping.string)(_.derived(_.customFields.name).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.derived(_.customFields.description).readonly)
+      .property("customFieldName", UniMapping.string)(_.select(_.customFields.name).readonly)
+      .property("customFieldDescription", UniMapping.string)(_.select(_.customFields.description).readonly)
 //      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
 //      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .property("computed.handlingDurationInHours", UniMapping.long)(
-        _.derived(
+        _.select(
           _.coalesce(
             UniMapping.long,
             _.has(Key("endDate"))

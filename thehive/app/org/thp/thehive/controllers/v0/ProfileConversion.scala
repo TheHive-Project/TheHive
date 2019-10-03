@@ -36,7 +36,7 @@ object ProfileConversion {
 
   val profileProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ProfileSteps]
-      .property("name", UniMapping.string)(_.simple.updatable)
-      .property("permissions", UniMapping.string.set)(_.simple.updatable)
+      .property("name", UniMapping.string)(_.field.updatable)
+      .property("permissions", UniMapping.string.set)(_.field.updatable)
       .build
 }

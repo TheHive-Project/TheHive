@@ -29,14 +29,14 @@ object TaskConversion {
 
   def taskProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[TaskSteps]
-      .property("title", UniMapping.string)(_.simple.updatable)
-      .property("description", UniMapping.string.optional)(_.simple.updatable)
-      .property("status", UniMapping.string)(_.simple.updatable)
-      .property("flag", UniMapping.boolean)(_.simple.updatable)
-      .property("startDate", UniMapping.date.optional)(_.simple.updatable)
-      .property("endDate", UniMapping.date.optional)(_.simple.updatable)
-      .property("order", UniMapping.int)(_.simple.updatable)
-      .property("dueDate", UniMapping.date.optional)(_.simple.updatable)
+      .property("title", UniMapping.string)(_.field.updatable)
+      .property("description", UniMapping.string.optional)(_.field.updatable)
+      .property("status", UniMapping.string)(_.field.updatable)
+      .property("flag", UniMapping.boolean)(_.field.updatable)
+      .property("startDate", UniMapping.date.optional)(_.field.updatable)
+      .property("endDate", UniMapping.date.optional)(_.field.updatable)
+      .property("order", UniMapping.int)(_.field.updatable)
+      .property("dueDate", UniMapping.date.optional)(_.field.updatable)
       .build
 
 }

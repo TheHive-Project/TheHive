@@ -53,13 +53,13 @@ object ActionConversion {
 
   val actionProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ActionSteps]
-      .property("responderId", UniMapping.string)(_.simple.readonly)
-      .property("objectType", UniMapping.string)(_.derived(_.context.map(_._model.label)).readonly) // FIXME convert label to v0 object type
-      .property("status", UniMapping.string)(_.simple.readonly)
-      .property("startDate", UniMapping.date)(_.simple.readonly)
-      .property("objectId", UniMapping.string)(_.simple.readonly)
-      .property("responderName", UniMapping.string.optional)(_.simple.readonly)
-      .property("cortexId", UniMapping.string.optional)(_.simple.readonly)
-      .property("tlp", UniMapping.int.optional)(_.simple.readonly)
+      .property("responderId", UniMapping.string)(_.field.readonly)
+      .property("objectType", UniMapping.string)(_.select(_.context.map(_._model.label)).readonly) // FIXME convert label to v0 object type
+      .property("status", UniMapping.string)(_.field.readonly)
+      .property("startDate", UniMapping.date)(_.field.readonly)
+      .property("objectId", UniMapping.string)(_.field.readonly)
+      .property("responderName", UniMapping.string.optional)(_.field.readonly)
+      .property("cortexId", UniMapping.string.optional)(_.field.readonly)
+      .property("tlp", UniMapping.int.optional)(_.field.readonly)
       .build
 }

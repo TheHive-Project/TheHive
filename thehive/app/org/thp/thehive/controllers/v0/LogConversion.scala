@@ -44,10 +44,10 @@ object LogConversion {
 
   val logProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[LogSteps]
-      .property("message", UniMapping.string)(_.simple.updatable)
-      .property("deleted", UniMapping.boolean)(_.simple.updatable)
+      .property("message", UniMapping.string)(_.field.updatable)
+      .property("deleted", UniMapping.boolean)(_.field.updatable)
       .property("startDate", UniMapping.date)(_.rename("date").readonly)
-      .property("status", UniMapping.string)(_.simple.readonly)
-      .property("attachment", IdMapping)(_.derived(_.attachments._id).readonly)
+      .property("status", UniMapping.string)(_.field.readonly)
+      .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
       .build
 }

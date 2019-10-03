@@ -31,9 +31,9 @@ object JobConversion {
   val jobProperties: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[JobSteps]
       .property("analyzerId", UniMapping.string)(_.rename("workerId").readonly)
-      .property("cortexId", UniMapping.string.optional)(_.simple.readonly)
-      .property("startDate", UniMapping.date)(_.simple.readonly)
-      .property("status", UniMapping.string)(_.simple.readonly)
+      .property("cortexId", UniMapping.string.optional)(_.field.readonly)
+      .property("startDate", UniMapping.date)(_.field.readonly)
+      .property("status", UniMapping.string)(_.field.readonly)
       .build
 
   def fromCortexOutputJob(j: CortexOutputJob): Job =

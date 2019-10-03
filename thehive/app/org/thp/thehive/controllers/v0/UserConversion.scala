@@ -58,8 +58,8 @@ object UserConversion {
 
   def userProperties(userSrv: UserSrv, profileSrv: ProfileSrv, roleSrv: RoleSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
-      .property("login", UniMapping.string)(_.simple.readonly)
-      .property("name", UniMapping.string)(_.simple.custom { (_, value, vertex, db, graph, authContext) =>
+      .property("login", UniMapping.string)(_.field.readonly)
+      .property("name", UniMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
         def isCurrentUser: Try[Unit] =
           userSrv
             .current(graph, authContext)
@@ -82,7 +82,7 @@ object UserConversion {
           }
       })
       .property("status", UniMapping.string)(
-        _.derived(_.choose(predicate = _.locked.is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
+        _.select(_.choose(predicate = _.locked.is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
           .custom { (_, value, vertex, db, graph, authContext) =>
             userSrv
               .current(graph, authContext)
