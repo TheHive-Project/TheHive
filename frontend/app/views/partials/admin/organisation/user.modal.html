@@ -56,11 +56,10 @@
                     ng-change="permissions = $modal.profiles[$modal.formData.profile.name].permissions">
                         <option value="" disabled selected>-- Select profile --</option>
                 </select>
-                <div class="wrap" ng-init="permissions = $modal.profiles[$modal.formData.profile.name].permissions">
-                    <em ng-if="permissions.length === 0" class="text-muted">No Permissions</em>
-                    <strong ng-if="permissions.length > 0">Permissions: </strong>
-                    <span class="label label-default mr-xxs" ng-repeat="permission in permissions">{{permission}}</span>
-                </div>
+                <permission-list  ng-init="permissions = $modal.profiles[$modal.formData.profile.name].permissions"
+                    permissions="permissions"
+                    show-label="true"
+                    label="Permissions"></permission-list>
             </div>
         </div>
     </div>
