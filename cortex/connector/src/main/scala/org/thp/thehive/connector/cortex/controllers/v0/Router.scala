@@ -30,13 +30,13 @@ class Router @Inject()(
     case GET(p"/action")                                     => cortexQueryExecutor.action.search
     case GET(p"/action/$entityType<[^/]*>/$entityId<[^/]*>") => actionCtrl.getByEntity(entityType, entityId)
 
-    case GET(p"/report/template/content/$analyzerId<[^/]*>/?.*") => reportCtrl.get(analyzerId)
-    case POST(p"/report/template/_import")                       => reportCtrl.importTemplates // Audit ok
-    case POST(p"/report/template/_search")                       => cortexQueryExecutor.report.search
-    case POST(p"/report/template")                               => reportCtrl.create() // Audit ok
-    case DELETE(p"/report/template/$reportTemplateId<[^/]*>")    => reportCtrl.delete(reportTemplateId) // Audit ok
-    case GET(p"/report/template/$reportTemplateId<[^/]*>")       => reportCtrl.get(reportTemplateId)
-    case PATCH(p"/report/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId) // Audit ok
+    case GET(p"/$_<((\breport\b)|(\banalyzer\b))>/template/content/$analyzerId<[^/]*>/?.*") => reportCtrl.get(analyzerId)
+    case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template/_import")                       => reportCtrl.importTemplates // Audit ok
+    case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template/_search")                       => cortexQueryExecutor.report.search
+    case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template")                               => reportCtrl.create() // Audit ok
+    case DELETE(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")    => reportCtrl.delete(reportTemplateId) // Audit ok
+    case GET(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")       => reportCtrl.get(reportTemplateId)
+    case PATCH(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId) // Audit ok
 
     case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") => responderCtrl.getResponders(entityType, entityId)
     case POST(p"/responder/_search")                            => responderCtrl.searchResponders

@@ -80,12 +80,12 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
         status(createResult) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(createResult)}")
 
         val outputReportTemplate = contentAsJson(createResult).as[OutputReportTemplate]
-        val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+        val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/analyzer/template/${outputReportTemplate.id}")
           .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
         val getResult2 = reportCtrl.get(outputReportTemplate.id)(getRequest2)
         status(getResult2) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult2)}")
 
-        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/analyzer/template/${outputReportTemplate.id}")
           .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
         val updateResult = reportCtrl.update(outputReportTemplate.id)(updateRequest)
