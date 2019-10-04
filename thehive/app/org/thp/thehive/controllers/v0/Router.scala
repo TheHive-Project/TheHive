@@ -76,12 +76,13 @@ class Router @Inject()(
     case GET(p"/list/$listName")          => listCtrl.listItems(listName)
     case POST(p"/list/$listName/_exists") => listCtrl.itemExists(listName)
 
-    case GET(p"/organisation")                                        => organisationCtrl.list
-    case POST(p"/organisation")                                       => organisationCtrl.create // Audit ok
-    case GET(p"/organisation/$organisationId")                        => organisationCtrl.get(organisationId)
-    case GET(p"/organisation/$organisationId/links")                  => organisationCtrl.listLinks(organisationId)
-    case PATCH(p"/organisation/$organisationId")                      => organisationCtrl.update(organisationId) // Audit ok
-    case PUT(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.link(organisationId1, organisationId2)
+    case GET(p"/organisation")                                           => organisationCtrl.list
+    case POST(p"/organisation")                                          => organisationCtrl.create // Audit ok
+    case GET(p"/organisation/$organisationId")                           => organisationCtrl.get(organisationId)
+    case GET(p"/organisation/$organisationId/links")                     => organisationCtrl.listLinks(organisationId)
+    case PATCH(p"/organisation/$organisationId")                         => organisationCtrl.update(organisationId) // Audit ok
+    case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
+    case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
 //    case GET(p"/share")            ⇒ shareCtrl.list
 //    case POST(p"/share")           ⇒ shareCtrl.create

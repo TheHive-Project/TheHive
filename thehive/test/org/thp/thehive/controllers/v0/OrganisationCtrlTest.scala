@@ -102,19 +102,32 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
       }
 
-      "link organisations" in {
+      "link and unlink organisations" in {
         val request = FakeRequest("PUT", s"/api/organisation/cert/link/default")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.link("cert", "default")(request)
 
         status(result) shouldEqual 201
 
-        val requestLinks = FakeRequest("GET", s"/api/organisation/cert/links")
-          .withHeaders("user" -> "user1@thehive.local")
-        val resultLinks = organisationCtrl.listLinks("cert")(requestLinks)
+        def listLinks = {
+          val requestLinks = FakeRequest("GET", s"/api/organisation/cert/links")
+            .withHeaders("user" -> "user1@thehive.local")
+          val resultLinks = organisationCtrl.listLinks("cert")(requestLinks)
 
-        status(resultLinks) shouldEqual 200
-        contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
+          status(resultLinks) shouldEqual 200
+
+          contentAsJson(resultLinks).as[List[OutputOrganisation]]
+        }
+
+        listLinks.length shouldEqual 1
+
+        val requestUnlink = FakeRequest("DELETE", s"/api/organisation/cert/link/default")
+          .withHeaders("user" -> "admin@thehive.local")
+        val resultUnlink = organisationCtrl.unlink("cert", "default")(requestUnlink)
+
+        status(resultUnlink) shouldEqual 204
+
+        listLinks must beEmpty
       }
     }
   }

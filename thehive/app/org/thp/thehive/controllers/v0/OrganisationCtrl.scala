@@ -104,6 +104,20 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
         } yield Results.Created
       }
 
+  def unlink(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
+    entryPoint("unlink organisations")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          fromOrg <- userSrv
+            .current
+            .organisations(Permissions.manageOrganisation)
+            .get(fromOrganisationId)
+            .getOrFail()
+          toOrg <- organisationSrv.getOrFail(toOrganisationId)
+          _ = organisationSrv.unlink(fromOrg, toOrg)
+        } yield Results.NoContent
+      }
+
   def listLinks(organisationId: String): Action[AnyContent] =
     entryPoint("list organisation links")
       .authRoTransaction(db) { implicit req => implicit graph =>

@@ -63,6 +63,12 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
   }
 
+  def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Unit =
+    get(fromOrg)
+      .outToE[OrganisationOrganisation]
+      .filter(_.otherV().hasId(toOrg._id))
+      .remove()
+
 }
 
 @EntitySteps[Case]
@@ -74,6 +80,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         .outTo[OrganisationOrganisation]
         .filter(_.hasId(orgId))
     )
+
+  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
 
   def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
 
@@ -115,8 +123,6 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     else getByName(idOrName)
 
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
-
-  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
 
   override def newInstance(): OrganisationSteps = new OrganisationSteps(raw.clone())
 }
