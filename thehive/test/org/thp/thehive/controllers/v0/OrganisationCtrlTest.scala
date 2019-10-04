@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -14,6 +9,10 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class OrganisationCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
@@ -86,6 +85,36 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         val result = organisationCtrl.update("default")(request)
 
         status(result) must_=== 204
+      }
+
+      "link organisations to default organisation" in {
+        val request = FakeRequest("PUT", s"/api/organisation/default/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.link("default", "cert")(request)
+
+        status(result) shouldEqual 201
+
+        val requestLinks = FakeRequest("GET", s"/api/organisation/default/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val resultLinks = organisationCtrl.listLinks("default")(requestLinks)
+
+        status(resultLinks) shouldEqual 200
+        contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
+      }
+
+      "link organisations" in {
+        val request = FakeRequest("PUT", s"/api/organisation/cert/link/default")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.link("cert", "default")(request)
+
+        status(result) shouldEqual 201
+
+        val requestLinks = FakeRequest("GET", s"/api/organisation/cert/links")
+          .withHeaders("user" -> "user1@thehive.local")
+        val resultLinks = organisationCtrl.listLinks("cert")(requestLinks)
+
+        status(resultLinks) shouldEqual 200
+        contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
       }
     }
   }

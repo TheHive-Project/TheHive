@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -13,6 +8,10 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)
@@ -89,5 +88,42 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
               propertyUpdaters
             )
         } yield Results.NoContent
+      }
+
+  def link(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
+    entryPoint("link organisations")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          fromOrg <- userSrv
+            .current
+            .organisations(Permissions.manageOrganisation)
+            .get(fromOrganisationId)
+            .getOrFail()
+          toOrg <- organisationSrv.getOrFail(toOrganisationId)
+          _     <- organisationSrv.link(fromOrg, toOrg)
+        } yield Results.Created
+      }
+
+  def listLinks(organisationId: String): Action[AnyContent] =
+    entryPoint("list organisation links")
+      .authRoTransaction(db) { implicit req => implicit graph =>
+        val org = userSrv
+          .current
+          .organisations
+          .get(organisationId)
+          .getOrFail()
+
+        org.map(
+          o =>
+            Results.Ok(
+              JsArray(
+                organisationSrv
+                  .get(o)
+                  .links
+                  .toList
+                  .map(_.toJson)
+              )
+            )
+        )
       }
 }

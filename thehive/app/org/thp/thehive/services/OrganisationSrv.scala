@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -13,6 +9,9 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.util.{Success, Try}
 
 object OrganisationSrv {
   val default = Organisation("default", "initial organisation")
@@ -26,8 +25,6 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
   val organisationOrganisationSrv               = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv                      = new EdgeSrv[OrganisationShare, Organisation, Share]
 
-  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = createEntity(e)
-
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
 
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
@@ -35,6 +32,8 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
       createdOrganisation <- create(organisation)
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.all)
     } yield createdOrganisation
+
+  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = createEntity(e)
 
   def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
 
@@ -53,10 +52,30 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
           .getOrFail()
           .flatMap(auditSrv.organisation.update(_, updatedFields))
     }
+
+  def link(
+      fromOrg: Organisation with Entity,
+      toOrg: Organisation with Entity
+  )(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
+    val existing = get(fromOrg).link(toOrg._id).getOrFail()
+
+    if (existing.isSuccess) Success(())
+    else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
+  }
+
 }
 
 @EntitySteps[Case]
 class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Organisation](raw) {
+
+  def link(orgId: String): OrganisationSteps =
+    newInstance(
+      raw
+        .outTo[OrganisationOrganisation]
+        .filter(_.hasId(orgId))
+    )
+
+  def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
 
   def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
 
@@ -98,5 +117,6 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
 
   override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
-  override def newInstance(): OrganisationSteps                             = new OrganisationSteps(raw.clone())
+
+  override def newInstance(): OrganisationSteps = new OrganisationSteps(raw.clone())
 }
