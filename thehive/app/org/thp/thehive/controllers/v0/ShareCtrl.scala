@@ -19,8 +19,8 @@ class ShareCtrl @Inject()(
     profileSrv: ProfileSrv
 ) {
 
-  def create: Action[AnyContent] =
-    entryPoint("create share")
+  def shareCase: Action[AnyContent] =
+    entryPoint("create case share")
       .extract("share", FieldsParser[InputShare])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShare: InputShare = request.body("share")
