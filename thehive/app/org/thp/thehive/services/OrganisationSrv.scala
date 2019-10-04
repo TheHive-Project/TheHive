@@ -59,7 +59,7 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
   )(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
     val existing = get(fromOrg).link(toOrg._id).getOrFail()
 
-    if (existing.isSuccess) Success(())
+    if (existing.isSuccess || fromOrg._id == toOrg._id) Success(())
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
   }
 
