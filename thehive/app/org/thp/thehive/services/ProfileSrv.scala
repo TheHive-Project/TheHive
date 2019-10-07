@@ -53,11 +53,10 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
 
-  def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      _ <- Try(get(profile).remove())
-      _ <- auditSrv.profile.delete(profile)
-    } yield ()
+  def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(profile).remove()
+    auditSrv.profile.delete(profile)
+  }
 
   def unused(profile: Profile with Entity)(implicit graph: Graph): Boolean = get(profile).roles.toList.length + get(profile).shares.toList.length <= 0
 }

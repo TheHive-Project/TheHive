@@ -52,8 +52,8 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     for {
       _     <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
       case0 <- get(log).`case`.getOrFail()
-      _     <- Try(get(log._id).remove())
-      _     <- auditSrv.log.delete(log, Some(case0))
+      _ = get(log._id).remove()
+      _ <- auditSrv.log.delete(log, Some(case0))
     } yield ()
 
   override def update(

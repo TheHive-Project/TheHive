@@ -133,19 +133,18 @@ class ObservableSrv @Inject()(
       // TODO copy or link key value ?
     } yield richObservable.copy(observable = createdObservable)
 
-  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      _ <- Try(get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove())
-      _ <- Try(get(observable).attachments.remove())
-      _ <- Try(get(observable).keyValues.remove())
-      ctx = get(observable).`case`.getOrFail().orElse(get(observable).alert.getOrFail())
-      r <- Try(get(observable).remove())
-      _ <- ctx.flatMap {
-        case case0: Case with Entity  => auditSrv.observable.delete(observable, Some(case0))
-        case alert: Alert with Entity => auditSrv.observableInAlert.delete(observable, Some(alert))
-        case _                        => auditSrv.observable.delete(observable, None)
-      }
-    } yield r
+  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove()
+    get(observable).attachments.remove()
+    get(observable).keyValues.remove()
+    val ctx = get(observable).`case`.getOrFail().orElse(get(observable).alert.getOrFail())
+    get(observable).remove()
+    ctx.flatMap {
+      case case0: Case with Entity  => auditSrv.observable.delete(observable, Some(case0))
+      case alert: Alert with Entity => auditSrv.observableInAlert.delete(observable, Some(alert))
+      case _                        => auditSrv.observable.delete(observable, None)
+    }
+  }
 
   override def update(
       steps: ObservableSteps,

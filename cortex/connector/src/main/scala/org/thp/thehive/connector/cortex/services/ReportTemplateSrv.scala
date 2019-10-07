@@ -55,11 +55,10 @@ class ReportTemplateSrv @Inject()(
           .flatMap(auditSrv.reportTemplate.update(_, updatedFields))
     }
 
-  def remove(reportTemplate: ReportTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      _ <- Try(get(reportTemplate).remove())
-      _ <- auditSrv.reportTemplate.delete(reportTemplate)
-    } yield ()
+  def remove(reportTemplate: ReportTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(reportTemplate).remove()
+    auditSrv.reportTemplate.delete(reportTemplate)
+  }
 
   /**
     * Creates or updates if found templates contained in a zip file
