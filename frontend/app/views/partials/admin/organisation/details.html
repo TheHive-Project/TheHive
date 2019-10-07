@@ -81,8 +81,9 @@
                             </span>
                         </uib-tab-heading>
                         <div if-permission="manageCaseTemplate">
-                            Case templates
-                        </div>                        
+                            <!-- <div ng-include="'views/partial/admin/case-template/case-templates.html'"></div> -->
+                            <org-case-template-list fields="$vm.fields" templates="$vm.templates"></org-case-template-list>
+                        </div>
                     </uib-tab>
                 </uib-tabset>
                 <!-- <div ui-view class="case-page-content"></div> -->

@@ -232,8 +232,11 @@ angular.module('thehive', [
                     users: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.users($stateParams.organisation);
                     },
-                    caseTemplates: function($stateParams, OrganisationSrv) {
+                    templates: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.caseTemplates($stateParams.organisation);
+                    },
+                    fields: function(CustomFieldsSrv){
+                        return CustomFieldsSrv.all();
                     }
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']

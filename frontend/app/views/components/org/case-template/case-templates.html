@@ -1,0 +1,65 @@
+<div class="row mb-xs">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group">
+                <button class="btn btn-sm btn-primary" ng-click="$vm.newTemplate()">
+                    <i class="mr-xxs fa fa-plus"></i>New template
+                </button>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-default" ng-click="$vm.importTemplate()">
+                    <i class="mr-xxs fa fa-upload"></i>Import template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row" ng-if="!$vm.template && $vm.templates.length === 0">
+    <div class="col-md-12">
+        <div class="empty-message">No case templates defined.</div>
+    </div>
+</div>
+
+<div class="row" ng-if="$vm.template || $vm.templates.length > 0">
+    <div class="col-md-2">
+
+
+        <h4 class="mt-m text-primary">Current templates</h4>
+        <ul class="nav nav-pills nav-stacked" ng-show="$vm.templates">
+            <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
+                <a href ng-click="$vm.loadTemplate(template)">{{template.name}}</a>
+            </li>
+        </ul>
+        <div ng-hide="$vm.templates.length != 0">
+            There are no templates
+        </div>
+    </div>
+    <div class="col-md-10 left-border">
+        <form class="form-horizontal" name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/details.html'"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/tasks.html'"></div>
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/custom-fields.html'"></div>
+                </div>
+            </div>
+
+            <div class="vpad10"></div>
+            <div class="vpad10"></div>
+
+            <div class="text-left">
+                <button class="btn btn-sm btn-danger" ng-click="$vm.deleteTemplate()" ng-disabled="!$vm.template.id" type="button">Delete case template</button>
+                <span class="hpad10">
+                    <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                <button class="btn btn-sm btn-primary pull-right" ng-disabled="templateEditForm.$invalid" type="submit">
+                    <i class="fa fa-plus"></i>&nbsp;Save case template</button>
+                <button class="btn btn-sm btn-default pull-right mr-xxxs" ng-disabled="templateEditForm.$invalid" type="button" ng-click="$vm.exportTemplate()">
+                    <i class="fa fa-download"></i>&nbsp;Export case template</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('UserSrv', function($http, $q, $uibModal) {
+        .service('UserSrv', function($http, $q, $uibModal, QuerySrv) {
 
             var self = this;
 
@@ -114,7 +114,7 @@
                         name: 'System'
                     });
                 } else {
-                    if(!login) {
+                    if (!login) {
                         defer.reject(undefined);
                         return;
                     }
@@ -143,20 +143,36 @@
                     });
             };
 
-            this.list = function(query) {
-                var post = {
-                    range: 'all',
-                    query: query
-                };
+            this.list = function(organisation, query) {
+                // var post = {
+                //     range: 'all',
+                //     query: query
+                // };
+                // return $http
+                //     .post('./api/v1/user/_search', post)
+                //     .then(function(response) {
+                //         return $q.resolve(response.data);
+                //     })
+                //     .catch(function(err) {
+                //         return $q.reject(err);
+                //     });
 
-                return this.$http
-                    .post('./api/v1/user/_search', post)
-                    .then(function(response) {
-                        return $q.resolve(response.data);
-                    })
-                    .catch(function(err) {
-                        return $q.reject(err);
-                    });
+                return QuerySrv.query('v1', [{
+                        '_name': 'getOrganisation',
+                        'idOrName': organisation
+                    },
+                    {
+                        '_name': 'users'
+                    },
+                    {
+                        '_name': 'filter', '_is': query || {}
+                    },
+                    {
+                        '_name': 'toList'
+                    }
+                ]).then(function(response) {
+                    return $q.resolve(response.data.result);
+                });
             };
 
             this.autoComplete = function(query) {
@@ -193,7 +209,7 @@
                             self.userCache[userId] = userInfo;
                             defer.resolve(userInfo);
                         })
-                        .catch(function(/*err*/) {
+                        .catch(function( /*err*/ ) {
                             defer.resolve(undefined);
                         });
 
