@@ -5,7 +5,7 @@
             this.templates = templates;
             this.uiSettings = uiSettings;
             this.state = {
-                filter: null,
+                filter: '',
                 selected: null,
                 hideEmptyCaseButton: UiSettingsSrv.hideEmptyCaseButton()
             };

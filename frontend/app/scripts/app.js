@@ -240,34 +240,7 @@ angular.module('thehive', [
                     }
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
-            })
-            // .state('app.administration.users', {
-            //     url: '/users',
-            //     templateUrl: 'views/partials/admin/users.html',
-            //     controller: 'AdminUsersCtrl',
-            //     title: 'Users administration',
-            //     resolve: {
-            //         appConfig: function(VersionSrv) {
-            //             return VersionSrv.get();
-            //         }
-            //     }
-            // })
-            .state('app.administration.case-templates', {
-                url: '/case-templates',
-                templateUrl: 'views/partials/admin/case-templates.html',
-                controller: 'AdminCaseTemplatesCtrl',
-                controllerAs: '$vm',
-                title: 'Templates administration',
-                resolve: {
-                    templates: function(CaseTemplateSrv) {
-                        return CaseTemplateSrv.list();
-                    },
-                    fields: function(CustomFieldsSrv){
-                        return CustomFieldsSrv.all();
-                    }
-                },
-                permissions: ['manageCaseTemplate']
-            })
+            })            
             .state('app.administration.report-templates', {
                 url: '/report-templates',
                 templateUrl: 'views/partials/admin/report-templates.html',
