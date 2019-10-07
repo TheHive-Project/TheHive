@@ -33,6 +33,7 @@ case class OutputCaseTemplate(
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
     name: String,
+    displayName: String,
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int],

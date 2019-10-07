@@ -45,7 +45,8 @@ object CaseTemplateConversion {
 
   def caseTemplateProperties(caseTemplateSrv: CaseTemplateSrv): List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
-      .property("name", UniMapping.string)(_.field.updatable)
+      .property("name", UniMapping.string)(_.field.readonly)
+      .property("displayName", UniMapping.string)(_.field.updatable)
       .property("titlePrefix", UniMapping.string.optional)(_.field.updatable)
       .property("description", UniMapping.string.optional)(_.field.updatable)
       .property("severity", UniMapping.int.optional)(_.field.updatable)
