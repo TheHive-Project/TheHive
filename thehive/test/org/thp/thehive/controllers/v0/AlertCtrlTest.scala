@@ -3,10 +3,8 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.util.Try
-
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
@@ -299,9 +297,9 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         ),
         summary = None,
         owner = Some("user1@thehive.local"),
-        customFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
-          OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
+        customFields = Json.obj(
+          "boolean1" -> JsNull,
+          "string1"  -> "string1 custom field"
         ),
         stats = Json.obj()
       )

@@ -64,33 +64,14 @@ class CaseSrv @Inject()(
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
       _            <- createdTasks.toTry(addTask(createdCase, _))
       caseTemplateCustomFields = caseTemplate
-        .fold[Seq[CustomFieldWithValue]](Nil)(_.customFields)
+        .fold[Seq[RichCustomField]](Nil)(_.customFields)
         .map(cf => cf.name -> cf.value)
-      cfs <- createCustomFields(createdCase, caseTemplateCustomFields.toMap ++ customFields)
+      cfs <- (caseTemplateCustomFields.toMap ++ customFields).toTry { case (name, value) => createCustomField(createdCase, name, value) }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
       _ <- auditSrv.`case`.create(createdCase)
     } yield RichCase(createdCase, allTags.toSeq, None, None, Some(assignee.login), cfs, authContext.permissions)
-
-  def createCustomFields(
-      `case`: Case with Entity,
-      customFields: Map[String, Option[Any]]
-  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[CustomFieldWithValue]] =
-    customFields
-      .toTry {
-        case (name, Some(value)) =>
-          for {
-            cf              <- customFieldSrv.getOrFail(name)
-            ccf             <- cf.`type`.setValue(CaseCustomField(), value)
-            caseCustomField <- caseCustomFieldSrv.create(ccf, `case`, cf)
-          } yield CustomFieldWithValue(cf, caseCustomField)
-        case (name, _) =>
-          for {
-            cf              <- customFieldSrv.getOrFail(name)
-            caseCustomField <- caseCustomFieldSrv.create(CaseCustomField(), `case`, cf)
-          } yield CustomFieldWithValue(cf, caseCustomField)
-      }
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
@@ -201,27 +182,30 @@ class CaseSrv @Inject()(
       .map(initSteps.getByNumber(_))
       .getOrElse(super.getByIds(idOrNumber))
 
-  def setCustomField(`case`: Case with Entity, customFieldName: String, value: Any)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(`case`, cf, value))
+  def createCustomField(
+      `case`: Case with Entity,
+      customFieldName: String,
+      customFieldValue: Option[Any]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    for {
+      cf   <- customFieldSrv.getOrFail(customFieldName)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue)
+      ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
+    } yield RichCustomField(cf, ccfe)
 
-  def setCustomField(`case`: Case with Entity, customField: CustomField with Entity, value: Any)(
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any])(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Unit] =
-    for {
-      _ <- getCustomField(`case`, customField.name) match {
-        case Some(cf) => caseCustomFieldSrv.get(cf.customFieldValue).update((cf.`type`.name + "Value") -> Some(value))
-        case None =>
-          customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(CaseCustomField(), value).map { caseCustomField =>
-            caseCustomFieldSrv.create(caseCustomField, `case`, customField)
-            ()
-          }
-      }
-      _ <- auditSrv.`case`.update(`case`, Json.obj(s"customField.${customField.name}" -> value.toString))
-    } yield ()
+  ): Try[Unit] = {
+    val cfv = get(`case`).customFields(customFieldName)
+    if (cfv.newInstance().exists())
+      cfv.setValue(value)
+    else
+      createCustomField(`case`, customFieldName, value).map(_ => ())
+  }
 
-  def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
-    get(`case`).customFieldsValue.toIterator.find(_.name == customFieldName)
+  def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
+    get(`case`).customFields(customFieldName).richCustomField.headOption()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
@@ -409,13 +393,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
-              .toSeq
             RichCase(
               caze.as[Case],
-              tags.asScala.map(_.as[Tag]).toSeq,
+              tags.asScala.map(_.as[Tag]),
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
@@ -425,16 +408,11 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  def customFields: CustomFieldSteps = new CustomFieldSteps(raw.outTo[CaseCustomField])
+  def customFields(name: String): CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.outV().has(Key[String]("name"), P.eq[String](name))))
 
-  def customFieldsValue: Traversal[CustomFieldWithValue, CustomFieldWithValue] =
-    Traversal(
-      raw
-        .outToE[CaseCustomField]
-        .inV()
-        .path
-        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
-    )
+  def customFields: CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[CaseCustomField])
 
   def share(implicit authContext: AuthContext): ShareSteps =
     new ShareSteps(
@@ -506,7 +484,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .select(richCaseLabel.name, richObservablesLabel.name)
     ).toList
       .map { resultMap =>
-        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala.toSeq
+        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala
       }
   }
 
@@ -529,13 +507,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
-              .toSeq
             RichCase(
               caze.as[Case],
-              tags.asScala.map(_.as[Tag]).toSeq,
+              tags.asScala.map(_.as[Tag]),
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
@@ -583,13 +560,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
-              .toSeq
             RichCase(
               caze.as[Case],
-              tags.asScala.map(_.as[Tag]).toSeq,
+              tags.asScala.map(_.as[Tag]),
               atMostOneOf[String](impactStatus),
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),

@@ -14,11 +14,11 @@ case class AlertCustomField(
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None
 ) extends CustomFieldValue[AlertCustomField] {
-  override def setStringValue(value: String): AlertCustomField   = copy(stringValue = Some(value))
-  override def setBooleanValue(value: Boolean): AlertCustomField = copy(booleanValue = Some(value))
-  override def setIntegerValue(value: Int): AlertCustomField     = copy(integerValue = Some(value))
-  override def setFloatValue(value: Float): AlertCustomField     = copy(floatValue = Some(value))
-  override def setDateValue(value: Date): AlertCustomField       = copy(dateValue = Some(value))
+  override def setStringValue(value: Option[String]): AlertCustomField   = copy(stringValue = value)
+  override def setBooleanValue(value: Option[Boolean]): AlertCustomField = copy(booleanValue = value)
+  override def setIntegerValue(value: Option[Int]): AlertCustomField     = copy(integerValue = value)
+  override def setFloatValue(value: Option[Float]): AlertCustomField     = copy(floatValue = value)
+  override def setDateValue(value: Option[Date]): AlertCustomField       = copy(dateValue = value)
 }
 
 @EdgeEntity[Alert, Observable]
@@ -59,7 +59,7 @@ case class RichAlert(
     alert: Alert with Entity,
     organisation: String,
     tags: Seq[Tag with Entity],
-    customFields: Seq[CustomFieldWithValue],
+    customFields: Seq[RichCustomField],
     caseId: Option[String],
     caseTemplate: Option[String]
 ) {
@@ -90,7 +90,7 @@ object RichAlert {
       alert: Alert with Entity,
       organisation: String,
       tags: Seq[Tag with Entity],
-      customFields: Seq[CustomFieldWithValue],
+      customFields: Seq[RichCustomField],
       caseId: Option[String],
       caseTemplate: Option[String]
   ): RichAlert =

@@ -67,7 +67,7 @@ class ActionOperationSrv @Inject()(
       case AddCustomFields(name, _, value, _, _) =>
         for {
           c <- Try(relatedCase.get)
-          _ <- caseSrv.createCustomFields(c, Map(name -> Some(value)))
+          _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))
         } yield updateOperation(operation)
 
       case CloseTask(_, _) =>

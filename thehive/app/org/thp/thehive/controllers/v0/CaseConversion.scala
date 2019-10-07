@@ -2,30 +2,27 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
-
-import play.api.libs.json.{JsNumber, JsObject, Json}
-
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.{Database, Model, UniMapping}
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, ShareSteps, UserSrv}
+import play.api.libs.json._
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 
 object CaseConversion {
-  import CustomFieldConversion._
-
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
     Output[OutputCase](
       richCase
         .into[OutputCase]
-        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_._type, "case")
         .withFieldComputed(_.id, _._id)
@@ -59,7 +56,7 @@ object CaseConversion {
       richCaseWithStats
         ._1
         .into[OutputCase]
-        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_._type, "case")
         .withFieldComputed(_.id, _._id)
@@ -190,21 +187,26 @@ object CaseConversion {
       .property("impactStatus", UniMapping.string.optional)(_.select(_.impactStatus.value).custom {
         (_, impactStatus, vertex, _, graph, authContext) =>
           for {
-            c <- caseSrv.get(vertex)(graph).getOrFail()
+            c <- caseSrv.getOrFail(vertex)(graph)
             _ <- impactStatus match {
               case Some(s) => caseSrv.setImpactStatus(c, s)(graph, authContext)
               case None    => caseSrv.unsetImpactStatus(c)(graph, authContext)
             }
           } yield Json.obj("impactStatus" -> impactStatus)
       })
-      .property("customFieldName", UniMapping.string)(_.select(_.customFields.name).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.select(_.customFields.description).readonly)
-//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
-//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
+      .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
+        case (FPathElem(_, FPathElem(name, _)), caseSteps) => caseSteps.customFields(name).jsonValue.map(_._2)
+        case (_, caseSteps)                                => caseSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+      }.custom {
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          for {
+            c <- caseSrv.getOrFail(vertex)(graph)
+            _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+          } yield Json.obj(s"customField.$name" -> value)
+      })(NoValue(JsNull))
       .property("computed.handlingDurationInHours", UniMapping.long)(
         _.select(
           _.coalesce(
-            UniMapping.long,
             _.has(Key("endDate"))
               .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
               .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))

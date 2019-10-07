@@ -56,24 +56,6 @@ class AlertSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
-
-    def createCustomFields(alert: Alert with Entity): Try[Seq[CustomFieldWithValue]] =
-      customFields
-        .toSeq
-        .toTry {
-          case (name, Some(value)) =>
-            for {
-              cf               <- customFieldSrv.getOrFail(name)
-              acf              <- cf.`type`.setValue(AlertCustomField(), value)
-              alertCustomField <- alertCustomFieldSrv.create(acf, alert, cf)
-            } yield CustomFieldWithValue(cf, alertCustomField)
-          case (name, _) =>
-            for {
-              cf               <- customFieldSrv.getOrFail(name)
-              alertCustomField <- alertCustomFieldSrv.create(AlertCustomField(), alert, cf)
-            } yield CustomFieldWithValue(cf, alertCustomField)
-        }
-
     val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
     if (alertAlreadyExist > 0)
       Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
@@ -84,7 +66,7 @@ class AlertSrv @Inject()(
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
         tags         <- tagNames.toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-        cfs          <- createCustomFields(createdAlert)
+        cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
         _            <- auditSrv.alert.create(createdAlert)
       } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
   }
@@ -153,24 +135,30 @@ class AlertSrv @Inject()(
       } yield ()
   }
 
-  def setCustomField(alert: Alert with Entity, customFieldName: String, value: Any)(
+  def createCustomField(
+      alert: Alert with Entity,
+      customFieldName: String,
+      customFieldValue: Option[Any]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    for {
+      cf   <- customFieldSrv.getOrFail(customFieldName)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), customFieldValue)
+      ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
+    } yield RichCustomField(cf, ccfe)
+
+  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any])(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[Unit] =
-    customFieldSrv.getOrFail(customFieldName).flatMap(cf => setCustomField(alert, cf, value))
+  ): Try[Unit] = {
+    val cfv = get(alert).customFields(customFieldName)
+    if (cfv.newInstance().exists())
+      cfv.setValue(value)
+    else
+      createCustomField(alert, customFieldName, value).map(_ => ())
+  }
 
-  def setCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    getCustomField(alert, customField.name)
-      .fold(addCustomField(alert, customField, value))(updateCustomField(alert, _, value))
-      .flatMap { _ =>
-        auditSrv.alert.update(alert, Json.obj(s"customField.${customField.name}" -> value.toString))
-      }
-
-  def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[CustomFieldWithValue] =
-    get(alert).customFieldsValue.toIterator.find(_.name == customFieldName)
+  def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
+    get(alert).customFields(customFieldName).richCustomField.headOption()
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -263,24 +251,6 @@ class AlertSrv @Inject()(
     } yield ()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
-
-  private def addCustomField(alert: Alert with Entity, customField: CustomField with Entity, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    for {
-      alertCustomField <- customField.`type`.asInstanceOf[CustomFieldType[Any]].setValue(AlertCustomField(), value)
-      _                <- alertCustomFieldSrv.create(alertCustomField, alert, customField)
-    } yield ()
-
-  private def updateCustomField(alert: Alert with Entity, customFieldWithValue: CustomFieldWithValue, value: Any)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] =
-    alertCustomFieldSrv
-      .get(customFieldWithValue.customFieldValue._id)
-      .update((customFieldWithValue.`type`.name + "Value") -> Some(value))
-      .map(_ => ())
 }
 
 @EntitySteps[Alert]
@@ -353,16 +323,15 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
         .select(alertLabel.name, organisationLabel.name, tagLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
         .map { resultMap =>
           val organisation = resultMap.getValue(organisationLabel).as[Organisation]
-          val tags         = resultMap.getValue(tagLabel).asScala.map(_.as[Tag]).toSeq
+          val tags         = resultMap.getValue(tagLabel).asScala.map(_.as[Tag])
           val customFieldValues = resultMap
             .getValue(customFieldLabel)
             .asScala
             .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
             .map {
-              case List(acf, cf) => CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
+              case List(acf, cf) => RichCustomField(cf.as[CustomField], acf.as[AlertCustomField])
               case _             => throw InternalError("Not possible")
             }
-            .toSeq
 
           RichAlert(
             resultMap.getValue(alertLabel).as[Alert],
@@ -376,17 +345,11 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     )
   }
 
-  def customFields: CustomFieldSteps = new CustomFieldSteps(raw.outTo[AlertCustomField])
+  def customFields(name: String): CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[AlertCustomField].filter(_.outV().has(Key[String]("name"), P.eq[String](name))))
 
-  def customFieldsValue: Traversal[CustomFieldWithValue, CustomFieldWithValue] =
-    new Traversal(
-      raw
-        .outToE[AlertCustomField]
-        .inV()
-        .path
-        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[AlertCustomField])),
-      UniMapping.identity
-    )
+  def customFields: CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[AlertCustomField])
 
   def observables: ObservableSteps = new ObservableSteps(raw.outTo[AlertObservable])
 
@@ -407,14 +370,14 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(acf, cf) => CustomFieldWithValue(cf.as[CustomField], acf.as[AlertCustomField])
+                case List(acf, cf) => RichCustomField(cf.as[CustomField], acf.as[AlertCustomField])
                 case _             => throw InternalError("Not possible")
               }
             RichAlert(
               alert.as[Alert],
               onlyOneOf[String](organisation),
-              tags.asScala.map(_.as[Tag]).toSeq,
-              customFieldValues.toSeq,
+              tags.asScala.map(_.as[Tag]),
+              customFieldValues,
               atMostOneOf[AnyRef](caseId).map(_.toString),
               atMostOneOf[String](caseTemplate)
             )

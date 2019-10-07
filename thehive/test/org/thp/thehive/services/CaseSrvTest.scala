@@ -124,7 +124,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.summary must beNone
         richCase.impactStatus must beNone
         richCase.user must beSome("user1@thehive.local")
-        CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldBoolean, mandatory = false, options = Nil)
+        CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldType.boolean, mandatory = false, options = Nil)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),
@@ -162,20 +162,20 @@ class CaseSrvTest extends PlaySpecification {
 
       "add custom field with wrong type" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", "plop") must beFailedTry
+          caseSrv.setOrCreateCustomField(`case`, "boolean1", Some("plop")) must beFailedTry
         }
       }
 
       "add custom field" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", true) must beSuccessfulTry
+          caseSrv.setOrCreateCustomField(`case`, "boolean1", Some(true)) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == true)
         }
       }
 
       "update custom field" in db.transaction { implicit graph =>
         caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setCustomField(`case`, "boolean1", false) must beSuccessfulTry
+          caseSrv.setOrCreateCustomField(`case`, "boolean1", Some(false)) must beSuccessfulTry
           caseSrv.getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
         }
       }

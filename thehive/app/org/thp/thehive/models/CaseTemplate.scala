@@ -16,11 +16,11 @@ case class CaseTemplateCustomField(
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None
 ) extends CustomFieldValue[CaseTemplateCustomField] {
-  override def setStringValue(value: String): CaseTemplateCustomField   = copy(stringValue = Some(value))
-  override def setBooleanValue(value: Boolean): CaseTemplateCustomField = copy(booleanValue = Some(value))
-  override def setIntegerValue(value: Int): CaseTemplateCustomField     = copy(integerValue = Some(value))
-  override def setFloatValue(value: Float): CaseTemplateCustomField     = copy(floatValue = Some(value))
-  override def setDateValue(value: Date): CaseTemplateCustomField       = copy(dateValue = Some(value))
+  override def setStringValue(value: Option[String]): CaseTemplateCustomField   = copy(stringValue = value)
+  override def setBooleanValue(value: Option[Boolean]): CaseTemplateCustomField = copy(booleanValue = value)
+  override def setIntegerValue(value: Option[Int]): CaseTemplateCustomField     = copy(integerValue = value)
+  override def setFloatValue(value: Option[Float]): CaseTemplateCustomField     = copy(floatValue = value)
+  override def setDateValue(value: Option[Date]): CaseTemplateCustomField       = copy(dateValue = value)
 }
 
 @EdgeEntity[CaseTemplate, Tag]
@@ -48,7 +48,7 @@ case class RichCaseTemplate(
     organisation: String,
     tags: Seq[Tag with Entity],
     tasks: Seq[Task with Entity],
-    customFields: Seq[CustomFieldWithValue]
+    customFields: Seq[RichCustomField]
 ) {
   val _id: String                 = caseTemplate._id
   val _createdBy: String          = caseTemplate._createdBy

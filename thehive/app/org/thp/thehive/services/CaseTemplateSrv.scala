@@ -48,36 +48,17 @@ class CaseTemplateSrv @Inject()(
   )(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[RichCaseTemplate] = {
-
-    def createCustomFields(caseTemplate: CaseTemplate with Entity, customFields: Seq[(String, Option[Any])]): Try[Seq[CustomFieldWithValue]] =
-      customFields
-        .toTry {
-          case (name, Some(value)) =>
-            for {
-              cf                      <- customFieldSrv.getOrFail(name)
-              ccf                     <- cf.`type`.setValue(CaseTemplateCustomField(), value)
-              caseTemplateCustomField <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
-            } yield CustomFieldWithValue(cf, caseTemplateCustomField)
-          case (name, _) =>
-            for {
-              cf                      <- customFieldSrv.getOrFail(name)
-              caseTemplateCustomField <- caseTemplateCustomFieldSrv.create(CaseTemplateCustomField(), caseTemplate, cf)
-            } yield CustomFieldWithValue(cf, caseTemplateCustomField)
-        }
-
+  ): Try[RichCaseTemplate] =
     for {
       createdCaseTemplate <- createEntity(caseTemplate)
       _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-      _                   <- createCustomFields(createdCaseTemplate, customFields)
       createdTasks        <- tasks.toTry(taskSrv.create)
       _                   <- createdTasks.toTry(addTask(createdCaseTemplate, _))
       tags                <- tagNames.toTry(tagSrv.getOrCreate)
       _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
-      cfs                 <- createCustomFields(createdCaseTemplate, customFields)
+      cfs                 <- customFields.toTry { case (name, value) => createCustomField(createdCaseTemplate, name, value) }
       _                   <- auditSrv.caseTemplate.create(createdCaseTemplate)
     } yield RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
-  }
 
   def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(
       implicit graph: Graph,
@@ -132,6 +113,31 @@ class CaseTemplateSrv @Inject()(
     } yield ()
   }
 
+  def createCustomField(
+      caseTemplate: CaseTemplate with Entity,
+      customFieldName: String,
+      customFieldValue: Option[Any]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    for {
+      cf   <- customFieldSrv.getOrFail(customFieldName)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(), customFieldValue)
+      ccfe <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
+    } yield RichCustomField(cf, ccfe)
+
+  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val cfv = get(caseTemplate).customFields(customFieldName)
+    if (cfv.newInstance().exists())
+      cfv.setValue(value)
+    else
+      createCustomField(caseTemplate, customFieldName, value).map(_ => ())
+  }
+
+  def getCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
+    get(caseTemplate).customFields(customFieldName).richCustomField.headOption()
+
 }
 
 @EntitySteps[CaseTemplate]
@@ -160,15 +166,13 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       )
     )
 
-  def customFields: CustomFieldSteps = new CustomFieldSteps(raw.outTo[CaseCustomField])
-
-  def customFieldsValue: Traversal[CustomFieldWithValue, CustomFieldWithValue] =
+  def customFieldsValue: Traversal[RichCustomField, RichCustomField] =
     Traversal(
       raw
         .outToE[CaseCustomField]
         .inV()
         .path
-        .map(path => CustomFieldWithValue(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
+        .map(path => RichCustomField(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
     )
 
   def richCaseTemplate: Traversal[RichCaseTemplate, RichCaseTemplate] =
@@ -187,15 +191,15 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
               .map {
-                case List(ccf, cf) => CustomFieldWithValue(cf.as[CustomField], ccf.as[CaseCustomField])
+                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
                 case _             => throw InternalError("Not possible")
               }
             RichCaseTemplate(
               caseTemplate.as[CaseTemplate],
               onlyOneOf[String](organisation),
-              tags.asScala.map(_.as[Tag]).toSeq,
-              tasks.asScala.map(_.as[Task]).toSeq,
-              customFieldValues.toSeq
+              tags.asScala.map(_.as[Tag]),
+              tasks.asScala.map(_.as[Task]),
+              customFieldValues
             )
         }
     )
@@ -208,4 +212,10 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
     ()
   }
+
+  def customFields(name: String): CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.outV().has(Key[String]("name"), P.eq[String](name))))
+
+  def customFields: CustomFieldValueSteps =
+    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField])
 }

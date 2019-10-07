@@ -44,11 +44,11 @@ case class CaseCustomField(
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None
 ) extends CustomFieldValue[CaseCustomField] {
-  override def setStringValue(value: String): CaseCustomField   = copy(stringValue = Some(value))
-  override def setBooleanValue(value: Boolean): CaseCustomField = copy(booleanValue = Some(value))
-  override def setIntegerValue(value: Int): CaseCustomField     = copy(integerValue = Some(value))
-  override def setFloatValue(value: Float): CaseCustomField     = copy(floatValue = Some(value))
-  override def setDateValue(value: Date): CaseCustomField       = copy(dateValue = Some(value))
+  override def setStringValue(value: Option[String]): CaseCustomField   = copy(stringValue = value)
+  override def setBooleanValue(value: Option[Boolean]): CaseCustomField = copy(booleanValue = value)
+  override def setIntegerValue(value: Option[Int]): CaseCustomField     = copy(integerValue = value)
+  override def setFloatValue(value: Option[Float]): CaseCustomField     = copy(floatValue = value)
+  override def setDateValue(value: Option[Date]): CaseCustomField       = copy(dateValue = value)
 }
 
 @EdgeEntity[Case, User]
@@ -83,7 +83,7 @@ case class RichCase(
     impactStatus: Option[String],
     resolutionStatus: Option[String],
     user: Option[String],
-    customFields: Seq[CustomFieldWithValue],
+    customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {
   val _id: String                = `case`._id
@@ -127,7 +127,7 @@ object RichCase {
       impactStatus: Option[String],
       resolutionStatus: Option[String],
       user: Option[String],
-      customFields: Seq[CustomFieldWithValue],
+      customFields: Seq[RichCustomField],
       userPermissions: Set[Permission]
   ): RichCase = {
     val `case` = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {

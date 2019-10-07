@@ -33,7 +33,7 @@ case class TestCase(
     status: String,
     summary: Option[String] = None,
     owner: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: JsObject = JsObject.empty,
     stats: JsValue
 )
 
@@ -69,11 +69,6 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       "create a new case from spam template" in {
         val now = new Date()
 
-        val outputCustomFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", Some("true")),
-          OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field")),
-          OutputCustomFieldValue("date1", "date custom field", "date", Some(now.getTime.toString))
-        )
         val inputCustomFields = Seq(
           InputCustomFieldValue("date1", Some(now.getTime)),
           InputCustomFieldValue("boolean1", Some(true))
@@ -118,7 +113,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tags = Set("testNamespace.testPredicate=\"spam\"", "testNamespace.testPredicate=\"src:mail\"", "tag1", "tag2"),
           summary = None,
           owner = Some("user1@thehive.local"),
-          customFields = outputCustomFields,
+          customFields = Json.obj("boolean1" -> "true", "string1" -> "string1 custom field", "date1" -> now.getTime),
           stats = Json.obj()
         )
 
@@ -210,7 +205,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tags = Set.empty,
           summary = None,
           owner = Some("user2@thehive.local"),
-          customFields = Set.empty,
+          customFields = JsObject.empty,
           stats = Json.obj()
         )
 

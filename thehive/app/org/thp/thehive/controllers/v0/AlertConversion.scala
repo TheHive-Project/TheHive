@@ -3,14 +3,14 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.language.implicitConversions
-
-import play.api.libs.json.Json
+import scala.collection.JavaConverters._
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.UniMapping
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
@@ -121,10 +121,16 @@ object AlertConversion {
       )
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
-      .property("customFieldName", UniMapping.string)(_.select(_.customFields.name).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.select(_.customFields.description).readonly)
-//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
-//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
+      .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
+        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+      }.custom {
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          for {
+            c <- alertSrv.getOrFail(vertex)(graph)
+            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+          } yield Json.obj(s"customField.$name" -> value)
+      })(NoValue(JsNull))
       .property("case", IdMapping)(_.select(_.`case`._id).readonly)
       .build
 }

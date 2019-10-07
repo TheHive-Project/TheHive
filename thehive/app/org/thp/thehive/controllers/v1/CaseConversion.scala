@@ -89,9 +89,5 @@ object CaseConversion {
           }
         } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("customFieldName", UniMapping.string)(_.select(_.customFields.name).readonly)
-      .property("customFieldDescription", UniMapping.string)(_.select(_.customFields.description).readonly)
-//      .property("customFieldType", UniMapping.string)(_.derived(_.customFields.`type`).readonly)
-//      .property("customFieldValue", UniMapping.string)(_.derived(_.customFieldsValue.map(_.value.toString)).readonly)
       .build
 }

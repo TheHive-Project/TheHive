@@ -6,14 +6,14 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1.{InputCustomFieldValue, OutputCustomField, OutputCustomFieldValue}
-import org.thp.thehive.models.{CustomField, CustomFieldWithValue}
+import org.thp.thehive.models.{CustomField, RichCustomField}
 
 object CustomFieldConversion {
 
   def fromInputCustomField(inputCustomFieldValue: InputCustomFieldValue): (String, Option[Any]) =
     inputCustomFieldValue.name -> inputCustomFieldValue.value
 
-  implicit def toOutputCustomField(customFieldValue: CustomFieldWithValue): Output[OutputCustomFieldValue] =
+  implicit def toOutputCustomField(customFieldValue: RichCustomField): Output[OutputCustomFieldValue] =
     Output[OutputCustomFieldValue](
       customFieldValue
         .into[OutputCustomFieldValue]
@@ -27,7 +27,7 @@ object CustomFieldConversion {
       customField
         .asInstanceOf[CustomField]
         .into[OutputCustomField]
-        .withFieldComputed(_.`type`, _.`type`.name)
+        .withFieldComputed(_.`type`, _.`type`.toString)
         .withFieldComputed(_.mandatory, _.mandatory)
         .transform
     )

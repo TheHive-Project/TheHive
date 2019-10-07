@@ -50,7 +50,7 @@ case class OutputCase(
     status: String,
     summary: Option[String] = None,
     owner: Option[String], // user
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: JsObject,
     stats: JsValue,
     permissions: Set[String]
 )
@@ -112,7 +112,7 @@ object OutputCase {
         status           <- (j \ "status").validate[String]
         summary          <- (j \ "summary").validateOpt[String]
         owner            <- (j \ "owner").validateOpt[String]
-        customFields     <- (j \ "customFields").validate[Set[OutputCustomFieldValue]]
+        customFields     <- (j \ "customFields").validate[JsObject]
         stats            <- (j \ "stats").validate[JsValue]
         permissions      <- (j \ "permissions").validate[Set[String]]
       } yield OutputCase(
