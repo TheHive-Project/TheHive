@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import scala.util.Success
 
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNumber, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -42,10 +42,12 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete custom field")
-      .authPermittedTransaction(db, permissions) { implicit req => implicit graph =>
+      .extract("force", FieldsParser.boolean.optional.on("force"))
+      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+        val force = request.body("force").getOrElse(false)
         for {
           cf <- customFieldSrv.getOrFail(id)
-          _  <- customFieldSrv.delete(cf)
+          _  <- customFieldSrv.delete(cf, force)
         } yield Results.NoContent
       }
 
@@ -59,5 +61,14 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
           updated <- customFieldSrv.update(customFieldSrv.get(id), propertyUpdaters)
           cf      <- updated._1.getOrFail()
         } yield Results.Ok(cf.toJson)
+      }
+
+  def useCount(id: String): Action[AnyContent] =
+    entryPoint("get use count of custom field")
+      .authPermittedTransaction(db, permissions) { _ => implicit graph =>
+        customFieldSrv.getOrFail(id).map(customFieldSrv.useCount).map { countMap =>
+          val total = countMap.valuesIterator.sum
+          Results.Ok(Json.toJsObject(countMap) + ("total" -> JsNumber(total)))
+        }
       }
 }
