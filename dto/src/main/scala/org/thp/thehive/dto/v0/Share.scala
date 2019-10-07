@@ -2,9 +2,11 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
+import org.thp.thehive.dto.v0.ObservablesFilter.ObservablesFilter
+import org.thp.thehive.dto.v0.TasksFilter.TasksFilter
 import play.api.libs.json.{Format, Json, Writes}
 
-case class InputShare(caseId: String, organisationName: String, profile: String, tasks: String, observables: String)
+case class InputShare(organisationName: String, profile: String, tasks: TasksFilter, observables: ObservablesFilter)
 
 object TasksFilter extends Enumeration {
   type TasksFilter = Value
@@ -26,22 +28,15 @@ object ObservablesFilter extends Enumeration {
 
 object InputShare {
   implicit val writes: Writes[InputShare] = Json.writes[InputShare]
-
-  val tasksFilterParser = ???
-
-  val observablesFilterParser = ???
 }
 
 case class OutputShare(
     _id: String,
-    id: String,
     createdBy: String,
     updatedBy: Option[String] = None,
     createdAt: Date,
     updatedAt: Option[Date] = None,
-    _type: String,
     caseId: String,
-    organisationName: String,
     profile: String
 )
 
