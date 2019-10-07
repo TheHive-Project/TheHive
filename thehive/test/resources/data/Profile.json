@@ -6,7 +6,8 @@
       "manageAlert",
       "manageTask",
       "manageAction",
-      "manageObservable"
+      "manageObservable",
+      "manageShare"
     ]
   },
   {
