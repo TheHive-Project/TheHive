@@ -2,7 +2,7 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @EdgeEntity[CaseTemplate, Organisation]
@@ -30,7 +30,6 @@ case class CaseTemplateTag()
 case class CaseTemplateTask()
 
 @VertexEntity
-@DefineIndex(IndexType.unique, "name")
 case class CaseTemplate(
     name: String,
     displayName: String,
