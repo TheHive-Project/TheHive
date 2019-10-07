@@ -2,12 +2,15 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.language.implicitConversions
 import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+import scala.util.Failure
+
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
@@ -130,6 +133,7 @@ object AlertConversion {
             c <- alertSrv.getOrFail(vertex)(graph)
             _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
+        case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))
       .property("case", IdMapping)(_.select(_.`case`._id).readonly)
       .build

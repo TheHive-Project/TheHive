@@ -2,8 +2,15 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+import scala.util.Failure
+
+import play.api.libs.json._
+
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.{Database, Model, UniMapping}
@@ -12,10 +19,6 @@ import org.thp.scalligraph.services._
 import org.thp.thehive.dto.v0.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, ShareSteps, UserSrv}
-import play.api.libs.json._
-
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
 
 object CaseConversion {
   implicit def toOutputCase(richCase: RichCase): Output[OutputCase] =
@@ -203,6 +206,7 @@ object CaseConversion {
             c <- caseSrv.getOrFail(vertex)(graph)
             _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
+        case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))
       .property("computed.handlingDurationInHours", UniMapping.long)(
         _.select(

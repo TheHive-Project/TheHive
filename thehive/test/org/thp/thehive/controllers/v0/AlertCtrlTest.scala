@@ -3,8 +3,10 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import scala.util.Try
+
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
