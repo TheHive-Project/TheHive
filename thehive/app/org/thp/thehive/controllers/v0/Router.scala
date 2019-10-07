@@ -27,6 +27,7 @@ class Router @Inject()(
     describeCtrl: DescribeCtrl,
     configCtrl: ConfigCtrl,
     profileCtrl: ProfileCtrl,
+    shareCtrl: ShareCtrl,
     queryExecutor: TheHiveQueryExecutor
 ) extends SimpleRouter {
 
@@ -85,10 +86,7 @@ class Router @Inject()(
     case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
-//    case GET(p"/share")            ⇒ shareCtrl.list
-//    case POST(p"/share")           ⇒ shareCtrl.create
-//    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
-//    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
+    case PUT(p"/case/$id/shares") => shareCtrl.shareCase(id)
 
     case GET(p"/case/task")           => queryExecutor.task.search
     case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
