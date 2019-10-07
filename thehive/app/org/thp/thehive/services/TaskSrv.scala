@@ -17,7 +17,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
 
 @Singleton
-class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], shareSrv: ShareSrv, auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
+class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
     extends VertexSrv[Task, TaskSteps] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
