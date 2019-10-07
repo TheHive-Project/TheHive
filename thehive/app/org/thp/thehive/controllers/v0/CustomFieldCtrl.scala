@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import scala.util.Success
 
-import play.api.libs.json.{JsNumber, Json}
+import play.api.libs.json.{JsNumber, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -17,6 +17,7 @@ import org.thp.thehive.services.CustomFieldSrv
 @Singleton
 class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
   import CustomFieldConversion._
+  import AuditConversion._
 
   val permissions: Set[Permission] = Set(Permissions.manageCustomField)
 
@@ -68,7 +69,10 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
       .authPermittedTransaction(db, permissions) { _ => implicit graph =>
         customFieldSrv.getOrFail(id).map(customFieldSrv.useCount).map { countMap =>
           val total = countMap.valuesIterator.sum
-          Results.Ok(Json.toJsObject(countMap) + ("total" -> JsNumber(total)))
+          val countStats = JsObject(countMap.map {
+            case (k, v) => objectTypeMapper(k) -> JsNumber(v)
+          })
+          Results.Ok(countStats + ("total" -> JsNumber(total)))
         }
       }
 }

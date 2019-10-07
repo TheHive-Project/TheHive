@@ -1,21 +1,21 @@
 package org.thp.thehive.services
-import scala.util.Try
-
-import play.api.libs.json.{JsNull, JsObject, JsValue}
 import java.util.{Map => JMap}
 
 import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, JsValue}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
-import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{RichElement, VertexSrv}
 import org.thp.scalligraph.steps.{EdgeSteps, Traversal, ValueMap, VertexSteps}
-import org.thp.thehive.models.{CustomField, CustomFieldType, CustomFieldValue, CustomFieldValueEdge, RichCustomField}
+import org.thp.scalligraph.{EntitySteps, RichSeq}
+import org.thp.thehive.models._
 import shapeless.HNil
 
 @Singleton
@@ -33,7 +33,11 @@ class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extend
   }
 
   def useCount(c: CustomField with Entity)(implicit graph: Graph): Map[String, Int] =
-    get(c).in().groupCount(By[String](T.label)).headOption().fold(Map.empty[String, Int])(x => x.asScala.map { case (k, v) => k -> v.toInt }.toMap)
+    get(c)
+      .in()
+      .groupCount(By[String](T.label))
+      .headOption()
+      .fold(Map.empty[String, Int])(_.asScala.collect { case (k, v) if k != "Audit" => k -> v.toInt }.toMap)
 
   override def update(
       steps: CustomFieldSteps,

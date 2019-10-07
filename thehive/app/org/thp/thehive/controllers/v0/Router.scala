@@ -1,9 +1,10 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -116,11 +117,11 @@ class Router @Inject()(
     case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
 
-    case GET(p"/customField")              => customFieldCtrl.list
-    case POST(p"/customField")             => customFieldCtrl.create
-    case DELETE(p"/customField/$id")       => customFieldCtrl.delete(id)
-    case PATCH(p"/customField/$id")        => customFieldCtrl.update(id)
-    case GET(p"/api/customFields/$id/use") => customFieldCtrl.useCount(id)
+    case GET(p"/customField")          => customFieldCtrl.list
+    case POST(p"/customField")         => customFieldCtrl.create
+    case DELETE(p"/customField/$id")   => customFieldCtrl.delete(id)
+    case PATCH(p"/customField/$id")    => customFieldCtrl.update(id)
+    case GET(p"/customFields/$id/use") => customFieldCtrl.useCount(id)
 
     case GET(p"/alert")                        => queryExecutor.alert.search
     case POST(p"/alert")                       => alertCtrl.create // Audit ok
