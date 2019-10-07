@@ -7,10 +7,9 @@ import scala.util.{Failure, Try}
 
 import play.api.libs.json.{JsObject, Json}
 
-import gremlin.scala.{__, By, Edge, Element, Graph, GremlinScala, Key, P, Vertex}
+import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
-import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -169,15 +168,6 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       )
     )
 
-  def customFieldsValue: Traversal[RichCustomField, RichCustomField] =
-    Traversal(
-      raw
-        .outToE[CaseCustomField]
-        .inV()
-        .path
-        .map(path => RichCustomField(path.get[Vertex](2).as[CustomField], path.get[Edge](1).as[CaseCustomField]))
-    )
-
   def richCaseTemplate: Traversal[RichCaseTemplate, RichCaseTemplate] =
     Traversal(
       raw
@@ -211,13 +201,11 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTemplateTag])
 
-  def removeTags(tags: Set[Tag with Entity]): Unit = {
-    raw.outToE[AlertTag].where(_.otherV().has(T.id, P.within(tags.map(_._id)))).drop().iterate()
-    ()
-  }
+  def removeTags(tags: Set[Tag with Entity]): Unit =
+    this.outToE[AlertTag].filter(_.inV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.outV().has(Key[String]("name"), P.eq[String](name))))
+    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField])

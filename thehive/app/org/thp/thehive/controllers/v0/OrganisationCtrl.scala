@@ -100,8 +100,12 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
             .organisations(Permissions.manageOrganisation)
             .get(fromOrganisationId)
             .getOrFail()
-          toOrg <- organisationSrv.getOrFail(toOrganisationId)
-          _     <- organisationSrv.link(fromOrg, toOrg)
+          toOrg <- userSrv
+            .current
+            .organisations(Permissions.manageOrganisation)
+            .get(toOrganisationId)
+            .getOrFail()
+          _ <- organisationSrv.link(fromOrg, toOrg)
         } yield Results.Created
       }
 
@@ -114,31 +118,25 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
             .organisations(Permissions.manageOrganisation)
             .get(fromOrganisationId)
             .getOrFail()
-          toOrg <- organisationSrv.getOrFail(toOrganisationId)
+          toOrg <- userSrv
+            .current
+            .organisations(Permissions.manageOrganisation)
+            .get(toOrganisationId)
+            .getOrFail()
           _ = organisationSrv.unlink(fromOrg, toOrg)
         } yield Results.NoContent
       }
 
   def listLinks(organisationId: String): Action[AnyContent] =
     entryPoint("list organisation links")
-      .authRoTransaction(db) { implicit req => implicit graph =>
-        val org = userSrv
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val linkedOrganisations = userSrv
           .current
           .organisations
           .get(organisationId)
-          .getOrFail()
-
-        org.map(
-          o =>
-            Results.Ok(
-              JsArray(
-                organisationSrv
-                  .get(o)
-                  .links
-                  .toList
-                  .map(_.toJson)
-              )
-            )
-        )
+          .links
+          .toList
+          .map(_.toJson)
+        Success(Results.Ok(JsArray(linkedOrganisations)))
       }
 }

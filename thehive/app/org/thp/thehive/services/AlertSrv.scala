@@ -346,7 +346,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   }
 
   def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[AlertCustomField].filter(_.outV().has(Key[String]("name"), P.eq[String](name))))
+    new CustomFieldValueSteps(raw.outToE[AlertCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[AlertCustomField])

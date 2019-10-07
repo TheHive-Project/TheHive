@@ -8,7 +8,7 @@ import play.api.libs.json._
 
 import gremlin.scala.Edge
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.{Database, Entity, UniMapping}
+import org.thp.scalligraph.models.{Database, Entity, Model, UniMapping}
 
 trait CustomFieldValue[C] extends Product {
   val stringValue: Option[String]
@@ -23,7 +23,7 @@ trait CustomFieldValue[C] extends Product {
   def setDateValue(value: Option[Date]): C
 }
 
-class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] {
+class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
   override val stringValue: Option[String]   = db.getOptionProperty(edge, "stringValue", UniMapping.string.optional)
   override val booleanValue: Option[Boolean] = db.getOptionProperty(edge, "booleanValue", UniMapping.boolean.optional)
   override val integerValue: Option[Int]     = db.getOptionProperty(edge, "intValue", UniMapping.int.optional)
@@ -53,6 +53,13 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
   override def productElement(n: Int): Any  = ???
   override def productArity: Int            = 0
   override def canEqual(that: Any): Boolean = that.isInstanceOf[CustomFieldValueEdge]
+
+  override val _id: String                = edge.id().toString
+  override val _model: Model              = null
+  override val _createdBy: String         = db.getSingleProperty(edge, "_createdBy", UniMapping.string)
+  override val _updatedBy: Option[String] = db.getOptionProperty(edge, "_updatedBy", UniMapping.string.optional)
+  override val _createdAt: Date           = db.getSingleProperty(edge, "_createdAt", UniMapping.date)
+  override val _updatedAt: Option[Date]   = db.getOptionProperty(edge, "_updatedAt", UniMapping.date.optional)
 }
 
 object CustomFieldType extends Enumeration {
