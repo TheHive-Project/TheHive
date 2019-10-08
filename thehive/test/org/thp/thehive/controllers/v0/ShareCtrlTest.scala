@@ -6,7 +6,7 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
+import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, OutputShare, TasksFilter}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
@@ -30,8 +30,21 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
   def specs(name: String, app: AppBuilder): Fragment = {
     val shareCtrl: ShareCtrl = app.instanceOf[ShareCtrl]
 
-    "share a case" in {
+    "manage shares for a case" in {
       val inputShare = Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))
+      def getShares = {
+        val requestGet = FakeRequest("GET", "/api/case/#4/shares")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        val resGet = shareCtrl.listShareCases("#4")(requestGet)
+
+        status(resGet) shouldEqual 200
+
+        val l = contentAsJson(resGet).as[List[OutputShare]]
+
+        l.length shouldEqual 2
+
+        l
+      }
       val request = FakeRequest("PUT", "/api/case/#4/shares")
         .withJsonBody(inputShare)
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
@@ -45,6 +58,29 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val result2 = shareCtrl.shareCase("#4")(requestAgain)
 
       status(result2) shouldEqual 201
+
+      val l = getShares
+      val share = l.find(_.organisationName == "cert")
+
+      share must beSome.which(s => {
+        s.profileName shouldEqual "all"
+        s.organisationName shouldEqual "cert"
+      })
+
+      val requestUpdate = FakeRequest("PUT", "/api/case/#4/shares")
+        .withJsonBody(Json.toJson(InputShare("cert", "read-only", TasksFilter.all, ObservablesFilter.all)))
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+      val result3 = shareCtrl.shareCase("#4")(requestUpdate)
+
+      status(result3) shouldEqual 201
+
+      val l2 = getShares
+      val share2 = l2.find(_.organisationName == "cert")
+
+      share2 must beSome.which(s => {
+        s.profileName shouldEqual "read-only"
+        s.organisationName shouldEqual "cert"
+      })
     }
   }
 
