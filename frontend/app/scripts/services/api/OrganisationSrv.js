@@ -6,9 +6,24 @@
             var baseUrl = './api/organisation';
 
             var factory = {
+                defaultOrg: 'default',
 
                 list: function() {
                     return $http.get(baseUrl);
+                },
+
+                links: function(orgId) {
+                    return $http.get(baseUrl + '/' + orgId + '/links')
+                        .then(function(response) {
+                            return $q.resolve(response.data);
+                        });
+                },
+
+                setLinks: function(orgId, links) {
+                    return $http.put(baseUrl + '/' + orgId + '/links', links)
+                        .then(function(response) {
+                            return $q.resolve(response.data);
+                        });
                 },
 
                 get: function(orgId) {
