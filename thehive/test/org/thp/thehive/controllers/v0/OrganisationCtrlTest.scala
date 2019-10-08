@@ -30,6 +30,16 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
   def specs(name: String, app: AppBuilder): Fragment = {
     val organisationCtrl: OrganisationCtrl = app.instanceOf[OrganisationCtrl]
 
+    def listLinks(orga: String, user: String) = {
+      val requestLinks = FakeRequest("GET", s"/api/organisation/$orga/links")
+        .withHeaders("user" -> user)
+      val resultLinks = organisationCtrl.listLinks(orga)(requestLinks)
+
+      status(resultLinks) shouldEqual 200
+
+      contentAsJson(resultLinks).as[List[OutputOrganisation]]
+    }
+
     s"[$name] organisation controller" should {
 
       "create a new organisation and bulk link several" in {
@@ -47,6 +57,15 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         val resultBulkLink = organisationCtrl.bulkLink("default")(requestBulkLink)
 
         status(resultBulkLink) shouldEqual 201
+        listLinks("default", "admin@thehive.local").length shouldEqual 1
+
+        val requestBulkLinkDel = FakeRequest("PUT", s"/api/organisation/default/links")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""{"organisations":[]}"""))
+        val resultBulkLinkDel = organisationCtrl.bulkLink("default")(requestBulkLinkDel)
+
+        status(resultBulkLinkDel) shouldEqual 201
+        listLinks("default", "admin@thehive.local") must beEmpty
       }
 
       "refuse to create an organisation if the permission doesn't contain ManageOrganisation right" in {
@@ -116,17 +135,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
         status(result) shouldEqual 201
 
-        def listLinks = {
-          val requestLinks = FakeRequest("GET", s"/api/organisation/cert/links")
-            .withHeaders("user" -> "user1@thehive.local")
-          val resultLinks = organisationCtrl.listLinks("cert")(requestLinks)
-
-          status(resultLinks) shouldEqual 200
-
-          contentAsJson(resultLinks).as[List[OutputOrganisation]]
-        }
-
-        listLinks.length shouldEqual 1
+        listLinks("cert", "user1@thehive.local").length shouldEqual 1
 
         val requestUnlink = FakeRequest("DELETE", s"/api/organisation/cert/link/default")
           .withHeaders("user" -> "admin@thehive.local")
@@ -134,7 +143,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
         status(resultUnlink) shouldEqual 204
 
-        listLinks must beEmpty
+        listLinks("cert", "user1@thehive.local") must beEmpty
       }
     }
   }
