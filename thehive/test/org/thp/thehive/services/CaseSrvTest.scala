@@ -62,6 +62,7 @@ class CaseSrvTest extends PlaySpecification {
           user = Some("user1@thehive.local"),
           Nil,
           Set(
+            Permission("manageShare"),
             Permission("manageTask"),
             Permission("manageCase"),
             Permission("manageObservable"),
@@ -96,6 +97,7 @@ class CaseSrvTest extends PlaySpecification {
           user = Some("user2@thehive.local"),
           Nil,
           Set(
+            Permission("manageShare"),
             Permission("manageTask"),
             Permission("manageCase"),
             Permission("manageObservable"),
