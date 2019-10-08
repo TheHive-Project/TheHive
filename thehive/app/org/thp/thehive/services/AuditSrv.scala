@@ -163,7 +163,8 @@ class AuditSrv @Inject()(
       auditSrv.create(Audit(Audit.create, entity), Some(context), Some(entity))
 
     def update(entity: E with Entity, context: C with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(context), Some(entity))
+      if (details == JsObject.empty) Success(())
+      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(context), Some(entity))
 
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
@@ -178,7 +179,8 @@ class AuditSrv @Inject()(
       auditSrv.create(Audit(Audit.create, entity, details.map(_.toString)), Some(entity), Some(entity))
 
     def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
+      if (details == JsObject.empty) Success(())
+      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
     def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), None, None)
