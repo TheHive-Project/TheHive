@@ -2,12 +2,6 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -21,6 +15,11 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -44,6 +43,7 @@ class AuditSrv @Inject()(
   val taskInTemplate                                      = new ObjectAudit[Task, CaseTemplate]
   val alert                                               = new SelfContextObjectAudit[Alert]
   val alertToCase                                         = new ObjectAudit[Alert, Case]
+  val share                                               = new ObjectAudit[Share, Case]
   val observableInAlert                                   = new ObjectAudit[Observable, Alert]
   val user                                                = new UserAudit
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]

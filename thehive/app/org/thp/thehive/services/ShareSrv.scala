@@ -8,11 +8,12 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
+import play.api.libs.json.Json
 
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, ShareSteps] {
+class ShareSrv @Inject()(implicit val db: Database, auditSrv: AuditSrv) extends VertexSrv[Share, ShareSteps] {
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]
@@ -42,6 +43,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
         if (existingProfile.name != profile.name) for {
           share <- get(`case`, organisation).getOrFail()
           _     <- updateProfile(share, existingProfile, profile)
+          _     <- auditSrv.share.update(share, `case`, Json.obj("profile" -> profile.name, "organisation" -> organisation.name, "case" -> `case`._id))
         } yield share
         else get(`case`, organisation).getOrFail()
       }
@@ -51,6 +53,7 @@ class ShareSrv @Inject()(implicit val db: Database) extends VertexSrv[Share, Sha
         _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
         _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
         _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
+        _            <- auditSrv.share.create(createdShare, `case`)
       } yield createdShare
     }
 

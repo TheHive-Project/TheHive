@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -14,6 +9,10 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class OrganisationCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
@@ -33,7 +32,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
 
     s"[$name] organisation controller" should {
 
-      "create a new organisation" in {
+      "create a new organisation and bulk link several" in {
         val request = FakeRequest("POST", "/api/v0/organisation")
           .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
           .withHeaders("user" -> "admin@thehive.local")
@@ -41,6 +40,13 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
         resultOrganisation.name must_=== "orga1"
+
+        val requestBulkLink = FakeRequest("PUT", s"/api/organisation/default/links")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""{"organisations":["orga1"]}"""))
+        val resultBulkLink = organisationCtrl.bulkLink("default")(requestBulkLink)
+
+        status(resultBulkLink) shouldEqual 201
       }
 
       "refuse to create an organisation if the permission doesn't contain ManageOrganisation right" in {
