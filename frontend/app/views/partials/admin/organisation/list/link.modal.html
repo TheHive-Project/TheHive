@@ -16,6 +16,9 @@
                 <th>
                     Organisation
                 </th>
+                <th width="220">
+                    Added at
+                </th>
             </thead>
             <tbody>
                 <tr ng-repeat="org in $modal.organisations" ng-click="$modal.toggleLink(org)">
@@ -24,6 +27,9 @@
                     </td>
                     <td>
                         {{org.name}}
+                    </td>
+                    <td>
+                        {{org.createdAt | showDate}}
                     </td>
                 </tr>
             </tbody>

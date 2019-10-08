@@ -20,7 +20,9 @@
                 },
 
                 setLinks: function(orgId, links) {
-                    return $http.put(baseUrl + '/' + orgId + '/links', links)
+                    return $http.put(baseUrl + '/' + orgId + '/links', {
+                        organisations: links || []
+                    })
                         .then(function(response) {
                             return $q.resolve(response.data);
                         });

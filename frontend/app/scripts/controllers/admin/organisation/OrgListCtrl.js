@@ -64,7 +64,7 @@
                                 return [OrganisationSrv.defaultOrg, org.name].indexOf(item.name) === -1;
                             });
 
-                            return list;
+                            return _.sortBy(list, 'name');
                         },
                         links: function () {
                             return OrganisationSrv.links(org.name);
