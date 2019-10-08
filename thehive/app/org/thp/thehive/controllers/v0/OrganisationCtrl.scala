@@ -130,13 +130,25 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
   def listLinks(organisationId: String): Action[AnyContent] =
     entryPoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val linkedOrganisations = userSrv
-          .current
-          .organisations
-          .get(organisationId)
-          .links
-          .toList
-          .map(_.toJson)
-        Success(Results.Ok(JsArray(linkedOrganisations)))
+        val isInDefaultOrganisation = userSrv.current.organisations.get(OrganisationSrv.default.name).exists()
+        val organisation =
+          if (isInDefaultOrganisation)
+            organisationSrv.get(organisationId)
+          else
+            userSrv
+              .current
+              .organisations
+              .get(organisationId)
+
+        Success(
+          Results.Ok(
+            JsArray(
+              organisation
+                .links
+                .toList
+                .map(_.toJson)
+            )
+          )
+        )
       }
 }
