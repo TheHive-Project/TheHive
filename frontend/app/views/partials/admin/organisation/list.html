@@ -41,20 +41,14 @@
                         <table class="table table-striped case-list">
                             <thead>
                                 <tr>
-                                    <th width="150px">ID</th>
                                     <th>Name</th>
-                                    <th style="width: 160px">Created By</th>
+                                    <th style="width: 250px">Created By</th>
                                     <th style="width: 160px">Created At</th>
                                     <th style="width: 150px"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-repeat="org in $vm.list">
-                                    <td>
-                                        <strong>
-                                            <span>{{::org._id}}</span>
-                                        </strong>
-                                    </td>
                                     <td>
                                         <div class="org-name">
                                             <a ui-sref="app.administration.organisations-details({organisation: org.name})">{{::org.name}}</a>
@@ -64,13 +58,13 @@
                                         </div>
                                     </td>
                                     <td class="clearfix">
-                                      <user user-id="org.createdBy" icon-only="true" icon-size="m"></user>
+                                      <user user-id="org.createdBy" icon-only="false" icon-size="m"></user>
                                     </td>
                                     <td>{{org.createdAt | showDate}}</td>
                                     <td>
                                         <span class="clickable mr-xs text-primary" ng-click="$vm.showNewOrg('edit', org)">
                                             <i class="fa fa-edit"></i> Edit</span>
-                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showLinks(org)">
+                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showLinks(org)" ng-if="org.name !== 'default'">
                                             <i class="fa fa-link"></i> Link</span>
                                         <!-- <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.showNewOrg('edit', org)" >
                                             <i class="text-info text-20 fa fa-edit"></i>
