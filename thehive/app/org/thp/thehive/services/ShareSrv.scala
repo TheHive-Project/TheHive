@@ -6,7 +6,7 @@ import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 
 import scala.util.{Failure, Success, Try}
@@ -132,4 +132,23 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
 
   def profile: ProfileSteps = new ProfileSteps(raw.outTo[ShareProfile])
+
+  def richShare: Traversal[RichShare, RichShare] = Traversal(
+    raw
+      .project(
+        _.apply(By[Vertex]())
+          .and(By(__[Vertex].inTo[OrganisationShare].values[String]("name").fold))
+          .and(By(__[Vertex].outTo[ShareCase].id().fold))
+          .and(By(__[Vertex].outTo[ShareProfile].values[String]("name").fold))
+      )
+      .map {
+        case (share, organisationName, caseId, profileName) =>
+          RichShare(
+            share.as[Share],
+            onlyOneOf[AnyRef](caseId).toString,
+            onlyOneOf[String](organisationName),
+            onlyOneOf[String](profileName)
+          )
+      }
+  )
 }

@@ -6,6 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
+import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -20,6 +21,7 @@ class ShareCtrl @Inject()(
     profileSrv: ProfileSrv,
     userSrv: UserSrv
 ) {
+  import ShareConversion._
 
   def shareCase(caseId: String): Action[AnyContent] =
     entryPoint("create case share")
@@ -33,11 +35,31 @@ class ShareCtrl @Inject()(
             .visibleOrganisations
             .get(inputShare.organisationName)
             .getOrFail()
-          case0   <- caseSrv.getOrFail(caseId)
-          profile <- profileSrv.getOrFail(inputShare.profile)
-          share   <- shareSrv.shareCase(case0, organisation, profile)
-          _       <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-          _       <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-        } yield Results.Created(ShareConversion.toOutputShare(share, caseId, profile.name).toJson)
+          case0     <- caseSrv.getOrFail(caseId)
+          profile   <- profileSrv.getOrFail(inputShare.profile)
+          share     <- shareSrv.shareCase(case0, organisation, profile)
+          richShare <- shareSrv.get(share).richShare.getOrFail()
+          _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
+          _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
+        } yield Results.Created(richShare.toJson)
+      }
+
+  def listShareCases(caseId: String): Action[AnyContent] =
+    entryPoint("list case shares")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        if (request.permissions.contains(Permissions.manageShare)) {
+          Success(
+            Results.Ok(
+              JsArray(
+                caseSrv
+                  .get(caseId)
+                  .shares
+                  .richShare
+                  .toList
+                  .map(_.toJson)
+              )
+            )
+          )
+        } else Success(Results.Forbidden)
       }
 }
