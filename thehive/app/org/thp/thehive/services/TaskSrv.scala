@@ -55,7 +55,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
       case (taskSteps, updatedFields) =>
         for {
           c <- taskSteps.newInstance().`case`.getOrFail()
-          t <- taskSteps.getOrFail()
+          t <- taskSteps.newInstance().getOrFail()
           _ <- auditSrv.task.update(t, c, updatedFields)
         } yield ()
     }
@@ -95,7 +95,7 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
     for {
       case0 <- get(task).`case`.getOrFail()
       _ = get(task).unassign()
-      _ = taskUserSrv.create(TaskUser(), task, user)
+      _ <- taskUserSrv.create(TaskUser(), task, user)
       _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> user.login))
     } yield ()
 }
