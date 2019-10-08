@@ -113,7 +113,11 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
           tags = Set("testNamespace.testPredicate=\"spam\"", "testNamespace.testPredicate=\"src:mail\"", "tag1", "tag2"),
           summary = None,
           owner = Some("user1@thehive.local"),
-          customFields = Json.obj("boolean1" -> "true", "string1" -> "string1 custom field", "date1" -> now.getTime),
+          customFields = Json.obj(
+            "boolean1" -> Json.obj("boolean" -> true),
+            "string1"  -> Json.obj("string"  -> "string1 custom field"),
+            "date1"    -> Json.obj("date"    -> now.getTime)
+          ),
           stats = Json.obj()
         )
 

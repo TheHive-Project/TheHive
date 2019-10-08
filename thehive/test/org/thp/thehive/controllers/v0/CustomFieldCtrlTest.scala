@@ -200,7 +200,7 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
         l must not(beEmpty)
 
-        val cf = l.find(_.`type` == CustomFieldString)
+        val cf = l.find(_.`type` == CustomFieldType.string)
 
         cf must beSome
 
@@ -235,7 +235,7 @@ class CustomFieldCtrlTest extends PlaySpecification with Mockito {
 
         l must not(beEmpty)
 
-        val cf = l.find(_.`type` == CustomFieldDate)
+        val cf = l.find(_.`type` == CustomFieldType.date)
 
         cf must beSome
 

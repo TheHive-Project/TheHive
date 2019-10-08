@@ -300,8 +300,8 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         summary = None,
         owner = Some("user1@thehive.local"),
         customFields = Json.obj(
-          "boolean1" -> JsNull,
-          "string1"  -> "string1 custom field"
+          "boolean1" -> Json.obj("boolean" -> JsNull),
+          "string1"  -> Json.obj("string"  -> "string1 custom field")
         ),
         stats = Json.obj()
       )
