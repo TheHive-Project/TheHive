@@ -29,19 +29,22 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val shareCtrl: ShareCtrl = app.instanceOf[ShareCtrl]
-    val db                   = app.instanceOf[Database]
 
     "share a case" in {
+      val inputShare = Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))
       val request = FakeRequest("PUT", "/api/case/#4/shares")
-        .withJsonBody(
-          Json.toJson(
-            InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all)
-          )
-        )
+        .withJsonBody(inputShare)
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result = shareCtrl.shareCase("#4")(request)
 
       status(result) shouldEqual 201
+
+      val requestAgain = FakeRequest("PUT", "/api/case/#4/shares")
+        .withJsonBody(inputShare)
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+      val result2 = shareCtrl.shareCase("#4")(requestAgain)
+
+      status(result2) shouldEqual 201
     }
   }
 
