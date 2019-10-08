@@ -121,6 +121,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
               .get(fromOrganisationId)
               .headOption()
               .toSeq
+            _ = organisationSrv.get(fromOrg).links.remove()
             orgId <- organisations
             toOrg <- userSrv
               .current
