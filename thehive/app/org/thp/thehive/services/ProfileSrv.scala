@@ -24,6 +24,11 @@ object ProfileSrv {
       Permissions.manageAction
     )
   )
+
+  val incidentHandler = Profile(
+    "incidentHandler",
+    analyst.permissions + Permissions.manageShare
+  )
   val readonly = Profile("read-only", Set.empty)
   val orgAdmin = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
   val all      = Profile("all", Permissions.all)
@@ -37,6 +42,7 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
     ProfileSrv.admin,
     ProfileSrv.orgAdmin,
     ProfileSrv.analyst,
+    ProfileSrv.incidentHandler,
     ProfileSrv.readonly,
     ProfileSrv.all
   )
