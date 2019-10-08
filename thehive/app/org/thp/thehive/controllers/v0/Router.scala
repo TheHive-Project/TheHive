@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v0
 
+import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -84,6 +83,7 @@ class Router @Inject()(
     case GET(p"/organisation/$organisationId/links")                     => organisationCtrl.listLinks(organisationId)
     case PATCH(p"/organisation/$organisationId")                         => organisationCtrl.update(organisationId) // Audit ok
     case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
+    case PUT(p"/organisation/$organisationId1/links")                    => organisationCtrl.bulkLink(organisationId1)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
     case PUT(p"/case/$id/shares") => shareCtrl.shareCase(id)

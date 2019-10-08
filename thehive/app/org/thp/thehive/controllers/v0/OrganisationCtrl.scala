@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -13,6 +8,10 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)
@@ -107,6 +106,32 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
             .getOrFail()
           _ <- organisationSrv.link(fromOrg, toOrg)
         } yield Results.Created
+      }
+
+  def bulkLink(fromOrganisationId: String): Action[AnyContent] =
+    entryPoint("link multiple organisations")
+      .extract("organisations", FieldsParser.string.sequence.on("organisations"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val organisations: Seq[String] = request.body("organisations")
+        val (_, failures) = {
+          for {
+            fromOrg <- userSrv
+              .current
+              .organisations(Permissions.manageOrganisation)
+              .get(fromOrganisationId)
+              .headOption()
+              .toSeq
+            orgId <- organisations
+            toOrg <- userSrv
+              .current
+              .organisations(Permissions.manageOrganisation)
+              .get(orgId)
+              .headOption()
+          } yield organisationSrv.link(fromOrg, toOrg)
+        } partition (_.isSuccess)
+
+        if (failures.nonEmpty) Success(Results.InternalServerError(failures.map(_.failed.get).head.getMessage))
+        else Success(Results.Created)
       }
 
   def unlink(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
