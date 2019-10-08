@@ -202,7 +202,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTemplateTag])
 
   def removeTags(tags: Set[Tag with Entity]): Unit =
-    this.outToE[AlertTag].filter(_.inV().hasId(tags.map(_._id).toSeq: _*)).remove()
+    if (tags.nonEmpty)
+      this.outToE[AlertTag].filter(_.inV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def customFields(name: String): CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))

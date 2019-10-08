@@ -442,7 +442,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   }
 
   def removeTags(tags: Set[Tag with Entity]): Unit =
-    this.outToE[CaseTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
+    if (tags.nonEmpty)
+      this.outToE[CaseTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
     val originCaseLabel = StepLabel[JSet[Vertex]]()

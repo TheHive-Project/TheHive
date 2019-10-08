@@ -277,7 +277,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def `case`: CaseSteps = new CaseSteps(raw.outTo[AlertCase])
 
   def removeTags(tags: Set[Tag with Entity]): Unit =
-    this.outToE[AlertTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
+    if (tags.nonEmpty)
+      this.outToE[AlertTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def visible(implicit authContext: AuthContext): AlertSteps =
     this.filter(

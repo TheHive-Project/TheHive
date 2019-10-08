@@ -83,6 +83,12 @@ class TaskCtrl @Inject()(
               .can(Permissions.manageTask),
             propertyUpdaters
           )
-          .map(_ => Results.NoContent)
+          .flatMap {
+            case (taskSteps, _) =>
+              taskSteps
+                .richTask
+                .getOrFail()
+                .map(richTask => Results.Ok(richTask.toJson))
+          }
       }
 }
