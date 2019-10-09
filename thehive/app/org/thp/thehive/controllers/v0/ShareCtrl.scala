@@ -1,6 +1,8 @@
 package org.thp.thehive.controllers.v0
 
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
@@ -24,25 +26,45 @@ class ShareCtrl @Inject()(
   import ShareConversion._
 
   def shareCase(caseId: String): Action[AnyContent] =
-    entryPoint("create case share")
-      .extract("share", FieldsParser[InputShare])
+    entryPoint("create case shares")
+      .extract("shares", FieldsParser[InputShare].sequence.on("shares"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputShare: InputShare = request.body("share")
-        for {
-          _ <- userSrv.current.can(Permissions.manageShare).existsOrFail()
-          organisation <- organisationSrv
-            .get(request.organisation)
-            .visibleOrganisations
-            .get(inputShare.organisationName)
-            .getOrFail()
-          case0     <- caseSrv.getOrFail(caseId)
-          profile   <- profileSrv.getOrFail(inputShare.profile)
-          share     <- shareSrv.shareCase(case0, organisation, profile)
-          richShare <- shareSrv.get(share).richShare.getOrFail()
-          _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-          _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-        } yield Results.Created(richShare.toJson)
+        val inputShares: Seq[InputShare] = request.body("shares")
+        if (userSrv.current.can(Permissions.manageShare).existsOrFail().isSuccess) {
+          caseSrv
+            .get(caseId)
+            .shares
+            .richShare
+            .toList
+            .filter(
+              rs =>
+                rs.organisationName != request.organisation && !inputShares
+                  .exists(is => is.profile == rs.profileName && is.organisationName == rs.organisationName)
+            )
+            .foreach(rs => shareSrv.get(rs.share).remove())
+
+          val (_, failures) = inputShares
+            .map(is => share(is, request.organisation, caseId))
+            .partition(_.isSuccess)
+          if (failures.nonEmpty) Success(Results.InternalServerError(failures.map(_.failed.get).head.getMessage))
+          else Success(Results.Created)
+        } else Success(Results.Forbidden)
       }
+
+  private def share(inputShare: InputShare, organisation: String, caseId: String)(implicit graph: Graph, authContext: AuthContext) =
+    for {
+      organisation <- organisationSrv
+        .get(organisation)
+        .visibleOrganisations
+        .get(inputShare.organisationName)
+        .getOrFail()
+      case0     <- caseSrv.getOrFail(caseId)
+      profile   <- profileSrv.getOrFail(inputShare.profile)
+      share     <- shareSrv.shareCase(case0, organisation, profile)
+      richShare <- shareSrv.get(share).richShare.getOrFail()
+      _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
+      _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
+    } yield richShare.toJson
 
   def listShareCases(caseId: String): Action[AnyContent] =
     entryPoint("list case shares")

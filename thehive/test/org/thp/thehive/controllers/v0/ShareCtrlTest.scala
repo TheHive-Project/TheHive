@@ -34,7 +34,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
     val db: Database         = app.instanceOf[Database]
 
     "manage shares for a case" in {
-      val inputShare = Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))
+      val inputShare = Json.obj("shares" -> List(Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))))
       def getShares = {
         val requestGet = FakeRequest("GET", "/api/case/#4/shares")
           .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
@@ -71,7 +71,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       })
 
       val requestUpdate = FakeRequest("PUT", "/api/case/#4/shares")
-        .withJsonBody(Json.toJson(InputShare("cert", "read-only", TasksFilter.all, ObservablesFilter.all)))
+        .withJsonBody(Json.obj("shares" -> List(Json.toJson(InputShare("cert", "read-only", TasksFilter.all, ObservablesFilter.all)))))
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result3 = shareCtrl.shareCase("#4")(requestUpdate)
 
@@ -102,6 +102,8 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       status(result) shouldEqual 200
       contentAsJson(result).as[List[OutputShare]] must not(beEmpty)
     }
+
+
   }
 
 }
