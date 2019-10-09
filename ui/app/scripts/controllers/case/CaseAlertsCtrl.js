@@ -73,6 +73,24 @@
                 }
             };
 
+            $scope.previewEvent = function(event) {
+                $uibModal.open({
+                    templateUrl: 'views/partials/alert/event.dialog.html',
+                    controller: 'AlertEventCtrl',
+                    controllerAs: 'dialog',
+                    size: 'max',
+                    resolve: {
+                        event: event,
+                        templates: function() {
+                            //return CaseTemplateSrv.list();
+                            return [];
+                        },
+                        isAdmin: false,
+                        readonly: true
+                    }
+                });
+            };
+
             $scope.alertStats = $scope.initStats($scope.alerts);
         }
     );

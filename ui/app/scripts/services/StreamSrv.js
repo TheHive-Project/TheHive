@@ -92,15 +92,15 @@
                 self.isPolling = true;
 
                 // Poll stream changes
-                $http.get('./api/stream/' + self.streamId).success(function(data, status) {
+                $http.get('./api/stream/' + self.streamId).then(function(res) {
                     // Flag polling end
                     self.isPolling = false;
 
                     // Handle stream data and callbacks
-                    self.handleStreamResponse(data);
+                    self.handleStreamResponse(res.data);
 
                     // Check if the session will expire soon
-                    if (status === 220) {
+                    if (res.status === 220) {
                         AfkSrv.prompt().then(function() {
                             UserSrv.getUserInfo(AuthenticationSrv.currentUser.id)
                                 .then(function() {
@@ -112,14 +112,14 @@
                     }
                     self.poll();
 
-                }).error(function(data, status) {
+                }).catch(function(err) {
                     // Initialize the stream;
                     self.isPolling = false;
 
-                    if (status !== 404) {
-                        NotificationSrv.error('StreamSrv', data, status);
+                    if (err.status !== 404) {
+                        NotificationSrv.error('StreamSrv', err.data, err.status);
 
-                        if (status === 401) {
+                        if (err.status === 401) {
                             return;
                         }
                     }
@@ -134,11 +134,13 @@
                     return;
                 }
 
-                $http.post('./api/stream').success(function(streamId) {
+                $http.post('./api/stream').then(function(response) {
+                    var streamId = response.data;
+
                     self.streamId = streamId;
                     self.poll(self.streamId);
-                }).error(function(data, status) {
-                    NotificationSrv.error('StreamSrv', data, status);
+                }).catch(function(err) {
+                    NotificationSrv.error('StreamSrv', err.data, err.status);
                 });
             },
 

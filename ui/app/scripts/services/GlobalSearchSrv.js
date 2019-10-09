@@ -59,7 +59,9 @@
             } else {
                 switch(fieldDef.type) {
                     case 'number':
-                        return Number.parseInt(value.id);
+                        return {
+                            value: Number.parseInt(value.id) 
+                        };
                     case 'boolean':
                         return value.id === 'true';
                     default:

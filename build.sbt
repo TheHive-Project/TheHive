@@ -22,28 +22,6 @@ lazy val thehiveBackend = (project in file("thehive-backend"))
     play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
   )
 
-lazy val thehiveMetrics = (project in file("thehive-metrics"))
-  .enablePlugins(PlayScala)
-  .dependsOn(thehiveBackend)
-  .settings(projectSettings)
-  .settings(
-    publish := {},
-    libraryDependencies ++= Seq(
-      Library.Play.cache,
-      Library.Play.ws,
-      Library.scalaGuice,
-      Library.elastic4play,
-      Library.reflections,
-      "io.dropwizard.metrics" % "metrics-core" % "3.1.2",
-      "io.dropwizard.metrics" % "metrics-json" % "3.1.2",
-      "io.dropwizard.metrics" % "metrics-jvm" % "3.1.2",
-      "io.dropwizard.metrics" % "metrics-logback" % "3.1.2",
-      "io.dropwizard.metrics" % "metrics-graphite" % "3.1.2",
-      "io.dropwizard.metrics" % "metrics-ganglia" % "3.1.2",
-      "info.ganglia.gmetric4j" % "gmetric4j" % "1.0.10"
-    )
-  )
-
 lazy val thehiveMisp = (project in file("thehive-misp"))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveBackend)
@@ -77,8 +55,8 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala/*, PlayAkkaHttp2Support*/)
   .enablePlugins(Bintray)
-  .dependsOn(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
-  .aggregate(thehiveBackend, thehiveMetrics, thehiveMisp, thehiveCortex)
+  .dependsOn(thehiveBackend, thehiveMisp, thehiveCortex)
+  .aggregate(thehiveBackend, thehiveMisp, thehiveCortex)
   .settings(projectSettings)
   .settings(
     aggregate in Debian := false,

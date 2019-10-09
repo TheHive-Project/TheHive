@@ -20,7 +20,7 @@
                             <th>Description</th>
                             <th width="100" class="text-center">Mandatory</th>
                             <th width="200">Options</th>
-                            <th width="80" class="text-center">Actions</th>
+                            <th width="160" class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -42,6 +42,7 @@
                             </td>
                             <td align="center">
                                 <button class="btn btn-xs btn-primary" ng-click="$vm.showFieldDialog(field)"><i class="fa fa-pencil"></i> Edit</button>
+                                <button class="btn btn-xs btn-danger" ng-click="$vm.deleteField(field)"><i class="fa fa-trash"></i> Delete</button>
                             </td>
                         </tr>
                     </tbody>

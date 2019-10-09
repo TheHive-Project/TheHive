@@ -19,10 +19,11 @@
             };
 
             $scope.artifact = artifact;
-            $scope.artifact.tlp = $scope.artifact.tlp || -1;
+            $scope.artifact.tlp = $scope.artifact.tlp !== undefined ? $scope.artifact.tlp : -1;
             $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.cortexServers = $scope.analysisEnabled && appConfig.connectors.cortex.servers;
             $scope.protectDownloadsWith = appConfig.config.protectDownloadsWith;
+            $scope.similarArtifactsLimit = 10;
 
             $scope.editorOptions = {
                 lineNumbers: true,
@@ -48,7 +49,7 @@
                 CaseTabsSrv.activateTab(observableName);
             }, 0);
 
-            $scope.initScope = function (artifact) {                
+            $scope.initScope = function (artifact) {
 
                 // Get analyzers available for the observable's datatype
                 AnalyzerSrv.forDataType(artifact.dataType)
@@ -125,6 +126,10 @@
                 }
             };
 
+            $scope.showMoreSimilar = function() {
+                $scope.similarArtifactsLimit = $scope.similarArtifactsLimit + 10;
+            };
+
             $scope.showReport = function (jobId) {
                 $scope.report = {};
 
@@ -155,7 +160,9 @@
             };
 
             $scope.similarArtifacts = CaseArtifactSrv.api().similar({
-                'artifactId': observableId
+                artifactId: observableId,
+                range: 'all',
+                sort: ['-startDate']
             });
 
 

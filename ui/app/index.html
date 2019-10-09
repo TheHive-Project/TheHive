@@ -19,12 +19,10 @@
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css"/>
     <!-- bower:css -->
-    <link rel="stylesheet" href="bower_components/angular-json-human/dist/angular-json-human.css" />
     <link rel="stylesheet" href="bower_components/animate.css/animate.css" />
     <link rel="stylesheet" href="bower_components/dropzone/dist/min/dropzone.min.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.css" />
     <link rel="stylesheet" href="bower_components/roboto-fontface/css/roboto/roboto-fontface.css" />
-    <link rel="stylesheet" href="bower_components/roboto-fontface/css/roboto-condensed/roboto-condensed-fontface.css" />
     <link rel="stylesheet" href="bower_components/angular-ui-notification/dist/angular-ui-notification.css" />
     <link rel="stylesheet" href="bower_components/c3/c3.css" />
     <link rel="stylesheet" href="bower_components/css-spaces/dist/spaces.css" />
@@ -64,14 +62,11 @@
 
     <!-- build:js(.) scripts/vendor.js -->
     <!-- bower:js -->
-    <script src="bower_components/es5-shim/es5-shim.js"></script>
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/angular/angular.js"></script>
     <script src="bower_components/angular-animate/angular-animate.js"></script>
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
     <script src="bower_components/angular-cookies/angular-cookies.js"></script>
-    <script src="bower_components/lodash/dist/lodash.compat.js"></script>
-    <script src="bower_components/angular-json-human/dist/angular-json-human.js"></script>
     <script src="bower_components/moment/moment.js"></script>
     <script src="bower_components/angular-moment/angular-moment.js"></script>
     <script src="bower_components/angular-resource/angular-resource.js"></script>
@@ -92,15 +87,16 @@
     <script src="bower_components/angular-messages/angular-messages.js"></script>
     <script src="bower_components/ng-file-upload/ng-file-upload.js"></script>
     <script src="bower_components/ng-file-upload-shim/ng-file-upload-shim.js"></script>
+    <script src="bower_components/es5-shim/es5-shim.js"></script>
     <script src="bower_components/es6-shim/es6-shim.js"></script>
     <script src="bower_components/angular-clipboard/angular-clipboard.js"></script>
     <script src="bower_components/angular-local-storage/dist/angular-local-storage.js"></script>
-    <script src="bower_components/myforce-angularjs-dropdown-multiselect/src/angularjs-dropdown-multiselect.js"></script>
     <script src="bower_components/angular-highlightjs/build/angular-highlightjs.js"></script>
     <script src="bower_components/marked/lib/marked.js"></script>
     <script src="bower_components/angular-marked/dist/angular-marked.js"></script>
     <script src="bower_components/bootstrap-markdown/js/bootstrap-markdown.js"></script>
     <script src="bower_components/angular-markdown-editor-ghiscoding/src/angular-markdown-editor.js"></script>
+    <script src="bower_components/angular-ui-ace/ui-ace.js"></script>
     <script src="bower_components/angular-page-loader/dist/angular-page-loader.js"></script>
     <script src="bower_components/angular-images-resizer/angular-images-resizer.js"></script>
     <script src="bower_components/angular-base64-upload/src/angular-base64-upload.js"></script>
@@ -113,6 +109,7 @@
     <script src="bower_components/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.js"></script>
     <script src="bower_components/file-saver/FileSaver.js"></script>
     <script src="bower_components/js-url/url.js"></script>
+    <script src="bower_components/bootstrap-sass/assets/javascripts/bootstrap.js"></script>
     <!-- endbower -->
 
     <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
@@ -131,13 +128,6 @@
     <script src="scripts/components/header.component.js"></script>
     <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/controllers/AboutCtrl.js"></script>
-    <script src="scripts/controllers/AuthenticationCtrl.js"></script>
-    <script src="scripts/controllers/LiveCtrl.js"></script>
-    <script src="scripts/controllers/MainPageCtrl.js"></script>
-    <script src="scripts/controllers/MigrationCtrl.js"></script>
-    <script src="scripts/controllers/RootCtrl.js"></script>
-    <script src="scripts/controllers/SearchCtrl.js"></script>
-    <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCaseTemplatesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldDialogCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
@@ -150,6 +140,7 @@
     <script src="scripts/controllers/alert/AlertEventCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertListCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertStatsCtrl.js"></script>
+    <script src="scripts/controllers/AuthenticationCtrl.js"></script>
     <script src="scripts/controllers/case/CaseAlertsCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCloseModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseCreationCtrl.js"></script>
@@ -172,9 +163,15 @@
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
     <script src="scripts/controllers/cortex/ResponderActionDialogCtrl.js"></script>
-    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
     <script src="scripts/controllers/dashboard/DashboardsCtrl.js"></script>
+    <script src="scripts/controllers/dashboard/DashboardViewCtrl.js"></script>
+    <script src="scripts/controllers/LiveCtrl.js"></script>
+    <script src="scripts/controllers/MainPageCtrl.js"></script>
+    <script src="scripts/controllers/MigrationCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/RootCtrl.js"></script>
+    <script src="scripts/controllers/SearchCtrl.js"></script>
+    <script src="scripts/controllers/SettingsCtrl.js"></script>
     <script src="scripts/directives/affixer.js"></script>
     <script src="scripts/directives/auto-focus.js"></script>
     <script src="scripts/directives/charts/c3Chart.js"></script>
@@ -220,6 +217,7 @@
     <script src="scripts/directives/utils/autofocus.js"></script>
     <script src="scripts/filters/ellipsis.js"></script>
     <script src="scripts/filters/fang.js"></script>
+    <script src="scripts/filters/filesize.js"></script>
     <script src="scripts/filters/filter-value.js"></script>
     <script src="scripts/filters/flattern-object.js"></script>
     <script src="scripts/filters/getField.js"></script>
@@ -240,14 +238,15 @@
     <script src="scripts/services/AuthenticationSrv.js"></script>
     <script src="scripts/services/CaseArtifactSrv.js"></script>
     <script src="scripts/services/CaseSrv.js"></script>
+    <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/CaseTabsSrv.js"></script>
     <script src="scripts/services/CaseTaskSrv.js"></script>
     <script src="scripts/services/CaseTemplate.js"></script>
-    <script src="scripts/services/CasesUISrv.js"></script>
     <script src="scripts/services/ChartSrv.js"></script>
     <script src="scripts/services/Constants.js"></script>
     <script src="scripts/services/CortexSrv.js"></script>
     <script src="scripts/services/CustomFieldsCacheSrv.js"></script>
+    <script src="scripts/services/CustomFieldsSrv.js"></script>
     <script src="scripts/services/DashboardSrv.js"></script>
     <script src="scripts/services/EntitySrv.js"></script>
     <script src="scripts/services/FileResource.js"></script>
@@ -265,8 +264,8 @@
     <script src="scripts/services/QueryBuilderSrv.js"></script>
     <script src="scripts/services/ReportTemplateSrv.js"></script>
     <script src="scripts/services/SearchSrv.js"></script>
-    <script src="scripts/services/StatSrv.js"></script>
     <script src="scripts/services/StatisticSrv.js"></script>
+    <script src="scripts/services/StatSrv.js"></script>
     <script src="scripts/services/StreamSrv.js"></script>
     <script src="scripts/services/StreamStatSrv.js"></script>
     <script src="scripts/services/TagSrv.js"></script>

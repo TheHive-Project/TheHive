@@ -1,3 +1,4 @@
+
 <div class="form-group" ng-class="{ 'has-error' : observableForm.dataType.$invalid && !observableForm.dataType.$pristine }">
     <label class="col-md-3 control-label">Type <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
@@ -6,7 +7,7 @@
             <button type="button" class="btn btn-default" uib-dropdown-toggle>{{params.dataType}}&nbsp;&nbsp;<span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
-                <li ng-repeat="type in types">
+                <li ng-repeat="type in types track by $index">
                     <a ng-click="selectDataType(type)">{{type}}</a>
                 </li>
             </ul>
@@ -14,11 +15,11 @@
     </div>
 </div>
 
-<!-- File observable -->
-<div class="form-group" ng-show="isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
+<!-- Uploaded File observable -->
+<div class="form-group" ng-show="params.isUpload === true && isFile()" ng-class="{ 'has-error' : observableForm.attachment.$invalid }">
     <label class="col-md-3 control-label">File <i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-md-9">
-        <input type="hidden" name="attachment" ng-model="params.attachment.status" ng-required="isFile()">
+        <input type="hidden" name="attachment" ng-model="params.attachment.status" ng-required="params.isUpload && isFile()">
         <div file-chooser="" filemodel="params.attachment"></div>
         <div ng-show="params.attachment.upload.total === 0" class="mv-xxs p-xxs bg-warning">
             WARNING: This file seems to be empty
@@ -31,6 +32,27 @@
         <div ng-show="params.isZip">
             <input type="text" class="form-control" ng-model="params.zipPassword" placeholder="Type archive's password if available"> {{params.izZip}}
         </div>
+    </div>
+</div>
+
+<!-- Existing attachment observable -->
+<div class="form-group" ng-show="!params.isUpload && isFile()">
+    <label class="col-md-3 control-label">File <i class="fa fa-asterisk text-danger"></i></label>
+    <div class="col-md-9">
+        <table class="table table-striped">
+          <tr>
+            <th class="text-center" style="width: 10px">#</th>
+            <th>Filename</th>
+            <th>Type</th>
+            <th>Size</th>
+          </tr>
+          <tr ng-repeat="a in params.attachment track by $index">
+              <td class="text-center">#{{$index+1}}</td>
+              <td>{{a.name}}</td>
+              <td>{{a.contentType}}</td>
+              <td>{{a.size | filesize}}</td>
+          </tr>
+        </table>
     </div>
 </div>
 
@@ -98,7 +120,7 @@
     </label>
     <div class="col-md-9">
         <input type="hidden" name="tags" ng-model="params.tagNames" ng-required="!params.message.length"/>
-        <tags-input name="tagsInput" ng-model="tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2">
+        <tags-input name="tagsInput" ng-model="params.tags" class="ti-input-sm" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2">
             <auto-complete min-length="1" debounceDelay="400" source="getTags($query)"></auto-complete>
         </tags-input>
         <p class="help-block" ng-show="observableForm.tags.$invalid && !observableForm.tagsInput.$pristine">The observable(s) description or tags are required.</p>
@@ -108,7 +130,7 @@
 <div class="form-group" ng-class="{ 'has-error' : observableForm.description.$invalid && !observableForm.description.$pristine }">
     <label class="col-sm-3 control-label">Description <i class="fa fa-asterisk text-danger"></i><i class="fa fa-asterisk text-danger"></i></label>
     <div class="col-sm-9">
-        <textarea class="form-control" name="description" ng-model="params.message" placeholder="Observable(s) description" rows="3" ng-required="!params.tagNames.length"></textarea>
+        <textarea class="form-control" name="description" ng-model="params.message" placeholder="Observable(s) description" rows="3" ng-required="!params.tags.length"></textarea>
         <p class="help-block" ng-show="observableForm.description.$invalid && !observableForm.description.$pristine">The observable(s) description or tags are required.</p>
     </div>
 </div>

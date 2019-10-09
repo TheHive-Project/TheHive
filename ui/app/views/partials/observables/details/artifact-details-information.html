@@ -88,7 +88,7 @@
     <div class="col-md-5">
         <h4 class="vpad10 text-primary">Links</h4>
         <strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
-        <table ng-if="similarArtifacts.length > 0" class="table table-hover">
+        <table ng-if="similarArtifacts.length > 0" class="table table-striped">
             <thead>
                 <tr>
                     <th width="10">IOC</th>
@@ -98,7 +98,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="a in similarArtifacts" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
+                <tr ng-repeat="a in similarArtifacts | limitTo:similarArtifactsLimit" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
                     <td align="center">
                         <span class="clickable fa"
                           ng-class="{true: 'fa-star', false: 'fa-star-o'}[a.ioc]"
@@ -108,11 +108,16 @@
                     <td>
                         <tlp value="a.tlp"></tlp>
                     </td>
-                    <td>[{{a.dataType}}]: {{a.data || a.attachment.name}}<br> #{{a.case.caseId}} - {{a.case.title}}
+                    <td>
+                      <!-- [{{a.dataType}}]: {{a.data || a.attachment.name}}<br> -->
+                      #{{a.case.caseId}} - {{a.case.title}}
                     </td>
-                    <td>{{a.startDate | showDate}}</td>
+                    <td>{{a.startDate | shortDate}}</td>
                 </tr>
             </tbody>
         </table>
+        <div class="mt-xxs text-center" ng-if="similarArtifactsLimit < similarArtifacts.length">
+            <a href ng-click="showMoreSimilar()"><i class="fa fa-angle-down"></i> Show more</a>
+        </div>
     </div>
 </div>

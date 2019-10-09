@@ -53,7 +53,7 @@
                 UserSrv.update({'userId': self.user.id}, postData, onSuccess, onFailure);
             } else {
                 postData = {
-                    login: angular.lowercase(self.formData.id),
+                    login: self.formData.id.toLowerCase(),
                     name: self.formData.name,
                     roles: buildRoles(self.formData.roles, self.formData.alert)
                 };
