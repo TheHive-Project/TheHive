@@ -86,7 +86,9 @@ class Router @Inject()(
     case PUT(p"/organisation/$organisationId1/links")                    => organisationCtrl.bulkLink(organisationId1)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
-    case PUT(p"/case/$id/shares") => shareCtrl.shareCase(id)
+    case PUT(p"/case/$id/shares")           => shareCtrl.shareCase(id)
+    case GET(p"/case/$id/shares")           => shareCtrl.listShareCases(id)
+//    case GET(p"/case/$id/task/$tId/shares") => shareCtrl.listShareTasks(id, tId)
 
     case GET(p"/case/task")           => queryExecutor.task.search
     case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
