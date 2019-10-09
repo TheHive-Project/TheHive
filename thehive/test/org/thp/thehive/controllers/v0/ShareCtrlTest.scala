@@ -8,6 +8,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, OutputShare, TasksFilter}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import org.thp.thehive.services.CaseSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
@@ -29,6 +30,8 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val shareCtrl: ShareCtrl = app.instanceOf[ShareCtrl]
+    val caseSrv: CaseSrv     = app.instanceOf[CaseSrv]
+    val db: Database         = app.instanceOf[Database]
 
     "manage shares for a case" in {
       val inputShare = Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))
@@ -59,7 +62,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(result2) shouldEqual 201
 
-      val l = getShares
+      val l     = getShares
       val share = l.find(_.organisationName == "cert")
 
       share must beSome.which(s => {
@@ -74,13 +77,30 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(result3) shouldEqual 201
 
-      val l2 = getShares
+      val l2     = getShares
       val share2 = l2.find(_.organisationName == "cert")
 
       share2 must beSome.which(s => {
         s.profileName shouldEqual "read-only"
         s.organisationName shouldEqual "cert"
       })
+    }
+
+    "fetch shares for a task" in db.roTransaction { implicit graph =>
+      val tasks = caseSrv.get("#4").tasks(dummyUserSrv.authContext).toList
+
+      tasks must not(beEmpty)
+
+      val task4 = tasks.find(_.title == "case 4 task 1")
+
+      task4 must beSome
+
+      val request = FakeRequest("GET", s"/api/case/#4/task/${task4.get._id}/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+      val result = shareCtrl.listShareTasks("#4", task4.get._id)(request)
+
+      status(result) shouldEqual 200
+      contentAsJson(result).as[List[OutputShare]] must not(beEmpty)
     }
   }
 

@@ -62,4 +62,24 @@ class ShareCtrl @Inject()(
           )
         } else Success(Results.Forbidden)
       }
+
+  def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
+    entryPoint("list case shares")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        if (request.permissions.contains(Permissions.manageShare)) {
+          Success(
+            Results.Ok(
+              JsArray(
+                caseSrv
+                  .get(caseId)
+                  .shares
+                  .byTask(taskId)
+                  .richShare
+                  .toList
+                  .map(_.toJson)
+              )
+            )
+          )
+        } else Success(Results.Forbidden)
+      }
 }

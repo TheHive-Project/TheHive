@@ -132,6 +132,11 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def tasks = new TaskSteps(raw.outTo[ShareTask])
 
+  def byTask(taskId: String): ShareSteps = this.filter(
+    _.outTo[ShareTask]
+      .filter(_.hasId(taskId))
+  )
+
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
 
   def profile: ProfileSteps = new ProfileSteps(raw.outTo[ShareProfile])
