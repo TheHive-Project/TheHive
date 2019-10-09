@@ -8,7 +8,8 @@ case class Responder(
     dataTypeList: Seq[String],
     maxTlp: Option[Long],
     maxPap: Option[Long],
-    cortexIds: List[String] = Nil) {
+    cortexIds: List[String] = Nil
+) {
 
   def addCortexId(cid: String): Responder = copy(cortexIds = cid :: cortexIds)
 

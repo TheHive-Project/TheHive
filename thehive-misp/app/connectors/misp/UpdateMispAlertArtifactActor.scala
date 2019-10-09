@@ -1,9 +1,9 @@
 package connectors.misp
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import scala.concurrent.ExecutionContext
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 import play.api.Logger
 
@@ -23,11 +23,8 @@ import org.elastic4play.services.EventSrv
   * @param ec execution context
   */
 @Singleton
-class UpdateMispAlertArtifactActor @Inject() (
-    eventSrv: EventSrv,
-    userSrv: UserSrv,
-    mispSrv: MispSrv,
-    implicit val ec: ExecutionContext) extends Actor {
+class UpdateMispAlertArtifactActor @Inject()(eventSrv: EventSrv, userSrv: UserSrv, mispSrv: MispSrv, implicit val ec: ExecutionContext)
+    extends Actor {
 
   private[UpdateMispAlertArtifactActor] lazy val logger = Logger(getClass)
   override def preStart(): Unit = {

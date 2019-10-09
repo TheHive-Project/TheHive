@@ -7,12 +7,12 @@ import scala.concurrent.Future
 import play.api.libs.json._
 
 import connectors.cortex.models.JsonFormat.jobStatusFormat
-import javax.inject.{ Inject, Singleton }
-import models.{ Artifact, ArtifactModel }
+import javax.inject.{Inject, Singleton}
+import models.{Artifact, ArtifactModel}
 import services.AuditedModel
 
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O }
+import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O}
 import org.elastic4play.utils.RichJson
 
 object JobStatus extends Enumeration with HiveEnumeration {
@@ -21,21 +21,24 @@ object JobStatus extends Enumeration with HiveEnumeration {
 }
 
 trait JobAttributes { _: AttributeDef ⇒
-  val analyzerId = attribute("analyzerId", F.stringFmt, "Analyzer", O.readonly)
-  val analyzerName = optionalAttribute("analyzerName", F.stringFmt, "Name of the analyzer", O.readonly)
+  val analyzerId         = attribute("analyzerId", F.stringFmt, "Analyzer", O.readonly)
+  val analyzerName       = optionalAttribute("analyzerName", F.stringFmt, "Name of the analyzer", O.readonly)
   val analyzerDefinition = optionalAttribute("analyzerDefinition", F.stringFmt, "Name of the analyzer definition", O.readonly)
-  val status = attribute("status", F.enumFmt(JobStatus), "Status of the job", JobStatus.InProgress)
-  val artifactId = attribute("artifactId", F.stringFmt, "Original artifact on which this job was executed", O.readonly)
-  val startDate = attribute("startDate", F.dateFmt, "Timestamp of the job start") // , O.model)
-  val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the job completion (or fail)")
-  val report = optionalAttribute("report", F.textFmt, "Analysis result", O.unaudited)
-  val cortexId = optionalAttribute("cortexId", F.stringFmt, "Id of cortex where the job is run", O.readonly)
-  val cortexJobId = optionalAttribute("cortexJobId", F.stringFmt, "Id of job in cortex", O.readonly)
+  val status             = attribute("status", F.enumFmt(JobStatus), "Status of the job", JobStatus.InProgress)
+  val artifactId         = attribute("artifactId", F.stringFmt, "Original artifact on which this job was executed", O.readonly)
+  val startDate          = attribute("startDate", F.dateFmt, "Timestamp of the job start") // , O.model)
+  val endDate            = optionalAttribute("endDate", F.dateFmt, "Timestamp of the job completion (or fail)")
+  val report             = optionalAttribute("report", F.textFmt, "Analysis result", O.unaudited)
+  val cortexId           = optionalAttribute("cortexId", F.stringFmt, "Id of cortex where the job is run", O.readonly)
+  val cortexJobId        = optionalAttribute("cortexJobId", F.stringFmt, "Id of job in cortex", O.readonly)
 
 }
+
 @Singleton
-class JobModel @Inject() (
-    artifactModel: ArtifactModel) extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job") with JobAttributes with AuditedModel {
+class JobModel @Inject()(artifactModel: ArtifactModel)
+    extends ChildModelDef[JobModel, Job, ArtifactModel, Artifact](artifactModel, "case_artifact_job", "Job", "/connector/cortex/job")
+    with JobAttributes
+    with AuditedModel {
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful {
     attrs
@@ -45,8 +48,9 @@ class JobModel @Inject() (
 }
 
 object Job {
+
   def fixJobAttr(attr: JsObject): JsObject = {
-    val analyzerId = (attr \ "analyzerId").as[String]
+    val analyzerId           = (attr \ "analyzerId").as[String]
     val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
     (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
   }
@@ -63,4 +67,5 @@ case class CortexJob(
     workerDefinition: String,
     artifact: CortexArtifact,
     date: Date,
-    status: JobStatus.Type)
+    status: JobStatus.Type
+)

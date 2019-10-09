@@ -1,6 +1,97 @@
 # Change Log
 
-## [3.3.0-RC6](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC6) (2019-02-07)
+## [3.4.0](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-09-05)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.4.0-RC2...3.4.0)
+
+**Implemented enhancements:**
+
+- Removing custom fields [\#954](https://github.com/TheHive-Project/TheHive/issues/954)
+
+**Fixed bugs:**
+
+- Cosmetic Bug: wrong number of exported observables displayed [\#1071](https://github.com/TheHive-Project/TheHive/issues/1071)
+- Update Database button does not appear in training appliance [\#1067](https://github.com/TheHive-Project/TheHive/issues/1067)
+- bulk merge alerts into case lose description's alert [\#1065](https://github.com/TheHive-Project/TheHive/issues/1065)
+- Incorrect number of related observables returned [\#1062](https://github.com/TheHive-Project/TheHive/issues/1062)
+- Incorrect tag filter results when observables with tags are added then deleted [\#1061](https://github.com/TheHive-Project/TheHive/issues/1061)
+- Cannot setup TheHive 3.4.0-RC2 using Docker [\#1051](https://github.com/TheHive-Project/TheHive/issues/1051)
+- Case statistics dashboard loads with an error message and the case over time panel fails to display any data [\#1050](https://github.com/TheHive-Project/TheHive/issues/1050)
+- Can't secure ElasticSearch connection [\#1046](https://github.com/TheHive-Project/TheHive/issues/1046)
+
+## [3.4.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.4.0-RC2) (2019-07-10)
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.4.0-RC1...3.4.0-RC2)
+
+**Implemented enhancements:**
+
+- Display ioc and sighted attributes in Alert artifact list [\#1035](https://github.com/TheHive-Project/TheHive/issues/1035)
+- Merge Observable tags with existing observables during importing alerts into case [\#1014](https://github.com/TheHive-Project/TheHive/issues/1014)
+- API not recognizing the attribute 'sighted' of artifacts on alert creation [\#1003](https://github.com/TheHive-Project/TheHive/issues/1003)
+- Alerts are not getting deleted as expected [\#974](https://github.com/TheHive-Project/TheHive/issues/974)
+
+**Fixed bugs:**
+
+- Update case owner field validation to handle null value [\#1036](https://github.com/TheHive-Project/TheHive/issues/1036)
+- thehive prints error messages on first run \("Authentication failure" / "user init not found"\) [\#1027](https://github.com/TheHive-Project/TheHive/issues/1027)
+- TLP:WHITE for observable not shown, not editable [\#1025](https://github.com/TheHive-Project/TheHive/issues/1025)
+- Dashboard based on observables not refreshing correctly [\#996](https://github.com/TheHive-Project/TheHive/issues/996)
+- javascript error in tasks [\#979](https://github.com/TheHive-Project/TheHive/issues/979)
+- /api/alert/{}/createCase does not use caseTemplate [\#929](https://github.com/TheHive-Project/TheHive/issues/929)
+
+**Closed issues:**
+
+- Cannot add custom fields to case template [\#1042](https://github.com/TheHive-Project/TheHive/issues/1042)
+- sample hive does not connect to cortex and prints no helpful error message [\#1028](https://github.com/TheHive-Project/TheHive/issues/1028)
+
+## [3.4.0-RC1](https://github.com/TheHive-Project/TheHive/tree/HEAD) (2019-06-05)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.1...3.4.0-4C1)
+
+**Implemented enhancements:**
+
+- Allow to import file from Cortex report [\#982](https://github.com/TheHive-Project/TheHive/issues/982)
+- Remove metrics module [\#975](https://github.com/TheHive-Project/TheHive/issues/975)
+- Upgrade frontend libraries [\#966](https://github.com/TheHive-Project/TheHive/issues/966)
+- Cortex AddArtifactToCase AssignCase [\#922](https://github.com/TheHive-Project/TheHive/issues/922)
+- Communication to ElasticSearch via HTTP API 9200 [\#913](https://github.com/TheHive-Project/TheHive/issues/913)
+- Add Cortex AssignCase [\#924](https://github.com/TheHive-Project/TheHive/pull/924) ([zpriddy](https://github.com/zpriddy))
+- Support Elasticsearch 6.x clusters [\#623](https://github.com/TheHive-Project/TheHive/issues/623)
+
+**Fixed bugs:**
+
+- Donut dashboard metric values are not transformed to searches [\#972](https://github.com/TheHive-Project/TheHive/issues/972)
+- Bulk merge of alerts does not merge the tags [\#994](https://github.com/TheHive-Project/TheHive/issues/994)
+- Java 11 build crash [\#990](https://github.com/TheHive-Project/TheHive/issues/990)
+- Failure to load datatypes [\#988](https://github.com/TheHive-Project/TheHive/issues/988)
+- Fix search page base filter [\#983](https://github.com/TheHive-Project/TheHive/issues/983)
+- Authentication Error when using Hive API \(Patch\) [\#951](https://github.com/TheHive-Project/TheHive/issues/951)
+
+**Closed issues:**
+
+- bintray repo for deb packages not signed [\#976](https://github.com/TheHive-Project/TheHive/issues/976)
+- Set alert to status "Ignored" via API does not work [\#955](https://github.com/TheHive-Project/TheHive/issues/955)
+
+**Merged pull requests:**
+
+- Add 'My open cases' and 'New & Updated alerts' to quick filters [\#925](https://github.com/TheHive-Project/TheHive/pull/925) ([zpriddy](https://github.com/zpriddy))
+
+## [3.3.1](https://github.com/TheHive-Project/TheHive/tree/3.3.1) (2019-05-22)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0...3.3.1)
+
+**Fixed bugs:**
+
+- THP-SEC-ADV-2017-001: Privilege Escalation in all Versions of TheHive [\#408](https://github.com/TheHive-Project/TheHive/issues/408)
+
+## [3.3.0](https://github.com/TheHive-Project/TheHive/tree/3.3.0) (2019-03-19)
+
+[Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC6...3.3.0)
+
+**Fixed bugs:**
+
+- Merge case by CaseID Broken [\#930](https://github.com/TheHive-Project/TheHive/issues/930)
+
+## [3.3.0-RC6](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC6) (2019-03-07)
 
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC5...3.3.0-RC6)
 
@@ -15,9 +106,10 @@
 
 - Dynamic \(auto-refresh\) of cases is break in 3.3.0-RC5 [\#907](https://github.com/TheHive-Project/TheHive/issues/907)
 - Hostname Artifact [\#900](https://github.com/TheHive-Project/TheHive/issues/900)
-- DOS issue: Firefox crashing TheHive  [\#899](https://github.com/TheHive-Project/TheHive/issues/899)
+- DOS issue: Firefox crashing TheHive [\#899](https://github.com/TheHive-Project/TheHive/issues/899)
 
 ## [3.3.0-RC5](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC5) (2019-02-23)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC4...3.3.0-RC5)
 
 **Implemented enhancements:**
@@ -30,6 +122,7 @@
 - Search results not visible [\#895](https://github.com/TheHive-Project/TheHive/issues/895)
 
 ## [3.3.0-RC4](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC4) (2019-02-22)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC3...3.3.0-RC4)
 
 **Implemented enhancements:**
@@ -42,6 +135,7 @@
 - Hide Empty Case Button Broken [\#890](https://github.com/TheHive-Project/TheHive/issues/890)
 
 ## [3.3.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC3) (2019-02-21)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC2...3.3.0-RC3)
 
 **Implemented enhancements:**
@@ -73,6 +167,7 @@
 - Fix Update Label to Warning [\#873](https://github.com/TheHive-Project/TheHive/pull/873) ([zpriddy](https://github.com/zpriddy))
 
 ## [3.3.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC2) (2019-02-07)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.3.0-RC1...3.3.0-RC2)
 
 **Fixed bugs:**
@@ -80,11 +175,12 @@
 - Java dependency of DEB package is broken [\#867](https://github.com/TheHive-Project/TheHive/issues/867)
 
 ## [3.3.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.3.0-RC1) (2019-02-06)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.1...3.3.0-RC1)
 
 **Implemented enhancements:**
 
-- \[BUG\] Session cookie received with API token  [\#864](https://github.com/TheHive-Project/TheHive/issues/864)
+- \[BUG\] Session cookie received with API token [\#864](https://github.com/TheHive-Project/TheHive/issues/864)
 - Add support to Java versions, higher than 8 [\#861](https://github.com/TheHive-Project/TheHive/issues/861)
 - MISP - Add an Event Tag instead of/additionnally to Attribute Tag [\#836](https://github.com/TheHive-Project/TheHive/issues/836)
 - sorting in alerts [\#824](https://github.com/TheHive-Project/TheHive/issues/824)
@@ -97,9 +193,10 @@
 
 - Alert updates and tracking \(follow\) [\#856](https://github.com/TheHive-Project/TheHive/issues/856)
 - Assigned Tasks do not show up in 'My Tasks' before they are started [\#845](https://github.com/TheHive-Project/TheHive/issues/845)
-- Delete user from Thehive:   DELETE /api/user/user1 returned 500 org.elastic4play.InternalError: user can't be removed [\#844](https://github.com/TheHive-Project/TheHive/issues/844)
+- Delete user from Thehive: DELETE /api/user/user1 returned 500 org.elastic4play.InternalError: user can't be removed [\#844](https://github.com/TheHive-Project/TheHive/issues/844)
 
 ## [3.2.1](https://github.com/TheHive-Project/TheHive/tree/3.2.1) (2018-12-20)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0...3.2.1)
 
 **Fixed bugs:**
@@ -114,6 +211,7 @@
 - Make improvements to configuration file [\#828](https://github.com/TheHive-Project/TheHive/pull/828) ([adl1995](https://github.com/adl1995))
 
 ## [3.2.0](https://github.com/TheHive-Project/TheHive/tree/3.2.0) (2018-11-29)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.2.0-RC1...3.2.0)
 
 **Implemented enhancements:**
@@ -127,6 +225,7 @@
 - Error when uploading password protected zips as observables [\#805](https://github.com/TheHive-Project/TheHive/issues/805)
 
 ## [3.2.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.2.0-RC1) (2018-11-16)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.2...3.2.0-RC1)
 
 **Implemented enhancements:**
@@ -155,6 +254,7 @@
 - Added Integration with FireEye iSIGHT [\#755](https://github.com/TheHive-Project/TheHive/pull/755) ([garanews](https://github.com/garanews))
 
 ## [3.1.2](https://github.com/TheHive-Project/TheHive/tree/3.1.2) (2018-10-12)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.1...3.1.2)
 
 **Fixed bugs:**
@@ -162,6 +262,7 @@
 - Cortex polling settings break startup [\#754](https://github.com/TheHive-Project/TheHive/issues/754)
 
 ## [3.1.1](https://github.com/TheHive-Project/TheHive/tree/3.1.1) (2018-10-09)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0...3.1.1)
 
 **Implemented enhancements:**
@@ -183,6 +284,7 @@
 - Artifact tags are overwritten by alert sourceRef during import to case [\#734](https://github.com/TheHive-Project/TheHive/issues/734)
 
 ## [3.1.0](https://github.com/TheHive-Project/TheHive/tree/3.1.0) (2018-09-25)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC3...3.1.0)
 
 **Implemented enhancements:**
@@ -195,7 +297,7 @@
 
 - RPM Updates not available \(404\) [\#719](https://github.com/TheHive-Project/TheHive/issues/719)
 - Observables not being displayed [\#655](https://github.com/TheHive-Project/TheHive/issues/655)
-- TheHive Hyperlinking  [\#723](https://github.com/TheHive-Project/TheHive/issues/723)
+- TheHive Hyperlinking [\#723](https://github.com/TheHive-Project/TheHive/issues/723)
 - Multiple responder actions does not seem to be handled [\#722](https://github.com/TheHive-Project/TheHive/issues/722)
 - API allows alert creation with duplicate artifacts [\#720](https://github.com/TheHive-Project/TheHive/issues/720)
 - 3.0.1RC3: certificate based authentication failes as attributes are not correctly lowercased [\#714](https://github.com/TheHive-Project/TheHive/issues/714)
@@ -214,6 +316,7 @@
 - Add AddTagToArtifact action to responders [\#717](https://github.com/TheHive-Project/TheHive/pull/717) ([srilumpa](https://github.com/srilumpa))
 
 ## [3.1.0-RC3](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC3) (2018-09-06)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC2...3.1.0-RC3)
 
 **Implemented enhancements:**
@@ -237,6 +340,7 @@
 - Start waiting tasks when adding task logs [\#695](https://github.com/TheHive-Project/TheHive/issues/695)
 
 ## [3.1.0-RC2](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC2) (2018-08-27)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.1.0-RC1...3.1.0-RC2)
 
 **Implemented enhancements:**
@@ -251,7 +355,7 @@
 - Ability to set custom fields as mandatory [\#652](https://github.com/TheHive-Project/TheHive/issues/652)
 - Application.conf needs clarifications [\#606](https://github.com/TheHive-Project/TheHive/issues/606)
 - Observable type boxes doesn't line break on alert preview pane [\#593](https://github.com/TheHive-Project/TheHive/issues/593)
--  On branch betterDescriptions [\#660](https://github.com/TheHive-Project/TheHive/pull/660) ([secdecompiled](https://github.com/secdecompiled))
+- On branch betterDescriptions [\#660](https://github.com/TheHive-Project/TheHive/pull/660) ([secdecompiled](https://github.com/secdecompiled))
 
 **Fixed bugs:**
 
@@ -267,7 +371,7 @@
 **Closed issues:**
 
 - ES Mapping bug [\#680](https://github.com/TheHive-Project/TheHive/issues/680)
-- ignore - delete me  [\#675](https://github.com/TheHive-Project/TheHive/issues/675)
+- ignore - delete me [\#675](https://github.com/TheHive-Project/TheHive/issues/675)
 - HTTPS not working with Keystore [\#669](https://github.com/TheHive-Project/TheHive/issues/669)
 
 **Merged pull requests:**
@@ -277,6 +381,7 @@
 - Move input group addons from right to left for better usage [\#672](https://github.com/TheHive-Project/TheHive/pull/672) ([srilumpa](https://github.com/srilumpa))
 
 ## [3.1.0-RC1](https://github.com/TheHive-Project/TheHive/tree/3.1.0-RC1) (2018-07-31)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.10...3.1.0-RC1)
 
 **Implemented enhancements:**
@@ -289,7 +394,7 @@
 - Add PAP to case to indicate which kind of action is allowed [\#616](https://github.com/TheHive-Project/TheHive/issues/616)
 - Ability to execute active response on any element of TheHive [\#609](https://github.com/TheHive-Project/TheHive/issues/609)
 - Consider providing checksums for the release files [\#590](https://github.com/TheHive-Project/TheHive/issues/590)
-- Start Task  - Button [\#540](https://github.com/TheHive-Project/TheHive/issues/540)
+- Start Task - Button [\#540](https://github.com/TheHive-Project/TheHive/issues/540)
 - Handling malware as zip protected file [\#538](https://github.com/TheHive-Project/TheHive/issues/538)
 - Auto-refresh for Dashboards [\#476](https://github.com/TheHive-Project/TheHive/issues/476)
 - Assign Tasks to users from the Tasks tab [\#426](https://github.com/TheHive-Project/TheHive/issues/426)
@@ -323,13 +428,14 @@
 - Fix installation links [\#603](https://github.com/TheHive-Project/TheHive/pull/603) ([Viltaria](https://github.com/Viltaria))
 
 ## [3.0.10](https://github.com/TheHive-Project/TheHive/tree/3.0.10) (2018-05-29)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.9...3.0.10)
 
 **Implemented enhancements:**
 
 - Rotate logs [\#579](https://github.com/TheHive-Project/TheHive/issues/579)
 - Send caseId to Cortex analyzer [\#564](https://github.com/TheHive-Project/TheHive/issues/564)
-- Poll for connectors status and display  [\#563](https://github.com/TheHive-Project/TheHive/issues/563)
+- Poll for connectors status and display [\#563](https://github.com/TheHive-Project/TheHive/issues/563)
 - Sort related cases by related artifacts amount [\#548](https://github.com/TheHive-Project/TheHive/issues/548)
 - Time Calculation for individual tasks [\#546](https://github.com/TheHive-Project/TheHive/issues/546)
 
@@ -352,6 +458,7 @@
 - Using Postman to test the API, getting "No CSRF token found in headers" [\#549](https://github.com/TheHive-Project/TheHive/issues/549)
 
 ## [3.0.9](https://github.com/TheHive-Project/TheHive/tree/3.0.9) (2018-04-13)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.8...3.0.9)
 
 **Fixed bugs:**
@@ -374,6 +481,7 @@
 - Update spacing for elasticsearch section in docker-compose yml file [\#539](https://github.com/TheHive-Project/TheHive/pull/539) ([jbarlow-mcafee](https://github.com/jbarlow-mcafee))
 
 ## [3.0.8](https://github.com/TheHive-Project/TheHive/tree/3.0.8) (2018-04-04)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.7...3.0.8)
 
 **Fixed bugs:**
@@ -389,6 +497,7 @@
 - Add ElasticSearch file descriptor limit to docker-compose.yml [\#505](https://github.com/TheHive-Project/TheHive/pull/505) ([flmsc](https://github.com/flmsc))
 
 ## [3.0.7](https://github.com/TheHive-Project/TheHive/tree/3.0.7) (2018-04-03)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.6...3.0.7)
 
 **Implemented enhancements:**
@@ -401,6 +510,7 @@
 - Can't save case template in 3.0.6 [\#502](https://github.com/TheHive-Project/TheHive/issues/502)
 
 ## [3.0.6](https://github.com/TheHive-Project/TheHive/tree/3.0.6) (2018-03-08)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.5...3.0.6)
 
 **Implemented enhancements:**
@@ -412,6 +522,7 @@
 - Tasks are stripped when merging cases [\#489](https://github.com/TheHive-Project/TheHive/issues/489)
 
 ## [3.0.5](https://github.com/TheHive-Project/TheHive/tree/3.0.5) (2018-02-08)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.4...3.0.5)
 
 **Fixed bugs:**
@@ -420,6 +531,7 @@
 - Importing Template Button Non-Functional [\#404](https://github.com/TheHive-Project/TheHive/issues/404)
 
 ## [3.0.4](https://github.com/TheHive-Project/TheHive/tree/3.0.4) (2018-02-06)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.3...3.0.4)
 
 **Implemented enhancements:**
@@ -427,7 +539,7 @@
 - Make alerts searchable through the global search field [\#456](https://github.com/TheHive-Project/TheHive/issues/456)
 - Make counts on Counter dashboard's widget clickable [\#455](https://github.com/TheHive-Project/TheHive/issues/455)
 - MISP feeds cause the growing of ES audit docs [\#450](https://github.com/TheHive-Project/TheHive/issues/450)
-- Case metrics sort  [\#418](https://github.com/TheHive-Project/TheHive/issues/418)
+- Case metrics sort [\#418](https://github.com/TheHive-Project/TheHive/issues/418)
 - Filter MISP Events Using MISP Tags & More Before Creating Alerts [\#370](https://github.com/TheHive-Project/TheHive/issues/370)
 - OAuth2 single sign-on implementation \(BE + FE\) [\#430](https://github.com/TheHive-Project/TheHive/pull/430) ([saibot94](https://github.com/saibot94))
 
@@ -453,6 +565,7 @@
 - How to limit by date amount of events pulled from MISP initially? [\#432](https://github.com/TheHive-Project/TheHive/issues/432)
 
 ## [3.0.3](https://github.com/TheHive-Project/TheHive/tree/3.0.3) (2018-01-10)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.2...3.0.3)
 
 **Fixed bugs:**
@@ -460,6 +573,7 @@
 - THP-SEC-ADV-2017-001: Privilege Escalation in all Versions of TheHive [\#408](https://github.com/TheHive-Project/TheHive/issues/408)
 
 ## [3.0.2](https://github.com/TheHive-Project/TheHive/tree/3.0.2) (2017-12-20)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.1...3.0.2)
 
 **Implemented enhancements:**
@@ -472,6 +586,7 @@
 - "Mark as Sighted" Option not available for "File" observable type [\#400](https://github.com/TheHive-Project/TheHive/issues/400)
 
 ## [3.0.1](https://github.com/TheHive-Project/TheHive/tree/3.0.1) (2017-12-07)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/3.0.0...3.0.1)
 
 **Fixed bugs:**
@@ -481,6 +596,7 @@
 - Error when configuring multiple ElasticSearch nodes [\#383](https://github.com/TheHive-Project/TheHive/issues/383)
 
 ## [3.0.0](https://github.com/TheHive-Project/TheHive/tree/3.0.0) (2017-12-05)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.13.2...3.0.0)
 
 **Implemented enhancements:**
@@ -499,7 +615,7 @@
 - Alerts in Statistics [\#274](https://github.com/TheHive-Project/TheHive/issues/274)
 - Statistics: Observables and IOC over time [\#215](https://github.com/TheHive-Project/TheHive/issues/215)
 - Export Statistics/Metrics [\#197](https://github.com/TheHive-Project/TheHive/issues/197)
-- Msg\_Parser analyser show for all files [\#184](https://github.com/TheHive-Project/TheHive/issues/184)
+- Msg_Parser analyser show for all files [\#184](https://github.com/TheHive-Project/TheHive/issues/184)
 - Assign default metric values [\#176](https://github.com/TheHive-Project/TheHive/issues/176)
 - Display Cortex Version, Instance Name, Status and Available Analyzers [\#130](https://github.com/TheHive-Project/TheHive/issues/130)
 - Feature Request: Webhooks [\#20](https://github.com/TheHive-Project/TheHive/issues/20)
@@ -529,6 +645,7 @@
 - Correct typo [\#353](https://github.com/TheHive-Project/TheHive/pull/353) ([arnydo](https://github.com/arnydo))
 
 ## [2.13.2](https://github.com/TheHive-Project/TheHive/tree/2.13.2) (2017-10-24)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.13.1...2.13.2)
 
 **Fixed bugs:**
@@ -540,6 +657,7 @@
 - Error on custom fields format when merging cases [\#331](https://github.com/TheHive-Project/TheHive/issues/331)
 
 ## [2.13.1](https://github.com/TheHive-Project/TheHive/tree/2.13.1) (2017-09-18)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.13.0...2.13.1)
 
 **Fixed bugs:**
@@ -547,6 +665,7 @@
 - Tasks Tab Elasticsearch exception: Fielddata is disabled on text fields by default. Set fielddata=true on \[title\] [\#311](https://github.com/TheHive-Project/TheHive/issues/311)
 
 ## [2.13.0](https://github.com/TheHive-Project/TheHive/tree/2.13.0) (2017-09-15)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.12.1...2.13.0)
 
 **Implemented enhancements:**
@@ -573,6 +692,7 @@
 - Threat level/severity code inverted between The Hive and MISP [\#292](https://github.com/TheHive-Project/TheHive/issues/292)
 
 ## [2.12.1](https://github.com/TheHive-Project/TheHive/tree/2.12.1) (2017-08-01)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.12.0...2.12.1)
 
 **Implemented enhancements:**
@@ -592,6 +712,7 @@
 - Renaming of users does not work [\#249](https://github.com/TheHive-Project/TheHive/issues/249)
 
 ## [2.12.0](https://github.com/TheHive-Project/TheHive/tree/2.12.0) (2017-07-04)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.11.3...2.12.0)
 
 **Implemented enhancements:**
@@ -600,7 +721,7 @@
 - Sort the analyzers list in observable details page [\#245](https://github.com/TheHive-Project/TheHive/issues/245)
 - More options to sort cases [\#243](https://github.com/TheHive-Project/TheHive/issues/243)
 - Alert Preview and management improvements [\#232](https://github.com/TheHive-Project/TheHive/issues/232)
-- Show case status and category \(FP, TP, IND\) in related cases  [\#229](https://github.com/TheHive-Project/TheHive/issues/229)
+- Show case status and category \(FP, TP, IND\) in related cases [\#229](https://github.com/TheHive-Project/TheHive/issues/229)
 - Open External Links in New Tab [\#228](https://github.com/TheHive-Project/TheHive/issues/228)
 - Observable analyzers view reports. [\#191](https://github.com/TheHive-Project/TheHive/issues/191)
 - Specifying tags on statistics page or performing a search [\#186](https://github.com/TheHive-Project/TheHive/issues/186)
@@ -621,6 +742,7 @@
 - report status not updated after finish [\#212](https://github.com/TheHive-Project/TheHive/issues/212)
 
 ## [2.11.3](https://github.com/TheHive-Project/TheHive/tree/2.11.3) (2017-06-14)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/debian/2.11.2...2.11.3)
 
 **Fixed bugs:**
@@ -630,6 +752,7 @@
 - MISP synchronization doesn't retrieve all events [\#236](https://github.com/TheHive-Project/TheHive/issues/236)
 
 ## [2.11.2](https://github.com/TheHive-Project/TheHive/tree/2.11.2) (2017-05-24)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.11.1...2.11.2)
 
 **Implemented enhancements:**
@@ -649,6 +772,7 @@
 - Fixing links to docu repo [\#213](https://github.com/TheHive-Project/TheHive/pull/213) ([SHSauler](https://github.com/SHSauler))
 
 ## [2.11.1](https://github.com/TheHive-Project/TheHive/tree/2.11.1) (2017-05-17)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.11.0...2.11.1)
 
 **Implemented enhancements:**
@@ -663,6 +787,7 @@
 - Error updating case templates [\#204](https://github.com/TheHive-Project/TheHive/issues/204)
 
 ## [2.11.0](https://github.com/TheHive-Project/TheHive/tree/2.11.0) (2017-05-14)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.10.2...2.11.0)
 
 **Implemented enhancements:**
@@ -707,6 +832,7 @@
 - Fixed minor typo in template creation and update notifications. [\#194](https://github.com/TheHive-Project/TheHive/pull/194) ([dewoodruff](https://github.com/dewoodruff))
 
 ## [2.10.2](https://github.com/TheHive-Project/TheHive/tree/2.10.2) (2017-04-19)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.10.1...2.10.2)
 
 **Implemented enhancements:**
@@ -728,6 +854,7 @@
 - Observable Tags not displayed in 2.10.1 [\#155](https://github.com/TheHive-Project/TheHive/issues/155)
 
 ## [2.10.1](https://github.com/TheHive-Project/TheHive/tree/2.10.1) (2017-03-08)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.10.0...2.10.1)
 
 **Implemented enhancements:**
@@ -757,6 +884,7 @@
 - Observables password hint does not reflect backend change [\#83](https://github.com/TheHive-Project/TheHive/issues/83)
 
 ## [2.10.0](https://github.com/TheHive-Project/TheHive/tree/2.10.0) (2017-02-01)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.9.2...2.10.0)
 
 **Implemented enhancements:**
@@ -791,7 +919,7 @@
 **Closed issues:**
 
 - Database schema update \(v8\) [\#67](https://github.com/TheHive-Project/TheHive/issues/67)
-- Add support for more filetypes to PE\_info analyser [\#54](https://github.com/TheHive-Project/TheHive/issues/54)
+- Add support for more filetypes to PE_info analyser [\#54](https://github.com/TheHive-Project/TheHive/issues/54)
 - Create an analyzer to get information about PE file [\#51](https://github.com/TheHive-Project/TheHive/issues/51)
 - PhishTank Analyzer [\#40](https://github.com/TheHive-Project/TheHive/issues/40)
 - OTX Analyzer [\#32](https://github.com/TheHive-Project/TheHive/issues/32)
@@ -801,6 +929,7 @@
 - AlienVault OTX Analyzer [\#39](https://github.com/TheHive-Project/TheHive/pull/39) ([ecapuano](https://github.com/ecapuano))
 
 ## [2.9.2](https://github.com/TheHive-Project/TheHive/tree/2.9.2) (2017-01-19)
+
 [Full Changelog](https://github.com/TheHive-Project/TheHive/compare/2.9.1...2.9.2)
 
 **Implemented enhancements:**
@@ -809,9 +938,10 @@
 
 **Fixed bugs:**
 
-- docker image: $.post\(...\).success is not a function [\#95](https://github.com/TheHive-Project/TheHive/issues/95)
+- docker image: \$.post\(...\).success is not a function [\#95](https://github.com/TheHive-Project/TheHive/issues/95)
 
 ## [2.9.1](https://github.com/TheHive-Project/TheHive/tree/2.9.1) (2016-11-28)
+
 **Implemented enhancements:**
 
 - Statistics on a per case template name / prefix basis [\#31](https://github.com/TheHive-Project/TheHive/issues/31)
@@ -847,6 +977,4 @@
 - Fixing a Simple Typo [\#6](https://github.com/TheHive-Project/TheHive/pull/6) ([swannysec](https://github.com/swannysec))
 - Fixed broken link to Wiki [\#1](https://github.com/TheHive-Project/TheHive/pull/1) ([Neo23x0](https://github.com/Neo23x0))
 
-
-
-\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
+\* _This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)_

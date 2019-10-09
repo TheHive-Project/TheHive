@@ -1,10 +1,12 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, CustomFieldsCacheSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, CustomFieldsCacheSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, isAdmin, readonly) {
             var self = this;
             var eventId = event.id;
 
+            self.readonly = readonly;
+            self.isAdmin = isAdmin;
             self.templates = _.pluck(templates, 'name');
             self.CaseResolutionStatus = CaseResolutionStatus;
             self.event = event;
@@ -187,6 +189,23 @@
                 }).catch(function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
+            };
+
+            this.delete = function() {
+                ModalUtilsSrv.confirm('Remove Alert', 'Are you sure you want to delete this Alert?', {
+                    okText: 'Yes, remove it',
+                    flavor: 'danger'
+                }).then(function() {
+                    AlertingSrv.forceRemove(self.event.id)
+                    .then(function() {
+                        $uibModalInstance.close();
+                        NotificationSrv.log('Alert has been permanently deleted', 'success');
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                    });
+                });
+
             };
 
             this.canMarkAsRead = AlertingSrv.canMarkAsRead;

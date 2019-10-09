@@ -8,10 +8,8 @@ search {
   ## Basic configuration
   # Index name.
   index = the_hive
-  # ElasticSearch cluster name.
-  cluster = hive
   # ElasticSearch instance address.
-  host = ["127.0.0.1:9300"]
+  uri = "http://127.0.0.1:9200/"
 
   ## Advanced configuration
   # Scroll keepalive.
@@ -28,33 +26,21 @@ search {
   #  mapping.nested_fields.limit = 100
   #}
 
-  ### XPack SSL configuration
-  # Username for XPack authentication
+  ## Authentication configuration
   #search.username = ""
-  # Password for XPack authentication
   #search.password = ""
-  # Enable SSL to connect to ElasticSearch
-  search.ssl.enabled = false
-  # Path to certificate authority file
-  #search.ssl.ca = ""
-  # Path to certificate file
-  #search.ssl.certificate = ""
-  # Path to key file
-  #search.ssl.key = ""
 
-  ### SearchGuard configuration
-  # Path to JKS file containing client certificate
-  #search.guard.keyStore.path = ""
-  # Password of the keystore
-  #search.guard.keyStore.password = ""
-  # Path to JKS file containing certificate authorities
-  #search.guard.trustStore.path = ""
-  ## Password of the truststore
-  #search.guard.trustStore.password = ""
-  # Enforce hostname verification
-  #search.guard.hostVerification = false
-  # If hostname verification is enabled specify if hostname should be resolved
-  #search.guard.hostVerificationResolveHostname = false
+  ## SSL configuration
+  #search.keyStore {
+  #  path = "/path/to/keystore"
+  #  type = "JKS" # or PKCS12
+  #  password = "keystore-password"
+  #}
+  #search.trustStore {
+  #  path = "/path/to/trustStore"
+  #  type = "JKS" # or PKCS12
+  #  password = "trustStore-password"
+  #}
 }
 
 # Authentication

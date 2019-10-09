@@ -165,10 +165,10 @@
 
                     // Prepare the filter value
                     if (field === 'keyword') {
-                        query = value;
+                        query = value.replace(/"/gi, '\\"');
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
-                            return field + ':"' + convertFn(val.text) + '"';
+                            return field + ':"' + convertFn(val.text.replace(/"/gi, '\\"')) + '"';
                         }).join(' OR ');
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
@@ -178,7 +178,7 @@
                         query = field + ':[ ' + fromDate + ' TO ' + toDate + ' ]';
 
                     } else {
-                        query = field + ':' + convertFn(value);
+                        query = field + ':' + convertFn(value.replace(/"/gi, '\\"'));
                     }
 
                     factory.filters[field] = {

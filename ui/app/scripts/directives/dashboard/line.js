@@ -61,7 +61,7 @@
                             rawData = {};
 
                         _.each(response.data, function(value, key) {
-                            rawData[key] = value[scope.options.field]
+                            rawData[key] = value[scope.options.field];
                         });
 
                         _.each(rawData, function(value) {
@@ -152,8 +152,8 @@
 
                         scope.chart = chart;
                     }, function(err) {
-                        scope.error = true;
-                        NotificationSrv.log('Failed to fetch data, please edit the widget definition', 'error');
+                        scope.error = true;                        
+                        NotificationSrv.error('dashboardBar', 'Failed to fetch data, please edit the widget definition', err.status);
                     });
                 };
 

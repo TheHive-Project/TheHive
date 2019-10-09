@@ -1,18 +1,18 @@
 package models
 
 import java.util.Date
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import scala.concurrent.Future
 
 import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json.{ JsFalse, JsObject }
+import play.api.libs.json.{JsFalse, JsObject}
 
 import models.JsonFormat.taskStatusFormat
 import services.AuditedModel
 
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{ AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F }
+import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F}
 import org.elastic4play.utils.RichJson
 
 object TaskStatus extends Enumeration with HiveEnumeration {
@@ -21,20 +21,23 @@ object TaskStatus extends Enumeration with HiveEnumeration {
 }
 
 trait TaskAttributes { _: AttributeDef ⇒
-  val title = attribute("title", F.textFmt, "Title of the task")
+  val title       = attribute("title", F.textFmt, "Title of the task")
   val description = optionalAttribute("description", F.textFmt, "Task details")
-  val owner = optionalAttribute("owner", F.userFmt, "User who owns the task")
-  val status = attribute("status", F.enumFmt(TaskStatus), "Status of the task", TaskStatus.Waiting)
-  val flag = attribute("flag", F.booleanFmt, "Flag of the task", false)
-  val startDate = optionalAttribute("startDate", F.dateFmt, "Timestamp of the comment start")
-  val endDate = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
-  val order = attribute("order", F.numberFmt, "Order of the task", 0L)
-  val dueDate = optionalAttribute("dueDate", F.dateFmt, "When this date is passed, Thehive warns users")
-  val group = attribute("group", F.stringFmt, "Name used to group tasks", "default")
+  val owner       = optionalAttribute("owner", F.userFmt, "User who owns the task")
+  val status      = attribute("status", F.enumFmt(TaskStatus), "Status of the task", TaskStatus.Waiting)
+  val flag        = attribute("flag", F.booleanFmt, "Flag of the task", false)
+  val startDate   = optionalAttribute("startDate", F.dateFmt, "Timestamp of the comment start")
+  val endDate     = optionalAttribute("endDate", F.dateFmt, "Timestamp of the comment end")
+  val order       = attribute("order", F.numberFmt, "Order of the task", 0L)
+  val dueDate     = optionalAttribute("dueDate", F.dateFmt, "When this date is passed, Thehive warns users")
+  val group       = attribute("group", F.stringFmt, "Name used to group tasks", "default")
 }
 
 @Singleton
-class TaskModel @Inject() (caseModel: CaseModel) extends ChildModelDef[TaskModel, Task, CaseModel, Case](caseModel, "case_task", "Task", "/case/task") with TaskAttributes with AuditedModel {
+class TaskModel @Inject()(caseModel: CaseModel)
+    extends ChildModelDef[TaskModel, Task, CaseModel, Case](caseModel, "case_task", "Task", "/case/task")
+    with TaskAttributes
+    with AuditedModel {
   override val defaultSortBy = Seq("-startDate")
 
   override def updateHook(task: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {

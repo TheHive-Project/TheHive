@@ -2,39 +2,51 @@ package models
 
 import java.util.Date
 
-import javax.inject.{ Inject, Provider, Singleton }
+import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.JsObject
-import play.api.{ Configuration, Logger }
+import play.api.{Configuration, Logger}
 
 import services.AuditedModel
 
-import org.elastic4play.models.{ Attribute, AttributeDef, AttributeFormat, BaseEntity, EntityDef, EnumerationAttributeFormat, ListEnumerationAttributeFormat, ModelDef, MultiAttributeFormat, ObjectAttributeFormat, OptionalAttributeFormat, StringAttributeFormat, AttributeOption ⇒ O }
-import org.elastic4play.services.{ AuditableAction, AuxSrv }
+import org.elastic4play.models.{
+  Attribute,
+  AttributeDef,
+  AttributeFormat,
+  BaseEntity,
+  EntityDef,
+  EnumerationAttributeFormat,
+  ListEnumerationAttributeFormat,
+  ModelDef,
+  MultiAttributeFormat,
+  ObjectAttributeFormat,
+  OptionalAttributeFormat,
+  StringAttributeFormat,
+  AttributeOption ⇒ O
+}
+import org.elastic4play.services.{AuditableAction, AuxSrv}
 import org.elastic4play.services.JsonFormat.auditableActionFormat
 
 trait AuditAttributes { _: AttributeDef ⇒
   def detailsAttributes: Seq[Attribute[_]]
 
   val operation: A[AuditableAction.Value] = attribute("operation", AttributeFormat.enumFmt(AuditableAction), "Operation", O.readonly)
-  val details: A[JsObject] = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject.empty, O.readonly)
-  val otherDetails: A[Option[String]] = optionalAttribute("otherDetails", AttributeFormat.textFmt, "Other details", O.readonly)
-  val objectType: A[String] = attribute("objectType", AttributeFormat.stringFmt, "Table affected by the operation", O.readonly)
-  val objectId: A[String] = attribute("objectId", AttributeFormat.stringFmt, "Object targeted by the operation", O.readonly)
-  val base: A[Boolean] = attribute("base", AttributeFormat.booleanFmt, "Indicates if this operation is the first done for a http query", O.readonly)
-  val startDate: A[Date] = attribute("startDate", AttributeFormat.dateFmt, "Date and time of the operation", new Date, O.readonly)
-  val rootId: A[String] = attribute("rootId", AttributeFormat.stringFmt, "Root element id (routing id)", O.readonly)
-  val requestId: A[String] = attribute("requestId", AttributeFormat.stringFmt, "Id of the request that do the operation", O.readonly)
+  val details: A[JsObject]                = attribute("details", AttributeFormat.objectFmt(detailsAttributes), "Details", JsObject.empty, O.readonly)
+  val otherDetails: A[Option[String]]     = optionalAttribute("otherDetails", AttributeFormat.textFmt, "Other details", O.readonly)
+  val objectType: A[String]               = attribute("objectType", AttributeFormat.stringFmt, "Table affected by the operation", O.readonly)
+  val objectId: A[String]                 = attribute("objectId", AttributeFormat.stringFmt, "Object targeted by the operation", O.readonly)
+  val base: A[Boolean]                    = attribute("base", AttributeFormat.booleanFmt, "Indicates if this operation is the first done for a http query", O.readonly)
+  val startDate: A[Date]                  = attribute("startDate", AttributeFormat.dateFmt, "Date and time of the operation", new Date, O.readonly)
+  val rootId: A[String]                   = attribute("rootId", AttributeFormat.stringFmt, "Root element id (routing id)", O.readonly)
+  val requestId: A[String]                = attribute("requestId", AttributeFormat.stringFmt, "Id of the request that do the operation", O.readonly)
 }
 
 @Singleton
-class AuditModel(
-    auditName: String,
-    auditedModels: immutable.Set[AuditedModel],
-    auxSrvProvider: Provider[AuxSrv],
-    implicit val ec: ExecutionContext) extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit") with AuditAttributes {
+class AuditModel(auditName: String, auditedModels: immutable.Set[AuditedModel], auxSrvProvider: Provider[AuxSrv], implicit val ec: ExecutionContext)
+    extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit")
+    with AuditAttributes {
 
   lazy val auxSrv = auxSrvProvider.get()
 
@@ -42,16 +54,13 @@ class AuditModel(
       configuration: Configuration,
       auditedModels: immutable.Set[AuditedModel],
       auxSrvProvider: Provider[AuxSrv],
-      ec: ExecutionContext) =
-    this(
-      configuration.get[String]("audit.name"),
-      auditedModels,
-      auxSrvProvider,
-      ec)
+      ec: ExecutionContext
+  ) =
+    this(configuration.get[String]("audit.name"), auditedModels, auxSrvProvider, ec)
 
   private[AuditModel] lazy val logger = Logger(getClass)
 
-  def mergeAttributeFormat(context: String, format1: AttributeFormat[_], format2: AttributeFormat[_]): Option[AttributeFormat[_]] = {
+  def mergeAttributeFormat(context: String, format1: AttributeFormat[_], format2: AttributeFormat[_]): Option[AttributeFormat[_]] =
     (format1, format2) match {
       case (OptionalAttributeFormat(f1), f2)                                              ⇒ mergeAttributeFormat(context, f1, f2)
       case (f1, OptionalAttributeFormat(f2))                                              ⇒ mergeAttributeFormat(context, f1, f2)
@@ -65,7 +74,6 @@ class AuditModel(
         None
 
     }
-  }
 
   def mergeAttributes(context: String, attributes: Seq[Attribute[_]]): Option[ObjectAttributeFormat] = {
     val mergeAttributes: Iterable[Option[Attribute[_]]] = attributes
@@ -85,7 +93,9 @@ class AuditModel(
             }
             .map(format ⇒ Attribute("audit", _name, format, Nil, None, ""))
             .orElse {
-              logger.error(s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.attributeName + ": " + a.format.name).mkString("\n")}")
+              logger.error(
+                s"Mapping is not consistent on attribute $context:\n${_attributes.map(a ⇒ a.modelName + "/" + a.attributeName + ": " + a.format.name).mkString("\n")}"
+              )
               None
             }
       }
@@ -95,16 +105,18 @@ class AuditModel(
     else
       Some(ObjectAttributeFormat(mergeAttributes.flatten.toSeq))
   }
-  def detailsAttributes: Seq[Attribute[_]] = {
-    mergeAttributes("audit", auditedModels
-      .flatMap(_.attributes)
-      .filter(a ⇒ a.isModel && !a.isUnaudited)
-      .toSeq)
-      .map(_.subAttributes)
-      .getOrElse(Nil)
-  }
 
-  override def getStats(entity: BaseEntity): Future[JsObject] = {
+  def detailsAttributes: Seq[Attribute[_]] =
+    mergeAttributes(
+      "audit",
+      auditedModels
+        .flatMap(_.attributes)
+        .filter(a ⇒ a.isModel && !a.isUnaudited)
+        .toSeq
+    ).map(_.subAttributes)
+      .getOrElse(Nil)
+
+  override def getStats(entity: BaseEntity): Future[JsObject] =
     entity match {
       case audit: Audit ⇒
         auxSrv(audit.objectType(), audit.objectId(), 10, withStats = false, removeUnaudited = true)
@@ -117,7 +129,6 @@ class AuditModel(
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
         Future.successful(JsObject.empty)
     }
-  }
 
   override def apply(attributes: JsObject): Audit = new Audit(this, attributes)
 }

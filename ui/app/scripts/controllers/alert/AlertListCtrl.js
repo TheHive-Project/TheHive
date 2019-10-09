@@ -1,10 +1,12 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
+
+            self.isAdmin = $scope.isAdmin($scope.currentUser);
 
             self.list = [];
             self.selection = [];
@@ -13,6 +15,7 @@
                 unfollow: false,
                 markAsRead: false,
                 markAsUnRead: false,
+                delete: false,
                 selectAll: false
             };
             self.filtering = new FilteringSrv('alert-section', {
@@ -193,6 +196,24 @@
                 });
             };
 
+            self.bulkDelete = function() {
+
+              ModalUtilsSrv.confirm('Remove Alerts', 'Are you sure you want to delete the selected Alerts?', {
+                  okText: 'Yes, remove them',
+                  flavor: 'danger'
+              }).then(function() {
+                  var ids = _.pluck(self.selection, 'id');
+
+                  AlertingSrv.bulkRemove(ids)
+                      .then(function(/*response*/) {
+                          NotificationSrv.log('The selected events have been deleted', 'success');
+                      })
+                      .catch(function(response) {
+                          NotificationSrv.error('AlertListCtrl', response.data, response.status);
+                      });
+              });
+            };
+
             self.import = function(event) {
                 $uibModal.open({
                     templateUrl: 'views/partials/alert/event.dialog.html',
@@ -203,7 +224,9 @@
                         event: event,
                         templates: function() {
                             return CaseTemplateSrv.list();
-                        }
+                        },
+                        isAdmin: self.isAdmin,
+                        readonly: false
                     }
                 });
             };
@@ -278,6 +301,9 @@
                 self.menu.createNewCase = temp.indexOf('Imported') === -1;
                 self.menu.mergeInCase = temp.indexOf('Imported') === -1;
 
+                temp = _.without(_.uniq(_.pluck(self.selection, 'case')), null, undefined);
+
+                self.menu.delete = temp.length === 0;
             };
 
             self.select = function(event) {

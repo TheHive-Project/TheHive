@@ -81,15 +81,17 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th style="width:20px;"></th>
+                            <th style="width:40px;"></th>
                             <th style="width:100px;">Type</th>
                             <th>Data</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr ng-repeat="attribute in dialog.pagination.data" class="clickable">
-                            <td>
-                                <span uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="attribute.seen > 0" class="glyphicon glyphicon-eye-open"></span>
+                            <td class="nowrap">
+                                <span ng-if="attribute.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                                <span ng-if="attribute.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                                <span ng-if="attribute.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                             </td>
                             <td>{{attribute.dataType}}</td>
                             <td class="wrap">
@@ -141,27 +143,31 @@
 
 
     <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsRead(dialog.event)"
+        ng-if="dialog.canMarkAsRead(dialog.event) && !dialog.readonly"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope"></i> Mark as read
     </button>
     <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsUnread(dialog.event)"
+        ng-if="dialog.canMarkAsUnread(dialog.event) && !dialog.readonly"
         ng-disabled="dialog.loading"
         ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope-open-o"></i> Mark as unread
     </button>
 
-    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.follow()">
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.follow()">
         <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
 
-    <button class="btn btn-default" type="button" ng-disabled="dialog.loading" ng-click="dialog.merge()">
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.merge()">
         <i class="fa fa-compress"></i> Merge into case
     </button>
 
-    <form name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
+    <button ng-if="dialog.isAdmin && !dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
+        <i class="fa fa-trash"></i> Delete
+    </button>
+
+    <form ng-if="!dialog.readonly" name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
         <div class="form-group">
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">

@@ -10,7 +10,7 @@
                     var footerHeight = $('.main-footer').outerHeight();
                     var headerHeight = $('.main-header').height();
 
-                    elem.css('min-height', windowHeight - headerHeight - footerHeight);
+                    elem.css('min-height', (windowHeight - headerHeight - footerHeight) + "px");
                 }, 500);
 
                 angular.element($window).bind('resize', function() {
@@ -18,7 +18,7 @@
                     var footerHeight = $('.main-footer').outerHeight();
                     var headerHeight = $('.main-header').height();
 
-                    elem.css('min-height', windowHeight - headerHeight - footerHeight);
+                    elem.css('min-height', (windowHeight - headerHeight - footerHeight) + "px");
                 });
 
             }
