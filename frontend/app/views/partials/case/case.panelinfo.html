@@ -73,9 +73,9 @@
 
             <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">
                 <span class="mr-xxs text-primary">|</span>
-                <a href ng-click="shareCase()" class="text-primary noline" uib-tooltip="Share case">
+                <a href ng-click="exportToMisp()" class="text-primary noline" uib-tooltip="Share case">
                     <i class="text-primary fa fa-share"></i>
-                    Share ({{existingExports}})
+                    Export ({{existingExports}})
                 </a>
             </span>
 
@@ -115,6 +115,15 @@
                 <a href ng-click="reopenCase()" class="text-success noline" uib-tooltip="Reopen case">
                     <i class="text-success fa fa-check-circle"></i>
                     Reopen
+                </a>
+            </span>
+
+            <span class="ml-xxs text-primary pull-right">|</span>
+
+            <span class="ml-xxs pull-right">
+                <a href ui-sref="app.case.sharing({caseId: caze.id})" class="noline">
+                    <i class="fa fa-users"></i>
+                    Share
                 </a>
             </span>
 

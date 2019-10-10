@@ -28,6 +28,7 @@ angular.module('thehive', [
     'duScroll',
     'dndLists',
     'colorpicker.module',
+    'btorfs.multiselect',
     'theHiveControllers',
     'theHiveServices',
     'theHiveFilters',
@@ -240,7 +241,7 @@ angular.module('thehive', [
                     }
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
-            })            
+            })
             .state('app.administration.report-templates', {
                 url: '/report-templates',
                 templateUrl: 'views/partials/admin/report-templates.html',
@@ -322,6 +323,37 @@ angular.module('thehive', [
                 url: '/links',
                 templateUrl: 'views/partials/case/case.links.html',
                 controller: 'CaseLinksCtrl'
+            })
+            .state('app.case.sharing', {
+                url: '/sharing',
+                templateUrl: 'views/partials/case/case.shares.html',
+                controller: 'CaseSharingCtrl',
+                controllerAs: '$vm',
+                resolve: {
+                    organisations: function(AuthenticationSrv, OrganisationSrv) {
+                        return AuthenticationSrv.current()
+                            .then(function(user) {
+                                return OrganisationSrv.links(user.organisation);
+                            })
+                            .then(function(response) {
+                                return _.map(response, function(item) {
+                                    return _.pick(item, 'name', 'description');
+                                });
+                            });
+                    },
+                    profiles: function(ProfileSrv) {
+                        return ProfileSrv.list()
+                            .then(function(response) {
+                                return _.map(response.data, 'name');
+                            });
+                    },
+                    shares: function(CaseSrv, $stateParams) {
+                        return CaseSrv.getShares($stateParams.caseId)
+                            .then(function(response) {
+                                return response.data;
+                            });
+                    }
+                }
             })
             .state('app.case.alerts', {
                 url: '/alerts',

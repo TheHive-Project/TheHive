@@ -1,0 +1,58 @@
+<div class="row mb-s">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group" if-permission="manageCase" allowed="{{userPermissions}}">
+                <button class="btn btn-sm btn-primary" ng-click="$vm.shareCase()">
+                    <i class="fa fa-plus"></i>
+                    Add share
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" ng-if="$vm.shares.length === 0">
+    <div class="col-md-12">
+        <div class=" empty-message">No records</div>
+    </div>
+</div>
+
+<div class="row" ng-if="$vm.shares.length > 0">
+    <div class="col-md-12">
+        <p>
+            The current case is shared with the following organisation(s)
+        </p>
+
+        <div ng-if="$vm.shares.length > 0">
+            <table class="table table-stripped">
+                <thead>
+                    <!-- <th width="40" class="text-center">
+                        <input type="checkbox" ng-change="$vm.toggleLinkAll()" ng-model="$vm.allSelected">
+                    </th> -->
+                    <th>
+                        Organisation
+                    </th>
+                    <th width="250">
+                        Profile
+                    </th>
+                    <th width="160">
+                        Shared At
+                    </th>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="share in $vm.shares | orderBy:'organisationName'">
+                        <!-- <td width="40" class="text-center">
+                            <input type="checkbox" ng-model="org.linked">
+                        </td> -->
+                        <td>{{share.organisationName}}</td>
+                        <td>
+                            <!-- on-update="updateField('group', newValue, task)" -->
+                            <updatable-select options="$vm.profiles"  value="share.profileName"></updatable-select>
+                        </td>
+                        <td>{{share.createdAt | shortDate}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -264,7 +264,7 @@
                 });
             };
 
-            $scope.shareCase = function() {
+            $scope.exportToMisp = function() {
                 if($scope.appConfig.connectors.misp && $scope.appConfig.connectors.misp.servers.length === 0) {
                     NotificationSrv.log('There are no MISP servers defined', 'error');
                     return;
@@ -294,7 +294,7 @@
                     $scope.caze = data.toJSON();
                     $scope.initExports();
                 });
-            };
+            };            
 
             $scope.removeCase = function() {
               var modalInstance = $uibModal.open({

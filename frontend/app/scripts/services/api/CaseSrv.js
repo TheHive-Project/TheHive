@@ -1,8 +1,9 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('CaseSrv', function($resource) {
-            return $resource('./api/case/:caseId', {}, {
+        .service('CaseSrv', function($http, $resource) {
+
+            var resource = $resource('./api/case/:caseId', {}, {
                 update: {
                     method: 'PATCH'
                 },
@@ -33,9 +34,29 @@
                 },
                 alerts: {
                   method: 'POST',
-                  url: './api/alert/_search',                  
+                  url: './api/alert/_search',
                   isArray: true
                 }
             });
+
+            this.get = resource.get;
+            this.alerts = resource.alerts;
+            this.save = resource.save;
+            this.forceRemove = resource.forceRemove;
+            this.links = resource.links;
+            this.update = resource.update;
+            this.merge = resource.merge;
+            this.query = resource.query;
+
+            this.getShares = function(id) {
+                return $http.get('./api/case/'+id+'/shares');
+            };
+
+            this.setShares = function(id, shares) {
+                return $http.put('./api/case/'+id+'/shares', {
+                    "shares": shares
+                });
+            };
         });
+
 })();
