@@ -2,10 +2,10 @@ package org.thp.thehive.controllers.v0
 
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.RichSeq
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
@@ -79,6 +79,26 @@ class ShareCtrl @Inject()(
           share <- shareSrv.get(id).getOrFail()
           _ = shareSrv.get(share).remove()
         } yield Results.NoContent
+      }
+
+  def updateShare(id: String): Action[AnyContent] =
+    entryPoint("update share")
+      .extract("profile", FieldsParser.string.on("profile"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val profile: String = request.body("profile")
+        for {
+          _         <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
+          richShare <- shareSrv.get(id).richShare.getOrFail()
+          organisation <- organisationSrv
+            .get(richShare.organisationName)
+            .visibleOrganisations
+            .get(richShare.organisationName)
+            .getOrFail()
+          case0       <- caseSrv.getOrFail(richShare.caseId)
+          p           <- profileSrv.getOrFail(profile)
+          updated     <- shareSrv.shareCase(case0, organisation, p)
+          richUpdated <- db.roTransaction(graph => shareSrv.get(updated)(graph).richShare.getOrFail())
+        } yield Results.Ok(richUpdated.toJson)
       }
 
   def listShareCases(caseId: String): Action[AnyContent] =
