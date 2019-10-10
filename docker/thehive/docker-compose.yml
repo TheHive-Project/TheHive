@@ -4,7 +4,6 @@ services:
     image: elasticsearch:6.8.0
     environment:
       - http.host=0.0.0.0
-      - cluster.name=hive
       - thread_pool.index.queue_size=100000
       - thread_pool.search.queue_size=100000
       - thread_pool.bulk.queue_size=100000
