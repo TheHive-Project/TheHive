@@ -98,7 +98,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(Json.parse("""{"title": "new title task 2", "owner": "user1@thehive.local", "status": "InProgress"}"""))
         val result = taskCtrl.update(task2._id)(request)
 
-        status(result) shouldEqual 204
+        status(result) shouldEqual 200
 
         val expected = TestTask(
           title = "new title task 2",
@@ -166,7 +166,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
           .withJsonBody(Json.parse("""{"owner": null}"""))
         val result = taskCtrl.update(task3._id)(request)
 
-        status(result) shouldEqual 204
+        status(result) shouldEqual 200
 
         val newTask = getTaskByTitle("case 3 task 1").map(TestTask.apply)
 
