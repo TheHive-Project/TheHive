@@ -141,6 +141,43 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       getShares("#3").length shouldEqual 1
       getShares("#3").head.organisationName shouldEqual "default"
     }
+
+    "remove a share" in {
+      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/cert/links")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.parse("""{"organisations":["default"]}"""))
+      val resultBulkLink = organisationCtrl.bulkLink("cert")(requestBulkLink)
+
+      status(resultBulkLink) shouldEqual 201
+      val request = FakeRequest("PUT", s"/api/case/#1/shares")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withJsonBody(
+          Json.obj(
+            "shares" -> List(
+              Json.toJson(InputShare("default", "read-only", TasksFilter.all, ObservablesFilter.all))
+            )
+          )
+        )
+      val result = shareCtrl.shareCase("#1")(request)
+
+      status(result) shouldEqual 201
+      getShares("#1").length shouldEqual 2
+
+      val share = getShares("#1").find(_.organisationName == "default").get
+
+      val requestRemove = FakeRequest("DELETE", s"/api/case/share/${share._id}")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+      val resultRemove = shareCtrl.removeShare(share._id)(requestRemove)
+
+      status(resultRemove) shouldEqual 204
+
+      val ownShare = getShares("#1").find(_.organisationName == "cert").get
+      val requestRemoveOwn = FakeRequest("DELETE", s"/api/case/share/${ownShare._id}")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+      val resultRemoveOwn = shareCtrl.removeShare(ownShare._id)(requestRemoveOwn)
+
+      status(resultRemoveOwn) shouldEqual 500
+    }
   }
 
 }

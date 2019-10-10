@@ -89,6 +89,7 @@ class Router @Inject()(
     case PUT(p"/case/$id/shares")           => shareCtrl.shareCase(id)
     case GET(p"/case/$id/shares")           => shareCtrl.listShareCases(id)
     case GET(p"/case/$id/task/$tId/shares") => shareCtrl.listShareTasks(id, tId)
+    case DELETE(p"case/share/$id")          => shareCtrl.removeShare(id)
 
     case GET(p"/case/task")           => queryExecutor.task.search
     case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok

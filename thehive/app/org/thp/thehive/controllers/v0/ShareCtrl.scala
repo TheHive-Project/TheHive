@@ -66,6 +66,18 @@ class ShareCtrl @Inject()(
       _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
     } yield richShare.toJson
 
+  def removeShare(id: String): Action[AnyContent] =
+    entryPoint("remove share")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          organisation <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
+          relatedOrg   <- shareSrv.get(id).organisation.getOrFail()
+          if relatedOrg.name != organisation.name
+          share <- shareSrv.get(id).getOrFail()
+          _ = shareSrv.get(share).remove()
+        } yield Results.NoContent
+      }
+
   def listShareCases(caseId: String): Action[AnyContent] =
     entryPoint("list case shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
