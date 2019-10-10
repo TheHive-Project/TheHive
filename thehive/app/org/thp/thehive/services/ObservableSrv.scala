@@ -3,11 +3,6 @@ package org.thp.thehive.services
 import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
@@ -19,6 +14,10 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject()(
@@ -27,7 +26,6 @@ class ObservableSrv @Inject()(
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
     caseSrvProvider: Provider[CaseSrv],
-    shareSrv: ShareSrv,
     auditSrv: AuditSrv
 )(
     implicit db: Database
@@ -103,6 +101,9 @@ class ObservableSrv @Inject()(
       _         <- keyValues.toTry(kv => observableKeyValueSrv.create(ObservableKeyValue(), observable, kv))
     } yield keyValues
 
+  def updateTagNames(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(observable, t.toSet))
+
   def updateTags(observable: Observable with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(observable)
       .tags
@@ -117,9 +118,6 @@ class ObservableSrv @Inject()(
       //      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
     } yield ()
   }
-
-  def updateTagNames(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(observable, t.toSet))
 
   def duplicate(richObservable: RichObservable)(
       implicit graph: Graph,
@@ -195,7 +193,6 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
         .has(Key("login"), P.eq(authContext.userId))
     )
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(newRaw)
   override def newInstance(): ObservableSteps                             = new ObservableSteps(raw.clone())
 
   def richObservable: Traversal[RichObservable, RichObservable] =
@@ -274,6 +271,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
         .dedup
     )
   }
+
+  override def newInstance(newRaw: GremlinScala[Vertex]): ObservableSteps = new ObservableSteps(newRaw)
 
   def data           = new DataSteps(raw.outTo[ObservableData])
   def attachments    = new AttachmentSteps(raw.outTo[ObservableAttachment])
