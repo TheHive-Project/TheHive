@@ -39,7 +39,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val resGet = shareCtrl.listShareCases(caseId)(requestGet)
 
-      status(resGet) shouldEqual 200
+      status(resGet) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resGet)}")
 
       val l = contentAsJson(resGet).as[List[OutputShare]]
 
@@ -54,14 +54,14 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result = shareCtrl.shareCase("#4")(request)
 
-      status(result) shouldEqual 201
+      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val requestAgain = FakeRequest("PUT", "/api/case/#4/shares")
         .withJsonBody(inputShare)
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result2 = shareCtrl.shareCase("#4")(requestAgain)
 
-      status(result2) shouldEqual 201
+      status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val l     = getShares("#4")
       val share = l.find(_.organisationName == "cert")
@@ -76,7 +76,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result3 = shareCtrl.shareCase("#4")(requestUpdate)
 
-      status(result3) shouldEqual 201
+      status(result3) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result3)}")
 
       val l2     = getShares("#4")
       val share2 = l2.find(_.organisationName == "cert")

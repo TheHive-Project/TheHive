@@ -279,4 +279,15 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   def attachments    = new AttachmentSteps(raw.outTo[ObservableAttachment])
   def keyValues      = new KeyValueSteps(raw.outTo[ObservableKeyValue])
   def observableType = new ObservableTypeSteps(raw.outTo[ObservableObservableType])
+
+  def shares: ShareSteps = new ShareSteps(raw.inTo[ShareObservable])
+
+  def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
+
+  def share(organistionName: String): ShareSteps =
+    new ShareSteps(
+      raw
+        .inTo[ShareObservable]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
+    )
 }

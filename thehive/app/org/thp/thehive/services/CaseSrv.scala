@@ -414,11 +414,13 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField])
 
-  def share(implicit authContext: AuthContext): ShareSteps =
+  def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
+
+  def share(organistionName: String): ShareSteps =
     new ShareSteps(
       raw
         .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
+        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
     )
 
   def shares: ShareSteps = new ShareSteps(raw.inTo[ShareCase])

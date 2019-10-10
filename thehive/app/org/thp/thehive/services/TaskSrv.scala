@@ -151,8 +151,16 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  def unassign(): Unit = {
-    raw.outToE[TaskUser].drop().iterate()
-    ()
-  }
+  def unassign(): Unit = this.outToE[TaskUser].remove()
+
+  def shares: ShareSteps = new ShareSteps(raw.inTo[ShareTask])
+
+  def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
+
+  def share(organistionName: String): ShareSteps =
+    new ShareSteps(
+      raw
+        .inTo[ShareTask]
+        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
+    )
 }

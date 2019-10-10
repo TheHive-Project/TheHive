@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import scala.language.implicitConversions
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.thehive.dto.v0.OutputShare

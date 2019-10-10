@@ -1,19 +1,25 @@
 package org.thp.thehive.services
 
+import scala.util.{Success, Try}
+
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
-import play.api.libs.json.Json
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ShareSrv @Inject()(implicit val db: Database, auditSrv: AuditSrv) extends VertexSrv[Share, ShareSteps] {
+class ShareSrv @Inject()(
+    implicit val db: Database,
+    auditSrv: AuditSrv,
+    caseSrvProvider: Provider[CaseSrv],
+    taskSrv: TaskSrv,
+    observableSrv: ObservableSrv
+) extends VertexSrv[Share, ShareSteps] {
+  lazy val caseSrv = caseSrvProvider.get
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]
@@ -38,46 +44,26 @@ class ShareSrv @Inject()(implicit val db: Database, auditSrv: AuditSrv) extends 
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share with Entity] =
-    if (get(`case`, organisation).profile.exists()) {
-      get(`case`, organisation).profile.getOrFail().flatMap { existingProfile =>
-        if (existingProfile.name != profile.name) for {
-          share <- get(`case`, organisation).getOrFail()
-          _     <- updateProfile(share, existingProfile, profile)
-          _     <- auditSrv.share.update(share, `case`, Json.obj("profile" -> profile.name, "organisation" -> organisation.name, "case" -> `case`._id))
-        } yield share
-        else get(`case`, organisation).getOrFail()
-      }
-    } else {
-      for {
-        createdShare <- createEntity(Share())
-        _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
-        _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
-        _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
-        _            <- auditSrv.share.create(createdShare, `case`)
-      } yield createdShare
+    get(`case`, organisation).headOption() match {
+      case Some(existingShare) =>
+        if (!get(existingShare).profile.has(Key[String]("name"), P.eq[String](profile.name)).exists()) {
+          get(existingShare).outE().remove()
+          shareProfileSrv
+            .create(ShareProfile(), existingShare, profile)
+            .map(_ => existingShare)
+        } else Success(existingShare)
+      case None =>
+        for {
+          createdShare <- createEntity(Share())
+          _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
+          _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
+          _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
+          _            <- auditSrv.share.shareCase(`case`, organisation, profile)
+        } yield createdShare
     }
 
   def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
     initSteps.relatedTo(`case`).relatedTo(organisation)
-
-  /**
-    * Removes and creates a new ShareProfile
-    * @param share the share to connect the profile to
-    * @param prevProfile the previous profile
-    * @param profile the new one
-    * @return
-    */
-  def updateProfile(share: Share with Entity, prevProfile: Profile with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[ShareProfile with Entity] = {
-    get(share)
-      .outToE[ShareProfile]
-      .filter(_.inV().hasId(prevProfile._id))
-      .remove()
-
-    shareProfileSrv.create(ShareProfile(), share, profile)
-  }
 
   /**
     * Shares all the tasks for an already shared case
@@ -86,16 +72,8 @@ class ShareSrv @Inject()(implicit val db: Database, auditSrv: AuditSrv) extends 
     */
   def shareCaseTasks(
       share: Share with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[List[ShareTask with Entity]] = {
-    val (successes, failures) = {
-      for {
-        task <- get(share).`case`.tasks.toList
-      } yield shareTaskSrv.create(ShareTask(), share, task)
-    } partition (_.isSuccess)
-
-    if (failures.nonEmpty) Failure(failures.map(_.failed.get).head)
-    else Success(successes.map(_.get))
-  }
+  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareTask with Entity]] =
+    get(share).`case`.tasks.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareTaskSrv.create(ShareTask(), share, _))
 
   /**
     * Shares all the observables for an already shared case
@@ -104,17 +82,60 @@ class ShareSrv @Inject()(implicit val db: Database, auditSrv: AuditSrv) extends 
     */
   def shareCaseObservables(
       share: Share with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[List[ShareObservable with Entity]] = {
-    val (successes, failures) = {
-      for {
-        obs <- get(share).`case`.observables.toList
-      } yield shareObservableSrv.create(ShareObservable(), share, obs)
-    } partition (_.isSuccess)
+  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareObservable with Entity]] =
+    get(share).`case`.observables.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareObservableSrv.create(ShareObservable(), share, _))
 
-    if (failures.nonEmpty) Failure(failures.map(_.failed.get).head)
-    else Success(successes.map(_.get))
+  def updateTaskShares(
+      task: Task with Entity,
+      organisations: Seq[Organisation with Entity]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val (orgsToAdd, orgsToRemove) = taskSrv
+      .get(task)
+      .shares
+      .organisation
+      .toIterator
+      .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
+        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
+        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
+      }
+    orgsToRemove.foreach(o => taskSrv.get(task).share(o.name).remove())
+    orgsToAdd
+      .toTry { o =>
+        for {
+          case0 <- taskSrv.get(task).`case`.getOrFail()
+          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          _     <- shareTaskSrv.create(ShareTask(), share, task)
+          _     <- auditSrv.share.shareTask(task, case0, o)
+        } yield ()
+      }
+      .map(_ => ())
   }
 
+  def updateObservableShares(
+      observable: Observable with Entity,
+      organisations: Seq[Organisation with Entity]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val (orgsToAdd, orgsToRemove) = observableSrv
+      .get(observable)
+      .shares
+      .organisation
+      .toIterator
+      .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
+        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
+        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
+      }
+    orgsToRemove.foreach(o => observableSrv.get(observable).share(o.name).remove())
+    orgsToAdd
+      .toTry { o =>
+        for {
+          case0 <- observableSrv.get(observable).`case`.getOrFail()
+          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          _     <- shareObservableSrv.create(ShareObservable(), share, observable)
+          _     <- auditSrv.share.shareObservable(observable, case0, o)
+        } yield ()
+      }
+      .map(_ => ())
+  }
 }
 
 @EntitySteps[Share]
