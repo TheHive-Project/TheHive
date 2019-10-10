@@ -89,6 +89,8 @@ class Router @Inject()(
     case PUT(p"/case/$id/shares")           => shareCtrl.shareCase(id)
     case GET(p"/case/$id/shares")           => shareCtrl.listShareCases(id)
     case GET(p"/case/$id/task/$tId/shares") => shareCtrl.listShareTasks(id, tId)
+    case PUT(p"/case/$id/task/$tId/shares") => shareCtrl.shareTask(tId)
+    case PUT(p"/case/task/$tId/shares")     => shareCtrl.shareTask(tId)
     case DELETE(p"case/share/$id")          => shareCtrl.removeShare(id)
 
     case GET(p"/case/task")           => queryExecutor.task.search
@@ -117,6 +119,8 @@ class Router @Inject()(
     case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
     case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
+    case PUT(p"/case/$id/artifact/$tId/shares")       => shareCtrl.shareObservable(tId)
+    case PUT(p"/case/artifact/$tId/shares")           => shareCtrl.shareObservable(tId)
 
     case GET(p"/customField")          => customFieldCtrl.list
     case POST(p"/customField")         => customFieldCtrl.create

@@ -43,7 +43,7 @@ class AuditSrv @Inject()(
   val taskInTemplate                                      = new ObjectAudit[Task, CaseTemplate]
   val alert                                               = new SelfContextObjectAudit[Alert]
   val alertToCase                                         = new ObjectAudit[Alert, Case]
-  val share                                               = new ObjectAudit[Share, Case]
+  val share                                               = new ShareAudit
   val observableInAlert                                   = new ObjectAudit[Observable, Alert]
   val user                                                = new UserAudit
   val dashboard                                           = new SelfContextObjectAudit[Dashboard]
@@ -196,6 +196,66 @@ class AuditSrv @Inject()(
         Audit(Audit.update, entity, Some(Json.obj("organisation" -> organisation.name, "profile" -> profile.name).toString)),
         Some(entity),
         Some(entity)
+      )
+  }
+
+  class ShareAudit {
+
+    def shareCase(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, `case`, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name, "profile" -> profile.name)).toString)),
+        Some(`case`),
+        Some(`case`)
+      )
+
+    def shareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, task, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name)).toString)),
+        Some(task),
+        Some(`case`)
+      )
+
+    def shareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, observable, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name)).toString)),
+        Some(observable),
+        Some(`case`)
+      )
+
+    def unshareCase(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, `case`, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
+        Some(`case`),
+        Some(`case`)
+      )
+
+    def unshareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, task, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
+        Some(task),
+        Some(`case`)
+      )
+
+    def unshareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.update, observable, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
+        Some(observable),
+        Some(`case`)
       )
   }
 }

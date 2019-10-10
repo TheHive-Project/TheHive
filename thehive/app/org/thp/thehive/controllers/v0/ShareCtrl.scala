@@ -5,6 +5,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.RichSeq
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
@@ -20,6 +21,8 @@ class ShareCtrl @Inject()(
     shareSrv: ShareSrv,
     organisationSrv: OrganisationSrv,
     caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
+    observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
     userSrv: UserSrv
 ) {
@@ -116,4 +119,31 @@ class ShareCtrl @Inject()(
           )
         } else Success(Results.Forbidden)
       }
+
+  def shareTask(taskId: String): Action[AnyContent] =
+    entryPoint("share task")
+      .extract("organisations", FieldsParser.string.sequence.on("organisations"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val organisationIds: Seq[String] = request.body("organisations")
+        for {
+          task           <- taskSrv.getOrFail(taskId)
+          organisations  <- organisationIds.toTry(organisationSrv.getOrFail)
+          myOrganisation <- organisationSrv.getOrFail(request.organisation)
+          _              <- shareSrv.updateTaskShares(task, organisations :+ myOrganisation)
+        } yield Results.NoContent
+      }
+
+  def shareObservable(observableId: String): Action[AnyContent] =
+    entryPoint("share observable")
+      .extract("organisations", FieldsParser.string.sequence.on("organisations"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val organisationIds: Seq[String] = request.body("organisations")
+        for {
+          observable     <- observableSrv.getOrFail(observableId)
+          organisations  <- organisationIds.toTry(organisationSrv.getOrFail)
+          myOrganisation <- organisationSrv.getOrFail(request.organisation)
+          _              <- shareSrv.updateObservableShares(observable, organisations :+ myOrganisation)
+        } yield Results.NoContent
+      }
+
 }
