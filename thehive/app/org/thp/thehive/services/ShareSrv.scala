@@ -107,6 +107,13 @@ class ShareSrv @Inject()(
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareObservable with Entity]] =
     get(share).`case`.observables.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareObservableSrv.create(ShareObservable(), share, _))
 
+  /**
+    * Does a full rebuild of the share status of a task,
+    * i.e. adds what's in the list and removes what's not
+    * @param task the task concerned
+    * @param organisations the organisations that are going to be able to see the task
+    * @return
+    */
   def updateTaskShares(
       task: Task with Entity,
       organisations: Seq[Organisation with Entity]
@@ -133,6 +140,13 @@ class ShareSrv @Inject()(
       .map(_ => ())
   }
 
+  /**
+    * Does a full rebuild of the share status of an observable,
+    * i.e. adds what's in the list and removes what's not
+    * @param observable the observable concerned
+    * @param organisations the organisations that are going to be able to see the observable
+    * @return
+    */
   def updateObservableShares(
       observable: Observable with Entity,
       organisations: Seq[Organisation with Entity]
