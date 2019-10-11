@@ -32,8 +32,6 @@ class ShareSrv @Inject()(
   /**
     * Shares a case (creates a share entity) for a precise organisation
     * according to the given profile.
-    * If share already exists for another profile, removes
-    * the previous one and create a new one
     *
     * @param `case` the case to share
     * @param organisation the organisation to share for
@@ -46,12 +44,14 @@ class ShareSrv @Inject()(
   ): Try[Share with Entity] =
     get(`case`, organisation).headOption() match {
       case Some(existingShare) =>
-        if (!get(existingShare).profile.has(Key[String]("name"), P.eq[String](profile.name)).exists()) {
+        // Only addition atm, no update
+        /*if (!get(existingShare).profile.has(Key[String]("name"), P.eq[String](profile.name)).exists()) {
           get(existingShare).outToE[ShareProfile].remove()
           shareProfileSrv
             .create(ShareProfile(), existingShare, profile)
             .map(_ => existingShare)
-        } else Success(existingShare)
+        } else*/
+        Success(existingShare)
       case None =>
         for {
           createdShare <- createEntity(Share())

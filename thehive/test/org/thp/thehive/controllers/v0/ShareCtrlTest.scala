@@ -49,19 +49,19 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
     "manage shares for a case" in {
       val inputShare = Json.obj("shares" -> List(Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))))
 
-      val request = FakeRequest("PUT", "/api/case/#4/shares")
+      val request = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(inputShare)
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result = shareCtrl.shareCase("#4")(request)
 
-      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must equalTo(201)
 
-      val requestAgain = FakeRequest("PUT", "/api/case/#4/shares")
+      val requestAgain = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(inputShare)
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result2 = shareCtrl.shareCase("#4")(requestAgain)
 
-      status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
+      status(result2) must equalTo(201)
 
       val l     = getShares("#4")
       val share = l.find(_.organisationName == "cert")
@@ -71,18 +71,18 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         s.organisationName shouldEqual "cert"
       })
 
-      val requestUpdate = FakeRequest("PUT", "/api/case/#4/shares")
+      val requestUpdate = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(Json.obj("shares" -> List(Json.toJson(InputShare("cert", "read-only", TasksFilter.all, ObservablesFilter.all)))))
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result3 = shareCtrl.shareCase("#4")(requestUpdate)
 
-      status(result3) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result3)}")
+      status(result3) must equalTo(201)
 
       val l2     = getShares("#4")
       val share2 = l2.find(_.organisationName == "cert")
 
       share2 must beSome.which(s => {
-        s.profileName shouldEqual "read-only"
+        s.profileName shouldEqual "all"
         s.organisationName shouldEqual "cert"
       })
     }
@@ -104,7 +104,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       contentAsJson(result).as[List[OutputShare]] must not(beEmpty)
     }
 
-    "handle share put/removal correctly" in {
+    "handle share put correctly" in {
       val requestOrga = FakeRequest("POST", "/api/v0/organisation")
         .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
         .withHeaders("user" -> "admin@thehive.local")
@@ -117,7 +117,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(resultBulkLink) shouldEqual 201
 
-      val request = FakeRequest("PUT", s"/api/case/#3/shares")
+      val request = FakeRequest("POST", s"/api/case/#3/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
         .withJsonBody(
           Json.obj(
@@ -132,14 +132,13 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       status(result) shouldEqual 201
       getShares("#3").length shouldEqual 3
 
-      val requestEmpty = FakeRequest("PUT", s"/api/case/#3/shares")
+      val requestEmpty = FakeRequest("POST", s"/api/case/#3/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
         .withJsonBody(Json.obj("shares" -> JsArray.empty))
       val resultEmpty = shareCtrl.shareCase("#3")(requestEmpty)
 
       status(resultEmpty) shouldEqual 201
-      getShares("#3").length shouldEqual 1
-      getShares("#3").head.organisationName shouldEqual "default"
+      getShares("#3").length shouldEqual 3
     }
 
     "remove a share" in {
@@ -150,7 +149,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(resultBulkLink) shouldEqual 201
 
-      val request = FakeRequest("PUT", s"/api/case/#1/shares")
+      val request = FakeRequest("POST", s"/api/case/#1/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
           Json.obj(
@@ -188,7 +187,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(resultBulkLink) shouldEqual 201
 
-      val request = FakeRequest("PUT", s"/api/case/#2/shares")
+      val request = FakeRequest("POST", s"/api/case/#2/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
           Json.obj(

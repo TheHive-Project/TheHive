@@ -34,17 +34,18 @@ class ShareCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShares: Seq[InputShare] = request.body("shares")
         if (userSrv.current.can(Permissions.manageShare).existsOrFail().isSuccess) {
-          caseSrv
-            .get(caseId)
-            .shares
-            .richShare
-            .toList
-            .filter(
-              rs =>
-                rs.organisationName != request.organisation && !inputShares
-                  .exists(is => is.profile == rs.profileName && is.organisationName == rs.organisationName)
-            )
-            .foreach(rs => shareSrv.get(rs.share).remove())
+          // No more magic removal atm
+//          caseSrv
+//            .get(caseId)
+//            .shares
+//            .richShare
+//            .toList
+//            .filter(
+//              rs =>
+//                rs.organisationName != request.organisation && !inputShares
+//                  .exists(is => is.profile == rs.profileName && is.organisationName == rs.organisationName)
+//            )
+//            .foreach(rs => shareSrv.get(rs.share).remove())
 
           val (_, failures) = inputShares
             .map(is => share(is, request.organisation, caseId))
