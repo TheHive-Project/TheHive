@@ -42,7 +42,7 @@
                         <td>{{share.organisationName}}</td>
                         <td>
                             <!-- on-update="updateField('group', newValue, task)" -->
-                            <updatable-select options="$vm.profiles" value="share.profileName" on-update="updateShareProfile(share._id, newValue)"></updatable-select>
+                            <updatable-select options="$vm.profiles" value="share.profileName" on-update="$vm.updateShareProfile(share._id, newValue)"></updatable-select>
                         </td>
                         <td>{{share.createdAt | shortDate}}</td>
                         <td>

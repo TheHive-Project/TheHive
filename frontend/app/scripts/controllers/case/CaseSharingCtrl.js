@@ -29,7 +29,7 @@
             this.load = function() {
                 return CaseSrv.getShares(this.caseId)
                     .then(function(response) {
-                        self.shared = response.data;
+                        self.shares = response.data;
                     });
             };
 
@@ -68,7 +68,6 @@
                 });
             };
 
-            // PATCH(p"case/share/$id")
             this.removeShare = function(id) {
                 CaseSrv.removeShare(id)
                     .then(function(/*response*/) {
