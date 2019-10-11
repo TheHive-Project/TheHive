@@ -10,7 +10,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.{Organisation, Permissions}
