@@ -92,8 +92,8 @@ class Router @Inject()(
     case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)
     case PUT(p"/case/$id/task/$tId/shares")       => shareCtrl.shareTask(tId)
     case PUT(p"/case/task/$tId/shares")           => shareCtrl.shareTask(tId)
-    case DELETE(p"case/share/$id")                => shareCtrl.removeShare(id)
-    case PATCH(p"case/share/$id")                 => shareCtrl.updateShare(id)
+    case DELETE(p"/case/share/$id")                => shareCtrl.removeShare(id)
+    case PATCH(p"/case/share/$id")                 => shareCtrl.updateShare(id)
 
     case GET(p"/case/task")           => queryExecutor.task.search
     case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
