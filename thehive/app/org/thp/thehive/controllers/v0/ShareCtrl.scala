@@ -5,9 +5,9 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
 import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
@@ -75,11 +75,29 @@ class ShareCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
-          relatedOrg   <- shareSrv.get(id).organisation.getOrFail()
-          if relatedOrg.name != organisation.name
-          share <- shareSrv.get(id).getOrFail()
-          _ = shareSrv.remove(share)
+          _            <- removeShare(id, organisation)
         } yield Results.NoContent
+      }
+
+  private def removeShare(id: String, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext) =
+    for {
+      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
+      if relatedOrg.name != organisation.name
+      share <- shareSrv.get(id).getOrFail()
+      _ = shareSrv.remove(share)
+    } yield ()
+
+  def removeShares(): Action[AnyContent] =
+    entryPoint("remove share")
+      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val shareIds: Seq[String] = request.body("shares")
+
+        userSrv.current.organisations(Permissions.manageShare).getOrFail().flatMap { organisation =>
+          shareIds
+            .toTry(id => removeShare(id, organisation))
+            .map(_ => Results.NoContent)
+        }
       }
 
   def updateShare(id: String): Action[AnyContent] =

@@ -104,7 +104,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       contentAsJson(result).as[List[OutputShare]] must not(beEmpty)
     }
 
-    "handle share put correctly" in {
+    "handle share put/remove correctly" in {
       val requestOrga = FakeRequest("POST", "/api/v0/organisation")
         .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
         .withHeaders("user" -> "admin@thehive.local")
@@ -138,7 +138,25 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val resultEmpty = shareCtrl.shareCase("#3")(requestEmpty)
 
       status(resultEmpty) shouldEqual 201
+
+      val l = getShares("#3")
+
+      l.length shouldEqual 3
+
+      val requestFailRemove = FakeRequest("DELETE", s"/api/case/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withJsonBody(Json.obj("ids" -> l.filter(_.organisationName == "default").map(_._id)))
+      val resultFailRemove = shareCtrl.removeShares()(requestFailRemove)
+
+      status(resultFailRemove) shouldEqual 204
       getShares("#3").length shouldEqual 3
+
+//      val requestRemove = FakeRequest("DELETE", s"/api/case/shares")
+//        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+//        .withJsonBody(Json.obj("ids" -> l.filterNot(_.organisationName == "default").map(_._id)))
+//      val resultRemove = shareCtrl.removeShares()(requestRemove)
+//
+//      status(resultRemove) shouldEqual 204
     }
 
     "remove a share" in {
