@@ -53,7 +53,7 @@
             };
 
             this.setShares = function(id, shares) {
-                return $http.put('./api/case/'+id+'/shares', {
+                return $http.post('./api/case/'+id+'/shares', {
                     "shares": shares
                 });
             };
