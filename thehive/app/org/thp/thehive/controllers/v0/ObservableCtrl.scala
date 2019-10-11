@@ -12,6 +12,7 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -20,6 +21,7 @@ import org.thp.thehive.services._
 class ObservableCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
@@ -29,7 +31,7 @@ class ObservableCtrl @Inject()(
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "observable"
-  override val publicProperties: List[PublicProperty[_, _]] = observableProperties(observableSrv) ::: metaProperties[ObservableSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.observable ::: metaProperties[ObservableSteps]
   override val initialQuery: Query =
     Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ObservableSteps](
@@ -50,7 +52,7 @@ class ObservableCtrl @Inject()(
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable]
+  override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
   )
@@ -65,11 +67,13 @@ class ObservableCtrl @Inject()(
             .get(caseId)
             .can(Permissions.manageObservable)
             .getOrFail()
-          observableType      <- observableTypeSrv.getOrFail(inputObservable.dataType)
-          observablesWithData <- inputObservable.data.toTry(d => observableSrv.create(inputObservable, observableType, d, inputObservable.tags, Nil))
+          observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
+          observablesWithData <- inputObservable
+            .data
+            .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
           observableWithAttachment <- inputObservable
             .attachment
-            .map(a => observableSrv.create(inputObservable, observableType, a, inputObservable.tags, Nil))
+            .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
             .flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
             caseSrv

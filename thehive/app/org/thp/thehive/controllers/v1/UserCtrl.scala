@@ -45,7 +45,7 @@ class UserCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[RichUser, OutputUser]
+  override val outputQuery: Query = Query.deprecatedOutput[RichUser, OutputUser]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
   )

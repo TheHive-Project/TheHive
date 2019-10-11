@@ -16,6 +16,7 @@ import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services._
 
 @Singleton
@@ -29,8 +30,7 @@ class StreamCtrl @Inject()(
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     system: ActorSystem
-) {
-  import AuditConversion._
+) extends AuditRenderer {
 
   def create: Action[AnyContent] =
     entryPoint("create stream")

@@ -2,6 +2,12 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -15,11 +21,6 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -316,7 +317,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
 
   def richAuditWithCustomRenderer[A](
-      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
+      entityRenderer: AuditSteps => Traversal[A, A]
   ): Traversal[(RichAudit, A), (RichAudit, A)] =
     Traversal(
       raw
@@ -324,7 +325,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[AuditContext]))
             .and(By(__[Vertex].outTo[Audited].fold()))
-            .and(By(entityRenderer(__[Vertex])))
+            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
           case (audit, context, obj, renderedObject) =>
@@ -361,8 +362,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
   override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
   override def newInstance(): AuditSteps                             = new AuditSteps(raw.clone())
 
-  def `object`: Traversal[Entity, Entity] = Traversal(raw.outTo[Audited].map(_.asEntity))
+  def `object`: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[Audited])
 
-  def context: VertexSteps[Entity] = new VertexSteps[Entity](raw.outTo[AuditContext])
+  def context: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[AuditContext])
 //    Traversal(raw.outTo[AuditContext].map(_.asEntity))
 }

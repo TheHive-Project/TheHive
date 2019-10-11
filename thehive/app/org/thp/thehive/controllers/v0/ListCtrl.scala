@@ -8,12 +8,12 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.utils.Hasher
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 
 @Singleton
 class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
-  import CustomFieldConversion._
 
   def list: Action[AnyContent] =
     entryPoint("list")

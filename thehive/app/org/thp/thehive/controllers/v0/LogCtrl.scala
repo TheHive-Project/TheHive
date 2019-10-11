@@ -8,6 +8,7 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputLog, OutputLog}
 import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
@@ -16,16 +17,15 @@ import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
 class LogCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
 
-  import LogConversion._
-
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "log"
-  override val publicProperties: List[PublicProperty[_, _]] = logProperties ::: metaProperties[LogSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.log ::: metaProperties[LogSteps]
   override val initialQuery: Query =
     Query.init[LogSteps]("listLog", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks.logs)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, LogSteps](
@@ -38,7 +38,7 @@ class LogCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
-  override val outputQuery: Query = Query.output[RichLog, OutputLog]
+  override val outputQuery: Query = Query.output[RichLog, OutputLog](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[LogSteps, List[RichLog]]("toList", (logSteps, _) => logSteps.richLog.toList)
   )
@@ -53,7 +53,7 @@ class LogCtrl @Inject()(
             .getByIds(taskId)
             .can(Permissions.manageTask)
             .getOrFail()
-          createdLog <- logSrv.create(inputLog, task)
+          createdLog <- logSrv.create(inputLog.toLog, task)
           attachment <- inputLog.attachment.map(logSrv.addAttachment(createdLog, _)).flip
           richLog = RichLog(createdLog, attachment.toList)
         } yield Results.Created(richLog.toJson)
@@ -61,7 +61,7 @@ class LogCtrl @Inject()(
 
   def update(logId: String): Action[AnyContent] =
     entryPoint("update log")
-      .extract("log", FieldsParser.update("log", logProperties))
+      .extract("log", FieldsParser.update("log", properties.log))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("log")
         logSrv

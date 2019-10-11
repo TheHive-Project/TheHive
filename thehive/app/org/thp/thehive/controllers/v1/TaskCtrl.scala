@@ -34,7 +34,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, OutputTask]
+  override val outputQuery: Query = Query.deprecatedOutput[RichTask, OutputTask]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
   )

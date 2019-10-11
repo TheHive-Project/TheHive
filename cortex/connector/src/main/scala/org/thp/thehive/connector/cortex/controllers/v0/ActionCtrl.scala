@@ -16,6 +16,7 @@ import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, Entity
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import org.thp.thehive.controllers.v0.Conversion._
 
 @Singleton
 class ActionCtrl @Inject()(
@@ -31,11 +32,6 @@ class ActionCtrl @Inject()(
     implicit val executionContext: ExecutionContext
 ) extends QueryableCtrl {
   import ActionConversion._
-  import org.thp.thehive.controllers.v0.AlertConversion._
-  import org.thp.thehive.controllers.v0.CaseConversion._
-  import org.thp.thehive.controllers.v0.LogConversion._
-  import org.thp.thehive.controllers.v0.ObservableConversion._
-  import org.thp.thehive.controllers.v0.TaskConversion._
 
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
@@ -64,7 +60,7 @@ class ActionCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
-  override val outputQuery: Query = Query.output[RichAction, OutputAction]
+  override val outputQuery: Query = Query.deprecatedOutput[RichAction, OutputAction]
 
   def create: Action[AnyContent] =
     entryPoint("create action")

@@ -1,18 +1,20 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
 class ShareCtrl @Inject()(
@@ -26,7 +28,6 @@ class ShareCtrl @Inject()(
     profileSrv: ProfileSrv,
     userSrv: UserSrv
 ) {
-  import ShareConversion._
 
   def shareCase(caseId: String): Action[AnyContent] =
     entryPoint("create case shares")

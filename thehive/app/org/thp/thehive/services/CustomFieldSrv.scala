@@ -119,7 +119,7 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
   def richCustomField: Traversal[RichCustomField, RichCustomField] = {
     val customFieldValueLabel = StepLabel[Edge]()
     val customFieldLabel      = StepLabel[Vertex]()
-    val x = Traversal(
+    Traversal(
       raw
         .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
         .as(customFieldValueLabel)
@@ -130,7 +130,6 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
           case (cfv, cf) => RichCustomField(cf.as[CustomField], new CustomFieldValueEdge(db, cfv))
         }
     )
-    x
   }
 
 //  def remove()     = raw.drop().i

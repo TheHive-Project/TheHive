@@ -10,14 +10,13 @@ import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
-  import CustomFieldConversion._
-  import AuditConversion._
+class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, customFieldSrv: CustomFieldSrv) extends AuditRenderer {
 
   val permissions: Set[Permission] = Set(Permissions.manageCustomField)
 
@@ -27,7 +26,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
       .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
         val customField: InputCustomField = request.body("customField")
         customFieldSrv
-          .create(customField)
+          .create(customField.toCustomField)
           .map(createdCustomField => Results.Created(createdCustomField.toJson))
       }
 
@@ -54,7 +53,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFiel
 
   def update(id: String): Action[AnyContent] =
     entryPoint("update custom field")
-      .extract("customField", FieldsParser.update("customField", customFieldProperties))
+      .extract("customField", FieldsParser.update("customField", properties.customField))
       .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
 

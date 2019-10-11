@@ -10,6 +10,7 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
 import org.thp.thehive.services._
@@ -24,8 +25,6 @@ class CaseTemplateCtrl @Inject()(
     auditSrv: AuditSrv
 ) extends QueryableCtrl {
   import CaseTemplateConversion._
-  import CustomFieldConversion._
-  import TaskConversion._
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
@@ -42,7 +41,7 @@ class CaseTemplateCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
-  override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val outputQuery: Query = Query.deprecatedOutput[RichCaseTemplate, OutputCaseTemplate]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
   )
@@ -54,8 +53,8 @@ class CaseTemplateCtrl @Inject()(
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
           organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
-          tasks        = inputCaseTemplate.tasks.map(fromInputTask)
-          customFields = inputCaseTemplate.customFieldValue.map(fromInputCustomField)
+          tasks        = inputCaseTemplate.tasks.map(_.toTask)
+          customFields = inputCaseTemplate.customFieldValue.map(c => c.name -> c.value)
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
