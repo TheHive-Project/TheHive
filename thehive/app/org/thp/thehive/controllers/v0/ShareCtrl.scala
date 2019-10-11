@@ -77,7 +77,7 @@ class ShareCtrl @Inject()(
           relatedOrg   <- shareSrv.get(id).organisation.getOrFail()
           if relatedOrg.name != organisation.name
           share <- shareSrv.get(id).getOrFail()
-          _ = shareSrv.get(share).remove()
+          _ = shareSrv.remove(share)
         } yield Results.NoContent
       }
 

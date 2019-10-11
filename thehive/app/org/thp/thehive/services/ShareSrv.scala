@@ -70,7 +70,21 @@ class ShareSrv @Inject()(
       share: Share with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[ShareProfile with Entity] = {
     get(share).outToE[ShareProfile].remove()
-    shareProfileSrv.create(ShareProfile(), share, profile)
+    for {
+      newShareProf <- shareProfileSrv.create(ShareProfile(), share, profile)
+      c            <- get(share).`case`.getOrFail()
+      o            <- get(share).organisation.getOrFail()
+      _            <- auditSrv.share.shareCase(c, o, profile)
+    } yield newShareProf
+  }
+
+  def remove(share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(share).remove()
+    for {
+      c <- get(share).`case`.getOrFail()
+      o <- get(share).organisation.getOrFail()
+      _ <- auditSrv.share.unshareCase(c, o)
+    } yield ()
   }
 
   /**
