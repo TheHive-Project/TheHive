@@ -148,15 +148,15 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         .withJsonBody(Json.obj("ids" -> l.filter(_.organisationName == "default").map(_._id)))
       val resultFailRemove = shareCtrl.removeShares()(requestFailRemove)
 
-      status(resultFailRemove) shouldEqual 204
+      status(resultFailRemove) shouldEqual 500
       getShares("#3").length shouldEqual 3
 
-//      val requestRemove = FakeRequest("DELETE", s"/api/case/shares")
-//        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
-//        .withJsonBody(Json.obj("ids" -> l.filterNot(_.organisationName == "default").map(_._id)))
-//      val resultRemove = shareCtrl.removeShares()(requestRemove)
-//
-//      status(resultRemove) shouldEqual 204
+      val requestRemove = FakeRequest("DELETE", s"/api/case/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withJsonBody(Json.obj("ids" -> l.filterNot(_.organisationName == "default").map(_._id)))
+      val resultRemove = shareCtrl.removeShares()(requestRemove)
+
+      status(resultRemove) shouldEqual 204
     }
 
     "remove a share" in {

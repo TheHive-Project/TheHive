@@ -74,9 +74,22 @@ class ShareCtrl @Inject()(
     entryPoint("remove share")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail()
           _            <- removeShare(id, organisation)
         } yield Results.NoContent
+      }
+
+  def removeShares(): Action[AnyContent] =
+    entryPoint("remove share")
+      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val shareIds: Seq[String] = request.body("shares")
+
+        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
+          shareIds
+            .toTry(id => removeShare(id, organisation))
+            .map(_ => Results.NoContent)
+        }
       }
 
   private def removeShare(id: String, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext) =
@@ -87,26 +100,13 @@ class ShareCtrl @Inject()(
       _ = shareSrv.remove(share)
     } yield ()
 
-  def removeShares(): Action[AnyContent] =
-    entryPoint("remove share")
-      .extract("shares", FieldsParser[String].sequence.on("ids"))
-      .authTransaction(db) { implicit request => implicit graph =>
-        val shareIds: Seq[String] = request.body("shares")
-
-        userSrv.current.organisations(Permissions.manageShare).getOrFail().flatMap { organisation =>
-          shareIds
-            .toTry(id => removeShare(id, organisation))
-            .map(_ => Results.NoContent)
-        }
-      }
-
   def updateShare(id: String): Action[AnyContent] =
     entryPoint("update share")
       .extract("profile", FieldsParser.string.on("profile"))
       .authTransaction(db) { implicit request => implicit graph =>
         val profile: String = request.body("profile")
         for {
-          _         <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
+          _         <- userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail()
           richShare <- shareSrv.get(id).richShare.getOrFail()
           _ <- organisationSrv
             .get(request.organisation)
