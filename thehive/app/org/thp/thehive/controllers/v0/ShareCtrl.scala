@@ -89,16 +89,14 @@ class ShareCtrl @Inject()(
         for {
           _         <- userSrv.current.organisations(Permissions.manageShare).getOrFail()
           richShare <- shareSrv.get(id).richShare.getOrFail()
-          organisation <- organisationSrv
-            .get(richShare.organisationName)
+          _ <- organisationSrv
+            .get(request.organisation)
             .visibleOrganisations
             .get(richShare.organisationName)
             .getOrFail()
-          case0       <- caseSrv.getOrFail(richShare.caseId)
-          p           <- profileSrv.getOrFail(profile)
-          updated     <- shareSrv.shareCase(case0, organisation, p)
-          richUpdated <- db.roTransaction(graph => shareSrv.get(updated)(graph).richShare.getOrFail())
-        } yield Results.Ok(richUpdated.toJson)
+          p <- profileSrv.getOrFail(profile)
+          _ <- shareSrv.update(p, richShare.share)
+        } yield Results.Ok
       }
 
   def listShareCases(caseId: String): Action[AnyContent] =

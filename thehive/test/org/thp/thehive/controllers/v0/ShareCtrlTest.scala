@@ -149,6 +149,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val resultBulkLink = organisationCtrl.bulkLink("cert")(requestBulkLink)
 
       status(resultBulkLink) shouldEqual 201
+
       val request = FakeRequest("PUT", s"/api/case/#1/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
@@ -177,6 +178,48 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val resultRemoveOwn = shareCtrl.removeShare(ownShare._id)(requestRemoveOwn)
 
       status(resultRemoveOwn) shouldEqual 500
+    }
+
+    "patch a share" in {
+      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/cert/links")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.parse("""{"organisations":["default"]}"""))
+      val resultBulkLink = organisationCtrl.bulkLink("cert")(requestBulkLink)
+
+      status(resultBulkLink) shouldEqual 201
+
+      val request = FakeRequest("PUT", s"/api/case/#2/shares")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withJsonBody(
+          Json.obj(
+            "shares" -> List(
+              Json.toJson(InputShare("default", "read-only", TasksFilter.all, ObservablesFilter.all))
+            )
+          )
+        )
+      val result = shareCtrl.shareCase("#2")(request)
+
+      status(result) shouldEqual 201
+
+      val l = getShares("#2")
+
+      l.length shouldEqual 2
+
+      val share = l.find(s => s.organisationName == "default" && s.profileName == "read-only")
+
+      share must beSome
+
+      val requestPatch = FakeRequest("PATCH", s"/api/case/share/${share.get._id}")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withJsonBody(Json.parse("""{"profile": "all"}"""))
+      val resultPatch = shareCtrl.updateShare(share.get._id)(requestPatch)
+
+      status(resultPatch) shouldEqual 200
+
+      val newL = getShares("#2")
+
+      newL.length shouldEqual 2
+      newL.find(s => s.organisationName == "default" && s.profileName == "all") must beSome
     }
   }
 

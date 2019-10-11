@@ -1,7 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
-
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -10,6 +8,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
+
+import scala.util.{Success, Try}
 
 @Singleton
 class ShareSrv @Inject()(
@@ -47,7 +47,7 @@ class ShareSrv @Inject()(
     get(`case`, organisation).headOption() match {
       case Some(existingShare) =>
         if (!get(existingShare).profile.has(Key[String]("name"), P.eq[String](profile.name)).exists()) {
-          get(existingShare).outE().remove()
+          get(existingShare).outToE[ShareProfile].remove()
           shareProfileSrv
             .create(ShareProfile(), existingShare, profile)
             .map(_ => existingShare)
@@ -64,6 +64,14 @@ class ShareSrv @Inject()(
 
   def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
     initSteps.relatedTo(`case`).relatedTo(organisation)
+
+  def update(
+      profile: Profile with Entity,
+      share: Share with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[ShareProfile with Entity] = {
+    get(share).outToE[ShareProfile].remove()
+    shareProfileSrv.create(ShareProfile(), share, profile)
+  }
 
   /**
     * Shares all the tasks for an already shared case
