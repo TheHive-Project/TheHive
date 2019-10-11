@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseSharingCtrl',
-        function($scope, $state, $stateParams, $uibModal, $timeout, CaseSrv, CaseTabsSrv, NotificationSrv, organisations, profiles, shares) {
+        function($scope, $state, $stateParams, $uibModal, $timeout, ModalSrv, CaseSrv, CaseTabsSrv, NotificationSrv, organisations, profiles, shares) {
             var self = this;
 
             this.caseId = $stateParams.caseId;
@@ -69,7 +69,18 @@
             };
 
             this.removeShare = function(id) {
-                CaseSrv.removeShare(id)
+                var modalInstance = ModalSrv.confirm(
+                    'Remove case share',
+                    'Are you sure you want to remove this sharing rule?', {
+                        okText: 'Yes, remove it',
+                        flavor: 'danger'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        return CaseSrv.removeShare(id);
+                    })
                     .then(function(/*response*/) {
                         self.load();
                         NotificationSrv.log('Case sharings updated successfully', 'success');
@@ -88,6 +99,7 @@
                         NotificationSrv.log('Case sharings updated successfully', 'success');
                     })
                     .catch(function(err) {
+                        self.load();
                         if(err && !_.isString(err)) {
                             NotificationSrv.error('Error', 'Case sharings update failed', err.status);
                         }
