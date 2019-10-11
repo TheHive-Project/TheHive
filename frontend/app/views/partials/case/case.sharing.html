@@ -29,15 +29,10 @@
                     <!-- <th width="40" class="text-center">
                         <input type="checkbox" ng-change="$vm.toggleLinkAll()" ng-model="$vm.allSelected">
                     </th> -->
-                    <th>
-                        Organisation
-                    </th>
-                    <th width="250">
-                        Profile
-                    </th>
-                    <th width="160">
-                        Shared At
-                    </th>
+                    <th>Organisation</th>
+                    <th width="250">Profile</th>
+                    <th width="160">Shared At</th>
+                    <th width="160">Actions</th>
                 </thead>
                 <tbody>
                     <tr ng-repeat="share in $vm.shares | orderBy:'organisationName'">
@@ -47,9 +42,13 @@
                         <td>{{share.organisationName}}</td>
                         <td>
                             <!-- on-update="updateField('group', newValue, task)" -->
-                            <updatable-select options="$vm.profiles"  value="share.profileName"></updatable-select>
+                            <updatable-select options="$vm.profiles" value="share.profileName" on-update="updateShareProfile(share._id, newValue)"></updatable-select>
                         </td>
                         <td>{{share.createdAt | shortDate}}</td>
+                        <td>
+                            <span class="clickable mr-xs text-danger" ng-click="$vm.removeShare(share._id)">
+                                <i class="fa fa-trash"></i> Delete</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>

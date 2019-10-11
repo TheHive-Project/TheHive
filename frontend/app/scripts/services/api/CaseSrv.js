@@ -57,6 +57,14 @@
                     "shares": shares
                 });
             };
+
+            this.updateShare = function(id, patch) {
+                return $http.patch('./api/case/share/'+id, patch);
+            };
+
+            this.removeShare = function(id) {
+                return $http.delete('./api/case/share/'+id);
+            };
         });
 
 })();

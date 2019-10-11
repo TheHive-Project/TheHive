@@ -26,6 +26,13 @@
                 CaseTabsSrv.activateTab(tabName);
             }, 0);
 
+            this.load = function() {
+                return CaseSrv.getShares(this.caseId)
+                    .then(function(response) {
+                        self.shared = response.data;
+                    });
+            };
+
 
             this.shareCase = function() {
 
@@ -48,10 +55,9 @@
                 });
 
                 modalInstance.result.then(function(shares) {
-                    console.log(shares);
-
                     CaseSrv.setShares(self.caseId, shares)
                         .then(function(/*response*/) {
+                            self.load();
                             NotificationSrv.log('Case sharings updated successfully', 'success');
                         })
                         .catch(function(err) {
@@ -60,6 +66,33 @@
                             }
                         });
                 });
+            };
+
+            // PATCH(p"case/share/$id")
+            this.removeShare = function(id) {
+                CaseSrv.removeShare(id)
+                    .then(function(/*response*/) {
+                        self.load();
+                        NotificationSrv.log('Case sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Case sharings update failed', err.status);
+                        }
+                    });
+            };
+
+            this.updateShareProfile = function(id, newValue) {
+                CaseSrv.updateShare(id, { profile: newValue })
+                    .then(function(/*response*/) {
+                        self.load();
+                        NotificationSrv.log('Case sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Case sharings update failed', err.status);
+                        }
+                    });
             };
         }
     );

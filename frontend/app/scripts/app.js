@@ -326,7 +326,7 @@ angular.module('thehive', [
             })
             .state('app.case.sharing', {
                 url: '/sharing',
-                templateUrl: 'views/partials/case/case.shares.html',
+                templateUrl: 'views/partials/case/case.sharing.html',
                 controller: 'CaseSharingCtrl',
                 controllerAs: '$vm',
                 resolve: {
