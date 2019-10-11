@@ -15,6 +15,7 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
@@ -33,10 +34,7 @@ case class TestTask(
 )
 
 object TestTask {
-
-  import TaskConversion._
-
-  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
+  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput.toOutput)
 
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform

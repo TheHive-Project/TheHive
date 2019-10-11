@@ -9,6 +9,7 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputTask, OutputTask}
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services._
@@ -17,16 +18,16 @@ import org.thp.thehive.services._
 class TaskCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
-  import TaskConversion._
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "task"
-  override val publicProperties: List[PublicProperty[_, _]] = taskProperties(taskSrv, userSrv) ::: metaProperties[TaskSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
@@ -39,7 +40,7 @@ class TaskCtrl @Inject()(
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, OutputTask]
+  override val outputQuery: Query = Query.output[RichTask, OutputTask](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
   )
@@ -51,7 +52,7 @@ class TaskCtrl @Inject()(
         val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(caseId)
-          createdTask <- taskSrv.create(inputTask)
+          createdTask <- taskSrv.create(inputTask.toTask)
           _           <- caseSrv.addTask(case0, createdTask)
           owner       <- inputTask.owner.map(userSrv.getOrFail).flip
           _           <- owner.map(taskSrv.assign(createdTask, _)).flip

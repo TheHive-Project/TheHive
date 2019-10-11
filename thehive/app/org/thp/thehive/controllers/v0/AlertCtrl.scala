@@ -15,6 +15,7 @@ import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -23,6 +24,7 @@ import org.thp.thehive.services._
 class AlertCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
@@ -33,14 +35,9 @@ class AlertCtrl @Inject()(
     val userSrv: UserSrv,
     val caseSrv: CaseSrv
 ) extends QueryableCtrl {
-  import AlertConversion._
-  import CaseConversion._
-  import CustomFieldConversion._
-  import ObservableConversion._
-
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.alert ::: metaProperties[AlertSteps]
   override val initialQuery: Query =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AlertSteps](
@@ -58,7 +55,7 @@ class AlertCtrl @Inject()(
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable]), OutputAlert]
+  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable]), OutputAlert](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
   )
@@ -83,10 +80,10 @@ class AlertCtrl @Inject()(
           }
 
           organisation <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
-          customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
+          customFields = inputAlert.customFieldValue.map(c => c.name -> c.value).toMap
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
           richObservables <- observables.toTry(createObservable).map(_.flatten)
-          richAlert       <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
+          richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o.observable)))(_ => Success(()))
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
@@ -220,10 +217,10 @@ class AlertCtrl @Inject()(
               val data = Base64.getDecoder.decode(value)
               attachmentSrv
                 .create(filename, contentType, data)
-                .flatMap(attachment => observableSrv.create(observable, attachmentType, attachment, observable.tags, Nil))
+                .flatMap(attachment => observableSrv.create(observable.toObservable, attachmentType, attachment, observable.tags, Nil))
             case data =>
               Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
           }
-        case dataType => observable.data.toTry(d => observableSrv.create(observable, dataType, d, observable.tags, Nil))
+        case dataType => observable.data.toTry(d => observableSrv.create(observable.toObservable, dataType, d, observable.tags, Nil))
       }
 }

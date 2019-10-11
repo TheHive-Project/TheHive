@@ -14,6 +14,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -22,6 +23,7 @@ import org.thp.thehive.services._
 class UserCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     authSrv: AuthSrv,
@@ -30,12 +32,9 @@ class UserCtrl @Inject()(
     implicit val ec: ExecutionContext,
     roleSrv: RoleSrv
 ) extends QueryableCtrl {
-
-  import UserConversion._
-
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv, profileSrv, roleSrv) ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
@@ -48,7 +47,7 @@ class UserCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[RichUser, OutputUser]
+  override val outputQuery: Query = Query.output[RichUser, OutputUser](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
   )
@@ -83,7 +82,7 @@ class UserCtrl @Inject()(
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
               else if (inputUser.roles.contains("read")) profileSrv.getOrFail(ProfileSrv.readonly.name)
               else profileSrv.getOrFail(ProfileSrv.readonly.name)
-              user <- userSrv.create(inputUser, organisation, profile)
+              user <- userSrv.create(inputUser.toUser, organisation, profile)
             } yield user
           }
           .flatMap { user =>
@@ -122,7 +121,7 @@ class UserCtrl @Inject()(
 
   def update(userId: String): Action[AnyContent] =
     entryPoint("update user")
-      .extract("user", FieldsParser.update("user", userProperties(userSrv, profileSrv, roleSrv)))
+      .extract("user", FieldsParser.update("user", properties.user))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         for {

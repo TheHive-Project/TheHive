@@ -41,7 +41,7 @@ class CaseTemplateCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
-  override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate]
+  override val outputQuery: Query = Query.deprecatedOutput[RichCaseTemplate, OutputCaseTemplate]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
   )

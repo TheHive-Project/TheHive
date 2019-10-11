@@ -35,7 +35,7 @@ class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditS
       FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
-  val outputQuery: Query = Query.output[RichAudit, OutputAudit]
+  val outputQuery: Query = Query.deprecatedOutput[RichAudit, OutputAudit]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
   )

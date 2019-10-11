@@ -7,13 +7,25 @@ import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{EntryPoint, Field}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, QueryExecutor}
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv, UserSrv}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, DashboardSrv, ObservableSrv, OrganisationSrv, ProfileSrv, RoleSrv, TaskSrv, UserSrv}
 
 class QueryTest extends PlaySpecification with Mockito {
+
+  val properties = new Properties(
+    mock[CaseSrv],
+    mock[UserSrv],
+    mock[AlertSrv],
+    mock[DashboardSrv],
+    mock[ObservableSrv],
+    mock[TaskSrv],
+    mock[ProfileSrv],
+    mock[RoleSrv]
+  )
 
   val taskCtrl = new TaskCtrl(
     mock[EntryPoint],
     mock[Database],
+    properties,
     mock[TaskSrv],
     mock[CaseSrv],
     mock[UserSrv],

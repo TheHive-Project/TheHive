@@ -11,14 +11,12 @@ import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, OutputCaseTemplate}
-import org.thp.thehive.models.{CaseTemplate, RichCaseTemplate}
+import org.thp.thehive.models.{CaseTemplate, RichCaseTemplate, RichTask}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
 
 object CaseTemplateConversion {
-  import CustomFieldConversion._
-  import TaskConversion._
-
   implicit def fromInputCaseTemplate(inputCaseTemplate: InputCaseTemplate): CaseTemplate =
     inputCaseTemplate
       .into[CaseTemplate]
@@ -30,7 +28,7 @@ object CaseTemplateConversion {
     Output[OutputCaseTemplate](
       richCaseTemplate
         .into[OutputCaseTemplate]
-        .withFieldComputed(_.customFields, _.customFields.map(toOutputCustomField(_).toOutput).toSet)
+        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput.toOutput).toSet)
         .withFieldRenamed(_._id, _.id)
         .withFieldRenamed(_._updatedAt, _.updatedAt)
         .withFieldRenamed(_._updatedBy, _.updatedBy)
@@ -39,7 +37,7 @@ object CaseTemplateConversion {
         .withFieldConst(_.status, "Ok")
         .withFieldConst(_._type, "caseTemplate")
         .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-        .withFieldComputed(_.tasks, _.tasks.map(toOutputTask(_).toOutput))
+        .withFieldComputed(_.tasks, _.tasks.map(t => RichTask(t, None).toOutput.toOutput))
         .transform
     )
 

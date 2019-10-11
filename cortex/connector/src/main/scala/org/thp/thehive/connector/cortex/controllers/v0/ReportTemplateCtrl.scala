@@ -43,7 +43,7 @@ class ReportTemplateCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, ReportTemplateSteps, _) => ReportTemplateSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[ReportTemplate with Entity, OutputReportTemplate]
+  override val outputQuery: Query = Query.deprecatedOutput[ReportTemplate with Entity, OutputReportTemplate]
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")

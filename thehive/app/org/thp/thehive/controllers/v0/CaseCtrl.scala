@@ -12,6 +12,7 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -20,21 +21,19 @@ import org.thp.thehive.services._
 class CaseCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     tagSrv: TagSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
-) extends QueryableCtrl {
-  import CaseConversion._
-  import CustomFieldConversion._
-  import ObservableConversion._
-  import TaskConversion._
+) extends QueryableCtrl
+    with CaseRenderer {
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "case"
-  override val publicProperties: List[PublicProperty[_, _]] = caseProperties(caseSrv, userSrv) ::: metaProperties[CaseSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.`case` ::: metaProperties[CaseSteps]
   override val initialQuery: Query =
     Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
@@ -55,7 +54,7 @@ class CaseCtrl @Inject()(
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase]
+  override val outputQuery: Query = Query.output[(RichCase, JsObject), OutputCase](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)
   )
@@ -79,12 +78,19 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          customFields = inputCase.customFieldValue.map(fromInputCustomField).toMap
-          case0        = fromInputCase(inputCase, caseTemplate)
+          customFields = inputCase.customFieldValue.map(c => c.name -> c.value).toMap
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
-          richCase     <- caseSrv.create(case0, user, organisation, tags.toSet, customFields, caseTemplate, inputTasks.map(fromInputTask))
+          richCase <- caseSrv.create(
+            caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
+            user,
+            organisation,
+            tags.toSet,
+            customFields,
+            caseTemplate,
+            inputTasks.map(_.toTask)
+          )
         } yield Results.Created(richCase.toJson)
       }
 
@@ -110,7 +116,7 @@ class CaseCtrl @Inject()(
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("update case")
-      .extract("case", FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
+      .extract("case", FieldsParser.update("case", properties.`case`))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         caseSrv
@@ -130,7 +136,7 @@ class CaseCtrl @Inject()(
 
   def bulkUpdate: Action[AnyContent] =
     entryPoint("update case")
-      .extract("case", FieldsParser.update("case", caseProperties(caseSrv, userSrv)))
+      .extract("case", FieldsParser.update("case", properties.`case`))
       .extract("idsOrNumbers", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")

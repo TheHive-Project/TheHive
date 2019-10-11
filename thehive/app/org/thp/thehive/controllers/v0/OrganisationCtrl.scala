@@ -1,25 +1,32 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.{Organisation, OrganisationOrganisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
-class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)
-    extends QueryableCtrl {
-  import OrganisationConversion._
+class OrganisationCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    properties: Properties,
+    organisationSrv: OrganisationSrv,
+    userSrv: UserSrv,
+    auditSrv: AuditSrv
+) extends QueryableCtrl {
 
   override val entityName: String                           = "organisation"
-  override val publicProperties: List[PublicProperty[_, _]] = organisationProperties
+  override val publicProperties: List[PublicProperty[_, _]] = properties.organisation
   override val initialQuery: Query =
     Query.init[OrganisationSteps]("listOrganisation", (graph, authContext) => organisationSrv.initSteps(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[Organisation with Entity]](
@@ -27,7 +34,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
     FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[Organisation with Entity, OutputOrganisation]
+  override val outputQuery: Query = Query.output[Organisation with Entity, OutputOrganisation](_.toOutput)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
     "getOrganisation",
     FieldsParser[IdOrName],
@@ -46,7 +53,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
           _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.default.name).existsOrFail()
-          org <- organisationSrv.create(fromInputOrganisation(inputOrganisation))
+          org <- organisationSrv.create(inputOrganisation.toOrganisation)
           _   <- auditSrv.organisation.create(org)
         } yield Results.Created(org.toJson)
       }
@@ -74,7 +81,7 @@ class OrganisationCtrl @Inject()(entryPoint: EntryPoint, db: Database, organisat
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
-      .extract("organisation", FieldsParser.update("organisation", organisationProperties))
+      .extract("organisation", FieldsParser.update("organisation", properties.organisation))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
 

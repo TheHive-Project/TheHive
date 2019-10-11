@@ -42,7 +42,7 @@ class AlertCtrl @Inject()(
       alertSteps
         .richPage(range.from, range.to, withTotal = true)(_.richAlert)
   )
-  override val outputQuery: Query = Query.output[RichAlert, OutputAlert]
+  override val outputQuery: Query = Query.deprecatedOutput[RichAlert, OutputAlert]
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
   )

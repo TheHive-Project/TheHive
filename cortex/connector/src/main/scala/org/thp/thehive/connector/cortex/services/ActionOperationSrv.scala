@@ -14,6 +14,7 @@ import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import org.thp.thehive.controllers.v0.Conversion._
 
 class ActionOperationSrv @Inject()(
     caseSrv: CaseSrv,
@@ -40,7 +41,6 @@ class ActionOperationSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[ActionOperation] = {
-    import org.thp.thehive.controllers.v0.TaskConversion._
 
     def updateOperation(operation: ActionOperation) = operation.updateStatus(ActionOperationStatus.Success, "Success")
 
@@ -60,7 +60,7 @@ class ActionOperationSrv @Inject()(
       case CreateTask(title, description, _, _) =>
         for {
           c           <- Try(relatedCase.get)
-          createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)))
+          createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask)
           _           <- caseSrv.addTask(c, createdTask)
         } yield updateOperation(operation)
 
