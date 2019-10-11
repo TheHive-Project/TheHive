@@ -208,6 +208,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val share = l.find(s => s.organisationName == "default" && s.profileName == "read-only")
 
       share must beSome
+      l.find(s => s.organisationName == "default" && s.profileName == "all") must beNone
 
       val requestPatch = FakeRequest("PATCH", s"/api/case/share/${share.get._id}")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
@@ -220,6 +221,26 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       newL.length shouldEqual 2
       newL.find(s => s.organisationName == "default" && s.profileName == "all") must beSome
+    }
+
+    "fetch observable shares" in db.roTransaction { implicit graph =>
+      val observables = caseSrv
+        .get("#1")
+        .observables(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all).authContext)
+        .toList
+
+      observables must not(beEmpty)
+
+      val observableHfr = observables.find(_.message.contains("Some weird domain"))
+
+      observableHfr must beSome
+
+      val request = FakeRequest("GET", s"/api/case/#1/observable/${observableHfr.get._id}/shares")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+      val result = shareCtrl.listShareObservables("#1", observableHfr.get._id)(request)
+
+      status(result) shouldEqual 200
+      contentAsJson(result).as[List[OutputShare]].length shouldEqual 1
     }
   }
 

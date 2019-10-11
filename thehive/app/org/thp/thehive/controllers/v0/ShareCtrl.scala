@@ -119,7 +119,7 @@ class ShareCtrl @Inject()(
       }
 
   def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
-    entryPoint("list case shares")
+    entryPoint("list task shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
         if (request.permissions.contains(Permissions.manageShare)) {
           Success(
@@ -129,6 +129,26 @@ class ShareCtrl @Inject()(
                   .get(caseId)
                   .shares
                   .byTask(taskId)
+                  .richShare
+                  .toList
+                  .map(_.toJson)
+              )
+            )
+          )
+        } else Success(Results.Forbidden)
+      }
+
+  def listShareObservables(caseId: String, obsId: String): Action[AnyContent] =
+    entryPoint("list observable shares")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        if (request.permissions.contains(Permissions.manageShare)) {
+          Success(
+            Results.Ok(
+              JsArray(
+                caseSrv
+                  .get(caseId)
+                  .shares
+                  .byObservable(obsId)
                   .richShare
                   .toList
                   .map(_.toJson)

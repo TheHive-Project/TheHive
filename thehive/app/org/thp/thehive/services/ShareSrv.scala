@@ -19,7 +19,7 @@ class ShareSrv @Inject()(
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv
 ) extends VertexSrv[Share, ShareSteps] {
-  lazy val caseSrv = caseSrvProvider.get
+  lazy val caseSrv: CaseSrv = caseSrvProvider.get
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]
@@ -164,6 +164,11 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def byTask(taskId: String): ShareSteps = this.filter(
     _.outTo[ShareTask]
       .filter(_.hasId(taskId))
+  )
+
+  def byObservable(obsId: String): ShareSteps = this.filter(
+    _.outTo[ShareObservable]
+      .filter(_.hasId(obsId))
   )
 
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
