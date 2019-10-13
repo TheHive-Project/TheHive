@@ -1,17 +1,15 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.auth.AuthContext
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
-class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper) {
+class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper, implicit val ec: ExecutionContext) {
 
   lazy val logger = Logger(getClass)
 

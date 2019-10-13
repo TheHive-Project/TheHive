@@ -64,7 +64,7 @@ class StreamCtrl @Inject()(
                             .asScala
                             .map {
                               case (o, ac) =>
-                                objectTypeMapper(o) -> JsObject(ac.asScala.map { case (a, c) => actionToOperation(a) -> JsNumber(c.toLong) }.toSeq)
+                                fromObjectType(o) -> JsObject(ac.asScala.map { case (a, c) => actionToOperation(a) -> JsNumber(c.toLong) }.toSeq)
                             }
                         )
                       }

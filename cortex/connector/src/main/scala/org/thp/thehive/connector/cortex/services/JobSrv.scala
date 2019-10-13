@@ -9,6 +9,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, StreamConverters}
 import com.google.inject.name.Named
 import gremlin.scala._
+import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
@@ -19,8 +20,8 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
-import org.thp.thehive.connector.cortex.controllers.v0.{ArtifactConversion, JobConversion}
-import org.thp.thehive.connector.cortex.models.{Job, ObservableJob, ReportObservable}
+import org.thp.thehive.connector.cortex.models.{Job, JobStatus, ObservableJob, ReportObservable}
+import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
@@ -44,9 +45,6 @@ class JobSrv @Inject()(
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Job, JobSteps] {
-
-  import ArtifactConversion._
-  import JobConversion._
 
   lazy val logger         = Logger(getClass)
   val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
@@ -96,6 +94,19 @@ class JobSrv @Inject()(
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
+
+  private def fromCortexOutputJob(j: CortexOutputJob): Job =
+    j.into[Job]
+      .withFieldComputed(_.workerId, _.workerId)
+      .withFieldComputed(_.workerName, _.workerName)
+      .withFieldComputed(_.workerDefinition, _.workerDefinition)
+      .withFieldComputed(_.status, s => JobStatus.withName(s.status.toString))
+      .withFieldComputed(_.startDate, j => j.startDate.getOrElse(j.date))
+      .withFieldComputed(_.endDate, j => j.endDate.getOrElse(j.date))
+      .withFieldConst(_.report, None)
+      .withFieldConst(_.cortexId, "tbd")
+      .withFieldComputed(_.cortexJobId, _.id)
+      .transform
 
   /**
     * Creates a Job with with according ObservableJob edge
@@ -147,7 +158,7 @@ class JobSrv @Inject()(
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts")
-        val status  = fromCortexJobStatus(cortexJob.status)
+        val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
           j <- get(job).update(
@@ -186,7 +197,7 @@ class JobSrv @Inject()(
               .fromTry {
                 db.tryTransaction { implicit graph =>
                   observableSrv
-                    .create(artifact, dataType, artifact.data.get, artifact.tags, Nil)
+                    .create(artifact.toObservable, dataType, artifact.data.get, artifact.tags, Nil)
                     .flatMap { richObservable =>
                       reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
                     }
@@ -227,7 +238,7 @@ class JobSrv @Inject()(
             db.tryTransaction { implicit graph =>
               for {
                 createdAttachment <- attachmentSrv.create(fFile)
-                richObservable    <- observableSrv.create(artifact, attachmentType, createdAttachment, artifact.tags, Nil)
+                richObservable    <- observableSrv.create(artifact.toObservable, attachmentType, createdAttachment, artifact.tags, Nil)
                 _                 <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
               } yield createdAttachment
             }

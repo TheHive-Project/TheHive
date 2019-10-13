@@ -6,10 +6,11 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{RichAction, Action => CortexAction}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
-import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.controllers.v0.Conversion.{toObjectType, _}
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -22,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ActionCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     actionSrv: ActionSrv,
     entityHelper: EntityHelper,
     caseSrv: CaseSrv,
@@ -31,7 +33,6 @@ class ActionCtrl @Inject()(
     alertSrv: AlertSrv,
     implicit val executionContext: ExecutionContext
 ) extends QueryableCtrl {
-  import ActionConversion._
 
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
@@ -47,7 +48,7 @@ class ActionCtrl @Inject()(
   }
 
   override val entityName: String                           = "action"
-  override val publicProperties: List[PublicProperty[_, _]] = actionProperties
+  override val publicProperties: List[PublicProperty[_, _]] = properties.action ::: metaProperties[ActionSteps]
   override val initialQuery: Query =
     Query.init[ActionSteps]("listAction", (graph, _) => actionSrv.initSteps(graph))
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ActionSteps](
@@ -60,13 +61,13 @@ class ActionCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[RichAction, OutputAction]
+  override val outputQuery: Query = Query.output[RichAction, OutputAction](_.toOutput)
 
   def create: Action[AnyContent] =
     entryPoint("create action")
       .extract("action", FieldsParser[InputAction])
       .asyncAuth { implicit request =>
-        val action: CortexAction = fromInputAction(request.body("action"))
+        val action: CortexAction = request.body("action").toAction
         val tryEntity = db.roTransaction { implicit graph =>
           entityHelper.get(action.objectType, action.objectId, Permissions.manageAction)
         }
@@ -80,7 +81,7 @@ class ActionCtrl @Inject()(
     entryPoint("get by entity")
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
-          entity <- entityHelper.get(toEntityType(objectType), objectId, Permissions.manageAction)
+          entity <- entityHelper.get(toObjectType(objectType), objectId, Permissions.manageAction)
         } yield Results.Ok(Json.toJson(actionSrv.listForEntity(entity._id)))
       }
 }

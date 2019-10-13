@@ -8,14 +8,15 @@ import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.Inject
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.{CortexOutputJob, CortexOutputOperation, InputCortexAction}
+import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexAction}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
-import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
+import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperation, ActionOperationStatus, RichAction}
+import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models.{Case, Task}
 import play.api.libs.json.{JsObject, Json, OWrites}
@@ -36,9 +37,6 @@ class ActionSrv @Inject()(
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
-
-  import org.thp.thehive.connector.cortex.controllers.v0.ActionOperationConversion._
-  import org.thp.thehive.connector.cortex.controllers.v0.JobConversion._
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ActionSteps = new ActionSteps(raw)
 
@@ -77,7 +75,7 @@ class ActionSrv @Inject()(
       updatedAction = action.copy(
         responderName = Some(job.workerName),
         responderDefinition = Some(job.workerDefinition),
-        status = fromCortexJobStatus(job.status),
+        status = job.status.toJobStatus,
         startDate = job.startDate.getOrElse(new Date()),
         cortexId = Some(client.name),
         cortexJobId = Some(job.id)
@@ -141,7 +139,7 @@ class ActionSrv @Inject()(
     db.tryTransaction { implicit graph =>
       val operations = cortexOutputJob
         .report
-        .fold[Seq[CortexOutputOperation]](Nil)(_.operations)
+        .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.toActionOperation))
         .filter(_.status == ActionOperationStatus.Waiting)
         .map { operation =>
           (for {
@@ -158,7 +156,7 @@ class ActionSrv @Inject()(
 
       getByIds(actionId)
         .update(
-          "status"     -> fromCortexJobStatus(cortexOutputJob.status),
+          "status"     -> cortexOutputJob.status.toJobStatus,
           "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
           "endDate"    -> Some(new Date()),
           "operations" -> operations.map(Json.toJsObject(_))

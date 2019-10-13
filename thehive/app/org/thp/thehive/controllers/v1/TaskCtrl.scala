@@ -6,6 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputTask, OutputTask}
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv, TaskSteps}
@@ -15,13 +16,17 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
 @Singleton
-class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv)
-    extends QueryableCtrl {
-
-  import TaskConversion._
+class TaskCtrl @Inject()(
+    entryPoint: EntryPoint,
+    db: Database,
+    properties: Properties,
+    taskSrv: TaskSrv,
+    caseSrv: CaseSrv,
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
 
   override val entityName: String                           = "task"
-  override val publicProperties: List[PublicProperty[_, _]] = taskProperties ::: metaProperties[TaskSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
@@ -34,7 +39,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[RichTask, OutputTask]
+  override val outputQuery: Query = Query.output[RichTask, OutputTask](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
   )
@@ -46,7 +51,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
         val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(inputTask.caseId)
-          createdTask <- taskSrv.create(inputTask)
+          createdTask <- taskSrv.create(inputTask.toTask)
           _           <- caseSrv.addTask(case0, createdTask)
         } yield Results.Created(RichTask(createdTask, None).toJson)
       }
@@ -76,7 +81,7 @@ class TaskCtrl @Inject()(entryPoint: EntryPoint, db: Database, taskSrv: TaskSrv,
 
   def update(taskId: String): Action[AnyContent] =
     entryPoint("update task")
-      .extract("task", FieldsParser.update("task", taskProperties))
+      .extract("task", FieldsParser.update("task", properties.task))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv

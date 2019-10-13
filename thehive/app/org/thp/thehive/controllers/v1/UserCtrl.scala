@@ -8,6 +8,7 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichOptionTry}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -21,6 +22,7 @@ import scala.util.{Failure, Success, Try}
 class UserCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     userSrv: UserSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
@@ -29,10 +31,8 @@ class UserCtrl @Inject()(
     implicit val ec: ExecutionContext
 ) extends QueryableCtrl {
 
-  import UserConversion._
-
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = userProperties(userSrv, profileSrv) ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
@@ -45,7 +45,7 @@ class UserCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[RichUser, OutputUser]
+  override val outputQuery: Query = Query.output[RichUser, OutputUser](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
   )
@@ -71,7 +71,7 @@ class UserCtrl @Inject()(
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile      <- profileSrv.getOrFail(inputUser.profile)
-              user         <- userSrv.create(inputUser, organisation, profile)
+              user         <- userSrv.create(inputUser.toUser, organisation, profile)
             } yield user
           }
           .flatMap { user =>

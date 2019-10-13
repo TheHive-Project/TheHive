@@ -1,14 +1,14 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.ExecutionContext
-
-import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.services.ResponderSrv
+import play.api.libs.json.{JsArray, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class ResponderCtrl @Inject()(
@@ -18,14 +18,12 @@ class ResponderCtrl @Inject()(
     implicit val ex: ExecutionContext
 ) {
 
-  import WorkerConversion._
-
   def getResponders(entityType: String, entityId: String): Action[AnyContent] =
     entryPoint("get responders")
       .asyncAuth { implicit req =>
         responderSrv
           .getRespondersByType(entityType, entityId)
-          .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))
+          .map(l => Results.Ok(JsArray(l.map(_.toJson).toSeq)))
       }
 
   def searchResponders: Action[AnyContent] =
@@ -35,6 +33,6 @@ class ResponderCtrl @Inject()(
         val query: JsObject = req.body("query")
         responderSrv
           .searchResponders(query)
-          .map(l => Results.Ok(Json.toJson(l.map(toOutputWorker))))
+          .map(l => Results.Ok(JsArray(l.map(_.toJson).toSeq)))
       }
 }

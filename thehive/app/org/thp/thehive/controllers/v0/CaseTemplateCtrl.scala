@@ -19,16 +19,16 @@ import scala.util.Try
 class CaseTemplateCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     auditSrv: AuditSrv
 ) extends QueryableCtrl {
-  import CaseTemplateConversion._
 
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = caseTemplateProperties(caseTemplateSrv) ::: metaProperties[CaseTemplateSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.caseTemplate ::: metaProperties[CaseTemplateSteps]
   override val initialQuery: Query =
     Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseTemplateSteps](
@@ -41,7 +41,7 @@ class CaseTemplateCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[RichCaseTemplate, OutputCaseTemplate]
+  override val outputQuery: Query = Query.output[RichCaseTemplate, OutputCaseTemplate](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
   )
@@ -55,7 +55,7 @@ class CaseTemplateCtrl @Inject()(
           organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           tasks        = inputCaseTemplate.tasks.map(_.toTask)
           customFields = inputCaseTemplate.customFieldValue.map(c => c.name -> c.value)
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 

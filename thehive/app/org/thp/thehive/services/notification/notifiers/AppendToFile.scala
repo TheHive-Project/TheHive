@@ -3,20 +3,18 @@ package org.thp.thehive.services.notification.notifiers
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.Try
-
-import play.api.Configuration
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.Configuration
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
-class AppendToFileProvider @Inject()(appConfig: ApplicationConfig) extends NotifierProvider {
+class AppendToFileProvider @Inject()(appConfig: ApplicationConfig, ec: ExecutionContext) extends NotifierProvider {
   override val name: String = "AppendToFile"
 
   val templateConfig: ConfigItem[String, String] =
@@ -29,11 +27,13 @@ class AppendToFileProvider @Inject()(appConfig: ApplicationConfig) extends Notif
     config.getOrFail[String]("file").map { filename =>
       val template = config.getOptional[String]("message").getOrElse(templateConfig.get)
       val charset  = config.getOptional[String]("charset").fold(Charset.defaultCharset())(Charset.forName)
-      new AppendToFile(filename, template, charset, baseUrlConfig.get)
+      new AppendToFile(filename, template, charset, baseUrlConfig.get, ec)
     }
 }
 
-class AppendToFile(filename: String, template: String, charset: Charset, baseUrl: String) extends Notifier with Template {
+class AppendToFile(filename: String, template: String, charset: Charset, baseUrl: String, implicit val ec: ExecutionContext)
+    extends Notifier
+    with Template {
   override val name: String = "AppendToFile"
 
   override def execute(

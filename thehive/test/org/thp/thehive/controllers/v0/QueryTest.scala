@@ -1,13 +1,23 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
 import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{EntryPoint, Field}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, QueryExecutor}
-import org.thp.thehive.services.{AlertSrv, CaseSrv, DashboardSrv, ObservableSrv, OrganisationSrv, ProfileSrv, RoleSrv, TaskSrv, UserSrv}
+import org.thp.thehive.services.{
+  AlertSrv,
+  CaseSrv,
+  CaseTemplateSrv,
+  DashboardSrv,
+  ObservableSrv,
+  OrganisationSrv,
+  ProfileSrv,
+  RoleSrv,
+  TaskSrv,
+  UserSrv
+}
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
 
 class QueryTest extends PlaySpecification with Mockito {
 
@@ -17,6 +27,7 @@ class QueryTest extends PlaySpecification with Mockito {
     mock[AlertSrv],
     mock[DashboardSrv],
     mock[ObservableSrv],
+    mock[CaseTemplateSrv],
     mock[TaskSrv],
     mock[ProfileSrv],
     mock[RoleSrv]

@@ -1,18 +1,16 @@
 package org.thp.thehive.services.notification.notifiers
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Success, Try}
-
-import play.api.libs.json.{Json, Reads, Writes}
-import play.api.libs.ws.WSClient
-import play.api.{Configuration, Logger}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.ws.WSClient
+import play.api.{Configuration, Logger}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 case class MattermostNotification(text: String, url: String, channel: Option[String], username: Option[String])
 
@@ -21,7 +19,7 @@ object MattermostNotification {
 }
 
 @Singleton
-class MattermostProvider @Inject()(appConfig: ApplicationConfig, ws: WSClient) extends NotifierProvider {
+class MattermostProvider @Inject()(appConfig: ApplicationConfig, ws: WSClient, ec: ExecutionContext) extends NotifierProvider {
   override val name: String                            = "Mattermost"
   implicit val optionStringRead: Reads[Option[String]] = Reads.optionNoError[String]
 
@@ -42,12 +40,14 @@ class MattermostProvider @Inject()(appConfig: ApplicationConfig, ws: WSClient) e
     val channel          = config.getOptional[String]("channel")
     val usernameOverride = usernameConfig.get
     val webhook          = webhookConfig.get
-    val mattermost       = new Mattermost(ws, MattermostNotification(template, webhook, channel, usernameOverride), baseUrlConfig.get)
+    val mattermost       = new Mattermost(ws, MattermostNotification(template, webhook, channel, usernameOverride), baseUrlConfig.get, ec)
     Success(mattermost)
   }
 }
 
-class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, baseUrl: String) extends Notifier with Template {
+class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, baseUrl: String, implicit val ec: ExecutionContext)
+    extends Notifier
+    with Template {
   lazy val logger           = Logger(getClass)
   override val name: String = "Mattermost"
 

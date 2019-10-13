@@ -1,20 +1,18 @@
 package org.thp.thehive.services.notification.notifiers
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Success, Try}
-
-import play.api.Configuration
-import play.api.libs.mailer.{Email, MailerClient}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.Configuration
+import play.api.libs.mailer.{Email, MailerClient}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 @Singleton
-class EmailerProvider @Inject()(appConfig: ApplicationConfig, mailerClient: MailerClient) extends NotifierProvider {
+class EmailerProvider @Inject()(appConfig: ApplicationConfig, mailerClient: MailerClient, ec: ExecutionContext) extends NotifierProvider {
   override val name: String = "Emailer"
 
   val subjectConfig: ConfigItem[String, String] =
@@ -31,12 +29,14 @@ class EmailerProvider @Inject()(appConfig: ApplicationConfig, mailerClient: Mail
 
   override def apply(config: Configuration): Try[Notifier] = {
     val template = config.getOptional[String]("message").getOrElse(templateConfig.get)
-    val emailer  = new Emailer(mailerClient, subjectConfig.get, fromConfig.get, template, baseUrlConfig.get)
+    val emailer  = new Emailer(mailerClient, subjectConfig.get, fromConfig.get, template, baseUrlConfig.get, ec)
     Success(emailer)
   }
 }
 
-class Emailer(mailerClient: MailerClient, subject: String, from: String, template: String, baseUrl: String) extends Notifier with Template {
+class Emailer(mailerClient: MailerClient, subject: String, from: String, template: String, baseUrl: String, implicit val ec: ExecutionContext)
+    extends Notifier
+    with Template {
   override val name: String = "Emailer"
 
   override def execute(

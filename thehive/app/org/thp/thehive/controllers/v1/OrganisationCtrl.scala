@@ -6,6 +6,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
@@ -16,15 +17,14 @@ import play.api.mvc.{Action, AnyContent, Results}
 class OrganisationCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     organisationSrv: OrganisationSrv,
     errorHandler: HttpErrorHandler,
     userSrv: UserSrv
 ) extends QueryableCtrl {
 
-  import OrganisationConversion._
-
   override val entityName: String                           = "organisation"
-  override val publicProperties: List[PublicProperty[_, _]] = organisationProperties
+  override val publicProperties: List[PublicProperty[_, _]] = properties.organisation ::: metaProperties[OrganisationSteps]
   override val initialQuery: Query =
     Query.init[OrganisationSteps]("listOrganisation", (graph, authContext) => organisationSrv.initSteps(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[Organisation with Entity]](
@@ -32,7 +32,7 @@ class OrganisationCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[Organisation with Entity, OutputOrganisation]
+  override val outputQuery: Query = Query.output[Organisation with Entity, OutputOrganisation](_.toOutput)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
     "getOrganisation",
     FieldsParser[IdOrName],
@@ -48,11 +48,11 @@ class OrganisationCtrl @Inject()(
     entryPoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
-        val inputOrganisation = request.body("organisation")
+        val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
           _            <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.default.name).existsOrFail()
           user         <- userSrv.current.getOrFail()
-          organisation <- organisationSrv.create(fromInputOrganisation(inputOrganisation), user)
+          organisation <- organisationSrv.create(inputOrganisation.toOrganisation, user)
         } yield Results.Created(organisation.toJson)
       }
 
@@ -78,7 +78,7 @@ class OrganisationCtrl @Inject()(
 
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
-      .extract("organisation", FieldsParser.update("organisation", organisationProperties))
+      .extract("organisation", FieldsParser.update("organisation", properties.organisation))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
         organisationSrv

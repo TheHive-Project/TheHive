@@ -9,6 +9,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.ReportTemplate
 import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
@@ -23,14 +24,13 @@ import scala.util.{Failure, Success}
 class ReportTemplateCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     reportTemplateSrv: ReportTemplateSrv
 ) extends QueryableCtrl {
 
-  import ReportTemplateConversion._
-
   lazy val logger                                           = Logger(getClass)
   override val entityName: String                           = "reportTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = reportTemplateProperties
+  override val publicProperties: List[PublicProperty[_, _]] = properties.reportTemplate ::: metaProperties[ReportTemplateSteps]
   override val initialQuery: Query =
     Query.init[ReportTemplateSteps]("listReportTemplate", (graph, _) => reportTemplateSrv.initSteps(graph))
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ReportTemplateSteps](
@@ -43,7 +43,7 @@ class ReportTemplateCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, ReportTemplateSteps, _) => ReportTemplateSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[ReportTemplate with Entity, OutputReportTemplate]
+  override val outputQuery: Query = Query.output[ReportTemplate with Entity, OutputReportTemplate](_.toOutput)
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")
@@ -75,8 +75,8 @@ class ReportTemplateCtrl @Inject()(
       .extract("template", FieldsParser[InputReportTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
-          val template: InputReportTemplate = request.body("template")
-          reportTemplateSrv.create(template).map { createdReportTemplate =>
+          val importReportTemplate: InputReportTemplate = request.body("template")
+          reportTemplateSrv.create(importReportTemplate.toReportTemplate).map { createdReportTemplate =>
             Results.Created(createdReportTemplate.toJson)
           }
         } else Success(Results.Unauthorized)
@@ -98,7 +98,7 @@ class ReportTemplateCtrl @Inject()(
 
   def update(id: String): Action[AnyContent] =
     entryPoint("update template")
-      .extract("template", FieldsParser.update("template", reportTemplateProperties))
+      .extract("template", FieldsParser.update("template", properties.reportTemplate))
       .authTransaction(db) { implicit request => implicit graph =>
         if (request.permissions.contains(Permissions.manageReportTemplate)) {
           val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")

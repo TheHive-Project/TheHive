@@ -7,6 +7,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Permissions, RichAlert}
 import org.thp.thehive.services._
@@ -16,18 +17,15 @@ import play.api.mvc.{Action, AnyContent, Results}
 class AlertCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
+    properties: Properties,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
 
-  import AlertConversion._
-  import CaseConversion._
-  import CustomFieldConversion._
-
   override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = alertProperties(alertSrv) ::: metaProperties[AlertSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.alert ::: metaProperties[AlertSteps]
   override val initialQuery: Query =
     Query.init[AlertSteps]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AlertSteps](
@@ -42,7 +40,7 @@ class AlertCtrl @Inject()(
       alertSteps
         .richPage(range.from, range.to, withTotal = true)(_.richAlert)
   )
-  override val outputQuery: Query = Query.deprecatedOutput[RichAlert, OutputAlert]
+  override val outputQuery: Query = Query.output[RichAlert, OutputAlert](_.toOutput)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
   )
@@ -63,8 +61,8 @@ class AlertCtrl @Inject()(
               .getOrFail()
           }.flip
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
-          customFields = inputAlert.customFieldValue.map(fromInputCustomField).toMap
-          richAlert <- alertSrv.create(request.body("alert"), organisation, inputAlert.tags, customFields, caseTemplate)
+          customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
+          richAlert <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 

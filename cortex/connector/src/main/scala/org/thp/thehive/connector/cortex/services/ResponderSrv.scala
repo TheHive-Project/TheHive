@@ -1,26 +1,25 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.JsObject
-
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
+import play.api.Logger
+import play.api.libs.json.JsObject
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class ResponderSrv @Inject()(
     connector: Connector,
     db: Database,
     entityHelper: EntityHelper,
-    serviceHelper: ServiceHelper
+    serviceHelper: ServiceHelper,
+    implicit val ec: ExecutionContext
 ) {
-  import org.thp.thehive.connector.cortex.controllers.v0.ActionConversion._
 
   lazy val logger = Logger(getClass)
 
@@ -39,7 +38,7 @@ class ResponderSrv @Inject()(
       entityId: String
   )(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
     for {
-      entity        <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.get(toEntityType(entityType), entityId, Permissions.manageAction)))
+      entity        <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.get(toObjectType(entityType), entityId, Permissions.manageAction)))
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <- Future
         .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation))(

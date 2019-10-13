@@ -2,14 +2,13 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsValue, Json}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 object Conversion {
 
@@ -20,13 +19,21 @@ object Conversion {
     case _        => "Unknown"
   }
 
-  def objectTypeMapper(objectType: String): String = objectType match {
+  def fromObjectType(objectType: String): String = objectType match {
     //    case "Case" =>"case"
     case "Task"       => "case_task"
     case "Log"        => "case_task_log"
     case "Observable" => "case_artifact"
     case "Job"        => "case_artifact_job"
     case other        => other.toLowerCase()
+  }
+
+  def toObjectType(t: String): String = t match {
+    case "case"          => "Case"
+    case "case_artifact" => "Observable"
+    case "case_task"     => "Task"
+    case "case_task_log" => "Log"
+    case "alert"         => "Alert"
   }
 
   implicit class AlertOps(richAlert: RichAlert) {
@@ -128,12 +135,12 @@ object Conversion {
           .withFieldConst(_.base, true)
           .withFieldComputed(_.details, a => Json.parse(a.details.getOrElse("{}")).as[JsObject])
           .withFieldComputed(_.objectId, a => a.objectId.getOrElse(a.context._id))
-          .withFieldComputed(_.objectType, a => objectTypeMapper(a.objectType.getOrElse(a.context._model.label)))
+          .withFieldComputed(_.objectType, a => fromObjectType(a.objectType.getOrElse(a.context._model.label)))
           .withFieldComputed(_.rootId, _.context._id)
           .withFieldComputed(_.startDate, _._createdAt)
           .withFieldComputed(
             _.summary,
-            a => Map(objectTypeMapper(a.objectType.getOrElse(a.context._model.label)) -> Map(actionToOperation(a.action) -> 1))
+            a => Map(fromObjectType(a.objectType.getOrElse(a.context._model.label)) -> Map(actionToOperation(a.action) -> 1))
           )
           .transform
       )
@@ -216,6 +223,37 @@ object Conversion {
           .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
           .withFieldConst(_.stats, richCaseWithStats._2)
           .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
+          .transform
+      )
+  }
+
+  implicit class InputCaseTemplateOps(inputCaseTemplate: InputCaseTemplate) {
+
+    def toCaseTemplate: CaseTemplate =
+      inputCaseTemplate
+        .into[CaseTemplate]
+        .withFieldComputed(_.displayName, _.displayName.getOrElse(""))
+        .withFieldComputed(_.flag, _.flag.getOrElse(false))
+        .transform
+  }
+
+  implicit class CaseTemplateOps(richCaseTemplate: RichCaseTemplate) {
+    def toJson: JsValue = toOutput.toJson
+
+    def toOutput: Output[OutputCaseTemplate] =
+      Output[OutputCaseTemplate](
+        richCaseTemplate
+          .into[OutputCaseTemplate]
+          .withFieldComputed(_.customFields, _.customFields.map(_.toOutput.toOutput).toSet)
+          .withFieldRenamed(_._id, _.id)
+          .withFieldRenamed(_._updatedAt, _.updatedAt)
+          .withFieldRenamed(_._updatedBy, _.updatedBy)
+          .withFieldRenamed(_._createdAt, _.createdAt)
+          .withFieldRenamed(_._createdBy, _.createdBy)
+          .withFieldConst(_.status, "Ok")
+          .withFieldConst(_._type, "caseTemplate")
+          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+          .withFieldComputed(_.tasks, _.tasks.map(t => RichTask(t, None).toOutput.toOutput))
           .transform
       )
   }

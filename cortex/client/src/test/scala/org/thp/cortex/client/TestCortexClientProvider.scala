@@ -3,21 +3,22 @@ package org.thp.cortex.client
 import java.net.URLEncoder
 import java.nio.file.{Path, Paths}
 
-import scala.io.Source
-import scala.util.matching.Regex
-
-import play.api.http.{FileMimeTypes, HttpEntity}
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc._
-import play.api.test.Helpers._
-
 import akka.stream.scaladsl._
 import javax.inject.{Inject, Provider}
 import mockws.MockWS
 import org.thp.client.NoAuthentication
 import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexWorker}
+import play.api.http.{FileMimeTypes, HttpEntity}
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc._
+import play.api.test.Helpers._
 
-class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes) extends Provider[CortexClient] {
+import scala.concurrent.ExecutionContext
+import scala.io.Source
+import scala.util.matching.Regex
+
+class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+    extends Provider[CortexClient] {
   lazy val analyzers: Seq[OutputCortexWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexWorker]]
   lazy val jobs: Seq[CortexOutputJob]          = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
   lazy val responders: Seq[OutputCortexWorker] = readResourceAsJson("/responders.json").as[Seq[OutputCortexWorker]]
@@ -64,5 +65,5 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
     block(get())
 
   override def get(): CortexClient =
-    new CortexClient("test", "", Seq("*"), Nil, ws, NoAuthentication)
+    new CortexClient("test", "", Seq("*"), Nil, ws, NoAuthentication, ec)
 }

@@ -16,6 +16,8 @@ import org.thp.thehive.services.{
   AuditSteps,
   CaseSrv,
   CaseSteps,
+  CaseTemplateSrv,
+  CaseTemplateSteps,
   CustomFieldSteps,
   DashboardSrv,
   DashboardSteps,
@@ -44,6 +46,7 @@ class Properties @Inject()(
     alertSrv: AlertSrv,
     dashboardSrv: DashboardSrv,
     observableSrv: ObservableSrv,
+    caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     profileSrv: ProfileSrv,
     roleSrv: RoleSrv
@@ -191,6 +194,41 @@ class Properties @Inject()(
           )
         ).readonly
       )
+      .build
+
+  lazy val caseTemplate: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[CaseTemplateSteps]
+      .property("name", UniMapping.string)(_.field.readonly)
+      .property("displayName", UniMapping.string)(_.field.updatable)
+      .property("titlePrefix", UniMapping.string.optional)(_.field.updatable)
+      .property("description", UniMapping.string.optional)(_.field.updatable)
+      .property("severity", UniMapping.int.optional)(_.field.updatable)
+      .property("tags", UniMapping.string.set)(
+        _.select(_.tags.displayName)
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            caseTemplateSrv
+              .get(vertex)(graph)
+              .getOrFail()
+              .flatMap(caseTemplate => caseTemplateSrv.updateTagNames(caseTemplate, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("flag", UniMapping.boolean)(_.field.updatable)
+      .property("tlp", UniMapping.int.optional)(_.field.updatable)
+      .property("pap", UniMapping.int.optional)(_.field.updatable)
+      .property("summary", UniMapping.string.optional)(_.field.updatable)
+      .property("user", UniMapping.string)(_.field.updatable)
+      .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
+        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+      }.custom {
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          for {
+            c <- caseTemplateSrv.getOrFail(vertex)(graph)
+            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+          } yield Json.obj(s"customField.$name" -> value)
+        case _ => Failure(BadRequestError("Invalid custom fields format"))
+      })(NoValue(JsNull))
       .build
 
   lazy val customField: List[PublicProperty[_, _]] =

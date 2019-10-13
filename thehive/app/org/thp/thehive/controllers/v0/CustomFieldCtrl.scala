@@ -69,7 +69,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties
         customFieldSrv.getOrFail(id).map(customFieldSrv.useCount).map { countMap =>
           val total = countMap.valuesIterator.sum
           val countStats = JsObject(countMap.map {
-            case (k, v) => objectTypeMapper(k) -> JsNumber(v)
+            case (k, v) => fromObjectType(k) -> JsNumber(v)
           })
           Results.Ok(countStats + ("total" -> JsNumber(total)))
         }
