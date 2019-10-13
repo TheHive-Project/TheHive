@@ -38,17 +38,19 @@ case class MergedFrom()
 
 @EdgeEntity[Case, CustomField]
 case class CaseCustomField(
+    order: Option[Int] = None,
     stringValue: Option[String] = None,
     booleanValue: Option[Boolean] = None,
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None
 ) extends CustomFieldValue[CaseCustomField] {
-  override def setStringValue(value: Option[String]): CaseCustomField   = copy(stringValue = value)
-  override def setBooleanValue(value: Option[Boolean]): CaseCustomField = copy(booleanValue = value)
-  override def setIntegerValue(value: Option[Int]): CaseCustomField     = copy(integerValue = value)
-  override def setFloatValue(value: Option[Float]): CaseCustomField     = copy(floatValue = value)
-  override def setDateValue(value: Option[Date]): CaseCustomField       = copy(dateValue = value)
+  override def order_=(value: Option[Int]): CaseCustomField            = copy(order = value)
+  override def stringValue_=(value: Option[String]): CaseCustomField   = copy(stringValue = value)
+  override def booleanValue_=(value: Option[Boolean]): CaseCustomField = copy(booleanValue = value)
+  override def integerValue_=(value: Option[Int]): CaseCustomField     = copy(integerValue = value)
+  override def floatValue_=(value: Option[Float]): CaseCustomField     = copy(floatValue = value)
+  override def dateValue_=(value: Option[Date]): CaseCustomField       = copy(dateValue = value)
 }
 
 @EdgeEntity[Case, User]

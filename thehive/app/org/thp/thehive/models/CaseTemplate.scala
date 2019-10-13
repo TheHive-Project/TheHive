@@ -10,17 +10,19 @@ case class CaseTemplateOrganisation()
 
 @EdgeEntity[CaseTemplate, CustomField]
 case class CaseTemplateCustomField(
+    order: Option[Int] = None,
     stringValue: Option[String] = None,
     booleanValue: Option[Boolean] = None,
     integerValue: Option[Int] = None,
     floatValue: Option[Float] = None,
     dateValue: Option[Date] = None
 ) extends CustomFieldValue[CaseTemplateCustomField] {
-  override def setStringValue(value: Option[String]): CaseTemplateCustomField   = copy(stringValue = value)
-  override def setBooleanValue(value: Option[Boolean]): CaseTemplateCustomField = copy(booleanValue = value)
-  override def setIntegerValue(value: Option[Int]): CaseTemplateCustomField     = copy(integerValue = value)
-  override def setFloatValue(value: Option[Float]): CaseTemplateCustomField     = copy(floatValue = value)
-  override def setDateValue(value: Option[Date]): CaseTemplateCustomField       = copy(dateValue = value)
+  override def order_=(value: Option[Int]): CaseTemplateCustomField            = copy(order = value)
+  override def stringValue_=(value: Option[String]): CaseTemplateCustomField   = copy(stringValue = value)
+  override def booleanValue_=(value: Option[Boolean]): CaseTemplateCustomField = copy(booleanValue = value)
+  override def integerValue_=(value: Option[Int]): CaseTemplateCustomField     = copy(integerValue = value)
+  override def floatValue_=(value: Option[Float]): CaseTemplateCustomField     = copy(floatValue = value)
+  override def dateValue_=(value: Option[Date]): CaseTemplateCustomField       = copy(dateValue = value)
 }
 
 @EdgeEntity[CaseTemplate, Tag]
