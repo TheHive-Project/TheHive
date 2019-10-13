@@ -2,16 +2,16 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.util.Try
-
-import play.api.test.PlaySpecification
-
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.test.PlaySpecification
+
+import scala.util.Try
 
 class CaseSrvTest extends PlaySpecification {
   val dummyUserSrv = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert")

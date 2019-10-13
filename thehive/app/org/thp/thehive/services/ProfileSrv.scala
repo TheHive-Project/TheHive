@@ -1,15 +1,16 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
+
+import scala.util.Try
 
 object ProfileSrv {
   val admin = Profile("admin", Permissions.adminPermissions)

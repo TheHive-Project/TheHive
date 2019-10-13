@@ -1,9 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.util.Try
-
-import play.api.test.{NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -11,9 +7,13 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
+import play.api.test.{NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class EntityHelperTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)

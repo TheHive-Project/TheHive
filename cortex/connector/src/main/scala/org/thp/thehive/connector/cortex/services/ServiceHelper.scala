@@ -1,13 +1,13 @@
 package org.thp.thehive.connector.cortex.services
 
-import play.api.Logger
-
 import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services._
+import play.api.Logger
 
 @Singleton
 class ServiceHelper @Inject()(

@@ -2,8 +2,6 @@ package org.thp.thehive.services
 
 import java.lang.{Long => JLong}
 
-import scala.util.{Success, Try}
-
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
@@ -11,8 +9,11 @@ import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
+
+import scala.util.{Success, Try}
 
 @Singleton
 class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSteps] {

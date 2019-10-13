@@ -1,19 +1,19 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.libs.json.{JsArray, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.CaseSrv
+import play.api.libs.json.{JsArray, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class ShareCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)

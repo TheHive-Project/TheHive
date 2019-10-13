@@ -2,12 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.zip.{ZipEntry, ZipFile}
 
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -15,8 +9,14 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.connector.cortex.models.ReportTemplate
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.io.Source
+import scala.util.Try
 
 @Singleton
 class ReportTemplateSrv @Inject()(

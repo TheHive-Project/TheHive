@@ -2,17 +2,17 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.Date
 
-import scala.language.implicitConversions
-
-import play.api.libs.json.{JsArray, JsObject}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.ActionSteps
+import play.api.libs.json.{JsArray, JsObject}
+
+import scala.language.implicitConversions
 
 object ActionConversion {
 

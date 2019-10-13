@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -10,10 +8,13 @@ import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0._
 import org.thp.thehive.services.ObservableSteps
+
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 @Singleton
 class CortexQueryExecutor @Inject()(

@@ -1,21 +1,21 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.JsValue
-
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
+import play.api.libs.json.JsValue
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class ConfigSrv @Inject()(

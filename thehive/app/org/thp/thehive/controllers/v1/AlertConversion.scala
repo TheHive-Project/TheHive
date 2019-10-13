@@ -2,12 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
-import scala.util.Failure
-
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import gremlin.scala.{__, By, Key, Vertex}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.BadRequestError
@@ -15,9 +9,15 @@ import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models.{Alert, AlertCase, RichAlert}
 import org.thp.thehive.services.{AlertSrv, AlertSteps}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+import scala.util.Failure
 
 object AlertConversion {
   import CustomFieldConversion._

@@ -1,21 +1,21 @@
 package org.thp.thehive.controllers.v1
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichOptionTry}
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class UserCtrl @Inject()(

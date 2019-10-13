@@ -1,19 +1,19 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Failure
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputProfile, OutputProfile}
 import org.thp.thehive.models.{Permissions, Profile}
 import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Failure
 
 @Singleton
 class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {

@@ -2,14 +2,6 @@ package org.thp.thehive.services
 
 import java.io.NotSerializableException
 
-import scala.collection.immutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Random, Try}
-
-import play.api.Logger
-import play.api.libs.json.Json
-
 import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
@@ -21,6 +13,14 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.steps.StepsOps._
+import play.api.Logger
+import play.api.libs.json.Json
+
+import scala.collection.immutable
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
 
 sealed trait StreamMessage extends Serializable
 

@@ -1,15 +1,15 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.JavaConverters._
-
-import play.api.libs.json._
-
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSteps, ShareSteps}
+import play.api.libs.json._
+
+import scala.collection.JavaConverters._
 
 trait CaseRenderer {
 

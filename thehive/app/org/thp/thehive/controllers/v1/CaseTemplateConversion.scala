@@ -1,19 +1,19 @@
 package org.thp.thehive.controllers.v1
 
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
-import scala.util.Failure
-
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.controllers.{FPathElem, Output}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.{InputCaseTemplate, OutputCaseTemplate}
 import org.thp.thehive.models.{CaseTemplate, RichCaseTemplate}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+import scala.util.Failure
 
 object CaseTemplateConversion {
 

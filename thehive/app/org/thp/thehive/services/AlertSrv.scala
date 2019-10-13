@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -14,10 +9,15 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, _}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject()(

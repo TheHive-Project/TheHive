@@ -2,19 +2,19 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.Logger
-
 import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.misp.dto.{Attribute, Tag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{BadRequestError, NotFoundError}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class MispExportSrv @Inject()(

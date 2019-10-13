@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
@@ -14,10 +9,15 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 case class TestCase(
     caseId: Int,

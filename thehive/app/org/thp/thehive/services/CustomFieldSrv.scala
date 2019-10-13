@@ -1,10 +1,6 @@
 package org.thp.thehive.services
+
 import java.util.{Map => JMap}
-
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, JsValue}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -13,10 +9,15 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{RichElement, VertexSrv}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{EdgeSteps, Traversal, ValueMap, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, JsValue}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {

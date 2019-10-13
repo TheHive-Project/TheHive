@@ -1,21 +1,21 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ErrorHandler
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.dto.v0.OutputJob
 import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.services.ObservableSrv
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class JobCtrl @Inject()(

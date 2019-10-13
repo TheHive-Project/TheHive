@@ -4,8 +4,18 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import scala.util.Try
-
+import akka.stream.Materializer
+import io.scalaland.chimney.dsl._
+import org.specs2.mock.Mockito
+import org.specs2.specification.core.{Fragment, Fragments}
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.models._
+import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.utils.Hasher
+import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
+import org.thp.thehive.models._
+import org.thp.thehive.services.{AlertSrv, DataSrv}
 import play.api.Configuration
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
@@ -14,17 +24,7 @@ import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
 
-import akka.stream.Materializer
-import io.scalaland.chimney.dsl._
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models._
-import org.thp.scalligraph.utils.Hasher
-import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
-import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, DataSrv}
+import scala.util.Try
 
 case class TestObservable(
     dataType: String,

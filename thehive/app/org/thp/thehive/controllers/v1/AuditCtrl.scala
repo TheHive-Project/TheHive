@@ -1,18 +1,18 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.OutputAudit
 import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, auditSrv: AuditSrv) extends QueryableCtrl {

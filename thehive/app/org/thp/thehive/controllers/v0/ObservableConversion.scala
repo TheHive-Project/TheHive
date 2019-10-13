@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.JavaConverters._
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala.{By, Graph, GremlinScala, Key, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.ObservableSteps
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
 
 object ObservableConversion {
 

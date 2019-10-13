@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -9,8 +7,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FSeq, Field, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.services.{ObservableSteps, _}
+
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean)
 

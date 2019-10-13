@@ -1,18 +1,18 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Success, Try}
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.{InputCase, InputTask, OutputCase}
 import org.thp.thehive.models.{Permissions, RichCase, RichCaseTemplate, User}
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(

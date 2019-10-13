@@ -1,15 +1,15 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.mvc.RequestHeader
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthenticationError
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Instance
 import org.thp.thehive.models.Permissions
+import play.api.mvc.RequestHeader
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv) extends ScalligraphUserSrv {

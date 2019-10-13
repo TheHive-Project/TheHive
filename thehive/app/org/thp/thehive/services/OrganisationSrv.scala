@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -11,8 +7,12 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.util.{Success, Try}
 
 object OrganisationSrv {
   val default = Organisation("default", "initial organisation")

@@ -1,17 +1,17 @@
 package org.thp.thehive.controllers.v1
 
-import scala.language.implicitConversions
-import scala.util.Success
-
-import play.api.libs.json.Json
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models.{Permissions, RichUser, User}
 import org.thp.thehive.services.{ProfileSrv, UserSrv, UserSteps}
+import play.api.libs.json.Json
+
+import scala.language.implicitConversions
+import scala.util.Success
 
 object UserConversion {
 

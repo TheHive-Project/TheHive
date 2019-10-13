@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{List => JList}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -14,9 +9,14 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
 
 class CaseTemplateSrv @Inject()(
     customFieldSrv: CustomFieldSrv,

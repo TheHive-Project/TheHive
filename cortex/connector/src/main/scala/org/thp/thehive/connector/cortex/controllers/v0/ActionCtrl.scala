@@ -1,22 +1,22 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.{ExecutionContext, Future}
-
-import play.api.libs.json.{JsObject, Json, OWrites}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction}
 import org.thp.thehive.connector.cortex.models.{RichAction, Action => CortexAction}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import org.thp.thehive.controllers.v0.Conversion._
+import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ActionCtrl @Inject()(

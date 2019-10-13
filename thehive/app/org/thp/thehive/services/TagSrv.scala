@@ -1,15 +1,16 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.VertexSrv
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models.Tag
+
+import scala.util.Try
 
 @Singleton
 class TagSrv @Inject()(appConfig: ApplicationConfig)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {

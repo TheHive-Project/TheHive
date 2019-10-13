@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{FPathElem, FString}
@@ -12,6 +7,7 @@ import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
 import org.thp.thehive.services.{
@@ -36,6 +32,10 @@ import org.thp.thehive.services.{
   UserSrv,
   UserSteps
 }
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class Properties @Inject()(

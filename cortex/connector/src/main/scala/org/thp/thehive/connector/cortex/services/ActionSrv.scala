@@ -2,11 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json, OWrites}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -17,11 +12,16 @@ import org.thp.cortex.dto.v0.{CortexOutputJob, CortexOutputOperation, InputCorte
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.models.{Action, ActionContext, ActionOperationStatus, RichAction}
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.models.{Case, Task}
+import play.api.libs.json.{JsObject, Json, OWrites}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ActionSrv @Inject()(
     @Named("cortex-actor") cortexActor: ActorRef,

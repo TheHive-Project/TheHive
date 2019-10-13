@@ -1,15 +1,16 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
-
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
+
+import scala.util.{Success, Try}
 
 @Singleton
 class ShareSrv @Inject()(

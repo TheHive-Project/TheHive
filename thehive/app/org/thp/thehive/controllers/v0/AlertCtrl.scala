@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
@@ -15,10 +10,15 @@ import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject()(

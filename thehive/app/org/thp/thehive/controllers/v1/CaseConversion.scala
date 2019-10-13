@@ -2,17 +2,17 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import scala.language.implicitConversions
-
-import play.api.libs.json.{JsObject, Json}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Output
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.dto.v1.{InputCase, OutputCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, CaseSteps, UserSrv}
+import play.api.libs.json.{JsObject, Json}
+
+import scala.language.implicitConversions
 
 object CaseConversion {
   import CustomFieldConversion._

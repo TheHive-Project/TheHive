@@ -1,10 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.util.Try
-
-import play.api.libs.json.Json
-import play.api.test.{NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -13,9 +8,14 @@ import org.thp.cortex.client._
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.Json
+import play.api.test.{NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class ResponderSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
