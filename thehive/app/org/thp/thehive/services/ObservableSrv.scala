@@ -12,11 +12,10 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
-
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -214,14 +213,14 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              tags.asScala.map(_.as[Tag]).toSeq,
-              extensions.asScala.map(_.as[KeyValue]).toSeq
+              tags.asScala.map(_.as[Tag]),
+              extensions.asScala.map(_.as[KeyValue])
             )
         }
     )
 
   def richObservableWithCustomRenderer[A](
-      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
+      entityRenderer: ObservableSteps => TraversalLike[_, A]
   ): Traversal[(RichObservable, A), (RichObservable, A)] =
     Traversal(
       raw
@@ -232,7 +231,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
             .and(By(__[Vertex].outTo[ObservableAttachment].fold))
             .and(By(__[Vertex].outTo[ObservableTag].fold))
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
-            .and(By(entityRenderer(__[Vertex])))
+            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
           case (observable, tpe, data, attachment, tags, extensions, renderedEntity) =>
@@ -241,8 +240,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
               onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
-              tags.asScala.map(_.as[Tag]).toSeq,
-              extensions.asScala.map(_.as[KeyValue]).toSeq
+              tags.asScala.map(_.as[Tag]),
+              extensions.asScala.map(_.as[KeyValue])
             ) -> renderedEntity
         }
     )

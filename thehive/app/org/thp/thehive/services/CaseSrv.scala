@@ -11,11 +11,10 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
-
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -353,7 +352,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     newInstance(raw.order(By(Key[Int]("number"), Order.desc)))
 
   def richCaseWithCustomRenderer[A](
-      entityRenderer: GremlinScala[Vertex] => GremlinScala[A]
+      entityRenderer: CaseSteps => TraversalLike[_, A]
   )(implicit authContext: AuthContext): Traversal[(RichCase, A), (RichCase, A)] =
     Traversal(
       raw
@@ -364,7 +363,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-            .and(By(entityRenderer(__[Vertex])))
+            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
             .and(
               By(
                 __[Vertex]

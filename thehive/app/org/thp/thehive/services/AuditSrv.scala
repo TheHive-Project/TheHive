@@ -13,12 +13,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
-
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
@@ -317,7 +316,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
 
   def richAuditWithCustomRenderer[A](
-      entityRenderer: AuditSteps => Traversal[A, A]
+      entityRenderer: AuditSteps => TraversalLike[_, A]
   ): Traversal[(RichAudit, A), (RichAudit, A)] =
     Traversal(
       raw

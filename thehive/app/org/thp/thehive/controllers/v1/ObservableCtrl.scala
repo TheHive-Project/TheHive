@@ -1,4 +1,10 @@
-package org.thp.thehive.controllers.v0
+package org.thp.thehive.controllers.v1
+
+import scala.util.Success
+
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
@@ -11,11 +17,6 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject()(

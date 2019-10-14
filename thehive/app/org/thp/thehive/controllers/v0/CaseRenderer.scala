@@ -8,8 +8,9 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSteps, ShareSteps}
 import play.api.libs.json._
-
 import scala.collection.JavaConverters._
+
+import org.thp.scalligraph.steps.Traversal
 
 trait CaseRenderer {
 
@@ -52,24 +53,22 @@ trait CaseRenderer {
 
   def mergeIntoStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
 
-  def caseStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): GremlinScala[Vertex] => GremlinScala[JsObject] =
-    (_: GremlinScala[Vertex])
-      .project(
-        _.apply(
-          By(
-            new CaseSteps(__[Vertex])
-              .share
-              .project(
-                _.apply(By(taskStats(__[Vertex])))
-                  .and(By(observableStats(__[Vertex])))
-              )
-              .raw
-          )
-        ).and(By(alertStats(__[Vertex])))
-          .and(By(mergeFromStats(__[Vertex])))
-          .and(By(mergeIntoStats(__[Vertex])))
-      )
-      .map {
+  def caseStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): CaseSteps => Traversal[JsObject, JsObject] =
+    _.project(
+      _.apply(
+        By(
+          new CaseSteps(__[Vertex])
+            .share
+            .project(
+              _.apply(By(taskStats(__[Vertex])))
+                .and(By(observableStats(__[Vertex])))
+            )
+            .raw
+        )
+      ).and(By(alertStats(__[Vertex])))
+        .and(By(mergeFromStats(__[Vertex])))
+        .and(By(mergeIntoStats(__[Vertex])))
+    ).map {
         case ((tasks, observables), alerts, mergeFrom, mergeInto) =>
           Json.obj(
             "tasks"     -> tasks,

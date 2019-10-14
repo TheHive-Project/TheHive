@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v1
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
 import gremlin.scala.{__, By, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
@@ -18,18 +23,16 @@ import org.thp.thehive.services.{
   CaseSteps,
   CaseTemplateSrv,
   CaseTemplateSteps,
+  ObservableSrv,
+  ObservableSteps,
   OrganisationSteps,
   TaskSteps,
   UserSrv,
   UserSteps
 }
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
 
 @Singleton
-class Properties @Inject()(alertSrv: AlertSrv, caseSrv: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv) {
+class Properties @Inject()(alertSrv: AlertSrv, caseSrv: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv, observableSrv: ObservableSrv) {
 
   lazy val alert: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[AlertSteps]
@@ -220,5 +223,27 @@ class Properties @Inject()(alertSrv: AlertSrv, caseSrv: CaseSrv, userSrv: UserSr
             Success(Json.obj("locked" -> value))
           }
       })
+      .build
+
+  lazy val observable: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[ObservableSteps]
+      .property("status", UniMapping.string)(_.select(_.constant("Ok")).readonly)
+      .property("startDate", UniMapping.date)(_.select(_._createdAt).readonly)
+      .property("ioc", UniMapping.boolean)(_.field.updatable)
+      .property("sighted", UniMapping.boolean)(_.field.updatable)
+      .property("tags", UniMapping.string.set)(
+        _.select(_.tags.displayName)
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            observableSrv
+              .getOrFail(vertex)(graph)
+              .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("message", UniMapping.string)(_.field.updatable)
+      .property("tlp", UniMapping.int)(_.field.updatable)
+      .property("dataType", UniMapping.string)(_.select(_.observableType.name).readonly)
+      .property("data", UniMapping.string.optional)(_.select(_.data.data).readonly)
+      // TODO add attachment ?
       .build
 }

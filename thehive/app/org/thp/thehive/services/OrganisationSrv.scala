@@ -72,7 +72,7 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
 
 }
 
-@EntitySteps[Case]
+@EntitySteps[Organisation]
 class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Organisation](raw) {
 
   def link(orgId: String): OrganisationSteps =
