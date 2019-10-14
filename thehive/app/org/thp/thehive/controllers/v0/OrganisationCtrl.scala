@@ -34,7 +34,7 @@ class OrganisationCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[Organisation with Entity, OutputOrganisation](_.toOutput)
+  override val outputQuery: Query = Query.output[Organisation with Entity]()
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
     "getOrganisation",
     FieldsParser[IdOrName],

@@ -34,7 +34,7 @@ class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Pr
     FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: Query = Query.output[Profile with Entity, OutputProfile](_.toOutput)
+  val outputQuery: Query = Query.output[Profile with Entity]()
 
   def create: Action[AnyContent] =
     entryPoint("create profile")

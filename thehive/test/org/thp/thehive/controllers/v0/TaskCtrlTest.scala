@@ -2,6 +2,11 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
@@ -15,10 +20,6 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
 
 case class TestTask(
     title: String,
@@ -34,7 +35,7 @@ case class TestTask(
 )
 
 object TestTask {
-  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput.toOutput)
+  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
 
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform

@@ -38,7 +38,7 @@ class LogCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
-  override val outputQuery: Query = Query.output[RichLog, OutputLog](_.toOutput)
+  override val outputQuery: Query = Query.output[RichLog]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[LogSteps, List[RichLog]]("toList", (logSteps, _) => logSteps.richLog.toList)
   )

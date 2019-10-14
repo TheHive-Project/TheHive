@@ -53,7 +53,7 @@ class ObservableCtrl @Inject()(
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichObservable, JsObject), OutputObservable](_.toOutput)
+  override val outputQuery: Query = Query.output[(RichObservable, JsObject)]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
   )

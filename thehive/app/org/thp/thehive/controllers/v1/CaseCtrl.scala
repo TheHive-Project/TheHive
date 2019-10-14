@@ -53,7 +53,7 @@ class CaseCtrl @Inject()(
           }
     }
   )
-  override val outputQuery: Query = Query.output[RichCase, OutputCase](_.toOutput)
+  override val outputQuery: Query = Query.output[RichCase]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)

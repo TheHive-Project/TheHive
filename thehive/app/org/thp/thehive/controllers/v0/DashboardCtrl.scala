@@ -37,7 +37,7 @@ class DashboardCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, dashboardSteps, _) => dashboardSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: Query = Query.output[Dashboard with Entity, OutputDashboard](_.toOutput)
+  val outputQuery: Query = Query.output[Dashboard with Entity]()
 
   def create: Action[AnyContent] =
     entryPoint("create dashboard")

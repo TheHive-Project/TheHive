@@ -2,17 +2,17 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.Date
 
+import play.api.libs.json.{JsArray, JsObject}
+
 import io.scalaland.chimney.dsl._
-import org.thp.cortex.dto.v0.{InputReportTemplate, OutputCortexWorker, OutputReportTemplate}
-import org.thp.scalligraph.controllers.Output
+import org.thp.cortex.dto.v0.{InputAnalyzerTemplate, OutputAnalyzerTemplate, OutputCortexWorker}
+import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction, OutputJob, OutputWorker}
-import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus, ReportTemplate, RichAction}
+import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
-import play.api.libs.json.{JsArray, JsObject, JsValue}
 
 object Conversion {
-
   implicit class InputActionOps(inputAction: InputAction) {
 
     def toAction: Action =
@@ -31,76 +31,58 @@ object Conversion {
         .transform
   }
 
-  implicit class ActionOps(action: RichAction) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val actionOutput: Outputer.Aux[RichAction, OutputAction] = Outputer[RichAction, OutputAction](
+    _.into[OutputAction]
+      .withFieldComputed(_.status, _.status.toString)
+      .withFieldComputed(_.objectId, _.context._id)
+      .withFieldComputed(_.objectType, _.context._model.label)
+      .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
+      .withFieldComputed(_.report, _.report.map(_.toString).getOrElse("{}"))
+      .transform
+  )
 
-    def toOutput: Output[OutputAction] =
-      Output[OutputAction](
-        action
-          .into[OutputAction]
-          .withFieldComputed(_.status, _.status.toString)
-          .withFieldComputed(_.objectId, _.context._id)
-          .withFieldComputed(_.objectType, _.context._model.label)
-          .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
-          .withFieldComputed(_.report, _.report.map(_.toString).getOrElse("{}"))
-          .transform
-      )
-  }
+  implicit val jobOuput: Outputer.Aux[Job with Entity, OutputJob] = Outputer[Job with Entity, OutputJob](
+    job =>
+      job
+        .asInstanceOf[Job]
+        .into[OutputJob]
+        .withFieldComputed(_.analyzerId, _.workerId)
+        .withFieldComputed(_.analyzerName, _.workerName)
+        .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldComputed(_.endDate, _.endDate)
+        .withFieldComputed(_.cortexId, _.cortexId)
+        .withFieldComputed(_.cortexJobId, _.cortexJobId)
+        .withFieldConst(_.id, job._id)
+        .transform
+  )
 
-  implicit class JobOps(job: Job with Entity) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val analyzerTemplateOutput: Outputer.Aux[AnalyzerTemplate with Entity, OutputAnalyzerTemplate] =
+    Outputer[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](
+      _.into[OutputAnalyzerTemplate]
+        .withFieldComputed(_.analyzerId, _.workerId)
+        .withFieldComputed(_.id, _._id)
+        .withFieldComputed(_.content, _.content)
+        .transform
+    )
 
-    def toOutput: Output[OutputJob] =
-      Output[OutputJob](
-        job
-          .asInstanceOf[Job]
-          .into[OutputJob]
-          .withFieldComputed(_.analyzerId, _.workerId)
-          .withFieldComputed(_.analyzerName, _.workerName)
-          .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
-          .withFieldComputed(_.status, _.status.toString)
-          .withFieldComputed(_.endDate, _.endDate)
-          .withFieldComputed(_.cortexId, _.cortexId)
-          .withFieldComputed(_.cortexJobId, _.cortexJobId)
-          .withFieldConst(_.id, job._id)
-          .transform
-      )
-  }
+  implicit class InputAnalyzerTemplateOps(inputAnalyzerTemplate: InputAnalyzerTemplate) {
 
-  implicit class ReportTemplateOps(reportTemplate: ReportTemplate with Entity) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputReportTemplate] =
-      Output[OutputReportTemplate](
-        reportTemplate
-          .into[OutputReportTemplate]
-          .withFieldComputed(_.analyzerId, _.workerId)
-          .withFieldComputed(_.id, _._id)
-          .withFieldComputed(_.content, _.content)
-          .transform
-      )
-  }
-
-  implicit class InputReportTemplateOps(inputReportTemplate: InputReportTemplate) {
-
-    def toReportTemplate: ReportTemplate =
-      inputReportTemplate
-        .into[ReportTemplate]
+    def toAnalyzerTemplate: AnalyzerTemplate =
+      inputAnalyzerTemplate
+        .into[AnalyzerTemplate]
         .withFieldComputed(_.workerId, _.analyzerId)
         .withFieldComputed(_.content, _.content)
         .transform
   }
 
-  implicit class OutputWorkerOps(worker: (OutputCortexWorker, Seq[String])) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputWorker] =
-      Output(
+  implicit val workerOutput: Outputer.Aux[(OutputCortexWorker, Seq[String]), OutputWorker] =
+    Outputer[(OutputCortexWorker, Seq[String]), OutputWorker](
+      worker =>
         worker
           ._1
           .into[OutputWorker]
           .withFieldConst(_.cortexIds, worker._2)
           .transform
-      )
-  }
+    )
 }

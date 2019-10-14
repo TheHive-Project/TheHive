@@ -2,56 +2,50 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
+import play.api.libs.json.{JsObject, JsValue}
+
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.controllers.Output
+import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, JsValue}
 
 object Conversion {
-
-  implicit class AlertOps(richAlert: RichAlert) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputAlert] =
-      Output[OutputAlert](
-        richAlert
-          .into[OutputAlert]
-          .withFieldComputed(_.customFields, _.customFields.map(_.toOutput.toOutput).toSet)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .transform
-      )
+  implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
+    def toJson: JsValue = outputer.toOutput(o).toJson
+    def toOutput: D     = outputer.toOutput(o).toOutput
   }
 
-  implicit class AuditOps(audit: RichAudit) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val alertOutput: Outputer.Aux[RichAlert, OutputAlert] = Outputer[RichAlert, OutputAlert](
+    _.into[OutputAlert]
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .transform
+  )
 
-    def toOutput: Output[OutputAudit] =
-      Output[OutputAudit](
-        audit
-          .into[OutputAudit]
-          .withFieldComputed(_.operation, _.action)
-          .withFieldComputed(_._id, _._id)
-          .withFieldComputed(_._createdAt, _._createdAt)
-          .withFieldComputed(_._createdBy, _._createdBy)
-          .withFieldComputed(_.obj, a => a.`object`.map(OutputEntity.apply))
-          //        .withFieldComputed(_.obj, a ⇒ OutputEntity(a.obj))
-          //        .withFieldComputed(
-          //          _.summary,
-          //          _.summary.mapValues(
-          //            opCount ⇒
-          //              opCount.map {
-          //                case (op, count) ⇒ op.toString → count
-          //              }
-          //          )
-          .withFieldConst(_.attributeName, None) // FIXME
-          .withFieldConst(_.oldValue, None)
-          .withFieldConst(_.newValue, None)
-          .withFieldConst(_.summary, Map.empty[String, Map[String, Int]])
-          .transform
-      )
-  }
+  implicit val auditOutput: Outputer.Aux[RichAudit, OutputAudit] = Outputer[RichAudit, OutputAudit](
+    _.into[OutputAudit]
+      .withFieldComputed(_.operation, _.action)
+      .withFieldComputed(_._id, _._id)
+      .withFieldComputed(_._createdAt, _._createdAt)
+      .withFieldComputed(_._createdBy, _._createdBy)
+      .withFieldComputed(_.obj, a => a.`object`.map(OutputEntity.apply))
+      //        .withFieldComputed(_.obj, a ⇒ OutputEntity(a.obj))
+      //        .withFieldComputed(
+      //          _.summary,
+      //          _.summary.mapValues(
+      //            opCount ⇒
+      //              opCount.map {
+      //                case (op, count) ⇒ op.toString → count
+      //              }
+      //          )
+      .withFieldConst(_.attributeName, None) // FIXME
+      .withFieldConst(_.oldValue, None)
+      .withFieldConst(_.newValue, None)
+      .withFieldConst(_.summary, Map.empty[String, Map[String, Int]])
+      .transform
+  )
+
   implicit class InputAlertOps(inputAlert: InputAlert) {
 
     def toAlert: Alert =
@@ -67,26 +61,16 @@ object Conversion {
         .transform
   }
 
-  implicit class CaseOps(richCase: RichCase) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val caseOutput: Outputer.Aux[RichCase, OutputCase] = Outputer[RichCase, OutputCase](
+    _.into[OutputCase]
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.status, _.status.toString)
+      .transform
+  )
 
-    def toOutput: Output[OutputCase] =
-      Output[OutputCase](
-        richCase
-          .into[OutputCase]
-          .withFieldComputed(_.customFields, _.customFields.map(_.toOutput.toOutput).toSet)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .withFieldComputed(_.status, _.status.toString)
-          .transform
-      )
-  }
-
-  implicit class CaseWithStatsOps(richCaseWithStats: (RichCase, JsObject)) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputCase] =
-      richCaseWithStats._1.toOutput // TODO add stats
-  }
+  implicit val caseWithStatsOutput: Outputer[(RichCase, JsObject)] =
+    Outputer[(RichCase, JsObject), OutputCase](_._1.toOutput) // TODO add stats
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
@@ -130,45 +114,27 @@ object Conversion {
         .transform
   }
 
-  implicit class CaseTemplateOps(richCaseTemplate: RichCaseTemplate) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val caseTemplateOutput: Outputer.Aux[RichCaseTemplate, OutputCaseTemplate] = Outputer[RichCaseTemplate, OutputCaseTemplate](
+    _.into[OutputCaseTemplate]
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .transform
+  )
 
-    def toOutput: Output[OutputCaseTemplate] =
-      Output[OutputCaseTemplate](
-        richCaseTemplate
-          .into[OutputCaseTemplate]
-          .withFieldComputed(_.customFields, _.customFields.map(_.toOutput.toOutput).toSet)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .transform
-      )
-  }
+  implicit val richCustomFieldOutput: Outputer.Aux[RichCustomField, OutputCustomFieldValue] = Outputer[RichCustomField, OutputCustomFieldValue](
+    _.into[OutputCustomFieldValue]
+      .withFieldComputed(_.value, _.value.map(_.toString))
+      .withFieldComputed(_.tpe, _.typeName)
+      .transform
+  )
 
-  implicit class RichCustomFieldOps(customFieldValue: RichCustomField) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputCustomFieldValue] =
-      Output[OutputCustomFieldValue](
-        customFieldValue
-          .into[OutputCustomFieldValue]
-          .withFieldComputed(_.value, _.value.map(_.toString))
-          .withFieldComputed(_.tpe, _.typeName)
-          .transform
-      )
-  }
-
-  implicit class CustomFieldOps(customField: CustomField with Entity) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputCustomField] =
-      Output[OutputCustomField](
-        customField
-          .asInstanceOf[CustomField]
-          .into[OutputCustomField]
-          .withFieldComputed(_.`type`, _.`type`.toString)
-          .withFieldComputed(_.mandatory, _.mandatory)
-          .transform
-      )
-  }
+  implicit val customFieldOutput: Outputer.Aux[CustomField with Entity, OutputCustomField] = Outputer[CustomField with Entity, OutputCustomField](
+    _.asInstanceOf[CustomField]
+      .into[OutputCustomField]
+      .withFieldComputed(_.`type`, _.`type`.toString)
+      .withFieldComputed(_.mandatory, _.mandatory)
+      .transform
+  )
 
   implicit class InputOrganisationOps(inputOrganisation: InputOrganisation) {
 
@@ -178,17 +144,12 @@ object Conversion {
         .transform
   }
 
-  implicit class OrganisationOps(organisation: Organisation with Entity) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputOrganisation] =
-      Output[OutputOrganisation](
-        organisation
-          .asInstanceOf[Organisation]
-          .into[OutputOrganisation]
-          .transform
-      )
-  }
+  implicit val organisationOutputer: Outputer.Aux[Organisation with Entity, OutputOrganisation] =
+    Outputer[Organisation with Entity, OutputOrganisation](
+      _.asInstanceOf[Organisation]
+        .into[OutputOrganisation]
+        .transform
+    )
 
   implicit class InputTaskOps(inputTask: InputTask) {
 
@@ -201,17 +162,11 @@ object Conversion {
         .transform
   }
 
-  implicit class TaskOps(task: RichTask) {
-    def toJson: JsValue = toOutput.toJson
-
-    def toOutput: Output[OutputTask] =
-      Output[OutputTask](
-        task
-          .into[OutputTask]
-          .withFieldComputed(_.status, _.status.toString)
-          .transform
-      )
-  }
+  implicit val taskOutput: Outputer.Aux[RichTask, OutputTask] = Outputer[RichTask, OutputTask](
+    _.into[OutputTask]
+      .withFieldComputed(_.status, _.status.toString)
+      .transform
+  )
 
   implicit class InputUserOps(inputUser: InputUser) {
 
@@ -226,18 +181,88 @@ object Conversion {
         .transform
   }
 
-  implicit class UserOps(user: RichUser) {
-    def toJson: JsValue = toOutput.toJson
+  implicit val userOutput: Outputer.Aux[RichUser, OutputUser] = Outputer[RichUser, OutputUser](
+    _.into[OutputUser]
+      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
+      .withFieldComputed(_.hasKey, _.apikey.isDefined)
+      //        .withFieldComputed(_.permissions, _.permissions)
+      //        .withFieldConst(_.permissions, Set.empty[String]
+      .transform
+  )
 
-    def toOutput: Output[OutputUser] =
-      Output[OutputUser](
-        user
-          .into[OutputUser]
-          .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
-          .withFieldComputed(_.hasKey, _.apikey.isDefined)
-          //        .withFieldComputed(_.permissions, _.permissions)
-          //        .withFieldConst(_.permissions, Set.empty[String]
-          .transform
-      )
-  }
+  implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](
+    profile =>
+      profile
+        .asInstanceOf[Profile]
+        .into[OutputProfile]
+        .withFieldConst(_._id, profile._id)
+        .withFieldConst(_.id, profile._id)
+        .withFieldConst(_.updatedAt, profile._updatedAt)
+        .withFieldConst(_.updatedBy, profile._updatedBy)
+        .withFieldConst(_.createdAt, profile._createdAt)
+        .withFieldConst(_.createdBy, profile._createdBy)
+        .withFieldConst(_._type, "profile")
+        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
+        .transform
+  )
+
+  implicit val dashboardOutput: Outputer.Aux[Dashboard with Entity, OutputDashboard] = Outputer[Dashboard with Entity, OutputDashboard](
+    dashboard =>
+      dashboard
+        .asInstanceOf[Dashboard]
+        .into[OutputDashboard]
+        .withFieldConst(_._id, dashboard._id)
+        .withFieldComputed(_.status, d => if (d.shared) "Shared" else "Private")
+        .withFieldConst(_._type, "dashboard")
+        .withFieldConst(_._updatedAt, dashboard._updatedAt)
+        .withFieldConst(_._updatedBy, dashboard._updatedBy)
+        .withFieldConst(_._createdAt, dashboard._createdAt)
+        .withFieldConst(_._createdBy, dashboard._createdBy)
+        .transform
+  )
+
+  implicit val attachmentOutput: Outputer.Aux[Attachment with Entity, OutputAttachment] = Outputer[Attachment with Entity, OutputAttachment](
+    _.asInstanceOf[Attachment]
+      .into[OutputAttachment]
+      .withFieldComputed(_.hashes, _.hashes.map(_.toString).sortBy(_.length)(Ordering.Int.reverse))
+      .withFieldComputed(_.id, _.attachmentId)
+      .transform
+  )
+
+  implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](
+    richObservable =>
+      richObservable
+        .into[OutputObservable]
+        .withFieldConst(_._type, "case_artifact")
+        .withFieldComputed(_._id, _.observable._id)
+        .withFieldComputed(_._updatedAt, _.observable._updatedAt)
+        .withFieldComputed(_._updatedBy, _.observable._updatedBy)
+        .withFieldComputed(_._createdAt, _.observable._createdAt)
+        .withFieldComputed(_._createdBy, _.observable._createdBy)
+        .withFieldComputed(_.dataType, _.`type`.name)
+        .withFieldComputed(_.startDate, _.observable._createdAt)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.data, _.data.map(_.data))
+        .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+        .withFieldConst(_.stats, JsObject.empty)
+        .transform
+  )
+
+  implicit val logOutput: Outputer.Aux[RichLog, OutputLog] = Outputer[RichLog, OutputLog](
+    richLog =>
+      richLog
+        .into[OutputLog]
+        .withFieldConst(_._type, "case_task_log")
+        .withFieldComputed(_._id, _._id)
+        .withFieldComputed(_._updatedAt, _._updatedAt)
+        .withFieldComputed(_._updatedBy, _._updatedBy)
+        .withFieldComputed(_._createdAt, _._createdAt)
+        .withFieldComputed(_._createdBy, _._createdBy)
+        .withFieldComputed(_.message, _.message)
+        .withFieldComputed(_.startDate, _._createdAt)
+        .withFieldComputed(_.owner, _._createdBy)
+        .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
+        .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
+        .transform
+  )
 }

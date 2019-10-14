@@ -55,7 +55,7 @@ class AlertCtrl @Inject()(
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable]), OutputAlert](_.toOutput)
+  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable])]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
   )
@@ -84,7 +84,7 @@ class AlertCtrl @Inject()(
           _               <- userSrv.current.can(Permissions.manageAlert).existsOrFail()
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
-          _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o.observable)))(_ => Success(()))
+          _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
@@ -97,7 +97,9 @@ class AlertCtrl @Inject()(
           .richAlert
           .getOrFail()
           .map { richAlert =>
-            Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson)
+            val alertWithObservables
+                : (RichAlert, Seq[RichObservable]) = (richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList)
+            Results.Ok(alertWithObservables.toJson)
           }
       }
 
@@ -110,7 +112,9 @@ class AlertCtrl @Inject()(
           .update(_.get(alertId).can(Permissions.manageAlert), propertyUpdaters)
           .flatMap { case (alertSteps, _) => alertSteps.richAlert.getOrFail() }
           .map { richAlert =>
-            Results.Ok((richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList).toJson)
+            val alertWithObservables
+                : (RichAlert, Seq[RichObservable]) = (richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList)
+            Results.Ok(alertWithObservables.toJson)
           }
       }
 

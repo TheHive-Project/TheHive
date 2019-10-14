@@ -50,7 +50,7 @@ class AuditCtrl @Inject()(
       FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
-  val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit, OutputAudit](_.toOutput)
+  val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
   )

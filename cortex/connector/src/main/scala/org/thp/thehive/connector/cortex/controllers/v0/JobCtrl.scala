@@ -43,7 +43,7 @@ class JobCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, jobSteps, _) => jobSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[Job with Entity, OutputJob](_.toOutput)
+  override val outputQuery: Query = Query.output[Job with Entity]()
 
   def get(jobId: String): Action[AnyContent] =
     entryPoint("get job")
