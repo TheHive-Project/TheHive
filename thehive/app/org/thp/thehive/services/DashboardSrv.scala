@@ -1,5 +1,9 @@
 package org.thp.thehive.services
 
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -9,11 +13,8 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
-import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
-import play.api.libs.json.{JsObject, Json}
-
-import scala.util.Try
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
 
 @Singleton
 class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSrv)(implicit db: Database)

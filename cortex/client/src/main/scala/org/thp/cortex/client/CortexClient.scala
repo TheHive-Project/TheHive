@@ -1,10 +1,9 @@
 package org.thp.cortex.client
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import org.thp.client._
-import org.thp.cortex.dto.v0.{Attachment, _}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
+
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{Format, JsObject, JsString, Json}
@@ -12,9 +11,11 @@ import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import org.thp.client._
+import org.thp.cortex.dto.v0.{Attachment, _}
 
 case class CortexClientConfig(
     name: String,

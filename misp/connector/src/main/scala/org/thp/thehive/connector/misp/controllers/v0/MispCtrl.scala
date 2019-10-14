@@ -1,5 +1,10 @@
 package org.thp.thehive.connector.misp.controllers.v0
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
+
+import play.api.mvc.{Action, AnyContent, Results}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala.{Key, P}
@@ -9,10 +14,6 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv, MispImportSrv}
 import org.thp.thehive.services.{AlertSrv, CaseSrv}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 @Singleton
 class MispCtrl @Inject()(

@@ -14,7 +14,7 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputObservable, OutputObservable}
+import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 

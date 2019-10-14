@@ -2,16 +2,17 @@ package org.thp.thehive.services
 
 import java.util.Base64
 
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Random, Success, Try}
+
+import play.api.Configuration
+import play.api.mvc.RequestHeader
+
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
-import play.api.Configuration
-import play.api.mvc.RequestHeader
-
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Random, Success, Try}
 
 class LocalKeyAuthSrv(
     db: Database,

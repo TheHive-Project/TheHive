@@ -2,6 +2,11 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
@@ -14,10 +19,6 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
 
 case class TestCase(
     caseId: Int,

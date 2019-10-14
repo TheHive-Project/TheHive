@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.regex.Pattern
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.Configuration
+import play.api.libs.json.JsObject
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -13,10 +18,6 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import play.api.Configuration
-import play.api.libs.json.JsObject
-
-import scala.util.{Failure, Success, Try}
 
 object UserSrv {
   val initUserPassword: String = "secret"

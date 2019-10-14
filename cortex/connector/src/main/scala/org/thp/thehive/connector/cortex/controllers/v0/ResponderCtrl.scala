@@ -1,15 +1,16 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import scala.concurrent.ExecutionContext
+
+import play.api.libs.json.{JsArray, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.services.ResponderSrv
-import play.api.libs.json.{JsArray, JsObject}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.concurrent.ExecutionContext
-import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.controllers.v0.Conversion._
 
 @Singleton
 class ResponderCtrl @Inject()(

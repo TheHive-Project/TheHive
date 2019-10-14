@@ -2,6 +2,11 @@ package org.thp.thehive.services.notification.notifiers
 
 import java.util.{HashMap => JHashMap}
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.test.PlaySpecification
+
 import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -11,10 +16,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.DatabaseBuilder
 import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
-import play.api.test.PlaySpecification
-
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 class NotificationTemplateTest extends PlaySpecification {
   val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local")

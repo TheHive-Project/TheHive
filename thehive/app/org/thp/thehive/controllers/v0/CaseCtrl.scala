@@ -1,5 +1,11 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -8,14 +14,9 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputCase, InputTask, OutputCase}
+import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(

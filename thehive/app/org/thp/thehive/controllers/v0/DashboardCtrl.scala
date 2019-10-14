@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -7,10 +9,9 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputDashboard, OutputDashboard}
+import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.Dashboard
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv}
-import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class DashboardCtrl @Inject()(

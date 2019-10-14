@@ -3,6 +3,11 @@ package org.thp.thehive.services
 import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
 
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+import play.api.libs.json.JsObject
+
 import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
@@ -15,9 +20,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
-import play.api.libs.json.JsObject
-import scala.collection.JavaConverters._
-import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject()(

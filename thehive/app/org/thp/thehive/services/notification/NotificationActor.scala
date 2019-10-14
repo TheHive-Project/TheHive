@@ -1,5 +1,13 @@
 package org.thp.thehive.services.notification
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.util.Try
+
+import play.api.libs.json.{Format, Json}
+import play.api.{Configuration, Logger}
+
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
 import gremlin.scala.{__, By, Graph, Key, P, Vertex}
@@ -12,13 +20,6 @@ import org.thp.thehive.models.{Audit, Organisation, User, UserConfig}
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}
-import play.api.libs.json.{Format, Json}
-import play.api.{Configuration, Logger}
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 object NotificationTopic {
   def apply(role: String = ""): String = if (role.isEmpty) "notification" else s"notification-$role"

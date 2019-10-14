@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
 import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
@@ -11,10 +16,6 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
 class ShareCtrl @Inject()(
@@ -69,7 +70,7 @@ class ShareCtrl @Inject()(
       richShare <- shareSrv.get(share).richShare.getOrFail()
       _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
       _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-    } yield richShare.toJson
+    } yield richShare
 
   def removeShare(id: String): Action[AnyContent] =
     entryPoint("remove share")

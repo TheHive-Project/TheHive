@@ -1,16 +1,17 @@
 package org.thp.thehive.services.notification.notifiers
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
+
+import play.api.libs.json.{Json, Reads, Writes}
+import play.api.libs.ws.WSClient
+import play.api.{Configuration, Logger}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
-import play.api.libs.json.{Json, Reads, Writes}
-import play.api.libs.ws.WSClient
-import play.api.{Configuration, Logger}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
 
 case class MattermostNotification(text: String, url: String, channel: Option[String], username: Option[String])
 

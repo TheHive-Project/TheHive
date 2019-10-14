@@ -1,5 +1,8 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers._
@@ -8,11 +11,9 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputTask, OutputTask}
+import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class TaskCtrl @Inject()(

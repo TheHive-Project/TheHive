@@ -3,6 +3,12 @@ package org.thp.thehive.connector.misp.services
 import java.nio.file.Files
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
+
+import play.api.Logger
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
@@ -17,11 +23,6 @@ import org.thp.scalligraph.services.RichVertexGremlinScala
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class MispImportSrv @Inject()(

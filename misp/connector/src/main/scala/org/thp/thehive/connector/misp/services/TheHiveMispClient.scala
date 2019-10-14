@@ -1,5 +1,12 @@
 package org.thp.thehive.connector.misp.services
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
+
+import play.api.libs.json.{Format, JsObject, JsString, Json}
+import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.AhcWSClientConfig
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
@@ -8,12 +15,6 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.OrganisationSteps
-import play.api.libs.json.{Format, JsObject, JsString, Json}
-import play.api.libs.ws.WSClient
-import play.api.libs.ws.ahc.AhcWSClientConfig
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
 
 case class TheHiveMispClientConfig(
     name: String,

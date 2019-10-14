@@ -1,16 +1,17 @@
 package org.thp.thehive.connector.cortex.services
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
+
+import play.api.Logger
+import play.api.libs.json.JsObject
+
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
-import play.api.Logger
-import play.api.libs.json.JsObject
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 @Singleton
 class ResponderSrv @Inject()(

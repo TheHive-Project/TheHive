@@ -1,11 +1,12 @@
 package org.thp.thehive.controllers.v0
 
+import play.api.libs.json.JsObject
+
 import gremlin.scala.By
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services._
-import play.api.libs.json.JsObject
 
 trait AuditRenderer {
 

@@ -2,6 +2,12 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.{Date, UUID}
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
+import scala.util.Try
+
+import play.api.test.PlaySpecification
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
@@ -14,11 +20,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, DatabaseBuilder, Permissions}
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
-import play.api.test.PlaySpecification
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with Mockito {
   val dummyUserSrv                    = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)

@@ -2,9 +2,10 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
+import play.api.libs.json.{Format, Json, Writes}
+
 import org.thp.thehive.dto.v0.ObservablesFilter.ObservablesFilter
 import org.thp.thehive.dto.v0.TasksFilter.TasksFilter
-import play.api.libs.json.{Format, Json, Writes}
 
 case class InputShare(organisationName: String, profile: String, tasks: TasksFilter, observables: ObservablesFilter)
 

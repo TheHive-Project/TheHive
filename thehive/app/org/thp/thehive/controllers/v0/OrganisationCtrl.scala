@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -7,13 +12,9 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{Organisation, OrganisationOrganisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
 class OrganisationCtrl @Inject()(
@@ -21,8 +22,7 @@ class OrganisationCtrl @Inject()(
     db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv,
-    auditSrv: AuditSrv
+    userSrv: UserSrv
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "organisation"

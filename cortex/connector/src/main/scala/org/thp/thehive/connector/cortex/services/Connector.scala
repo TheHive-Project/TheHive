@@ -1,5 +1,11 @@
 package org.thp.thehive.connector.cortex.services
 
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.{JsObject, Json}
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
@@ -8,11 +14,6 @@ import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationForma
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
-import play.api.libs.json.{JsObject, Json}
-
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 @Singleton
 class Connector @Inject()(

@@ -1,5 +1,9 @@
 package org.thp.thehive.controllers.v1
 
+import scala.util.{Success, Try}
+
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -8,12 +12,9 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.{InputCase, InputTask, OutputCase}
+import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models.{Permissions, RichCase, RichCaseTemplate, User}
 import org.thp.thehive.services._
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -25,8 +26,7 @@ class CaseCtrl @Inject()(
     taskSrv: TaskSrv,
     userSrv: UserSrv,
     tagSrv: TagSrv,
-    organisationSrv: OrganisationSrv,
-    auditSrv: AuditSrv
+    organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "case"

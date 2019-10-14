@@ -2,6 +2,11 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
+import scala.util.Try
+
+import play.api.libs.json.{JsString, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -14,10 +19,6 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertSrv
-import play.api.libs.json.{JsString, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import scala.util.Try
 
 case class TestAlert(
     `type`: String,

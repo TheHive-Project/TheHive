@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{FPathElem, FString}
@@ -34,10 +39,6 @@ import org.thp.thehive.services.{
   UserSrv,
   UserSteps
 }
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class Properties @Inject()(

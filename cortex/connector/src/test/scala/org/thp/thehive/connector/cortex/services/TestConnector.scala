@@ -1,12 +1,12 @@
 package org.thp.thehive.connector.cortex.services
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.scalligraph.services.config.ApplicationConfig
-
-import scala.concurrent.ExecutionContext
 
 @Singleton
 class TestConnector @Inject()(client: CortexClient, appConfig: ApplicationConfig, mat: Materializer, system: ActorSystem, ec: ExecutionContext)

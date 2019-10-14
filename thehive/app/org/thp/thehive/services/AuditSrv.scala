@@ -2,6 +2,12 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
+
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue, Json}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -16,11 +22,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 

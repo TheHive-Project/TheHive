@@ -25,42 +25,20 @@ case class Action(
     operations: Seq[JsObject]
 )
 
-case class RichAction(
-    _id: String,
-    _createdAt: Date,
-    _createdBy: String,
-    responderId: String,
-    responderName: Option[String],
-    responderDefinition: Option[String],
-    status: JobStatus.Value,
-    startDate: Date,
-    endDate: Option[Date],
-    report: Option[JsObject],
-    cortexId: Option[String],
-    cortexJobId: Option[String],
-    operations: Seq[JsObject],
-    context: Entity
-)
-
-object RichAction {
-
-  def apply(action: Action with Entity, context: Entity): RichAction =
-    new RichAction(
-      action._id,
-      action._createdAt,
-      action._createdBy,
-      action.responderId,
-      action.responderName,
-      action.responderDefinition,
-      action.status,
-      action.startDate,
-      action.endDate,
-      action.report,
-      action.cortexId,
-      action.cortexJobId,
-      action.operations,
-      context
-    )
+case class RichAction(action: Action with Entity, context: Entity) {
+  val _id: String                         = action._id
+  val _createdAt: Date                    = action._createdAt
+  val _createdBy: String                  = action._createdBy
+  val responderId: String                 = action.responderId
+  val responderName: Option[String]       = action.responderName
+  val responderDefinition: Option[String] = action.responderDefinition
+  val status: JobStatus.Value             = action.status
+  val startDate: Date                     = action.startDate
+  val endDate: Option[Date]               = action.endDate
+  val report: Option[JsObject]            = action.report
+  val cortexId: Option[String]            = action.cortexId
+  val cortexJobId: Option[String]         = action.cortexJobId
+  val operations: Seq[JsObject]           = action.operations
 }
 
 case class ActionContext()

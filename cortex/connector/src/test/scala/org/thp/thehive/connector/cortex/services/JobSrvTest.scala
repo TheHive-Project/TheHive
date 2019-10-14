@@ -2,6 +2,14 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+import scala.io.Source
+import scala.util.Try
+
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+
 import akka.actor.Terminated
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -17,13 +25,6 @@ import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.triggers.JobFinished
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.io.Source
-import scala.util.Try
 
 class JobSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)

@@ -2,6 +2,10 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -12,9 +16,6 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
-import play.api.libs.json.{JsNull, JsObject, Json}
-
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
