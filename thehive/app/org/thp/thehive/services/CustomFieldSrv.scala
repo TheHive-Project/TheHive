@@ -85,7 +85,7 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
     raw
       .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
       .as(customFieldValueLabel)
-      .outV()
+      .inV()
       .value(Key[String]("type"))
       .as(typeLabel)
       .select()
