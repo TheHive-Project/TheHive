@@ -38,6 +38,17 @@ class Router @Inject()(
     case POST(p"/login") => authenticationCtrl.login
 //    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
+    case POST(p"/case/$id/shares")                => shareCtrl.shareCase(id)
+    case DELETE(p"/case/shares")                  => shareCtrl.removeShares()
+    case DELETE(p"/task/shares")                  => shareCtrl.removeShareTasks()
+    case DELETE(p"/observable/shares")            => shareCtrl.removeShareObservables()
+    case GET(p"/case/$id/shares")                 => shareCtrl.listShareCases(id)
+    case GET(p"/case/$id/task/$tId/shares")       => shareCtrl.listShareTasks(id, tId)
+    case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)
+    case PUT(p"/case/task/$tId/shares")           => shareCtrl.shareTask(tId)
+    case DELETE(p"/case/share/$id")               => shareCtrl.removeShare(id)
+    case PATCH(p"/case/share/$id")                => shareCtrl.updateShare(id)
+
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
@@ -85,17 +96,6 @@ class Router @Inject()(
     case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
     case PUT(p"/organisation/$organisationId1/links")                    => organisationCtrl.bulkLink(organisationId1)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
-
-    case POST(p"/case/$id/shares")                => shareCtrl.shareCase(id)
-    case DELETE(p"/case/shares")                  => shareCtrl.removeShares()
-    case DELETE(p"/task/shares")                  => shareCtrl.removeShareTasks()
-    case DELETE(p"/observable/shares")            => shareCtrl.removeShareObservables()
-    case GET(p"/case/$id/shares")                 => shareCtrl.listShareCases(id)
-    case GET(p"/case/$id/task/$tId/shares")       => shareCtrl.listShareTasks(id, tId)
-    case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)
-    case PUT(p"/case/task/$tId/shares")           => shareCtrl.shareTask(tId)
-    case DELETE(p"/case/share/$id")               => shareCtrl.removeShare(id)
-    case PATCH(p"/case/share/$id")                => shareCtrl.updateShare(id)
 
     case GET(p"/case/task")           => queryExecutor.task.search
     case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
