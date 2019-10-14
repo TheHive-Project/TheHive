@@ -16,6 +16,7 @@
                 shares: '<',
                 organisations: '<',
                 profiles: '<',
+                readOnly: '<',
                 //onReload: '&',
                 onDelete: '&'
             }
