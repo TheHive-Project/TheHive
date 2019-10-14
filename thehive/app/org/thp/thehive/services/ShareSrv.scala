@@ -99,6 +99,40 @@ class ShareSrv @Inject()(
     get(share).`case`.tasks.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareTaskSrv.create(ShareTask(), share, _))
 
   /**
+    * Shares a task for an already shared case
+    * @return
+    */
+  def shareCaseTask(`case`: Case with Entity, task: Task with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      share <- caseSrv
+        .get(`case`)
+        .share
+        .getOrFail()
+      _ = shareTaskSrv.create(ShareTask(), share, task)
+      _ <- auditSrv.task.create(task, `case`)
+    } yield ()
+
+  /**
+    * Shares an observable for an already shared case
+    * @return
+    */
+  def shareCaseObservable(`case`: Case with Entity, observable: Observable with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      share <- caseSrv
+        .get(`case`)
+        .share
+        .getOrFail()
+      _ = shareObservableSrv.create(ShareObservable(), share, observable)
+      _ <- auditSrv.observable.create(observable, `case`)
+    } yield ()
+
+  /**
     * Shares all the observables for an already shared case
     * @param share the associated share
     * @return
@@ -194,13 +228,13 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       .filter(_.hasId(taskId))
   )
 
+  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
+
   def byObservable(obsId: String)(implicit authContext: AuthContext): ShareSteps = this.filter(
     _.filter(_.organisation.hasNot(Key("name"), P.eq(authContext.organisation)))
       .outTo[ShareObservable]
       .filter(_.hasId(obsId))
   )
-
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
 

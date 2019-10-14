@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputTask, OutputTask}
 import org.thp.thehive.models.{Permissions, RichTask}
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv, TaskSteps}
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -22,7 +22,8 @@ class TaskCtrl @Inject()(
     properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    shareSrv: ShareSrv
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "task"
@@ -52,7 +53,7 @@ class TaskCtrl @Inject()(
         for {
           case0       <- caseSrv.getOrFail(inputTask.caseId)
           createdTask <- taskSrv.create(inputTask.toTask)
-          _           <- caseSrv.addTask(case0, createdTask)
+          _           <- shareSrv.shareCaseTask(case0, createdTask)
         } yield Results.Created(RichTask(createdTask, None).toJson)
       }
 

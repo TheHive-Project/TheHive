@@ -22,7 +22,8 @@ class TaskCtrl @Inject()(
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    shareSrv: ShareSrv
 ) extends QueryableCtrl {
 
   lazy val logger                                           = Logger(getClass)
@@ -53,7 +54,7 @@ class TaskCtrl @Inject()(
         for {
           case0       <- caseSrv.getOrFail(caseId)
           createdTask <- taskSrv.create(inputTask.toTask)
-          _           <- caseSrv.addTask(case0, createdTask)
+          _           <- shareSrv.shareCaseTask(case0, createdTask)
           owner       <- inputTask.owner.map(userSrv.getOrFail).flip
           _           <- owner.map(taskSrv.assign(createdTask, _)).flip
           richTask = RichTask(createdTask, owner.map(_.login))

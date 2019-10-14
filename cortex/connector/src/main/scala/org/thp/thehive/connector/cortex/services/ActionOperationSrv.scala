@@ -23,7 +23,8 @@ class ActionOperationSrv @Inject()(
     alertSrv: AlertSrv,
     logSrv: LogSrv,
     observableTypeSrv: ObservableTypeSrv,
-    userSrv: UserSrv
+    userSrv: UserSrv,
+    shareSrv: ShareSrv
 ) {
   private[ActionOperationSrv] lazy val logger = Logger(getClass)
 
@@ -61,7 +62,7 @@ class ActionOperationSrv @Inject()(
         for {
           c           <- Try(relatedCase.get)
           createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask)
-          _           <- caseSrv.addTask(c, createdTask)
+          _           <- shareSrv.shareCaseTask(c, createdTask)
         } yield updateOperation(operation)
 
       case AddCustomFields(name, _, value, _, _) =>
