@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.Graph
+import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
@@ -129,6 +129,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
+                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
                   .richShare
                   .toList
                   .map(_.toJson)

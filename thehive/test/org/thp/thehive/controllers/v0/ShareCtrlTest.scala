@@ -47,6 +47,18 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       l
     }
 
+    def getSomeShares(caseId: String, user: String, orga: String) = {
+      val requestGet = FakeRequest("GET", s"/api/case/$caseId/shares")
+        .withHeaders("user" -> s"$user@thehive.local", "X-Organisation" -> orga)
+      val resGet = shareCtrl.listShareCases(caseId)(requestGet)
+
+      status(resGet) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resGet)}")
+
+      val l = contentAsJson(resGet).as[List[OutputShare]]
+
+      l
+    }
+
     "manage shares for a case" in {
       val inputShare = Json.obj("shares" -> List(Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))))
 
@@ -98,7 +110,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       task4 must beSome
 
       val request = FakeRequest("GET", s"/api/case/#4/task/${task4.get._id}/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
       val result = shareCtrl.listShareTasks("#4", task4.get._id)(request)
 
       status(result) shouldEqual 200
@@ -131,7 +143,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val result = shareCtrl.shareCase("#3")(request)
 
       status(result) shouldEqual 201
-      getShares("#3").length shouldEqual 3
+      getShares("#3").length shouldEqual 2
 
       val requestEmpty = FakeRequest("POST", s"/api/case/#3/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
@@ -142,15 +154,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       val l = getShares("#3")
 
-      l.length shouldEqual 3
-
-      val requestFailRemove = FakeRequest("DELETE", s"/api/case/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
-        .withJsonBody(Json.obj("ids" -> l.filter(_.organisationName == "default").map(_._id)))
-      val resultFailRemove = shareCtrl.removeShares()(requestFailRemove)
-
-      status(resultFailRemove) shouldEqual 500
-      getShares("#3").length shouldEqual 3
+      getShares("#3").length shouldEqual 2
 
       val requestRemove = FakeRequest("DELETE", s"/api/case/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
@@ -180,22 +184,15 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val result = shareCtrl.shareCase("#1")(request)
 
       status(result) shouldEqual 201
-      getShares("#1").length shouldEqual 2
+      getSomeShares("#1", "user1", "cert").length shouldEqual 1
 
-      val share = getShares("#1").find(_.organisationName == "default").get
+      val share = getSomeShares("#1", "user1", "cert").find(_.organisationName == "default").get
 
       val requestRemove = FakeRequest("DELETE", s"/api/case/share/${share._id}")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
       val resultRemove = shareCtrl.removeShare(share._id)(requestRemove)
 
       status(resultRemove) shouldEqual 204
-
-      val ownShare = getShares("#1").find(_.organisationName == "cert").get
-      val requestRemoveOwn = FakeRequest("DELETE", s"/api/case/share/${ownShare._id}")
-        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-      val resultRemoveOwn = shareCtrl.removeShare(ownShare._id)(requestRemoveOwn)
-
-      status(resultRemoveOwn) shouldEqual 500
     }
 
     "patch a share" in {
@@ -219,9 +216,9 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(result) shouldEqual 201
 
-      val l = getShares("#2")
+      val l = getSomeShares("#2", "user1", "cert")
 
-      l.length shouldEqual 2
+      l.length shouldEqual 1
 
       val share = l.find(s => s.organisationName == "default" && s.profileName == "read-only")
 
@@ -235,9 +232,9 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(resultPatch) shouldEqual 200
 
-      val newL = getShares("#2")
+      val newL = getSomeShares("#2", "user1", "cert")
 
-      newL.length shouldEqual 2
+      newL.length shouldEqual 1
       newL.find(s => s.organisationName == "default" && s.profileName == "all") must beSome
     }
 
@@ -254,7 +251,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       observableHfr must beSome
 
       val request = FakeRequest("GET", s"/api/case/#1/observable/${observableHfr.get._id}/shares")
-        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
       val result = shareCtrl.listShareObservables("#1", observableHfr.get._id)(request)
 
       status(result) shouldEqual 200

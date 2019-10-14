@@ -186,19 +186,21 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def relatedTo(organisation: Organisation with Entity): ShareSteps = this.filter(_.organisation.get(organisation._id))
 
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
-
   def tasks = new TaskSteps(raw.outTo[ShareTask])
 
-  def byTask(taskId: String): ShareSteps = this.filter(
-    _.outTo[ShareTask]
+  def byTask(taskId: String)(implicit authContext: AuthContext): ShareSteps = this.filter(
+    _.filter(_.organisation.hasNot(Key("name"), P.eq(authContext.organisation)))
+      .outTo[ShareTask]
       .filter(_.hasId(taskId))
   )
 
-  def byObservable(obsId: String): ShareSteps = this.filter(
-    _.outTo[ShareObservable]
+  def byObservable(obsId: String)(implicit authContext: AuthContext): ShareSteps = this.filter(
+    _.filter(_.organisation.hasNot(Key("name"), P.eq(authContext.organisation)))
+      .outTo[ShareObservable]
       .filter(_.hasId(obsId))
   )
+
+  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
 
   def observables = new ObservableSteps(raw.outTo[ShareObservable])
 
