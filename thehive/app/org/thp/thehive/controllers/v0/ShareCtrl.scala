@@ -76,16 +76,23 @@ class ShareCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail()
-          _            <- removeShare(id, organisation)
+          _            <- removeShare(id, organisation, None)
         } yield Results.NoContent
       }
 
-  private def removeShare(id: String, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext) =
+  private def removeShare(id: String, organisation: Organisation with Entity, entity: Option[String])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ) =
     for {
       relatedOrg <- shareSrv.get(id).organisation.getOrFail()
       if relatedOrg.name != organisation.name
       share <- shareSrv.get(id).getOrFail()
-      _ = shareSrv.remove(share)
+      _ = entity.map {
+        case "task"       => shareSrv.removeShareTasks(share)
+        case "observable" => shareSrv.removeShareObservable(share)
+        case _            => shareSrv.remove(share)
+      } getOrElse shareSrv.remove(share)
     } yield ()
 
   def removeShares(): Action[AnyContent] =
@@ -96,7 +103,33 @@ class ShareCtrl @Inject()(
 
         userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
           shareIds
-            .toTry(id => removeShare(id, organisation))
+            .toTry(id => removeShare(id, organisation, None))
+            .map(_ => Results.NoContent)
+        }
+      }
+
+  def removeShareTasks(): Action[AnyContent] =
+    entryPoint("remove share tasks")
+      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val shareIds: Seq[String] = request.body("shares")
+
+        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
+          shareIds
+            .toTry(id => removeShare(id, organisation, Some("task")))
+            .map(_ => Results.NoContent)
+        }
+      }
+
+  def removeShareObservables(): Action[AnyContent] =
+    entryPoint("remove share observables")
+      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val shareIds: Seq[String] = request.body("shares")
+
+        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
+          shareIds
+            .toTry(id => removeShare(id, organisation, Some("observable")))
             .map(_ => Results.NoContent)
         }
       }
@@ -149,6 +182,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
+                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
                   .byTask(taskId)
                   .richShare
                   .toList
@@ -169,6 +203,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
+                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
                   .byObservable(obsId)
                   .richShare
                   .toList

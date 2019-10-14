@@ -88,6 +88,8 @@ class Router @Inject()(
 
     case POST(p"/case/$id/shares")                => shareCtrl.shareCase(id)
     case DELETE(p"/case/shares")                  => shareCtrl.removeShares()
+    case DELETE(p"/task/shares")                  => shareCtrl.removeShareTasks()
+    case DELETE(p"/observable/shares")            => shareCtrl.removeShareObservables()
     case GET(p"/case/$id/shares")                 => shareCtrl.listShareCases(id)
     case GET(p"/case/$id/task/$tId/shares")       => shareCtrl.listShareTasks(id, tId)
     case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)

@@ -89,6 +89,48 @@ class ShareSrv @Inject()(
   }
 
   /**
+    * Unshare all Tasks for a given Share (Case <=> Organisation)
+    * @param share the given share to clean
+    * @return
+    */
+  def removeShareTasks(share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Seq[Unit]] = {
+    val tasks = get(share).tasks.toList
+    get(share)
+      .outToE[ShareTask]
+      .remove()
+    tasks.toTry(
+      t =>
+        for {
+          c <- taskSrv.get(t).`case`.getOrFail()
+          o <- get(share).organisation.getOrFail()
+          _ <- auditSrv.share.unshareTask(t, c, o)
+        } yield ()
+    )
+  }
+
+  /**
+    * Unshare all Observables for a given Share (Case <=> Organisation)
+    * @param share the given share to clean
+    * @return
+    */
+  def removeShareObservable(
+      share: Share with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[Unit]] = {
+    val observables = get(share).observables.toList
+    get(share)
+      .outToE[ShareObservable]
+      .remove()
+    observables.toTry(
+      obs =>
+        for {
+          c <- observableSrv.get(obs).`case`.getOrFail()
+          o <- get(share).organisation.getOrFail()
+          _ <- auditSrv.share.unshareObservable(obs, c, o)
+        } yield ()
+    )
+  }
+
+  /**
     * Shares all the tasks for an already shared case
     * @param share the associated share
     * @return
@@ -220,19 +262,17 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
 
   def relatedTo(organisation: Organisation with Entity): ShareSteps = this.filter(_.organisation.get(organisation._id))
 
+  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
+
   def tasks = new TaskSteps(raw.outTo[ShareTask])
 
-  def byTask(taskId: String)(implicit authContext: AuthContext): ShareSteps = this.filter(
-    _.filter(_.organisation.hasNot(Key("name"), P.eq(authContext.organisation)))
-      .outTo[ShareTask]
+  def byTask(taskId: String): ShareSteps = this.filter(
+    _.outTo[ShareTask]
       .filter(_.hasId(taskId))
   )
 
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
-
-  def byObservable(obsId: String)(implicit authContext: AuthContext): ShareSteps = this.filter(
-    _.filter(_.organisation.hasNot(Key("name"), P.eq(authContext.organisation)))
-      .outTo[ShareObservable]
+  def byObservable(obsId: String): ShareSteps = this.filter(
+    _.outTo[ShareObservable]
       .filter(_.hasId(obsId))
   )
 
