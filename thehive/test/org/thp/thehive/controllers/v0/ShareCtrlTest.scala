@@ -10,7 +10,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.CaseSrv
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{JsArray, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import scala.util.Try
@@ -100,7 +100,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       })
     }
 
-    "fetch shares for a task" in db.roTransaction { implicit graph =>
+    "fetch and remove shares for a task" in db.roTransaction { implicit graph =>
       val tasks = caseSrv.get("#4").tasks(dummyUserSrv.authContext).toList
 
       tasks must not(beEmpty)
@@ -109,12 +109,27 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       task4 must beSome
 
-      val request = FakeRequest("GET", s"/api/case/#4/task/${task4.get._id}/shares")
-        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-      val result = shareCtrl.listShareTasks("#4", task4.get._id)(request)
+      def getTaskShares = {
+        val request = FakeRequest("GET", s"/api/case/#4/task/${task4.get._id}/shares")
+          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        val result = shareCtrl.listShareTasks("#4", task4.get._id)(request)
 
-      status(result) shouldEqual 200
-      contentAsJson(result).as[List[OutputShare]] must not(beEmpty)
+        status(result) shouldEqual 200
+
+        contentAsJson(result).as[List[OutputShare]]
+      }
+
+      val l = getTaskShares
+
+      l must not(beEmpty)
+
+      val requestDel = FakeRequest("DELETE", s"/api/task/shares")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withJsonBody(Json.obj("ids" -> List(l.head._id)))
+      val resultDel = shareCtrl.removeShareTasks()(requestDel)
+
+      status(resultDel) shouldEqual 204
+      getTaskShares must beEmpty
     }
 
     "handle share put/remove correctly" in {
@@ -238,7 +253,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       newL.find(s => s.organisationName == "default" && s.profileName == "all") must beSome
     }
 
-    "fetch observable shares" in db.roTransaction { implicit graph =>
+    "fetch and remove observable shares" in db.roTransaction { implicit graph =>
       val observables = caseSrv
         .get("#1")
         .observables(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all).authContext)
@@ -250,12 +265,27 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       observableHfr must beSome
 
-      val request = FakeRequest("GET", s"/api/case/#1/observable/${observableHfr.get._id}/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
-      val result = shareCtrl.listShareObservables("#1", observableHfr.get._id)(request)
+      def getObsShares = {
+        val request = FakeRequest("GET", s"/api/case/#1/observable/${observableHfr.get._id}/shares")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        val result = shareCtrl.listShareObservables("#1", observableHfr.get._id)(request)
 
-      status(result) shouldEqual 200
-      contentAsJson(result).as[List[OutputShare]].length shouldEqual 1
+        status(result) shouldEqual 200
+
+        contentAsJson(result).as[List[OutputShare]]
+      }
+
+      val l = getObsShares
+
+      l.length shouldEqual 1
+
+      val requestDel = FakeRequest("DELETE", s"/api/observable/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withJsonBody(Json.obj("ids" -> List(l.head._id)))
+      val resultDel = shareCtrl.removeShareObservables()(requestDel)
+
+      status(resultDel) shouldEqual 204
+      getObsShares must beEmpty
     }
   }
 
