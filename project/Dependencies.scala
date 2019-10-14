@@ -30,7 +30,7 @@ object Dependencies {
   lazy val neo4jTinkerpop          = "org.neo4j"                % "neo4j-tinkerpop-api-impl"            % "0.7-3.2.3" exclude ("org.slf4j", "slf4j-nop")
   lazy val apacheConfiguration     = "commons-configuration"    % "commons-configuration"               % "1.10"
   lazy val macroParadise           = "org.scalamacros"          % "paradise"                            % "2.1.1" cross CrossVersion.full
-  lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.3.2"
+  lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.3.3"
   lazy val elastic4play            = "org.thehive-project"      %% "elastic4play"                       % "1.10.0" /*exclude ("org.apache.logging.log4j", "log4j-core") exclude("org.apache.logging.log4j", "log4j-api") exclude("org.apache.logging.log4j", "log4j-1.2-api") */
   lazy val log4jOverSlf4j          = "org.slf4j"                % "log4j-over-slf4j"                    % "1.7.25"
   lazy val log4jToSlf4j            = "org.apache.logging.log4j" % "log4j-to-slf4j"                      % "2.9.1"
