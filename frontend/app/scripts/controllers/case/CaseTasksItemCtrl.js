@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, SecuritySrv, ModalSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -207,6 +207,17 @@
                 $scope.logs.update();
             };
 
+            $scope.scrollTo = function(hash) {
+                $timeout(function() {
+                    var el = angular.element(hash)[0];
+
+                    // Scrolling hack using jQuery stuff
+                    $('html,body').animate({
+                        scrollTop: $(el).offset().top
+                    }, 'fast');
+                }, 100);
+            };
+
             $scope.getTaskResponders = function(force) {
                 if(!force && $scope.taskResponders !== null) {
                    return;
@@ -218,8 +229,8 @@
                       $scope.taskResponders = responders;
                   })
                   .catch(function(err) {
-                      NotificationSrv.error('taskDetails', response.data, response.status);
-                  })
+                      NotificationSrv.error('taskDetails', err.data, err.status);
+                  });
             };
 
             $scope.runResponder = function(responderId, responderName) {
@@ -244,26 +255,67 @@
                 });
             };
 
-            // Add tabs
-            CaseTabsSrv.addTab($scope.tabName, {
-                name: $scope.tabName,
-                label: task.title,
-                closable: true,
-                state: 'app.case.tasks-item',
-                params: {
-                    itemId: task.id
+            $scope.loadShared = function () {
+                return CaseTaskSrv.getShares(caseId, taskId)
+                    .then(function(response) {
+                        $scope.shares = response.data;
+                    });
+            };
+
+            $scope.removeShare = function() {
+                var modalInstance = ModalSrv.confirm(
+                    'Remove case share',
+                    'Are you sure you want to remove this sharing rule?', {
+                        okText: 'Yes, remove it',
+                        flavor: 'danger'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        return CaseTaskSrv.removeShare($scope.taskId);
+                    })
+                    .then(function(/*response*/) {
+                        $scope.loadShares();
+                        NotificationSrv.log('Task sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task sharings update failed', err.status);
+                        }
+                    });
+            };
+
+            this.$onInit = function() {
+                // Add tabs
+                CaseTabsSrv.addTab($scope.tabName, {
+                    name: $scope.tabName,
+                    label: task.title,
+                    closable: true,
+                    state: 'app.case.tasks-item',
+                    params: {
+                        itemId: task.id
+                    }
+                });
+
+                // Select tab
+                $timeout(function() {
+                    CaseTabsSrv.activateTab($scope.tabName);
+                    $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
+                }, 0);
+
+
+                // Prepare the scope data
+                $scope.initScope(task);
+
+                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                    $scope.loadShared();
                 }
-            });
 
-            // Select tab
-            $timeout(function() {
-                CaseTabsSrv.activateTab($scope.tabName);
-                $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
-            }, 0);
-
-
-            // Prepare the scope data
-            $scope.initScope(task);
+                // $scope.organisations = organisations;
+                // $scope.profiles = profiles;
+                // $scope.shares = shares;
+            };
         }
     );
 }());

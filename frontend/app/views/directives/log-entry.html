@@ -8,7 +8,9 @@
         <div class="col-md-6">
             <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageTask" allowed="{{userPermissions}}">
                 <a href class="text-primary noline nowrap" ng-click="getLogResponders(log.id, true)" uib-dropdown-toggle>
-                    <i class="text-primary fa fa-cog"></i>
+                    <i class="fa fa-cog"></i>
+                    Responders
+                    <i class="fa fa-angle-down"></i>
                 </a>
                 <ul class="dropdown-menu align-right" uib-dropdown-menu>
                   <li ng-if="logResponders && logResponders.length === 0">
@@ -25,8 +27,8 @@
                 </ul>
             </span>
             <span class="pull-right" if-permission="manageTask" allowed="{{userPermissions}}">
-                <a href ng-click="dropLog()" uib-tooltip="Delete log">
-                    <i class="text-danger fa fa-times-circle"></i>
+                <a href ng-click="dropLog()" uib-tooltip="Delete log" class="text-danger">
+                    <i class="fa fa-trash"></i> Delete
                 </a>
             </span>
             <span class="text-muted mr-xs pull-right" ng-bind="log.startDate | showDate"></span>

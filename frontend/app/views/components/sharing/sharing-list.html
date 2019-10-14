@@ -1,0 +1,31 @@
+<div>
+    <div ng-if="$ctrl.shares.length === 0">
+        <div class="empty-message">No records</div>
+    </div>
+
+    <div ng-if="$ctrl.shares.length > 0">
+        <table class="table table-striped">
+            <thead>
+                <th>Organisation</th>
+                <th width="250">Profile</th>
+                <th width="160">Shared At</th>
+                <th width="160" class="text-right">Actions</th>
+            </thead>
+            <tbody>
+                <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'">
+                    <td>{{share.organisationName}}</td>
+                    <td ng-if="!$ctrl.readOnly">
+                        <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateShareProfile(share._id, newValue)"></updatable-select>
+                    </td>
+                    <td ng-if="$ctrl.readOnly">{{share.profileName}}</td>
+                    <td>{{share.createdAt | shortDate}}</td>
+                    <td class="text-right">
+                        <span class="clickable text-danger" ng-click="$ctrl.remove(share._id)">
+                            <i class="fa fa-trash"></i> Delete
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
