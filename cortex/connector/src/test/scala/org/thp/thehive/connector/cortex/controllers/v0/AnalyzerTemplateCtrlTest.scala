@@ -10,7 +10,7 @@ import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.dto.v0.OutputReportTemplate
+import org.thp.cortex.dto.v0.OutputAnalyzerTemplate
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
@@ -18,7 +18,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
-class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
+class AnalyzerTemplateCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
@@ -35,8 +35,8 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val reportCtrl: ReportTemplateCtrl = app.instanceOf[ReportTemplateCtrl]
-    val cortexQueryExecutor            = app.instanceOf[CortexQueryExecutor]
+    val reportCtrl: AnalyzerTemplateCtrl = app.instanceOf[AnalyzerTemplateCtrl]
+    val cortexQueryExecutor              = app.instanceOf[CortexQueryExecutor]
 
     s"[$name] report controller" should {
 //      "create, fetch, update and delete a template" in {
@@ -79,22 +79,22 @@ class ReportTemplateCtrlTest extends PlaySpecification with Mockito {
         val createResult = reportCtrl.create(createRequest)
         status(createResult) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(createResult)}")
 
-        val outputReportTemplate = contentAsJson(createResult).as[OutputReportTemplate]
-        val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/analyzer/template/${outputReportTemplate.id}")
+        val outputAnalyzerTemplate = contentAsJson(createResult).as[OutputAnalyzerTemplate]
+        val getRequest2 = FakeRequest("GET", s"/api/connector/cortex/analyzer/template/${outputAnalyzerTemplate.id}")
           .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
-        val getResult2 = reportCtrl.get(outputReportTemplate.id)(getRequest2)
+        val getResult2 = reportCtrl.get(outputAnalyzerTemplate.id)(getRequest2)
         status(getResult2) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(getResult2)}")
 
-        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/analyzer/template/${outputReportTemplate.id}")
+        val updateRequest = FakeRequest("PATCH", s"/api/connector/cortex/analyzer/template/${outputAnalyzerTemplate.id}")
           .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
           .withJsonBody(Json.parse("""{"content": "<br/>"}"""))
-        val updateResult = reportCtrl.update(outputReportTemplate.id)(updateRequest)
+        val updateResult = reportCtrl.update(outputAnalyzerTemplate.id)(updateRequest)
         status(updateResult) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
-        contentAsJson(updateResult).as[OutputReportTemplate].content must equalTo("<br/>")
+        contentAsJson(updateResult).as[OutputAnalyzerTemplate].content must equalTo("<br/>")
 
-        val deleteRequest = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputReportTemplate.id}")
+        val deleteRequest = FakeRequest("DELETE", s"/api/connector/cortex/report/template/${outputAnalyzerTemplate.id}")
           .withHeaders("user" -> "admin@thehive.local", "X-Organisation" -> "default")
-        val deleteResult = reportCtrl.delete(outputReportTemplate.id)(deleteRequest)
+        val deleteResult = reportCtrl.delete(outputAnalyzerTemplate.id)(deleteRequest)
         status(deleteResult) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
       }
 

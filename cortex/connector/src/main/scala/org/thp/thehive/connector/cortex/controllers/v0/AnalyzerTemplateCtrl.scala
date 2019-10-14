@@ -2,53 +2,55 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.zip.ZipFile
 
+import scala.util.{Failure, Success}
+
+import play.api.Logger
+import play.api.libs.json.{JsFalse, JsObject, JsTrue}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.{InputReportTemplate, OutputReportTemplate}
+import org.thp.cortex.dto.v0.InputAnalyzerTemplate
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
-import org.thp.thehive.connector.cortex.models.ReportTemplate
-import org.thp.thehive.connector.cortex.services.{ReportTemplateSrv, ReportTemplateSteps}
+import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
+import org.thp.thehive.connector.cortex.services.{AnalyzerTemplateSrv, AnalyzerTemplateSteps}
+import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
-import play.api.Logger
-import play.api.libs.json.{JsFalse, JsObject, JsTrue}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Failure, Success}
 
 @Singleton
-class ReportTemplateCtrl @Inject()(
+class AnalyzerTemplateCtrl @Inject()(
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,
-    reportTemplateSrv: ReportTemplateSrv
+    analyzerTemplateSrv: AnalyzerTemplateSrv
 ) extends QueryableCtrl {
 
   lazy val logger                                           = Logger(getClass)
-  override val entityName: String                           = "reportTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.reportTemplate ::: metaProperties[ReportTemplateSteps]
+  override val entityName: String                           = "analyzerTemplate"
+  override val publicProperties: List[PublicProperty[_, _]] = properties.analyzerTemplate ::: metaProperties[AnalyzerTemplateSteps]
   override val initialQuery: Query =
-    Query.init[ReportTemplateSteps]("listReportTemplate", (graph, _) => reportTemplateSrv.initSteps(graph))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ReportTemplateSteps](
+    Query.init[AnalyzerTemplateSteps]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.initSteps(graph))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AnalyzerTemplateSteps](
     "getReportTemplace",
     FieldsParser[IdOrName],
-    (param, graph, _) => reportTemplateSrv.get(param.idOrName)(graph)
+    (param, graph, _) => analyzerTemplateSrv.get(param.idOrName)(graph)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ReportTemplateSteps, PagedResult[ReportTemplate with Entity]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, AnalyzerTemplateSteps, PagedResult[AnalyzerTemplate with Entity]](
     "page",
     FieldsParser[OutputParam],
-    (range, ReportTemplateSteps, _) => ReportTemplateSteps.page(range.from, range.to, withTotal = true)
+    (range, AnalyzerTemplateSteps, _) => AnalyzerTemplateSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[ReportTemplate with Entity, OutputReportTemplate](_.toOutput)
+  override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]()
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")
       .authRoTransaction(db) { _ => implicit graph =>
-        reportTemplateSrv
+        analyzerTemplateSrv
           .getOrFail(id)
           .map(report => Results.Ok(report.content))
       }
@@ -58,7 +60,7 @@ class ReportTemplateCtrl @Inject()(
       .extract("archive", FieldsParser.file.on("templates"))
       .auth { implicit request =>
         val archive: FFile = request.body("archive")
-        val triedTemplates = reportTemplateSrv
+        val triedTemplates = analyzerTemplateSrv
           .importZipFile(db, new ZipFile(archive.filepath.toFile))
           .map {
             case (analyzerId, Success(_)) => analyzerId -> JsTrue
@@ -72,12 +74,12 @@ class ReportTemplateCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create template")
-      .extract("template", FieldsParser[InputReportTemplate])
+      .extract("template", FieldsParser[InputAnalyzerTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageReportTemplate)) {
-          val importReportTemplate: InputReportTemplate = request.body("template")
-          reportTemplateSrv.create(importReportTemplate.toReportTemplate).map { createdReportTemplate =>
-            Results.Created(createdReportTemplate.toJson)
+        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
+          val importAnalyzerTemplate: InputAnalyzerTemplate = request.body("template")
+          analyzerTemplateSrv.create(importAnalyzerTemplate.toAnalyzerTemplate).map { createdAnalyzerTemplate =>
+            Results.Created(createdAnalyzerTemplate.toJson)
           }
         } else Success(Results.Unauthorized)
       }
@@ -85,12 +87,12 @@ class ReportTemplateCtrl @Inject()(
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete template")
       .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageReportTemplate)) {
-          reportTemplateSrv
+        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
+          analyzerTemplateSrv
             .get(id)
             .getOrFail()
-            .map { reportTemplate =>
-              reportTemplateSrv.remove(reportTemplate)
+            .map { analyzerTemplate =>
+              analyzerTemplateSrv.remove(analyzerTemplate)
               Results.NoContent
             }
         } else Success(Results.Unauthorized)
@@ -98,13 +100,13 @@ class ReportTemplateCtrl @Inject()(
 
   def update(id: String): Action[AnyContent] =
     entryPoint("update template")
-      .extract("template", FieldsParser.update("template", properties.reportTemplate))
+      .extract("template", FieldsParser.update("template", properties.analyzerTemplate))
       .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageReportTemplate)) {
+        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
           val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")
 
           for {
-            (templateSteps, _) <- reportTemplateSrv.update(_.get(id), propertyUpdaters)
+            (templateSteps, _) <- analyzerTemplateSrv.update(_.get(id), propertyUpdaters)
             template           <- templateSteps.getOrFail()
           } yield Results.Ok(template.toJson)
 

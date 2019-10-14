@@ -42,18 +42,18 @@ trait Template {
   def buildUrl(baseUrl: String, `object`: Option[Entity], context: Option[Entity]): Option[String] =
     `object`.flatMap { obj =>
       obj._model.label match {
-        case "Case"           => Some(s"$baseUrl/index.html#/case/${obj._id}")
-        case "Task"           => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}/tasks/${obj._id}")
-        case "Log"            => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}")
-        case "CaseTemplate"   => None
-        case "Alert"          => Some(s"$baseUrl/index.html#/alert/list")
-        case "Observable"     => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}/observables/${obj._id}")
-        case "User"           => Some(s"$baseUrl/index.html#/administration/users")
-        case "Dashboard"      => Some(s"$baseUrl/index.html#/dashboards/${obj._id}")
-        case "Organisation"   => None
-        case "Job"            => None
-        case "Action"         => buildUrl(baseUrl, context, None)
-        case "ReportTemplate" => None
+        case "Case"             => Some(s"$baseUrl/index.html#/case/${obj._id}")
+        case "Task"             => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}/tasks/${obj._id}")
+        case "Log"              => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}")
+        case "CaseTemplate"     => None
+        case "Alert"            => Some(s"$baseUrl/index.html#/alert/list")
+        case "Observable"       => context.map(ctx => s"$baseUrl/index.html#/case/${ctx._id}/observables/${obj._id}")
+        case "User"             => Some(s"$baseUrl/index.html#/administration/users")
+        case "Dashboard"        => Some(s"$baseUrl/index.html#/dashboards/${obj._id}")
+        case "Organisation"     => None
+        case "Job"              => None
+        case "Action"           => buildUrl(baseUrl, context, None)
+        case "AnalyzerTemplate" => None
       }
     }
 

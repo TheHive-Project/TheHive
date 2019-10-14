@@ -2,21 +2,21 @@ package org.thp.cortex.dto.v0
 
 import play.api.libs.json.{Json, OFormat}
 
-case class OutputReportTemplate(
+case class OutputAnalyzerTemplate(
     id: String,
     analyzerId: String,
     content: String
 )
 
-object OutputReportTemplate {
-  implicit val format: OFormat[OutputReportTemplate] = Json.format[OutputReportTemplate]
+object OutputAnalyzerTemplate {
+  implicit val format: OFormat[OutputAnalyzerTemplate] = Json.format[OutputAnalyzerTemplate]
 }
 
-case class InputReportTemplate(
+case class InputAnalyzerTemplate(
     analyzerId: String,
     content: String
 )
 
-object InputReportTemplate {
-  implicit val format: OFormat[InputReportTemplate] = Json.format[InputReportTemplate]
+object InputAnalyzerTemplate {
+  implicit val format: OFormat[InputAnalyzerTemplate] = Json.format[InputAnalyzerTemplate]
 }

@@ -12,7 +12,7 @@ class Router @Inject()(
     analyzerCtrl: AnalyzerCtrl,
     actionCtrl: ActionCtrl,
     cortexQueryExecutor: CortexQueryExecutor,
-    reportCtrl: ReportTemplateCtrl,
+    reportCtrl: AnalyzerTemplateCtrl,
     responderCtrl: ResponderCtrl
 ) extends SimpleRouter {
   override def routes: Routes = {
@@ -35,9 +35,9 @@ class Router @Inject()(
     case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template/_import")                       => reportCtrl.importTemplates // Audit ok
     case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template/_search")                       => cortexQueryExecutor.report.search
     case POST(p"/$_<((\breport\b)|(\banalyzer\b))>/template")                               => reportCtrl.create() // Audit ok
-    case DELETE(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")    => reportCtrl.delete(reportTemplateId) // Audit ok
-    case GET(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")       => reportCtrl.get(reportTemplateId)
-    case PATCH(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$reportTemplateId<[^/]*>")     => reportCtrl.update(reportTemplateId) // Audit ok
+    case DELETE(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$analyzerTemplateId<[^/]*>")  => reportCtrl.delete(analyzerTemplateId) // Audit ok
+    case GET(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$analyzerTemplateId<[^/]*>")     => reportCtrl.get(analyzerTemplateId)
+    case PATCH(p"/$_<((\breport\b)|(\banalyzer\b))>/template/$analyzerTemplateId<[^/]*>")   => reportCtrl.update(analyzerTemplateId) // Audit ok
 
     case GET(p"/responder/$entityType<[^/]*>/$entityId<[^/]*>") => responderCtrl.getResponders(entityType, entityId)
     case POST(p"/responder/_search")                            => responderCtrl.searchResponders

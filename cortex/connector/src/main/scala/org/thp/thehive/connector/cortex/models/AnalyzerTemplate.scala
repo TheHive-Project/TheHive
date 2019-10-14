@@ -3,4 +3,4 @@ package org.thp.thehive.connector.cortex.models
 import org.thp.scalligraph.VertexEntity
 
 @VertexEntity
-case class ReportTemplate(workerId: String, content: String)
+case class AnalyzerTemplate(workerId: String, content: String)

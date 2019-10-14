@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.connector.cortex.services.{ActionSteps, JobSteps, ReportTemplateSteps}
+import org.thp.thehive.connector.cortex.services.{ActionSteps, AnalyzerTemplateSteps, JobSteps}
 
 @Singleton
 class Properties @Inject()() {
@@ -21,8 +21,8 @@ class Properties @Inject()() {
       .property("tlp", UniMapping.int.optional)(_.field.readonly)
       .build
 
-  lazy val reportTemplate: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[ReportTemplateSteps]
+  lazy val analyzerTemplate: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[AnalyzerTemplateSteps]
       .property("analyzerId", UniMapping.string)(_.rename("workerId").readonly)
       .property("reportType", UniMapping.string)(_.field.readonly)
       .property("content", UniMapping.string)(_.field.updatable)
