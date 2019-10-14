@@ -80,6 +80,14 @@ class ShareCtrl @Inject()(
         } yield Results.NoContent
       }
 
+  private def removeShare(id: String, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext) =
+    for {
+      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
+      if relatedOrg.name != organisation.name
+      share <- shareSrv.get(id).getOrFail()
+      _ = shareSrv.remove(share)
+    } yield ()
+
   def removeShares(): Action[AnyContent] =
     entryPoint("remove share")
       .extract("shares", FieldsParser[String].sequence.on("ids"))
@@ -92,14 +100,6 @@ class ShareCtrl @Inject()(
             .map(_ => Results.NoContent)
         }
       }
-
-  private def removeShare(id: String, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext) =
-    for {
-      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
-      if relatedOrg.name != organisation.name
-      share <- shareSrv.get(id).getOrFail()
-      _ = shareSrv.remove(share)
-    } yield ()
 
   def updateShare(id: String): Action[AnyContent] =
     entryPoint("update share")
