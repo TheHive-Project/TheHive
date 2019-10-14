@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v0
 
+import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject()(
@@ -92,7 +91,6 @@ class Router @Inject()(
     case GET(p"/case/$id/shares")                 => shareCtrl.listShareCases(id)
     case GET(p"/case/$id/task/$tId/shares")       => shareCtrl.listShareTasks(id, tId)
     case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)
-    case PUT(p"/case/$id/task/$tId/shares")       => shareCtrl.shareTask(tId)
     case PUT(p"/case/task/$tId/shares")           => shareCtrl.shareTask(tId)
     case DELETE(p"/case/share/$id")               => shareCtrl.removeShare(id)
     case PATCH(p"/case/share/$id")                => shareCtrl.updateShare(id)
@@ -123,7 +121,6 @@ class Router @Inject()(
     case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
     case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
-    case PUT(p"/case/$id/artifact/$tId/shares")       => shareCtrl.shareObservable(tId)
     case PUT(p"/case/artifact/$tId/shares")           => shareCtrl.shareObservable(tId)
 
     case GET(p"/customField")          => customFieldCtrl.list
