@@ -78,7 +78,7 @@ class ObservableCtrl @Inject()(
             .flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
             caseSrv
-              .addObservable(case0, richObservables.observable)
+              .addObservable(case0, richObservables)
               .map(_ => richObservables)
           }
         } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))

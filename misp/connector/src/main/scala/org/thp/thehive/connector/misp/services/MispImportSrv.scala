@@ -202,7 +202,7 @@ class MispImportSrv @Inject()(
           logger.debug(s"Observable ${observableType.name}:$data doesn't exist, create it")
           for {
             richObservable <- observableSrv.create(observable, observableType, data, tags, Nil)
-            _              <- alertSrv.addObservable(alert, richObservable.observable)
+            _              <- alertSrv.addObservable(alert, richObservable)
           } yield richObservable.observable
         case Some(richObservable) =>
           logger.debug(s"Observable ${observableType.name}:$data exists, update it")
@@ -248,7 +248,7 @@ class MispImportSrv @Inject()(
               for {
                 createdAttachment <- attachmentSrv.create(fFile)
                 richObservable    <- observableSrv.create(observable, observableType, createdAttachment, tags, Nil)
-                _                 <- alertSrv.addObservable(alert, richObservable.observable)
+                _                 <- alertSrv.addObservable(alert, richObservable)
               } yield richObservable
             }
           }

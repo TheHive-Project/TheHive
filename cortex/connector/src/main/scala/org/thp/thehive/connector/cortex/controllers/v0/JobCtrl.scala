@@ -17,6 +17,7 @@ import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class JobCtrl @Inject()(

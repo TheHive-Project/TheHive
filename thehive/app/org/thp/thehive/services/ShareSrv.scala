@@ -11,6 +11,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 
 import scala.util.{Success, Try}
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class ShareSrv @Inject()(
@@ -144,7 +145,7 @@ class ShareSrv @Inject()(
     * Shares a task for an already shared case
     * @return
     */
-  def shareCaseTask(`case`: Case with Entity, task: Task with Entity)(
+  def shareCaseTask(`case`: Case with Entity, richTask: RichTask)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
@@ -153,15 +154,15 @@ class ShareSrv @Inject()(
         .get(`case`)
         .share
         .getOrFail()
-      _ = shareTaskSrv.create(ShareTask(), share, task)
-      _ <- auditSrv.task.create(task, `case`)
+      _ = shareTaskSrv.create(ShareTask(), share, richTask.task)
+      _ <- auditSrv.task.create(richTask.task, `case`, richTask.toJson)
     } yield ()
 
   /**
     * Shares an observable for an already shared case
     * @return
     */
-  def shareCaseObservable(`case`: Case with Entity, observable: Observable with Entity)(
+  def shareCaseObservable(`case`: Case with Entity, richObservable: RichObservable)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
@@ -170,8 +171,8 @@ class ShareSrv @Inject()(
         .get(`case`)
         .share
         .getOrFail()
-      _ = shareObservableSrv.create(ShareObservable(), share, observable)
-      _ <- auditSrv.observable.create(observable, `case`)
+      _ <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
+      _ <- auditSrv.observable.create(richObservable.observable, `case`, richObservable.toJson)
     } yield ()
 
   /**

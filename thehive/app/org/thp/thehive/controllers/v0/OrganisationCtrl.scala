@@ -54,7 +54,7 @@ class OrganisationCtrl @Inject()(
         for {
           _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.default.name).existsOrFail()
           org <- organisationSrv.create(inputOrganisation.toOrganisation)
-          _   <- auditSrv.organisation.create(org)
+
         } yield Results.Created(org.toJson)
       }
 

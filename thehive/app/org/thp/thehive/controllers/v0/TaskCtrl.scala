@@ -54,10 +54,10 @@ class TaskCtrl @Inject()(
         for {
           case0       <- caseSrv.getOrFail(caseId)
           createdTask <- taskSrv.create(inputTask.toTask)
-          _           <- shareSrv.shareCaseTask(case0, createdTask)
           owner       <- inputTask.owner.map(userSrv.getOrFail).flip
           _           <- owner.map(taskSrv.assign(createdTask, _)).flip
           richTask = RichTask(createdTask, owner.map(_.login))
+          _ <- shareSrv.shareCaseTask(case0, richTask)
         } yield Results.Created(richTask.toJson)
       }
 

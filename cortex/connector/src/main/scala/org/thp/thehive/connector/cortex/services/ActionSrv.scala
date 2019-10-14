@@ -82,18 +82,12 @@ class ActionSrv @Inject()(
       )
       createdAction <- Future.fromTry {
         db.tryTransaction { implicit graph =>
-          create(updatedAction, entity)
+          for {
+            a <- create(updatedAction, entity)
+            _ <- auditSrv.action.create(a.action, entity, a.toJson)
+          } yield a
         }
       }
-      actionWithEntity <- Future.fromTry(db.roTransaction { implicit graph =>
-        get(createdAction._id).getOrFail()
-      })
-      _ <- Future.fromTry {
-        db.tryTransaction { implicit graph =>
-          auditSrv.action.create(actionWithEntity, entity)
-        }
-      }
-
       _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client.name, authContext)
     } yield createdAction
   }

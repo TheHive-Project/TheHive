@@ -90,7 +90,7 @@ class JobSrv @Inject()(
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
       _ <- Future.fromTry(db.tryTransaction { implicit graph =>
-        auditSrv.job.create(createdJob, `case`)
+        auditSrv.job.create(createdJob, `case`, createdJob.toJson)
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob

@@ -17,7 +17,8 @@ import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
+
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
@@ -159,8 +160,8 @@ class AuditSrv @Inject()(
 
   class ObjectAudit[E <: Product, C <: Product] {
 
-    def create(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity), Some(context), Some(entity))
+    def create(entity: E with Entity, context: C with Entity, details: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), Some(context), Some(entity))
 
     def update(entity: E with Entity, context: C with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       if (details == JsObject.empty) Success(())
@@ -175,8 +176,8 @@ class AuditSrv @Inject()(
 
   class SelfContextObjectAudit[E <: Product] {
 
-    def create(entity: E with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity, details.map(_.toString)), Some(entity), Some(entity))
+    def create(entity: E with Entity, details: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), Some(entity), Some(entity))
 
     def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       if (details == JsObject.empty) Success(())

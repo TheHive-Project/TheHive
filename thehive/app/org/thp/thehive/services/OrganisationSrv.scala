@@ -13,6 +13,7 @@ import org.thp.thehive.models._
 import play.api.libs.json.JsObject
 
 import scala.util.{Success, Try}
+import org.thp.thehive.controllers.v1.Conversion._
 
 object OrganisationSrv {
   val default = Organisation("default", "initial organisation")
@@ -34,7 +35,11 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.all)
     } yield createdOrganisation
 
-  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = createEntity(e)
+  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+    for {
+      createdOrganisation <- createEntity(e)
+      _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
+    } yield createdOrganisation
 
   def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
 

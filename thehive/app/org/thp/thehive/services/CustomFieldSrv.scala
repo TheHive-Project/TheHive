@@ -18,6 +18,7 @@ import shapeless.HNil
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
@@ -25,7 +26,7 @@ class CustomFieldSrv @Inject()(implicit db: Database, auditSrv: AuditSrv) extend
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
     for {
       created <- createEntity(e)
-      _       <- auditSrv.customField.create(created)
+      _       <- auditSrv.customField.create(created, created.toJson)
     } yield created
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {

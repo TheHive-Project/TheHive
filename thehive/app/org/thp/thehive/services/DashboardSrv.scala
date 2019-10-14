@@ -13,6 +13,7 @@ import org.thp.thehive.models.{Dashboard, Organisation, OrganisationDashboard}
 import play.api.libs.json.{JsObject, Json}
 
 import scala.util.Try
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSrv)(implicit db: Database)
@@ -28,7 +29,7 @@ class DashboardSrv @Inject()(organisationSrv: OrganisationSrv, auditSrv: AuditSr
     for {
       createdDashboard <- createEntity(dashboard)
       _                <- organisationDashboardSrv.create(OrganisationDashboard(), organisation, createdDashboard)
-      _                <- auditSrv.dashboard.create(createdDashboard)
+      _                <- auditSrv.dashboard.create(createdDashboard, createdDashboard.toJson)
     } yield createdDashboard
 
   override def update(

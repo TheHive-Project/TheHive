@@ -11,6 +11,7 @@ import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
 
 import scala.util.Try
+import org.thp.thehive.controllers.v1.Conversion._
 
 object ProfileSrv {
   val admin = Profile("admin", Permissions.adminPermissions)
@@ -51,7 +52,7 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
   def create(profile: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] =
     for {
       createdProfile <- createEntity(profile)
-      _              <- auditSrv.profile.create(createdProfile, None)
+      _              <- auditSrv.profile.create(createdProfile, createdProfile.toJson)
     } yield createdProfile
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ProfileSteps = new ProfileSteps(raw)

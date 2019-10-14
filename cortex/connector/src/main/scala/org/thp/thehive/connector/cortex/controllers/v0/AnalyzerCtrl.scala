@@ -10,6 +10,7 @@ import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class AnalyzerCtrl @Inject()(

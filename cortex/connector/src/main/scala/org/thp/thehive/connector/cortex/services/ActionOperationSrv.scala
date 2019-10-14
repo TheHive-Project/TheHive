@@ -62,7 +62,7 @@ class ActionOperationSrv @Inject()(
         for {
           c           <- Try(relatedCase.get)
           createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask)
-          _           <- shareSrv.shareCaseTask(c, createdTask)
+          _           <- shareSrv.shareCaseTask(c, RichTask(createdTask, None))
         } yield updateOperation(operation)
 
       case AddCustomFields(name, _, value, _, _) =>
@@ -93,8 +93,14 @@ class ActionOperationSrv @Inject()(
         for {
           c       <- Try(relatedCase.get)
           obsType <- observableTypeSrv.getOrFail(dataType)
-          obs     <- observableSrv.create(Observable(Some(dataMessage), 2, ioc = false, sighted = false), obsType, dataMessage, Set[String](), Nil)
-          _       <- caseSrv.addObservable(c, obs.observable)
+          richObservable <- observableSrv.create(
+            Observable(Some(dataMessage), 2, ioc = false, sighted = false),
+            obsType,
+            dataMessage,
+            Set[String](),
+            Nil
+          )
+          _ <- caseSrv.addObservable(c, richObservable)
         } yield updateOperation(operation)
 
       case AssignCase(owner, _, _) =>

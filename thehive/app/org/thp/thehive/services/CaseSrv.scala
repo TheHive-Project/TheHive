@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList, Set => JSet}
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
@@ -13,10 +18,8 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNull, JsObject, Json}
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -58,7 +61,7 @@ class CaseSrv @Inject()(
       _            <- shareSrv.shareCase(createdCase, organisation, profileSrv.all)
       _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
-      _            <- createdTasks.toTry(shareSrv.shareCaseTask(createdCase, _))
+      _            <- createdTasks.toTry(t => shareSrv.shareCaseTask(createdCase, RichTask(t, None)))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[RichCustomField]](Nil)(_.customFields)
         .map(cf => cf.name -> cf.value)
@@ -66,8 +69,9 @@ class CaseSrv @Inject()(
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
-      _ <- auditSrv.`case`.create(createdCase)
-    } yield RichCase(createdCase, allTags.toSeq, None, None, Some(assignee.login), cfs, authContext.permissions)
+      richCase = RichCase(createdCase, allTags.toSeq, None, None, Some(assignee.login), cfs, authContext.permissions)
+      _ <- auditSrv.`case`.create(createdCase, richCase.toJson)
+    } yield richCase
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
 
@@ -135,12 +139,12 @@ class CaseSrv @Inject()(
     } yield ()
   }
 
-  def addObservable(`case`: Case with Entity, observable: Observable with Entity)(
+  def addObservable(`case`: Case with Entity, richObservable: RichObservable)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val alreadyExistInThatCase = observableSrv
-      .get(observable)
+      .get(richObservable.observable)
       .similar
       .visible
       .`case`
@@ -148,7 +152,11 @@ class CaseSrv @Inject()(
       .exists()
     if (alreadyExistInThatCase)
       Failure(CreateError("Observable already exist"))
-    else shareSrv.shareCaseObservable(`case`, observable)
+    else
+      for {
+        _ <- shareSrv.shareCaseObservable(`case`, richObservable)
+        _ <- auditSrv.observable.create(richObservable.observable, `case`, richObservable.toJson)
+      } yield ()
   }
 
   def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =

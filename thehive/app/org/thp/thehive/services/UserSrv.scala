@@ -11,6 +11,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
 import play.api.libs.json.JsObject
@@ -60,8 +61,9 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
       validUser   <- checkUser(user)
       createdUser <- createEntity(validUser)
       _           <- roleSrv.create(createdUser, organisation, profile)
-      _           <- auditSrv.user.create(createdUser)
-    } yield RichUser(createdUser, profile.name, profile.permissions, organisation.name)
+      richUser = RichUser(createdUser, profile.name, profile.permissions, organisation.name)
+      _ <- auditSrv.user.create(createdUser, richUser.toJson)
+    } yield richUser
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 

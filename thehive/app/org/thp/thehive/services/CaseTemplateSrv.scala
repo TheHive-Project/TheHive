@@ -17,6 +17,7 @@ import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Try}
+import org.thp.thehive.controllers.v1.Conversion._
 
 class CaseTemplateSrv @Inject()(
     customFieldSrv: CustomFieldSrv,
@@ -59,8 +60,9 @@ class CaseTemplateSrv @Inject()(
         tags                <- tagNames.toTry(tagSrv.getOrCreate)
         _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
         cfs                 <- customFields.toTry { case (name, value) => createCustomField(createdCaseTemplate, name, value) }
-        _                   <- auditSrv.caseTemplate.create(createdCaseTemplate)
-      } yield RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
+        richCaseTemplate = RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
+        _ <- auditSrv.caseTemplate.create(createdCaseTemplate, richCaseTemplate.toJson)
+      } yield richCaseTemplate
 
   def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(
       implicit graph: Graph,
@@ -68,7 +70,7 @@ class CaseTemplateSrv @Inject()(
   ): Try[Unit] =
     for {
       _ <- caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
-      _ <- auditSrv.taskInTemplate.create(task, caseTemplate)
+      _ <- auditSrv.taskInTemplate.create(task, caseTemplate, RichTask(task, None).toJson)
     } yield ()
 
   override def update(

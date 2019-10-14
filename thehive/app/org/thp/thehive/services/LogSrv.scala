@@ -15,6 +15,7 @@ import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+import org.thp.thehive.controllers.v1.Conversion._
 
 @Singleton
 class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
@@ -27,7 +28,7 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
       createdLog <- createEntity(log)
       _          <- taskLogSrv.create(TaskLog(), task, createdLog)
       case0      <- get(createdLog).`case`.getOrFail()
-      _          <- auditSrv.log.create(createdLog, case0)
+      _          <- auditSrv.log.create(createdLog, case0, RichLog(createdLog, Nil).toJson)
     } yield createdLog
 
   def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =

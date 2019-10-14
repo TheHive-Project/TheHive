@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList}
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -12,12 +17,9 @@ import org.thp.scalligraph.services.{EdgeSrv, _}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
 import shapeless.HNil
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject()(
@@ -67,8 +69,9 @@ class AlertSrv @Inject()(
         tags         <- tagNames.toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
-        _            <- auditSrv.alert.create(createdAlert)
-      } yield RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
+        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
+        _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
+      } yield richAlert
   }
 
   override def update(
@@ -116,12 +119,12 @@ class AlertSrv @Inject()(
     } yield ()
   }
 
-  def addObservable(alert: Alert with Entity, observable: Observable with Entity)(
+  def addObservable(alert: Alert with Entity, richObservable: RichObservable)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val alreadyExistInThatCase = observableSrv
-      .get(observable)
+      .get(richObservable.observable)
       .similar
       .alert
       .hasId(alert._id)
@@ -130,8 +133,8 @@ class AlertSrv @Inject()(
       Failure(CreateError("Observable already exist"))
     else
       for {
-        _ <- alertObservableSrv.create(AlertObservable(), alert, observable)
-        _ <- auditSrv.observableInAlert.create(observable, alert)
+        _ <- alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
+        _ <- auditSrv.observableInAlert.create(richObservable.observable, alert, richObservable.toJson)
       } yield ()
   }
 
@@ -212,7 +215,6 @@ class AlertSrv @Inject()(
       _           <- importObservables(alert.alert, createdCase.`case`)
       _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
       _           <- markAsRead(alert._id)
-      _           <- auditSrv.`case`.create(createdCase.`case`, Some(Json.obj("operation" -> "createFromAlert")))
     } yield createdCase
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
@@ -238,7 +240,7 @@ class AlertSrv @Inject()(
       .toTry { richObservable =>
         observableSrv
           .duplicate(richObservable)
-          .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable.observable))
+          .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable))
           .recover { case _: CreateError => () } // ignore if case already contains observable
       }
       .map(_ => ())
