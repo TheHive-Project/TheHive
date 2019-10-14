@@ -1,0 +1,23 @@
+<div>
+    <table class="table table-stripped">
+        <thead>
+            <th>Organisation</th>
+            <th width="250">Profile</th>
+            <th width="160">Shared At</th>
+            <th width="160">Actions</th>
+        </thead>
+        <tbody>
+            <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'">
+                <td>{{share.organisationName}}</td>
+                <td>
+                    <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateShareProfile(share._id, newValue)"></updatable-select>
+                </td>
+                <td>{{share.createdAt | shortDate}}</td>
+                <td>
+                    <span class="clickable mr-xs text-danger" ng-click="$ctrl.remove(share._id)">
+                        <i class="fa fa-trash"></i> Delete</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -23,12 +23,17 @@
             The current case is shared with the following organisation(s)
         </p>
 
-        <div ng-if="$vm.shares.length > 0">
+        <sharing-list
+            shares="$vm.shares"
+            organisations="$vm.organisations"
+            profiles="$vm.profiles"
+            on-delete="$vm.removeShare(id)"
+            ></sharing-list>
+
+        <!-- <div>
             <table class="table table-stripped">
                 <thead>
-                    <!-- <th width="40" class="text-center">
-                        <input type="checkbox" ng-change="$vm.toggleLinkAll()" ng-model="$vm.allSelected">
-                    </th> -->
+
                     <th>Organisation</th>
                     <th width="250">Profile</th>
                     <th width="160">Shared At</th>
@@ -36,12 +41,9 @@
                 </thead>
                 <tbody>
                     <tr ng-repeat="share in $vm.shares | orderBy:'organisationName'">
-                        <!-- <td width="40" class="text-center">
-                            <input type="checkbox" ng-model="org.linked">
-                        </td> -->
+
                         <td>{{share.organisationName}}</td>
                         <td>
-                            <!-- on-update="updateField('group', newValue, task)" -->
                             <updatable-select options="$vm.profiles" value="share.profileName" on-update="$vm.updateShareProfile(share._id, newValue)"></updatable-select>
                         </td>
                         <td>{{share.createdAt | shortDate}}</td>
@@ -52,6 +54,6 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </div> -->
     </div>
 </div>
