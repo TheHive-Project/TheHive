@@ -1,0 +1,29 @@
+<form class="" ng-submit="$modal.save()">
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Select organisations</h3>
+    </div>
+    <div class="modal-body">
+        <table class="table table-striped">
+            <thead>
+                <th width="40" class="text-center">
+                    <input type="checkbox" ng-model="$modal.selectAll" ng-change="$modal.toggleAll()">
+                </th>
+                <th>Organisation</th>
+                <th>Profile</th>
+            </thead>
+            <tbody>
+                <tr class="clickable" ng-repeat="share in $modal.shares track by $index" ng-click="share.selected = !share.selected">
+                    <td class="text-center">
+                        <input type="checkbox" ng-model="share.selected">
+                    </td>
+                    <td>{{share.organisationName}}</td>
+                    <td>{{share.profileName}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="modal-footer text-left">
+        <button type="button" class="btn btn-default" ng-click="$modal.cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary pull-right" ng-disabled="shareForm.$invalid">Save</button>
+    </div>
+</form>

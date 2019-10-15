@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, SecuritySrv, ModalSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -286,8 +286,44 @@
                     });
             };
 
-            $scope.shareTask = function() {
+            $scope.addTaskShare = function() {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    templateUrl: 'views/components/sharing/sharing-modal.html',
+                    controller: 'SharingModalCtrl',
+                    controllerAs: '$modal',
+                    size: 'lg',
+                    resolve: {
+                        shares: function() {
+                            return CaseSrv.getShares(caseId)
+                                .then(function(response) {
+                                    var caseShares = response.data;
+                                    var taskShares = _.pluck($scope.shares, 'organisationName');
 
+                                    var shares = _.filter(caseShares, function(item) {
+                                        return taskShares.indexOf(item.organisationName) === -1;
+                                    });
+
+                                    return angular.copy(shares);
+                                });
+                        },
+
+                    }
+                });
+
+                modalInstance.result
+                    .then(function(orgs) {
+                        return CaseTaskSrv.addShares(taskId, orgs);
+                    })
+                    .then(function(/*response*/) {
+                        $scope.loadShares();
+                        NotificationSrv.log('Task sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task sharings update failed', err.status);
+                        }
+                    });
             };
 
             this.$onInit = function() {

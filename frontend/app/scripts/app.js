@@ -2,6 +2,7 @@ angular.module('theHiveControllers', []);
 angular.module('theHiveServices', []);
 angular.module('theHiveFilters', []);
 angular.module('theHiveDirectives', []);
+angular.module('theHiveComponents', []);
 
 angular.module('thehive', [
     'ngAnimate',
@@ -32,7 +33,8 @@ angular.module('thehive', [
     'theHiveControllers',
     'theHiveServices',
     'theHiveFilters',
-    'theHiveDirectives'
+    'theHiveDirectives',
+    'theHiveComponents'
     ])
     .config(function($resourceProvider) {
         'use strict';
@@ -353,7 +355,8 @@ angular.module('thehive', [
                                 return response.data;
                             });
                     }
-                }
+                },
+                permissions: ['manageShare']
             })
             .state('app.case.alerts', {
                 url: '/alerts',

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers')
+    angular.module('theHiveComponents')
         .component('sharingList', {
             controller: function() {
                 this.remove = function(id) {

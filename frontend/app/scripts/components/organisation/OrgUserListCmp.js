@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers')
+    angular.module('theHiveComponents')
         .component('orgUserList', {
             controller: function($scope, UserSrv, NotificationSrv, ModalSrv, AuthenticationSrv, clipboard) {
                 var self = this;

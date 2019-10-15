@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, $uibModal, CaseSrv, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -158,7 +158,7 @@
                     $scope.currentJob = jobId;
 
                     $timeout(function() {
-                        var reportEl = angular.element(document.getElementById('analysis-report'))[0];
+                        var reportEl = angular.element('#analysis-report')[0];
 
                         // Scrolling hack using jQuery stuff
                         $('html,body').animate({
@@ -313,6 +313,46 @@
                 modalInstance.result
                     .then(function() {
                         return CaseArtifactSrv.removeShare(id);
+                    })
+                    .then(function(/*response*/) {
+                        $scope.loadShares();
+                        NotificationSrv.log('Observable sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Observable sharings update failed', err.status);
+                        }
+                    });
+            };
+
+            $scope.addTaskShare = function() {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    templateUrl: 'views/components/sharing/sharing-modal.html',
+                    controller: 'SharingModalCtrl',
+                    controllerAs: '$modal',
+                    size: 'lg',
+                    resolve: {
+                        shares: function() {
+                            return CaseSrv.getShares($scope.caseId)
+                                .then(function(response) {
+                                    var caseShares = response.data;
+                                    var taskShares = _.pluck($scope.shares, 'organisationName');
+
+                                    var shares = _.filter(caseShares, function(item) {
+                                        return taskShares.indexOf(item.organisationName) === -1;
+                                    });
+
+                                    return angular.copy(shares);
+                                });
+                        },
+
+                    }
+                });
+
+                modalInstance.result
+                    .then(function(orgs) {
+                        return CaseArtifactSrv.addShares(observableId, orgs);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();

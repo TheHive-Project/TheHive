@@ -28,6 +28,12 @@
                 return $http.get('./api/case/' + caseId + '/observable/' + observableId + '/shares');
             };
 
+            this.addShares = function(observableId, organisations) {
+                return $http.put('./api/case/artifact/' + observableId + '/shares', {
+                    organisations: organisations
+                });
+            };
+
             this.removeShare = function(id) {
                 return $http.delete('./api/observable/shares', {
                     data: {

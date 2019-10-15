@@ -17,6 +17,12 @@
                 return $http.get('./api/case/' + caseId + '/task/' + taskId + '/shares');
             };
 
+            this.addShares = function(taskId, organisations) {
+                return $http.put('./api/case/task/' + taskId + '/shares', {
+                    organisations: organisations
+                });
+            };
+
             this.removeShare = function(id) {
                 return $http.delete('./api/task/shares', {
                     data: {

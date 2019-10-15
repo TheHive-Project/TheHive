@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers')
+    angular.module('theHiveComponents')
         .component('orgCaseTemplateList', {
             controller: function($uibModal, $scope, CaseTemplateSrv, UserSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
                 var self = this;
