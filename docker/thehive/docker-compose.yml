@@ -2,6 +2,8 @@ version: "2"
 services:
   elasticsearch:
     image: elasticsearch:6.8.0
+    volumes:
+      - ./data:/usr/share/elasticsearch/data
     environment:
       - http.host=0.0.0.0
       - cluster.name=hive
