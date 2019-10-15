@@ -1,0 +1,20 @@
+<div class="row">
+    <div class="col-md-12" id="observable-sharings" if-permission="manageShare" allowed="{{userPermissions}}">
+         <h4 class="vpad10 text-primary">Sharing</h4>
+         <div class="btn-toolbar" role="toolbar">
+             <div class="btn-group">
+                 <button class="btn btn-sm btn-primary" ng-click="shareTask()">
+                     <i class="fa fa-plus"></i>
+                     Add share
+                 </button>
+             </div>
+         </div>
+         <div class="mv-s">
+             <sharing-list
+                 shares="shares"
+                 read-only="true"
+                 on-delete="removeShare(id)"
+                 ></sharing-list>
+         </div>
+    </div>
+</div>

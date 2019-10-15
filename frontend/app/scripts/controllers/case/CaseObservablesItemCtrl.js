@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -91,6 +91,17 @@
 
             // Prepare the scope data
             $scope.initScope(artifact);
+
+            $scope.scrollTo = function(hash) {
+                $timeout(function() {
+                    var el = angular.element(hash)[0];
+
+                    // Scrolling hack using jQuery stuff
+                    $('html,body').animate({
+                        scrollTop: $(el).offset().top
+                    }, 'fast');
+                }, 100);
+            };
 
             $scope.onJobsChange = function (updates) {
                 $scope.analyzerJobs = {};
@@ -281,6 +292,44 @@
 
             $scope.getTags = function(query) {
                 return TagSrv.fromObservables(query);
+            };
+
+            $scope.loadShares = function () {
+                return CaseArtifactSrv.getShares($scope.caseId, observableId)
+                    .then(function(response) {
+                        $scope.shares = response.data;
+                    });
+            };
+
+            $scope.removeShare = function(id) {
+                var modalInstance = ModalSrv.confirm(
+                    'Remove observable share',
+                    'Are you sure you want to remove this sharing rule?', {
+                        okText: 'Yes, remove it',
+                        flavor: 'danger'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        return CaseArtifactSrv.removeShare(id);
+                    })
+                    .then(function(/*response*/) {
+                        $scope.loadShares();
+                        NotificationSrv.log('Observable sharings updated successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Observable sharings update failed', err.status);
+                        }
+                    });
+            };
+
+            this.$onInit = function () {
+
+                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                    $scope.loadShares();
+                }
             };
 
         }

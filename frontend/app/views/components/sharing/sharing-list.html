@@ -1,5 +1,5 @@
 <div>
-    <div ng-if="$ctrl.shares.length === 0">
+    <div ng-if="!$ctrl.shares || $ctrl.shares.length === 0">
         <div class="empty-message">No records</div>
     </div>
 

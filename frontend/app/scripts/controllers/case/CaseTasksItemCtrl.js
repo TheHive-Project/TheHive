@@ -264,7 +264,7 @@
 
             $scope.removeShare = function(id) {
                 var modalInstance = ModalSrv.confirm(
-                    'Remove case share',
+                    'Remove task share',
                     'Are you sure you want to remove this sharing rule?', {
                         okText: 'Yes, remove it',
                         flavor: 'danger'
