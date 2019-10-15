@@ -17,5 +17,16 @@
                 return $http.get('./api/case/' + caseId + '/task/' + taskId + '/shares');
             };
 
+            this.removeShare = function(id) {
+                return $http.delete('./api/task/shares', {
+                    data: {
+                        ids: [id]
+                    },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            };
+
         });
 })();

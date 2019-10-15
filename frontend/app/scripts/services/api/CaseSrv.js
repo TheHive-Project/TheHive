@@ -22,7 +22,7 @@
                 },
                 forceRemove: {
                     method: 'DELETE',
-                    url : './api/case/:caseId/force',
+                    url: './api/case/:caseId/force',
                     params: {
                         caseId: '@caseId'
                     }
@@ -33,9 +33,9 @@
                     isArray: true
                 },
                 alerts: {
-                  method: 'POST',
-                  url: './api/alert/_search',
-                  isArray: true
+                    method: 'POST',
+                    url: './api/alert/_search',
+                    isArray: true
                 }
             });
 
@@ -49,21 +49,28 @@
             this.query = resource.query;
 
             this.getShares = function(id) {
-                return $http.get('./api/case/'+id+'/shares');
+                return $http.get('./api/case/' + id + '/shares');
             };
 
             this.setShares = function(id, shares) {
-                return $http.post('./api/case/'+id+'/shares', {
+                return $http.post('./api/case/' + id + '/shares', {
                     "shares": shares
                 });
             };
 
             this.updateShare = function(id, patch) {
-                return $http.patch('./api/case/share/'+id, patch);
+                return $http.patch('./api/case/share/' + id, patch);
             };
 
-            this.removeShare = function(id) {
-                return $http.delete('./api/case/share/'+id);
+            this.removeShare = function(id) {                
+                return $http.delete('./api/case/shares', {
+                    data: {
+                        ids: [id]
+                    },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
             };
         });
 

@@ -255,14 +255,14 @@
                 });
             };
 
-            $scope.loadShared = function () {
+            $scope.loadShares = function () {
                 return CaseTaskSrv.getShares(caseId, taskId)
                     .then(function(response) {
                         $scope.shares = response.data;
                     });
             };
 
-            $scope.removeShare = function() {
+            $scope.removeShare = function(id) {
                 var modalInstance = ModalSrv.confirm(
                     'Remove case share',
                     'Are you sure you want to remove this sharing rule?', {
@@ -273,7 +273,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseTaskSrv.removeShare($scope.taskId);
+                        return CaseTaskSrv.removeShare(id);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();
@@ -284,6 +284,10 @@
                             NotificationSrv.error('Error', 'Task sharings update failed', err.status);
                         }
                     });
+            };
+
+            $scope.shareTask = function() {
+
             };
 
             this.$onInit = function() {
@@ -309,7 +313,7 @@
                 $scope.initScope(task);
 
                 if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
-                    $scope.loadShared();
+                    $scope.loadShares();
                 }
 
                 // $scope.organisations = organisations;
