@@ -5,21 +5,19 @@ services:
     environment:
       - http.host=0.0.0.0
       - cluster.name=hive
-      - thread_pool.index.queue_size=100000
+      - xpack.security.enabled=false
       - thread_pool.search.queue_size=100000
-      - thread_pool.bulk.queue_size=100000
+      - gateway.recover_after_nodes=1
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
   cortex:
-    image: thehiveproject/cortex:3.0.0-RC4
-    depends_on:
-      - elasticsearch
+    image: thehiveproject/cortex:3.0.0
     ports:
       - "0.0.0.0:9001:9001"
   thehive:
-    image: thehiveproject/thehive:3.4.0-RC2
+    image: thehiveproject/thehive:3.4.0
     depends_on:
       - elasticsearch
       - cortex
