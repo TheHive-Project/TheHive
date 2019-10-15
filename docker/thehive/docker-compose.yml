@@ -7,7 +7,6 @@ services:
     environment:
       - http.host=0.0.0.0
       - cluster.name=hive
-      - xpack.security.enabled=false
       - thread_pool.search.queue_size=100000
       - gateway.recover_after_nodes=1
     ulimits:
