@@ -64,7 +64,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
                         }
                     },
                     {
-                        'owner': $scope.currentUser._id
+                        'owner': $scope.currentUser.login
                     }
                 ]
             },
