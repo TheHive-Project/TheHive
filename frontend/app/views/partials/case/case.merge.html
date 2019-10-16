@@ -11,7 +11,7 @@
                 <input type="radio" name="search-type" ng-model="dialog.search.type" value="number" ng-change="dialog.onTypeChange('number')"> By Number
             </label>
         </span>
-        <input type="text"
+        <input type="{{dialog.search.type === 'number' ? 'number' : 'text'}}"
             placeholder="{{dialog.search.placeholder}}"
             ng-model="dialog.search.input"
             uib-typeahead="caze as dialog.format(caze) for caze in dialog.getCaseByTitle(dialog.search.type, $viewValue)"
@@ -32,7 +32,7 @@
         <h4>{{c.title}}</h4>
         <div>
             <span>
-                <i class="glyphicon glyphicon-user"></i>                
+                <i class="glyphicon glyphicon-user"></i>
                 <user-info value="c.owner" field="name"></user-info>
             </span>
             <span class="ml-xxs">

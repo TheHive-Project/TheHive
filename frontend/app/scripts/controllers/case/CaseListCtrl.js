@@ -191,7 +191,7 @@
                     var currentUser = AuthenticationSrv.currentUser;
                     self.uiSrv.activeFilters.owner = {
                         value: [{
-                            text: currentUser._id,
+                            text: currentUser.login,
                             label: currentUser.name
                         }]
                     };
@@ -205,7 +205,7 @@
                     var currentUser = AuthenticationSrv.currentUser;
                     self.uiSrv.activeFilters.owner = {
                         value: [{
-                            text: currentUser._id,
+                            text: currentUser.login,
                             label: currentUser.name
                         }]
                     };

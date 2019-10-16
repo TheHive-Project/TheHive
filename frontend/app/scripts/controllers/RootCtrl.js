@@ -8,7 +8,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         if(currentUser === 520) {
             $state.go('maintenance');
             return;
-        }else if(!currentUser || !currentUser._id) {
+        }else if(!currentUser || !currentUser.login) {
             $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
             return;
         }

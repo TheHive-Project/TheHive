@@ -55,7 +55,7 @@
 
 
             this.canEditDashboard = function() {
-                return (this.createdBy === this.currentUser._id) || this.dashboardStatus === 'Shared';                
+                return (this.createdBy === this.currentUser.login) || this.dashboardStatus === 'Shared';                
             };
 
             this.options = {
