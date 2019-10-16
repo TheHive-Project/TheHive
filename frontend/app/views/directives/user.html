@@ -1,5 +1,5 @@
 <div class="clearfix avatar avatar-{{iconSize || 'xs'}}">
-    <img ng-if="userData.avatar" class="avatar-icon" alt="{{userData.name}}" uib-tooltip="{{userData.name}}" data-ng-src="{{'data:image/jpeg;base64,' + userData.avatar}}"/>
-    <div ng-if="!userData.avatar" class="avatar-icon" uib-tooltip="{{userData.name}}">{{initials}}</div>
-    <span ng-if="!iconOnly" class="avatar-name">{{userData.name}}</span>
+    <img ng-if="userData.avatar" class="avatar-icon" alt="{{userData.organisation}}/{{userData.name}}" uib-tooltip="{{userData.organisation}}/{{userData.name}}" data-ng-src="{{'data:image/jpeg;base64,' + userData.avatar}}"/>
+    <div ng-if="!userData.avatar" class="avatar-icon" uib-tooltip="{{userData.organisation}}/{{userData.name}}">{{initials}}</div>
+    <span ng-if="!iconOnly" class="avatar-name">{{userData.organisation}}/{{userData.name}}</span>
 </div>
