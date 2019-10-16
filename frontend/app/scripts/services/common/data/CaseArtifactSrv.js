@@ -29,7 +29,7 @@
             };
 
             this.addShares = function(observableId, organisations) {
-                return $http.put('./api/case/artifact/' + observableId + '/shares', {
+                return $http.post('./api/case/artifact/' + observableId + '/shares', {
                     organisations: organisations
                 });
             };

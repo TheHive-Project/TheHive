@@ -18,7 +18,7 @@
             };
 
             this.addShares = function(taskId, organisations) {
-                return $http.put('./api/case/task/' + taskId + '/shares', {
+                return $http.post('./api/case/task/' + taskId + '/shares', {
                     organisations: organisations
                 });
             };
