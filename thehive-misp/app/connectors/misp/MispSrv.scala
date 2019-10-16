@@ -109,7 +109,7 @@ class MispSrv @Inject()(
             logger.error(s"Artifact $artifact has neither data nor attachment")
             sys.error("???")
         }
-        ExportedMispAttribute(artifact, tpe, category, artifact.tlp(), value, artifact.message())
+        ExportedMispAttribute(artifact, tpe, category, artifact.tags(), artifact.tlp(), value, artifact.message())
       }
       .runWith(Sink.seq)
   }

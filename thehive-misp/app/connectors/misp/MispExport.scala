@@ -115,7 +115,7 @@ class MispExport @Inject()(
 
   def exportAttribute(mispConnection: MispConnection, eventId: String, attribute: ExportedMispAttribute): Future[Artifact] = {
     val mispResponse = attribute match {
-      case ExportedMispAttribute(_, _, _, _, Right(attachment), comment) ⇒
+      case ExportedMispAttribute(_, _, _, _, _, Right(attachment), comment) ⇒
         attachmentSrv
           .source(attachment.id)
           .runReduce(_ ++ _)
@@ -138,11 +138,19 @@ class MispExport @Inject()(
       case response if response.status / 100 == 2 ⇒
         // then add tlp tag
         // doesn't work with file artifact (malware sample attribute)
-        (response.json \ "Attribute" \ "id")
+        (response.json \ "Attribute" \ "uuid")
           .asOpt[String]
           .foreach { attributeId ⇒
-            mispConnection("/attributes/addTag")
-              .post(Json.obj("attribute" → attributeId, "tag" → tlpWrites.writes(attribute.tlp)))
+            val attrib_tlp=tlpWrites.writes(attribute.tlp)
+            mispConnection(s"/tags/attachTagToObject/$attributeId/$attrib_tlp")
+              .post("")
+            if (mispConnection.exportAttributeTags){
+                for (tag <- attribute.tags){
+                    logger.debug(s"Sending POST request for ${tag}")
+                    mispConnection(s"/tags/attachTagToObject/$attributeId/$tag")
+                      .post("")
+            }
+            }
           }
         attribute.artifact
       case response ⇒

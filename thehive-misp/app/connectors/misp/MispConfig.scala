@@ -59,7 +59,8 @@ class MispConfig(val interval: FiniteDuration, val connections: Seq[MispConnecti
         excludedTags,
         whitelistTags,
         purpose,
-        exportCaseTags
+        exportCaseTags,
+        exportAttributeTags
       )
     )
 

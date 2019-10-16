@@ -82,7 +82,7 @@ object JsonFormat {
       "type"     → attribute.tpe,
       "value"    → attribute.value.fold[String](identity, _.name),
       "comment"  → attribute.comment,
-      "Tag"      → Json.arr(Json.obj("name" → tlpWrites.writes(attribute.tlp)))
+      "Tag" → JsArray((attribute.tags.map(JsString.apply) :+ tlpWrites.writes(attribute.tlp)).map(t ⇒ Json.obj("name" -> t)))
     )
   }
 

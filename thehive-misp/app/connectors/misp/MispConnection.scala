@@ -29,7 +29,8 @@ case class MispConnection(
     excludedTags: Set[String],
     whitelistTags: Set[String],
     purpose: MispPurpose.Value,
-    exportCaseTags: Boolean
+    exportCaseTags: Boolean,
+    exportAttributeTags: Boolean
 ) {
 
   private[MispConnection] lazy val logger = Logger(getClass)

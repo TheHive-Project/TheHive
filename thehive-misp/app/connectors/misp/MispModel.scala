@@ -40,6 +40,7 @@ case class ExportedMispAttribute(
     artifact: Artifact,
     tpe: String,
     category: String,
+    tags: Seq[String],
     tlp: Long,
     value: Either[String, Attachment],
     comment: Option[String]
