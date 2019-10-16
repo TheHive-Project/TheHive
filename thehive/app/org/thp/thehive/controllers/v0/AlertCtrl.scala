@@ -58,6 +58,7 @@ class AlertCtrl @Inject()(
   )
   override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable])]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[AlertSteps, CaseSteps]("cases", (alertSteps, _) => alertSteps.`case`),
     Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
   )
 

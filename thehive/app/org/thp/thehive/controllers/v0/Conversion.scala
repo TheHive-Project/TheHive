@@ -51,6 +51,7 @@ object Conversion {
         .withFieldRenamed(_._id, _.id)
         .withFieldConst(_._type, "alert")
         .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.`case`, _.caseId)
         .withFieldComputed(
           _.status,
           alert =>
@@ -76,6 +77,7 @@ object Conversion {
           .withFieldRenamed(_._createdBy, _.createdBy)
           .withFieldConst(_._type, "alert")
           .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+          .withFieldComputed(_.`case`, _.caseId)
           .withFieldComputed(
             _.status,
             alert =>

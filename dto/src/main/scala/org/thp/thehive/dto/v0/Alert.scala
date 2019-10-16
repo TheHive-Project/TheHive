@@ -49,6 +49,7 @@ case class OutputAlert(
     pap: Int,
     status: String,
     follow: Boolean,
+    `case`: Option[String],
     customFields: Set[OutputCustomFieldValue] = Set.empty,
     caseTemplate: Option[String] = None,
     artifacts: Seq[OutputObservable] = Nil
@@ -68,6 +69,7 @@ object OutputAlert {
       source       <- (json \ "source").validate[String]
       sourceRef    <- (json \ "sourceRef").validate[String]
       externalLink <- (json \ "externalLink").validateOpt[String]
+      case0        <- (json \ "case").validateOpt[String]
       title        <- (json \ "title").validate[String]
       description  <- (json \ "description").validate[String]
       severity     <- (json \ "severity").validate[Int]
@@ -103,6 +105,7 @@ object OutputAlert {
       pap,
       status,
       follow,
+      case0,
       customFields,
       caseTemplate,
       artifacts
@@ -121,6 +124,7 @@ object OutputAlert {
       "source"       -> outputAlert.source,
       "sourceRef"    -> outputAlert.sourceRef,
       "externalLink" -> outputAlert.externalLink,
+      "case"         -> outputAlert.`case`,
       "title"        -> outputAlert.title,
       "description"  -> outputAlert.description,
       "severity"     -> outputAlert.severity,

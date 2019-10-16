@@ -78,4 +78,5 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override lazy val extraModels: Seq[Model]                                                                = db.extraModels
   override def addTransactionListener(listener: Consumer[Transaction.Status])(implicit graph: Graph): Unit = db.addTransactionListener(listener)
   override def mapPredicate[T](predicate: P[T]): P[T]                                                      = db.mapPredicate(predicate)
+  override def toId(id: Any): Any                                                                          = db.toId(id)
 }
