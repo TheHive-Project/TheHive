@@ -311,6 +311,14 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       l.length shouldEqual 1
 
+      val requestAdd = FakeRequest("POST", s"/api/case/observable/${observableHfr.get._id}/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withJsonBody(Json.obj("organisations" -> List("cert")))
+      val resultAdd = shareCtrl.shareObservable(observableHfr.get._id)(requestAdd)
+
+      status(resultAdd) shouldEqual 204
+      getObsShares.length shouldEqual 1
+
       val requestDel = FakeRequest("DELETE", s"/api/observable/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
         .withJsonBody(Json.obj("ids" -> List(l.head._id)))
