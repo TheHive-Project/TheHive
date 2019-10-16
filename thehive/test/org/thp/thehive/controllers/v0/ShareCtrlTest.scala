@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.libs.json.{JsArray, Json}
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -15,6 +10,10 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import org.thp.thehive.services.CaseSrv
+import play.api.libs.json.{JsArray, Json}
+import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+
+import scala.util.Try
 
 class ShareCtrlTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
@@ -60,6 +59,16 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       l
     }
 
+    def getTaskShares(caseId: String, taskId: String, user: String, orga: String) = {
+      val request = FakeRequest("GET", s"""/api/case/$caseId/task/$taskId/shares""")
+        .withHeaders("user" -> s"$user@thehive.local", "X-Organisation" -> orga)
+      val result = shareCtrl.listShareTasks(caseId, taskId)(request)
+
+      status(result) shouldEqual 200
+
+      contentAsJson(result).as[List[OutputShare]]
+    }
+
     "manage shares for a case" in {
       val inputShare = Json.obj("shares" -> List(Json.toJson(InputShare("cert", "all", TasksFilter.all, ObservablesFilter.all))))
 
@@ -101,7 +110,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       })
     }
 
-    "fetch and remove shares for a task" in db.roTransaction { implicit graph =>
+    "fetch, add and remove shares for a task" in db.roTransaction { implicit graph =>
       val tasks = caseSrv.get("#4").tasks(dummyUserSrv.authContext).toList
 
       tasks must not(beEmpty)
@@ -124,6 +133,14 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       l must not(beEmpty)
 
+      val requestAdd = FakeRequest("POST", s"/api/case/task/${task4.get._id}/shares")
+        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withJsonBody(Json.obj("organisations" -> List("default")))
+      val resultAdd = shareCtrl.shareTask(task4.get._id)(requestAdd)
+
+      status(resultAdd) shouldEqual 204
+      getTaskShares.length shouldEqual l.length
+
       val requestDel = FakeRequest("DELETE", s"/api/task/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(Json.obj("ids" -> List(l.head._id)))
@@ -133,7 +150,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       getTaskShares must beEmpty
     }
 
-    "handle share put/remove correctly" in {
+    "handle share post/remove correctly" in db.roTransaction { implicit graph =>
       val requestOrga = FakeRequest("POST", "/api/v0/organisation")
         .withJsonBody(Json.toJson(InputOrganisation(name = "orga1", "no description")))
         .withHeaders("user" -> "admin@thehive.local")
@@ -160,6 +177,20 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       status(result) shouldEqual 201
       getShares("#3").length shouldEqual 2
+
+      val tasks = caseSrv.get("#3").tasks(dummyUserSrv.authContext).toList
+      tasks must not(beEmpty)
+      val task6 = tasks.find(_.title == "case 3 task 2")
+      task6 must beSome
+      getTaskShares("#3", task6.get._id, "user2", "default").filter(_.organisationName == "orga1") must beEmpty
+
+      val requestAddTask = FakeRequest("POST", s"/api/case/task/${task6.get._id}/shares")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withJsonBody(Json.obj("organisations" -> List("orga1")))
+      val resultAddTask = shareCtrl.shareTask(task6.get._id)(requestAddTask)
+
+      status(resultAddTask) shouldEqual 204
+      getTaskShares("#3", task6.get._id, "user2", "default").filter(_.organisationName == "orga1") must not(beEmpty)
 
       val requestEmpty = FakeRequest("POST", s"/api/case/#3/shares")
         .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")

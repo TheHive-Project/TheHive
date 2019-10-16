@@ -43,5 +43,14 @@
     "status": "Waiting",
     "flag": true,
     "order": 0
+  },
+  {
+    "id": "task6",
+    "title": "case 3 task 2",
+    "group": "group1",
+    "description": "description task 6",
+    "status": "Waiting",
+    "flag": true,
+    "order": 1
   }
 ]

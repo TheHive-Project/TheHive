@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
@@ -16,6 +11,10 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class ShareCtrl @Inject()(
@@ -81,21 +80,6 @@ class ShareCtrl @Inject()(
         } yield Results.NoContent
       }
 
-  private def removeShare(id: String, organisation: Organisation with Entity, entity: Option[String])(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ) =
-    for {
-      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
-      if relatedOrg.name != organisation.name
-      share <- shareSrv.get(id).getOrFail()
-      _ = entity.map {
-        case "task"       => shareSrv.removeShareTasks(share)
-        case "observable" => shareSrv.removeShareObservable(share)
-        case _            => shareSrv.remove(share)
-      } getOrElse shareSrv.remove(share)
-    } yield ()
-
   def removeShares(): Action[AnyContent] =
     entryPoint("remove share")
       .extract("shares", FieldsParser[String].sequence.on("ids"))
@@ -134,6 +118,21 @@ class ShareCtrl @Inject()(
             .map(_ => Results.NoContent)
         }
       }
+
+  private def removeShare(id: String, organisation: Organisation with Entity, entity: Option[String])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ) =
+    for {
+      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
+      if relatedOrg.name != organisation.name
+      share <- shareSrv.get(id).getOrFail()
+      _ = entity.map {
+        case "task"       => shareSrv.removeShareTasks(share)
+        case "observable" => shareSrv.removeShareObservable(share)
+        case _            => shareSrv.remove(share)
+      } getOrElse shareSrv.remove(share)
+    } yield ()
 
   def updateShare(id: String): Action[AnyContent] =
     entryPoint("update share")
@@ -221,10 +220,10 @@ class ShareCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val organisationIds: Seq[String] = request.body("organisations")
         for {
-          task           <- taskSrv.getOrFail(taskId)
-          organisations  <- organisationIds.toTry(organisationSrv.getOrFail)
-          myOrganisation <- organisationSrv.getOrFail(request.organisation)
-          _              <- shareSrv.updateTaskShares(task, organisations :+ myOrganisation)
+          task          <- taskSrv.getOrFail(taskId)
+          organisations <- organisationIds.toTry(organisationSrv.getOrFail)
+          _             <- organisationSrv.getOrFail(request.organisation)
+          _             <- shareSrv.addTaskShares(task, organisations)
         } yield Results.NoContent
       }
 
@@ -234,10 +233,10 @@ class ShareCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val organisationIds: Seq[String] = request.body("organisations")
         for {
-          observable     <- observableSrv.getOrFail(observableId)
-          organisations  <- organisationIds.toTry(organisationSrv.getOrFail)
-          myOrganisation <- organisationSrv.getOrFail(request.organisation)
-          _              <- shareSrv.updateObservableShares(observable, organisations :+ myOrganisation)
+          observable    <- observableSrv.getOrFail(observableId)
+          organisations <- organisationIds.toTry(organisationSrv.getOrFail)
+          _             <- organisationSrv.getOrFail(request.organisation)
+          _             <- shareSrv.addObservableShares(observable, organisations)
         } yield Results.NoContent
       }
 

@@ -18,5 +18,9 @@
   {
     "from": "case4-default",
     "to": "task5"
+  },
+  {
+    "from": "case3-default",
+    "to": "task6"
   }
 ]

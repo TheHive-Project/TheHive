@@ -1,7 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
-
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -10,8 +8,10 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.thehive.models._
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.models._
+
+import scala.util.{Success, Try}
 
 @Singleton
 class ShareSrv @Inject()(
@@ -213,6 +213,52 @@ class ShareSrv @Inject()(
           share <- caseSrv.get(case0).share(o.name).getOrFail()
           _     <- shareTaskSrv.create(ShareTask(), share, task)
           _     <- auditSrv.share.shareTask(task, case0, o)
+        } yield ()
+      }
+      .map(_ => ())
+  }
+
+  def addTaskShares(
+      task: Task with Entity,
+      organisations: Seq[Organisation with Entity]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val existingOrgs = taskSrv
+      .get(task)
+      .shares
+      .organisation
+      .toList
+
+    organisations
+      .filterNot(existingOrgs.contains)
+      .toTry { o =>
+        for {
+          case0 <- taskSrv.get(task).`case`.getOrFail()
+          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          _     <- shareTaskSrv.create(ShareTask(), share, task)
+          _     <- auditSrv.share.shareTask(task, case0, o)
+        } yield ()
+      }
+      .map(_ => ())
+  }
+
+  def addObservableShares(
+      observable: Observable with Entity,
+      organisations: Seq[Organisation with Entity]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val existingOrgs = observableSrv
+      .get(observable)
+      .shares
+      .organisation
+      .toList
+
+    organisations
+      .filterNot(existingOrgs.contains)
+      .toTry { o =>
+        for {
+          case0 <- observableSrv.get(observable).`case`.getOrFail()
+          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          _     <- shareObservableSrv.create(ShareObservable(), share, observable)
+          _     <- auditSrv.share.shareObservable(observable, case0, o)
         } yield ()
       }
       .map(_ => ())
