@@ -12,27 +12,43 @@
 
             var tabName = 'sharing-' + this.caseId;
 
-            // Add tab
-            CaseTabsSrv.addTab(tabName, {
-                name: tabName,
-                label: 'Sharing',
-                closable: true,
-                state: 'app.case.sharing',
-                params: {}
-            });
+            this.$onInit = function() {
+                // Add tab
+                CaseTabsSrv.addTab(tabName, {
+                    name: tabName,
+                    label: 'Sharing',
+                    closable: true,
+                    state: 'app.case.sharing',
+                    params: {}
+                });
 
-            // Select tab
-            $timeout(function() {
-                CaseTabsSrv.activateTab(tabName);
-            }, 0);
+                // Select tab
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(tabName);
+                }, 0);
+
+                self.enableAddButton = self.getRemainingOrgs().length > 0;
+            };
 
             this.load = function() {
                 return CaseSrv.getShares(this.caseId)
                     .then(function(response) {
                         self.shares = response.data;
+                        self.enableAddButton = self.getRemainingOrgs().length > 0;
                     });
             };
 
+            this.getRemainingOrgs = function() {
+                var organisationNames = _.pluck(self.organisations, 'name');
+                var shareNames = _.pluck(self.shares, 'organisationName');
+
+                console.log(organisationNames);
+                console.log(shareNames);
+
+                return _.filter(organisationNames, function(name) {
+                    return shareNames.indexOf(name) === -1;
+                });
+            };
 
             this.shareCase = function() {
 
@@ -40,10 +56,9 @@
                     templateUrl: 'views/partials/case/share/case.share.modal.html',
                     controller: 'CaseShareModalCtrl',
                     controllerAs: '$modal',
-                    size: 'max',
                     resolve: {
                         organisations: function() {
-                            return _.pluck(self.organisations, 'name');
+                            return self.getRemainingOrgs();
                         },
                         profiles: function() {
                             return self.profiles;

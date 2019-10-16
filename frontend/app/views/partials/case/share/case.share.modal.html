@@ -1,68 +1,58 @@
-<form class="form-horizontal" name="form" ng-submit="$modal.ok()">
+<form name="shareForm" ng-submit="$modal.save()" novalidate>
     <div class="modal-header bg-primary">
         <h3 class="modal-title">Share case</h3>
     </div>
     <div class="modal-body">
-        <div class="mb-s">
-            <button class="btn btn-primary" type="button" ng-click="$modal.addRule()">Add sharing rule</button>
+
+        <p>
+            Select the organisations you would like to share the case with.
+        </p>
+
+        <div class="form-group" ng-class="{ 'has-error' : shareForm.organisations.$invalid && !shareForm.organisations.$pristine }">
+            <label>
+                Organisation
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <select class="form-control" name="organisations" ng-model="$modal.formData.organisations"
+                ng-options="organisation for organisation in $modal.organisations" multiple size="10" required>
+            </select>
+            <p class="help-block" ng-show="shareForm.organisations.$invalid && !shareForm.organisations.$pristine">This field is required.</p>
         </div>
 
-        <div ng-if="$modal.rules.length === 0">
-            <div class="empty-message">No sharing rule defined</div>
+        <div class="form-group" ng-class="{ 'has-error' : shareForm.profile.$invalid && !shareForm.profile.$pristine }">
+            <label>
+                Profile
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <select class="form-control" name="profile" ng-model="$modal.formData.profile" ng-options="profile for profile in $modal.profiles" required>
+                    <option value="" disabled selected>-- Select profile --</option>
+            </select>
+            <p class="help-block" ng-show="shareForm.profile.$invalid && !shareForm.profile.$pristine">This field is required.</p>
         </div>
 
-        <table class="mb-0 table table-striped" ng-repeat="rule in $modal.rules track by $index">
-            <thead>
-                <th class="text-center" width="40">#</th>
-                <th>Organisations</th>
-                <th>Profile</th>
-                <th width="100">Tasks</th>
-                <th width="100">Observables</th>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="text-center" width="40">{{$index + 1}}</td>
-                    <td>
-                        <multiselect ng-model="$modal.rules[$index].organisations"
-                            options="$modal.organisations"
-                            show-select-all="true"
-                            show-unselect-all="true"
-                            show-search="true"
-                        ></multiselect>
-                    </td>
-                    <td>
-                        <select class="form-control" ng-model="$modal.rules[$index].profile"
-                            ng-options="profile for profile in $modal.profiles">
-                                <option value="" disabled selected>-- Select profile --</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-control" name="tasks" ng-model="$modal.rules[$index].tasks"
-                            ng-options="item for item in $modal.options ">
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-control" name="observables" ng-model="$modal.rules[$index].observables"
-                            ng-options="item for item in $modal.options ">
-                        </select>
-                    </td>
-                </tr>
-                <tr ng-show="$modal.rules[$index].organisations.length > 0">
-                    <td colspan="5" class="wrap">
-                        <span class="mr-xxs">Users of</span>
-                        <span class="label label-lg label-default mr-xxs" ng-repeat="item in $modal.rules[$index].organisations">{{item}}</span>
-                        <span>organisation(s) will have a <span class="label label-lg label-default">{{$modal.rules[$index].profile}}</span> access to this case</span>
-                        <span>, <span class="label label-lg label-default">{{$modal.rules[$index].tasks}}</span> of it's tasks</span>
-                        <span>, <span class="label label-lg label-default">{{$modal.rules[$index].observables}}</span> of it's observables</span>
+        <div class="form-group">
+            <label>
+                Tasks
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <select class="form-control" name="tasks" ng-model="$modal.formData.tasks"
+                ng-options="item for item in $modal.options">
+            </select>
+        </div>
 
-                        <hr class="mv-s">
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="form-group">
+            <label>
+                Observables
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <select class="form-control" name="observables" ng-model="$modal.formData.observables"
+                ng-options="item for item in $modal.options">
+            </select>
+        </div>
+
     </div>
     <div class="modal-footer">
         <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="button" ng-click="$modal.save()">Save</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="shareForm.$invalid">Save</button>
     </div>
 </form>

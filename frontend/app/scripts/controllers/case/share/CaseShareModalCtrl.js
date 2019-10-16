@@ -3,22 +3,20 @@
 
     angular.module('theHiveControllers')
         .controller('CaseShareModalCtrl', function($uibModalInstance, organisations, profiles, shares) {
+            var self = this;
+
             this.organisations = organisations;
             this.profiles = profiles;
             this.shares = shares;
 
-            this.rules = [];
+            this.formData = {
+                organisations: [],
+                profile: null,
+                tasks: 'none',
+                observables: 'none'
+            };
 
             this.options = ['all', 'none'];
-
-            this.addRule = function() {
-                this.rules.push({
-                    organisations: [],
-                    profile: null,
-                    tasks: 'none',
-                    observables: 'none'
-                });
-            };
 
             this.cancel = function() {
                 $uibModalInstance.dismiss();
@@ -27,17 +25,13 @@
             this.save = function() {
                 var shares = [];
 
-                _.each(this.rules, function(rule) {
-
-                    _.each(rule.organisations, function(org) {
-                        shares.push({
-                            organisationName: org,
-                            profile: rule.profile,
-                            tasks: rule.tasks,
-                            observables: rule.observables
-                        });
+                _.each(self.formData.organisations, function(org) {
+                    shares.push({
+                        organisationName: org,
+                        profile: self.formData.profile,
+                        tasks: self.formData.tasks,
+                        observables: self.formData.observables
                     });
-
                 });
 
                 $uibModalInstance.close(shares);

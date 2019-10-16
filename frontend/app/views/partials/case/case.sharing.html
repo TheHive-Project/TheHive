@@ -2,7 +2,7 @@
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group" if-permission="manageCase" allowed="{{userPermissions}}">
-                <button class="btn btn-sm btn-primary" ng-click="$vm.shareCase()">
+                <button class="btn btn-sm btn-primary" ng-click="$vm.shareCase()" ng-disabled="!$vm.enableAddButton">
                     <i class="fa fa-plus"></i>
                     Add share
                 </button>
@@ -29,31 +29,5 @@
             profiles="$vm.profiles"
             on-delete="$vm.removeShare(id)"
             ></sharing-list>
-
-        <!-- <div>
-            <table class="table table-stripped">
-                <thead>
-
-                    <th>Organisation</th>
-                    <th width="250">Profile</th>
-                    <th width="160">Shared At</th>
-                    <th width="160">Actions</th>
-                </thead>
-                <tbody>
-                    <tr ng-repeat="share in $vm.shares | orderBy:'organisationName'">
-
-                        <td>{{share.organisationName}}</td>
-                        <td>
-                            <updatable-select options="$vm.profiles" value="share.profileName" on-update="$vm.updateShareProfile(share._id, newValue)"></updatable-select>
-                        </td>
-                        <td>{{share.createdAt | shortDate}}</td>
-                        <td>
-                            <span class="clickable mr-xs text-danger" ng-click="$vm.removeShare(share._id)">
-                                <i class="fa fa-trash"></i> Delete</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div> -->
     </div>
 </div>
