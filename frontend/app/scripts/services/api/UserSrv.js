@@ -157,35 +157,42 @@
                 //         return $q.reject(err);
                 //     });
 
-                return QuerySrv.query('v1', [{
+                var operations = [{
                         '_name': 'getOrganisation',
                         'idOrName': organisation
                     },
                     {
                         '_name': 'users'
-                    },
-                    {
-                        '_name': 'filter', '_is': query || {}
-                    },
-                    {
-                        '_name': 'toList'
                     }
-                ]).then(function(response) {
-                    return $q.resolve(response.data.result);
+                ];
+
+                if (query) {
+                    query._name = 'filter';
+
+                    operations.push(query);
+                }
+
+                operations.push({
+                    '_name': 'toList'
                 });
+
+                return QuerySrv.query('v1', operations)
+                    .then(function(response) {
+                        return $q.resolve(response.data.result);
+                    });
             };
 
-            this.autoComplete = function(query) {
-                return this.list({
-                        _and: [{
-                            status: 'Ok'
-                        }]
+            this.autoComplete = function(organisation, query) {
+                return this.list(organisation, {
+                        _is: {
+                            locked: false
+                        }
                     })
                     .then(function(data) {
                         return _.map(data, function(user) {
                             return {
                                 label: user.name,
-                                text: user.id
+                                text: user.login
                             };
                         });
                     })

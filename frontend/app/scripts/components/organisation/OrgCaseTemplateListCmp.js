@@ -176,9 +176,7 @@
                                 return _.extend({}, task);
                             },
                             users: function() {
-                                console.log(self.currentUser.organisation);
-
-                                return UserSrv.list(self.currentUser.organisation, { locked: false });
+                                return UserSrv.list(self.currentUser.organisation, {_is: { locked: false }});
                             },
                             groups: function() {
                                 var existingGroups = _.uniq(_.pluck(self.template.tasks, 'group').sort());

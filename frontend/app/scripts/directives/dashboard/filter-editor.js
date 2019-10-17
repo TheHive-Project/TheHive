@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('filterEditor', function($q, UserSrv) {
+    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -34,7 +34,10 @@
                     var promise = null;
 
                     if(field.type === 'user') {
-                        promise = UserSrv.autoComplete(query);
+                        promise = AuthenticationSrv.current()
+                            .then(function(user) {
+                                return UserSrv.autoComplete(user.organisation, query);
+                            });
                     } else if (field.values.length > 0) {
                         promise = $q.resolve(
                             _.map(field.values, function(item, index) {

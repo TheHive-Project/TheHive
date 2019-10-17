@@ -38,52 +38,52 @@
             field: 'status'
         });
 
-        $scope.$watch('$vm.list.pageSize', function (newValue) {
+        $scope.$watch('$vm.list.pageSize', function(newValue) {
             self.uiSrv.setPageSize(newValue);
         });
 
-        this.toggleStats = function () {
+        this.toggleStats = function() {
             this.uiSrv.toggleStats();
         };
 
-        this.toggleFilters = function () {
+        this.toggleFilters = function() {
             this.uiSrv.toggleFilters();
         };
 
-        this.filter = function () {
+        this.filter = function() {
             this.uiSrv.filter().then(this.applyFilters);
         };
 
-        this.applyFilters = function () {
+        this.applyFilters = function() {
             self.searchForm.searchQuery = self.uiSrv.buildQuery();
 
-            if(self.lastQuery !== self.searchForm.searchQuery) {
+            if (self.lastQuery !== self.searchForm.searchQuery) {
                 self.lastQuery = self.searchForm.searchQuery;
                 self.search();
             }
 
         };
 
-        this.clearFilters = function () {
+        this.clearFilters = function() {
             this.uiSrv.clearFilters().then(this.applyFilters);
         };
 
-        this.addFilter = function (field, value) {
+        this.addFilter = function(field, value) {
             this.uiSrv.addFilter(field, value).then(this.applyFilters);
         };
 
-        this.removeFilter = function (field) {
+        this.removeFilter = function(field) {
             this.uiSrv.removeFilter(field).then(this.applyFilters);
         };
 
-        this.search = function () {
+        this.search = function() {
             this.list.filter = {
                 _string: this.searchForm.searchQuery
             };
 
             this.list.update();
         };
-        this.addFilterValue = function (field, value) {
+        this.addFilterValue = function(field, value) {
             var filterDef = this.uiSrv.filterDefs[field];
             var filter = this.uiSrv.activeFilters[field];
             var date;
@@ -132,9 +132,12 @@
         };
 
         this.getStatuses = function() {
-            return $q.resolve([
-                {text: 'Open'},
-                {text: 'Resolved'}
+            return $q.resolve([{
+                    text: 'Open'
+                },
+                {
+                    text: 'Resolved'
+                }
             ]);
         };
 
@@ -142,7 +145,9 @@
             var defer = $q.defer();
 
             $q.resolve(_.map(Severity.keys, function(value, key) {
-                return {text: key};
+                return {
+                    text: key
+                };
             })).then(function(response) {
                 var severities = [];
 
@@ -162,17 +167,16 @@
         };
 
         this.getUsers = function(query) {
-            return UserSrv.list({
-                _and: [
-                    {
-                        status: 'Ok'
-                    }
-                ]
+            var currentUser = AuthenticationSrv.currentUser;
+            return UserSrv.list(currentUser.organisation, {
+                _is: {
+                    locked: false
+                }
             }).then(function(data) {
                 return _.map(data, function(user) {
                     return {
                         label: user.name,
-                        text: user.id
+                        text: user.login
                     };
                 });
             }).then(function(users) {
@@ -187,7 +191,7 @@
 
         this.filterMyCases = function() {
             this.uiSrv.clearFilters()
-                .then(function(){
+                .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.uiSrv.activeFilters.owner = {
                         value: [{
@@ -201,7 +205,7 @@
 
         this.filterMyOpenCases = function() {
             this.uiSrv.clearFilters()
-                .then(function(){
+                .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.uiSrv.activeFilters.owner = {
                         value: [{
@@ -216,7 +220,7 @@
 
         this.filterByStatus = function(status) {
             this.uiSrv.clearFilters()
-                .then(function(){
+                .then(function() {
                     self.addFilterValue('status', status);
                 });
         };
@@ -236,30 +240,30 @@
         };
 
         this.getCaseResponders = function(caseId, force) {
-            if(!force && this.caseResponders !== null) {
-               return;
+            if (!force && this.caseResponders !== null) {
+                return;
             }
 
             this.caseResponders = null;
             CortexSrv.getResponders('case', caseId)
-              .then(function(responders) {
-                  self.caseResponders = responders;
-              })
-              .catch(function(err) {
-                  NotificationSrv.error('CaseList', err.data, err.status);
-              });
+                .then(function(responders) {
+                    self.caseResponders = responders;
+                })
+                .catch(function(err) {
+                    NotificationSrv.error('CaseList', err.data, err.status);
+                });
         };
 
         this.runResponder = function(responderId, responderName, caze) {
             CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
-              .then(function(response) {
-                  NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
-              })
-              .catch(function(response) {
-                  if(response && !_.isString(response)) {
-                      NotificationSrv.error('CaseList', response.data, response.status);
-                  }
-              });
+                .then(function(response) {
+                    NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
+                })
+                .catch(function(response) {
+                    if (response && !_.isString(response)) {
+                        NotificationSrv.error('CaseList', response.data, response.status);
+                    }
+                });
         };
 
     }

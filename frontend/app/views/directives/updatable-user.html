@@ -10,13 +10,13 @@
 </span>
 <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
     <span class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
-        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">            
+        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
             <user-info value="value" field="name"></user-info>
             <span class="caret"></span>
         </button>
         <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
             <li ng-repeat="user in userList.allValues">
-                <a ng-click="update(user.id)">{{user.name}}</a>
+                <a ng-click="update(user.login)">{{user.name}}</a>
             </li>
         </ul>
     </span>
