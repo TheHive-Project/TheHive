@@ -16,98 +16,41 @@
                 delete: false,
                 selectAll: false
             };
-            self.filtering = new FilteringSrv('alert-section', {
-                defaults: {
-                    showFilters: false,
-                    showStats: false,
-                    pageSize: 15,
-                    sort: ['-date']
-                },
-                defaultFilter: {
-                    status: {
-                        field: 'status',
-                        label: 'Status',
-                        value: [{
-                            text: 'New'
-                        }, {
-                            text: 'Updated'
-                        }],
-                        filter: '(status:"New" OR status:"Updated")'
-                    }
-                },
-                filterDefs: {
-                    keyword: {
-                        field: 'keyword',
-                        type: 'string',
-                        defaultValue: []
-                    },
-                    status: {
-                        field: 'status',
-                        type: 'list',
-                        defaultValue: [],
-                        label: 'Status'
-                    },
-                    tags: {
-                        field: 'tags',
-                        type: 'list',
-                        defaultValue: [],
-                        label: 'Tags'
-                    },
-                    source: {
-                        field: 'source',
-                        type: 'list',
-                        defaultValue: [],
-                        label: 'Source'
-                    },
-                    type: {
-                        field: 'type',
-                        type: 'list',
-                        defaultValue: [],
-                        label: 'Type'
-                    },
-                    severity: {
-                        field: 'severity',
-                        type: 'list',
-                        defaultValue: [],
-                        label: 'Severity',
-                        convert: function(value) {
-                            // Convert the text value to its numeric representation
-                            return Severity.keys[value];
-                        }
-                    },
-                    title: {
-                        field: 'title',
-                        type: 'string',
-                        defaultValue: '',
-                        label: 'Title'
-                    },
-                    sourceRef: {
-                        field: 'sourceRef',
-                        type: 'string',
-                        defaultValue: '',
-                        label: 'Reference'
-                    },
-                    date: {
-                        field: 'date',
-                        type: 'date',
-                        defaultValue: {
-                            from: null,
-                            to: null
-                        },
-                        label: 'Date'
-                    }
-                }
-            });
-            self.filtering.initContext('list');
-            self.searchForm = {
-                searchQuery: self.filtering.buildQuery() || ''
-            };
+
             self.lastSearch = null;
             self.responders = null;
 
-            $scope.$watch('$vm.list.pageSize', function (newValue) {
-                self.filtering.setPageSize(newValue);
-            });
+            this.$onInit = function() {
+                self.filtering = new FilteringSrv('alert', 'alert.list', {
+                    defaults: {
+                        showFilters: false,
+                        showStats: false,
+                        pageSize: 15,
+                        sort: ['-date']
+                    },
+                    defaultFilter: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'New',
+                                label: 'New'
+                            }, {
+                                text: 'Updated',
+                                label: 'Updated'
+                            }]
+                        }
+                    }]
+                });
+                self.filtering.initContext('list')
+                    .then(function() {
+                        self.load();
+
+                        $scope.$watch('$vm.list.pageSize', function (newValue) {
+                            self.filtering.setPageSize(newValue);
+                        });
+                    });
+            };
 
             this.toggleStats = function () {
                 this.filtering.toggleStats();
@@ -268,9 +211,7 @@
             self.load = function() {
                 var config = {
                     scope: $scope,
-                    filter: self.searchForm.searchQuery !== '' ? {
-                        _string: self.searchForm.searchQuery
-                    } : '',
+                    filter: this.filtering.buildQuery(),
                     loadAll: false,
                     sort: self.filtering.context.sort,
                     pageSize: self.filtering.context.pageSize,
@@ -441,33 +382,32 @@
                 self.filtering.filter().then(this.applyFilters);
             };
 
-            this.applyFilters = function () {
-                self.searchForm.searchQuery = self.filtering.buildQuery();
-
-                if(self.lastSearch !== self.searchForm.searchQuery) {
-                    self.lastSearch = self.searchForm.searchQuery;
-                    self.search();
-                }
-            };
+            // this.applyFilters = function () {
+            //     self.searchForm.searchQuery = self.filtering.buildQuery();
+            //
+            //     if(self.lastSearch !== self.searchForm.searchQuery) {
+            //         self.lastSearch = self.searchForm.searchQuery;
+            //         self.search();
+            //     }
+            // };
 
             this.clearFilters = function () {
-                self.filtering.clearFilters().then(this.applyFilters);
+                this.filtering.clearFilters()
+                    .then(self.search);
             };
 
             this.addFilter = function (field, value) {
                 self.filtering.addFilter(field, value).then(this.applyFilters);
             };
 
-            this.removeFilter = function (field) {
-                self.filtering.removeFilter(field).then(this.applyFilters);
+            this.removeFilter = function (index) {
+                self.filtering.removeFilter(index)
+                    .then(self.search);
             };
 
             this.search = function () {
-                this.list.filter = {
-                    _string: this.searchForm.searchQuery
-                };
-
-                this.list.update();
+                self.load();
+                self.filtering.storeContext();
             };
             this.addFilterValue = function (field, value) {
                 var filterDef = self.filtering.filterDefs[field];
@@ -557,7 +497,7 @@
                 self.filtering.setSort(sort);
             };
 
-            this.getSeverities = self.filtering.getSeverities;
+            //this.getSeverities = self.filtering.getSeverities;
 
             this.getStatuses = function(query) {
                 return AlertingSrv.statuses(query);
@@ -574,7 +514,5 @@
             this.getTags = function(query) {
                 return TagSrv.fromAlerts(query);
             };
-
-            self.load();
         });
 })();

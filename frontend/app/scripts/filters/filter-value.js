@@ -16,6 +16,8 @@
                 }
 
                 return result.join(', ');
+            } else if(angular.isObject(value) && value.list !== undefined) {
+                return _.pluck(value.list, 'label').join(', ');
             }
 
             return value;

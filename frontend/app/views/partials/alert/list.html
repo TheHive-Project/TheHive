@@ -16,7 +16,7 @@
                 <div class="row mt-s">
                     <div class="col-md-12 clearfix">
                         <div class="active-filters">
-                            <ul ng-if="$vm.filtering.countFilters() > 0">
+                            <!-- <ul ng-if="$vm.filtering.countFilters() > 0">
                                 <li>{{$vm.filtering.countFilters()}}
                                     filter(s) applied:
                                 </li>
@@ -25,6 +25,22 @@
                                         <strong>{{filter.label}}:</strong>
                                         {{filter.value | filterValue}}</span>
                                     <a href ng-click="$vm.removeFilter(field)">
+                                        <span class="filter-close fa fa-times text-danger"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
+                                </li>
+                            </ul> -->
+                            <ul ng-if="$vm.uiSrv.filters.length > 0">
+                                <li>{{$vm.uiSrv.filters.length}}
+                                    filter(s) applied:
+                                </li>
+                                <li class="filter-item" ng-repeat="(field, filter) in $vm.uiSrv.filters track by $index">
+                                    <span>
+                                        <strong>{{filter.field}}:</strong>
+                                        {{filter.value | filterValue}}</span>
+                                    <a href ng-click="$vm.uiSrv.removeFilter($index)">
                                         <span class="filter-close fa fa-times text-danger"></span>
                                     </a>
                                 </li>
