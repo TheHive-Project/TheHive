@@ -201,7 +201,6 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 } else {
                     NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
                 }
-                console.log(response[0]);
             }, function(err) {
                 NotificationSrv.error('Case search', err.data, err.status);
             });

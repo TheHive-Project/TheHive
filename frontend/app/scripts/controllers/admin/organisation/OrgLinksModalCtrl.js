@@ -39,8 +39,6 @@
             };
 
             self.toggleLinkAll = function() {
-                console.log(self.allSelected);
-
                 _.each(this.organisations, function(item){
                     item.linked = self.allSelected;
                 });

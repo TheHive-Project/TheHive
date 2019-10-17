@@ -45,9 +45,10 @@
                     scope.control.removeAllFiles = function() {
                         dropzone.removeAllFiles();
                     };
-                } else {
-                    console.log('Don\'t add removeAllFiles function as control object is not defined');
                 }
+                //  else {
+                //     console.log('Don\'t add removeAllFiles function as control object is not defined');
+                // }
             },
             'templateUrl': 'views/directives/dropzone.html',
             'scope': {

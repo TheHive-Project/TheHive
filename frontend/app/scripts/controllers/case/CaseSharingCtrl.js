@@ -42,9 +42,6 @@
                 var organisationNames = _.pluck(self.organisations, 'name');
                 var shareNames = _.pluck(self.shares, 'organisationName');
 
-                console.log(organisationNames);
-                console.log(shareNames);
-
                 return _.filter(organisationNames, function(name) {
                     return shareNames.indexOf(name) === -1;
                 });
