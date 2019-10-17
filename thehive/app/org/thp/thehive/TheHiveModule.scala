@@ -7,6 +7,7 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.services.HadoopStorageSrv
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
@@ -66,6 +67,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     configuration.get[String]("storage.provider") match {
       case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
       case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+      case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
 //      case "orientdb" => bind(classOf[StorageSrv]).to(classOf[OrientDatabaseStorageSrv])
     }
 
