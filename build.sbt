@@ -63,6 +63,7 @@ lazy val thehive = (project in file("."))
   .settings(
     name := "thehive",
     crossScalaVersions := Nil,
+    PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
     Compile / run := {
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
