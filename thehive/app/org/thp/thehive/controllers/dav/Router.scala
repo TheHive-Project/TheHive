@@ -1,5 +1,16 @@
 package org.thp.thehive.controllers.dav
 
+import scala.util.Success
+import scala.util.matching.Regex
+import scala.xml.{Node, NodeSeq}
+
+import play.api.Logger
+import play.api.http.{HttpEntity, Status, Writeable}
+import play.api.mvc._
+import play.api.routing.Router.Routes
+import play.api.routing.SimpleRouter
+import play.api.routing.sird._
+
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
@@ -7,18 +18,6 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.StorageSrv
 import org.thp.thehive.services.AttachmentSrv
-import play.api.http.{HttpEntity, Status, Writeable}
-import play.api.mvc._
-import play.api.routing.Router.Routes
-import play.api.routing.SimpleRouter
-import play.api.routing.sird._
-import scala.util.Success
-import scala.util.matching.Regex
-import scala.xml.{Node, NodeSeq}
-
-import play.api.Logger
-
-import org.thp.thehive.controllers.HttpHeaderParameterEncoding
 
 @Singleton
 class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv, storageSrv: StorageSrv) extends SimpleRouter {

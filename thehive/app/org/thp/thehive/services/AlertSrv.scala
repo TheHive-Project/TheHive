@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.{EdgeSrv, _}
+import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
@@ -221,6 +221,7 @@ class AlertSrv @Inject()(
     for {
       alert <- getOrFail(alertId)
       case0 <- caseSrv.getOrFail(caseId)
+      _     <- caseSrv.addTags(case0, get(alert).tags.toList.map(_.toString).toSet)
       description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
       c <- caseSrv.get(caseId).update("description" -> description)
       _ <- importObservables(alert, case0)

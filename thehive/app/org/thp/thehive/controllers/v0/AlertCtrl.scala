@@ -9,7 +9,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph._
+import org.thp.scalligraph.{RichSeq, _}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -23,7 +23,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class AlertCtrl @Inject()(
-    entryPoint: EntryPoint,
+    entrypoint: EntryPoint,
     db: Database,
     properties: Properties,
     alertSrv: AlertSrv,
@@ -63,7 +63,7 @@ class AlertCtrl @Inject()(
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create alert")
+    entrypoint("create alert")
       .extract("alert", FieldsParser[InputAlert])
       .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .extract("observables", FieldsParser[InputObservable].sequence.on("artifacts"))
@@ -91,7 +91,7 @@ class AlertCtrl @Inject()(
       }
 
   def get(alertId: String): Action[AnyContent] =
-    entryPoint("get alert")
+    entrypoint("get alert")
       .authRoTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
@@ -106,7 +106,7 @@ class AlertCtrl @Inject()(
       }
 
   def update(alertId: String): Action[AnyContent] =
-    entryPoint("update alert")
+    entrypoint("update alert")
       .extract("alert", FieldsParser.update("alert", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
@@ -121,7 +121,7 @@ class AlertCtrl @Inject()(
       }
 
   def delete(alertId: String): Action[AnyContent] =
-    entryPoint("delete alert")
+    entrypoint("delete alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           alert <- alertSrv
@@ -133,7 +133,7 @@ class AlertCtrl @Inject()(
       }
 
   def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
-    entryPoint("merge alert with case")
+    entrypoint("merge alert with case")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           _ <- alertSrv
@@ -145,8 +145,21 @@ class AlertCtrl @Inject()(
         } yield Results.Ok(richCase.toJson)
       }
 
+  def bulkMergeWithCase: Action[AnyContent] =
+    entrypoint("bulk merge with case")
+      .extract("caseId", FieldsParser.string.on("caseId"))
+      .extract("alertIds", FieldsParser.string.sequence.on("alertIds"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val alertIds: Seq[String] = request.body("alertIds")
+        val caseId: String        = request.body("caseId")
+        for {
+          _        <- alertIds.toTry(alertSrv.mergeInCase(_, caseId))
+          richCase <- caseSrv.get(caseId).richCase.getOrFail()
+        } yield Results.Ok(richCase.toJson)
+      }
+
   def markAsRead(alertId: String): Action[AnyContent] =
-    entryPoint("mark alert as read")
+    entrypoint("mark alert as read")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
@@ -159,7 +172,7 @@ class AlertCtrl @Inject()(
       }
 
   def markAsUnread(alertId: String): Action[AnyContent] =
-    entryPoint("mark alert as unread")
+    entrypoint("mark alert as unread")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
@@ -172,7 +185,7 @@ class AlertCtrl @Inject()(
       }
 
   def createCase(alertId: String): Action[AnyContent] =
-    entryPoint("create case from alert")
+    entrypoint("create case from alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           (alert, organisation) <- alertSrv
@@ -185,7 +198,7 @@ class AlertCtrl @Inject()(
       }
 
   def followAlert(alertId: String): Action[AnyContent] =
-    entryPoint("follow alert")
+    entrypoint("follow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
@@ -198,7 +211,7 @@ class AlertCtrl @Inject()(
       }
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
-    entryPoint("unfollow alert")
+    entrypoint("unfollow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .get(alertId)
