@@ -11,7 +11,7 @@ import play.api.Configuration
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
-import gremlin.scala.{Graph, GremlinScala, Vertex}
+import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -50,6 +50,10 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
+  override def get(idOrAttachmentId: String)(implicit graph: Graph): AttachmentSteps =
+    if (db.isValidId(idOrAttachmentId)) getByIds(idOrAttachmentId)
+    else initSteps.getByAttachmentId(idOrAttachmentId)
+
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
 
@@ -65,4 +69,6 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
 class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Attachment](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(newRaw)
   override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
+
+  def getByAttachmentId(attachmentId: String): AttachmentSteps = this.has(Key[String]("attachmentId"), P.eq(attachmentId))
 }

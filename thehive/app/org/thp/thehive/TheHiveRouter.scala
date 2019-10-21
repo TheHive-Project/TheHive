@@ -8,16 +8,22 @@ import play.api.{Environment, Logger, Mode}
 import _root_.controllers.{Assets, ExternalAssets}
 import com.google.inject.ProvidedBy
 import javax.inject.{Inject, Provider, Singleton}
-import org.thp.thehive.controllers.{v0, v1}
+import org.thp.thehive.controllers.{dav, v0, v1}
 
 @Singleton
-class TheHiveRouter @Inject()(routerV0: v0.Router, routerV1: v1.Router, assets: AssetGetter, actionBuilder: DefaultActionBuilder)
-    extends Provider[Router] {
+class TheHiveRouter @Inject()(
+    routerV0: v0.Router,
+    routerV1: v1.Router,
+    davRouter: dav.Router,
+    assets: AssetGetter,
+    actionBuilder: DefaultActionBuilder
+) extends Provider[Router] {
 
   lazy val logger = Logger(getClass)
   lazy val get: Router = routerV1.withPrefix("/api/v1/") orElse
     routerV0.withPrefix("/api/v0/") orElse
     routerV0.withPrefix("/api/") orElse // default version
+    davRouter.withPrefix("/fs/") orElse
     SimpleRouter {
       case GET(p"/")                                   => actionBuilder(Results.PermanentRedirect("/index.html"))
       case GET(p"/$file*") if !file.startsWith("api/") => assets.at(file)
