@@ -30,10 +30,10 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
   }
 
   override def routes: Routes = {
-    case OPTIONS(p"/$path*")                  => options()
-    case PROPFIND(p"/$path*")                 => dav(path)
+    case OPTIONS(_)                           => options()
+    case PROPFIND(request)                    => dav(request.path)
     case GET(p"/cases/$caseId/$attachmentId") => downloadFile(attachmentId)
-    case HEAD(p"/$path")                      => head(path)
+    case HEAD(request)                        => head(request.path)
     case _                                    => debug()
   }
 
@@ -98,7 +98,7 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
         Success(Results.MultiStatus(response))
       }
 
-  val rangeExtract: Regex = "^bytes=(\\d+)-(\\d+)$".r
+  val rangeExtract: Regex = "^bytes=(\\d+)-(\\d+)?$".r
 
   def downloadFile(id: String): Action[AnyContent] =
     entrypoint("download attachment")
@@ -106,19 +106,21 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
         attachmentSrv.getOrFail(id).map { attachment =>
           val range = request.headers.get("Range")
           range match {
-            case Some(rangeExtract(from, to)) =>
-              logger.debug(s"Download attachment $id with range $from-$to")
+            case Some(rangeExtract(from, maybeTo)) =>
+              logger.debug(s"Download attachment $id with range $from-$maybeTo")
               val is = storageSrv.loadBinary(id)
               is.skip(from.toLong)
-              val source = StreamConverters.fromInputStream(() => is)
+              val to            = Option(maybeTo).fold(attachment.size)(_.toLong)
+              val source        = StreamConverters.fromInputStream(() => is)
+              val contentLength = to - from.toLong
               Result(
                 header = ResponseHeader(Status.PARTIAL_CONTENT, Map("Content-Range" -> s"bytes $from-$to/${attachment.size}")),
-                body = HttpEntity.Streamed(source.take(to.toLong - from.toLong), Some(attachment.size), Some(attachment.contentType))
+                body = HttpEntity.Streamed(source.take(contentLength), Some(contentLength), Some(attachment.contentType))
               )
             case _ =>
               logger.debug(s"Download attachment $id")
               Result(
-                header = ResponseHeader(Status.OK, Map("Cache-Control" -> "immutable")),
+                header = ResponseHeader(Status.OK, Map("Cache-Control" -> "immutable", "ETag" -> s""""$id"""")),
                 body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(id)), None, None)
               )
           }
@@ -137,7 +139,7 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
               Success(
                 Results
                   .Ok(EmptyResponse())(EmptyResponse.writeable(a.contentType))
-                  .withHeaders("Accept-Ranges" -> "Bytes", "Content-Length" -> a.size.toString)
+                  .withHeaders("Accept-Ranges" -> "Bytes", "ETag" -> s""""${a.attachmentId}"""", "Content-Length" -> a.size.toString)
               )
             case _ => Success(Results.Ok(EmptyResponse())(EmptyResponse.writeable("httpd/unix-directory")))
           }
