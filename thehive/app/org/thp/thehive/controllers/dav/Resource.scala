@@ -43,8 +43,8 @@ case class StaticResource(url: String) extends Resource {
   override def hasChildren: Boolean = true
 }
 
-case class EntityResource(entity: Entity, emptyId: Boolean) extends Resource {
-  override def url: String          = if (emptyId) "" else entity._id
+case class EntityResource[E <: Entity](entity: E, id: String) extends Resource {
+  override def url: String          = id
   override def lastModified: Date   = entity._updatedAt.getOrElse(entity._createdAt)
   override def contentLength: Long  = 0
   override def hasChildren: Boolean = true
