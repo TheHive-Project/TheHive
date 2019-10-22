@@ -9,8 +9,8 @@
 
             $uibModalStack.dismissAll();
 
-            $scope.ssoLogin = function (code) {
-                AuthenticationSrv.ssoLogin(code)
+            $scope.ssoLogin = function (code, state) {
+                AuthenticationSrv.ssoLogin(code, state)
                     .then(function(response) {
                         var redirectLocation = response.headers().location;
                         if(angular.isDefined(redirectLocation)) {
@@ -50,8 +50,9 @@
             };
 
             var code = UtilsSrv.extractQueryParam('code', UrlParser('query', $location.absUrl()));
-            if(angular.isDefined(code) || $stateParams.autoLogin) {
-                $scope.ssoLogin(code);
+            var state = UtilsSrv.extractQueryParam('state', UrlParser('query', $location.absUrl()));
+            if((angular.isDefined(code) && angular.isDefined(state)) || $stateParams.autoLogin) {
+                $scope.ssoLogin(code, state);
             }
         });
 })();
