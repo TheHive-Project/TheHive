@@ -5,8 +5,8 @@ import java.util.Date
 import play.api.libs.json._
 
 import org.scalactic.Accumulation._
-import org.scalactic.{Bad, Good, One}
-import org.thp.scalligraph.InvalidFormatAttributeError
+import org.scalactic.{Bad, Every, Good, One, Or}
+import org.thp.scalligraph.{AttributeError, InvalidFormatAttributeError}
 import org.thp.scalligraph.controllers.{FNull, _}
 
 case class OutputCustomField(
@@ -27,6 +27,46 @@ case class InputCustomFieldValue(name: String, value: Option[Any])
 
 object InputCustomFieldValue {
 
+  def getStringCustomField(name: String, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
+    obj.get("string") match {
+      case FUndefined     => None
+      case FNull          => Some(Good(InputCustomFieldValue(name, None)))
+      case FString(value) => Some(Good(InputCustomFieldValue(name, Some(value))))
+      case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.string", "string", Set.empty, other))))
+    }
+
+  def getIntegerCustomField(name: String, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
+    obj.get("integer") match {
+      case FUndefined     => None
+      case FNull          => Some(Good(InputCustomFieldValue(name, None)))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toLong))))
+      case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.integer", "integer", Set.empty, other))))
+    }
+
+  def getFloatCustomField(name: String, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
+    obj.get("float") match {
+      case FUndefined     => None
+      case FNull          => Some(Good(InputCustomFieldValue(name, None)))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toFloat))))
+      case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.float", "float", Set.empty, other))))
+    }
+
+  def getDateCustomField(name: String, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
+    obj.get("date") match {
+      case FUndefined     => None
+      case FNull          => Some(Good(InputCustomFieldValue(name, None)))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(new Date(value.toLong)))))
+      case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.date", "date", Set.empty, other))))
+    }
+
+  def getBooleanCustomField(name: String, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
+    obj.get("boolean") match {
+      case FUndefined      => None
+      case FNull           => Some(Good(InputCustomFieldValue(name, None)))
+      case FBoolean(value) => Some(Good(InputCustomFieldValue(name, Some(value))))
+      case other           => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.boolean", "boolean", Set.empty, other))))
+    }
+
   val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
     case (_, FObject(fields)) =>
       fields
@@ -37,6 +77,13 @@ object InputCustomFieldValue {
           case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value)))
           case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value)))
           case (name, FNull)            => Good(InputCustomFieldValue(name, None))
+          case (name, obj: FObject) =>
+            getStringCustomField(name, obj) orElse
+              getIntegerCustomField(name, obj) orElse
+              getFloatCustomField(name, obj) orElse
+              getDateCustomField(name, obj) orElse
+              getBooleanCustomField(name, obj) getOrElse
+              Good(InputCustomFieldValue(name, None))
           case (name, other) =>
             Bad(
               One(

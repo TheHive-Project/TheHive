@@ -41,7 +41,7 @@ object Conversion {
       .transform
   )
 
-  implicit val jobOuput: Outputer.Aux[Job with Entity, OutputJob] = Outputer[Job with Entity, OutputJob](
+  implicit val jobOutput: Outputer.Aux[Job with Entity, OutputJob] = Outputer[Job with Entity, OutputJob](
     job =>
       job
         .asInstanceOf[Job]

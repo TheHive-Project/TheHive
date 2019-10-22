@@ -99,7 +99,6 @@ class CaseTemplateSrv @Inject()(
       _ = get(caseTemplate).removeTags(tagsToRemove)
       _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags.map(_.toString)))
     } yield ()
-
   }
 
   def updateTagNames(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
@@ -143,6 +142,21 @@ class CaseTemplateSrv @Inject()(
   def getCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
     get(caseTemplate).customFields(customFieldName).richCustomField.headOption()
 
+  def updateCustomField(
+      caseTemplate: CaseTemplate with Entity,
+      customFieldValues: Seq[(CustomField, Any)]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val customFieldNames = customFieldValues.map(_._1.name)
+    get(caseTemplate)
+      .customFields
+      .richCustomField
+      .toIterator
+      .filterNot(rcf => customFieldNames.contains(rcf.name))
+      .foreach(rcf => get(caseTemplate).customFields(rcf.name).remove())
+    customFieldValues
+      .toTry { case (cf, v) => setOrCreateCustomField(caseTemplate, cf.name, Some(v)) }
+      .map(_ => ())
+  }
 }
 
 @EntitySteps[CaseTemplate]

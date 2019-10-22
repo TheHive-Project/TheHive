@@ -163,6 +163,22 @@ class AlertSrv @Inject()(
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
     get(alert).customFields(customFieldName).richCustomField.headOption()
 
+  def updateCustomField(
+      alert: Alert with Entity,
+      customFieldValues: Seq[(CustomField, Any)]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val customFieldNames = customFieldValues.map(_._1.name)
+    get(alert)
+      .customFields
+      .richCustomField
+      .toIterator
+      .filterNot(rcf => customFieldNames.contains(rcf.name))
+      .foreach(rcf => get(alert).customFields(rcf.name).remove())
+    customFieldValues
+      .toTry { case (cf, v) => setOrCreateCustomField(alert, cf.name, Some(v)) }
+      .map(_ => ())
+  }
+
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update("read" -> false)

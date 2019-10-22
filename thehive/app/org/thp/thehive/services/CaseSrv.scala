@@ -192,6 +192,22 @@ class CaseSrv @Inject()(
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
     get(`case`).customFields(customFieldName).richCustomField.headOption()
 
+  def updateCustomField(
+      `case`: Case with Entity,
+      customFieldValues: Seq[(CustomField, Any)]
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val customFieldNames = customFieldValues.map(_._1.name)
+    get(`case`)
+      .customFields
+      .richCustomField
+      .toIterator
+      .filterNot(rcf => customFieldNames.contains(rcf.name))
+      .foreach(rcf => get(`case`).customFields(rcf.name).remove())
+    customFieldValues
+      .toTry { case (cf, v) => setOrCreateCustomField(`case`, cf.name, Some(v)) }
+      .map(_ => ())
+  }
+
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
   def setImpactStatus(

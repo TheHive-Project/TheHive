@@ -219,7 +219,7 @@ object Conversion {
 
   implicit val caseTemplateOutput: Outputer.Aux[RichCaseTemplate, OutputCaseTemplate] = Outputer[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
-      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
       .withFieldRenamed(_._id, _.id)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldRenamed(_._updatedBy, _.updatedBy)
@@ -229,10 +229,11 @@ object Conversion {
       .withFieldConst(_._type, "caseTemplate")
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.tasks, _.tasks.map(t => RichTask(t, None).toOutput))
+      .withFieldConst(_.metrics, JsObject.empty)
       .transform
   )
 
-  implicit val richCustomFieldOuput: Outputer.Aux[RichCustomField, OutputCustomFieldValue] = Outputer[RichCustomField, OutputCustomFieldValue](
+  implicit val richCustomFieldOutput: Outputer.Aux[RichCustomField, OutputCustomFieldValue] = Outputer[RichCustomField, OutputCustomFieldValue](
     _.into[OutputCustomFieldValue]
       .withFieldComputed(_.value, _.value.map {
         case d: Date => d.getTime.toString
@@ -254,7 +255,7 @@ object Conversion {
         .transform
   }
 
-  implicit val customFieldOuput: Outputer.Aux[CustomField with Entity, OutputCustomField] = Outputer[CustomField with Entity, OutputCustomField](
+  implicit val customFieldOutput: Outputer.Aux[CustomField with Entity, OutputCustomField] = Outputer[CustomField with Entity, OutputCustomField](
     customField =>
       customField
         .asInstanceOf[CustomField]
@@ -331,7 +332,7 @@ object Conversion {
         .transform
   }
 
-  implicit val observableOuput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](
+  implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](
     _.into[OutputObservable]
       .withFieldConst(_._type, "case_artifact")
       .withFieldComputed(_.id, _.observable._id)
@@ -379,22 +380,23 @@ object Conversion {
         .transform
   }
 
-  implicit val organisationOuput: Outputer.Aux[Organisation with Entity, OutputOrganisation] = Outputer[Organisation with Entity, OutputOrganisation](
-    organisation =>
-      OutputOrganisation(
-        organisation.name,
-        organisation.description,
-        organisation._id,
-        organisation._id,
-        organisation._createdAt,
-        organisation._createdBy,
-        organisation._updatedAt,
-        organisation._updatedBy,
-        "organisation"
-      )
-  )
+  implicit val organisationOutput: Outputer.Aux[Organisation with Entity, OutputOrganisation] =
+    Outputer[Organisation with Entity, OutputOrganisation](
+      organisation =>
+        OutputOrganisation(
+          organisation.name,
+          organisation.description,
+          organisation._id,
+          organisation._id,
+          organisation._createdAt,
+          organisation._createdBy,
+          organisation._updatedAt,
+          organisation._updatedBy,
+          "organisation"
+        )
+    )
 
-  implicit val profileOuput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](
+  implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](
     profile =>
       profile
         .asInstanceOf[Profile]
@@ -470,7 +472,7 @@ object Conversion {
         .transform
   }
 
-  implicit val userOuput: Outputer.Aux[RichUser, OutputUser] = Outputer[RichUser, OutputUser](
+  implicit val userOutput: Outputer.Aux[RichUser, OutputUser] = Outputer[RichUser, OutputUser](
     _.into[OutputUser]
       .withFieldComputed(_.roles, u => permissions2Roles(u.permissions))
       .withFieldRenamed(_.login, _.id)
@@ -484,7 +486,7 @@ object Conversion {
       .transform
   )
 
-  val userWithKeyInfoOuput: Outputer.Aux[RichUser, OutputUser] =
+  val userWithKeyInfoOutput: Outputer.Aux[RichUser, OutputUser] =
     Outputer[RichUser, OutputUser](u => u.toOutput.copy(hasKey = Some(u.apikey.isDefined)))
 
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)

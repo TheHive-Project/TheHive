@@ -55,7 +55,7 @@ class CaseTemplateCtrl @Inject()(
         for {
           organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           tasks        = inputCaseTemplate.tasks.map(_.toTask)
-          customFields = inputCaseTemplate.customFieldValue.map(c => c.name -> c.value)
+          customFields = inputCaseTemplate.customFields.map(c => c.name -> c.value)
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }

@@ -174,8 +174,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def richUser(organisation: String): Traversal[RichUser, RichUser] =
-//    new Traversal[RichUser](
-//      raw
     this
       .project(
         _.apply(By[Vertex]())
@@ -186,7 +184,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           val profile = profiles.get(0).as[Profile]
           RichUser(user.as[User], profile.name, profile.permissions, organisation)
       }
-//    )
 
   def role = new RoleSteps(raw.outTo[UserRole])
 }

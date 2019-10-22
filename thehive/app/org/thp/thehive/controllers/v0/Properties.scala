@@ -7,13 +7,13 @@ import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{FPathElem, FString}
+import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
+import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
 import org.thp.thehive.services.{
   AlertSrv,
@@ -23,6 +23,7 @@ import org.thp.thehive.services.{
   CaseSteps,
   CaseTemplateSrv,
   CaseTemplateSteps,
+  CustomFieldSrv,
   CustomFieldSteps,
   DashboardSrv,
   DashboardSteps,
@@ -50,7 +51,8 @@ class Properties @Inject()(
     caseTemplateSrv: CaseTemplateSrv,
     taskSrv: TaskSrv,
     profileSrv: ProfileSrv,
-    roleSrv: RoleSrv
+    roleSrv: RoleSrv,
+    customFieldSrv: CustomFieldSrv
 ) {
 
   lazy val alert: List[PublicProperty[_, _]] =
@@ -102,6 +104,13 @@ class Properties @Inject()(
             c <- alertSrv.getOrFail(vertex)(graph)
             _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          for {
+            c   <- alertSrv.get(vertex)(graph).getOrFail()
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
+          } yield Json.obj("customFields" -> values)
+
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))
       .property("case", IdMapping)(_.select(_.`case`._id).readonly)
@@ -181,6 +190,12 @@ class Properties @Inject()(
             c <- caseSrv.getOrFail(vertex)(graph)
             _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          for {
+            c   <- caseSrv.get(vertex)(graph).getOrFail()
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
+          } yield Json.obj("customFields" -> values)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))
       .property("computed.handlingDurationInHours", UniMapping.long)(
@@ -220,14 +235,20 @@ class Properties @Inject()(
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
-        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+        case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFields(name).jsonValue.map(_._2)
+        case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- caseTemplateSrv.getOrFail(vertex)(graph)
             _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
+          } yield Json.obj(s"customFields.$name" -> value)
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          for {
+            c   <- caseTemplateSrv.get(vertex)(graph).getOrFail()
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
+          } yield Json.obj("customFields" -> values)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))
       .build

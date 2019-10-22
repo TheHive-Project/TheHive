@@ -19,7 +19,7 @@ case class InputCaseTemplate(
     summary: Option[String] = None,
     tasks: Seq[InputTask] = Nil,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil
+    customFields: Seq[InputCustomFieldValue] = Nil
 )
 
 object InputCaseTemplate {
@@ -30,24 +30,24 @@ case class OutputCaseTemplate(
     _id: String,
     id: String,
     createdBy: String,
-    updatedBy: Option[String] = None,
+    updatedBy: Option[String],
     createdAt: Date,
-    updatedAt: Option[Date] = None,
+    updatedAt: Option[Date],
     _type: String,
     name: String,
     displayName: String,
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int],
-    tags: Set[String] = Set.empty,
+    tags: Set[String],
     flag: Boolean,
     tlp: Option[Int],
     pap: Option[Int],
     summary: Option[String],
     tasks: Seq[OutputTask],
     status: String,
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
-    metrics: JsObject = JsObject.empty
+    customFields: JsObject,
+    metrics: JsObject
 )
 
 object OutputCaseTemplate {
