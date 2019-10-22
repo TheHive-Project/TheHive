@@ -38,10 +38,15 @@
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
                 value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-date>
 
-            <updatable-simple-text ng-switch-when="number"
+            <updatable-simple-text ng-switch-when="integer"
                 input-type="number"
                 on-update="updateField(getCustomFieldName(fieldDef), newValue)"
                 value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
+
+            <updatable-simple-text ng-switch-when="float"
+               input-type="number"
+               on-update="updateField(getCustomFieldName(fieldDef), newValue)"
+               value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
 
             <updatable-boolean ng-switch-when="boolean"
                 input-type="number"

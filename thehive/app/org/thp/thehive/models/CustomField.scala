@@ -29,7 +29,7 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
   override def order: Option[Int]            = db.getOptionProperty(edge, "order", UniMapping.int.optional)
   override def stringValue: Option[String]   = db.getOptionProperty(edge, "stringValue", UniMapping.string.optional)
   override def booleanValue: Option[Boolean] = db.getOptionProperty(edge, "booleanValue", UniMapping.boolean.optional)
-  override def integerValue: Option[Int]     = db.getOptionProperty(edge, "intValue", UniMapping.int.optional)
+  override def integerValue: Option[Int]     = db.getOptionProperty(edge, "integerValue", UniMapping.int.optional)
   override def floatValue: Option[Float]     = db.getOptionProperty(edge, "floatValue", UniMapping.float.optional)
   override def dateValue: Option[Date]       = db.getOptionProperty(edge, "dateValue", UniMapping.date.optional)
 
@@ -47,7 +47,7 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
     this
   }
   override def integerValue_=(value: Option[Int]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "intValue", value, UniMapping.int.optional)
+    db.setOptionProperty(edge, "integerValue", value, UniMapping.int.optional)
     this
   }
   override def floatValue_=(value: Option[Float]): CustomFieldValueEdge = {
