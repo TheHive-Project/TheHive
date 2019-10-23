@@ -67,7 +67,7 @@ class CaseCtrl @Inject()(
     entryPoint("create case")
       .extract("case", FieldsParser[InputCase])
       .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
-      .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
+      .extract("caseTemplate", FieldsParser[String].optional.on("template"))
       .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
