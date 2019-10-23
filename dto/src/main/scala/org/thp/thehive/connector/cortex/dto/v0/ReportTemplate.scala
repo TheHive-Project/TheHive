@@ -12,11 +12,11 @@ object OutputAnalyzerTemplate {
   implicit val format: OFormat[OutputAnalyzerTemplate] = Json.format[OutputAnalyzerTemplate]
 }
 
-//case class InputAnalyzerTemplate(
-//    analyzerId: String,
-//    content: String
-//)
-//
-//object InputAnalyzerTemplate {
-//  implicit val format: OFormat[InputAnalyzerTemplate] = Json.format[InputAnalyzerTemplate]
-//}
+case class InputAnalyzerTemplate(
+    analyzerId: String,
+    content: String
+)
+
+object InputAnalyzerTemplate {
+  implicit val format: OFormat[InputAnalyzerTemplate] = Json.format[InputAnalyzerTemplate]
+}

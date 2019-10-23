@@ -15,6 +15,7 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
+import org.thp.thehive.connector.cortex.dto.v0.InputAnalyzerTemplate
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.connector.cortex.services.{AnalyzerTemplateSrv, AnalyzerTemplateSteps}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -73,11 +74,10 @@ class AnalyzerTemplateCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create template")
-      .extract("analyzerId", FieldsParser.string.on("analyzerId"))
-      .extract("content", FieldsParser.string.on("content"))
+      .extract("analyzerTemplate", FieldsParser[InputAnalyzerTemplate])
       .authPermittedTransaction(db, Set(Permissions.manageAnalyzerTemplate)) { implicit request => implicit graph =>
-        val analyzerTemplate = AnalyzerTemplate(request.body("analyzerId"), request.body("content"))
-        analyzerTemplateSrv.create(analyzerTemplate).map { createdAnalyzerTemplate =>
+        val analyzerTemplate: InputAnalyzerTemplate = request.body("analyzerTemplate")
+        analyzerTemplateSrv.create(analyzerTemplate.toAnalyzerTemplate).map { createdAnalyzerTemplate =>
           Results.Created(createdAnalyzerTemplate.toJson)
         }
       }

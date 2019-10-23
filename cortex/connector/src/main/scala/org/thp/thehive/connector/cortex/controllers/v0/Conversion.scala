@@ -8,7 +8,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.OutputCortexWorker
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.connector.cortex.dto.v0.{InputAction, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
+import org.thp.thehive.connector.cortex.dto.v0.{InputAction, InputAnalyzerTemplate, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 
@@ -65,6 +65,15 @@ object Conversion {
         .withFieldComputed(_.content, _.content)
         .transform
     )
+
+  implicit class InputAnalyzerTemplateOps(inputAnalyzerTemplate: InputAnalyzerTemplate) {
+
+    def toAnalyzerTemplate: AnalyzerTemplate =
+      inputAnalyzerTemplate
+        .into[AnalyzerTemplate]
+        .withFieldRenamed(_.analyzerId, _.workerId)
+        .transform
+  }
 
   implicit val workerOutput: Outputer.Aux[(OutputCortexWorker, Seq[String]), OutputWorker] =
     Outputer[(OutputCortexWorker, Seq[String]), OutputWorker](

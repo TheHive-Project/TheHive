@@ -4,13 +4,13 @@ import java.util.zip.{ZipEntry, ZipFile}
 
 import scala.collection.JavaConverters._
 import scala.io.Source
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 import play.api.libs.json.{JsObject, Json}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -31,7 +31,7 @@ class AnalyzerTemplateSrv @Inject()(
 
   override def get(idOrName: String)(implicit graph: Graph): AnalyzerTemplateSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+    else initSteps.getByAnalyzerId(idOrName)
 
   def readZipEntry(file: ZipFile, entry: ZipEntry): Try[String] =
     Try {
@@ -41,10 +41,13 @@ class AnalyzerTemplateSrv @Inject()(
     }
 
   def create(analyzerTemplate: AnalyzerTemplate)(implicit graph: Graph, authContext: AuthContext): Try[AnalyzerTemplate with Entity] =
-    for {
-      created <- createEntity(analyzerTemplate)
-      _       <- auditSrv.analyzerTemplate.create(created, created.toJson)
-    } yield created
+    if (initSteps.getByAnalyzerId(analyzerTemplate.workerId).exists())
+      Failure(CreateError(s"Analyzer template for ${analyzerTemplate.workerId} already exists"))
+    else
+      for {
+        created <- createEntity(analyzerTemplate)
+        _       <- auditSrv.analyzerTemplate.create(created, created.toJson)
+      } yield created
 
   override def update(
       steps: AnalyzerTemplateSteps,
@@ -104,9 +107,9 @@ class AnalyzerTemplateSrv @Inject()(
 @EntitySteps[AnalyzerTemplate]
 class AnalyzerTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[AnalyzerTemplate](raw) {
 
-  def get(idOrName: String): AnalyzerTemplateSteps =
-    if (db.isValidId(idOrName)) this.getByIds(idOrName)
-    else getByName(idOrName)
+  def get(idOrAnalyzerId: String): AnalyzerTemplateSteps =
+    if (db.isValidId(idOrAnalyzerId)) this.getByIds(idOrAnalyzerId)
+    else getByAnalyzerId(idOrAnalyzerId)
 
   /**
     * Looks for a template that has the workerId supplied
@@ -114,7 +117,7 @@ class AnalyzerTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, gr
     * @param workerId the id to look for
     * @return
     */
-  def getByName(workerId: String): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(raw.has(Key("workerId") of workerId))
+  def getByAnalyzerId(workerId: String): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(raw.has(Key("workerId") of workerId))
 
   override def newInstance(newRaw: GremlinScala[Vertex]): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(newRaw)
   override def newInstance(): AnalyzerTemplateSteps                             = new AnalyzerTemplateSteps(raw.clone())
