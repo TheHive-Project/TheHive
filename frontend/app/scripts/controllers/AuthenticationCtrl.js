@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AuthenticationCtrl', function($scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
+        .controller('AuthenticationCtrl', function($rootScope, $scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
             $scope.params = {};
 
             $uibModalStack.dismissAll();
@@ -16,7 +16,9 @@
                         if(angular.isDefined(redirectLocation)) {
                             window.location = redirectLocation;
                         } else {
-                            $state.go('app.index');
+                            $rootScope.isLoading = true;
+                            // Simple redirect to remove oauth2 query strings from url (before hash)
+                            window.location.replace(window.location.origin + window.location.pathname);
                         }
                     })
                     .catch(function(err) {
@@ -37,16 +39,16 @@
             $scope.login = function() {
                 $scope.params.username = $scope.params.username.toLowerCase();
                 AuthenticationSrv.login($scope.params.username, $scope.params.password)
-                  .then(function() {
-                      $state.go('app.index');
-                  })
-                  .catch(function(err) {
-                    if (err.status === 520) {
-                        NotificationSrv.error('AuthenticationCtrl', err.data.message, err.status);
-                    } else {
-                        NotificationSrv.log(err.data.message, 'error');
-                    }
-                });
+                    .then(function() {
+                        $state.go('app.index');
+                    })
+                    .catch(function(err) {
+                        if (err.status === 520) {
+                            NotificationSrv.error('AuthenticationCtrl', err.data.message, err.status);
+                        } else {
+                            NotificationSrv.log(err.data.message, 'error');
+                        }
+                    });
             };
 
             var code = UtilsSrv.extractQueryParam('code', UrlParser('query', $location.absUrl()));
