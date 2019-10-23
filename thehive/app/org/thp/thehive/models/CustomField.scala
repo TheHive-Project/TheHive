@@ -111,9 +111,9 @@ object CustomFieldString extends CustomFieldType[String] {
     case JsString(v)   => Success(customFieldValue.stringValue = Some(v))
     case JsNull | null => Success(customFieldValue.stringValue = None)
     case obj: JsObject =>
-      customFieldValue.stringValue = (obj \ "string").asOpt[String]
-      customFieldValue.order = (obj \ "order").asOpt[Int]
-      Success(customFieldValue)
+      val stringValue = (obj \ "string").asOpt[String]
+      val order       = (obj \ "order").asOpt[Int]
+      Success((customFieldValue.stringValue = stringValue).order = order)
     case _ => setValueFailure(value)
   }
 
@@ -129,9 +129,9 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
     case JsBoolean(v)  => Success(customFieldValue.booleanValue = Some(v))
     case JsNull | null => Success(customFieldValue.booleanValue = None)
     case obj: JsObject =>
-      customFieldValue.booleanValue = (obj \ "boolean").asOpt[Boolean]
-      customFieldValue.order = (obj \ "order").asOpt[Int]
-      Success(customFieldValue)
+      val booleanValue = (obj \ "boolean").asOpt[Boolean]
+      val order        = (obj \ "order").asOpt[Int]
+      Success((customFieldValue.booleanValue = booleanValue).order = order)
 
     case _ => setValueFailure(value)
   }
@@ -148,9 +148,9 @@ object CustomFieldInteger extends CustomFieldType[Int] {
     case JsNumber(n)   => Success(customFieldValue.integerValue = Some(n.toInt))
     case JsNull | null => Success(customFieldValue.integerValue = None)
     case obj: JsObject =>
-      customFieldValue.integerValue = (obj \ "integer").asOpt[Int]
-      customFieldValue.order = (obj \ "order").asOpt[Int]
-      Success(customFieldValue)
+      val integerValue = (obj \ "integer").asOpt[Int]
+      val order        = (obj \ "order").asOpt[Int]
+      Success((customFieldValue.integerValue = integerValue).order = order)
 
     case _ => setValueFailure(value)
   }
@@ -167,9 +167,9 @@ object CustomFieldFloat extends CustomFieldType[Float] {
     case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toFloat))
     case JsNull | null => Success(customFieldValue.floatValue = None)
     case obj: JsObject =>
-      customFieldValue.floatValue = (obj \ "float").asOpt[Float]
-      customFieldValue.order = (obj \ "order").asOpt[Int]
-      Success(customFieldValue)
+      val floatValue = (obj \ "float").asOpt[Float]
+      val order      = (obj \ "order").asOpt[Int]
+      Success((customFieldValue.floatValue = floatValue).order = order)
 
     case _ => setValueFailure(value)
   }
@@ -187,9 +187,9 @@ object CustomFieldDate extends CustomFieldType[Date] {
     case v: Date       => Success(customFieldValue.dateValue = Some(v))
     case JsNull | null => Success(customFieldValue.dateValue = None)
     case obj: JsObject =>
-      customFieldValue.dateValue = (obj \ "date").asOpt[Long].map(new Date(_))
-      customFieldValue.order = (obj \ "order").asOpt[Int]
-      Success(customFieldValue)
+      val dateValue = (obj \ "date").asOpt[Long].map(new Date(_))
+      val order     = (obj \ "order").asOpt[Int]
+      Success((customFieldValue.dateValue = dateValue).order = order)
 
     case _ => setValueFailure(value)
   }
