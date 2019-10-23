@@ -9,7 +9,6 @@ import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.InputAnalyzerTemplate
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -74,14 +73,13 @@ class AnalyzerTemplateCtrl @Inject()(
 
   def create: Action[AnyContent] =
     entryPoint("create template")
-      .extract("template", FieldsParser[InputAnalyzerTemplate])
-      .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
-          val importAnalyzerTemplate: InputAnalyzerTemplate = request.body("template")
-          analyzerTemplateSrv.create(importAnalyzerTemplate.toAnalyzerTemplate).map { createdAnalyzerTemplate =>
-            Results.Created(createdAnalyzerTemplate.toJson)
-          }
-        } else Success(Results.Unauthorized)
+      .extract("analyzerId", FieldsParser.string.on("analyzerId"))
+      .extract("content", FieldsParser.string.on("content"))
+      .authPermittedTransaction(db, Set(Permissions.manageAnalyzerTemplate)) { implicit request => implicit graph =>
+        val analyzerTemplate = AnalyzerTemplate(request.body("analyzerId"), request.body("content"))
+        analyzerTemplateSrv.create(analyzerTemplate).map { createdAnalyzerTemplate =>
+          Results.Created(createdAnalyzerTemplate.toJson)
+        }
       }
 
   def delete(id: String): Action[AnyContent] =

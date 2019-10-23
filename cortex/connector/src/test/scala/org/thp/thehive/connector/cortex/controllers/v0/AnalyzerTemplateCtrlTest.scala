@@ -10,11 +10,11 @@ import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.cortex.dto.v0.OutputAnalyzerTemplate
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzerTemplate
 import org.thp.thehive.connector.cortex.services.CortexActor
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
