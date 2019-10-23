@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('FilteringSrv', function($q, DashboardSrv, QueryBuilderSrv, localStorageService, Severity) {
+        .service('FilteringSrv', function($q, DashboardSrv, QueryBuilderSrv, localStorageService) {
             return function(entity, sectionName, config) {
                 var self = this;
 
@@ -121,25 +121,70 @@
                     localStorageService.set(self.sectionName, self.context);
                 };
 
-                this.getSeverities = function(query) {
-                    var defer = $q.defer();
+                this.addFilterValue = function (field, value) {
+                    var filterDef = self.attributes[field];
 
-                    $q.resolve(_.map(Severity.keys, function(value, key) {
-                        return {
-                            text: key
+                    if(!filterDef) {
+                        return;
+                    }
+
+                    var date,
+                        type = filterDef.type,
+                        filter = {
+                            field: field,
+                            type: filterDef.type
                         };
-                    })).then(function(response) {
-                        var severities = [];
 
-                        severities = _.filter(response, function(sev) {
-                            var regex = new RegExp(query, 'gi');
-                            return regex.test(sev.text);
-                        });
+                    switch(type) {
+                        case 'date':
+                            date = moment(value);
+                            filter.value = {
+                                from: date.hour(0).minutes(0).seconds(0).toDate(),
+                                to: date.hour(23).minutes(59).seconds(59).toDate()
+                            };
+                            break;
+                        case 'tags':
+                        case 'string':
+                            filter.value = {
+                                list: [{
+                                    text: value
+                                }]
+                            };
+                            break;
+                        case 'number':
+                        case 'enumeration':
+                            if(!_.isArray(value)) {
 
-                        defer.resolve(severities);
+                            }
+
+                            filter.value = {
+                                list: _.map(_.isArray(value) ? value : [value], function(item) {
+                                    return {
+                                        text: item,
+                                        label: filterDef.labels[item] || item
+                                    };
+                                })
+                            };
+                            break;
+                        case 'boolean':
+                            filter.value = value;
+                            break;
+                        case 'user':
+                            break;
+                    }
+
+                    var pos = _.findIndex(this.context.filters, function(item) {
+                        return item.field === field;
                     });
 
-                    return defer.promise;
+                    if(pos>-1) {
+                        this.context.filters.splice(pos, 1);
+                        this.context.filters.push(filter);
+                    } else {
+                        this.context.filters.push(filter);
+                    }
+
+                    return;
                 };
             };
         });

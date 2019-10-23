@@ -168,7 +168,7 @@
                                     </td>
                                     <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
                                     <td class="text-center">
-                                        <div class="clickable" ng-click="$vm.filterBySeverity(event.severity)">
+                                        <div class="clickable" ng-click="$vm.addFilterValue('severity', event.severity)">
                                             <severity active="false" value="event.severity"></severity>
                                         </div>
                                     </td>

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, AlertStatus) {
+        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, AlertStatus, Severity) {
 
             var baseUrl = './api/alert';
 
@@ -146,6 +146,27 @@
                         });
 
                         defer.resolve(statuses);
+                    });
+
+                    return defer.promise;
+                },
+
+                severities: function(query) {
+                    var defer = $q.defer();
+
+                    $q.resolve(_.map(Severity.keys, function(value, key) {
+                        return {
+                            text: key
+                        };
+                    })).then(function(response) {
+                        var severities = [];
+
+                        severities = _.filter(response, function(sev) {
+                            var regex = new RegExp(query, 'gi');
+                            return regex.test(sev.text);
+                        });
+
+                        defer.resolve(severities);
                     });
 
                     return defer.promise;

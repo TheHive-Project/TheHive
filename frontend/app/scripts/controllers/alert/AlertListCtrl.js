@@ -410,52 +410,56 @@
                 self.filtering.storeContext();
             };
             this.addFilterValue = function (field, value) {
-                var filterDef = self.filtering.filterDefs[field];
-                var filter = self.filtering.activeFilters[field];
-                var date;
-
-                if (filter && filter.value) {
-                    if (filterDef.type === 'list') {
-                        if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
-                            filter.value.push({
-                                text: value
-                            });
-                        }
-                    } else if (filterDef.type === 'date') {
-                        date = moment(value);
-                        self.filtering.activeFilters[field] = {
-                            value: {
-                                from: date.hour(0).minutes(0).seconds(0).toDate(),
-                                to: date.hour(23).minutes(59).seconds(59).toDate()
-                            }
-                        };
-                    } else {
-                        filter.value = value;
-                    }
-                } else {
-                    if (filterDef.type === 'list') {
-                        self.filtering.activeFilters[field] = {
-                            value: [{
-                                text: value
-                            }]
-                        };
-                    } else if (filterDef.type === 'date') {
-                        date = moment(value);
-                        self.filtering.activeFilters[field] = {
-                            value: {
-                                from: date.hour(0).minutes(0).seconds(0).toDate(),
-                                to: date.hour(23).minutes(59).seconds(59).toDate()
-                            }
-                        };
-                    } else {
-                        self.filtering.activeFilters[field] = {
-                            value: value
-                        };
-                    }
-                }
-
-                this.filter();
+                this.filtering.addFilterValue(field, value);
+                this.search();
             };
+            // this.addFilterValue = function (field, value) {
+            //     var filterDef = self.filtering.filterDefs[field];
+            //     var filter = self.filtering.activeFilters[field];
+            //     var date;
+            //
+            //     if (filter && filter.value) {
+            //         if (filterDef.type === 'list') {
+            //             if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
+            //                 filter.value.push({
+            //                     text: value
+            //                 });
+            //             }
+            //         } else if (filterDef.type === 'date') {
+            //             date = moment(value);
+            //             self.filtering.activeFilters[field] = {
+            //                 value: {
+            //                     from: date.hour(0).minutes(0).seconds(0).toDate(),
+            //                     to: date.hour(23).minutes(59).seconds(59).toDate()
+            //                 }
+            //             };
+            //         } else {
+            //             filter.value = value;
+            //         }
+            //     } else {
+            //         if (filterDef.type === 'list') {
+            //             self.filtering.activeFilters[field] = {
+            //                 value: [{
+            //                     text: value
+            //                 }]
+            //             };
+            //         } else if (filterDef.type === 'date') {
+            //             date = moment(value);
+            //             self.filtering.activeFilters[field] = {
+            //                 value: {
+            //                     from: date.hour(0).minutes(0).seconds(0).toDate(),
+            //                     to: date.hour(23).minutes(59).seconds(59).toDate()
+            //                 }
+            //             };
+            //         } else {
+            //             self.filtering.activeFilters[field] = {
+            //                 value: value
+            //             };
+            //         }
+            //     }
+            //
+            //     this.filter();
+            // };
 
             this.filterByStatus = function(status) {
                 self.filtering.clearFilters()
@@ -467,8 +471,7 @@
             this.filterByNewAndUpdated = function() {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('status', 'New');
-                        self.addFilterValue('status', 'Updated');
+                        self.addFilterValue('status', ['New', 'Updated']);
                     });
             };
 
@@ -495,24 +498,6 @@
                 self.list.sort = sort;
                 self.list.update();
                 self.filtering.setSort(sort);
-            };
-
-            //this.getSeverities = self.filtering.getSeverities;
-
-            this.getStatuses = function(query) {
-                return AlertingSrv.statuses(query);
-            };
-
-            this.getTypes = function(query) {
-                return AlertingSrv.types(query);
-            };
-
-            this.getSources = function(query) {
-                return AlertingSrv.sources(query);
-            };
-
-            this.getTags = function(query) {
-                return TagSrv.fromAlerts(query);
             };
         });
 })();
