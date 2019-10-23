@@ -1,10 +1,10 @@
 package org.thp.thehive.services
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
@@ -61,10 +61,13 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
 
-  def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(profile).remove()
-    auditSrv.profile.delete(profile)
-  }
+  def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    if (get(profile).in().exists())
+      Failure(BadRequestError(s"Profile ${profile.name} is used"))
+    else {
+      get(profile).remove()
+      auditSrv.profile.delete(profile)
+    }
 
   def unused(profile: Profile with Entity)(implicit graph: Graph): Boolean = get(profile).roles.toList.length + get(profile).shares.toList.length <= 0
 }
