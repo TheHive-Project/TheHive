@@ -43,6 +43,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     authBindings.addBinding.to[HeaderAuthProvider]
     authBindings.addBinding.to[PkiAuthProvider]
     authBindings.addBinding.to[SessionAuthProvider]
+    authBindings.addBinding.to[OAuth2Provider]
     // TODO add more authSrv
 
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
