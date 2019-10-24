@@ -20,7 +20,7 @@
                 return _.pluck(value.list, 'label').join(', ');
             }
 
-            return value;
+            return value || 'Any';
         };
     });
 

@@ -26,8 +26,7 @@
                 self.analyzers = response[1];
 
                 var cleared = _.mapObject(self.analyzers, function(val) {
-                    delete val.shortReport;
-                    delete val.longReport;
+                    delete val.template;
 
                     return val;
                 });
