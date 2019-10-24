@@ -11,9 +11,6 @@
         this.CaseResolutionStatus = CaseResolutionStatus;
         this.caseResponders = null;
 
-        // this.searchForm = {
-        //     searchQuery: this.uiSrv.buildQuery() || ''
-        // };
         this.lastQuery = null;
 
         this.$onInit = function() {
@@ -74,19 +71,6 @@
             this.filtering.toggleFilters();
         };
 
-        // this.filter = function() {
-        //     this.uiSrv.filter().then(this.applyFilters);
-        // };
-
-        // this.applyFilters = function() {
-        //     self.searchForm.searchQuery = self.uiSrv.buildQuery();
-        //
-        //     if (self.lastQuery !== self.searchForm.searchQuery) {
-        //         self.lastQuery = self.searchForm.searchQuery;
-        //         self.search();
-        //     }
-        // };
-
         this.filter = function () {
             self.filtering.filter().then(this.applyFilters);
         };
@@ -95,10 +79,6 @@
             this.filtering.clearFilters()
                 .then(self.search);
         };
-
-        // this.addFilter = function (field, value) {
-        //     self.filtering.addFilter(field, value).then(this.applyFilters);
-        // };
 
         this.removeFilter = function (index) {
             self.filtering.removeFilter(index)

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, AlertStatus, Severity) {
+        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
 
             var baseUrl = './api/alert';
 
@@ -107,93 +107,8 @@
                     });
 
                     return StatSrv.get(statConfig);
-                },
-
-                sources: function(query) {
-                    var defer = $q.defer();
-
-                    StatSrv.getPromise({
-                        objectType: 'alert',
-                        field: 'source',
-                        limit: 1000
-                    }).then(function(response) {
-                        var sources = [];
-
-                        sources = _.map(_.filter(_.keys(response.data), function(source) {
-                            var regex = new RegExp(query, 'gi');
-                            return regex.test(source);
-                        }), function(source) {
-                            return {text: source};
-                        });
-
-                        defer.resolve(sources);
-                    });
-
-                    return defer.promise;
-                },
-
-                statuses: function(query) {
-                    var defer = $q.defer();
-
-                    $q.resolve(_.map(AlertStatus.values, function(status) {
-                        return { text: status};
-                    })).then(function(response) {
-                        var statuses = [];
-
-                        statuses = _.filter(response, function(status) {
-                            var regex = new RegExp(query, 'gi');
-                            return regex.test(status.text);
-                        });
-
-                        defer.resolve(statuses);
-                    });
-
-                    return defer.promise;
-                },
-
-                severities: function(query) {
-                    var defer = $q.defer();
-
-                    $q.resolve(_.map(Severity.keys, function(value, key) {
-                        return {
-                            text: key
-                        };
-                    })).then(function(response) {
-                        var severities = [];
-
-                        severities = _.filter(response, function(sev) {
-                            var regex = new RegExp(query, 'gi');
-                            return regex.test(sev.text);
-                        });
-
-                        defer.resolve(severities);
-                    });
-
-                    return defer.promise;
-                },
-
-                types: function(query) {
-                  var defer = $q.defer();
-
-                  StatSrv.getPromise({
-                      objectType: 'alert',
-                      field: 'type',
-                      limit: 1000
-                  }).then(function(response) {
-                      var alertTypes = [];
-
-                      alertTypes = _.map(_.filter(_.keys(response.data), function(tpe) {
-                          var regex = new RegExp(query, 'gi');
-                          return regex.test(tpe);
-                      }), function(tpe) {
-                          return {text: tpe};
-                      });
-
-                      defer.resolve(alertTypes);
-                  });
-
-                  return defer.promise;
                 }
+
             };
 
             return factory;
