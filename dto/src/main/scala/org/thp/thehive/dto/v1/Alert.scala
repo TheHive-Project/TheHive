@@ -42,7 +42,6 @@ case class OutputAlert(
     severity: Int,
     date: Date,
     tags: Set[String] = Set.empty,
-    flag: Boolean,
     tlp: Int,
     pap: Int,
     read: Boolean,

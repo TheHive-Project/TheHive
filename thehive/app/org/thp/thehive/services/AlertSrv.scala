@@ -220,7 +220,7 @@ class AlertSrv @Inject()(
         severity = alert.severity,
         startDate = new Date,
         endDate = None,
-        flag = alert.flag,
+        flag = false,
         tlp = alert.tlp,
         pap = alert.pap,
         status = CaseStatus.Open,

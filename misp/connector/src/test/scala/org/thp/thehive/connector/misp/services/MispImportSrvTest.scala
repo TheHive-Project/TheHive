@@ -105,7 +105,6 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
             severity = 3,
             date = new Date(1566511200000L),
             lastSyncDate = new Date(1566913355000L),
-            flag = false,
             tlp = 2,
             pap = 2,
             read = false,

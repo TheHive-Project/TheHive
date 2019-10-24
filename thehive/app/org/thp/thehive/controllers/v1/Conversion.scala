@@ -52,7 +52,6 @@ object Conversion {
       inputAlert
         .into[Alert]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
-        .withFieldComputed(_.flag, _.flag.getOrElse(false))
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .withFieldComputed(_.pap, _.pap.getOrElse(2))
         .withFieldConst(_.read, false)

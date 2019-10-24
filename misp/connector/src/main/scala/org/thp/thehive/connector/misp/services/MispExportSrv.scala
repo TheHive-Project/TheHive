@@ -121,7 +121,6 @@ class MispExportSrv @Inject()(
           severity = `case`.severity,
           date = `case`.startDate,
           lastSyncDate = new Date(0L),
-          flag = false,
           tlp = `case`.tlp,
           pap = `case`.pap,
           read = false,

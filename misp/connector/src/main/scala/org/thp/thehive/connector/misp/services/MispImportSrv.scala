@@ -56,7 +56,6 @@ class MispImportSrv @Inject()(
           severity = event.threatLevel.filter(l => 0 < l && l < 4).fold(2)(4 - _),
           date = event.date,
           lastSyncDate = event.publishDate,
-          flag = false, // TODO need check
           tlp = event
             .tags
             .collectFirst {

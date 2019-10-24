@@ -50,7 +50,6 @@ case class Alert(
     severity: Int,
     date: Date,
     lastSyncDate: Date,
-    flag: Boolean,
     tlp: Int,
     pap: Int,
     read: Boolean,
@@ -79,7 +78,6 @@ case class RichAlert(
   val severity: Int                = alert.severity
   val date: Date                   = alert.date
   val lastSyncDate: Date           = alert.lastSyncDate
-  val flag: Boolean                = alert.flag
   val tlp: Int                     = alert.tlp
   val pap: Int                     = alert.pap
   val read: Boolean                = alert.read
