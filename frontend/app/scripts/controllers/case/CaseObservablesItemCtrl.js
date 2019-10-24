@@ -52,41 +52,43 @@
 
             $scope.initScope = function (artifact) {
 
-                // Get analyzers available for the observable's datatype
-                AnalyzerSrv.forDataType(artifact.dataType)
-                    .then(function (analyzers) {
-                        $scope.analyzers = analyzers;
-                    }, function () {
-                        $scope.analyzers = [];
-                    })
-                    .finally(function () {
-                        $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
-                    });
-
-                  $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
-                      scope: $scope,
-                      streamObjectType: 'action',
-                      filter: {
-                          _and: [
-                              {
-                                  _not: {
-                                      status: 'Deleted'
+                if($scope.analysisEnabled) {
+                    // Get analyzers available for the observable's datatype
+                    AnalyzerSrv.forDataType(artifact.dataType)
+                        .then(function (analyzers) {
+                            $scope.analyzers = analyzers;
+                        }, function () {
+                            $scope.analyzers = [];
+                        })
+                        .finally(function () {
+                            $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
+                        });
+                        
+                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                          scope: $scope,
+                          streamObjectType: 'action',
+                          filter: {
+                              _and: [
+                                  {
+                                      _not: {
+                                          status: 'Deleted'
+                                      }
+                                  }, {
+                                      objectType: 'case_artifact'
+                                  }, {
+                                      objectId: artifact.id
                                   }
-                              }, {
-                                  objectType: 'case_artifact'
-                              }, {
-                                  objectId: artifact.id
-                              }
-                          ]
-                      },
-                      sort: ['-startDate'],
-                      pageSize: 100,
-                      guard: function(updates) {
-                          return _.find(updates, function(item) {
-                              return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
-                          }) !== undefined;
-                      }
-                  });
+                              ]
+                          },
+                          sort: ['-startDate'],
+                          pageSize: 100,
+                          guard: function(updates) {
+                              return _.find(updates, function(item) {
+                                  return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
+                              }) !== undefined;
+                          }
+                      });
+                }
             };
 
             // Prepare the scope data
