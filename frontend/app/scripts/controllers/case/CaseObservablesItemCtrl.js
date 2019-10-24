@@ -63,7 +63,7 @@
                         .finally(function () {
                             $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
                         });
-                        
+
                     $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
                           scope: $scope,
                           streamObjectType: 'action',
@@ -173,10 +173,12 @@
                 });
             };
 
-            $scope.similarArtifacts = CaseArtifactSrv.api().similar({
-                artifactId: observableId,
+            CaseArtifactSrv.similar(observableId, {
                 range: 'all',
                 sort: ['-startDate']
+            }).then(function(response) {
+                console.log(response);
+                $scope.similarArtifacts = response;
             });
 
 

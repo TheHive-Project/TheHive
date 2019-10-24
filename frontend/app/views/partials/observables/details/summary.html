@@ -10,11 +10,9 @@
                             <i class="fa fa-users"></i> Sharing
                         </span>
                     </a>
-
-                    <span class="mr-xxs text-primary">|</span>
                 </span>
 
-                <span class="mr-xxs action-button" if-permission="manageObservable" allowed="{{userPermissions}}" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                <span class="ml-xxs action-button" if-permission="manageObservable" allowed="{{userPermissions}}" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
                     <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
                         <i class="text-primary fa fa-cog"></i>
                         Responders
@@ -102,7 +100,7 @@
         </div>
 
         <div ng-if="similarArtifacts.length > 0">
-            <strong>Observable seen in {{similarArtifacts.length}} other case/alert(s)</strong>
+            <strong>Observable seen in {{similarArtifacts.length}} other case(s)</strong>
             <table class="table table-striped">
                 <thead>
                     <tr>

@@ -20,6 +20,17 @@
                 return api;
             };
 
+            this.similar = function(observableId, options) {
+                return $http.get('./api/case/artifact/'+observableId+'/similar', {
+                        params: options
+                    })
+                    .then(function(response) {
+                        return _.filter(response.data, function(item) {
+                            return item.case;
+                        });
+                    });
+            };
+
             this.bulkUpdate = function(ids, update) {
                 return $http.patch('./api/case/artifact/_bulk', _.extend({ids: ids}, update));
             };
