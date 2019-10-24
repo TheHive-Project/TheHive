@@ -10,6 +10,17 @@
             };
         };
 
+        this._buildQueryFromBooleanFilter = function(fieldDef, filter) {
+            if(filter.value === null) {
+                return undefined;
+            }
+
+            return {
+                _field: filter.field,
+                _value: filter.value
+            };
+        };
+
         this._buildQueryFromNumberFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
@@ -84,7 +95,7 @@
             } else {
                 end = null;
             }
-        
+
             if (start !== null && end !== null) {
                 return {
                     _between: { _field: filter.field, _from: start, _to: end }
@@ -105,12 +116,12 @@
         this._buildQueryFromFilter = function(fieldDef, filter) {
             if (filter.type === 'date') {
                 return this._buildQueryFromDateFilter(fieldDef, filter);
+            } else if(filter.type === 'boolean') {
+                return this._buildQueryFromBooleanFilter(fieldDef, filter);
             } else if(filter.value.list || filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration' || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
             } else if(filter.type === 'number') {
                 return this._buildQueryFromNumberFilter(fieldDef, filter);
-            } else if(filter.type === 'boolean') {
-                return this._buildQueryFromDefaultFilter(fieldDef, filter);
             }
             return {
                 _string: filter.field + ':"' + filter.value +'"'
@@ -123,7 +134,7 @@
                     return self._buildQueryFromFilter(fields[filter.field], filter);
                 }) || [];
 
-            criterias = _.without(criterias, null, undefined);
+            criterias = _.without(criterias, null, undefined, {});
 
             return criterias.length === 0 ? {} : criterias.length === 1 ? criterias[0] : { _and: criterias };
         };
