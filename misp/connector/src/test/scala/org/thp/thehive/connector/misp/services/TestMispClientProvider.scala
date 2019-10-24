@@ -24,15 +24,16 @@ class TestMispClientProvider @Inject()(Action: DefaultActionBuilder, implicit va
         val predicate = request
           .body
           .asJson
-          .fold((_: JsValue) => true) { json =>
-            println(s"Filter is $json")
-            (attr: JsValue) =>
-              (json \ "request" \ "timestamp").asOpt[Long].fold(true)(d => (attr \ "timestamp").asOpt[String].exists(_.toLong > d * 1000)) &&
+          .fold((_: JsValue) => true) {
+            json =>
+//            println(s"Filter is $json")
+              (attr: JsValue) =>
+                (json \ "request" \ "timestamp").asOpt[Long].fold(true)(d => (attr \ "timestamp").asOpt[String].exists(_.toLong > d * 1000)) &&
                 (json \ "request" \ "eventid").asOpt[String].fold(true)(e => (attr \ "event_id").asOpt[String].filter(_ == "1").contains(e))
           }
         val attributes = readResourceAsJson("/attributes.json").as[Seq[JsValue]].filter { a =>
           val f = predicate(a)
-          println(s"attribute: $a => $f")
+//          println(s"attribute: $a => $f")
           f
         }
         Results.Ok(Json.obj("response" -> Json.obj("Attribute" -> attributes)))

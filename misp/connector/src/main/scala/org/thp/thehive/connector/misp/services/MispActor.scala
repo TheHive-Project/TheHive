@@ -25,7 +25,6 @@ class MispActor @Inject()(
   import context.dispatcher
 
   lazy val logger = Logger(getClass)
-  logger.info(s"[$self] Initialising actor MISP")
 
   override def preStart(): Unit = {
     super.preStart()

@@ -102,9 +102,9 @@ class MispImportSrv @Inject()(
         case observables
             if observables.exists(
               o =>
-                o._1.isAttachment != (attribute.`type` == "attachment" || attribute.`type` == "malware-sample") || o
-                  ._1
-                  .isAttachment == attribute.data.isEmpty
+                o._1.isAttachment != (attribute.`type` == "attachment" ||
+                  attribute.`type` == "malware-sample") ||
+                  o._1.isAttachment == attribute.data.isEmpty
             ) =>
           logger.error(s"Attribute conversion return incompatible types (${attribute.`type`} / ${observables.map(_._1.name).mkString(",")}")
           Nil
@@ -365,7 +365,6 @@ class MispImportSrv @Inject()(
               (if (richAlert.description != alert.description) Seq("description"    -> alert.description) else Nil) ++
               (if (richAlert.severity != alert.severity) Seq("severity"             -> alert.severity) else Nil) ++
               (if (richAlert.date != alert.date) Seq("date"                         -> alert.date) else Nil) ++
-              (if (richAlert.flag != alert.flag) Seq("flag"                         -> alert.flag) else Nil) ++
               (if (richAlert.tlp != alert.tlp) Seq("tlp"                            -> alert.tlp) else Nil) ++
               (if (richAlert.pap != alert.pap) Seq("pap"                            -> alert.pap) else Nil) ++
               (if (richAlert.externalLink != alert.externalLink) Seq("externalLink" -> alert.externalLink) else Nil)
@@ -392,7 +391,7 @@ class MispImportSrv @Inject()(
       logger.debug(s"Last synchronisation is $lastSynchro")
       client
         .searchEvents(publishDate = lastSynchro)
-        .runWith(Sink.foreachAsync(2) { event =>
+        .runWith(Sink.foreachAsync(1) { event =>
           logger.debug(s"Importing event ${client.name}#${event.id}")
           Future
             .traverse(organisations) { organisation =>

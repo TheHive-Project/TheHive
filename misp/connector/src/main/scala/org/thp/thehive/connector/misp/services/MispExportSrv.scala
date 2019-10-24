@@ -72,7 +72,7 @@ class MispExportSrv @Inject()(
       .get(`case`)
       .alert
       .has(Key("type"), P.eq("misp"))
-      .has(Key("source"), P.eq(orgName))
+      .has(Key("source"), P.eq[String](orgName))
       .headOption()
 
   def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
@@ -144,83 +144,4 @@ class MispExportSrv @Inject()(
       _       <- Future.fromTry(db.tryTransaction(implicit graph => createAlert(client, `case`, eventId)))
     } yield eventId
   }
-  /*
-
-
-         attributes <- mispSrv.getAttributesFromCase(caze)
-          uniqueAttributes = removeDuplicateAttributes(attributes)
-          eventToUpdate <- maybeEventId.fold(Future.successful[Option[String]](None))(getUpdatableEvent(mispConnection, _))
-          (eventId, initialExportesArtifacts, existingAttributes) <- eventToUpdate.fold {
-            logger.debug(s"Creating a new MISP event that extends $maybeEventId")
-            val simpleAttributes = uniqueAttributes.filter(_.value.isLeft)
-            // if no event is associated to this case, create a new one
-            createEvent(
-              mispConnection,
-              caze.title(),
-              caze.severity(),
-              caze.tlp(),
-              caze.startDate(),
-              simpleAttributes,
-              maybeEventId,
-              if (mispConnection.exportCaseTags) caze.tags() else Nil
-            ).map {
-              case (eventId, exportedAttributes) =>
-                (eventId, exportedAttributes.map(a => Success(a.artifact)), exportedAttributes.map(_.value.map(_.name)))
-            }
-          } { eventId => // if an event already exists, retrieve its attributes in order to export only new one
-            logger.debug(s"Updating MISP event $eventId")
-            mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes =>
-              (eventId, Nil, attributes.map {
-                case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             => Left(data)
-                case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             => Right(filename)
-                case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) => Right(filename)
-              })
-            }
-          }
-
-          newAttributes = uniqueAttributes.filterNot(attr => existingAttributes.contains(attr.value.map(_.name)))
-          exportedArtifact <- Future.traverse(newAttributes)(attr => exportAttribute(mispConnection, eventId, attr).toTry)
-          artifacts = uniqueAttributes.map { a =>
-            Json.obj(
-              "data"       -> a.artifact.data(),
-              "dataType"   -> a.artifact.dataType(),
-              "message"    -> a.artifact.message(),
-              "startDate"  -> a.artifact.startDate(),
-              "attachment" -> a.artifact.attachment(),
-              "tlp"        -> a.artifact.tlp(),
-              "tags"       -> a.artifact.tags(),
-              "ioc"        -> a.artifact.ioc()
-            )
-          }
-          alert <- maybeAlertId.fold {
-            alertSrv.create(
-              Fields(
-                Json.obj(
-                  "type"         -> "misp",
-                  "source"       -> mipsId,
-                  "sourceRef"    -> eventId,
-                  "date"         -> caze.startDate(),
-                  "lastSyncDate" -> new Date(0),
-                  "case"         -> caze.id,
-                  "title"        -> caze.title(),
-                  "description"  -> "Case have been exported to MISP",
-                  "severity"     -> caze.severity(),
-                  "tags"         -> caze.tags(),
-                  "tlp"          -> caze.tlp(),
-                  "artifacts"    -> artifacts,
-                  "status"       -> "Imported",
-                  "follow"       -> true
-                )
-              )
-            )
-          } { alertId =>
-            alertSrv.update(alertId, Fields(Json.obj("artifacts" -> artifacts, "status" -> "Imported")))
-          }
-        } yield alert.id -> (initialExportesArtifacts ++ exportedArtifact)
-      }
-  }
-
-}
- */
-
 }
