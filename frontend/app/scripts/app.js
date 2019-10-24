@@ -244,13 +244,13 @@ angular.module('thehive', [
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
             })
-            .state('app.administration.report-templates', {
-                url: '/report-templates',
-                templateUrl: 'views/partials/admin/report-templates.html',
-                controller: 'AdminReportTemplatesCtrl',
+            .state('app.administration.analyzer-templates', {
+                url: '/analyzer-templates',
+                templateUrl: 'views/partials/admin/analyzer-templates.html',
+                controller: 'AdminAnalyzerTemplatesCtrl',
                 controllerAs: 'vm',
-                title: 'Report templates administration',
-                permissions: ['manageReportTemplate']
+                title: 'Analyzer templates administration',
+                permissions: ['manageAnalyzerTemplate']
             })
             .state('app.administration.custom-fields', {
                 url: '/custom-fields',

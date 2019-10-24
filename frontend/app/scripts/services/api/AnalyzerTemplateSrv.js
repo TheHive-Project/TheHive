@@ -1,8 +1,8 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('ReportTemplateSrv', function($resource, $http) {
-            var baseUrl = './api/connector/cortex/report/template';
+        .factory('AnalyzerTemplateSrv', function($resource, $http) {
+            var baseUrl = './api/connector/cortex/analyzer/template';
             var resource = $resource(baseUrl, {}, {
                 query: {
                     method: 'POST',
@@ -48,7 +48,6 @@
                         transformRequest: function (data) {
                             var formData = new FormData(),
                                 copy = angular.copy(data, {});
-                                // _json = {};
 
                             angular.forEach(data, function (value, key) {
                                 if (Object.getPrototypeOf(value) instanceof Blob || Object.getPrototypeOf(value) instanceof File) {
@@ -56,8 +55,6 @@
                                     delete copy[key];
                                 }
                             });
-
-                            //formData.append("attributes", angular.toJson(_json));
 
                             return formData;
                         },

@@ -20,7 +20,7 @@
                     'manageConfig',
                     'manageTag',
                     'manageProfile',
-                    'manageReportTemplate'
+                    'manageAnalyzerTemplate'
                 ],
                 labels: {
                     manageUser: 'Manage users',
@@ -36,7 +36,7 @@
                     manageConfig: 'Manage configurations',
                     manageTag: 'Manage tags',
                     manageProfile: 'Manage profiles',
-                    manageReportTemplate: 'Manage report templates'
+                    manageAnalyzerTemplate: 'Manage analyzer templates'
                 }
             };
 

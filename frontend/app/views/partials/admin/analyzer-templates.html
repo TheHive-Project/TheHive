@@ -26,7 +26,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th width="200px">Short template</th>
                             <th width="200px">Long template</th>
                         </tr>
                     </thead>
@@ -37,21 +36,12 @@
                                 <small class="text-muted">{{::analyzer.description}}</small>
                             </td>
                             <td class="vmiddle">
-                                <div class="btn-group btn-group-sm" ng-if="analyzer.shortReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.shortReport, analyzer)">View Template</button>
-                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.shortReport)"><i class="fa fa-times"></i></button>
+                                <div class="btn-group btn-group-sm" ng-if="analyzer.template">
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer)">View Template</button>
+                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.template)"><i class="fa fa-times"></i></button>
                                 </div>
-                                <div class="btn-group btn-group-sm" ng-if="!analyzer.shortReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate({reportType: 'short'}, analyzer)">Default template</button>
-                                </div>
-                            </td>
-                            <td class="vmiddle">
-                                <div class="btn-group btn-group-sm" ng-if="analyzer.longReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.longReport, analyzer)">View Template</button>
-                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.longReport)"><i class="fa fa-times"></i></button>
-                                </div>
-                                <div class="btn-group btn-group-sm" ng-if="!analyzer.longReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate({reportType: 'long'}, analyzer)">Default template</button>
+                                <div class="btn-group btn-group-sm" ng-if="!analyzer.template">
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer)">Default template</button>
                                 </div>
                             </td>
                         </tr>
