@@ -14,20 +14,20 @@
             <div class="box-body">
                 <div ng-include="'views/partials/case/list/toolbar.html'"></div>
 
-                <div class="mv-s filter-panel" ng-include="'views/partials/case/list/mini-stats.html'" ng-show="$vm.uiSrv.context.showStats"></div>
+                <div class="mv-s filter-panel" ng-include="'views/partials/case/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
 
-                <div class="mt-s filter-panel" ng-include="'views/partials/case/list/filters.html'" ng-show="$vm.uiSrv.context.showFilters"></div>
+                <div class="mt-s filter-panel" ng-include="'views/partials/case/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 
                 <div class="row mt-s">
                     <div class="col-md-12 clearfix">
                         <div class="active-filters">
-                            <ul ng-if="$vm.uiSrv.countFilters() > 0">
-                                <li>{{$vm.uiSrv.countFilters()}}
+                            <ul ng-if="$vm.filtering.context.filters.length > 0">
+                                <li>{{$vm.filtering.context.filters.length}}
                                     filter(s) applied:
                                 </li>
-                                <li class="filter-item" ng-repeat="(field,filter) in $vm.uiSrv.filters">
+                                <li class="filter-item" ng-repeat="filter in $vm.filtering.context.filters">
                                     <span>
-                                        <strong>{{field}}:</strong>
+                                        <strong>{{filter.field}}:</strong>
                                         {{filter.value | filterValue}}</span>
                                     <a href="" ng-click="$vm.removeFilter(field)">
                                         <span class="filter-close fa fa-times text-danger"></span>

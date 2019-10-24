@@ -11,15 +11,6 @@
                 this.defaults = config.defaults || {};
                 this.defaultFilter = config.defaultFilter || {};
 
-                this.context = {
-                    state: null,
-                    showFilters: false,
-                    showStats: false,
-                    pageSize: this.defaults.pageSize || 15,
-                    sort: this.defaults.sort || [],
-                    filters: []
-                };
-
                 this.initContext = function(state) {
 
                     return DashboardSrv.getMetadata()
@@ -35,8 +26,8 @@
                             } else {
                                 self.context = {
                                     state: state,
-                                    showFilters: false,
-                                    showStats: false,
+                                    showFilters: self.defaults.showFilters || false,
+                                    showStats: self.defaults.showStats || false,
                                     pageSize: self.defaults.pageSize || 15,
                                     sort: self.defaults.sort || [],
                                     filters: self.defaultFilter || []
@@ -51,8 +42,8 @@
                     return QueryBuilderSrv.buildFiltersQuery(this.attributes, this.context.filters);
                 };
 
-                this.addFilter = function() {
-                    this.context.filters.push({
+                this.addFilter = function(filter) {
+                    this.context.filters.push(filter || {
                         field: null,
                         type: null
                     });
@@ -147,7 +138,8 @@
                         case 'string':
                             filter.value = {
                                 list: [{
-                                    text: value
+                                    text: value,
+                                    label: value
                                 }]
                             };
                             break;

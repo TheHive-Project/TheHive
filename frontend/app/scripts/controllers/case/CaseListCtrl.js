@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, CasesUISrv, StreamStatSrv, PSearchSrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, FilteringSrv, StreamStatSrv, PSearchSrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -11,232 +11,170 @@
         this.CaseResolutionStatus = CaseResolutionStatus;
         this.caseResponders = null;
 
-        this.uiSrv = CasesUISrv;
-        this.uiSrv.initContext('list');
-        this.searchForm = {
-            searchQuery: this.uiSrv.buildQuery() || ''
-        };
+        // this.searchForm = {
+        //     searchQuery: this.uiSrv.buildQuery() || ''
+        // };
         this.lastQuery = null;
 
-        this.list = PSearchSrv(undefined, 'case', {
-            scope: $scope,
-            filter: self.searchForm.searchQuery !== '' ? {
-                _string: self.searchForm.searchQuery
-            } : '',
-            loadAll: false,
-            sort: self.uiSrv.context.sort,
-            pageSize: self.uiSrv.context.pageSize,
-            nstats: true
-        });
-
-        this.caseStats = StreamStatSrv({
-            scope: $scope,
-            rootId: 'any',
-            query: {},
-            result: {},
-            objectType: 'case',
-            field: 'status'
-        });
-
-        $scope.$watch('$vm.list.pageSize', function(newValue) {
-            self.uiSrv.setPageSize(newValue);
-        });
-
-        this.toggleStats = function() {
-            this.uiSrv.toggleStats();
-        };
-
-        this.toggleFilters = function() {
-            this.uiSrv.toggleFilters();
-        };
-
-        this.filter = function() {
-            this.uiSrv.filter().then(this.applyFilters);
-        };
-
-        this.applyFilters = function() {
-            self.searchForm.searchQuery = self.uiSrv.buildQuery();
-
-            if (self.lastQuery !== self.searchForm.searchQuery) {
-                self.lastQuery = self.searchForm.searchQuery;
-                self.search();
-            }
-
-        };
-
-        this.clearFilters = function() {
-            this.uiSrv.clearFilters().then(this.applyFilters);
-        };
-
-        this.addFilter = function(field, value) {
-            this.uiSrv.addFilter(field, value).then(this.applyFilters);
-        };
-
-        this.removeFilter = function(field) {
-            this.uiSrv.removeFilter(field).then(this.applyFilters);
-        };
-
-        this.search = function() {
-            this.list.filter = {
-                _string: this.searchForm.searchQuery
-            };
-
-            this.list.update();
-        };
-        this.addFilterValue = function(field, value) {
-            var filterDef = this.uiSrv.filterDefs[field];
-            var filter = this.uiSrv.activeFilters[field];
-            var date;
-
-            if (filter && filter.value) {
-                if (filterDef.type === 'list') {
-                    if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
-                        filter.value.push({
-                            text: value
-                        });
-                    }
-                } else if (filterDef.type === 'date') {
-                    date = moment(value);
-                    this.uiSrv.activeFilters[field] = {
-                        value: {
-                            from: date.hour(0).minutes(0).seconds(0).toDate(),
-                            to: date.hour(23).minutes(59).seconds(59).toDate()
-                        }
-                    };
-                } else {
-                    filter.value = value;
-                }
-            } else {
-                if (filterDef.type === 'list') {
-                    this.uiSrv.activeFilters[field] = {
-                        value: [{
-                            text: value
-                        }]
-                    };
-                } else if (filterDef.type === 'date') {
-                    date = moment(value);
-                    this.uiSrv.activeFilters[field] = {
-                        value: {
-                            from: date.hour(0).minutes(0).seconds(0).toDate(),
-                            to: date.hour(23).minutes(59).seconds(59).toDate()
-                        }
-                    };
-                } else {
-                    this.uiSrv.activeFilters[field] = {
-                        value: value
-                    };
-                }
-            }
-
-            this.filter();
-        };
-
-        this.getStatuses = function() {
-            return $q.resolve([{
-                    text: 'Open'
+        this.$onInit = function() {
+            self.filtering = new FilteringSrv('case', 'case.list', {
+                defaults: {
+                    showFilters: true,
+                    showStats: false,
+                    pageSize: 15,
+                    sort: ['-flag', '-startDate']
                 },
-                {
-                    text: 'Resolved'
-                }
-            ]);
-        };
-
-        this.getSeverities = function(query) {
-            var defer = $q.defer();
-
-            $q.resolve(_.map(Severity.keys, function(value, key) {
-                return {
-                    text: key
-                };
-            })).then(function(response) {
-                var severities = [];
-
-                severities = _.filter(response, function(sev) {
-                    var regex = new RegExp(query, 'gi');
-                    return regex.test(sev.text);
-                });
-
-                defer.resolve(severities);
+                defaultFilter: [{
+                    field: 'status',
+                    type: 'enumeration',
+                    value: {
+                        list: [{
+                            text: 'Open',
+                            label: 'Open'
+                        }]
+                    }
+                }]
             });
 
-            return defer.promise;
-        };
+            self.filtering.initContext('list')
+                .then(function() {
+                    self.load();
 
-        this.getTags = function(query) {
-            return TagSrv.fromCases(query);
-        };
-
-        this.getUsers = function(query) {
-            var currentUser = AuthenticationSrv.currentUser;
-            return UserSrv.list(currentUser.organisation, {
-                _is: {
-                    locked: false
-                }
-            }).then(function(data) {
-                return _.map(data, function(user) {
-                    return {
-                        label: user.name,
-                        text: user.login
-                    };
-                });
-            }).then(function(users) {
-                var filtered = _.filter(users, function(user) {
-                    var regex = new RegExp(query, 'gi');
-                    return regex.test(user.label);
+                    $scope.$watch('$vm.list.pageSize', function (newValue) {
+                        self.filtering.setPageSize(newValue);
+                    });
                 });
 
-                return filtered;
+            this.caseStats = StreamStatSrv({
+                scope: $scope,
+                rootId: 'any',
+                query: {},
+                result: {},
+                objectType: 'case',
+                field: 'status'
             });
+        };
+
+        this.load = function() {
+            this.list = PSearchSrv(undefined, 'case', {
+                scope: $scope,
+                filter: this.filtering.buildQuery(),
+                loadAll: false,
+                sort: self.filtering.context.sort,
+                pageSize: self.filtering.context.pageSize,
+                nstats: true
+            });
+        };
+
+        this.toggleStats = function () {
+            this.filtering.toggleStats();
+        };
+
+        this.toggleFilters = function () {
+            this.filtering.toggleFilters();
+        };
+
+        // this.filter = function() {
+        //     this.uiSrv.filter().then(this.applyFilters);
+        // };
+
+        // this.applyFilters = function() {
+        //     self.searchForm.searchQuery = self.uiSrv.buildQuery();
+        //
+        //     if (self.lastQuery !== self.searchForm.searchQuery) {
+        //         self.lastQuery = self.searchForm.searchQuery;
+        //         self.search();
+        //     }
+        // };
+
+        this.filter = function () {
+            self.filtering.filter().then(this.applyFilters);
+        };
+
+        this.clearFilters = function () {
+            this.filtering.clearFilters()
+                .then(self.search);
+        };
+
+        // this.addFilter = function (field, value) {
+        //     self.filtering.addFilter(field, value).then(this.applyFilters);
+        // };
+
+        this.removeFilter = function (index) {
+            self.filtering.removeFilter(index)
+                .then(self.search);
+        };
+
+        this.search = function () {
+            self.load();
+            self.filtering.storeContext();
+        };
+        this.addFilterValue = function (field, value) {
+            this.filtering.addFilterValue(field, value);
+            this.search();
         };
 
         this.filterMyCases = function() {
-            this.uiSrv.clearFilters()
+            this.filtering.clearFilters()
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
-                    self.uiSrv.activeFilters.owner = {
-                        value: [{
-                            text: currentUser.login,
-                            label: currentUser.name
-                        }]
-                    };
-                    self.filter();
+                    self.filtering.addFilter({
+                        field: 'owner',
+                        type: 'user',
+                        value: {
+                            list: [{
+                                text: currentUser.login,
+                                label: currentUser.name
+                            }]
+                        }
+                    });
+                    self.search();
                 });
         };
 
         this.filterMyOpenCases = function() {
-            this.uiSrv.clearFilters()
+            this.filtering.clearFilters()
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
-                    self.uiSrv.activeFilters.owner = {
-                        value: [{
-                            text: currentUser.login,
-                            label: currentUser.name
-                        }]
-                    };
-                    self.filter();
+                    self.filtering.addFilter({
+                        field: 'owner',
+                        type: 'user',
+                        value: {
+                            list: [{
+                                text: currentUser.login,
+                                label: currentUser.name
+                            }]
+                        }
+                    });
                     self.addFilterValue('status', 'Open');
                 });
         };
 
         this.filterByStatus = function(status) {
-            this.uiSrv.clearFilters()
+            this.filtering.clearFilters()
                 .then(function() {
                     self.addFilterValue('status', status);
                 });
         };
 
         this.filterBySeverity = function(numericSev) {
-            self.addFilterValue('severity', Severity.values[numericSev]);
+            this.filtering.clearFilters()
+                .then(function() {
+                    self.addFilterValue('severity', numericSev);
+                });
         };
 
         this.filterByTlp = function(value) {
-            self.addFilterValue('tlp', Tlp.values[value]);
+            this.filtering.clearFilters()
+                .then(function() {
+                    self.addFilterValue('tlp', value);
+                });
         };
 
         this.sortBy = function(sort) {
             this.list.sort = sort;
             this.list.update();
-            this.uiSrv.setSort(sort);
+            this.filtering.setSort(sort);
         };
 
         this.getCaseResponders = function(caseId, force) {

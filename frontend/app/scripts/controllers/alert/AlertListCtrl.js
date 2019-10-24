@@ -23,7 +23,7 @@
             this.$onInit = function() {
                 self.filtering = new FilteringSrv('alert', 'alert.list', {
                     defaults: {
-                        showFilters: false,
+                        showFilters: true,
                         showStats: false,
                         pageSize: 15,
                         sort: ['-date']
@@ -50,6 +50,18 @@
                             self.filtering.setPageSize(newValue);
                         });
                     });
+            };
+
+            self.load = function() {
+                var config = {
+                    scope: $scope,
+                    filter: this.filtering.buildQuery(),
+                    loadAll: false,
+                    sort: self.filtering.context.sort,
+                    pageSize: self.filtering.context.pageSize,
+                };
+
+                self.list = AlertingSrv.list(config, self.resetSelection);
             };
 
             this.toggleStats = function () {
@@ -206,18 +218,6 @@
                           NotificationSrv.error('CaseList', response.data, response.status);
                       }
                   });
-            };
-
-            self.load = function() {
-                var config = {
-                    scope: $scope,
-                    filter: this.filtering.buildQuery(),
-                    loadAll: false,
-                    sort: self.filtering.context.sort,
-                    pageSize: self.filtering.context.pageSize,
-                };
-
-                self.list = AlertingSrv.list(config, self.resetSelection);
             };
 
             self.cancel = function() {
@@ -382,15 +382,6 @@
                 self.filtering.filter().then(this.applyFilters);
             };
 
-            // this.applyFilters = function () {
-            //     self.searchForm.searchQuery = self.filtering.buildQuery();
-            //
-            //     if(self.lastSearch !== self.searchForm.searchQuery) {
-            //         self.lastSearch = self.searchForm.searchQuery;
-            //         self.search();
-            //     }
-            // };
-
             this.clearFilters = function () {
                 this.filtering.clearFilters()
                     .then(self.search);
@@ -413,53 +404,6 @@
                 this.filtering.addFilterValue(field, value);
                 this.search();
             };
-            // this.addFilterValue = function (field, value) {
-            //     var filterDef = self.filtering.filterDefs[field];
-            //     var filter = self.filtering.activeFilters[field];
-            //     var date;
-            //
-            //     if (filter && filter.value) {
-            //         if (filterDef.type === 'list') {
-            //             if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
-            //                 filter.value.push({
-            //                     text: value
-            //                 });
-            //             }
-            //         } else if (filterDef.type === 'date') {
-            //             date = moment(value);
-            //             self.filtering.activeFilters[field] = {
-            //                 value: {
-            //                     from: date.hour(0).minutes(0).seconds(0).toDate(),
-            //                     to: date.hour(23).minutes(59).seconds(59).toDate()
-            //                 }
-            //             };
-            //         } else {
-            //             filter.value = value;
-            //         }
-            //     } else {
-            //         if (filterDef.type === 'list') {
-            //             self.filtering.activeFilters[field] = {
-            //                 value: [{
-            //                     text: value
-            //                 }]
-            //             };
-            //         } else if (filterDef.type === 'date') {
-            //             date = moment(value);
-            //             self.filtering.activeFilters[field] = {
-            //                 value: {
-            //                     from: date.hour(0).minutes(0).seconds(0).toDate(),
-            //                     to: date.hour(23).minutes(59).seconds(59).toDate()
-            //                 }
-            //             };
-            //         } else {
-            //             self.filtering.activeFilters[field] = {
-            //                 value: value
-            //             };
-            //         }
-            //     }
-            //
-            //     this.filter();
-            // };
 
             this.filterByStatus = function(status) {
                 self.filtering.clearFilters()
@@ -486,7 +430,8 @@
             };
 
             this.sortByField = function(field) {
-                var currentSort = Array.isArray(this.filtering.context.sort) ? this.filtering.context.sort[0] : this.filtering.context.sort;
+                var context = this.filtering.context;
+                var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                 var sort = null;
 
                 if(currentSort.substr(1) !== field) {
