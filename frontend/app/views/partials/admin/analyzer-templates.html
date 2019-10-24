@@ -34,6 +34,7 @@
                             <td>
                                 {{::analyzer.name || analyzer.id}}<br>
                                 <small class="text-muted">{{::analyzer.description}}</small>
+                                <pre>{{analyzer | json}}</pre>
                             </td>
                             <td class="vmiddle">
                                 <div class="btn-group btn-group-sm" ng-if="analyzer.template">

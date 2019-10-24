@@ -101,12 +101,18 @@
                     _between: { _field: filter.field, _from: start, _to: end }
                 };
             } else if (start !== null) {
+                var gt = {};
+                gt[filter.field] = start;
+
                 return {
-                    _gt: { _field: filter.field, _value: start }
+                    _gt: gt
                 };
             } else {
+                var lt = {};
+                lt[filter.field] = end;
+
                 return {
-                    _lt: { _field: filter.field, _value: end }
+                    _lt: lt
                 };
             }
 
