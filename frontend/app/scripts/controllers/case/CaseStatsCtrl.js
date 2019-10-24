@@ -5,10 +5,8 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('CaseStatsCtrl',
-        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv, CasesUISrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv) {
             var self = this;
-
-            this.uiSrv = CasesUISrv;
 
             this.byResolution = {};
             this.byStatus = {};
@@ -72,11 +70,7 @@
                     total: total,
                     details: columns
                 };
-            };
-
-            this.filterBy = function(field, value) {
-                this.uiSrv.addFilter(field, value);
-            };
+            };            
         }
     );
 })();
