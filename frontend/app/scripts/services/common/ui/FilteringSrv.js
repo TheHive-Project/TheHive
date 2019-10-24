@@ -20,7 +20,7 @@
                         })
                         .then(function() {
                             var storedContext = localStorageService.get(self.sectionName);
-                            if (storedContext) {
+                            if (storedContext && storedContext.state && storedContext.state === state) {
                                 self.context = storedContext;
                                 return;
                             } else {
