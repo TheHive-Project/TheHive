@@ -11,7 +11,7 @@
 <span ng-show="updatable.updating" ng-init="updatable.dropdownOpen=false">
 	<form ng-submit="update()">
 		<div class="input-group input-group-sm">
-			<input type="{{inputType || 'text'}}" class="form-control input-sm" placeholder="{{placeholder}}" ng-model="value" autofocus="autofocus">
+			<input type="{{ {'float': 'number', 'integer': 'number', 'text': 'text'}[inputType] }}" step="{{ {'float':'.01', 'integer': '1'}[inputType] }}" class="form-control input-sm" placeholder="{{placeholder}}" ng-model="value" autofocus="autofocus">
 			<span class="input-group-btn">
 				<button class="btn btn-sm btn-default" type="submit">
 					<i class="text-success glyphicon glyphicon-ok"></i>

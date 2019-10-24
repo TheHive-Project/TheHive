@@ -29,7 +29,8 @@
                 </div>
                 <div class="col-sm-6" ng-if="$vm.fields[cf.name].options.length === 0" ng-switch="$vm.fields[cf.name].type">
                     <input ng-switch-when="string" type="text" class="form-control" ng-model="cf.value">
-                    <input ng-switch-when="number" type="number" class="form-control" ng-model="cf.value">
+                    <input ng-switch-when="integer" type="number" class="form-control" ng-model="cf.value">
+                    <input ng-switch-when="float" type="number" step=".01" class="form-control" ng-model="cf.value">
                     <select ng-switch-when="boolean" class="form-control" ng-model="cf.value" ng-options="v for v in [true, false]">
                         <option value=""></option>
                     </select>
