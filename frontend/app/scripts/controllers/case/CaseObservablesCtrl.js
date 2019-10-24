@@ -1,74 +1,99 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $filter, $uibModal, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, ObservablesUISrv, VersionSrv, Tlp) {
+        function ($scope, $q, $state, $stateParams, $filter, $uibModal, FilteringSrv, StreamSrv, CaseTabsSrv, PSearchSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
             $scope.analysisEnabled = VersionSrv.hasCortex();
-            $scope.uiSrv = ObservablesUISrv;
             $scope.caseId = $stateParams.caseId;
             $scope.showText = false;
             $scope.obsResponders = null;
 
-            $scope.uiSrv.initContext($scope.caseId);
-            $scope.searchForm = {
-                searchQuery: $scope.uiSrv.buildQuery() || ''
-            };
             $scope.selection = {};
+            $scope.actions = {
+                main: 'Action',
+                export: 'Export',
+                changeSightedFlog: 'Change sighted flag',
+                changeIOCFlog: 'Change IOC flag',
+                changeTlp: 'Change TLP',
+                addTags: 'Add tags',
+                runAnalyzers: 'Run analyzers',
+                remove: 'Delete'
+            };
 
-            $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
-                scope: $scope,
-                baseFilter: {
-                    '_and': [{
-                        '_parent': {
-                            "_type": "case",
-                            "_query": {
-                                "_id": $scope.caseId
+            this.$onInit = function() {
+                $scope.filtering = new FilteringSrv('case_artifact', 'observable.list', {
+                    defaults: {
+                        showFilters: true,
+                        showStats: false,
+                        pageSize: 15,
+                        sort: ['-startDate']
+                    },
+                    defaultFilter: []
+                });
+
+                $scope.filtering.initContext($scope.caseId)
+                    .then(function() {
+                        $scope.load();
+
+                        $scope.initSelection($scope.selection);
+                        $scope.initAnalyzersList();
+
+                        // Add a listener to refresh observables list on job finish
+                        StreamSrv.addListener({
+                            scope: $scope,
+                            rootId: $scope.caseId,
+                            objectType: 'case_artifact_job',
+                            callback: function(data) {
+                                var successFound = false;
+                                var i = 0;
+                                var ln = data.length;
+
+                                while(!successFound && i < ln) {
+                                    if(data[i].base.operation === 'Update' && data[i].base.details.status === 'Success') {
+                                        successFound = true;
+                                    }
+                                    i++;
+                                }
+
+                                if(successFound) {
+                                    $scope.artifacts.update();
+                                }
                             }
-                        }
-                    },   {
-                        'status': 'Ok'
-                    }]
-                },
-                filter: $scope.searchForm.searchQuery !== '' ? {
-                    _string: $scope.searchForm.searchQuery
-                } : '',
-                loadAll: true,
-                sort: '-startDate',
-                pageSize: $scope.uiSrv.context.pageSize,
-                onUpdate: function () {
-                    $scope.updateSelection();
-                },
-                nstats: true
-            });
+                        });
 
-            // Add a listener to refresh observables list on job finish
-            StreamSrv.addListener({
-                scope: $scope,
-                rootId: $scope.caseId,
-                objectType: 'case_artifact_job',
-                callback: function(data) {
-                    var successFound = false;
-                    var i = 0;
-                    var ln = data.length;
+                        $scope.$watchCollection('artifacts.pageSize', function (newValue) {
+                            $scope.filtering.setPageSize(newValue);
+                        });
+                    });
+            };
 
-                    while(!successFound && i < ln) {
-                        if(data[i].base.operation === 'Update' && data[i].base.details.status === 'Success') {
-                            successFound = true;
-                        }
-                        i++;
-                    }
-
-                    if(successFound) {
-                        $scope.artifacts.update();
-                    }
-                }
-            });
-
-            $scope.$watchCollection('artifacts.pageSize', function (newValue) {
-                $scope.uiSrv.setPageSize(newValue);
-            });
+            $scope.load = function() {
+                $scope.artifacts = PSearchSrv($scope.caseId, 'case_artifact', {
+                    scope: $scope,
+                    baseFilter: {
+                        '_and': [{
+                            '_parent': {
+                                "_type": "case",
+                                "_query": {
+                                    "_id": $scope.caseId
+                                }
+                            }
+                        },   {
+                            'status': 'Ok'
+                        }]
+                    },
+                    filter: $scope.filtering.buildQuery(),
+                    loadAll: true,
+                    sort: $scope.filtering.context.sort,
+                    pageSize: $scope.filtering.context.pageSize,
+                    onUpdate: function () {
+                        $scope.updateSelection();
+                    },
+                    nstats: true
+                });
+            };
 
             $scope.sortBy = function(field) {
                 if($scope.artifacts.sort.substr(1) !== field) {
@@ -84,92 +109,42 @@
                 return _.keys(obj || {});
             };
 
+            // ***************************************************
             $scope.toggleStats = function () {
-                $scope.uiSrv.toggleStats();
+                $scope.filtering.toggleStats();
             };
 
             $scope.toggleFilters = function () {
-                $scope.uiSrv.toggleFilters();
+                $scope.filtering.toggleFilters();
             };
 
             $scope.filter = function () {
-                $scope.uiSrv.filter().then($scope.applyFilters);
-            };
-
-            $scope.applyFilters = function () {
-                $scope.searchForm.searchQuery = $scope.uiSrv.buildQuery();
-                $scope.search();
+                $scope.filtering.filter().then($scope.applyFilters);
             };
 
             $scope.clearFilters = function () {
-                $scope.uiSrv.clearFilters($scope.caseId).then($scope.applyFilters);
+                $scope.filtering.clearFilters()
+                    .then($scope.search);
             };
 
-            $scope.addFilter = function (field, value) {
-                $scope.uiSrv.addFilter(field, value).then($scope.applyFilters);
-            };
-
-            $scope.removeFilter = function (field) {
-                $scope.uiSrv.removeFilter(field).then($scope.applyFilters);
+            $scope.removeFilter = function (index) {
+                $scope.filtering.removeFilter(index)
+                    .then($scope.search);
             };
 
             $scope.search = function () {
-                $scope.artifacts.filter = {
-                    _string: $scope.searchForm.searchQuery
-                };
-
-                $scope.artifacts.update();
+                $scope.load();
+                $scope.filtering.storeContext();
             };
             $scope.addFilterValue = function (field, value) {
-                var filterDef = $scope.uiSrv.filterDefs[field];
-                var filter = $scope.uiSrv.activeFilters[field];
-                var date;
-
-                if (filter && filter.value) {
-                    if (filterDef.type === 'list') {
-                        if (_.pluck(filter.value, 'text').indexOf(value) === -1) {
-                            filter.value.push({
-                                text: value
-                            });
-                        }
-                    } else if (filterDef.type === 'date') {
-                        date = moment(value);
-                        $scope.uiSrv.activeFilters[field] = {
-                            value: {
-                                from: date.hour(0).minutes(0).seconds(0).toDate(),
-                                to: date.hour(23).minutes(59).seconds(59).toDate()
-                            }
-                        };
-                    } else {
-                        filter.value = value;
-                    }
-                } else {
-                    if (filterDef.type === 'list') {
-                        $scope.uiSrv.activeFilters[field] = {
-                            value: [{
-                                text: value
-                            }]
-                        };
-                    } else if (filterDef.type === 'date') {
-                        date = moment(value);
-                        $scope.uiSrv.activeFilters[field] = {
-                            value: {
-                                from: date.hour(0).minutes(0).seconds(0).toDate(),
-                                to: date.hour(23).minutes(59).seconds(59).toDate()
-                            }
-                        };
-                    } else {
-                        $scope.uiSrv.activeFilters[field] = {
-                            value: value
-                        };
-                    }
-                }
-
-                $scope.filter();
+                $scope.filtering.addFilterValue(field, value);
+                $scope.search();
             };
 
+            // ***************************************************
+
             $scope.filterByTlp = function(value) {
-                $scope.addFilterValue('tlp', Tlp.values[value]);
+                $scope.addFilterValue('tlp', value);
             };
 
             $scope.countReports = function(observable) {
@@ -216,9 +191,6 @@
                         });
                     });
             };
-
-            $scope.initSelection($scope.selection);
-            $scope.initAnalyzersList();
 
             //
             // update selection of artifacts each time artifacts is updated

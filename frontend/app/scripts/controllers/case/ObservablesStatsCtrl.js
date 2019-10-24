@@ -5,10 +5,8 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservablesStatsCtrl',
-        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv, ObservablesUISrv) {
-            var self = this;
-
-            this.uiSrv = ObservablesUISrv;
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv) {
+            var self = this;            
 
             this.byType = {};
             this.byIoc = {};
@@ -85,10 +83,6 @@
                     total: total,
                     details: columns
                 };
-            };
-
-            this.filterBy = function(field, value) {
-                this.uiSrv.addFilter(field, value);
             };
         }
     );

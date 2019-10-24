@@ -1,7 +1,41 @@
 <div class="row">
     <div class="col-md-12 active-filters">
         <h4>Filters</h4>
-        <form class="form-horizontal" name="filtersForm" ng-submit="filter(filtersForm);" novalidate>
+        <form ng-submit="search()">
+            <div class="row mb-xxxs" ng-repeat="filter in filtering.context.filters track by $index">
+                <div class="col-sm-4 col-md-4 col-lg-2">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" ng-click="removeFilter($index)">
+                                <i class="fa fa-times text-danger"></i>
+                            </button>
+                        </span>
+                        <select class="form-control" ng-model="filter.field"
+                            ng-options="item.name as item.name for (key, item) in filtering.attributes"
+                            ng-change="filtering.setFilterField(filter, config.entity)"></select>
+                    </div>
+                </div>
+                <div class="col-sm-8 col-md-8 col-lg-6">
+                    <filter-editor metadata="filtering.metadata" filter="filter" entity="filtering.entity"></filter-editor>
+                </div>
+            </div>
+            <div class="mv-xs row">
+                <div class="col-sm-12 col-md-12 col-lg-8">
+                    <a href class="btn btn-sm  btn-link btn-clear" ng-click="filtering.addFilter()">
+                        <i class="fa fa-plus"></i> Add a filter
+                    </a>
+                    <a href class="btn btn-sm btn-danger" ng-click="clearFilters()" ng-if="filtering.context.filters.length > 0">
+                        <i class="fa fa-times"></i> Clear
+                    </a>
+                    <button href class="btn btn-sm btn-primary pull-right" type="submit" ng-if="filtering.context.filters.length > 0">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+
+
+        <!-- <form class="form-horizontal" name="filtersForm" ng-submit="filter(filtersForm);" novalidate>
 
             <div class="row">
                 <div class="col-md-12">
@@ -87,7 +121,7 @@
             <div class="pull-right">
                 <button class="btn btn-sm btn-primary" type="submit">Apply filters</button>
             </div>
-        </form>
+        </form> -->
 
     </div>
 </div>
