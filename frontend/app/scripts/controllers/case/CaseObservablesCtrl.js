@@ -177,19 +177,21 @@
             };
 
             $scope.initAnalyzersList = function () {
-                AnalyzerSrv.query()
-                    .then(function (analyzers) {
-                        $scope.analyzersList.analyzers = analyzers;
-                        $scope.analyzersList.active = {};
-                        $scope.analyzersList.datatypes = {};
-                        angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.active[analyzer.name] = false;
+                if($scope.analysisEnabled) {
+                    AnalyzerSrv.query()
+                        .then(function (analyzers) {
+                            $scope.analyzersList.analyzers = analyzers;
+                            $scope.analyzersList.active = {};
+                            $scope.analyzersList.datatypes = {};
+                            angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
+                                $scope.analyzersList.active[analyzer.name] = false;
+                            });
+                            $scope.analyzersList.selected = {};
+                            angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
+                                $scope.analyzersList.selected[analyzer.name] = false;
+                            });
                         });
-                        $scope.analyzersList.selected = {};
-                        angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            $scope.analyzersList.selected[analyzer.name] = false;
-                        });
-                    });
+                }                
             };
 
             //
