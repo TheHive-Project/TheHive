@@ -45,7 +45,7 @@ object Conversion {
     richAlert =>
       richAlert
         .into[OutputAlert]
-        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+        .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldRenamed(_._id, _.id)
@@ -71,7 +71,7 @@ object Conversion {
         richAlertWithObservables
           ._1
           .into[OutputAlert]
-          .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+          .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
           .withFieldRenamed(_._id, _.id)
           .withFieldRenamed(_._createdAt, _.createdAt)
           .withFieldRenamed(_._createdBy, _.createdBy)

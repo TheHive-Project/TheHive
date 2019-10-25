@@ -34,7 +34,7 @@ case class TestAlert(
     pap: Int,
     status: String,
     follow: Boolean,
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: JsObject = JsObject.empty,
     caseTemplate: Option[String] = None
 )
 
@@ -63,11 +63,8 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
     val db                   = app.instanceOf[Database]
 
     "create an alert" in {
-      val now = new Date()
-      val outputCustomFields = Set(
-        OutputCustomFieldValue("string1", "string custom field", "string", Some("string custom field")),
-        OutputCustomFieldValue("float1", "float custom field", "float", Some("42.0"))
-      )
+      val now                = new Date()
+      val outputCustomFields = Json.obj("string1" -> Json.obj("string" -> "string custom field"), "float1" -> Json.obj("float" -> 42.0))
       val inputCustomFields = Seq(
         InputCustomFieldValue("float1", Some(42)),
         InputCustomFieldValue("string1", Some("string custom field"))
@@ -176,7 +173,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         pap = 2,
         status = "New",
         follow = true,
-        customFields = Set(OutputCustomFieldValue("integer1", "integer custom field", "integer", Some("42"))),
+        customFields = Json.obj("integer1" -> Json.obj("integer" -> 42)),
         caseTemplate = None
       )
 

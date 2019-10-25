@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OWrites, Reads}
+import play.api.libs.json.{JsObject, Json, OWrites, Reads}
 
 import org.thp.scalligraph.controllers.WithParser
 
@@ -49,7 +49,7 @@ case class OutputAlert(
     status: String,
     follow: Boolean,
     `case`: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: JsObject,
     caseTemplate: Option[String] = None,
     artifacts: Seq[OutputObservable] = Nil
 )
@@ -74,12 +74,11 @@ object OutputAlert {
       severity     <- (json \ "severity").validate[Int]
       date         <- (json \ "date").validate[Date]
       tags         <- (json \ "tags").validate[Set[String]]
-      flag         <- (json \ "flag").validate[Boolean]
       tlp          <- (json \ "tlp").validate[Int]
       pap          <- (json \ "pap").validate[Int]
       status       <- (json \ "status").validate[String]
       follow       <- (json \ "follow").validate[Boolean]
-      customFields <- (json \ "customFields").validate[Set[OutputCustomFieldValue]]
+      customFields <- (json \ "customFields").validate[JsObject]
       caseTemplate <- (json \ "caseTemplate").validateOpt[String]
       artifacts    <- (json \ "artifacts").validate[Seq[OutputObservable]]
     } yield OutputAlert(
