@@ -137,20 +137,6 @@
                 });
         };
 
-        this.filterBySeverity = function(numericSev) {
-            this.filtering.clearFilters()
-                .then(function() {
-                    self.addFilterValue('severity', numericSev);
-                });
-        };
-
-        this.filterByTlp = function(value) {
-            this.filtering.clearFilters()
-                .then(function() {
-                    self.addFilterValue('tlp', value);
-                });
-        };
-
         this.sortBy = function(sort) {
             this.list.sort = sort;
             this.list.update();

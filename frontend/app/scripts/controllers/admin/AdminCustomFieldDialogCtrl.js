@@ -29,10 +29,15 @@
             var type = self.customField.type;
             var values = self.customField.options.split('\n');
 
-            if (type === 'integer' || type === 'float') {
-                return _.without(values.map(function(item) {
-                    return Number(item);
-                }), NaN) || [];
+            switch(type) {
+                case 'integer':
+                    return _.without(values.map(function(item) {
+                        return Number(item);
+                    }), NaN) || [];
+                case 'float':
+                    return _.without(values.map(function(item) {
+                        return parseFloat(item.replace(/,/gi, '.'));
+                    }), NaN) || [];
             }
 
             return values;
