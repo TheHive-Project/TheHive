@@ -13,7 +13,7 @@ case class KeyValue(
     `type`: ValueType.Value,
     string: Option[String],
     integer: Option[Int],
-    float: Option[Float],
+    float: Option[Double],
     boolean: Option[Boolean],
     date: Option[Date]
 )

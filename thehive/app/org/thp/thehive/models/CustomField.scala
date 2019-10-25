@@ -15,13 +15,13 @@ trait CustomFieldValue[C] extends Product {
   def stringValue: Option[String]
   def booleanValue: Option[Boolean]
   def integerValue: Option[Int]
-  def floatValue: Option[Float]
+  def floatValue: Option[Double]
   def dateValue: Option[Date]
   def order_=(value: Option[Int]): C
   def stringValue_=(value: Option[String]): C
   def booleanValue_=(value: Option[Boolean]): C
   def integerValue_=(value: Option[Int]): C
-  def floatValue_=(value: Option[Float]): C
+  def floatValue_=(value: Option[Double]): C
   def dateValue_=(value: Option[Date]): C
 }
 
@@ -30,7 +30,7 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
   override def stringValue: Option[String]   = db.getOptionProperty(edge, "stringValue", UniMapping.string.optional)
   override def booleanValue: Option[Boolean] = db.getOptionProperty(edge, "booleanValue", UniMapping.boolean.optional)
   override def integerValue: Option[Int]     = db.getOptionProperty(edge, "integerValue", UniMapping.int.optional)
-  override def floatValue: Option[Float]     = db.getOptionProperty(edge, "floatValue", UniMapping.float.optional)
+  override def floatValue: Option[Double]    = db.getOptionProperty(edge, "floatValue", UniMapping.double.optional)
   override def dateValue: Option[Date]       = db.getOptionProperty(edge, "dateValue", UniMapping.date.optional)
 
   override def order_=(value: Option[Int]): CustomFieldValueEdge = {
@@ -50,8 +50,8 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
     db.setOptionProperty(edge, "integerValue", value, UniMapping.int.optional)
     this
   }
-  override def floatValue_=(value: Option[Float]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "floatValue", value, UniMapping.float.optional)
+  override def floatValue_=(value: Option[Double]): CustomFieldValueEdge = {
+    db.setOptionProperty(edge, "floatValue", value, UniMapping.double.optional)
     this
   }
   override def dateValue_=(value: Option[Date]): CustomFieldValueEdge = {
@@ -158,23 +158,23 @@ object CustomFieldInteger extends CustomFieldType[Int] {
   override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
 }
 
-object CustomFieldFloat extends CustomFieldType[Float] {
-  override val name: String          = "float"
-  override val writes: Writes[Float] = Writes.FloatWrites
+object CustomFieldFloat extends CustomFieldType[Double] {
+  override val name: String           = "float"
+  override val writes: Writes[Double] = Writes.DoubleWrites
 
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case n: Number     => Success(customFieldValue.floatValue = Some(n.floatValue()))
-    case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toFloat))
+    case n: Number     => Success(customFieldValue.floatValue = Some(n.doubleValue()))
+    case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toDouble))
     case JsNull | null => Success(customFieldValue.floatValue = None)
     case obj: JsObject =>
-      val floatValue = (obj \ "float").asOpt[Float]
+      val floatValue = (obj \ "float").asOpt[Double]
       val order      = (obj \ "order").asOpt[Int]
       Success((customFieldValue.floatValue = floatValue).order = order)
 
     case _ => setValueFailure(value)
   }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[Float] = ccf.floatValue
+  override def getValue(ccf: CustomFieldValue[_]): Option[Double] = ccf.floatValue
 }
 
 object CustomFieldDate extends CustomFieldType[Date] {

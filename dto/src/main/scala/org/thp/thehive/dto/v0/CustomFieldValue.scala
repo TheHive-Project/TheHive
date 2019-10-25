@@ -47,7 +47,7 @@ object InputCustomFieldValue {
     obj.get("float") match {
       case FUndefined     => None
       case FNull          => Some(Good(InputCustomFieldValue(name, None)))
-      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toFloat))))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toDouble))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.float", "float", Set.empty, other))))
     }
 

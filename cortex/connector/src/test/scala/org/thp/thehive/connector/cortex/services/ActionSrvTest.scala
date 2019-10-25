@@ -162,7 +162,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
             )
           )
           relatedCase.customFields.find(_.value.contains(new Date(1562157321892L))) must beSome
-          relatedCase.customFields.find(_.value.contains(15.54.toFloat)) must beSome
+          relatedCase.customFields.find(_.value.contains(15.54)) must beSome
           caseSrv.get(relatedCase._id).observables(authContextUser1).toList.find(_.message.contains("test observable from action")) must beSome
         }
       }
