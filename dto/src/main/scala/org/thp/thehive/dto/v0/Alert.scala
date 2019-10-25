@@ -20,7 +20,7 @@ case class InputAlert(
     tlp: Option[Int] = None,
     pap: Option[Int] = None,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil
+    customFields: Seq[InputCustomFieldValue] = Nil
 )
 
 object InputAlert {

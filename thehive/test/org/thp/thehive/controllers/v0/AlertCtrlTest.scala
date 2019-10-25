@@ -119,7 +119,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
                 flag = Some(false),
                 tlp = Some(1),
                 pap = Some(3),
-                customFieldValue = inputCustomFields
+                customFields = inputCustomFields
               )
             )
             .as[JsObject] +

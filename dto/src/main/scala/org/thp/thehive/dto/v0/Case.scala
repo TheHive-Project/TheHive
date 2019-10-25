@@ -20,7 +20,7 @@ case class InputCase(
     summary: Option[String] = None,
     user: Option[String] = None,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil
+    customFields: Seq[InputCustomFieldValue] = Nil
 )
 
 object InputCase {

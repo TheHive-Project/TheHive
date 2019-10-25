@@ -82,7 +82,7 @@ class CaseCtrl @Inject()(
                 .getOrFail()
                 .map(Some.apply)
             }
-          customFields = inputCase.customFieldValue.map(c => c.name -> c.value).toMap
+          customFields = inputCase.customFields.map(c => c.name -> c.value).toMap
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
