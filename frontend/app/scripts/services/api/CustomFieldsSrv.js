@@ -23,7 +23,6 @@
             };
 
             this.usage = function(field) {
-                // TODO TEST ME after backend implementation
                 return $http.get('./api/customFields/' + field.reference + '/use');
             };
 
@@ -36,7 +35,7 @@
             };
 
             this.update = function(id, field) {
-                return $http.patch('./api/customField', self._convert(field));
+                return $http.patch('./api/customField/'+id, self._convert(field));
             };
 
             this.remove = function(id) {

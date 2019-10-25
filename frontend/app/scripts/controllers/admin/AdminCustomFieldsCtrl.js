@@ -50,7 +50,17 @@
                     controllerAs: '$vm',
                     size: 'lg',
                     resolve: {
-                        customField: angular.copy(customField) || {}
+                        customField: function() {
+                            return customField.id ? {
+                                  id: customField.id,
+                                  name: customField.reference,
+                                  displayName: customField.name,
+                                  description: customField.description,
+                                  type: customField.type,
+                                  options: customField.options,
+                                  mandatory: customField.mandatory
+                            } : {};
+                        }
                     }
                 });
 
@@ -58,6 +68,11 @@
                     self.initCustomfields();
                     CustomFieldsSrv.clearCache();
                     $scope.$emit('custom-fields:refresh');
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AdminCustomfieldsCtrl', err.data, err.status);
+                    }
                 });
             };
 
