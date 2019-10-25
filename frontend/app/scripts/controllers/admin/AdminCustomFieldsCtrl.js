@@ -41,16 +41,6 @@
                     .catch(function(response) {
                         NotificationSrv.error('AdminCustomfieldsCtrl', response.data, response.status);
                     });
-
-                // ListSrv.query({
-                //     'listId': 'custom_fields'
-                // }, {}, function(response) {
-                //
-                //
-                //
-                // }, function(response) {
-                //
-                // });
             };
 
             self.showFieldDialog = function(customField) {

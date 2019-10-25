@@ -19,12 +19,12 @@
 
 
             this.removeField = function(field) {
-                return $http.delete('./api/list/' + field.id);
+                return $http.delete('./api/customField/' + field.reference);
             };
 
             this.usage = function(field) {
                 // TODO TEST ME after backend implementation
-                return $http.get('./api/customFields/' + field.reference);
+                return $http.get('./api/customFields/' + field.reference + '/use');
             };
 
             this.list = function() {
