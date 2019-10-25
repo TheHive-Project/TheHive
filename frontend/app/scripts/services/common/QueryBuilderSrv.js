@@ -45,6 +45,42 @@
             }
         };
 
+        this._buildQueryFromFreeTextFilter = function(fieldDef, filter) {
+            if (!filter || !filter.value) {
+                return null;
+            }
+            var operator = filter.value.operator || 'any';
+            var values = _.pluck(filter.value.list, 'text');
+
+            if(values.length > 0) {
+                var criterions = _.map(values, function(val) {
+                    var v = {_like: {}};
+
+                    v._like[filter.field] = val;
+
+                    return v;
+                });
+
+                var criteria = {};
+                switch(operator) {
+                    case 'all':
+                        criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                        break;
+                    case 'none':
+                        criteria = {
+                            _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                        };
+                        break;
+                    default:
+                        criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                }
+
+                return criteria;
+            }
+
+            return null;
+        };
+
         this._buildQueryFromListFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
@@ -54,7 +90,6 @@
 
             if(values.length > 0) {
                 var criterions = _.map(values, function(val) {
-                    //return {_string: filter.field + ':' + val};
                     return {_field: filter.field, _value: val};
                 });
 
@@ -124,11 +159,19 @@
                 return this._buildQueryFromDateFilter(fieldDef, filter);
             } else if(filter.type === 'boolean') {
                 return this._buildQueryFromBooleanFilter(fieldDef, filter);
-            } else if(filter.value.list || filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration' || fieldDef.values.length > 0) {
+            } else if(filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration') {
+                return this._buildQueryFromListFilter(fieldDef, filter);
+            } else if(filter.type === 'string' && fieldDef.values.length === 0) {
+                // TODO implemtent like operator
+                return this._buildQueryFromFreeTextFilter(fieldDef, filter);
+            } else if(filter.value.list || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
             } else if(filter.type === 'number') {
                 return this._buildQueryFromNumberFilter(fieldDef, filter);
             }
+
+
+
             return {
                 _string: filter.field + ':"' + filter.value +'"'
             };
