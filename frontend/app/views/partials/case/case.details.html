@@ -4,63 +4,87 @@
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Title
             </dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-simple-text on-update="updateField('title', newValue)" value="caze.title"></updatable-simple-text>
+            </dd>
+            <dd ng-if="!canEdit">
+                {{caze.title}}
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Severity</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <a class="noline" href ng-click="activeSev = true" ng-init="activeSev = false">
                     <severity active="activeSev" on-update="updateField('severity', newValue)" style="float:left; font-size:16px" value="caze.severity"></severity>
                 </a>
+            </dd>
+            <dd ng-if="!canEdit">
+                <severity active="false" value="caze.severity"></severity>
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">TLP</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <a class="noline" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
                     <tlp format="activeTlp" on-update="updateField('tlp', newValue)" style="float:left;" value="caze.tlp"></tlp>
                 </a>
+            </dd>
+            <dd ng-if="!canEdit">
+                <tlp format="'static'" value="caze.tlp"></tlp>
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">PAP</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <a class="noline" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
                     <tlp format="activePap" on-update="updateField('pap', newValue)" style="float:left;" value="caze.pap" namespace="PAP"></tlp>
                 </a>
             </dd>
+            <dd ng-if="!canEdit">
+                <tlp format="'static'" value="caze.pap" namespace="PAP"></tlp>
+            </dd>
         </dl>
 
-        <dl class="dl-horizontal">
+        <dl class="dl-horizontal clear">
             <dt class="pull-left">Assignee</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
+            </dd>
+            <dd ng-if="!canEdit">
+                <user-info value="caze.owner" field="name"></user-info>
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Date</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-date on-update="updateField('startDate', newValue)" value="caze.startDate"></updatable-date>
+            </dd>
+            <dd ng-if="!canEdit">
+                {{caze.startDate | showDate}}
             </dd>
         </dl>
 
-        <dl class="dl-horizontal">
+        <dl class="dl-horizontal clear">
             <dt class="pull-left">Tags</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tags>
+            </dd>
+            <dd ng-if="!canEdit">
+                <tag-list data="caze.tags"></tag-list>
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear" ng-show="isCaseClosed()">
             <dt class="pull-left text-success">Close date</dt>
-            <dd class="text-success">
+            <dd class="text-success" ng-if="canEdit">
                 <updatable-date on-update="updateField('endDate', newValue)" value="caze.endDate"></updatable-date>
+            </dd>
+            <dd class="text-success" ng-if="!canEdit">
+                {{caze.endDate | showDate}}
             </dd>
         </dl>
     </div>
@@ -71,18 +95,24 @@
 <div class="row">
     <div class="col-sm-8">
         <ng-include src="'views/partials/case/details/custom.fields.html'"></ng-include>
-    </div>    
+    </div>
 </div>
 <div class="vpad10">
      <h4 class="vpad10 text-primary">Description</h4>
-     <div class="description-pane">
+     <div class="description-pane" ng-if="canEdit">
          <updatable-text on-update="updateField('description', newValue)" value="caze.description"></updatable-text>
+     </div>
+     <div class="description-pane" ng-if="!canEdit">
+        <div marked="caze.description" class="markdown"></div>
      </div>
 </div>
 <div class="vpad10" ng-show="isCaseClosed()">
      <h4 class="vpad10 text-primary">Summary</h4>
-     <div class="description-pane">
+     <div class="description-pane" ng-if="canEdit">
          <updatable-text on-update="updateField('summary', newValue)" value="caze.summary"></updatable-text>
+     </div>
+     <div class="description-pane" ng-if="!canEdit">
+        <div marked="caze.summary" class="markdown"></div>
      </div>
 </div>
 <div class="case-actions vpad10" ng-if="actions.values.length">

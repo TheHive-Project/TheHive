@@ -28,6 +28,8 @@
             $scope.userPermissions = (caze.permissions || []).join(',');
             $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
 
+            $scope.canEdit = caze.permissions.indexOf('manageCase') !== -1;
+
             $scope.initExports = function() {
                 $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
                     return item.type === 'misp';
@@ -294,7 +296,7 @@
                     $scope.caze = data.toJSON();
                     $scope.initExports();
                 });
-            };            
+            };
 
             $scope.removeCase = function() {
               var modalInstance = $uibModal.open({
