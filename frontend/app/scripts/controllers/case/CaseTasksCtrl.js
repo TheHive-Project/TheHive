@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, FilteringSrv, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -19,29 +19,84 @@
         $scope.taskResponders = null;
         $scope.collapseOptions = {};
 
-        $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
-            scope: $scope,
-            loadAll: true,
-            baseFilter: {
-                _and: [{
-                    _parent: {
-                        _type: 'case',
-                        _query: {
-                            '_id': $scope.caseId
+        this.$onInit = function() {
+            $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+                defaults: {
+                    showFilters: true,
+                    showStats: false,
+                    pageSize: 15,
+                    sort: ['-flag', '+order', '+startDate', '+title'],
+                },
+                defaultFilter: []
+            });
+
+            $scope.filtering.initContext($scope.caseId)
+                .then(function() {
+                    $scope.load();
+
+                    $scope.$watchCollection('artifacts.pageSize', function (newValue) {
+                        $scope.filtering.setPageSize(newValue);
+                    });
+                });
+        };
+
+        $scope.load = function() {
+            $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+                scope: $scope,
+                baseFilter: {
+                    _and: [{
+                        _parent: {
+                            _type: 'case',
+                            _query: {
+                                '_id': $scope.caseId
+                            }
                         }
-                    }
-                }, {
-                    _not: {
-                        'status': 'Cancel'
-                    }
-                }]
-            },
-            sort: ['-flag', '+order', '+startDate', '+title'],
-            onUpdate: function() {
-                $scope.buildTaskGroups($scope.tasks.values);
-            },
-            pageSize: 1000
-        });
+                    }, {
+                        _not: {
+                            'status': 'Cancel'
+                        }
+                    }]
+                },
+                filter: $scope.filtering.buildQuery(),
+                loadAll: true,
+                sort: $scope.filtering.context.sort,
+                pageSize: $scope.filtering.context.pageSize,
+                onUpdate: function() {
+                    $scope.buildTaskGroups($scope.tasks.values);
+                }
+            });
+        };
+
+        $scope.toggleStats = function () {
+            $scope.filtering.toggleStats();
+        };
+
+        $scope.toggleFilters = function () {
+            $scope.filtering.toggleFilters();
+        };
+
+        $scope.filter = function () {
+            $scope.filtering.filter().then($scope.applyFilters);
+        };
+
+        $scope.clearFilters = function () {
+            $scope.filtering.clearFilters()
+                .then($scope.search);
+        };
+
+        $scope.removeFilter = function (index) {
+            $scope.filtering.removeFilter(index)
+                .then($scope.search);
+        };
+
+        $scope.search = function () {
+            $scope.load();
+            $scope.filtering.storeContext();
+        };
+        $scope.addFilterValue = function (field, value) {
+            $scope.filtering.addFilterValue(field, value);
+            $scope.search();
+        };
 
         $scope.toggleGroupedView = function() {
             $scope.state.showGrouped = !$scope.state.showGrouped;
