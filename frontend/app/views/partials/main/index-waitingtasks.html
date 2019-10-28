@@ -1,6 +1,8 @@
-<psearch control="list"></psearch>
+<psearch control="$vm.list"></psearch>
 
-<table class="table table-striped table-hover">
+<div class="empty-message" ng-show="$vm.list.total === 0">No records</div>
+
+<table class="table table-striped table-hover" ng-show="$vm.list.total > 0">
 	<thead>
 		<tr>
 			<th class="text-center" style="width: 60px;">Severity</th>
@@ -12,7 +14,7 @@
 
 	<tbody>
 		<tr class="task-row"
-			ng-repeat="value in list.values">
+			ng-repeat="value in $vm.list.values">
 			<td class="text-center">
 				<severity active="false" value="value.case.severity"></severity>
 			</td>
@@ -24,11 +26,11 @@
 				</div>
 			</td>
 			<td>
-				<button type="button" class="btn btn-sm btn-primary" ng-click="openWTask(value)">Take</button>
+				<button type="button" class="btn btn-sm btn-primary" ng-click="$vm.openWTask(value)">Take</button>
 			</td>
 		</tr>
 	</tbody>
 
 </table>
 
-<psearch control="list"></psearch>
+<psearch control="$vm.list"></psearch>

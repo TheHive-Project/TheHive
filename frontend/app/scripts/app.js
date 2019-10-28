@@ -126,8 +126,9 @@ angular.module('thehive', [
                 params: {
                     viewId: 'mytasks'
                 },
-                templateUrl: 'views/app.main.html',
-                controller: 'MainPageCtrl'
+                templateUrl: 'views/partials/main/list.html',
+                controller: 'MainPageCtrl',
+                controllerAs: '$vm'
             })
             .state('app.cases', {
                 url: 'cases',

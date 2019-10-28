@@ -1,0 +1,93 @@
+<div class="row">
+    <div ng-Class="{ 'col-md-9': $vm.appLayout.showFlow, 'col-md-12': !$vm.appLayout.showFlow}">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title" ng-if="$vm.view.data == 'mytasks'">My tasks ({{$vm.list.total}})</h3>
+                <h3 class="box-title" ng-if="$vm.view.data == 'waitingtasks'">Waiting tasks ({{$vm.list.total}})</h3>
+
+                <div class="box-tools pull-right" ng-show="!$vm.appLayout.showFlow">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="$vm.layoutSrv.showFlow(true)">
+                            <i class="fa fa-plus"></i> Show live stream
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/main/toolbar.html'"></div>
+
+                <div class="mt-s filter-panel" ng-include="'views/partials/case/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                <div class="row mt-s">
+                    <div class="col-md-12 clearfix">
+                        <div class="active-filters">
+                            <ul ng-if="$vm.filtering.context.filters.length > 0">
+                                <li>{{$vm.filtering.context.filters.length}}
+                                    filter(s) applied:
+                                </li>
+                                <li class="filter-item" ng-repeat="filter in $vm.filtering.context.filters">
+                                    <span>
+                                        <strong>{{filter.field}}:</strong>
+                                        {{filter.value | filterValue}}</span>
+                                    <a href="" ng-click="$vm.removeFilter(field)">
+                                        <span class="filter-close fa fa-times text-danger"></span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="" ng-click="$vm.clearFilters()">Clear filters</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- <div class="clearfix">
+                    <div class="form-inline pull-right">
+                        <div class="input-group">
+                            <filter-box collection="$vm.list"></filter-box>
+                        </div>
+                        <div class="form-group">
+                            <page-sizer collection="$vm.list"></page-sizer>
+                        </div>
+                    </div>
+                </div> -->
+
+                <div ng-switch="$vm.view.data">
+                    <div class="main-fadein" ng-switch-when="waitingtasks">
+                        <div ng-include="'views/partials/main/index-waitingtasks.html'"></div>
+                    </div>
+
+                    <div class="main-fadein" ng-switch-default>
+                        <div ng-include="'views/partials/main/index-mytasks.html'"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div ng-show="$vm.appLayout.showFlow" class="col-md-3">
+        <div class=" box">
+            <div class="box-header">
+                <h3 class="box-title">&nbsp;</h3>
+                <div class="box-tools pull-right">
+                    <span class="ml-xs" tooltip="Open in new window">
+                        <a class="text-muted" href ng-click="$vm.layoutSrv.detachFlow()">
+                            <i class="fa fa-external-link"></i> Open in new window
+                        </a>
+                    </span>
+
+                    <span class="ml-xs" tooltip="Hide">
+                        <a class="text-muted" href ng-click="$vm.layoutSrv.showFlow(false)">
+                            <i class="fa fa-minus"></i> Hide
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body no-padding">
+                <flow max="10"></flow>
+            </div>
+        </div>
+    </div>
+
+</div>

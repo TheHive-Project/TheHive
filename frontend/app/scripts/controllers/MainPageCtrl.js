@@ -1,51 +1,104 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('MainPageCtrl',
-        function($rootScope, $scope, $window, $stateParams, $state, CaseTaskSrv, PSearchSrv, EntitySrv, UserSrv) {
+        function($rootScope, $scope, $window, $stateParams, $state, FilteringSrv, CaseTaskSrv, PSearchSrv, EntitySrv, UserSrv) {
+            var self = this;
+            var view = $stateParams.viewId;
 
-            $scope.live = function() {
-                $window.open($state.href('live'), 'TheHiveLive',
-                    'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');
+            self.$onInit = function() {
+                self.view = {};
+
+                self.defaultFilter = view === 'mytasks' ? {
+                    '_and': [{
+                        '_in': {
+                            '_field': 'status',
+                            '_values': ['Waiting', 'InProgress']
+                        }
+                    }, {
+                        'owner': $scope.currentUser.login
+                    }]
+                } : {
+                    'status': 'Waiting'
+                };
+
+                if ($stateParams.viewId === 'mytasks') {
+                    $rootScope.title = 'My tasks';
+                    self.view.data = 'mytasks';
+
+                } else if ($stateParams.viewId === 'waitingtasks') {
+                    $rootScope.title = 'Waiting tasks';
+                    self.view.data = 'waitingtasks';
+                }
+
+                self.filtering = new FilteringSrv('case_task', $stateParams.viewId + '.list', {
+                    defaults: {
+                        showFilters: true,
+                        showStats: false,
+                        pageSize: 15,
+                        sort: ['-flag', '-startDate'],
+                    },
+                    defaultFilter: [],
+                    excludes: view === 'mytasks' ? ['owner'] : ['status']
+                });
+                self.filtering.initContext('list')
+                    .then(function() {
+                        self.load();
+
+                        $scope.$watch('$vm.list.pageSize', function (newValue) {
+                            self.filtering.setPageSize(newValue);
+                        });
+                    });
             };
 
-            if ($stateParams.viewId === 'mytasks') {
-                $rootScope.title = 'My tasks';
-                $scope.view.data = 'mytasks';
-                $scope.list = PSearchSrv(undefined, 'case_task', {
+            self.load = function() {
+                self.list = PSearchSrv(undefined, 'case_task', {
                     scope: $scope,
-                    baseFilter: {
-                        '_and': [{
-                            '_in': {
-                                '_field': 'status',
-                                '_values': ['Waiting', 'InProgress']
-                            }
-                        }, {
-                            'owner': $scope.currentUser.login
-                        }]
-                    },
-                    sort: ['-flag', '-startDate'],
+                    baseFilter: self.defaultFilter,
+                    filter: self.filtering.buildQuery(),
+                    loadAll: false,
+                    sort: self.filtering.context.sort,
+                    pageSize: self.filtering.context.pageSize,
                     nparent: 1
                 });
+            };
 
-            } else if ($stateParams.viewId === 'waitingtasks') {
-                $rootScope.title = 'Waiting tasks';
-                $scope.view.data = 'waitingtasks';
-                $scope.list = PSearchSrv(undefined, 'case_task', {
-                    scope: $scope,
-                    baseFilter: {
-                        'status': 'Waiting'
-                    },
-                    sort: '-startDate',
-                    nparent: 1
-                });
-            }
+            self.toggleStats = function () {
+                self.filtering.toggleStats();
+            };
+
+            self.toggleFilters = function () {
+                self.filtering.toggleFilters();
+            };
+
+            self.filter = function () {
+                self.filtering.filter().then(self.applyFilters);
+            };
+
+            self.clearFilters = function () {
+                self.filtering.clearFilters()
+                    .then(self.search);
+            };
+
+            self.removeFilter = function (index) {
+                self.filtering.removeFilter(index)
+                    .then(self.search);
+            };
+
+            self.search = function () {
+                self.load();
+                self.filtering.storeContext();
+            };
+            self.addFilterValue = function (field, value) {
+                self.filtering.addFilterValue(field, value);
+                self.search();
+            };
 
             // init values
-            $scope.showFlow = true;
-            $scope.openEntity = EntitySrv.open;
-            $scope.getUserInfo = UserSrv.getCache;
+            self.showFlow = true;
+            self.openEntity = EntitySrv.open;
+            self.getUserInfo = UserSrv.getCache;
 
-            $scope.openWTask = function(task) {
+            self.openWTask = function(task) {
                 if (task.status === 'Waiting') {
                     CaseTaskSrv.update({
                         'taskId': task.id
@@ -53,12 +106,17 @@
                         'status': 'InProgress'
                     }, function(data) {
                         if (data.status === 'InProgress') {
-                            $scope.openEntity(task);
+                            self.openEntity(task);
                         }
                     }, function(response) {
                         console.log(response);
                     });
                 }
+            };
+
+            self.live = function() {
+                $window.open($state.href('live'), 'TheHiveLive',
+                    'width=500,height=700,menubar=no,status=no,toolbar=no,location=no,scrollbars=yes');
             };
         }
     );

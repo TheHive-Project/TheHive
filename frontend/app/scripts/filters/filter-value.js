@@ -4,7 +4,9 @@
     angular.module('theHiveFilters').filter('filterValue', function() {
         return function(value) {
             if (angular.isArray(value)) {
-                return _.pluck(value, 'text').join(', ');
+                return _.map(value, function(item) {
+                    return item.label || item.text;
+                }).join(', ');
             } else if(angular.isObject(value) && value.from !== undefined && value.to !== undefined) {
                 var result = [];
                 if(value.from !== null) {
@@ -17,7 +19,9 @@
 
                 return result.join(', ');
             } else if(angular.isObject(value) && value.list !== undefined) {
-                return _.pluck(value.list, 'label').join(', ');
+                return _.map(value.list, function(item) {
+                    return item.label || item.text;
+                }).join(', ');
             }
 
             return value || 'Any';

@@ -16,7 +16,11 @@
                     return DashboardSrv.getMetadata()
                         .then(function(response) {
                             self.metadata = response;
-                            self.attributes = response[self.entity].attributes;
+                            self.attributes = angular.copy(response[self.entity].attributes);
+
+                            _.each(self.config.excludes || [], function(exclude) {
+                                delete self.attributes[exclude];
+                            });
                         })
                         .then(function() {
                             var storedContext = localStorageService.get(self.sectionName);
