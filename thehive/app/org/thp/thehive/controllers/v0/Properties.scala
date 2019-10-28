@@ -362,6 +362,7 @@ class Properties @Inject()(
       .property("endDate", UniMapping.date.optional)(_.field.updatable)
       .property("order", UniMapping.int)(_.field.updatable)
       .property("dueDate", UniMapping.date.optional)(_.field.updatable)
+      .property("group", UniMapping.string)(_.field.updatable)
       .property("owner", UniMapping.string.optional)(
         _.select(_.user.login)
           .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
