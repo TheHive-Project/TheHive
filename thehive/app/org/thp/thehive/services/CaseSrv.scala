@@ -96,7 +96,7 @@ class CaseSrv @Inject()(
         Success(Json.obj("endDate" -> endDate.getTime))
       }
 
-    val closeCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == "Resolved")
+    val closeCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == CaseStatus.Resolved)
 
     val newPropertyUpdaters = if (closeCase) endDateSetter(new Date) +: propertyUpdaters else propertyUpdaters
     auditSrv.mergeAudits(super.update(steps, newPropertyUpdaters)) {
