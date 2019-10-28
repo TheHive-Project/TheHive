@@ -186,6 +186,7 @@ object Conversion {
       .withFieldComputed(_.hasKey, _.apikey.isDefined)
       //        .withFieldComputed(_.permissions, _.permissions)
       //        .withFieldConst(_.permissions, Set.empty[String]
+      .withFieldComputed(_.avatar, user => user.avatar.map(_ => s"/api/v1/user/${user._id}/avatar"))
       .transform
   )
 

@@ -10,12 +10,13 @@ import play.api.libs.json.JsObject
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
+import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.scalligraph.{BadRequestError, EntitySteps}
+import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
@@ -32,7 +33,7 @@ object UserSrv {
 }
 
 @Singleton
-class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, implicit val db: Database)
+class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, attachmentSrv: AttachmentSrv, implicit val db: Database)
     extends VertexSrv[User, UserSteps] {
 
   override val initialValues: Seq[User] = Seq(UserSrv.initUser)
@@ -40,6 +41,7 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
   val basicUserNameRegex: Pattern       = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
 
+  val userAttachmentSrv                                                           = new EdgeSrv[UserAttachment, User, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
   def checkUser(user: User): Try[User] =
@@ -54,15 +56,16 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
       Success(s"$login}@${defaultUserDomain.get}")
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: $login)"))
 
-  def create(user: User, organisation: Organisation with Entity, profile: Profile with Entity)(
+  def create(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
     for {
       validUser   <- checkUser(user)
       createdUser <- createEntity(validUser)
+      avatarId    <- avatar.map(setAvatar(createdUser, _)).flip
       _           <- roleSrv.create(createdUser, organisation, profile)
-      richUser = RichUser(createdUser, profile.name, profile.permissions, organisation.name)
+      richUser = RichUser(createdUser, avatarId, profile.name, profile.permissions, organisation.name)
       _ <- auditSrv.user.create(createdUser, richUser.toJson)
     } yield richUser
 
@@ -87,6 +90,16 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
           .getOrFail()
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
+
+  def setAvatar(user: User with Entity, avatar: FFile)(implicit graph: Graph, authContext: AuthContext): Try[String] = {
+    unsetAvatar(user)
+    attachmentSrv.create(avatar).flatMap(setAvatar(user, _))
+  }
+
+  def setAvatar(user: User with Entity, avatar: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[String] =
+    userAttachmentSrv.create(UserAttachment(), user, avatar).map(_ => avatar.attachmentId)
+
+  def unsetAvatar(user: User with Entity)(implicit graph: Graph): Unit = get(user).avatar.remove()
 
   def setProfile(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -178,12 +191,16 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       .project(
         _.apply(By[Vertex]())
           .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
+          .and(By(__[Vertex].outTo[UserAttachment].fold()))
       )
       .collect {
-        case (user, profiles) if profiles.size() == 1 =>
+        case (user, profiles, attachment) if profiles.size() == 1 =>
           val profile = profiles.get(0).as[Profile]
-          RichUser(user.as[User], profile.name, profile.permissions, organisation)
+          val avatar  = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+          RichUser(user.as[User], avatar, profile.name, profile.permissions, organisation)
       }
 
-  def role = new RoleSteps(raw.outTo[UserRole])
+  def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])
+
+  def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
 }

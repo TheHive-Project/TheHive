@@ -83,7 +83,7 @@ class UserCtrl @Inject()(
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
               else if (inputUser.roles.contains("read")) profileSrv.getOrFail(ProfileSrv.readonly.name)
               else profileSrv.getOrFail(ProfileSrv.readonly.name)
-              user <- userSrv.create(inputUser.toUser, organisation, profile)
+              user <- userSrv.create(inputUser.toUser, inputUser.avatar, organisation, profile)
             } yield user
           }
           .flatMap { user =>

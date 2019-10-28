@@ -53,6 +53,7 @@ class Router @Inject()(
     case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
     case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
     case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
+    case GET(p"/user/$userId/avatar")           => userCtrl.avatar(userId)
 
     case POST(p"/organisation")                  => organisationCtrl.create
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)

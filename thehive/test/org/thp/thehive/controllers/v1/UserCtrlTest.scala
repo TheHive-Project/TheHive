@@ -74,7 +74,8 @@ class UserCtrlTest extends PlaySpecification with Mockito {
                 name = "create user test",
                 password = Some("azerty"),
                 profile = "read-only",
-                organisation = Some("default")
+                organisation = Some("default"),
+                avatar = None
               )
             )
           )
@@ -102,7 +103,8 @@ class UserCtrlTest extends PlaySpecification with Mockito {
                 name = "create user test",
                 password = Some("azerty"),
                 profile = "analyst",
-                organisation = Some("cert")
+                organisation = Some("cert"),
+                avatar = None
               )
             )
           )

@@ -1,19 +1,24 @@
 package org.thp.thehive.controllers.v1
 
+import java.util.Base64
+
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
-import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
+import play.api.http.HttpEntity
+import play.api.libs.json.{JsNull, JsObject, Json}
+import play.api.mvc._
 
+import akka.stream.scaladsl.StreamConverters
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.services.StorageSrv
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
@@ -21,7 +26,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class UserCtrl @Inject()(
-    entryPoint: EntryPoint,
+    entrypoint: EntryPoint,
     db: Database,
     properties: Properties,
     userSrv: UserSrv,
@@ -29,6 +34,8 @@ class UserCtrl @Inject()(
     organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
+    attachmentSrv: AttachmentSrv,
+    storageSrv: StorageSrv,
     implicit val ec: ExecutionContext
 ) extends QueryableCtrl {
 
@@ -52,7 +59,7 @@ class UserCtrl @Inject()(
   )
 
   def current: Action[AnyContent] =
-    entryPoint("current user")
+    entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
@@ -62,7 +69,7 @@ class UserCtrl @Inject()(
       }
 
   def create: Action[AnyContent] =
-    entryPoint("create user")
+    entrypoint("create user")
       .extract("user", FieldsParser[InputUser])
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
@@ -72,7 +79,7 @@ class UserCtrl @Inject()(
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile      <- profileSrv.getOrFail(inputUser.profile)
-              user         <- userSrv.create(inputUser.toUser, organisation, profile)
+              user         <- userSrv.create(inputUser.toUser, inputUser.avatar, organisation, profile)
             } yield user
           }
           .flatMap { user =>
@@ -88,7 +95,7 @@ class UserCtrl @Inject()(
   // lock make user unusable for all organisation
   // remove from organisation make the user disappear from organisation admin, and his profile is removed
   def delete(userId: String): Action[AnyContent] =
-    entryPoint("delete user")
+    entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           user        <- userSrv.get(userId).getOrFail()
@@ -99,7 +106,7 @@ class UserCtrl @Inject()(
       }
 
   def get(userId: String): Action[AnyContent] =
-    entryPoint("get user")
+    entrypoint("get user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .get(userId)
@@ -110,16 +117,18 @@ class UserCtrl @Inject()(
       }
 
   def update(userId: String): Action[AnyContent] =
-    entryPoint("update user")
+    entrypoint("update user")
       .extract("name", FieldsParser.string.optional.on("name"))
       .extract("organisation", FieldsParser.string.optional.on("organisation"))
       .extract("profile", FieldsParser.string.optional.on("profile"))
       .extract("locked", FieldsParser.boolean.optional.on("locked"))
+      .extract("avatar", FieldsParser.string.optional.on("avatar"))
       .authTransaction(db) { implicit request => implicit graph =>
         val maybeName: Option[String]         = request.body("name")
         val maybeOrganisation: Option[String] = request.body("organisation")
         val maybeProfile: Option[String]      = request.body("profile")
         val maybeLocked: Option[Boolean]      = request.body("locked")
+        val maybeAvatar: Option[String]       = request.body("avatar")
         userSrv.get(userId).getOrFail().flatMap { user =>
           auditSrv
             .mergeAudits {
@@ -136,14 +145,25 @@ class UserCtrl @Inject()(
                       } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
                   }
                 }
-              } yield updateName.getOrElse(JsObject.empty) ++ updateLocked.getOrElse(JsObject.empty) ++ updateProfile
+                updatedAvatar <- maybeAvatar
+                  .map { avatar =>
+                    attachmentSrv
+                      .create(s"$userId.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
+                      .flatMap(userSrv.setAvatar(user, _))
+                      .map(_ => Json.obj("avatar" -> "[binary data]"))
+                  }
+                  .getOrElse {
+                    userSrv.unsetAvatar(user)
+                    Success(Json.obj("avatar" -> JsNull))
+                  }
+              } yield updateName.getOrElse(JsObject.empty) ++ updateLocked.getOrElse(JsObject.empty) ++ updateProfile ++ updatedAvatar
             }(update => auditSrv.user.update(user, update))
             .map(_ => Results.NoContent)
         }
       }
 
   def setPassword(userId: String): Action[AnyContent] =
-    entryPoint("set password")
+    entrypoint("set password")
       .extract("password", FieldsParser[String].on("password"))
       .auth { implicit request =>
         for {
@@ -166,7 +186,7 @@ class UserCtrl @Inject()(
       }
 
   def changePassword(userId: String): Action[AnyContent] =
-    entryPoint("change password")
+    entrypoint("change password")
       .extract("password", FieldsParser[String])
       .extract("currentPassword", FieldsParser[String])
       .auth { implicit request =>
@@ -180,7 +200,7 @@ class UserCtrl @Inject()(
       }
 
   def getKey(userId: String): Action[AnyContent] =
-    entryPoint("get key")
+    entrypoint("get key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
@@ -201,7 +221,7 @@ class UserCtrl @Inject()(
       }
 
   def removeKey(userId: String): Action[AnyContent] =
-    entryPoint("remove key")
+    entrypoint("remove key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
@@ -224,7 +244,7 @@ class UserCtrl @Inject()(
       }
 
   def renewKey(userId: String): Action[AnyContent] =
-    entryPoint("renew key")
+    entrypoint("renew key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
@@ -243,5 +263,20 @@ class UserCtrl @Inject()(
           key <- authSrv.renewKey(userId)
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.Ok(key)
+      }
+
+  def avatar(userId: String): Action[AnyContent] =
+    entrypoint("get user avatar")
+      .authTransaction(db) { implicit request => implicit graph =>
+        userSrv.get(userId).visible.avatar.headOption() match {
+          case Some(avatar) =>
+            Success(
+              Result(
+                header = ResponseHeader(200, Map("Content-Type" -> avatar.contentType)),
+                body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(avatar.attachmentId)), None, None)
+              )
+            )
+          case None => Failure(NotFoundError(s"user $userId has no avatar"))
+        }
       }
 }

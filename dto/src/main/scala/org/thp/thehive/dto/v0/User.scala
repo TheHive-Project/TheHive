@@ -4,7 +4,16 @@ import java.util.Date
 
 import play.api.libs.json.{Json, OFormat, Writes}
 
-case class InputUser(login: String, name: String, roles: Seq[String], password: Option[String], organisation: Option[String] = None)
+import org.thp.scalligraph.controllers.FFile
+
+case class InputUser(
+    login: String,
+    name: String,
+    roles: Seq[String],
+    password: Option[String],
+    organisation: Option[String] = None,
+    avatar: Option[FFile]
+)
 
 object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]

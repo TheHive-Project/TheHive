@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
+import scala.util.Failure
 
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
@@ -14,10 +14,11 @@ import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBui
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models.{AlertCase, Permissions}
+import org.thp.thehive.models.AlertCase
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,
+  AttachmentSrv,
   AuditSteps,
   CaseSrv,
   CaseSteps,
@@ -32,7 +33,14 @@ import org.thp.thehive.services.{
 }
 
 @Singleton
-class Properties @Inject()(alertSrv: AlertSrv, caseSrv: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv, observableSrv: ObservableSrv) {
+class Properties @Inject()(
+    alertSrv: AlertSrv,
+    caseSrv: CaseSrv,
+    userSrv: UserSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    observableSrv: ObservableSrv,
+    attachmentSrv: AttachmentSrv
+) {
 
   lazy val alert: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[AlertSteps]
@@ -189,40 +197,9 @@ class Properties @Inject()(alertSrv: AlertSrv, caseSrv: CaseSrv, userSrv: UserSr
   lazy val user: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[UserSteps]
       .property("login", UniMapping.string)(_.field.readonly)
-      .property("name", UniMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
-        def isCurrentUser =
-          userSrv
-            .current(graph, authContext)
-            .get(vertex)
-            .existsOrFail()
-
-        def isUserAdmin =
-          userSrv
-            .current(graph, authContext)
-            .organisations(Permissions.manageUser)
-            .users
-            .get(vertex)
-            .existsOrFail()
-
-        isCurrentUser
-          .orElse(isUserAdmin)
-          .flatMap { _ =>
-            db.setProperty(vertex, "name", value, UniMapping.string)
-            Success(Json.obj("name" -> value))
-          }
-      })
-      .property("locked", UniMapping.boolean)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
-        userSrv
-          .current(graph, authContext)
-          .organisations(Permissions.manageUser)
-          .users
-          .get(vertex)
-          .existsOrFail()
-          .flatMap { _ =>
-            db.setProperty(vertex, "locked", value, UniMapping.boolean)
-            Success(Json.obj("locked" -> value))
-          }
-      })
+      .property("name", UniMapping.string)(_.field.readonly)
+      .property("locked", UniMapping.boolean)(_.field.readonly)
+      .property("avatar", UniMapping.string.optional)(_.select(_.avatar.attachmentId.map(id => s"/api/datastore/$id")).readonly)
       .build
 
   lazy val observable: List[PublicProperty[_, _]] =

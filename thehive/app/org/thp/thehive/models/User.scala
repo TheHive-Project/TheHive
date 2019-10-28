@@ -9,6 +9,9 @@ import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 @EdgeEntity[User, Role]
 case class UserRole()
 
+@EdgeEntity[User, Attachment]
+case class UserAttachment()
+
 @DefineIndex(IndexType.unique, "login")
 @VertexEntity
 case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String]) extends ScalligraphUser {
@@ -21,7 +24,7 @@ case class User(login: String, name: String, apikey: Option[String], locked: Boo
 //    avatar: Array[Byte],
 //    preference: JsObject)
 
-case class RichUser(user: User with Entity, profile: String, permissions: Set[Permission], organisation: String) {
+case class RichUser(user: User with Entity, avatar: Option[String], profile: String, permissions: Set[Permission], organisation: String) {
   val _id: String                = user._id
   val _createdBy: String         = user._createdBy
   val _updatedBy: Option[String] = user._updatedBy
