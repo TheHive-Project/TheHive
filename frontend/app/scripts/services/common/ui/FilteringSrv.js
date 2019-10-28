@@ -153,7 +153,7 @@
                                 list: _.map(_.isArray(value) ? value : [value], function(item) {
                                     return {
                                         text: item,
-                                        label: filterDef.labels[item] || item
+                                        label: filterDef.labels[filterDef.values.indexOf(item)] || item
                                     };
                                 })
                             };
