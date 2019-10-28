@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Reads}
 
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
@@ -12,7 +12,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
@@ -125,8 +125,8 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
             val userIds = tuple2.collect { case (_, _, Right(userId)) => userId }
             (inOrg, userIds)
           }
-          .toMap
       }
-      .toMap
   }
+
+  def getValue[A: Reads](name: String): Traversal[JsValue, String] = this.has(Key[String]("name"), P.eq[String](name)).value
 }
