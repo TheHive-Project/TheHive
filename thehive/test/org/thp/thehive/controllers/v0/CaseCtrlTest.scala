@@ -89,10 +89,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
                   flag = Some(false),
                   tlp = Some(1),
                   pap = Some(3),
-                  customFieldValue = inputCustomFields
+                  customFields = inputCustomFields
                 )
               )
-              .as[JsObject] + ("caseTemplate" -> JsString("spam"))
+              .as[JsObject] + ("template" -> JsString("spam"))
           )
           .withHeaders("user" -> "user1@thehive.local")
 
