@@ -12,7 +12,7 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{Permissions, RichTask}
+import org.thp.thehive.models.{Permissions, RichCase, RichTask}
 import org.thp.thehive.services._
 
 @Singleton
@@ -32,10 +32,13 @@ class TaskCtrl @Inject()(
   override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[(RichTask, Option[RichCase])]](
     "page",
-    FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask)
+    FieldsParser[OutputParam], {
+      case (OutputParam(from, to, _, 0), taskSteps, _) => taskSteps.richPage(from, to, withTotal = true)(_.richTask.map(_ -> None))
+      case (OutputParam(from, to, _, _), taskSteps, authContext) =>
+        taskSteps.richPage(from, to, withTotal = true)(_.richTaskWithCustomRenderer(_.`case`.richCase(authContext).map(c => Option(c)))(authContext))
+    }
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
     "getTask",
@@ -44,7 +47,8 @@ class TaskCtrl @Inject()(
   )
   override val outputQuery: Query = Query.output[RichTask]()
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
+    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList),
+    Query.output[(RichTask, Option[RichCase])]()
   )
 
   def create(caseId: String): Action[AnyContent] =

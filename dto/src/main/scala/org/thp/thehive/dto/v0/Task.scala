@@ -38,7 +38,8 @@ case class OutputTask(
     startDate: Option[Date],
     endDate: Option[Date],
     order: Int,
-    dueDate: Option[Date]
+    dueDate: Option[Date],
+    `case`: Option[OutputCase]
 )
 
 object OutputTask {

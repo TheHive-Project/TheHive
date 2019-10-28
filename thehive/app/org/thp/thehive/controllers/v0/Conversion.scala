@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
@@ -451,12 +451,28 @@ object Conversion {
       .withFieldRenamed(_._id, _.id)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_._type, "case_task")
+      .withFieldConst(_.`case`, None)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldRenamed(_._updatedBy, _.updatedBy)
       .withFieldRenamed(_._createdAt, _.createdAt)
       .withFieldRenamed(_._createdBy, _.createdBy)
       .transform
   )
+
+  implicit val taskWithParentOutput: Outputer.Aux[(RichTask, Option[RichCase]), OutputTask] = Outputer[(RichTask, Option[RichCase]), OutputTask] {
+    case (richTask, richCase) =>
+      richTask
+        .into[OutputTask]
+        .withFieldRenamed(_._id, _.id)
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldConst(_._type, "case_task")
+        .withFieldConst(_.`case`, richCase.map(_.toOutput))
+        .withFieldRenamed(_._updatedAt, _.updatedAt)
+        .withFieldRenamed(_._updatedBy, _.updatedBy)
+        .withFieldRenamed(_._createdAt, _.createdAt)
+        .withFieldRenamed(_._createdBy, _.createdBy)
+        .transform
+  }
 
   implicit class InputUserOps(inputUser: InputUser) {
 

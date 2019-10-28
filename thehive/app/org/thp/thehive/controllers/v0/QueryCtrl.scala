@@ -83,8 +83,9 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
               else (offset, end)
             case None => (0L, 10L)
           }
-        withStats <- FieldsParser.boolean.optional.on("nstats")(o)
-      } yield OutputParam(fromTo._1, fromTo._2, withStats.getOrElse(false))
+        withStats   <- FieldsParser.boolean.optional.on("nstats")(o)
+        withParents <- FieldsParser.int.optional.on("nparent")(o)
+      } yield OutputParam(fromTo._1, fromTo._2, withStats.getOrElse(false), withParents.getOrElse(0))
   }
 
   val statsParser: FieldsParser[Seq[Query]] = FieldsParser[Seq[Query]]("stats") {
@@ -107,7 +108,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
           .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
         inputSort <- sortParser(field.get("sort"))
         sortedQuery = filteredQuery andThen new SortQuery(db, publicProperties).toQuery(inputSort)
-        outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false)))
+        outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
         outputQuery = ctrl.pageQuery.toQuery(outputParam)
       } yield sortedQuery andThen outputQuery
   }

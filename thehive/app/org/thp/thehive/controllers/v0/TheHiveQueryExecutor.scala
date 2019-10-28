@@ -13,7 +13,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.services.{ObservableSteps, _}
 
-case class OutputParam(from: Long, to: Long, withStats: Boolean)
+case class OutputParam(from: Long, to: Long, withStats: Boolean, withParents: Int)
 
 @Singleton
 class TheHiveQueryExecutor @Inject()(

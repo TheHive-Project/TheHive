@@ -45,7 +45,7 @@ class CaseCtrl @Inject()(
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withStats), caseSteps, authContext) =>
+      case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
         caseSteps
           .richPage(from, to, withTotal = true) {
             case c if withStats =>

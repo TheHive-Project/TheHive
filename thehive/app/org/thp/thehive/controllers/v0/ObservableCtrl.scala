@@ -43,7 +43,7 @@ class ObservableCtrl @Inject()(
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withStats), observableSteps, authContext) =>
+      case (OutputParam(from, to, withStats, _), observableSteps, authContext) =>
         observableSteps
           .richPage(from, to, withTotal = true) {
             case o if withStats =>

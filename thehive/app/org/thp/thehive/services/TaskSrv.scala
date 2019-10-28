@@ -14,7 +14,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
 
 @Singleton
@@ -149,6 +149,25 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               task.as[Task],
               atMostOneOf[String](user)
             )
+        }
+    )
+
+  def richTaskWithCustomRenderer[A](
+      entityRenderer: TaskSteps => TraversalLike[_, A]
+  )(implicit authContext: AuthContext): Traversal[(RichTask, A), (RichTask, A)] =
+    Traversal(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
+            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+        )
+        .map {
+          case (task, user, renderedEntity) =>
+            RichTask(
+              task.as[Task],
+              atMostOneOf[String](user)
+            ) -> renderedEntity
         }
     )
 
