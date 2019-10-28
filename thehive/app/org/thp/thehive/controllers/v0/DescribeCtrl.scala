@@ -78,7 +78,9 @@ class DescribeCtrl @Inject()(
       Some(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
     case (_, "severity") =>
       Some(PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3)), Seq("low", "medium", "high")))
-    case _ => None
+    case (_, "createdBy") => Some(PropertyDescription("createdBy", "user"))
+    case (_, "updatedBy") => Some(PropertyDescription("updatedBy", "user"))
+    case _                => None
   }
 
   def propertyToJson(model: String, prop: PublicProperty[_, _]): PropertyDescription =
