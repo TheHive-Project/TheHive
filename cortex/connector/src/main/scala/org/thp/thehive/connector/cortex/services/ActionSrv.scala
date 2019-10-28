@@ -2,11 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json, OWrites}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -26,6 +21,10 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
+import play.api.libs.json.{JsObject, Json, OWrites}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ActionSrv @Inject()(
     @Named("cortex-actor") cortexActor: ActorRef,
@@ -148,13 +147,16 @@ class ActionSrv @Inject()(
             .fold(t => operation.updateStatus(ActionOperationStatus.Failure, t.getMessage), identity)
         }
 
-      getByIds(actionId)
-        .update(
+      for {
+        updated <- getByIds(actionId).update(
           "status"     -> cortexOutputJob.status.toJobStatus,
           "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
           "endDate"    -> Some(new Date()),
           "operations" -> operations.map(Json.toJsObject(_))
         )
+        relatedEntity <- Try(relatedCase(updated._id).orElse(relatedTask(updated._id)).get)
+        _             <- auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString))
+      } yield updated
     }
 
   /**
@@ -208,10 +210,11 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
       )
     )
 
+  override def newInstance(newRaw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(newRaw)
+
   def context: Traversal[Entity, Entity] = Traversal(raw.outTo[ActionContext].map(_.asEntity))
 
   def visible(authContext: AuthContext): ActionSteps = ???
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(newRaw)
   override def newInstance(): ActionSteps                             = new ActionSteps(raw.clone())
 }
