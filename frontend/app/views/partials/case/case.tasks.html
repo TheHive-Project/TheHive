@@ -2,34 +2,14 @@
 
 <div class="mt-s filter-panel" ng-include="'views/partials/case/tasks/filters.html'" ng-show="filtering.context.showFilters"></div>
 
-<!-- <div class="row">
-    <div class="col-md-12">
-        <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group" if-permission="manageTask" allowed="{{userPermissions}}">
-                <button class="btn btn-sm btn-primary" ng-click="state.isNewTask = true">
-                    <i class="glyphicon glyphicon-plus"></i>
-                    Add Task
-                </button>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-sm btn-primary" ng-click="toggleGroupedView()">
-                    <i class="glyphicon glyphicon-th-list"></i>
-                    Show {{state.showGrouped ? 'as a List' : 'Groups'}}
-                </button>
-            </div>
-
-            <-- <div class="btn-group pull-right" role="group">
-                <page-sizer collection="tasks" sizes="[10, 15, 30, 100]"></page-sizer>
-            </div>
-
-            <div class="pull-right form-inline">
-                <div class="input-group input-group-sm">
-                    <filter-box collection="tasks"></filter-box>
-                </div>
-            </div>
-        </div>
+<!-- Filters preview  -->
+<div class="row mt-s">
+    <div class="col-md-12 clearfix">
+        <filters-preview filters="filtering.context.filters"
+            on-clear-item="removeFilter(field)"
+            on-clear-all="clearFilters()"></filters-preview>
     </div>
-</div> -->
+</div>
 
 <div class="row mv-s" ng-show="tasks.total === 0">
     <div class="col-md-12">
@@ -37,7 +17,7 @@
     </div>
 </div>
 
-<div class="row mt-l" ng-show="state.isNewTask">
+<div class="row mv-l" ng-show="state.isNewTask">
     <div class="col-md-12">
         <form name="form" ng-submit="addTask(); state.isNewTask = false;">
             <div class="row">
@@ -66,7 +46,7 @@
     </div>
 </div>
 
-<div class="row mt-l" ng-show="!state.showGrouped && tasks.total !== 0">
+<div class="row" ng-show="!state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
         <table class="table table-hover valigned tasks-table">
             <thead>
@@ -169,7 +149,7 @@
     </div>
 </div>
 
-<div class="row mt-l" ng-show="state.showGrouped && tasks.total !== 0">
+<div class="row" ng-show="state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
         <div class="panel panel-default" ng-repeat="group in groupedTasks">
             <div class="panel-heading">

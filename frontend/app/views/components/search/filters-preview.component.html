@@ -1,0 +1,18 @@
+<div class="active-filters">
+    <ul ng-if="$ctrl.filters.length > 0">
+        <li>{{$ctrl.filters.length}}
+            filter(s) applied:
+        </li>
+        <li class="filter-item" ng-repeat="filter in $ctrl.filters">
+            <span>
+                <strong>{{filter.field}}:</strong>
+                {{filter.value | filterValue}}</span>
+            <a href ng-click="$ctrl.clearItem(field)">
+                <span class="filter-close fa fa-times text-danger"></span>
+            </a>
+        </li>
+        <li>
+            <a href ng-click="$ctrl.clearAll()">Clear filters</a>
+        </li>
+    </ul>
+</div>

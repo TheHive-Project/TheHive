@@ -3,43 +3,10 @@
     <div class="pull-left">
         <h4>Observable List ({{artifacts.total || 0}} of {{artifactStats.count}})</h4>
     </div>
-    <div class="active-filters">
-        <ul ng-if="filtering.context.filters.length > 0">
-            <li>{{filtering.context.filters.length}}
-                filter(s) applied:
-            </li>
-            <li class="filter-item" ng-repeat="filter in filtering.context.filters">
-                <span>
-                    <strong>{{filter.field}}:</strong>
-                    {{filter.value | filterValue}}</span>
-                <a href="" ng-click="removeFilter(field)">
-                    <span class="filter-close fa fa-times text-danger"></span>
-                </a>
-            </li>
-            <li>
-                <a href="" ng-click="clearFilters()">Clear filters</a>
-            </li>
-        </ul>
-
-        <ul class="" ng-if="uiSrv.countFilters() > 0">
-            <li>{{uiSrv.countFilters()}}
-                filter(s) applied:
-            </li>
-            <li class="filter-item" ng-repeat="(field,filter) in uiSrv.filters">
-                <span>
-                    <strong>{{field}}:</strong>
-                    {{filter.value | filterValue}}</span>
-                <a href="" ng-click="removeFilter(field)">
-                    <span class="filter-close fa fa-times text-danger"></span>
-                </a>
-            </li>
-            <li>
-                <a href="" ng-click="clearFilters()">Clear filters</a>
-            </li>
-        </ul>
-    </div>
+    <filters-preview filters="filtering.context.filters"
+        on-clear-item="removeFilter(field)"
+        on-clear-all="clearFilters()"></filters-preview>
 </div>
-
 
 <div class="col-md-12 mv-s" ng-show="artifacts.total === 0">
     <div class="empty-message">No records.</div>

@@ -15,24 +15,9 @@
                 <!-- Filters preview  -->
                 <div class="row mt-s">
                     <div class="col-md-12 clearfix">
-                        <div class="active-filters">
-                            <ul ng-if="$vm.filtering.context.filters.length > 0">
-                                <li>{{$vm.filtering.context.filters.length}}
-                                    filter(s) applied:
-                                </li>
-                                <li class="filter-item" ng-repeat="filter in $vm.filtering.context.filters">
-                                    <span>
-                                        <strong>{{filter.field}}:</strong>
-                                        {{filter.value | filterValue}}</span>
-                                    <a href="" ng-click="$vm.removeFilter(field)">
-                                        <span class="filter-close fa fa-times text-danger"></span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="" ng-click="$vm.clearFilters()">Clear filters</a>
-                                </li>
-                            </ul>                            
-                        </div>
+                        <filters-preview filters="$vm.filtering.context.filters"
+                            on-clear-item="$vm.removeFilter(field)"
+                            on-clear-all="$vm.clearFilters()"></filters-preview>                                                
                     </div>
                 </div>
 
