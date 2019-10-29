@@ -28,7 +28,7 @@ object ProfileSrv {
   )
 
   val incidentHandler = Profile(
-    "incidentHandler",
+    "incident-handler",
     analyst.permissions + Permissions.manageShare
   )
   val readonly = Profile("read-only", Set.empty)
