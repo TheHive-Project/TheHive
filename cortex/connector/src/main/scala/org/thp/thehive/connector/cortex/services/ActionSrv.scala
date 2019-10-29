@@ -154,9 +154,13 @@ class ActionSrv @Inject()(
           "endDate"    -> Some(new Date()),
           "operations" -> operations.map(Json.toJsObject(_))
         )
-        relatedEntity <- Try(relatedCase(updated._id).orElse(relatedTask(updated._id)).get)
-        _             <- auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString))
-      } yield updated
+      } yield {
+        relatedCase(updated._id)
+          .orElse(relatedTask(updated._id))
+          .foreach(relatedEntity => auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString)))
+
+        updated
+      }
     }
 
   /**
@@ -216,5 +220,5 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
 
   def visible(authContext: AuthContext): ActionSteps = ???
 
-  override def newInstance(): ActionSteps                             = new ActionSteps(raw.clone())
+  override def newInstance(): ActionSteps = new ActionSteps(raw.clone())
 }
