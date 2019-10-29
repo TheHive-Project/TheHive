@@ -145,18 +145,20 @@ class UserCtrl @Inject()(
                       } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
                   }
                 }
-                updatedAvatar <- maybeAvatar
-                  .map { avatar =>
+                updatedAvatar <- maybeAvatar.map {
+                  case "" =>
+                    userSrv.unsetAvatar(user)
+                    Success(Json.obj("avatar" -> JsNull))
+                  case avatar =>
                     attachmentSrv
                       .create(s"$userId.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
                       .flatMap(userSrv.setAvatar(user, _))
                       .map(_ => Json.obj("avatar" -> "[binary data]"))
-                  }
-                  .getOrElse {
-                    userSrv.unsetAvatar(user)
-                    Success(Json.obj("avatar" -> JsNull))
-                  }
-              } yield updateName.getOrElse(JsObject.empty) ++ updateLocked.getOrElse(JsObject.empty) ++ updateProfile ++ updatedAvatar
+                }.flip
+              } yield updateName.getOrElse(JsObject.empty) ++
+                updateLocked.getOrElse(JsObject.empty) ++
+                updateProfile ++
+                updatedAvatar.getOrElse(JsObject.empty)
             }(update => auditSrv.user.update(user, update))
             .map(_ => Results.NoContent)
         }
