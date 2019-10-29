@@ -91,13 +91,13 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
 
-  def setAvatar(user: User with Entity, avatar: FFile)(implicit graph: Graph, authContext: AuthContext): Try[String] = {
-    unsetAvatar(user)
+  def setAvatar(user: User with Entity, avatar: FFile)(implicit graph: Graph, authContext: AuthContext): Try[String] =
     attachmentSrv.create(avatar).flatMap(setAvatar(user, _))
-  }
 
-  def setAvatar(user: User with Entity, avatar: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[String] =
+  def setAvatar(user: User with Entity, avatar: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[String] = {
+    unsetAvatar(user)
     userAttachmentSrv.create(UserAttachment(), user, avatar).map(_ => avatar.attachmentId)
+  }
 
   def unsetAvatar(user: User with Entity)(implicit graph: Graph): Unit = get(user).avatar.remove()
 
