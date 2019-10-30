@@ -36,10 +36,13 @@
         </h4>
         <dl class="dl-horizontal clear">
             <dt class="pull-left">TLP</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <a class="noline" href ng-init="activeTlp = 'static'" ng-click="activeTlp = 'active'">
                     <tlp value="artifact.tlp" format="activeTlp" style="font-size:16px" on-update="updateField('tlp', newValue)"></tlp>
                 </a>
+            </dd>
+            <dd ng-if="!canEdit">
+                <tlp format="'static'" value="artifact.tlp"></tlp>
             </dd>
         </dl>
 
@@ -62,8 +65,13 @@
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Is IOC</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <span class="clickable" ng-click="updateField('ioc', !artifact.ioc)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
+				</span>
+            </dd>
+            <dd ng-if="!canEdit">
+                <span>
                     <i class="text-primary fa" ng-class="{'true': 'fa-star', 'false': 'fa-star-o'}[artifact.ioc]"></i>
 				</span>
             </dd>
@@ -71,24 +79,37 @@
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Has been sighted</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <span class="clickable" ng-click="updateField('sighted', !artifact.sighted)">
                     <i class="text-primary fa" ng-class="{'true': 'fa-toggle-on', 'false': 'fa-toggle-off'}[artifact.sighted]"></i>
                 </span>
+            </dd>
+            <dd ng-if="!canEdit">
+                <span>
+                    <i class="text-primary fa" ng-class="{'true': 'fa-toggle-on', 'false': 'fa-toggle-off'}[artifact.sighted]"></i>
+				</span>
             </dd>
         </dl>
 
         <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))" source="getTags"></updatable-tags>
+            </dd>
+            <dd ng-if="!canEdit">
+                <tag-list ng-if="artifact.tags.length > 0" data="artifact.tags"></tag-list>
+                <em ng-if="!artifact.tags || artifact.tags.length === 0" class="text-warning">Not Specified</em>
             </dd>
         </dl>
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Description</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-text value="artifact.message" on-update="updateField('message', newValue)" placeholder="Artifact description"></updatable-text>
+            </dd>
+            <dd ng-if="!canEdit">
+                <div ng-if="artifact.message" marked="artifact.message" class="markdown"></div>
+                <em ng-if="!artifact.message" class="text-warning">Not Specified</em>
             </dd>
         </dl>
     </div>
