@@ -30,11 +30,12 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
   }
 
   override def routes: Routes = {
-    case OPTIONS(_)                           => options()
-    case PROPFIND(request)                    => dav(request.path)
-    case GET(p"/cases/$caseId/$attachmentId") => downloadFile(attachmentId)
-    case HEAD(request)                        => head(request.path)
-    case _                                    => debug()
+    case OPTIONS(_)                                       => options()
+    case PROPFIND(request)                                => dav(request.path)
+    case GET(p"/cases/$caseId/observables/$attachmentId") => downloadFile(attachmentId)
+    case GET(p"/cases/$caseId/tasks/$attachmentId")       => downloadFile(attachmentId)
+    case HEAD(request)                                    => head(request.path)
+    case _                                                => debug()
   }
 
   def debug(): Action[AnyContent] = entrypoint("DAV options") { request =>
@@ -64,7 +65,10 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
     entrypoint("dav")
       .extract("xml", FieldsParser.xml.on("xml"))
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val pathElements = path.split('/').toList
+        val pathElements = path.split('/').toList.filterNot(_.isEmpty)
+        val baseUrl =
+          if (request.uri.endsWith("/")) request.uri
+          else request.uri + '/'
         val resources =
           if (request.headers.get("Depth").contains("1")) vfs.get(pathElements) ::: vfs.list(pathElements)
           else vfs.get(pathElements)
@@ -75,9 +79,10 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
             val (knownProps, unknownProps) = props.foldLeft(List.empty[Node] -> List.empty[Node]) {
               case ((k, u), p) => resource.property(p).fold((k, p :: u))(v => (v :: k, u))
             }
+            val href = if (resource.url.isEmpty) request.uri else baseUrl + resource.url
             <D:response>
               <D:href>
-                {s"${request.uri}${resource.url}"}
+                {href}
               </D:href>
               <D:propstat xmlns:D="DAV:">
                 <D:prop>

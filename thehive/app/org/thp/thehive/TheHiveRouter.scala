@@ -23,7 +23,7 @@ class TheHiveRouter @Inject()(
   lazy val get: Router = routerV1.withPrefix("/api/v1/") orElse
     routerV0.withPrefix("/api/v0/") orElse
     routerV0.withPrefix("/api/") orElse // default version
-    davRouter.withPrefix("/fs/") orElse
+    davRouter.withPrefix("/fs") orElse
     SimpleRouter {
       case GET(p"/")                                   => actionBuilder(Results.PermanentRedirect("/index.html"))
       case GET(p"/$file*") if !file.startsWith("api/") => assets.at(file)
