@@ -22,7 +22,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, CaseSrv, TaskSrv}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, OrganisationSrv, TaskSrv}
 
 class ActionSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
@@ -169,7 +169,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "handle action related to Task and Log" in {
         db.roTransaction { implicit graph =>
-          val authContextUser2 = AuthContextImpl("user2@thehive.local", "user2@thehive.local", "default", "testRequest", Permissions.all)
+          val authContextUser2 =
+            AuthContextImpl("user2@thehive.local", "user2@thehive.local", OrganisationSrv.administration.name, "testRequest", Permissions.all)
 
           val l1 = taskSrv.initSteps.has(Key("title"), P.eq("case 4 task 1")).logs.headOption()
           l1 must beSome
@@ -227,7 +228,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert =>
             alert.read must beFalse
 
-            val authContextUser2 = AuthContextImpl("user2@thehive.local", "user2@thehive.local", "default", "testRequest", Permissions.all)
+            val authContextUser2 =
+              AuthContextImpl("user2@thehive.local", "user2@thehive.local", OrganisationSrv.administration.name, "testRequest", Permissions.all)
 
             val inputAction = Action(
               responderId = "respTest1",

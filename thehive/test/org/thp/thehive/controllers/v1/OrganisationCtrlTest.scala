@@ -14,6 +14,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationSrv
 
 class OrganisationCtrlTest extends PlaySpecification with Mockito {
   implicit val mat: Materializer = NoMaterializer
@@ -68,8 +69,8 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       }
 
       "refuse to get a invisible organisation" in {
-        val request = FakeRequest("GET", s"/api/v1/user/default").withHeaders("user" -> "user1@thehive.local")
-        val result  = organisationCtrl.get("default")(request)
+        val request = FakeRequest("GET", s"/api/v1/organisation/${OrganisationSrv.administration.name}").withHeaders("user" -> "user1@thehive.local")
+        val result  = organisationCtrl.get(OrganisationSrv.administration.name)(request)
         status(result) must_=== 404
       }
     }

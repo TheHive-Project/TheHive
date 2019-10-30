@@ -63,7 +63,7 @@ class UserCtrl @Inject()(
           .orElse(
             userSrv
               .get(request.userId)
-              .richUser(OrganisationSrv.default.name)
+              .richUser(OrganisationSrv.administration.name)
               .getOrFail()
           )
           .map(user => Results.Ok(user.toJson))

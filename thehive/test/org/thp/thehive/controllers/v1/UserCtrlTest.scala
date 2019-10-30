@@ -14,6 +14,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationSrv
 
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
@@ -59,7 +60,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           name = "Default admin user",
           profile = "admin",
           permissions = Permissions.adminPermissions.map(_.toString),
-          organisation = "default"
+          organisation = OrganisationSrv.administration.name
         )
 
         TestUser(resultCase) must_=== expected
@@ -74,7 +75,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
                 name = "create user test",
                 password = Some("azerty"),
                 profile = "read-only",
-                organisation = Some("default"),
+                organisation = Some(OrganisationSrv.administration.name),
                 avatar = None
               )
             )
@@ -88,7 +89,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
           name = "create user test",
           profile = "read-only",
           permissions = Set.empty,
-          organisation = "default"
+          organisation = OrganisationSrv.administration.name
         )
 
         TestUser(resultCase) must_=== expected
@@ -154,7 +155,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "update an user" in {
         val request = FakeRequest("POST", "/api/v1/user/user3@thehive.local")
           .withJsonBody(Json.parse("""{"name": "new name", "roles": ["read"]}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
 
         val result = userCtrl.update("user3@thehive.local")(request)
         status(result) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")

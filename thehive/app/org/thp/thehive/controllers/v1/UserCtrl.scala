@@ -129,38 +129,61 @@ class UserCtrl @Inject()(
         val maybeProfile: Option[String]      = request.body("profile")
         val maybeLocked: Option[Boolean]      = request.body("locked")
         val maybeAvatar: Option[String]       = request.body("avatar")
-        userSrv.get(userId).getOrFail().flatMap { user =>
-          auditSrv
-            .mergeAudits {
-              for {
-                updateName   <- maybeName.map(name => userSrv.get(user).update("name"       -> name).map(_ => Json.obj("name"     -> name))).flip
-                updateLocked <- maybeLocked.map(locked => userSrv.get(user).update("locked" -> locked).map(_ => Json.obj("locked" -> locked))).flip
-                updateProfile <- maybeProfile.fold[Try[JsObject]](Success(JsObject.empty)) { profileName =>
-                  maybeOrganisation.fold[Try[JsObject]](Failure(BadRequestError("Organisation information is required to update user profile"))) {
-                    organisationName =>
-                      for {
-                        profile      <- profileSrv.getOrFail(profileName)
-                        organisation <- organisationSrv.getOrFail(organisationName)
-                        _            <- userSrv.setProfile(user, organisation, profile)
-                      } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
-                  }
-                }
-                updatedAvatar <- maybeAvatar.map {
-                  case "" =>
-                    userSrv.unsetAvatar(user)
-                    Success(Json.obj("avatar" -> JsNull))
-                  case avatar =>
-                    attachmentSrv
-                      .create(s"$userId.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
-                      .flatMap(userSrv.setAvatar(user, _))
-                      .map(_ => Json.obj("avatar" -> "[binary data]"))
-                }.flip
-              } yield updateName.getOrElse(JsObject.empty) ++
-                updateLocked.getOrElse(JsObject.empty) ++
-                updateProfile ++
-                updatedAvatar.getOrElse(JsObject.empty)
-            }(update => auditSrv.user.update(user, update))
-            .map(_ => Results.NoContent)
+        val isCurrentUser: Boolean =
+          userSrv
+            .current
+            .get(userId)
+            .exists()
+
+        val isUserAdmin: Boolean =
+          userSrv
+            .current
+            .organisations(Permissions.manageUser)
+            .users
+            .get(userId)
+            .exists()
+
+        def requireAdmin[A](body: => Try[A]): Try[A] =
+          if (isUserAdmin) body else Failure(AuthorizationError("You are not permitted to update this user"))
+
+        userSrv.get(userId).visible.getOrFail().flatMap {
+          case _ if !isCurrentUser && !isUserAdmin => Failure(AuthorizationError("You are not permitted to update this user"))
+          case user =>
+            auditSrv
+              .mergeAudits {
+                for {
+                  updateName <- maybeName.map(name => userSrv.get(user).update("name" -> name).map(_ => Json.obj("name" -> name))).flip
+                  updateLocked <- maybeLocked
+                    .map(locked => requireAdmin(userSrv.get(user).update("locked" -> locked).map(_ => Json.obj("locked" -> locked))))
+                    .flip
+                  updateProfile <- maybeProfile.map { profileName =>
+                    requireAdmin {
+                      maybeOrganisation.fold[Try[JsObject]](Failure(BadRequestError("Organisation information is required to update user profile"))) {
+                        organisationName =>
+                          for {
+                            profile      <- profileSrv.getOrFail(profileName)
+                            organisation <- organisationSrv.getOrFail(organisationName)
+                            _            <- userSrv.setProfile(user, organisation, profile)
+                          } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
+                      }
+                    }
+                  }.flip
+                  updatedAvatar <- maybeAvatar.map {
+                    case "" =>
+                      userSrv.unsetAvatar(user)
+                      Success(Json.obj("avatar" -> JsNull))
+                    case avatar =>
+                      attachmentSrv
+                        .create(s"$userId.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
+                        .flatMap(userSrv.setAvatar(user, _))
+                        .map(_ => Json.obj("avatar" -> "[binary data]"))
+                  }.flip
+                } yield updateName.getOrElse(JsObject.empty) ++
+                  updateLocked.getOrElse(JsObject.empty) ++
+                  updateProfile.getOrElse(JsObject.empty) ++
+                  updatedAvatar.getOrElse(JsObject.empty)
+              }(update => auditSrv.user.update(user, update))
+              .map(_ => Results.NoContent)
         }
       }
 
@@ -171,16 +194,11 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
               .get(userId)
               .getOrFail()
-              .flatMap { u =>
-                userSrv
-                  .current
-                  .organisations(Permissions.manageUser)
-                  .users
-                  .get(u)
-                  .getOrFail()
-              }
           }
           _ <- authSrv.setPassword(userId, request.body("password"))
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
@@ -192,13 +210,11 @@ class UserCtrl @Inject()(
       .extract("password", FieldsParser[String])
       .extract("currentPassword", FieldsParser[String])
       .auth { implicit request =>
-        if (userId == request.userId) {
-          for {
-            user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail())
-            _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
-            _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
-          } yield Results.NoContent
-        } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
+        for {
+          user <- db.roTransaction(implicit graph => userSrv.current.get(userId).getOrFail())
+          _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
+          _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
+        } yield Results.NoContent
       }
 
   def getKey(userId: String): Action[AnyContent] =
@@ -207,16 +223,11 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
               .get(userId)
               .getOrFail()
-              .flatMap { u =>
-                userSrv
-                  .current
-                  .organisations(Permissions.manageUser)
-                  .users
-                  .get(u)
-                  .getOrFail()
-              }
           }
           key <- authSrv.getKey(user._id)
         } yield Results.Ok(key)
@@ -228,16 +239,11 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
               .get(userId)
               .getOrFail()
-              .flatMap { u =>
-                userSrv
-                  .current
-                  .organisations(Permissions.manageUser)
-                  .users
-                  .get(u)
-                  .getOrFail()
-              }
           }
           _ <- authSrv.removeKey(userId)
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
@@ -251,16 +257,11 @@ class UserCtrl @Inject()(
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
+              .current
+              .organisations(Permissions.manageUser)
+              .users
               .get(userId)
               .getOrFail()
-              .flatMap { u =>
-                userSrv
-                  .current
-                  .organisations(Permissions.manageUser)
-                  .users
-                  .get(u)
-                  .getOrFail()
-              }
           }
           key <- authSrv.renewKey(userId)
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))

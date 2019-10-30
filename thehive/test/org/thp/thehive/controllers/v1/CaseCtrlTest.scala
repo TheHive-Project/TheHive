@@ -15,6 +15,7 @@ import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationSrv
 
 case class TestCase(
     title: String,
@@ -88,7 +89,7 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
               )
             )
           )
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
         val result = caseCtrl.create(request)
         status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultCase = contentAsJson(result).as[OutputCase]

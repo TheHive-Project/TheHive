@@ -62,14 +62,12 @@ class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extend
     else initSteps.getByName(idOrName)
 
   def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    if (get(profile).in().exists())
+    if (profile.name == "all" || get(profile).filter(_.or(_.roles, _.shares)).exists())
       Failure(BadRequestError(s"Profile ${profile.name} is used"))
     else {
       get(profile).remove()
       auditSrv.profile.delete(profile)
     }
-
-  def unused(profile: Profile with Entity)(implicit graph: Graph): Boolean = get(profile).roles.toList.length + get(profile).shares.toList.length <= 0
 }
 
 @EntitySteps[Profile]

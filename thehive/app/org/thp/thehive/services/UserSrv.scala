@@ -21,40 +21,38 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 object UserSrv {
-  val initUserPassword: String = "secret"
+  val initPassword: String = "secret"
 
-  val initUser: User = User(
+  val init: User = User(
     login = "admin@thehive.local",
     name = "Default admin user",
     apikey = None,
     locked = false,
-    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initUserPassword))
+    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initPassword))
   )
+
+  val system: User = User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None)
 }
 
 @Singleton
 class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, attachmentSrv: AttachmentSrv, implicit val db: Database)
     extends VertexSrv[User, UserSteps] {
 
-  override val initialValues: Seq[User] = Seq(UserSrv.initUser)
+  override val initialValues: Seq[User] = Seq(UserSrv.init, UserSrv.system)
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
-  val basicUserNameRegex: Pattern       = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*".r.pattern
 
   val userAttachmentSrv                                                           = new EdgeSrv[UserAttachment, User, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
 
-  def checkUser(user: User): Try[User] =
-    if (fullUserNameRegex.matcher(user.login).matches()) Success(user)
-    else if (basicUserNameRegex.matcher(user.login).matches && defaultUserDomain.isDefined)
-      Success(user.copy(login = s"${user.login}@${defaultUserDomain.get}"))
-    else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+  def checkUser(user: User): Try[User] = {
+    val login =
+      if (!user.login.contains('@') && defaultUserDomain.isDefined) s"${user.login}@${defaultUserDomain.get}"
+      else user.login
 
-  def checkUserName(login: String): Try[String] =
-    if (fullUserNameRegex.matcher(login).matches()) Success(login)
-    else if (basicUserNameRegex.matcher(login).matches && defaultUserDomain.isDefined)
-      Success(s"$login}@${defaultUserDomain.get}")
-    else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: $login)"))
+    if (fullUserNameRegex.matcher(login).matches() && login != "system@thehive.local") Success(user.copy(login = login))
+    else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+  }
 
   def create(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -86,6 +84,7 @@ class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (userSteps, updatedFields) =>
         userSteps
+          .filterNot(_.systemUser)
           .newInstance()
           .getOrFail()
           .flatMap(auditSrv.user.update(_, updatedFields))
@@ -124,7 +123,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def visible(implicit authContext: AuthContext): UserSteps =
     if (authContext.permissions.contains(Permissions.manageOrganisation)) this
-    else newInstance(raw.filter(_.outTo[UserRole].outTo[RoleOrganisation].has(Key("name") of authContext.organisation)))
+    else
+      this.filter(_.or(_.organisations.get(authContext.organisation), _.systemUser))
 
   override def newInstance(newRaw: GremlinScala[Vertex]): UserSteps = new UserSteps(newRaw)
   override def newInstance(): UserSteps                             = new UserSteps(raw.clone())
@@ -145,7 +145,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInDefaultOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.default.name).exists()
+    val isInDefaultOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.administration.name).exists()
     if (isInDefaultOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
     else organisations0(requiredPermission)
   }
@@ -162,7 +162,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .value[String](Key("name"))
           .headOption()
       )
-      .getOrElse(OrganisationSrv.default.name)
+      .getOrElse(OrganisationSrv.administration.name)
     getAuthContext(requestId, organisationName)
   }
 
@@ -180,7 +180,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .map {
           case (userId, userName, profile) =>
             val permissions =
-              if (organisationName == OrganisationSrv.default.name) profile.as[Profile].permissions
+              if (organisationName == OrganisationSrv.administration.name) profile.as[Profile].permissions
               else profile.as[Profile].permissions -- Permissions.restrictedPermissions
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
@@ -203,4 +203,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])
 
   def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
+
+  def systemUser: UserSteps = this.has(Key[String]("login"), P.eq[String](UserSrv.system.login))
 }

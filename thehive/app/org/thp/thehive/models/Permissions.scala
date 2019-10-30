@@ -18,7 +18,7 @@ object Permissions {
   val manageCustomField: Permission      = Permission("manageCustomField")
   val manageShare: Permission            = Permission("manageShare")
 
-  // These permissions are available only if the user is in default organisation, they are removed for other organisations
+  // These permissions are available only if the user is in admin organisation, they are removed for other organisations
   val restrictedPermissions: Set[Permission] =
     Set(manageOrganisation, manageAnalyzerTemplate, manageConfig, manageProfile, manageCustomField, manageTag)
 

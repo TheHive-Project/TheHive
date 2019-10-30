@@ -75,14 +75,10 @@ class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Pr
 
   def delete(profileId: String): Action[AnyContent] =
     entryPoint("delete profile")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Set(Permissions.manageProfile)) { implicit request => implicit graph =>
         profileSrv
           .getOrFail(profileId)
-          .map { profile =>
-            if (profileSrv.unused(profile)) {
-              profileSrv.remove(profile)
-              Results.NoContent
-            } else Results.Forbidden
-          }
+          .flatMap(profileSrv.remove)
+          .map(_ => Results.NoContent)
       }
 }

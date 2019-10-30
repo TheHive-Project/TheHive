@@ -52,7 +52,7 @@ class OrganisationCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
-          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.default.name).existsOrFail()
+          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.administration.name).existsOrFail()
           org <- organisationSrv.create(inputOrganisation.toOrganisation)
 
         } yield Results.Created(org.toJson)
@@ -163,7 +163,7 @@ class OrganisationCtrl @Inject()(
   def listLinks(organisationId: String): Action[AnyContent] =
     entryPoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val isInDefaultOrganisation = userSrv.current.organisations.get(OrganisationSrv.default.name).exists()
+        val isInDefaultOrganisation = userSrv.current.organisations.get(OrganisationSrv.administration.name).exists()
         val organisation =
           if (isInDefaultOrganisation)
             organisationSrv.get(organisationId)

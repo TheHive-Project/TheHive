@@ -1,18 +1,2 @@
 [
-  {
-    "name": "analyst",
-    "permissions": [
-      "manageCase",
-      "manageAlert",
-      "manageTask",
-      "manageAction",
-      "manageObservable",
-      "manageShare",
-      "manageCaseTemplate"
-    ]
-  },
-  {
-    "name": "read-only",
-    "permissions": []
-  }
 ]

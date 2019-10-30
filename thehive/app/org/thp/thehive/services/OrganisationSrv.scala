@@ -17,14 +17,14 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 object OrganisationSrv {
-  val default = Organisation("default", "initial organisation")
+  val administration = Organisation("admin", "organisation for administration")
 }
 
 @Singleton
 class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
     extends VertexSrv[Organisation, OrganisationSteps] {
 
-  override val initialValues: Seq[Organisation] = Seq(OrganisationSrv.default)
+  override val initialValues: Seq[Organisation] = Seq(OrganisationSrv.administration)
   val organisationOrganisationSrv               = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv                      = new EdgeSrv[OrganisationShare, Organisation, Share]
 

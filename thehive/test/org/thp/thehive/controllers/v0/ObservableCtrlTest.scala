@@ -25,7 +25,7 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, DataSrv}
+import org.thp.thehive.services.{AlertSrv, DataSrv, OrganisationSrv}
 
 case class TestObservable(
     dataType: String,
@@ -95,7 +95,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
       "be able to create and search 2 observables with data array" in {
         val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
           .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
@@ -120,14 +120,15 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
         createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
-        val requestCase   = FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        val requestCase =
+          FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
         val resultCaseGet = caseCtrl.get("#4")(requestCase)
 
         status(resultCaseGet) shouldEqual 200
 
         val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
         val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
           .withJsonBody(Json.parse(s"""
               {
                 "query":{
