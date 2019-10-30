@@ -31,7 +31,7 @@ case class OutputUser(
     name: String,
     roles: Set[String],
     organisation: String,
-    hasKey: Option[Boolean],
+    hasKey: Boolean,
     status: String
 )
 

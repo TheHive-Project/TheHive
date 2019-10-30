@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
@@ -491,7 +491,7 @@ object Conversion {
     _.into[OutputUser]
       .withFieldComputed(_.roles, u => permissions2Roles(u.permissions))
       .withFieldRenamed(_.login, _.id)
-      .withFieldConst(_.hasKey, None)
+      .withFieldComputed(_.hasKey, _.apikey.isDefined)
       .withFieldComputed(_.status, u => if (u.locked) "Locked" else "Ok")
       .withFieldRenamed(_._createdBy, _.createdBy)
       .withFieldRenamed(_._createdAt, _.createdAt)
@@ -500,9 +500,6 @@ object Conversion {
       .withFieldConst(_._type, "user")
       .transform
   )
-
-  val userWithKeyInfoOutput: Outputer.Aux[RichUser, OutputUser] =
-    Outputer[RichUser, OutputUser](u => u.toOutput.copy(hasKey = Some(u.apikey.isDefined)))
 
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
 
