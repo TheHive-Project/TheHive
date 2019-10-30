@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -17,6 +11,11 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -73,15 +72,7 @@ class CaseCtrl @Inject()(
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
-          caseTemplate <- caseTemplateName
-            .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName =>
-              caseTemplateSrv
-                .get(templateName)
-                .visible
-                .richCaseTemplate
-                .getOrFail()
-                .map(Some.apply)
-            }
+          caseTemplate <- caseTemplateSrv.getFromOption(caseTemplateName)
           customFields = inputCase.customFields.map(c => c.name -> c.value).toMap
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
@@ -105,7 +96,8 @@ class CaseCtrl @Inject()(
         val c = caseSrv
           .get(caseIdOrNumber)
           .visible
-        if (request.body("stats").contains(true)) {
+        val stats: Option[Boolean] = request.body("stats")
+        if (stats.contains(true)) {
           c.richCaseWithCustomRenderer(caseStatsRenderer(request, db, graph))
             .getOrFail()
             .map {
@@ -217,7 +209,7 @@ class CaseCtrl @Inject()(
                 ("linkedWith" -> JsArray(o.map(_.toJson))) +
                 ("linksCount" -> JsNumber(o.size))
           }
-          .toSeq
+
         Success(Results.Ok(JsArray(relatedCases)))
       }
 }
