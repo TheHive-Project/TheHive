@@ -95,6 +95,23 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
 
         status(resultGet) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
       }
+
+      "update a template" in getAndTestCaseTemplate("tmp basic case 4", "description tmp case 4") { output =>
+        val request = FakeRequest("PATCH", s"/api/case/template/${output.name}")
+          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withJsonBody(
+            Json.parse("""{"displayName": "patched"}""")
+          )
+        val result = caseTemplateCtrl.update(output._id)(request)
+
+        status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+        val requestGet = FakeRequest("GET", s"/api/case/template/${output._id}")
+          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        val resultGet = caseTemplateCtrl.get(output._id)(requestGet)
+
+        status(resultGet) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
+      }
     }
   }
 }
