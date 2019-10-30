@@ -17,7 +17,7 @@
     </div>
 </div>
 
-<div class="row mv-l" ng-show="state.isNewTask">
+<div class="row mv-l" ng-if="canEdit" ng-show="state.isNewTask">
     <div class="col-md-12">
         <form name="form" ng-submit="addTask(); state.isNewTask = false;">
             <div class="row">
@@ -74,8 +74,11 @@
                         <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                         <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                     </td>
-                    <td>
+                    <td ng-if="canEdit">
                         <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
+                    </td>
+                    <td ng-if="!canEdit">
+                        {{task.group}}
                     </td>
                     <td>
                       <div>
@@ -89,12 +92,20 @@
                       </div>
                     </td>
                     <td>{{task.startDate | showDate}}</td>
-                    <td>
+                    <td ng-if="canEdit">
                         <span ng-show="task.owner">
                             <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
                         </span>
                         <span ng-show="!task.owner">
                             <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                        </span>
+                    </td>
+                    <td ng-if="!canEdit">
+                        <span ng-show="task.owner">
+                            <user-info value="task.owner" field="name"></user-info>
+                        </span>
+                        <span ng-show="!task.owner">
+                            <em class="text-warning">Not Assigned</em>
                         </span>
                     </td>
                     <!--  class="task-delete" -->
@@ -182,8 +193,11 @@
                                 <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
                                 <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]"></i>
                             </td>
-                            <td>
+                            <td ng-if="canEdit">
                                 <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
+                            </td>
+                            <td ng-if="!canEdit">
+                                {{task.group}}
                             </td>
                             <td>
                               <div>
@@ -197,12 +211,20 @@
                               </div>
                             </td>
                             <td>{{task.startDate | shortDate}}</td>
-                            <td>
+                            <td ng-if="canEdit">
                                 <span ng-show="task.owner">
                                     <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
                                 </span>
                                 <span ng-show="!task.owner">
                                     <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                                </span>
+                            </td>
+                            <td ng-if="!canEdit">
+                                <span ng-show="task.owner">
+                                    <user-info value="task.owner" field="name"></user-info>
+                                </span>
+                                <span ng-show="!task.owner">
+                                    <em class="text-warning">Not Assigned</em>
                                 </span>
                             </td>
                             <!--  class="task-delete" -->

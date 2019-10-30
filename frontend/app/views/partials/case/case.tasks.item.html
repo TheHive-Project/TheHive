@@ -68,22 +68,31 @@
     <div class="col-md-6">
         <dl class="dl-horizontal">
             <dt class="pull-left">Title</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-simple-text on-update="updateField('title', newValue)" value="task.title"/>
+            </dd>
+            <dd ng-if="!canEdit">
+                {{task.title}}
             </dd>
         </dl>
 
         <dl class="dl-horizontal">
             <dt class="pull-left">Group</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-simple-text on-update="updateField('group', newValue)" value="task.group"/>
+            </dd>
+            <dd ng-if="!canEdit">
+                {{task.group}}
             </dd>
         </dl>
 
         <dl class="dl-horizontal">
             <dt class="pull-left">Assignee</dt>
-            <dd>
+            <dd ng-if="canEdit">
                 <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
+            </dd>
+            <dd ng-if="!canEdit">
+                <user-info value="task.owner" field="name"></user-info>
             </dd>
         </dl>
     </div>
@@ -91,8 +100,11 @@
     <div class="col-md-6">
         <dl class="dl-horizontal">
             <dt class="pull-left">Date</dt>
-            <dd ng-if="task.status !== 'Waiting'">
+            <dd ng-if="canEdit && task.status !== 'Waiting'">
                 <updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/>
+            </dd>
+            <dd ng-if="!canEdit && task.status !== 'Waiting'">
+                {{task.startDate | showDate}}
             </dd>
             <dd ng-if="task.status === 'Waiting'">
                 <em class="text-warning">Not started yet</em>
@@ -132,8 +144,12 @@
 
     <div class="col-md-12">
          <h4 class="vpad10 text-primary">Description</h4>
-         <div class="description-pane">
+         <div ng-if="canEdit" class="description-pane">
              <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
+         </div>
+         <div ng-if="!canEdit" class="description-pane">
+             <div marked="task.description" class="markdown"></div>
+             <em ng-if="!task.description" class="text-warning">Not specified</em>
          </div>
     </div>
 
