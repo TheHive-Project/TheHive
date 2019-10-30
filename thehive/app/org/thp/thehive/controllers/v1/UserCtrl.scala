@@ -274,8 +274,12 @@ class UserCtrl @Inject()(
           case Some(avatar) =>
             Success(
               Result(
-                header = ResponseHeader(200, Map("Content-Type" -> avatar.contentType)),
-                body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(avatar.attachmentId)), None, None)
+                header = ResponseHeader(200),
+                body = HttpEntity.Streamed(
+                  StreamConverters.fromInputStream(() => storageSrv.loadBinary(avatar.attachmentId)),
+                  Some(avatar.size),
+                  Some(avatar.contentType)
+                )
               )
             )
           case None => Failure(NotFoundError(s"user $userId has no avatar"))
