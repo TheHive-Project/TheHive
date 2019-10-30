@@ -89,7 +89,7 @@ class StatusCtrlTest extends PlaySpecification with Mockito {
             "protectDownloadsWith" -> config.get[String]("datastore.attachment.password"),
             "authType"             -> Seq("local", "key", "header"),
             "capabilities"         -> Seq("changePassword", "setPassword", "authByKey"),
-            "ssoAutoLogin"         -> config.get[Boolean]("auth.sso.autologin")
+            "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso")
           )
         )
 

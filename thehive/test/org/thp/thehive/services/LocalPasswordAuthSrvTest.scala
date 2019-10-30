@@ -1,4 +1,4 @@
-package org.thp.thehive.controllers.v0
+package org.thp.thehive.services
 
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
@@ -7,12 +7,14 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import play.api.Configuration
 import play.api.libs.json.Json
+import play.api.mvc.RequestHeader
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import scala.util.Try
 
-class AuthenticationCtrlTest extends PlaySpecification with Mockito {
+class LocalPasswordAuthSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
@@ -27,22 +29,23 @@ class AuthenticationCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val authenticationCtrl = app.instanceOf[AuthenticationCtrl]
+    val localPasswordAuthProvider = app.instanceOf[LocalPasswordAuthProvider]
+    val userSrv                   = app.instanceOf[UserSrv]
+    val db                        = app.instanceOf[Database]
+    val conf = app.instanceOf[Configuration]
 
-    "login and logout users" in {
-      val request = FakeRequest("POST", "/api/v0/login")
-        .withHeaders("X-Organisation" -> "default")
-        .withJsonBody(
-          Json.parse("""{"user": "user3@thehive.local", "password": "secret"}""")
-        )
-      val result = authenticationCtrl.login()(request)
+    s"[$name] localPasswordAuth service" should {
+      "be able to verify passwords" in db.roTransaction { implicit graph =>
+        val user3 = userSrv.getOrFail("user3@thehive.local").get
+        val localPasswordAuthSrv = localPasswordAuthProvider.apply(conf).get.asInstanceOf[LocalPasswordAuthSrv]
+        val request = FakeRequest("POST", "/api/v0/login")
+          .withHeaders("X-Organisation" -> "default")
+          .withJsonBody(
+            Json.parse("""{"user": "user3@thehive.local", "password": "secret"}""")
+          )
 
-      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-      val requestOut = FakeRequest("GET", "/api/v0/logout")
-      val resultOut = authenticationCtrl.logout()(requestOut)
-
-      status(resultOut) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        localPasswordAuthSrv.authenticate(user3.login, "secret", None)(request) must beSuccessfulTry
+      }
     }
   }
 }
