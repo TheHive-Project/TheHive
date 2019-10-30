@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, NotificationSrv, resizeService, readLocalPicService, currentUser, appConfig) {
+        function($scope, $state, UserSrv, AuthenticationSrv, NotificationSrv, resizeService, readLocalPicService, currentUser, appConfig) {
             $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
 
@@ -13,7 +13,8 @@
             $scope.basicData = {
                 username: $scope.currentUser.login,
                 name: $scope.currentUser.name,
-                avatar: $scope.currentUser.avatar
+                avatar: $scope.currentUser.avatar,
+                avatarB64: null
             };
 
             $scope.passData = {
@@ -30,22 +31,34 @@
                     return;
                 }
 
-                UserSrv.update($scope.currentUser.login, {
-                    name: $scope.basicData.name,
-                    avatar: $scope.basicData.avatar
-                })
-                .then(function(data) {
-                    $scope.currentUser.name = data.name;
+                var postData = {
+                    name: $scope.basicData.name
+                };
 
-                    UserSrv.updateCache(data._id, data);
+                if($scope.basicData.avatarB64) {
+                    postData.avatar = $scope.basicData.avatarB64;
+                }
 
-                    NotificationSrv.log('Your basic information have been successfully updated', 'success');
+                if($scope.basicData.avatar === '') {
+                    postData.avatar = '';
+                }
 
-                    $state.reload();
-                })
-                .catch(function(response) {
-                    NotificationSrv.error('SettingsCtrl', response.data, response.status);
-                });
+                UserSrv.update($scope.currentUser.login, postData)
+                    .then(function() {
+                        return AuthenticationSrv.current();
+                    })
+                    .then(function(data) {
+                        $scope.currentUser.name = data.name;
+
+                        UserSrv.updateCache(data.login, data);
+
+                        NotificationSrv.log('Your basic information have been successfully updated', 'success');
+
+                        $state.reload();
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('SettingsCtrl', response.data, response.status);
+                    });
             };
 
             $scope.updatePassword = function(form) {
@@ -88,16 +101,17 @@
             };
 
             $scope.cancel = function() {
-                $state.go('app.cases');
+                $state.go('app.index');
             };
 
             $scope.clearAvatar = function(form) {
-                $scope.basicData.avatar = null;
+                $scope.basicData.avatar = '';
+                $scope.basicData.avatarB64 = null;
                 form.avatar.$setValidity('maxsize', true);
                 form.avatar.$setPristine(true);
             };
 
-            $scope.$watch('avatar', function(value) {
+            $scope.$watch('avatarB64', function(value) {
                if(!value){
                    return;
                }
@@ -108,7 +122,8 @@
                    outputFormat: 'image/jpeg'
                })
                .then(function(image) {
-                   $scope.basicData.avatar = image.replace('data:image/jpeg;base64,', '');
+                   $scope.basicData.avatarB64 = image.replace('data:image/jpeg;base64,', '');
+                   $scope.basicData.avatar = null;
                });
            });
         }

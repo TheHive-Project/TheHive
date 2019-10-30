@@ -11,7 +11,6 @@
                     <h3 class="box-title">Update basic information</h3>
                 </div>
                 <div class="box-body">
-
                     <div class="form-group">
                         <label class="col-md-3 control-label">Username</label>
                         <div class="col-md-9">
@@ -33,10 +32,10 @@
                     <div class="form-group" ng-class="{ 'has-error' : basicForm.avatar.$error.maxsize}">
                         <label class="col-md-3 control-label">Avatar</label>
                         <div class="col-md-9">
-                            <div ng-show="!basicData.avatar">
+                            <div ng-show="!basicData.avatarB64 && !basicData.avatar">
                                 <div style="width: 100px;">
                                     <img alt="User avatar" src="images/no-avatar.png"/>
-                                    <input type="file" class="mt-xxs avatar-input" ng-model="avatar" id="avatar-input" name="avatar"
+                                    <input type="file" class="mt-xxs avatar-input" ng-model="avatarB64" id="avatar-input" name="avatar"
                                         accept="image/jpg|image/png|image/jpeg"
                                         maxsize="500"
                                         base-sixty-four-input
@@ -47,8 +46,10 @@
 
                             </div>
 
-                            <div ng-show="basicData.avatar" style="width: 100px;">
-                                <img alt="User avatar" data-ng-src="{{'data:image/jpeg;base64,' + basicData.avatar}}"/>
+                            <div ng-show="basicData.avatar || basicData.avatarB64" style="width: 100px;">
+                                <img ng-if="basicData.avatar" alt="User avatar" data-ng-src=".{{basicData.avatar}}"/>
+                                <img ng-if="basicData.avatarB64" alt="User avatar" data-ng-src="{{'data:image/jpeg;base64,' + basicData.avatarB64}}"/>
+                                <!-- <img alt="User avatar" data-ng-src="{{'data:image/jpeg;base64,' + basicData.avatar}}"/> -->
                                 <br>
                                 <button class="mt-xxs btn btn-block btn-sm btn-danger" type="button" ng-click="clearAvatar(basicForm)">Clear</button>
                             </div>
