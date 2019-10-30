@@ -1,14 +1,15 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
+        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
             var self = this;
             var eventId = event.id;
 
-            self.readonly = readonly;            
+            self.readonly = readonly;
             self.templates = _.pluck(templates, 'name');
             self.CaseResolutionStatus = CaseResolutionStatus;
             self.event = event;
+            self.canEdit = AuthenticationSrv.hasPermission('manageAlert');
 
             self.loading = true;
 

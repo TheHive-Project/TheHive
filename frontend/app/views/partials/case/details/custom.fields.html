@@ -68,6 +68,7 @@
                 <span ng-switch-when="date">{{caze.customFields[fieldDef.reference][fieldDef.type] | showDate}}</span>
                 <span ng-switch-default>
                     {{caze.customFields[fieldDef.reference][fieldDef.type]}}
+                    <em class="text-warning" ng-if="!caze.customFields[fieldDef.reference][fieldDef.type]">Not Specified</em>
                 </span>
             </dd>
         </dl>
