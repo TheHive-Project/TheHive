@@ -1,14 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import scala.util.Try
-
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.{AppBuilder, AuthenticationError}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
@@ -130,7 +128,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
         val keyAuthRequest = FakeRequest("GET", "/api/v0/user/current")
           .withHeaders("Authorization" -> "Bearer azertyazerty")
 
-        (status(userCtrl.current(keyAuthRequest)) must_=== 401).pendingUntilFixed("EntryPoint seem to have changed")
+        status(userCtrl.current(keyAuthRequest)) must throwA[AuthenticationError]
 
         val request = FakeRequest("POST", "/api/v0/user/user4@thehive.local")
           .withJsonBody(Json.parse("""{"status": "Ok"}"""))
