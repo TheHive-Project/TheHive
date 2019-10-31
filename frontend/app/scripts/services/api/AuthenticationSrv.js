@@ -50,7 +50,7 @@
         isSuperAdmin: function() {
             var user = self.currentUser;
 
-            return user && user.organisation === 'default';
+            return user && user.organisation === 'admin';
         },
         hasPermission: function(permissions) {
             var user = self.currentUser;

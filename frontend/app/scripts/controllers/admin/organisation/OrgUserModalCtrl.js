@@ -37,7 +37,7 @@
 
             var postData = {};
 
-            var profile = (self.organisation === 'default') ? 'admin' : self.formData.profile.name;
+            var profile = (self.organisation === 'admin') ? 'admin' : self.formData.profile.name;
 
             if (self.user._id) {
                 postData = {

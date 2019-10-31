@@ -6,7 +6,7 @@
             var baseUrl = './api/organisation';
 
             var factory = {
-                defaultOrg: 'default',
+                defaultOrg: 'admin',
 
                 list: function() {
                     return $http.get(baseUrl);

@@ -7,34 +7,6 @@
             <div class="box-body">
                 <div ng-include="'views/partials/admin/organisation/list/toolbar.html'"></div>
 
-                <!-- <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
-
-                <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div> -->
-
-                <!-- Filters preview  -->
-                <!-- <div class="row mt-s">
-                    <div class="col-md-12 clearfix">
-                        <div class="active-filters">
-                            <ul ng-if="$vm.filtering.countFilters() > 0">
-                                <li>{{$vm.filtering.countFilters()}}
-                                    filter(s) applied:
-                                </li>
-                                <li class="filter-item" ng-repeat="(field,filter) in $vm.filtering.filters">
-                                    <span>
-                                        <strong>{{filter.label}}:</strong>
-                                        {{filter.value | filterValue}}</span>
-                                    <a href ng-click="$vm.removeFilter(field)">
-                                        <span class="filter-close fa fa-times text-danger"></span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href ng-click="$vm.clearFilters()">Clear filters</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div> -->
-
                 <!-- Datalist  -->
                 <div class="row mt-s">
                     <div class="col-md-12">
@@ -42,7 +14,7 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th style="width: 250px">Created By</th>
+                                    <th style="width: 300px">Created By</th>
                                     <th style="width: 160px">Created At</th>
                                     <th style="width: 150px"></th>
                                 </tr>
@@ -64,7 +36,7 @@
                                     <td>
                                         <span class="clickable mr-xs text-primary" ng-click="$vm.showNewOrg('edit', org)">
                                             <i class="fa fa-edit"></i> Edit</span>
-                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showLinks(org)" ng-if="org.name !== 'default'">
+                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showLinks(org)" ng-if="org.name !== 'admin'">
                                             <i class="fa fa-link"></i> Link</span>
                                         <!-- <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.showNewOrg('edit', org)" >
                                             <i class="text-info text-20 fa fa-edit"></i>

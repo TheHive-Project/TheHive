@@ -188,15 +188,6 @@ angular.module('thehive', [
                 abstract: true,
                 url: 'administration',
                 template: '<ui-view/>',
-                // onEnter: function($state, AuthenticationSrv) {
-                //     var currentUser = AuthenticationSrv.currentUser;
-                //
-                //     if (!currentUser || !currentUser.permissions || currentUser.organisation !== 'default') {
-                //         $state.go('app.index', {}, {reload: true});
-                //     }
-                //
-                //     return true;
-                // }
             })
             .state('app.administration.profiles', {
                 url: '/profiles',
