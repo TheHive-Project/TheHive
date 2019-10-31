@@ -12,11 +12,11 @@
     "to": "all"
   },
   {
-    "from": "case3-default",
+    "from": "case3-admin",
     "to": "read-only"
   },
   {
-    "from": "case4-default",
+    "from": "case4-admin",
     "to": "all"
   }
 ]

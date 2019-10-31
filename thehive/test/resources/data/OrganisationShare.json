@@ -12,11 +12,11 @@
     "to": "case3-cert"
   },
   {
-    "from": "default",
-    "to": "case3-default"
+    "from": "admin",
+    "to": "case3-admin"
   },
   {
-    "from": "default",
-    "to": "case4-default"
+    "from": "admin",
+    "to": "case4-admin"
   }
 ]

@@ -8,11 +8,11 @@
     "to": "read-only"
   },
   {
-    "from": "user2-default",
-    "to": "analyst"
+    "from": "user2-admin",
+    "to": "incident-handler"
   },
   {
-    "from": "user3-default",
+    "from": "user3-admin",
     "to": "admin"
   },
   {

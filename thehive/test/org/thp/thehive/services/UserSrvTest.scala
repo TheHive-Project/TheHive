@@ -12,7 +12,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 
 class UserSrvTest extends PlaySpecification {
-  val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local")
+  val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local", organisation = "admin")
   implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>

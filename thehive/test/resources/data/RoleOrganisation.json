@@ -8,12 +8,12 @@
     "to": "cert"
   },
   {
-    "from": "user2-default",
-    "to": "default"
+    "from": "user2-admin",
+    "to": "admin"
   },
   {
-    "from": "user3-default",
-    "to": "default"
+    "from": "user3-admin",
+    "to": "admin"
   },
   {
     "from": "user4-cert",

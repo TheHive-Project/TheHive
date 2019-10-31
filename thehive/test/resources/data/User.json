@@ -15,7 +15,7 @@
   {
     "id": "user3",
     "login": "user3@thehive.local",
-    "name": "only on default",
+    "name": "only on admin",
     "locked": false,
     "password": "*random*seed*,799523c20727fcf99ec5a9a98ff728e5897e7f17a453af396b2a6b7fae441e20"
   },

@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import gremlin.scala.{Graph, Key, P}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.RichSeq
+import org.thp.scalligraph.{AuthorizationError, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -13,8 +13,7 @@ import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
 import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 @Singleton
 class ShareCtrl @Inject()(
@@ -34,7 +33,7 @@ class ShareCtrl @Inject()(
       .extract("shares", FieldsParser[InputShare].sequence.on("shares"))
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShares: Seq[InputShare] = request.body("shares")
-        if (userSrv.current.can(Permissions.manageShare).existsOrFail().isSuccess) {
+        if (userSrv.current.can(Permissions.manageShare).exists()) {
           // No more magic removal atm
 //          caseSrv
 //            .get(caseId)
@@ -53,7 +52,7 @@ class ShareCtrl @Inject()(
             .partition(_.isSuccess)
           if (failures.nonEmpty) Success(Results.InternalServerError(failures.map(_.failed.get).head.getMessage))
           else Success(Results.Created)
-        } else Success(Results.Forbidden)
+        } else Failure(AuthorizationError("You are not permitted to manage share"))
       }
 
   private def share(inputShare: InputShare, organisation: String, caseId: String)(implicit graph: Graph, authContext: AuthContext) =

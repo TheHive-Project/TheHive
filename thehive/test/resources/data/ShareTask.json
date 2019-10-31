@@ -12,15 +12,15 @@
     "to": "task3"
   },
   {
-    "from": "case4-default",
+    "from": "case4-admin",
     "to": "task4"
   },
   {
-    "from": "case4-default",
+    "from": "case4-admin",
     "to": "task5"
   },
   {
-    "from": "case3-default",
+    "from": "case3-admin",
     "to": "task6"
   }
 ]

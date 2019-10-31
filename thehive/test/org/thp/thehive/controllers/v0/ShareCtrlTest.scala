@@ -16,7 +16,7 @@ import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import scala.util.Try
 
 class ShareCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -37,7 +37,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
     def getShares(caseId: String) = {
       val requestGet = FakeRequest("GET", s"/api/case/$caseId/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
       val resGet = shareCtrl.listShareCases(caseId)(requestGet)
 
       status(resGet) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resGet)}")
@@ -74,17 +74,17 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       val request = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(inputShare)
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
       val result = shareCtrl.shareCase("#4")(request)
 
-      status(result) must equalTo(201)
+      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val requestAgain = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(inputShare)
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
       val result2 = shareCtrl.shareCase("#4")(requestAgain)
 
-      status(result2) must equalTo(201)
+      status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val l     = getShares("#4")
       val share = l.find(_.organisationName == "cert")
@@ -96,7 +96,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       val requestUpdate = FakeRequest("POST", "/api/case/#4/shares")
         .withJsonBody(Json.obj("shares" -> List(Json.toJson(InputShare("cert", "read-only", TasksFilter.all, ObservablesFilter.all)))))
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
       val result3 = shareCtrl.shareCase("#4")(requestUpdate)
 
       status(result3) must equalTo(201)
@@ -121,10 +121,10 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       def getTaskShares = {
         val request = FakeRequest("GET", s"/api/case/#4/task/${task4.get._id}/shares")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user4@thehive.local", "X-Organisation" -> "cert")
         val result = shareCtrl.listShareTasks("#4", task4.get._id)(request)
 
-        status(result) shouldEqual 200
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
         contentAsJson(result).as[List[OutputShare]]
       }
@@ -135,7 +135,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       val requestAdd = FakeRequest("POST", s"/api/case/task/${task4.get._id}/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-        .withJsonBody(Json.obj("organisations" -> List("default")))
+        .withJsonBody(Json.obj("organisations" -> List("admin")))
       val resultAdd = shareCtrl.shareTask(task4.get._id)(requestAdd)
 
       status(resultAdd) shouldEqual 204
@@ -156,15 +156,15 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
         .withHeaders("user" -> "admin@thehive.local")
       val resultOrga = organisationCtrl.create(requestOrga)
       status(resultOrga) must beEqualTo(201)
-      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/default/links")
+      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/admin/links")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"organisations":["orga1", "cert"]}"""))
-      val resultBulkLink = organisationCtrl.bulkLink("default")(requestBulkLink)
+      val resultBulkLink = organisationCtrl.bulkLink("admin")(requestBulkLink)
 
       status(resultBulkLink) shouldEqual 201
 
       val request = FakeRequest("POST", s"/api/case/#3/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         .withJsonBody(
           Json.obj(
             "shares" -> List(
@@ -182,18 +182,18 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       tasks must not(beEmpty)
       val task6 = tasks.find(_.title == "case 3 task 2")
       task6 must beSome
-      getTaskShares("#3", task6.get._id, "user2", "default").filter(_.organisationName == "orga1") must beEmpty
+      getTaskShares("#3", task6.get._id, "user2", "admin").filter(_.organisationName == "orga1") must beEmpty
 
       val requestAddTask = FakeRequest("POST", s"/api/case/task/${task6.get._id}/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         .withJsonBody(Json.obj("organisations" -> List("orga1")))
       val resultAddTask = shareCtrl.shareTask(task6.get._id)(requestAddTask)
 
       status(resultAddTask) shouldEqual 204
-      getTaskShares("#3", task6.get._id, "user2", "default").filter(_.organisationName == "orga1") must not(beEmpty)
+      getTaskShares("#3", task6.get._id, "user2", "admin").filter(_.organisationName == "orga1") must not(beEmpty)
 
       val requestEmpty = FakeRequest("POST", s"/api/case/#3/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         .withJsonBody(Json.obj("shares" -> JsArray.empty))
       val resultEmpty = shareCtrl.shareCase("#3")(requestEmpty)
 
@@ -204,8 +204,8 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       getShares("#3").length shouldEqual 2
 
       val requestRemove = FakeRequest("DELETE", s"/api/case/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
-        .withJsonBody(Json.obj("ids" -> l.filterNot(_.organisationName == "default").map(_._id)))
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
+        .withJsonBody(Json.obj("ids" -> l.filterNot(_.organisationName == "admin").map(_._id)))
       val resultRemove = shareCtrl.removeShares()(requestRemove)
 
       status(resultRemove) shouldEqual 204
@@ -214,63 +214,63 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
     "remove a share" in {
       val requestBulkLink = FakeRequest("PUT", s"/api/organisation/cert/links")
         .withHeaders("user" -> "admin@thehive.local")
-        .withJsonBody(Json.parse("""{"organisations":["default"]}"""))
+        .withJsonBody(Json.parse("""{"organisations":["admin"]}"""))
       val resultBulkLink = organisationCtrl.bulkLink("cert")(requestBulkLink)
 
-      status(resultBulkLink) shouldEqual 201
+      status(resultBulkLink) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(resultBulkLink)}")
 
       val request = FakeRequest("POST", s"/api/case/#1/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
           Json.obj(
             "shares" -> List(
-              Json.toJson(InputShare("default", "read-only", TasksFilter.all, ObservablesFilter.all))
+              Json.toJson(InputShare("admin", "read-only", TasksFilter.all, ObservablesFilter.all))
             )
           )
         )
       val result = shareCtrl.shareCase("#1")(request)
 
-      status(result) shouldEqual 201
+      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
       getSomeShares("#1", "user1", "cert").length shouldEqual 1
 
-      val share = getSomeShares("#1", "user1", "cert").find(_.organisationName == "default").get
+      val share = getSomeShares("#1", "user1", "cert").find(_.organisationName == "admin").get
 
       val requestRemove = FakeRequest("DELETE", s"/api/case/share/${share._id}")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
       val resultRemove = shareCtrl.removeShare(share._id)(requestRemove)
 
-      status(resultRemove) shouldEqual 204
+      status(resultRemove) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultRemove)}")
     }
 
     "patch a share" in {
       val requestBulkLink = FakeRequest("PUT", s"/api/organisation/cert/links")
         .withHeaders("user" -> "admin@thehive.local")
-        .withJsonBody(Json.parse("""{"organisations":["default"]}"""))
+        .withJsonBody(Json.parse("""{"organisations":["admin"]}"""))
       val resultBulkLink = organisationCtrl.bulkLink("cert")(requestBulkLink)
 
-      status(resultBulkLink) shouldEqual 201
+      status(resultBulkLink) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(resultBulkLink)}")
 
       val request = FakeRequest("POST", s"/api/case/#2/shares")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
           Json.obj(
             "shares" -> List(
-              Json.toJson(InputShare("default", "read-only", TasksFilter.all, ObservablesFilter.all))
+              Json.toJson(InputShare("admin", "read-only", TasksFilter.all, ObservablesFilter.all))
             )
           )
         )
       val result = shareCtrl.shareCase("#2")(request)
 
-      status(result) shouldEqual 201
+      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val l = getSomeShares("#2", "user1", "cert")
 
       l.length shouldEqual 1
 
-      val share = l.find(s => s.organisationName == "default" && s.profileName == "read-only")
+      val share = l.find(s => s.organisationName == "admin" && s.profileName == "read-only")
 
       share must beSome
-      l.find(s => s.organisationName == "default" && s.profileName == "all") must beNone
+      l.find(s => s.organisationName == "admin" && s.profileName == "all") must beNone
 
       val requestPatch = FakeRequest("PATCH", s"/api/case/share/${share.get._id}")
         .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
@@ -282,7 +282,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       val newL = getSomeShares("#2", "user1", "cert")
 
       newL.length shouldEqual 1
-      newL.find(s => s.organisationName == "default" && s.profileName == "all") must beSome
+      newL.find(s => s.organisationName == "admin" && s.profileName == "all") must beSome
     }
 
     "fetch and remove observable shares" in db.roTransaction { implicit graph =>
@@ -299,7 +299,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
 
       def getObsShares = {
         val request = FakeRequest("GET", s"/api/case/#1/observable/${observableHfr.get._id}/shares")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         val result = shareCtrl.listShareObservables("#1", observableHfr.get._id)(request)
 
         status(result) shouldEqual 200
@@ -312,7 +312,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       l.length shouldEqual 1
 
       val requestAdd = FakeRequest("POST", s"/api/case/observable/${observableHfr.get._id}/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         .withJsonBody(Json.obj("organisations" -> List("cert")))
       val resultAdd = shareCtrl.shareObservable(observableHfr.get._id)(requestAdd)
 
@@ -320,7 +320,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
       getObsShares.length shouldEqual 1
 
       val requestDel = FakeRequest("DELETE", s"/api/observable/shares")
-        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+        .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         .withJsonBody(Json.obj("ids" -> List(l.head._id)))
       val resultDel = shareCtrl.removeShareObservables()(requestDel)
 

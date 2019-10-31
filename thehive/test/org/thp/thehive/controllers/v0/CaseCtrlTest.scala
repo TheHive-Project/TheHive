@@ -45,7 +45,7 @@ object TestCase {
 }
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -320,10 +320,10 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
 
       "assign a case to an user" in {
         val request = FakeRequest("PATCH", s"/api/v0/case/#4")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
           .withJsonBody(Json.obj("owner" -> "user4@thehive.local"))
         val result = caseCtrl.update("#4")(request)
-        status(result) must_=== 200
+        status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         val resultCase       = contentAsJson(result)
         val resultCaseOutput = resultCase.as[OutputCase]
 
@@ -333,13 +333,13 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
       "force delete a case" in {
         val tasks = db.roTransaction { implicit graph =>
           val authContext = mock[AuthContext]
-          authContext.organisation returns "default"
+          authContext.organisation returns "admin"
           caseSrv.get("#4").tasks(authContext).toList
         }
         tasks must have size 2
 
         val requestDel = FakeRequest("DELETE", s"/api/v0/case/#4/force")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "default")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
         val resultDel = caseCtrl.realDelete("#4")(requestDel)
         status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 

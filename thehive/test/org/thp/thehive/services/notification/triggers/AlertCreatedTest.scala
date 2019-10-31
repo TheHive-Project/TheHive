@@ -20,7 +20,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AuditSrv, OrganisationSrv, UserSrv}
 
 class AlertCreatedTest extends PlaySpecification {
-  val dummyUserSrv                      = DummyUserSrv(userId = "user1@thehive.local")
+  val dummyUserSrv                      = DummyUserSrv(userId = "user1@thehive.local", organisation = "admin")
   implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>

@@ -1,7 +1,7 @@
 [
   {
     "from": "alert1",
-    "to": "default"
+    "to": "admin"
   },
   {
     "from": "alert2",

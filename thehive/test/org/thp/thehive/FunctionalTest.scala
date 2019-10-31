@@ -182,7 +182,7 @@
 //        "create new user" in {
 //          val asyncResp = client.user.create(InputUser("toom@thehive.local", "Thomas", Some("secret"), "analyst"))
 //          user2 = TestUser(await(asyncResp))
-//          val expected = TestUser("toom@thehive.local", "Thomas", "analyst", Set("manageAlert", "manageCase", "manageTask"), "default")
+//          val expected = TestUser("toom@thehive.local", "Thomas", "analyst", Set("manageAlert", "manageCase", "manageTask"), "admin")
 //          user2 must_=== expected
 //        }
 //
@@ -329,7 +329,7 @@
 //        "list organisations" in {
 //          val asyncResp     = client.query(Json.obj("_name" -> "listOrganisation"), Json.obj("_name" -> "toList"))
 //          val organisations = (await(asyncResp) \ "result").as[Seq[OutputOrganisation]]
-//          organisations must contain(exactly(OutputOrganisation("test", "no description"), OutputOrganisation("default", "initial organisation")))
+//          organisations must contain(exactly(OutputOrganisation("test", "no description"), OutputOrganisation("admin", "initial organisation")))
 //        }
 //
 //        "create a new user in the test organisation" in {
@@ -381,7 +381,7 @@
 //      {
 ////        implicit val auth: Authentication = Authentication(UserSrv.initUser, UserSrv.initUserPassword)
 //
-//        "share a case from default organisation to test organisation" in {
+//        "share a case from admin organisation to test organisation" in {
 ////          val asyncResp = client.share.create(InputShare(case2._id, "test"))
 ////          await(asyncResp) must_=== OutputShare(case2._id, "test")
 //          pending

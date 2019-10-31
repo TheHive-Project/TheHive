@@ -9,11 +9,11 @@
   },
   {
     "from": "user2",
-    "to": "user2-default"
+    "to": "user2-admin"
   },
   {
     "from": "user3",
-    "to": "user3-default"
+    "to": "user3-admin"
   },
   {
     "from": "user4",

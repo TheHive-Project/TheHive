@@ -13,7 +13,7 @@ import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 import scala.util.Try
 
 class AuthenticationCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -31,7 +31,7 @@ class AuthenticationCtrlTest extends PlaySpecification with Mockito {
 
     "login and logout users" in {
       val request = FakeRequest("POST", "/api/v0/login")
-        .withHeaders("X-Organisation" -> "default")
+        .withHeaders("X-Organisation" -> "admin")
         .withJsonBody(
           Json.parse("""{"user": "user3@thehive.local", "password": "secret"}""")
         )
@@ -40,7 +40,7 @@ class AuthenticationCtrlTest extends PlaySpecification with Mockito {
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val requestOut = FakeRequest("GET", "/api/v0/logout")
-      val resultOut = authenticationCtrl.logout()(requestOut)
+      val resultOut  = authenticationCtrl.logout()(requestOut)
 
       status(resultOut) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
     }

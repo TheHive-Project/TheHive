@@ -15,7 +15,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
 class LocalPasswordAuthSrvTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -39,7 +39,7 @@ class LocalPasswordAuthSrvTest extends PlaySpecification with Mockito {
         val user3                = userSrv.getOrFail("user3@thehive.local").get
         val localPasswordAuthSrv = localPasswordAuthProvider.apply(conf).get.asInstanceOf[LocalPasswordAuthSrv]
         val request = FakeRequest("POST", "/api/v0/login")
-          .withHeaders("X-Organisation" -> "default")
+          .withHeaders("X-Organisation" -> "admin")
           .withJsonBody(
             Json.parse("""{"user": "user3@thehive.local", "password": "secret"}""")
           )

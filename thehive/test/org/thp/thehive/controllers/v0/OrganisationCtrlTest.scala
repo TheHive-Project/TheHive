@@ -52,21 +52,21 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
         resultOrganisation.name must_=== "orga1"
 
-        val requestBulkLink = FakeRequest("PUT", s"/api/organisation/default/links")
+        val requestBulkLink = FakeRequest("PUT", s"/api/organisation/admin/links")
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""{"organisations":["orga1"]}"""))
-        val resultBulkLink = organisationCtrl.bulkLink("default")(requestBulkLink)
+        val resultBulkLink = organisationCtrl.bulkLink("admin")(requestBulkLink)
 
         status(resultBulkLink) shouldEqual 201
-        listLinks("default", "admin@thehive.local").length shouldEqual 1
+        listLinks("admin", "admin@thehive.local").length shouldEqual 1
 
-        val requestBulkLinkDel = FakeRequest("PUT", s"/api/organisation/default/links")
+        val requestBulkLinkDel = FakeRequest("PUT", s"/api/organisation/admin/links")
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.parse("""{"organisations":[]}"""))
-        val resultBulkLinkDel = organisationCtrl.bulkLink("default")(requestBulkLinkDel)
+        val resultBulkLinkDel = organisationCtrl.bulkLink("admin")(requestBulkLinkDel)
 
         status(resultBulkLinkDel) shouldEqual 201
-        listLinks("default", "admin@thehive.local") must beEmpty
+        listLinks("admin", "admin@thehive.local") must beEmpty
       }
 
       "refuse to create an organisation if the permission doesn't contain ManageOrganisation right" in {
@@ -94,13 +94,13 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
       }
 
       "refuse to get a invisible organisation" in {
-        val request = FakeRequest("GET", s"/api/v0/user/default").withHeaders("user" -> "user1@thehive.local")
-        val result  = organisationCtrl.get("default")(request)
+        val request = FakeRequest("GET", s"/api/v0/organisation/admin").withHeaders("user" -> "user1@thehive.local")
+        val result  = organisationCtrl.get("admin")(request)
         status(result) must_=== 404
       }
 
       "update an organisation" in {
-        val request = FakeRequest("PATCH", s"/api/organisation/default")
+        val request = FakeRequest("PATCH", s"/api/organisation/admin")
           .withJsonBody(Json.parse(s"""
               {
                  "organisation":{
@@ -109,38 +109,38 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
               }
             """.stripMargin))
           .withHeaders("user" -> "admin@thehive.local")
-        val result = organisationCtrl.update("default")(request)
+        val result = organisationCtrl.update("admin")(request)
 
         status(result) must_=== 204
       }
 
-      "link organisations to default organisation" in {
-        val request = FakeRequest("PUT", s"/api/organisation/default/link/cert")
+      "link organisations to admin organisation" in {
+        val request = FakeRequest("PUT", s"/api/organisation/admin/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
-        val result = organisationCtrl.link("default", "cert")(request)
+        val result = organisationCtrl.link("admin", "cert")(request)
 
         status(result) shouldEqual 201
 
-        val requestLinks = FakeRequest("GET", s"/api/organisation/default/links")
+        val requestLinks = FakeRequest("GET", s"/api/organisation/admin/links")
           .withHeaders("user" -> "admin@thehive.local")
-        val resultLinks = organisationCtrl.listLinks("default")(requestLinks)
+        val resultLinks = organisationCtrl.listLinks("admin")(requestLinks)
 
         status(resultLinks) shouldEqual 200
         contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
       }
 
       "link and unlink organisations" in {
-        val request = FakeRequest("PUT", s"/api/organisation/cert/link/default")
+        val request = FakeRequest("PUT", s"/api/organisation/cert/link/admin")
           .withHeaders("user" -> "admin@thehive.local")
-        val result = organisationCtrl.link("cert", "default")(request)
+        val result = organisationCtrl.link("cert", "admin")(request)
 
         status(result) shouldEqual 201
 
         listLinks("cert", "user1@thehive.local").length shouldEqual 1
 
-        val requestUnlink = FakeRequest("DELETE", s"/api/organisation/cert/link/default")
+        val requestUnlink = FakeRequest("DELETE", s"/api/organisation/cert/link/admin")
           .withHeaders("user" -> "admin@thehive.local")
-        val resultUnlink = organisationCtrl.unlink("cert", "default")(requestUnlink)
+        val resultUnlink = organisationCtrl.unlink("cert", "admin")(requestUnlink)
 
         status(resultUnlink) shouldEqual 204
 

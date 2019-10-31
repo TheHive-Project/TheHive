@@ -18,7 +18,7 @@ import org.thp.thehive.models.DatabaseBuilder
 import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
 
 class NotificationTemplateTest extends PlaySpecification {
-  val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local")
+  val dummyUserSrv                      = DummyUserSrv(userId = "admin@thehive.local", organisation = "admin")
   implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
