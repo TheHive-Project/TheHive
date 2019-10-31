@@ -100,7 +100,18 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
         val request = FakeRequest("PATCH", s"/api/case/template/${output.name}")
           .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
           .withJsonBody(
-            Json.parse("""{"displayName": "patched"}""")
+            Json.parse(s"""{
+            "displayName": "patched",
+            "titlePrefix":"test patched",
+            "severity":2,
+            "tlp":3,
+            "pap":3,
+            "tags":[
+               "tg${Random.nextInt}"
+            ],
+            "customFields":{},
+            "description":"patched"
+          }""".stripMargin)
           )
         val result = caseTemplateCtrl.update(output._id)(request)
 
@@ -111,6 +122,17 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
         val resultGet = caseTemplateCtrl.get(output._id)(requestGet)
 
         status(resultGet) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
+
+        val updatedOutput = contentAsJson(resultGet).as[OutputCaseTemplate]
+
+        updatedOutput.displayName shouldEqual "patched"
+        updatedOutput.tags.size shouldEqual 3
+        updatedOutput.name shouldEqual "tmp basic case 4"
+        updatedOutput.tlp must beSome(3)
+        updatedOutput.pap must beSome(3)
+        updatedOutput.severity must beSome(2)
+        updatedOutput.tasks must not(beEmpty)
+        updatedOutput.tasks.head.title must contain("task template")
       }
     }
   }
