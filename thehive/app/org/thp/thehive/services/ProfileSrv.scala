@@ -23,7 +23,8 @@ object ProfileSrv {
       Permissions.manageObservable,
       Permissions.manageAlert,
       Permissions.manageTask,
-      Permissions.manageAction
+      Permissions.manageAction,
+      Permissions.manageAnalyse
     )
   )
 

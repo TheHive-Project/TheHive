@@ -1,12 +1,10 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.ExecutionContext
-
+import scala.concurrent.{ExecutionContext, Future}
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.ErrorHandler
+import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
@@ -18,6 +16,7 @@ import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.models.Permissions
 
 @Singleton
 class JobCtrl @Inject()(
@@ -64,20 +63,22 @@ class JobCtrl @Inject()(
       .extract("cortexId", FieldsParser[String].on("cortexId"))
       .extract("artifactId", FieldsParser[String].on("artifactId"))
       .asyncAuth { implicit request =>
-        val analyzerId: String = request.body("analyzerId")
-        val cortexId: String   = request.body("cortexId")
-        db.roTransaction { implicit graph =>
+        if (request.permissions.contains(Permissions.manageAnalyse)) {
+          val analyzerId: String = request.body("analyzerId")
+          val cortexId: String   = request.body("cortexId")
+          db.roTransaction { implicit graph =>
             val artifactId: String = request.body("artifactId")
             for {
               o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
               c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
             } yield (o, c)
           }
-          .fold(error => errorHandler.onServerError(request, error), {
-            case (o, c) =>
-              jobSrv
-                .submit(cortexId, analyzerId, o, c)
-                .map(j => Results.Created(j.toJson))
-          })
+            .fold(error => errorHandler.onServerError(request, error), {
+              case (o, c) =>
+                jobSrv
+                  .submit(cortexId, analyzerId, o, c)
+                  .map(j => Results.Created(j.toJson))
+            })
+        } else Future.failed(AuthorizationError("Job creation not allowed"))
       }
 }

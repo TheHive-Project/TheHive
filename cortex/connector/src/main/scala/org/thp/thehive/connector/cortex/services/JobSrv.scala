@@ -3,12 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -19,7 +13,7 @@ import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
@@ -33,6 +27,11 @@ import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject()(
@@ -272,6 +271,27 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
         .has(Key("login") of authContext.userId)
     )
   )
+
+  /**
+    * Checks if a job is accessible if the user and
+    * the share profile contain the permission
+    * @param permission the permission to check
+    * @param authContext the user context
+    * @return
+    */
+  def can(permission: Permission)(implicit authContext: AuthContext): JobSteps =
+    newInstance(
+      raw.filter(
+        _.inTo[ObservableJob]
+          .inTo[ShareObservable]
+          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .inTo[OrganisationShare]
+          .inTo[RoleOrganisation]
+          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
+          .inTo[UserRole]
+          .has(Key("login") of authContext.userId)
+      )
+    )
 
   override def newInstance(newRaw: GremlinScala[Vertex]): JobSteps = new JobSteps(newRaw)
   override def newInstance(): JobSteps                             = new JobSteps(raw.clone())

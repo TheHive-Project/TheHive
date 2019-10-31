@@ -17,6 +17,7 @@ object Permissions {
   val manageTag: Permission              = Permission("manageTag")
   val manageCustomField: Permission      = Permission("manageCustomField")
   val manageShare: Permission            = Permission("manageShare")
+  val manageAnalyse: Permission          = Permission("manageAnalyse")
 
   // These permissions are available only if the user is in admin organisation, they are removed for other organisations
   val restrictedPermissions: Set[Permission] =
@@ -40,6 +41,7 @@ object Permissions {
       manageProfile,
       manageTag,
       manageCustomField,
-      manageShare
+      manageShare,
+      manageAnalyse
     )
 }
