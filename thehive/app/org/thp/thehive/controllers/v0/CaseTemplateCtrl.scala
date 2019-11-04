@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -52,10 +50,10 @@ class CaseTemplateCtrl @Inject()(
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
+        val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
+        val customFields                         = inputCaseTemplate.customFields.map(c => c.name -> c.value)
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
-          tasks        = inputCaseTemplate.tasks.map(_.toTask)
-          customFields = inputCaseTemplate.customFields.map(c => c.name -> c.value)
+          organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
@@ -89,13 +87,8 @@ class CaseTemplateCtrl @Inject()(
     entryPoint("delete case template")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          template <- caseTemplateSrv.get(caseTemplateNameOrId).getOrFail()
-          _ <- Try(
-            caseTemplateSrv
-              .get(template)
-              .visible
-              .remove()
-          )
+          template <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail()
+          _ = caseTemplateSrv.get(template).remove()
           _ <- auditSrv.caseTemplate.delete(template)
         } yield Results.Ok
       }

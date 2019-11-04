@@ -49,7 +49,7 @@ class AnalyzerTemplateCtrl @Inject()(
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")
-      .authPermittedTransaction(db, Set(Permissions.manageAnalyzerTemplate)) { _ => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { _ => implicit graph =>
         analyzerTemplateSrv
           .getOrFail(id)
           .map(report => Results.Ok(report.content))
@@ -75,7 +75,7 @@ class AnalyzerTemplateCtrl @Inject()(
   def create: Action[AnyContent] =
     entryPoint("create template")
       .extract("analyzerTemplate", FieldsParser[InputAnalyzerTemplate])
-      .authPermittedTransaction(db, Set(Permissions.manageAnalyzerTemplate)) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
         val analyzerTemplate: InputAnalyzerTemplate = request.body("analyzerTemplate")
         analyzerTemplateSrv.create(analyzerTemplate.toAnalyzerTemplate).map { createdAnalyzerTemplate =>
           Results.Created(createdAnalyzerTemplate.toJson)
@@ -84,30 +84,26 @@ class AnalyzerTemplateCtrl @Inject()(
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete template")
-      .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
-          analyzerTemplateSrv
-            .get(id)
-            .getOrFail()
-            .map { analyzerTemplate =>
-              analyzerTemplateSrv.remove(analyzerTemplate)
-              Results.NoContent
-            }
-        } else Success(Results.Unauthorized)
+      .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
+        analyzerTemplateSrv
+          .get(id)
+          .getOrFail()
+          .map { analyzerTemplate =>
+            analyzerTemplateSrv.remove(analyzerTemplate)
+            Results.NoContent
+          }
       }
 
   def update(id: String): Action[AnyContent] =
     entryPoint("update template")
       .extract("template", FieldsParser.update("template", properties.analyzerTemplate))
-      .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageAnalyzerTemplate)) {
-          val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")
+      .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")
 
-          for {
-            (templateSteps, _) <- analyzerTemplateSrv.update(_.get(id), propertyUpdaters)
-            template           <- templateSteps.getOrFail()
-          } yield Results.Ok(template.toJson)
+        for {
+          (templateSteps, _) <- analyzerTemplateSrv.update(_.get(id), propertyUpdaters)
+          template           <- templateSteps.getOrFail()
+        } yield Results.Ok(template.toJson)
 
-        } else Success(Results.Unauthorized)
       }
 }

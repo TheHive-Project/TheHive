@@ -114,14 +114,10 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def visible(implicit authContext: AuthContext): OrganisationSteps =
     if (authContext.permissions.contains(Permissions.manageOrganisation)) this
     else
-      newInstance(
-        raw.or(
-          _.inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId),
-          _.inTo[OrganisationOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)
-        )
-      )
+      this.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
 
-  def visibleOrganisations: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
+  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
+  def visibleOrganisationsTo: OrganisationSteps   = new OrganisationSteps(raw.unionFlat(identity, _.inTo[OrganisationOrganisation]).dedup())
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
 
@@ -129,7 +125,7 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
-  def getByName(name: String): OrganisationSteps = newInstance(raw.has(Key("name") of name))
+  def getByName(name: String): OrganisationSteps = this.has("name", name)
 
   override def newInstance(): OrganisationSteps = new OrganisationSteps(raw.clone())
 }

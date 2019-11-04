@@ -2,11 +2,10 @@ package org.thp.thehive.controllers.v0
 
 import scala.util.Success
 
-import play.api.libs.json.{JsNumber, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PropertyUpdater
@@ -19,12 +18,10 @@ import org.thp.thehive.services.CustomFieldSrv
 @Singleton
 class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, customFieldSrv: CustomFieldSrv) extends AuditRenderer {
 
-  val permissions: Set[Permission] = Set(Permissions.manageCustomField)
-
   def create: Action[AnyContent] =
     entryPoint("create custom field")
       .extract("customField", FieldsParser[InputCustomField])
-      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCustomField) { implicit request => implicit graph =>
         val customField: InputCustomField = request.body("customField")
         customFieldSrv
           .create(customField.toCustomField)
@@ -38,13 +35,13 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties
           .initSteps
           .map(_.toJson)
           .toList
-        Success(Results.Ok(Json.toJson(customFields)))
+        Success(Results.Ok(JsArray(customFields)))
       }
 
   def delete(id: String): Action[AnyContent] =
     entryPoint("delete custom field")
       .extract("force", FieldsParser.boolean.optional.on("force"))
-      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCustomField) { implicit request => implicit graph =>
         val force = request.body("force").getOrElse(false)
         for {
           cf <- customFieldSrv.getOrFail(id)
@@ -55,7 +52,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties
   def update(id: String): Action[AnyContent] =
     entryPoint("update custom field")
       .extract("customField", FieldsParser.update("customField", properties.customField))
-      .authPermittedTransaction(db, permissions) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCustomField) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
 
         for {
@@ -66,7 +63,7 @@ class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties
 
   def useCount(id: String): Action[AnyContent] =
     entryPoint("get use count of custom field")
-      .authPermittedTransaction(db, permissions) { _ => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCustomField) { _ => implicit graph =>
         customFieldSrv.getOrFail(id).map(customFieldSrv.useCount).map { countMap =>
           val total = countMap.valuesIterator.sum
           val countStats = JsObject(countMap.map {

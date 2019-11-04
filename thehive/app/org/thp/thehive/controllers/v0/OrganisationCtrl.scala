@@ -41,7 +41,7 @@ class OrganisationCtrl @Inject()(
     (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisations),
+    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
     Query[OrganisationSteps, UserSteps]("users", (organisationSteps, _) => organisationSteps.users),
     Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
   )
@@ -70,9 +70,10 @@ class OrganisationCtrl @Inject()(
 
   def list: Action[AnyContent] =
     entryPoint("list organisation")
-      .authRoTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val organisations = organisationSrv
           .initSteps
+          .visible
           .toIterator
           .map(_.toJson)
           .toSeq
@@ -82,16 +83,13 @@ class OrganisationCtrl @Inject()(
   def update(organisationId: String): Action[AnyContent] =
     entryPoint("update organisation")
       .extract("organisation", FieldsParser.update("organisation", properties.organisation))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
 
         for {
           _ <- organisationSrv
             .update(
-              userSrv
-                .current
-                .organisations(Permissions.manageOrganisation)
-                .get(organisationId),
+              organisationSrv.get(organisationId),
               propertyUpdaters
             )
         } yield Results.NoContent

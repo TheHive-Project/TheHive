@@ -86,10 +86,10 @@ class ObservableCtrl @Inject()(
 
   def get(observableId: String): Action[AnyContent] =
     entryPoint("get observable")
-      .authRoTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .getByIds(observableId)
-          //            .availableFor(request.organisation)
+          .visible
           .richObservable
           .getOrFail()
           .map { observable =>
@@ -112,10 +112,12 @@ class ObservableCtrl @Inject()(
 
   def findSimilar(obsId: String): Action[AnyContent] =
     entryPoint("find similar")
-      .authRoTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .getByIds(obsId)
+          .visible
           .similar
+          .visible
           .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
           .toList
           .map {

@@ -40,7 +40,7 @@ class OrganisationCtrl @Inject()(
     (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisations),
+    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
     Query[OrganisationSteps, UserSteps]("users", (organisationSteps, _) => organisationSteps.users),
     Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
   )
@@ -63,7 +63,7 @@ class OrganisationCtrl @Inject()(
         userSrv
           .current
           .organisations
-          .visibleOrganisations
+          .visibleOrganisationsFrom
           .get(organisationId)
           .getOrFail()
           .map(organisation => Results.Ok(organisation.toJson))

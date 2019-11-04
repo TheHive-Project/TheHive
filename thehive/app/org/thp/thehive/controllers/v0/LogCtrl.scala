@@ -78,7 +78,7 @@ class LogCtrl @Inject()(
     entryPoint("delete log")
       .authTransaction(db) { implicit req => implicit graph =>
         for {
-          log <- logSrv.getOrFail(logId)
+          log <- logSrv.get(logId).can(Permissions.manageTask).getOrFail()
           _   <- logSrv.cascadeRemove(log)
         } yield Results.NoContent
       }
