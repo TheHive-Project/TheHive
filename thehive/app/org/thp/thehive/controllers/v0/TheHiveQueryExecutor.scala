@@ -29,11 +29,12 @@ class TheHiveQueryExecutor @Inject()(
     organisationCtrl: OrganisationCtrl,
     auditCtrl: AuditCtrl,
     profileCtrl: ProfileCtrl,
+    tagCtrl: TagCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: Nil
+    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: Nil
   override val version: (Int, Int) = 0 -> 0
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
@@ -57,6 +58,7 @@ class TheHiveQueryExecutor @Inject()(
   val organisation: QueryCtrl = queryCtrlBuilder(organisationCtrl, this)
   val audit: QueryCtrl        = queryCtrlBuilder(auditCtrl, this)
   val profile: QueryCtrl      = queryCtrlBuilder(profileCtrl, this)
+  val tag: QueryCtrl          = queryCtrlBuilder(tagCtrl, this)
 }
 
 object ParentIdFilter {

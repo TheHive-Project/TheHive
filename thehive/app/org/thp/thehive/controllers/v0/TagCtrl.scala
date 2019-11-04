@@ -53,6 +53,16 @@ class TagCtrl @Inject()(
         } else Failure(AuthorizationError("You don't have permission to manage tags"))
       }
 
+  def get(tagId: String): Action[AnyContent] =
+    entryPoint("get tag")
+      .authRoTransaction(db) { _ => implicit graph =>
+        tagSrv
+          .getOrFail(tagId)
+          .map { tag =>
+            Results.Ok(tag.toJson)
+          }
+      }
+
   def parseColour(colour: String): Int = if (colour(0) == '#') Try(Integer.parseUnsignedInt(colour.tail, 16)).getOrElse(0) else 0
 
   def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] =

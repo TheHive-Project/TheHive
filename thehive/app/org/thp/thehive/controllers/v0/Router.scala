@@ -27,6 +27,7 @@ class Router @Inject()(
     configCtrl: ConfigCtrl,
     profileCtrl: ProfileCtrl,
     shareCtrl: ShareCtrl,
+    tagCtrl: TagCtrl,
     queryExecutor: TheHiveQueryExecutor
 ) extends SimpleRouter {
 
@@ -182,6 +183,11 @@ class Router @Inject()(
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)
     case PATCH(p"/profile/$profileId")  => profileCtrl.update(profileId)
     case DELETE(p"/profile/$profileId") => profileCtrl.delete(profileId)
+
+    case POST(p"/tag/_import") => tagCtrl.importTaxonomy
+    case GET(p"/tag/$id")      => tagCtrl.get(id)
+    case POST(p"/tag/_search") => queryExecutor.tag.search
+    case POST(p"/tag/_stats")  => queryExecutor.tag.stats
   }
 }
 /*
