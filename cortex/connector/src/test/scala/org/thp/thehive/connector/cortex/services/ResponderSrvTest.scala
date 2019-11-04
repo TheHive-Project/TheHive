@@ -6,7 +6,6 @@ import play.api.libs.json.Json
 import play.api.test.{NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client._
@@ -44,7 +43,7 @@ class ResponderSrvTest extends PlaySpecification with Mockito {
 
       "fetch responders by type" in {
         val t = db.roTransaction { graph =>
-          taskSrv.initSteps(graph).has(Key("title"), P.eq("case 1 task 1")).getOrFail()
+          taskSrv.initSteps(graph).has("title", "case 1 task 1").getOrFail()
         }
 
         t must successfulTry.which { task =>

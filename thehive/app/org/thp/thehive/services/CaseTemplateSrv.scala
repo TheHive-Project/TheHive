@@ -2,6 +2,11 @@ package org.thp.thehive.services
 
 import java.util.{List => JList}
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
+
+import play.api.libs.json.{JsObject, Json}
+
 import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.Path
@@ -14,10 +19,6 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 
 class CaseTemplateSrv @Inject()(
     customFieldSrv: CustomFieldSrv,
@@ -35,25 +36,6 @@ class CaseTemplateSrv @Inject()(
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseTemplateSteps = new CaseTemplateSteps(raw)
 
-  /**
-    * Tries to get a CaseTemplate if the
-    * optional name is defined
-    * @param maybeName the optional name
-    * @return
-    */
-  def getFromOption(maybeName: Option[String])(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Option[RichCaseTemplate]] =
-    maybeName
-      .fold[Try[Option[RichCaseTemplate]]](Success(None)) { templateName =>
-        get(templateName)
-          .visible
-          .richCaseTemplate
-          .getOrFail()
-          .map(Some.apply)
-      }
-
   override def get(idOrName: String)(implicit graph: Graph): CaseTemplateSteps =
     if (db.isValidId(idOrName)) super.getByIds(idOrName)
     else initSteps.getByName(idOrName)
@@ -68,7 +50,7 @@ class CaseTemplateSrv @Inject()(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichCaseTemplate] =
-    if (organisationSrv.get(organisation).caseTemplates.has(Key[String]("name"), P.eq[String](caseTemplate.name)).exists())
+    if (organisationSrv.get(organisation).caseTemplates.has("name", P.eq[String](caseTemplate.name)).exists())
       Failure(CreateError(s"""The case template "${caseTemplate.name}" already exists"""))
     else
       for {
@@ -191,7 +173,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def visible(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
 
-  override def newInstance(): CaseTemplateSteps                             = new CaseTemplateSteps(raw.clone())
+  override def newInstance(): CaseTemplateSteps = new CaseTemplateSteps(raw.clone())
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
     newInstance(
@@ -242,7 +224,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       this.outToE[AlertTag].filter(_.inV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
   def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))
+    new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField].filter(_.inV().has(Key("name") of name)))
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField])

@@ -5,7 +5,6 @@ import scala.util.Try
 import play.api.test.{NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -57,7 +56,7 @@ class EntityHelperTest extends PlaySpecification with Mockito {
 
       "return proper observable threat levels" in db.roTransaction { implicit graph =>
         val observableSrv: ObservableSrv = app.instanceOf[ObservableSrv]
-        val o1                           = observableSrv.initSteps.has(Key("tlp"), P.eq(3)).headOption()
+        val o1                           = observableSrv.initSteps.has("tlp", 3).headOption()
         o1 must beSome
         val observable1 = o1.get
 

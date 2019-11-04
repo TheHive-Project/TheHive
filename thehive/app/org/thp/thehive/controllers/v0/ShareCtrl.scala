@@ -1,19 +1,21 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.{Graph, Key, P}
+import scala.util.{Failure, Success}
+
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{AuthorizationError, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{AuthorizationError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-import scala.util.{Failure, Success}
 
 @Singleton
 class ShareCtrl @Inject()(
@@ -59,7 +61,7 @@ class ShareCtrl @Inject()(
     for {
       organisation <- organisationSrv
         .get(organisation)
-        .visibleOrganisations
+        .visibleOrganisationsFrom
         .get(inputShare.organisationName)
         .getOrFail()
       case0     <- caseSrv.getOrFail(caseId)
@@ -143,7 +145,7 @@ class ShareCtrl @Inject()(
           richShare <- shareSrv.get(id).richShare.getOrFail()
           _ <- organisationSrv
             .get(request.organisation)
-            .visibleOrganisations
+            .visibleOrganisationsFrom
             .get(richShare.organisationName)
             .getOrFail()
           p <- profileSrv.getOrFail(profile)
@@ -161,7 +163,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
-                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
+                  .filter(_.organisation.hasNot("name", request.organisation))
                   .richShare
                   .toList
                   .map(_.toJson)
@@ -181,7 +183,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
-                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
+                  .filter(_.organisation.hasNot("name", request.organisation))
                   .byTask(taskId)
                   .richShare
                   .toList
@@ -202,7 +204,7 @@ class ShareCtrl @Inject()(
                 caseSrv
                   .get(caseId)
                   .shares
-                  .filter(_.organisation.hasNot(Key("name"), P.eq(request.organisation)))
+                  .filter(_.organisation.hasNot("name", request.organisation))
                   .byObservable(obsId)
                   .richShare
                   .toList

@@ -4,7 +4,7 @@ import scala.util.{Success, Try}
 
 import play.api.Configuration
 
-import gremlin.scala.{Graph, Key, P}
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.steps.StepsOps._
@@ -32,5 +32,5 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
       audit.objectId.fold(false)(taskAssignee(_, user.login).isDefined)
 
   def taskAssignee(taskId: String, login: String)(implicit graph: Graph): Option[User with Entity] =
-    taskSrv.getByIds(taskId).user.has(Key("login"), P.eq(login)).headOption()
+    taskSrv.getByIds(taskId).user.has("login", login).headOption()
 }

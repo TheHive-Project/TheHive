@@ -2,7 +2,12 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import gremlin.scala.{By, Key, P}
+import scala.util.Success
+
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import gremlin.scala.{By, Key}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -13,10 +18,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
 
 @Singleton
 class AuditCtrl @Inject()(
@@ -55,7 +56,7 @@ class AuditCtrl @Inject()(
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val auditTraversal: AuditSteps = auditSrv.initSteps.has(Key("mainAction"), P.eq(true))
+        val auditTraversal: AuditSteps = auditSrv.initSteps.has("mainAction", true)
         val audits = caseId
           .filterNot(_ == "any")
           .fold(auditTraversal)(cid => auditTraversal.forCase(cid))
@@ -63,7 +64,7 @@ class AuditCtrl @Inject()(
           .order(List(By(Key[Date]("_createdAt"), Order.desc)))
           .range(0, count.getOrElse(10).toLong)
           .richAuditWithCustomRenderer(auditRenderer)
-          .toList
+          .toIterator
           .map {
             case (audit, obj) =>
               audit
@@ -73,6 +74,7 @@ class AuditCtrl @Inject()(
                   Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id), "summary" -> jsonSummary(auditSrv, audit.requestId))
                 )
           }
+          .toSeq
 
         Success(Results.Ok(JsArray(audits)))
       }

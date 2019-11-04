@@ -7,7 +7,6 @@ import scala.util.Try
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
-import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
@@ -75,7 +74,7 @@ class AlertCreatedTest extends PlaySpecification {
 
         alert must beSuccessfulTry
 
-        val audit = auditSrv.initSteps.has(Key("objectId"), P.eq(alert.get._id)).getOrFail()
+        val audit = auditSrv.initSteps.has("objectId", alert.get._id).getOrFail()
 
         audit must beSuccessfulTry
 

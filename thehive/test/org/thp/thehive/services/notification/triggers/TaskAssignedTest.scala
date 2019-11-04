@@ -4,7 +4,6 @@ import scala.util.Try
 
 import play.api.test.PlaySpecification
 
-import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
@@ -37,7 +36,7 @@ class TaskAssignedTest extends PlaySpecification {
       val orgSrv       = app.instanceOf[OrganisationSrv]
 
       "be properly triggered on task assignment" in db.roTransaction { implicit graph =>
-        val task1 = taskSrv.initSteps.has(Key("title"), P.eq("case 1 task 1")).getOrFail()
+        val task1 = taskSrv.initSteps.has("title", "case 1 task 1").getOrFail()
         val user2 = userSrv.initSteps.getByName("user2@thehive.local").getOrFail()
         val user1 = userSrv.initSteps.getByName("user1@thehive.local").getOrFail()
 
@@ -49,7 +48,7 @@ class TaskAssignedTest extends PlaySpecification {
 
         taskAssigned must beSuccessfulTry
 
-        val audit = auditSrv.initSteps.has(Key("objectId"), P.eq(task1.get._id)).getOrFail()
+        val audit = auditSrv.initSteps.has("objectId", task1.get._id).getOrFail()
 
         audit must beSuccessfulTry
 

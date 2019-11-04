@@ -1,10 +1,10 @@
 package org.thp.thehive.controllers.dav
 
-import gremlin.scala.{Graph, Key, P}
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.thehive.services.CaseSrv
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.services.CaseSrv
 
 @Singleton
 class VFS @Inject()(caseSrv: CaseSrv) {
@@ -21,7 +21,7 @@ class VFS @Inject()(caseSrv: CaseSrv) {
         .getByNumber(cid.toInt)
         .observables
         .attachments
-        .has(Key[String]("attachmentId"), P.eq(aid))
+        .has("attachmentId", aid)
         .toList
         .map(AttachmentResource(_, emptyId = true))
     case "cases" :: cid :: "tasks" :: aid :: Nil =>
@@ -31,7 +31,7 @@ class VFS @Inject()(caseSrv: CaseSrv) {
         .tasks
         .logs
         .attachments
-        .has(Key[String]("attachmentId"), P.eq(aid))
+        .has("attachmentId", aid)
         .toList
         .map(AttachmentResource(_, emptyId = true))
     case _ => Nil

@@ -4,7 +4,7 @@ import scala.util.Try
 
 import play.api.libs.json.{JsObject, Json}
 
-import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
+import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -63,7 +63,7 @@ class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Gr
   override def newInstance(newRaw: GremlinScala[Vertex] = raw): DashboardSteps = new DashboardSteps(newRaw)
 
   def visible(implicit authContext: AuthContext): DashboardSteps =
-    this.filter(_.inTo[OrganisationDashboard].has(Key("name"), P.eq(authContext.organisation)))
+    this.filter(_.inTo[OrganisationDashboard].has("name", authContext.organisation))
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationDashboard])
 }

@@ -70,7 +70,7 @@ class AuditSrv @Inject()(
     */
   def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): AuditSteps =
     getByIds(ids: _*)
-      .has(Key("mainAction"), P.eq(true))
+      .has("mainAction", true)
       .order(List(By(Key[Date]("_createdAt"), order)))
 
   def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = {

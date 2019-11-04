@@ -166,8 +166,8 @@ class MispImportSrv @Inject()(
             By(
               __[Vertex]
                 .inTo[AlertOrganisation]
-                .has(Key[String]("source"), P.eq[String](mispOrganisation))
-                .has(Key[String]("type"), P.eq[String]("misp"))
+                .has(Key("source") of mispOrganisation)
+                .has(Key("type") of "misp")
                 .value[Date]("lastSyncDate")
                 .max[Date]
             )
@@ -318,8 +318,8 @@ class MispImportSrv @Inject()(
                 .observables
                 .filter(
                   _.or(
-                    _.has(Key[Date]("_updatedAt"), P.lt(startSyncDate)),
-                    _.and(_.hasNot(Key("_updatedAt")), _.has(Key[Date]("_createdAt"), P.lt(startSyncDate)))
+                    _.has("_updatedAt", P.lt(startSyncDate)),
+                    _.and(_.hasNot("_updatedAt"), _.has("_createdAt", P.lt(startSyncDate)))
                   )
                 )
                 .toIterator

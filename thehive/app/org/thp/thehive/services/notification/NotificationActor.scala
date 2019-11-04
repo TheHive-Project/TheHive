@@ -175,7 +175,7 @@ class NotificationActor @Inject()(
                       organisationSrv
                         .get(organisation)
                         .config
-                        .has(Key[String]("name"), P.eq("notification"))
+                        .has("name", "notification")
                         .value
                         .toIterator
                         .foreach { notificationConfig =>
@@ -185,7 +185,7 @@ class NotificationActor @Inject()(
                           organisationSrv
                             .get(organisation)
                             .users
-                            .filter(_.config.hasNot(Key[String]("name"), P.eq("notification")))
+                            .filter(_.config.hasNot("name", "notification"))
                             .toIterator
                             .foreach { user =>
                               executeForUser(user, config, audit, context, obj, organisation)

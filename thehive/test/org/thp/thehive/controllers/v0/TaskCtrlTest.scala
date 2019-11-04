@@ -8,7 +8,6 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -63,7 +62,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
     val caseSrv              = app.instanceOf[CaseSrv]
 
     def getTaskByTitle(title: String): Try[RichTask] = db.roTransaction { implicit graph =>
-      taskSrv.initSteps.has(Key("title"), P.eq(title)).richTask.getOrFail()
+      taskSrv.initSteps.has("title", title).richTask.getOrFail()
     }
 
     s"[$name] task controller" should {
@@ -186,7 +185,7 @@ class TaskCtrlTest extends PlaySpecification with Mockito {
       }
 
       "get tasks stats" in {
-        val case1 = db.roTransaction(graph => caseSrv.initSteps(graph).has(Key("title"), P.eq("case#1")).getOrFail())
+        val case1 = db.roTransaction(graph => caseSrv.initSteps(graph).has("title", "case#1").getOrFail())
 
         case1 must beSuccessfulTry
 

@@ -8,7 +8,6 @@ import play.api.libs.json.{JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -151,7 +150,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       "get an alert" in {
         val alertSrv = app.instanceOf[AlertSrv]
         app.instanceOf[Database].roTransaction { implicit graph =>
-          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail()
+          alertSrv.initSteps.has("sourceRef", "ref1").getOrFail()
         } must beSuccessfulTry.which { alert: Alert with Entity =>
           val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "user2@thehive.local")
           val result  = alertCtrl.get(alert._id)(request)

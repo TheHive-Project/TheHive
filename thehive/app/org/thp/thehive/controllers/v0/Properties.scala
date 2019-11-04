@@ -201,7 +201,7 @@ class Properties @Inject()(
       .property("computed.handlingDurationInHours", UniMapping.long)(
         _.select(
           _.coalesce(
-            _.has(Key("endDate"))
+            _.has("endDate")
               .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
               .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))
               .sack((_: Long) / (_: Long), By(__.constant(3600000L)))

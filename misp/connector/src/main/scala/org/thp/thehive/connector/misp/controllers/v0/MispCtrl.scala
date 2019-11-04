@@ -7,7 +7,6 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import gremlin.scala.{Key, P}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.models.Database
@@ -52,7 +51,7 @@ class MispCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .initSteps
-          .has(Key("type"), P.eq("misp"))
+          .has("type", "misp")
           .toIterator
           .toTry(alertSrv.cascadeRemove(_))
           .map(_ => Results.NoContent)

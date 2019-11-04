@@ -8,7 +8,6 @@ import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import io.scalaland.chimney.dsl._
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
@@ -346,7 +345,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
 
       observableSrv
         .initSteps
-        .has(Key("message"), P.eq("if you are lost"))
+        .has("message", "if you are lost")
         .alert
         .getOrFail() must beSuccessfulTry
 
@@ -359,7 +358,7 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
         graph =>
           observableSrv
             .initSteps(graph)
-            .has(Key("message"), P.eq("if you are lost"))
+            .has("message", "if you are lost")
             .alert
             .getOrFail() must beFailedTry
       )

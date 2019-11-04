@@ -11,7 +11,6 @@ import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
 import akka.actor.Terminated
-import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
@@ -59,7 +58,7 @@ class JobSrvTest extends PlaySpecification with Mockito {
 
       "handle creation and then finished job" in {
         val maybeObservable = db.roTransaction { implicit graph =>
-          observableSrv.initSteps.has(Key("message"), P.eq("hello world")).getOrFail()
+          observableSrv.initSteps.has("message", "hello world").getOrFail()
         }
         maybeObservable must beSuccessfulTry
         val observable = maybeObservable.get
@@ -102,7 +101,7 @@ class JobSrvTest extends PlaySpecification with Mockito {
 
           val jobFinished = new JobFinished()
 
-          val audit = auditSrv.initSteps.has(Key("objectId"), P.eq(updatedJob._id)).getOrFail()
+          val audit = auditSrv.initSteps.has("objectId", updatedJob._id).getOrFail()
 
           audit must beSuccessfulTry
 
@@ -120,14 +119,14 @@ class JobSrvTest extends PlaySpecification with Mockito {
 
       "submit a job" in {
         val maybeObservable = db.roTransaction { implicit graph =>
-          observableSrv.initSteps.has(Key("message"), P.eq("Some weird domain")).getOrFail()
+          observableSrv.initSteps.has("message", "Some weird domain").getOrFail()
         }
 
         maybeObservable must beSuccessfulTry
 
         val observable = maybeObservable.get
         val c = db.roTransaction { implicit graph =>
-          caseSrv.initSteps.has(Key("title"), P.eq("case#1")).getOrFail()
+          caseSrv.initSteps.has("title", "case#1").getOrFail()
         }
         val obs = db.roTransaction { implicit graph =>
           observableSrv.get(observable).richObservable.getOrFail()

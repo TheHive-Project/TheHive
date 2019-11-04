@@ -19,7 +19,6 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import shapeless.HNil
 
 @Singleton
 class AlertSrv @Inject()(
@@ -235,13 +234,18 @@ class AlertSrv @Inject()(
 
   def mergeInCase(alertId: String, caseId: String)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {
-      alert <- getOrFail(alertId)
-      case0 <- caseSrv.getOrFail(caseId)
-      _     <- caseSrv.addTags(case0, get(alert).tags.toList.map(_.toString).toSet)
-      description = case0.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      c <- caseSrv.get(caseId).update("description" -> description)
-      _ <- importObservables(alert, case0)
-      _ <- alertCaseSrv.create(AlertCase(), alert, case0)
+      alert       <- getOrFail(alertId)
+      case0       <- caseSrv.getOrFail(caseId)
+      updatedCase <- mergeInCase(alert, case0)
+    } yield updatedCase
+
+  def mergeInCase(alert: Alert with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
+    for {
+      _ <- caseSrv.addTags(`case`, get(alert).tags.toList.map(_.toString).toSet)
+      description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
+      c <- caseSrv.get(`case`).update("description" -> description)
+      _ <- importObservables(alert, `case`)
+      _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
       _ <- markAsRead(alert._id)
       _ <- auditSrv.alertToCase.merge(alert, c)
     } yield c
@@ -282,12 +286,10 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   }
 
   def getBySourceId(`type`: String, source: String, sourceRef: String): AlertSteps =
-    newInstance(
-      raw
-        .has(Key("type") of `type`)
-        .has(Key("source") of source)
-        .has(Key("sourceRef") of sourceRef)
-    )
+    this
+      .has("type", `type`)
+      .has("source", source)
+      .has("sourceRef", sourceRef)
 
   def organisation: OrganisationSteps = new OrganisationSteps(raw.outTo[AlertOrganisation])
 
@@ -304,16 +306,16 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       _.outTo[AlertOrganisation]
         .inTo[RoleOrganisation]
         .inTo[UserRole]
-        .has(Key("login"), P.eq(authContext.userId))
+        .has("login", authContext.userId)
     )
 
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
     this.filter(
       _.outTo[AlertOrganisation]
         .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has(Key("permissions"), P.eq(permission)))
+        .filter(_.outTo[RoleProfile].has("permissions", permission))
         .inTo[UserRole]
-        .has(Key("login"), P.eq(authContext.userId))
+        .has("login", authContext.userId)
     )
 
   def alertUserOrganisation(
@@ -327,7 +329,6 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     val caseTemplateNameLabel = StepLabel[JList[String]]()
     Traversal(
       raw
-        .asInstanceOf[GremlinScala.Aux[Vertex, HNil]]
         .`match`(
           _.as(alertLabel).out("AlertOrganisation").as(organisationLabel),
           _.as(alertLabel).out("AlertTag").fold().as(tagLabel),
@@ -366,7 +367,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   }
 
   def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[AlertCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))
+    new CustomFieldValueSteps(raw.outToE[AlertCustomField].filter(_.inV().has(Key("name") of name)))
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[AlertCustomField])

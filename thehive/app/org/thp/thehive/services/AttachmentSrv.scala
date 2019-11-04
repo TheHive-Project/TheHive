@@ -11,7 +11,7 @@ import play.api.Configuration
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
-import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
+import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -70,5 +70,5 @@ class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   override def newInstance(newRaw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(newRaw)
   override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
 
-  def getByAttachmentId(attachmentId: String): AttachmentSteps = this.has(Key[String]("attachmentId"), P.eq(attachmentId))
+  def getByAttachmentId(attachmentId: String): AttachmentSteps = this.has("attachmentId", attachmentId)
 }

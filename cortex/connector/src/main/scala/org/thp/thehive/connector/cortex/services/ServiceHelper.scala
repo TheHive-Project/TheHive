@@ -2,7 +2,7 @@ package org.thp.thehive.connector.cortex.services
 
 import play.api.Logger
 
-import gremlin.scala.{Key, P}
+import gremlin.scala.P
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputCortexWorker
@@ -65,9 +65,9 @@ class ServiceHelper @Inject()(
   ): OrganisationSteps = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
-      else organisationSteps.has(Key[String]("name"), P.within(includedTheHiveOrganisations))
+      else organisationSteps.has("name", P.within(includedTheHiveOrganisations))
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
-    else includedOrgs.has(Key[String]("name"), P.without(excludedTheHiveOrganisations))
+    else includedOrgs.has("name", P.without(excludedTheHiveOrganisations))
   }
 
   /**

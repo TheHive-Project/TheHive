@@ -6,7 +6,6 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
@@ -41,7 +40,7 @@ class JobCtrlTest extends PlaySpecification with Mockito {
     s"[$name] job controller" should {
       "get a job" in {
         val maybeObservable = db.roTransaction { implicit graph =>
-          observableSrv.initSteps.has(Key("message"), P.eq("Some weird domain")).getOrFail()
+          observableSrv.initSteps.has("message", "Some weird domain").getOrFail()
         }
 
         maybeObservable must beSuccessfulTry

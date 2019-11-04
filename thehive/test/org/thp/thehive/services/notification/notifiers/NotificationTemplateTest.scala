@@ -7,7 +7,6 @@ import scala.util.Try
 
 import play.api.test.PlaySpecification
 
-import gremlin.scala.{Key, P}
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
@@ -105,7 +104,7 @@ class NotificationTemplateTest extends PlaySpecification {
             case4 <- caseSrv.get("#4").getOrFail()
             _     <- caseSrv.addTags(case4, Set("emailer test"))
             _     <- caseSrv.addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
-            audit <- auditSrv.initSteps.has(Key("objectId"), P.eq(case4._id)).getOrFail()
+            audit <- auditSrv.initSteps.has("objectId", case4._id).getOrFail()
             user  <- userSrv.get("user1@thehive.local").getOrFail()
             msg   <- templateEngine.buildMessage(template, audit, Some(case4), Some(case4), user, "http://localhost/")
           } yield msg

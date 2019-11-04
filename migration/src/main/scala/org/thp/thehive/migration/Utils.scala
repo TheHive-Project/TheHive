@@ -93,7 +93,7 @@ trait Utils {
     val data = readStream(storageSrv.saveBinary(id, _))
 
     val attach           = attachmentSrv.create(Attachment(attachment.name, attachment.size, attachment.contentType, hs, id))
-    val attachmentVertex = graph.V().has(Key("_id") of attach._id).head()
+    val attachmentVertex = graph.V().has("_id" of attach._id).head()
 //    attachmentVertex.addEdge("nextChunk", data, "_id", UUID.randomUUID().toString) // FIXME
     attach
   }

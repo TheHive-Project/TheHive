@@ -8,7 +8,7 @@ import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
 
 import akka.stream.Materializer
-import gremlin.scala.{Key, P}
+import gremlin.scala.P
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.misp.client.{MispClient, MispPurpose}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
@@ -90,9 +90,9 @@ class TheHiveMispClient(
   def organisationFilter(organisationSteps: OrganisationSteps): OrganisationSteps = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
-      else organisationSteps.has(Key[String]("name"), P.within(includedTheHiveOrganisations))
+      else organisationSteps.has("name", P.within(includedTheHiveOrganisations))
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
-    else includedOrgs.has(Key[String]("name"), P.without(excludedTheHiveOrganisations))
+    else includedOrgs.has("name", P.without(excludedTheHiveOrganisations))
   }
 
   override def getStatus(implicit ec: ExecutionContext): Future[JsObject] =

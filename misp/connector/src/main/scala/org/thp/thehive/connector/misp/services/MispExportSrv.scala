@@ -7,7 +7,7 @@ import scala.util.Try
 
 import play.api.Logger
 
-import gremlin.scala.{Graph, Key, P}
+import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.misp.dto.{Attribute, Tag}
 import org.thp.scalligraph.auth.AuthContext
@@ -71,12 +71,12 @@ class MispExportSrv @Inject()(
     caseSrv
       .get(`case`)
       .alert
-      .has(Key("type"), P.eq("misp"))
-      .has(Key("source"), P.eq[String](orgName))
+      .has("type", "misp")
+      .has("source", orgName)
       .headOption()
 
   def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
-    caseSrv.get(`case`).observables.has(Key("ioc"), P.eq(true)).richObservable.toIterator.flatMap(observableToAttribute)
+    caseSrv.get(`case`).observables.has("ioc", true).richObservable.toIterator.flatMap(observableToAttribute)
 
   def removeDuplicateAttributes(attributes: Iterator[Attribute]): Seq[Attribute] = {
     var attrSet = Set.empty[(String, String, String)]

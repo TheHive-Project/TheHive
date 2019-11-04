@@ -371,7 +371,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               By(
                 __[Vertex]
                   .inTo[ShareCase]
-                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authContext.organisation)))
+                  .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
                   .outTo[ShareProfile]
                   .fold
               )
@@ -381,9 +381,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
                 __[Vertex]
                   .inTo[ShareCase]
                   .inTo[OrganisationShare]
-                  .has(Key[String]("name"), P.eq[String](authContext.organisation))
+                  .has(Key[String]("name") of authContext.organisation)
                   .inTo[RoleOrganisation]
-                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authContext.userId)))
+                  .filter(_.inTo[UserRole].has(Key[String]("login") of authContext.userId))
                   .outTo[RoleProfile]
                   .fold
               )
@@ -411,7 +411,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.inV().has(Key[String]("name"), P.eq[String](name))))
+    new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.inV().has(Key("name") of name)))
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField])

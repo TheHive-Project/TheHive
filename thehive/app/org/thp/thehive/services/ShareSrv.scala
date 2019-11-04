@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import scala.util.{Success, Try}
+
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -10,8 +12,6 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-
-import scala.util.{Success, Try}
 
 @Singleton
 class ShareSrv @Inject()(
@@ -47,7 +47,7 @@ class ShareSrv @Inject()(
     get(`case`, organisation).headOption() match {
       case Some(existingShare) =>
         // Only addition atm, no update
-        /*if (!get(existingShare).profile.has(Key[String]("name"), P.eq[String](profile.name)).exists()) {
+        /*if (!get(existingShare).profile.has("name", P.eq[String](profile.name)).exists()) {
           get(existingShare).outToE[ShareProfile].remove()
           shareProfileSrv
             .create(ShareProfile(), existingShare, profile)

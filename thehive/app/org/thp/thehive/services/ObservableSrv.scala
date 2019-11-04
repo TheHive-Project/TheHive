@@ -164,35 +164,35 @@ class ObservableSrv @Inject()(
 class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Observable](raw) {
 
   def filterOnType(`type`: String): ObservableSteps =
-    this.filter(_.outTo[ObservableObservableType].has(Key("name"), P.eq(`type`)))
+    this.filter(_.outTo[ObservableObservableType].has("name", `type`))
 
   def filterOnData(data: String): ObservableSteps =
-    this.filter(_.outTo[ObservableData].has(Key("data"), P.eq(data)))
+    this.filter(_.outTo[ObservableData].has("data", data))
 
   def filterOnAttachmentName(name: String): ObservableSteps =
-    this.filter(_.outTo[ObservableAttachment].has(Key("name"), P.eq(name)))
+    this.filter(_.outTo[ObservableAttachment].has("name", name))
 
   def filterOnAttachmentSize(size: Long): ObservableSteps =
-    this.filter(_.outTo[ObservableAttachment].has(Key("size"), P.eq(size)))
+    this.filter(_.outTo[ObservableAttachment].has("size", size))
 
   def filterOnAttachmentContentType(contentType: String): ObservableSteps =
-    this.filter(_.outTo[ObservableAttachment].has(Key("contentType"), P.eq(contentType)))
+    this.filter(_.outTo[ObservableAttachment].has("contentType", contentType))
 
   def filterOnAttachmentHash(hash: String): ObservableSteps =
-    this.filter(_.outTo[ObservableAttachment].has(Key("hashes"), P.eq(hash)))
+    this.filter(_.outTo[ObservableAttachment].has("hashes", hash))
 
   def visible(implicit authContext: AuthContext): ObservableSteps =
-    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login"), P.eq(authContext.userId)))
+    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has("login", authContext.userId))
 
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
     this.filter(
       _.inTo[ShareObservable]
-        .filter(_.outTo[ShareProfile].has(Key("permissions"), P.eq(permission)))
+        .filter(_.outTo[ShareProfile].has("permissions", permission))
         .inTo[OrganisationShare]
         .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has(Key("permissions"), P.eq(permission)))
+        .filter(_.outTo[RoleProfile].has("permissions", permission))
         .inTo[UserRole]
-        .has(Key("login"), P.eq(authContext.userId))
+        .has("login", authContext.userId)
     )
 
   override def newInstance(): ObservableSteps = new ObservableSteps(raw.clone())

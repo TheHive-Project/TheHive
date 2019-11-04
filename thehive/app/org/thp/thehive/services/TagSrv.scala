@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import scala.util.Try
 
-import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
+import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -67,7 +67,7 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
         .has(Key("namespace") of namespace)
         .has(Key("predicate") of predicate)
     )
-    value.fold(step.hasNot(Key("value")))(v => step.has(Key("value"), P.eq(v)))
+    value.fold(step.hasNot("value"))(v => step.has("value", v))
   }
 
   def displayName: Traversal[String, String] = this.map(_.toString)

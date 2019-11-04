@@ -49,7 +49,7 @@ class ConfigSrv @Inject()(
       organisationSrv
         .get(organisationName)
         .config
-        .has(Key("name"), P.eq(name))
+        .has("name", name)
         .headOption()
   }
 
@@ -70,7 +70,7 @@ class ConfigSrv @Inject()(
       userSrv
         .get(userName)
         .config
-        .has(Key("name"), P.eq(name))
+        .has("name", name)
         .headOption()
   }
 }
@@ -128,5 +128,5 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
       }
   }
 
-  def getValue[A: Reads](name: String): Traversal[JsValue, String] = this.has(Key[String]("name"), P.eq[String](name)).value
+  def getValue[A: Reads](name: String): Traversal[JsValue, String] = this.has("name", name).value
 }

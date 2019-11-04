@@ -4,7 +4,7 @@ import java.lang.{Long => JLong}
 
 import scala.util.{Success, Try}
 
-import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
+import gremlin.scala.{Graph, GremlinScala, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.EntitySteps
@@ -45,7 +45,7 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   override def newInstance(newRaw: GremlinScala[Vertex]): DataSteps = new DataSteps(newRaw)
   override def newInstance(): DataSteps                             = new DataSteps(raw.clone())
 
-  def getByData(data: String): DataSteps = newInstance(raw.has(Key("data") of data))
+  def getByData(data: String): DataSteps = this.has("data", data)
 
   def useCount: Traversal[JLong, JLong] = Traversal(raw.inTo[ObservableData].count())
 }

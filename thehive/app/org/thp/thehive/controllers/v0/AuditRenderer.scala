@@ -3,14 +3,15 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Long => JLong}
 import java.util.{Map => JMap}
 
-import gremlin.scala.{__, By, Graph, Key, P, Vertex}
+import scala.collection.JavaConverters._
+
+import play.api.libs.json.{JsNumber, JsObject}
+
+import gremlin.scala.{__, By, Graph, Key, Vertex}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsNumber, JsObject}
-
-import scala.collection.JavaConverters._
 
 trait AuditRenderer {
 
@@ -75,8 +76,8 @@ trait AuditRenderer {
   def jsonSummary(auditSrv: AuditSrv, requestId: String)(implicit graph: Graph): JsObject =
     auditSrv
       .initSteps
-      .has(Key("requestId"), P.eq(requestId))
-      .has(Key("mainAction"), P.eq(false))
+      .has("requestId", requestId)
+      .has("mainAction", false)
       .groupBy(By(Key[String]("objectType")), By(__[Vertex].groupCount(By(Key[String]("action")))))
       .headOption()
       .fold(JsObject.empty) { m: JMap[String, java.util.Collection[JMap[String, JLong]]] =>

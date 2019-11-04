@@ -204,5 +204,5 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
 
-  def systemUser: UserSteps = this.has(Key[String]("login"), P.eq[String](UserSrv.system.login))
+  def systemUser: UserSteps = this.has("login", UserSrv.system.login)
 }
