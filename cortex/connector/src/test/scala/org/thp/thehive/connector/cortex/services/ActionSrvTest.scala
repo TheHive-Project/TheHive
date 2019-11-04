@@ -2,12 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.io.Source
-import scala.util.Try
-
-import play.api.libs.json.{JsValue, Json}
-import play.api.test.{NoMaterializer, PlaySpecification}
-
 import akka.stream.Materializer
 import gremlin.scala.{Key, P}
 import org.specs2.mock.Mockito
@@ -23,6 +17,11 @@ import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{Action, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, CaseSrv, OrganisationSrv, TaskSrv}
+import play.api.libs.json.{JsValue, Json}
+import play.api.test.{NoMaterializer, PlaySpecification}
+
+import scala.io.Source
+import scala.util.Try
 
 class ActionSrvTest extends PlaySpecification with Mockito {
   val dummyUserSrv               = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert", permissions = Permissions.all)
@@ -55,8 +54,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "execute, create and handle finished action operations" in {
         db.roTransaction { implicit graph =>
-          val authContextUser1 = AuthContextImpl("user1@thehive.local", "user1@thehive.local", "cert", "testRequest", Permissions.all)
-          val t1               = taskSrv.initSteps.has(Key("title"), P.eq("case 1 task 1")).headOption()
+          val authContextUser1             = AuthContextImpl("user1@thehive.local", "user1@thehive.local", "cert", "testRequest", Permissions.all)
+          val t1: Option[Task with Entity] = taskSrv.initSteps.has(Key("title"), P.eq("case 1 task 1")).headOption()
           t1 must beSome
           val task1 = t1.get
 
@@ -224,12 +223,11 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 
       "handle action related to an Alert" in {
         val alertSrv = app.instanceOf[AlertSrv]
+        val authContextUser2 =
+          AuthContextImpl("user2@thehive.local", "user2@thehive.local", OrganisationSrv.administration.name, "testRequest", Permissions.all)
         db.roTransaction { implicit graph =>
           alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).getOrFail() must beSuccessfulTry.which { alert =>
             alert.read must beFalse
-
-            val authContextUser2 =
-              AuthContextImpl("user2@thehive.local", "user2@thehive.local", OrganisationSrv.administration.name, "testRequest", Permissions.all)
 
             val inputAction = Action(
               responderId = "respTest1",
@@ -263,6 +261,9 @@ class ActionSrvTest extends PlaySpecification with Mockito {
             alert.read must beTrue
 //            alertSrv.initSteps.get(alert._id).tags.toList must contain(Tag.fromString("test tag from action")) // TODO
           }
+
+          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).visible(dummyUserSrv.authContext).getOrFail() must beFailedTry
+          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).visible(authContextUser2).getOrFail() must beSuccessfulTry
         }
       }
     }

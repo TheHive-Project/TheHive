@@ -21,6 +21,7 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
+import org.thp.thehive.services.{AlertSrv, AlertSteps, CaseSrv, CaseSteps, LogSrv, LogSteps, ObservableSrv, ObservableSteps, TaskSrv, TaskSteps}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,7 +36,12 @@ class ActionSrv @Inject()(
     implicit val schema: Schema,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
-    auditSrv: CortexAuditSrv
+    auditSrv: CortexAuditSrv,
+    taskSrv: TaskSrv,
+    observableSrv: ObservableSrv,
+    logSrv: LogSrv,
+    alertSrv: AlertSrv,
+    caseSrv: CaseSrv
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
@@ -218,7 +224,19 @@ class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
 
   def context: Traversal[Entity, Entity] = Traversal(raw.outTo[ActionContext].map(_.asEntity))
 
-  def visible(authContext: AuthContext): ActionSteps = ???
+  def visible(implicit authContext: AuthContext): ActionSteps = new ActionSteps(
+    raw.filter(
+      _.outTo[ActionContext]
+        .choose[Label, Vertex](
+          on = _.label(),
+          BranchCase("Case", new CaseSteps(_).visible.raw),
+          BranchCase("Task", new TaskSteps(_).visible.raw),
+          BranchCase("Log", new LogSteps(_).visible.raw),
+          BranchCase("Alert", new AlertSteps(_).visible.raw),
+          BranchCase("Observable", new ObservableSteps(_).visible.raw)
+        )
+    )
+  )
 
   override def newInstance(): ActionSteps = new ActionSteps(raw.clone())
 }

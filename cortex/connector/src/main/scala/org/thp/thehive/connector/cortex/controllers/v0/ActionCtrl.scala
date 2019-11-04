@@ -51,7 +51,7 @@ class ActionCtrl @Inject()(
   override val entityName: String                           = "action"
   override val publicProperties: List[PublicProperty[_, _]] = properties.action ::: metaProperties[ActionSteps]
   override val initialQuery: Query =
-    Query.init[ActionSteps]("listAction", (graph, _) => actionSrv.initSteps(graph))
+    Query.init[ActionSteps]("listAction", (graph, authContext) => actionSrv.initSteps(graph).visible(authContext))
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ActionSteps](
     "getAction",
     FieldsParser[IdOrName],
