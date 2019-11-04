@@ -5,6 +5,7 @@ import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.services.{ActionSteps, AnalyzerTemplateSteps, JobSteps}
+import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 
 @Singleton
 class Properties @Inject()() {
@@ -12,7 +13,7 @@ class Properties @Inject()() {
   lazy val action: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ActionSteps]
       .property("responderId", UniMapping.string)(_.field.readonly)
-      .property("objectType", UniMapping.string)(_.select(_.context.map(_._model.label)).readonly) // FIXME convert label to v0 object type
+      .property("objectType", UniMapping.string)(_.select(_.context.map(o => fromObjectType(o._model.label))).readonly)
       .property("status", UniMapping.string)(_.field.readonly)
       .property("startDate", UniMapping.date)(_.field.readonly)
       .property("objectId", UniMapping.string)(_.field.readonly)
