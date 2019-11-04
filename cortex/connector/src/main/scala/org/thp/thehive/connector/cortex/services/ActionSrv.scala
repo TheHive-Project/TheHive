@@ -163,6 +163,7 @@ class ActionSrv @Inject()(
       } yield {
         relatedCase(updated._id)
           .orElse(relatedTask(updated._id))
+          .orElse(get(updated._id).context.headOption())
           .foreach(relatedEntity => auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString)))
 
         updated

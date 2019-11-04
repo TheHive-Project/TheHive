@@ -63,7 +63,7 @@ class EntityHelper @Inject()(
   }
 
   /**
-    * Retrieves an optional parent Case
+    * Retrieves an optional parent Task
     * @param entity the child entity
     * @param graph db traversal
     * @return
