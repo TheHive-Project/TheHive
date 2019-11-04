@@ -51,4 +51,6 @@ class RoleSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     raw.outToE[RoleProfile].drop().iterate()
     ()
   }
+
+  def profile: ProfileSteps = new ProfileSteps(raw.outTo[RoleProfile])
 }

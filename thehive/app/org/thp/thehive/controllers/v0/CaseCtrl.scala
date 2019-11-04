@@ -1,21 +1,22 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.Success
+
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsNumber, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{RichSeq, _}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsNumber, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject()(
@@ -59,7 +60,8 @@ class CaseCtrl @Inject()(
     Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList),
     Query.withParam[IdOrName, CaseSteps, CaseSteps]("getCase", FieldsParser[IdOrName], (idOrName, caseSteps, _) => caseSteps.get(idOrName.idOrName)),
     Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
+    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
+    Query.output[RichCase]()
   )
 
   def create: Action[AnyContent] =
@@ -71,11 +73,11 @@ class CaseCtrl @Inject()(
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
+        val customFields                     = inputCase.customFields.map(c => c.name -> c.value).toMap
         for {
-          caseTemplate <- caseTemplateSrv.getFromOption(caseTemplateName)
-          customFields = inputCase.customFields.map(c => c.name -> c.value).toMap
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
-          user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
+          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
+          user         <- inputCase.user.map(userSrv.get(_).visible.getOrFail()).flip
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
@@ -137,8 +139,8 @@ class CaseCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         val idsOrNumbers: Seq[String]              = request.body("idsOrNumbers")
-        val updatedCases = idsOrNumbers.map(
-          caseIdOrNumber =>
+        idsOrNumbers
+          .toTry { caseIdOrNumber =>
             caseSrv
               .update(
                 _.get(caseIdOrNumber).can(Permissions.manageCase),
@@ -150,10 +152,8 @@ class CaseCtrl @Inject()(
                     .richCase
                     .getOrFail()
               }
-        )
-
-        Try(updatedCases.map(_.get))
-          .map(r => Results.Ok(Json.toJson(r.map(_.toJson))))
+          }
+          .map(richCases => Results.Ok(JsArray(richCases.map(_.toJson))))
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
