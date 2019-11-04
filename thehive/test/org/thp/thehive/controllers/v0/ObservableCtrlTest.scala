@@ -219,7 +219,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
         maybeObservable must beSome
         val observableId = maybeObservable.get._id
         val getRequest = FakeRequest("GET", s"/api/case/artifact/$observableId")
-          .withHeaders("user" -> "user3@thehive.local")
+          .withHeaders("user" -> "user1@thehive.local")
         val getResult = observableCtrl.get(observableId)(getRequest)
 
         status(getResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")

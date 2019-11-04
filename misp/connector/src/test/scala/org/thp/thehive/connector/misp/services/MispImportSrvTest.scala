@@ -115,7 +115,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         val observables = db
           .roTransaction { implicit graph =>
             organisationSrv
-              .get("default")
+              .get("admin")
               .alerts
               .getBySourceId("misp", "ORGNAME", "1")
               .observables

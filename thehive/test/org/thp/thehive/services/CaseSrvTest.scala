@@ -67,7 +67,8 @@ class CaseSrvTest extends PlaySpecification {
             Permission("manageCase"),
             Permission("manageObservable"),
             Permission("manageAlert"),
-            Permission("manageAction")
+            Permission("manageAction"),
+            Permission("manageAnalyse")
           )
         )
       }
@@ -101,7 +102,8 @@ class CaseSrvTest extends PlaySpecification {
             Permission("manageCase"),
             Permission("manageObservable"),
             Permission("manageAlert"),
-            Permission("manageAction")
+            Permission("manageAction"),
+            Permission("manageAnalyse")
           )
         )
         richCase._createdBy must_=== dummyUserSrv.userId
