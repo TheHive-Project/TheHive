@@ -155,7 +155,7 @@ class ShareSrv @Inject()(
         .share
         .getOrFail()
       _ = shareTaskSrv.create(ShareTask(), share, richTask.task)
-      _ <- auditSrv.task.create(richTask.task, `case`, richTask.toJson)
+      _ <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
 
   /**
@@ -172,7 +172,7 @@ class ShareSrv @Inject()(
         .share
         .getOrFail()
       _ <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
-      _ <- auditSrv.observable.create(richObservable.observable, `case`, richObservable.toJson)
+      _ <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
 
   /**

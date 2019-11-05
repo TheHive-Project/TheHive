@@ -33,19 +33,16 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
   def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
     getByIds(taskId).visible(authContext).exists()
 
-  def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      case0 <- get(task).`case`.getOrFail()
-      _ = get(task).unassign()
-      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> JsNull))
-    } yield ()
+  def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(task).unassign()
+    auditSrv.task.update(task, Json.obj("assignee" -> JsNull))
+  }
 
   def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      case0 <- get(task).`case`.getOrFail()
-      _     <- get(task).logs.toIterator.toTry(logSrv.cascadeRemove(_))
+      _ <- get(task).logs.toIterator.toTry(logSrv.cascadeRemove(_))
       _ = get(task).remove()
-      _ <- auditSrv.task.delete(task, Some(case0))
+      _ <- auditSrv.task.delete(task)
     } yield ()
 
   override def update(
@@ -55,9 +52,8 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (taskSteps, updatedFields) =>
         for {
-          c <- taskSteps.newInstance().`case`.getOrFail()
           t <- taskSteps.newInstance().getOrFail()
-          _ <- auditSrv.task.update(t, c, updatedFields)
+          _ <- auditSrv.task.update(t, updatedFields)
         } yield ()
     }
 
@@ -92,13 +88,13 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
     }
   }
 
-  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(task).unassign()
     for {
-      case0 <- get(task).`case`.getOrFail()
-      _ = get(task).unassign()
       _ <- taskUserSrv.create(TaskUser(), task, user)
-      _ <- auditSrv.task.update(task, case0, Json.obj("assignee" -> user.login))
+      _ <- auditSrv.task.update(task, Json.obj("assignee" -> user.login))
     } yield ()
+  }
 }
 
 @EntitySteps[Task]

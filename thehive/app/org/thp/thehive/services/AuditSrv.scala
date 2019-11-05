@@ -38,9 +38,9 @@ class AuditSrv @Inject()(
   val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
   val auditContextSrv                                     = new EdgeSrv[AuditContext, Audit, Product]
   val `case`                                              = new SelfContextObjectAudit[Case]
-  val task                                                = new ObjectAudit[Task, Case]
-  val observable                                          = new ObjectAudit[Observable, Case]
-  val log                                                 = new ObjectAudit[Log, Case]
+  val task                                                = new SelfContextObjectAudit[Task]
+  val observable                                          = new SelfContextObjectAudit[Observable]
+  val log                                                 = new ObjectAudit[Log, Task]
   val caseTemplate                                        = new SelfContextObjectAudit[CaseTemplate]
   val taskInTemplate                                      = new ObjectAudit[Task, CaseTemplate]
   val alert                                               = new SelfContextObjectAudit[Alert]
@@ -308,12 +308,14 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AuditContext].in().hasLabel("Share").outTo[ShareCase].fold()))
             .and(By(__[Vertex].outTo[AuditContext]))
             .and(By(__[Vertex].outTo[Audited].fold()))
         )
         .map {
-          case (audit, context, obj) =>
-            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
+          case (audit, context, visibilityContext, obj) =>
+            val ctx = if (context.isEmpty) visibilityContext else context.get(0)
+            RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
         }
     )
 
@@ -324,13 +326,15 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
       raw
         .project(
           _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AuditContext].in().hasLabel("Share").outTo[ShareCase].fold()))
             .and(By(__[Vertex].outTo[AuditContext]))
             .and(By(__[Vertex].outTo[Audited].fold()))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
-          case (audit, context, obj, renderedObject) =>
-            RichAudit(audit.as[Audit], context.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
+          case (audit, context, visibilityContext, obj, renderedObject) =>
+            val ctx = if (context.isEmpty) visibilityContext else context.get(0)
+            RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
         }
     )
 

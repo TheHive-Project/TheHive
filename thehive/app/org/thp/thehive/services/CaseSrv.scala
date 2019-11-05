@@ -155,7 +155,7 @@ class CaseSrv @Inject()(
     else
       for {
         _ <- shareSrv.shareCaseObservable(`case`, richObservable)
-        _ <- auditSrv.observable.create(richObservable.observable, `case`, richObservable.toJson)
+        _ <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
       } yield ()
   }
 

@@ -28,16 +28,15 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     for {
       createdLog <- createEntity(log)
       _          <- taskLogSrv.create(TaskLog(), task, createdLog)
-      case0      <- get(createdLog).`case`.getOrFail()
-      _          <- auditSrv.log.create(createdLog, case0, RichLog(createdLog, Nil).toJson)
+      _          <- auditSrv.log.create(createdLog, task, RichLog(createdLog, Nil).toJson)
     } yield createdLog
 
   def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
     for {
-      case0      <- get(log).`case`.getOrFail()
+      task       <- get(log).task.getOrFail()
       attachment <- attachmentSrv.create(file)
       _          <- addAttachment(log, attachment)
-      _          <- auditSrv.log.update(log, case0, Json.obj("attachment" -> attachment.name))
+      _          <- auditSrv.log.update(log, task, Json.obj("attachment" -> attachment.name))
     } yield attachment
 
   def addAttachment(
@@ -45,17 +44,17 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
       attachment: Attachment with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
     for {
-      _     <- logAttachmentSrv.create(LogAttachment(), log, attachment)
-      case0 <- get(log).`case`.getOrFail()
-      _     <- auditSrv.log.update(log, case0, Json.obj("attachment" -> attachment.name))
+      _    <- logAttachmentSrv.create(LogAttachment(), log, attachment)
+      task <- get(log).task.getOrFail()
+      _    <- auditSrv.log.update(log, task, Json.obj("attachment" -> attachment.name))
     } yield attachment
 
   def cascadeRemove(log: Log with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _     <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
-      case0 <- get(log).`case`.getOrFail()
+      _    <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
+      task <- get(log).task.getOrFail()
       _ = get(log._id).remove()
-      _ <- auditSrv.log.delete(log, Some(case0))
+      _ <- auditSrv.log.delete(log, Some(task))
     } yield ()
 
   override def update(
@@ -65,9 +64,9 @@ class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implici
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (logSteps, updatedFields) =>
         for {
-          c <- logSteps.newInstance().`case`.getOrFail()
-          l <- logSteps.getOrFail()
-          _ <- auditSrv.log.update(l, c, updatedFields)
+          task <- logSteps.newInstance().task.getOrFail()
+          log  <- logSteps.getOrFail()
+          _    <- auditSrv.log.update(log, task, updatedFields)
         } yield ()
     }
 }

@@ -42,12 +42,13 @@ case class RichAudit(
     objectType: Option[String],
     details: Option[String],
     context: Entity,
+    visibilityContext: Entity,
     `object`: Option[Entity]
 )
 
 object RichAudit {
 
-  def apply(audit: Audit with Entity, context: Entity, `object`: Option[Entity]): RichAudit =
+  def apply(audit: Audit with Entity, context: Entity, visibilityContext: Entity, `object`: Option[Entity]): RichAudit =
     new RichAudit(
       audit._id,
       audit._createdAt,
@@ -59,6 +60,7 @@ object RichAudit {
       audit.objectType,
       audit.details,
       context,
+      visibilityContext,
       `object`
     )
 }

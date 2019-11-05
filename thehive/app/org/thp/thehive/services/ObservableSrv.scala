@@ -137,12 +137,11 @@ class ObservableSrv @Inject()(
     get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove()
     get(observable).attachments.remove()
     get(observable).keyValues.remove()
-    val ctx = get(observable).`case`.getOrFail().orElse(get(observable).alert.getOrFail())
+    val maybeAlert = get(observable).alert.headOption()
     get(observable).remove()
-    ctx.flatMap {
-      case case0: Case with Entity  => auditSrv.observable.delete(observable, Some(case0))
-      case alert: Alert with Entity => auditSrv.observableInAlert.delete(observable, Some(alert))
-      case _                        => auditSrv.observable.delete(observable, None)
+    maybeAlert match {
+      case None         => auditSrv.observable.delete(observable)
+      case ctx: Some[_] => auditSrv.observableInAlert.delete(observable, ctx)
     }
   }
 
@@ -153,9 +152,8 @@ class ObservableSrv @Inject()(
     auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
       case (observableSteps, updatedFields) =>
         for {
-          c <- observableSteps.newInstance().`case`.getOrFail()
-          o <- observableSteps.getOrFail()
-          _ <- auditSrv.observable.update(o, c, updatedFields)
+          observable <- observableSteps.getOrFail()
+          _          <- auditSrv.observable.update(observable, updatedFields)
         } yield ()
     }
 }
