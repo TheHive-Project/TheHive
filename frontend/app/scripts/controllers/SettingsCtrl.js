@@ -73,7 +73,7 @@
                 }
 
                 if (updatedFields !== {}) {
-                    UserSrv.changePass($scope.currentUser.login, updatedFields)
+                    UserSrv.changePass($scope.currentUser.login, updatedFields.currentPassword, updatedFields.password)
                         .then(function( /*data*/ ) {
                             NotificationSrv.log('Your password has been successfully updated', 'success');
                             $state.reload();
