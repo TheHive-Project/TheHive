@@ -32,7 +32,7 @@
                     manageTask: 'Manage tasks',
                     manageAction: 'Manage actions',
                     manageOrganisation: 'Manage organisations',
-                    manageCustomField: 'Manage csutom fields',
+                    manageCustomField: 'Manage custom fields',
                     manageConfig: 'Manage configurations',
                     manageTag: 'Manage tags',
                     manageProfile: 'Manage profiles',
