@@ -165,6 +165,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
     },
     Compile / resourceDirectory := baseDirectory.value / "app",
     Compile / packageBin / mappings := gruntBuild.value,
+    watchSources := Nil,
     cleanFiles ++= Seq(
       baseDirectory.value / "dist",
       baseDirectory.value / "bower_components",
