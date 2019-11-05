@@ -238,7 +238,7 @@
 
             this.openModal = function(user, organisation) {
                 var modalInstance = $uibModal.open({
-                    templateUrl: 'views/partials/admin//organisation/user.modal.html',
+                    templateUrl: 'views/partials/admin/organisation/user.modal.html',
                     controller: 'OrgUserModalCtrl',
                     controllerAs: '$modal',
                     size: 'lg',
