@@ -207,8 +207,8 @@ class UserCtrl @Inject()(
 
   def changePassword(userId: String): Action[AnyContent] =
     entrypoint("change password")
-      .extract("password", FieldsParser[String])
-      .extract("currentPassword", FieldsParser[String])
+      .extract("password", FieldsParser[String].on("password"))
+      .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
         for {
           user <- db.roTransaction(implicit graph => userSrv.current.get(userId).getOrFail())
