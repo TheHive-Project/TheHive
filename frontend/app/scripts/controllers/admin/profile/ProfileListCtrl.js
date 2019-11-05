@@ -92,6 +92,10 @@
                     });
             };
 
+            self.canDelete = function(profile) {
+                return profile.name !== 'all' && profile.name !== ProfileSrv.adminProfile;
+            };
+
             self.load();
         });
 })();

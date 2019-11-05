@@ -5,6 +5,8 @@
             var self = this;
             var baseUrl = './api/profile';
 
+            this.adminProfile = 'admin'
+
             this.permissions = {
                 keys: [
                     'manageUser',
