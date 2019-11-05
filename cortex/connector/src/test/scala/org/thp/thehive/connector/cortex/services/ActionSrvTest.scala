@@ -261,8 +261,8 @@ class ActionSrvTest extends PlaySpecification with Mockito {
 //            alertSrv.initSteps.get(alert._id).tags.toList must contain(Tag.fromString("test tag from action")) // TODO
           }
 
-          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).visible(dummyUserSrv.authContext).getOrFail() must beFailedTry
-          alertSrv.initSteps.has(Key("sourceRef"), P.eq("ref1")).visible(authContextUser2).getOrFail() must beSuccessfulTry
+          alertSrv.initSteps.has("sourceRef", "ref1").visible(dummyUserSrv.authContext).getOrFail() must beFailedTry
+          alertSrv.initSteps.has("sourceRef", "ref1").visible(authContextUser2).getOrFail() must beSuccessfulTry
         }
       }
     }
