@@ -159,7 +159,7 @@ class JobSrv @Inject()(
   def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
-        val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject] - "artifacts")
+        val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject])
         val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
