@@ -22,5 +22,9 @@
   {
     "from": "case3-admin",
     "to": "task6"
+  },
+  {
+    "from": "case3-admin",
+    "to": "task7"
   }
 ]

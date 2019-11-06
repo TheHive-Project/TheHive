@@ -63,6 +63,14 @@ class UserCtrlTest extends PlaySpecification with Mockito {
               organisation = "cert",
               hasKey = false,
               status = "Ok"
+            ),
+            TestUser(
+              login = "user5@thehive.local",
+              name = "org admin of cert",
+              roles = Set("admin", "read", "write", "alert"),
+              organisation = "cert",
+              hasKey = false,
+              status = "Ok"
             )
           )
 
@@ -71,7 +79,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
       "create a new user" in {
         val request = FakeRequest("POST", "/api/v0/user")
-          .withJsonBody(Json.parse("""{"login": "user5@thehive.local", "name": "new user", "roles": ["read", "write", "alert"]}"""))
+          .withJsonBody(Json.parse("""{"login": "user6@thehive.local", "name": "new user", "roles": ["read", "write", "alert"]}"""))
           .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
 
         val result = userCtrl.create(request)
@@ -79,7 +87,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
 
         val resultUser = contentAsJson(result).as[OutputUser]
         val expected = TestUser(
-          login = "user5@thehive.local",
+          login = "user6@thehive.local",
           name = "new user",
           roles = Set("read", "write", "alert"),
           organisation = "admin",

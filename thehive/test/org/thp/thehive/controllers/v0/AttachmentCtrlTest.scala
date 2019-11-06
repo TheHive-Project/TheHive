@@ -12,7 +12,7 @@ import play.api.test.{FakeRequest, PlaySpecification}
 import scala.util.Try
 
 class AttachmentCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
+  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
     val app: AppBuilder = TestAppBuilder(dbProvider)

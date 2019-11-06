@@ -155,7 +155,7 @@ class UserCtrlTest extends PlaySpecification with Mockito {
       "update an user" in {
         val request = FakeRequest("POST", "/api/v1/user/user3@thehive.local")
           .withJsonBody(Json.parse("""{"name": "new name", "roles": ["read"]}"""))
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
 
         val result = userCtrl.update("user3@thehive.local")(request)
         status(result) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")

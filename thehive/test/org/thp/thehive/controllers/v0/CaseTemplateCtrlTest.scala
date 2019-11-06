@@ -52,7 +52,7 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
             "description":"$description"
           }""".stripMargin
       val request = FakeRequest("POST", "/api/case/template")
-        .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+        .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
         .withJsonBody(
           Json.parse(json)
         )
@@ -84,7 +84,7 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
 
       "delete a template" in getAndTestCaseTemplate("tmp basic case 3", "description tmp case 3") { output =>
         val request = FakeRequest("DELETE", s"/api/case/template/${output.name}")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
         val result = caseTemplateCtrl.delete(output.name)(request)
 
         status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -98,7 +98,7 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
 
       "update a template" in getAndTestCaseTemplate("tmp basic case 4", "description tmp case 4") { output =>
         val request = FakeRequest("PATCH", s"/api/case/template/${output.name}")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
           .withJsonBody(
             Json.parse(s"""{
             "displayName": "patched",

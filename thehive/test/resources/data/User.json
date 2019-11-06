@@ -25,5 +25,11 @@
     "name": "admin of cert",
     "locked": true,
     "apikey": "azertyazerty"
+  },
+  {
+    "id": "user5",
+    "login": "user5@thehive.local",
+    "name": "org admin of cert",
+    "locked": false
   }
 ]

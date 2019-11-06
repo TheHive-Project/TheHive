@@ -92,7 +92,7 @@ class JobSrvTest extends PlaySpecification with Mockito {
         )
         updatedJob.status shouldEqual JobStatus.Success
         updatedJob.report must beSome
-        updatedJob.report.get \ "artifacts" must beEmpty
+        updatedJob.report.get \ "artifacts" must not(beEmpty)
         (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
         db.roTransaction { implicit graph =>
