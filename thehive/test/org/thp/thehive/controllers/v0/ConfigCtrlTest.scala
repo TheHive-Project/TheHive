@@ -58,6 +58,25 @@ class ConfigCtrlTest extends PlaySpecification with Mockito {
 
         v must beSome.which(defaultColour => (defaultColour \ "value").as[String] shouldEqual "#42")
       }
+
+      "get user specific configuration" in {
+        val request = FakeRequest("GET", "/api/config/user/organisation")
+          .withHeaders("X-Organisation" -> "admin", "user" -> "admin@thehive.local")
+        val result = configCtrl.userGet("organisation")(request)
+
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        (contentAsJson(result).as[JsObject] \ "value").as[String] shouldEqual "admin"
+      }
+
+      "set user specific configuration" in {
+        val request = FakeRequest("PUT", "/api/config/user/organisation")
+          .withHeaders("X-Organisation" -> "admin", "user" -> "admin@thehive.local")
+          .withJsonBody(Json.parse("""{"value": "default"}"""))
+        val result = configCtrl.userSet("organisation")(request)
+
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        (contentAsJson(result).as[JsObject] \ "value").as[String] shouldEqual "default"
+      }
     }
   }
 }
