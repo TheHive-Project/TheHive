@@ -22,7 +22,8 @@
                     'manageConfig',
                     'manageTag',
                     'manageProfile',
-                    'manageAnalyzerTemplate'
+                    'manageAnalyzerTemplate',
+                    'manageAnalyse'
                 ],
                 labels: {
                     manageUser: 'Manage users',
@@ -38,7 +39,8 @@
                     manageConfig: 'Manage configurations',
                     manageTag: 'Manage tags',
                     manageProfile: 'Manage profiles',
-                    manageAnalyzerTemplate: 'Manage analyzer templates'
+                    manageAnalyzerTemplate: 'Manage analyzer templates',
+                    manageAnalyse: 'Run Cortex analyzer and responders'
                 }
             };
 
