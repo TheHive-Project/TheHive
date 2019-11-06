@@ -154,7 +154,7 @@
                     var order = self.template.tasks ? self.template.tasks.length : 0;
 
                     self.openTaskDialog({
-                        order: order
+                        order: order                        
                     }, 'Add');
                 };
 

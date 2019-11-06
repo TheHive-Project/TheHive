@@ -36,7 +36,9 @@
             <label class="col-md-3 control-label">Assignee</label>
             <div class="col-md-9">
                 <select class="form-control" ng-model="task.owner"
-                    ng-options="item.id as item.name for item in users | orderBy:'id'"></select>
+                    ng-options="item.login as item.name for item in users | orderBy:'login'">
+                    <option value="" selected>-- Select assignee --</option>
+                </select>
             </div>
         </div>
     </div>

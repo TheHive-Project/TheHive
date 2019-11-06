@@ -11,7 +11,7 @@
     </div>
 
     <div ng-if="$vm.template.tasks.length !== 0" ui-sortable="$vm.sortableOptions" ng-model="$vm.template.tasks">
-        <div class="task-item" ng-init="isCollapsed=true" ng-repeat="t in $vm.template.tasks">
+        <div class="task-item" ng-init="isCollapsed=true" ng-repeat="t in $vm.template.tasks | orderBy:'order'">
             <div class="panel-heading">
                 <span class="drag-handle text-primary clickable mr-xxs">
                     <i class="fa fa-bars"></i>
