@@ -49,7 +49,7 @@ class AnalyzerTemplateCtrl @Inject()(
 
   def get(id: String): Action[AnyContent] =
     entryPoint("get content")
-      .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { _ => implicit graph =>
+      .authTransaction(db) { _ => implicit graph =>
         analyzerTemplateSrv
           .getOrFail(id)
           .map(report => Results.Ok(report.content))
