@@ -8,14 +8,14 @@
                     return;
                 }
 
-                var reportUrl = './api/connector/cortex/report/template/content/' + scope.name + '/' + scope.reportType;
+                var reportUrl = './api/connector/cortex/analyzer/template/content/' + scope.name;
 
                 // find report template
                 $templateRequest(reportUrl, true)
                     .then(function (tmpl) {
                         scope.element.append($compile(tmpl)(scope));
                     }, function (/*response*/) {
-                        $templateRequest('views/reports/' + scope.reportType + '.html', true)
+                        $templateRequest('views/reports/default.html', true)
                             .then(function (tmpl) {
                                 scope.element.append($compile(tmpl)(scope));
                             });
@@ -27,7 +27,6 @@
                 scope: {
                     name: '=',
                     artifact: '=',
-                    reportType: '@',
                     status: '=',
                     content: '=',
                     success: '='
