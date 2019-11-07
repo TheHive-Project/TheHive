@@ -2,12 +2,6 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -22,6 +16,11 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.AuditNotificationMessage
+import play.api.Logger
+import play.api.libs.json.{JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
@@ -52,6 +51,7 @@ class AuditSrv @Inject()(
   val organisation                                        = new SelfContextObjectAudit[Organisation]
   val profile                                             = new SelfContextObjectAudit[Profile]
   val customField                                         = new SelfContextObjectAudit[CustomField]
+  val page                                                = new SelfContextObjectAudit[Page]
   private val pendingAuditsLock                           = new Object
   private val transactionAuditIdsLock                     = new Object
   private val unauditedTransactionsLock                   = new Object
@@ -349,6 +349,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
       )
     )
 
+  override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
+
   def visible(implicit authContext: AuthContext): AuditSteps = newInstance(
     raw.filter(
       _.outTo[AuditContext]                          // TODO use choose step
@@ -364,7 +366,6 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
   )
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
   override def newInstance(): AuditSteps                             = new AuditSteps(raw.clone())
 
   def `object`: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[Audited])

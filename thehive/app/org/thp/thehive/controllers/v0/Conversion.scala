@@ -2,20 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsValue, Json}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 object Conversion {
   implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
     def toJson: JsValue = outputer.toOutput(o).toJson
     def toOutput: D     = outputer.toOutput(o).toOutput
   }
+
+  val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
 
   def actionToOperation(action: String): String = action match {
     case "create" => "Creation"
@@ -31,14 +32,6 @@ object Conversion {
     case "Observable" => "case_artifact"
     case "Job"        => "case_artifact_job"
     case other        => other.toLowerCase()
-  }
-
-  def toObjectType(t: String): String = t match {
-    case "case"          => "Case"
-    case "case_artifact" => "Observable"
-    case "case_task"     => "Task"
-    case "case_task_log" => "Log"
-    case "alert"         => "Alert"
   }
 
   implicit val alertOutput: Outputer.Aux[RichAlert, OutputAlert] = Outputer[RichAlert, OutputAlert](
@@ -503,7 +496,37 @@ object Conversion {
       .transform
   )
 
-  val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
+  implicit val pageOutput: Outputer.Aux[Page with Entity, OutputPage] = Outputer[Page with Entity, OutputPage](
+    p =>
+      p.asInstanceOf[Page]
+        .into[OutputPage]
+        .withFieldConst(_._id, p._id)
+        .withFieldConst(_.id, p._id)
+        .withFieldConst(_.createdBy, p._createdBy)
+        .withFieldConst(_.createdAt, p._createdAt)
+        .withFieldConst(_.updatedBy, p._updatedBy)
+        .withFieldConst(_.updatedAt, p._updatedAt)
+        .withFieldConst(_._type, "page")
+        .withFieldComputed(_.content, _.content)
+        .withFieldComputed(_.title, _.title)
+        .transform
+  )
+
+  implicit class InputPageOps(inputPage: InputPage) {
+
+    def toPage: Page =
+      inputPage
+        .into[Page]
+        .transform
+  }
+
+  def toObjectType(t: String): String = t match {
+    case "case"          => "Case"
+    case "case_artifact" => "Observable"
+    case "case_task"     => "Task"
+    case "case_task_log" => "Log"
+    case "alert"         => "Alert"
+  }
 
   def permissions2Roles(permissions: Set[Permission]): Set[String] = {
     val roles =

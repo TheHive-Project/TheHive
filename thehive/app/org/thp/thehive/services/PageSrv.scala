@@ -4,20 +4,29 @@ import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.VertexSrv
+import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
-import org.thp.thehive.models.{OrganisationPage, Page}
+import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
+import play.api.libs.json.Json
+
+import scala.util.Try
 
 @Singleton
-class PageSrv @Inject()(implicit db: Database) extends VertexSrv[Page, PageSteps] {
+class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page, PageSteps] {
+
+  val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): PageSteps = new PageSteps(raw)
 
-//  override def get(idOrTitle: String)(implicit graph: Graph): PageSteps =
-//    if (db.isValidId(idOrTitle)) getByIds(idOrTitle)
-//    else initSteps.getByTitle(idOrTitle)
+  def create(page: Page)(implicit authContext: AuthContext, graph: Graph): Try[Page with Entity] =
+    for {
+      created      <- createEntity(page)
+      organisation <- organisationSrv.get(authContext.organisation).getOrFail()
+      _            <- organisationPageSrv.create(OrganisationPage(), organisation, created)
+      _            <- auditSrv.page.create(created, Json.obj("title" -> page.title))
+    } yield created
 
 }
 
