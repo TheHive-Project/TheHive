@@ -45,7 +45,7 @@ object TestCase {
 }
 
 class CaseCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
+  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
   implicit val mat: Materializer = NoMaterializer
 
   Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
@@ -282,6 +282,44 @@ class CaseCtrlTest extends PlaySpecification with Mockito {
         val resultCases = contentAsJson(result).as[Seq[OutputCase]]
 
         resultCases.map(_.caseId) must contain(exactly(1, 2, 3))
+      }
+
+      "search a case by custom field" in {
+        // Create a case with custom fields
+        val now = new Date()
+        val inputCustomFields = Seq(
+          InputCustomFieldValue("date1", Some(now.getTime)),
+          InputCustomFieldValue("boolean1", Some(true))
+        )
+
+        val request = FakeRequest("POST", "/api/v0/case")
+          .withJsonBody(Json.toJson(
+                InputCase(
+                  title = "cf case",
+                  description = "cf case description",
+                  severity = Some(2),
+                  startDate = Some(now),
+                  tags = Set("tag1cf", "tag2cf"),
+                  flag = Some(false),
+                  tlp = Some(2),
+                  pap = Some(2),
+                  customFields = inputCustomFields
+                )
+              ).as[JsObject] + ("template" -> JsString("spam")))
+          .withHeaders("user" -> "user1@thehive.local")
+
+        val result = caseCtrl.create(request)
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+        // Search it by cf value
+        val requestSearch = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
+          .withHeaders("user" -> "user1@thehive.local")
+          .withJsonBody(
+            Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true},{"_not":{"status":"Deleted"}}]}}""")
+          )
+        val resultSearch = theHiveQueryExecutor.`case`.search()(requestSearch)
+        status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
+        contentAsJson(resultSearch).as[List[OutputCase]] must not(beEmpty)
       }
 
       "get and aggregate properly case stats" in {
