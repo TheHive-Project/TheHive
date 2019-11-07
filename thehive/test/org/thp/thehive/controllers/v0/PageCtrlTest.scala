@@ -60,7 +60,7 @@ class PageCtrlTest extends PlaySpecification with Mockito {
         val page = createPage("test title 2", "test content 2")
 
         val request = FakeRequest("GET", s"/api/page/${page.id}")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
         val result = pageCtrl.get(page.id)(request)
 
         status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -69,6 +69,24 @@ class PageCtrlTest extends PlaySpecification with Mockito {
 
         resultPage.title shouldEqual page.title
         resultPage.content shouldEqual page.content
+
+        val requestFailed = FakeRequest("GET", s"/api/page/${page.id}")
+          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
+        val resultFailed = pageCtrl.get(page.id)(requestFailed)
+
+        status(resultFailed) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
+      }
+
+      "update a page if allowed" in {
+        val page = createPage("test title 3", "test content 3")
+
+        val request = FakeRequest("PATCH", s"/api/page/${page.id}")
+          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
+          .withJsonBody(Json.parse("""{"title": "lol"}"""))
+        val result = pageCtrl.update(page.id)(request)
+
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        contentAsJson(result).as[OutputPage].title shouldEqual "lol"
       }
     }
   }

@@ -5,6 +5,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
@@ -28,6 +29,12 @@ class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv,
       _            <- auditSrv.page.create(created, Json.obj("title" -> page.title))
     } yield created
 
+  def update(page: Page with Entity, propertyUpdaters: Seq[PropertyUpdater])(implicit graph: Graph, authContext: AuthContext): Try[Page with Entity] =
+    for {
+      updated <- update(get(page), propertyUpdaters)
+      p       <- updated._1.getOrFail()
+      _       <- auditSrv.page.update(p, Json.obj("title" -> p.title))
+    } yield p
 }
 
 @EntitySteps[Page]

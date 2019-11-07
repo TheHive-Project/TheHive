@@ -1,22 +1,18 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString, Field, FieldsParser}
+import org.scalactic.Accumulation._
+import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, InvalidFormatAttributeError, RichSeq}
-import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, RichTask, TaskStatus}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
+import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,
@@ -33,6 +29,7 @@ import org.thp.thehive.services.{
   ObservableSrv,
   ObservableSteps,
   OrganisationSteps,
+  PageSteps,
   ProfileSrv,
   ProfileSteps,
   RoleSrv,
@@ -42,7 +39,10 @@ import org.thp.thehive.services.{
   UserSrv,
   UserSteps
 }
-import org.scalactic.Accumulation._
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class Properties @Inject()(
@@ -345,6 +345,12 @@ class Properties @Inject()(
     PublicPropertyListBuilder[OrganisationSteps]
       .property("name", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
+      .build
+
+  lazy val page: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[PageSteps]
+      .property("title", UniMapping.string)(_.field.updatable)
+      .property("content", UniMapping.string.set)(_.field.updatable)
       .build
 
   lazy val profile: List[PublicProperty[_, _]] =
