@@ -34,7 +34,7 @@ case class Task(
 
 case class RichTask(
     task: Task with Entity,
-    owner: Option[String]
+    owner: Option[User with Entity]
 ) {
   val _id: String                 = task._id
   val _createdBy: String          = task._createdBy

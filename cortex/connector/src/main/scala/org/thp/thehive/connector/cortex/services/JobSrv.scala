@@ -92,7 +92,7 @@ class JobSrv @Inject()(
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
       _ <- Future.fromTry(db.tryTransaction { implicit graph =>
-        auditSrv.job.create(createdJob, `case`, createdJob.toJson)
+        auditSrv.job.create(createdJob, observable.observable, createdJob.toJson)
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
@@ -163,14 +163,14 @@ class JobSrv @Inject()(
         val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
-          j <- get(job).update(
+          job <- get(job).update(
             "report"  -> report,
             "status"  -> status,
             "endDate" -> endDate
           )
-          c <- get(j).observable.`case`.getOrFail()
-          _ <- auditSrv.job.update(j, c, Json.obj("status" -> status, "endDate" -> endDate))
-        } yield j
+          observable <- get(job).observable.getOrFail()
+          _          <- auditSrv.job.update(job, observable, Json.obj("status" -> status, "endDate" -> endDate))
+        } yield job
       }
     }
 

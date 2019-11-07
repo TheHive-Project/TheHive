@@ -48,7 +48,7 @@ case class RichCaseTemplate(
     caseTemplate: CaseTemplate with Entity,
     organisation: String,
     tags: Seq[Tag with Entity],
-    tasks: Seq[Task with Entity],
+    tasks: Seq[RichTask],
     customFields: Seq[RichCustomField]
 ) {
   val _id: String                 = caseTemplate._id

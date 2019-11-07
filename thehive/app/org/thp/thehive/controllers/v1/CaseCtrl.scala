@@ -81,7 +81,7 @@ class CaseCtrl @Inject()(
             tags.toSet,
             customFields,
             caseTemplate,
-            inputTasks.map(_.toTask)
+            inputTasks.map(_.toTask -> None)
           )
         } yield Results.Created(richCase.toJson)
       }

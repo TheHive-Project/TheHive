@@ -9,6 +9,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.RichSeq
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCaseTemplate
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
@@ -50,9 +51,9 @@ class CaseTemplateCtrl @Inject()(
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
-        val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
         val customFields                         = inputCaseTemplate.customFields.map(c => c.name -> c.value)
         for {
+          tasks            <- inputCaseTemplate.tasks.toTry(t => t.owner.map(userSrv.getOrFail).flip.map(t.toTask -> _))
           organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)

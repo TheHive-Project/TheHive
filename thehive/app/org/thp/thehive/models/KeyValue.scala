@@ -1,4 +1,5 @@
 package org.thp.thehive.models
+
 import java.util.Date
 
 import org.thp.scalligraph.VertexEntity
@@ -9,7 +10,9 @@ object ValueType extends Enumeration {
 
 @VertexEntity
 case class KeyValue(
-    name: String,
+    namespace: String,
+    predicate: String,
+    level: String,
     `type`: ValueType.Value,
     string: Option[String],
     integer: Option[Int],

@@ -262,9 +262,10 @@ class Properties @Inject()(
           for {
             caseTemplate <- caseTemplateSrv.getOrFail(vertex)(graph)
             tasks        <- value.validatedBy(t => fp(Field(t))).badMap(AttributeCheckingError(_)).toTry
-            createdTasks <- tasks.toTry(t => taskSrv.create(t.toTask)(graph, authContext))
-            _            <- createdTasks.toTry(t => caseTemplateSrv.addTask(caseTemplate, t)(graph, authContext))
-          } yield Json.obj("tasks" -> createdTasks.map(t => RichTask(t, None).toJson))
+            createdTasks <- tasks
+              .toTry(t => t.owner.map(userSrv.getOrFail(_)(graph)).flip.flatMap(owner => taskSrv.create(t.toTask, owner)(graph, authContext)))
+            _ <- createdTasks.toTry(t => caseTemplateSrv.addTask(caseTemplate, t.task)(graph, authContext))
+          } yield Json.obj("tasks" -> createdTasks.map(_.toJson))
       })(NoValue(JsNull))
       .build
 

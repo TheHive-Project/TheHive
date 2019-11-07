@@ -52,7 +52,7 @@ class CaseTemplateCtrl @Inject()(
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
           organisation <- organisationSrv.getOrFail(request.organisation)
-          tasks        = inputCaseTemplate.tasks.map(_.toTask)
+          tasks        = inputCaseTemplate.tasks.map(_.toTask -> None)
           customFields = inputCaseTemplate.customFieldValue.map(cf => cf.name -> cf.value)
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)

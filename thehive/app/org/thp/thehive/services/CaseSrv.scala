@@ -52,16 +52,18 @@ class CaseSrv @Inject()(
       tags: Set[Tag with Entity],
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[RichCaseTemplate],
-      additionalTasks: Seq[Task]
+      additionalTasks: Seq[(Task, Option[User with Entity])]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
-      createdCase  <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-      assignee     <- user.fold(userSrv.current.getOrFail())(Success(_))
-      _            <- caseUserSrv.create(CaseUser(), createdCase, assignee)
-      _            <- shareSrv.shareCase(createdCase, organisation, profileSrv.all)
-      _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks).toTry(taskSrv.create(_))
-      _            <- createdTasks.toTry(t => shareSrv.shareCaseTask(createdCase, RichTask(t, None)))
+      createdCase <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
+      assignee    <- user.fold(userSrv.current.getOrFail())(Success(_))
+      _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
+      _           <- shareSrv.shareCase(createdCase, organisation, profileSrv.all)
+      _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.owner)).toTry {
+        case (task, owner) => taskSrv.create(task, owner)
+      }
+      _ <- createdTasks.toTry(t => shareSrv.shareCaseTask(createdCase, t))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[RichCustomField]](Nil)(_.customFields)
         .map(cf => cf.name -> cf.value)

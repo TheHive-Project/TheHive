@@ -44,7 +44,7 @@ class CaseTemplateSrv @Inject()(
       caseTemplate: CaseTemplate,
       organisation: Organisation with Entity,
       tagNames: Seq[String],
-      tasks: Seq[Task],
+      tasks: Seq[(Task, Option[User with Entity])],
       customFields: Seq[(String, Option[Any])]
   )(
       implicit graph: Graph,
@@ -56,8 +56,8 @@ class CaseTemplateSrv @Inject()(
       for {
         createdCaseTemplate <- createEntity(caseTemplate)
         _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-        createdTasks        <- tasks.toTry(taskSrv.create)
-        _                   <- createdTasks.toTry(addTask(createdCaseTemplate, _))
+        createdTasks        <- tasks.toTry { case (task, owner) => taskSrv.create(task, owner) }
+        _                   <- createdTasks.toTry(rt => addTask(createdCaseTemplate, rt.task))
         tags                <- tagNames.toTry(tagSrv.getOrCreate)
         _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
         cfs                 <- customFields.toTry { case (name, value) => createCustomField(createdCaseTemplate, name, value) }
@@ -193,7 +193,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
           _.apply(By[Vertex]())
             .and(By(__[Vertex].outTo[CaseTemplateOrganisation].values[String]("name").fold))
             .and(By(__[Vertex].outTo[CaseTemplateTag].fold))
-            .and(By(__[Vertex].outTo[CaseTemplateTask].fold))
+            .and(By(new TaskSteps(__[Vertex].outTo[CaseTemplateTask]).richTask.raw.fold))
             .and(By(__[Vertex].outToE[CaseTemplateCustomField].inV().path.fold.traversal))
         )
         .map {
@@ -209,7 +209,7 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
               caseTemplate.as[CaseTemplate],
               onlyOneOf[String](organisation),
               tags.asScala.map(_.as[Tag]),
-              tasks.asScala.map(_.as[Task]),
+              tasks.asScala,
               customFieldValues
             )
         }

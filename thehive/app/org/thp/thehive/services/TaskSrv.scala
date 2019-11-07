@@ -26,7 +26,11 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
   val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
 
-  def create(e: Task)(implicit graph: Graph, authContext: AuthContext): Try[Task with Entity] = createEntity(e)
+  def create(e: Task, owner: Option[User with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
+    for {
+      task <- createEntity(e)
+      _    <- owner.map(taskUserSrv.create(TaskUser(), task, _)).flip
+    } yield RichTask(task, owner)
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TaskSteps = new TaskSteps(raw)
 
@@ -137,13 +141,13 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       raw
         .project(
           _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
+            .and(By(__[Vertex].outTo[TaskUser].fold))
         )
         .map {
           case (task, user) =>
             RichTask(
               task.as[Task],
-              atMostOneOf[String](user)
+              atMostOneOf(user).map(_.as[User])
             )
         }
     )
@@ -155,14 +159,14 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       raw
         .project(
           _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[TaskUser].values[String]("login").fold))
+            .and(By(__[Vertex].outTo[TaskUser].fold))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
           case (task, user, renderedEntity) =>
             RichTask(
               task.as[Task],
-              atMostOneOf[String](user)
+              atMostOneOf(user).map(_.as[User])
             ) -> renderedEntity
         }
     )

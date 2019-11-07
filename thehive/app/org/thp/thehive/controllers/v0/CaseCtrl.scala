@@ -79,6 +79,7 @@ class CaseCtrl @Inject()(
           caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
           user         <- inputCase.user.map(userSrv.get(_).visible.getOrFail()).flip
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
+          tasks        <- inputTasks.toTry(t => t.owner.map(userSrv.getOrFail).flip.map(owner => t.toTask -> owner))
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
             user,
@@ -86,7 +87,7 @@ class CaseCtrl @Inject()(
             tags.toSet,
             customFields,
             caseTemplate,
-            inputTasks.map(_.toTask)
+            tasks
           )
         } yield Results.Created(richCase.toJson)
       }

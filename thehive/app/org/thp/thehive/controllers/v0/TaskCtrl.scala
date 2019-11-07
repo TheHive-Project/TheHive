@@ -58,12 +58,10 @@ class TaskCtrl @Inject()(
         val inputTask: InputTask = request.body("task")
         for {
           case0       <- caseSrv.getOrFail(caseId)
-          createdTask <- taskSrv.create(inputTask.toTask)
           owner       <- inputTask.owner.map(userSrv.getOrFail).flip
-          _           <- owner.map(taskSrv.assign(createdTask, _)).flip
-          richTask = RichTask(createdTask, owner.map(_.login))
-          _ <- shareSrv.shareCaseTask(case0, richTask)
-        } yield Results.Created(richTask.toJson)
+          createdTask <- taskSrv.create(inputTask.toTask, owner)
+          _           <- shareSrv.shareCaseTask(case0, createdTask)
+        } yield Results.Created(createdTask.toJson)
       }
 
   def get(taskId: String): Action[AnyContent] =
