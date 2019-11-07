@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.nio.file.Files
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 import play.api.http.HttpEntity
 import play.api.mvc._
@@ -12,6 +12,7 @@ import javax.inject.{Inject, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
+import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.EntryPoint
 import org.thp.scalligraph.services.StorageSrv
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
@@ -28,7 +29,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationCon
       .auth { _ =>
         if (!name.getOrElse("").intersect(forbiddenChar).isEmpty)
           Success(Results.BadRequest("File name is invalid"))
-        else
+        else if (storageSrv.exists(id))
           Success(
             Result(
               header = ResponseHeader(
@@ -41,6 +42,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationCon
               body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(id)), None, None)
             )
           )
+        else Failure(NotFoundError(s"Attachment $id not found"))
       }
 
   def downloadZip(hash: String, name: Option[String]): Action[AnyContent] =
@@ -48,7 +50,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationCon
       .auth { _ =>
         if (!name.getOrElse("").intersect(forbiddenChar).isEmpty)
           Success(Results.BadRequest("File name is invalid"))
-        else
+        else if (storageSrv.exists(hash))
           Try {
             val f = Files.createTempFile("downloadzip-", hash)
             Files.delete(f)
@@ -73,7 +75,7 @@ class AttachmentCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationCon
               ),
               body = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip"))
             ) // FIXME remove temporary file (but when ?)
-          }
+          } else Failure(NotFoundError(s"Attachment $hash not found"))
       }
 
   def password: String = passwordConfig.get

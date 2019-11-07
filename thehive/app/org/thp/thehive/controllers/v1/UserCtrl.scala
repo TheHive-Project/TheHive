@@ -272,7 +272,7 @@ class UserCtrl @Inject()(
     entrypoint("get user avatar")
       .authTransaction(db) { implicit request => implicit graph =>
         userSrv.get(userId).visible.avatar.headOption() match {
-          case Some(avatar) =>
+          case Some(avatar) if storageSrv.exists(avatar.attachmentId) =>
             Success(
               Result(
                 header = ResponseHeader(200),

@@ -303,7 +303,7 @@ class ShareCtrlTest extends PlaySpecification with Mockito {
               Set.empty,
               Map.empty,
               None,
-              Seq(Task("task 1 new case", "group 666", None, TaskStatus.Waiting, flag = false, None, None, 0, None))
+              Seq(Task("task 1 new case", "group 666", None, TaskStatus.Waiting, flag = false, None, None, 0, None) -> None)
             )(graph, dummyUserSrv.authContext)
         )
         .get
