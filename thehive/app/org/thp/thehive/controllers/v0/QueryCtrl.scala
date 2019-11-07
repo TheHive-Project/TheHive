@@ -32,8 +32,8 @@ trait QueryableCtrl {
     PublicPropertyListBuilder[S]
       .property("createdBy", UniMapping.string)(_.rename("_createdBy").readonly)
       .property("createdAt", UniMapping.date)(_.rename("_createdAt").readonly)
-      .property("updatedBy", UniMapping.string)(_.rename("_updatedBy").readonly)
-      .property("updatedAt", UniMapping.date)(_.rename("_updatedAt").readonly)
+      .property("updatedBy", UniMapping.string.optional)(_.rename("_updatedBy").readonly)
+      .property("updatedAt", UniMapping.date.optional)(_.rename("_updatedAt").readonly)
       .build
 }
 
