@@ -28,7 +28,8 @@ class Router @Inject()(
     profileCtrl: ProfileCtrl,
     shareCtrl: ShareCtrl,
     tagCtrl: TagCtrl,
-    queryExecutor: TheHiveQueryExecutor
+    queryExecutor: TheHiveQueryExecutor,
+    pageCtrl: PageCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -188,6 +189,8 @@ class Router @Inject()(
     case GET(p"/tag/$id")      => tagCtrl.get(id)
     case POST(p"/tag/_search") => queryExecutor.tag.search
     case POST(p"/tag/_stats")  => queryExecutor.tag.stats
+
+    case GET(p"/page/$idOrTitle") => pageCtrl.get(idOrTitle)
   }
 }
 /*

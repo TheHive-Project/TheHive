@@ -11,3 +11,6 @@ case class OrganisationShare()
 
 @EdgeEntity[Organisation, Organisation]
 case class OrganisationOrganisation()
+
+@EdgeEntity[Organisation, Page]
+case class OrganisationPage()
