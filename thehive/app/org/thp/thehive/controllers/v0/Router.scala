@@ -190,9 +190,10 @@ class Router @Inject()(
     case POST(p"/tag/_search") => queryExecutor.tag.search
     case POST(p"/tag/_stats")  => queryExecutor.tag.stats
 
-    case GET(p"/page/$idOrTitle")   => pageCtrl.get(idOrTitle)
-    case POST(p"/page")             => pageCtrl.create
-    case PATCH(p"/page/$idOrTitle") => pageCtrl.update(idOrTitle)
+    case GET(p"/page/$idOrTitle")    => pageCtrl.get(idOrTitle)
+    case POST(p"/page")              => pageCtrl.create
+    case PATCH(p"/page/$idOrTitle")  => pageCtrl.update(idOrTitle)
+    case DELETE(p"/page/$idOrTitle") => pageCtrl.delete(idOrTitle)
   }
 }
 /*

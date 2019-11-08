@@ -21,6 +21,10 @@ class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv,
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): PageSteps = new PageSteps(raw)
 
+  override def get(idOrTitle: String)(implicit graph: Graph): PageSteps =
+    if (db.isValidId(idOrTitle)) getByIds(idOrTitle)
+    else initSteps.getByTitle(idOrTitle)
+
   def create(page: Page)(implicit authContext: AuthContext, graph: Graph): Try[Page with Entity] =
     for {
       created      <- createEntity(page)
@@ -35,6 +39,11 @@ class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv,
       p       <- updated._1.getOrFail()
       _       <- auditSrv.page.update(p, Json.obj("title" -> p.title))
     } yield p
+
+  def delete(page: Page with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(page).remove()
+    auditSrv.page.delete(page)
+  }
 }
 
 @EntitySteps[Page]

@@ -46,4 +46,13 @@ class PageCtrl @Inject()(entryPoint: EntryPoint, pageSrv: PageSrv, db: Database,
           updated <- pageSrv.update(page, propertyUpdaters)
         } yield Results.Ok(updated.toJson)
       }
+
+  def delete(idOrTitle: String): Action[AnyContent] =
+    entryPoint("delete a page")
+      .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
+        for {
+          page <- pageSrv.get(idOrTitle).visible.getOrFail()
+          _    <- pageSrv.delete(page)
+        } yield Results.NoContent
+      }
 }
