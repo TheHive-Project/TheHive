@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -12,6 +10,8 @@ import org.thp.scalligraph.query.{InputFilter, _}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
 import org.thp.thehive.services.{ObservableSteps, _}
+
+import scala.reflect.runtime.{currentMirror => rm, universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean, withParents: Int)
 
@@ -30,15 +30,13 @@ class TheHiveQueryExecutor @Inject()(
     auditCtrl: AuditCtrl,
     profileCtrl: ProfileCtrl,
     tagCtrl: TagCtrl,
+    pageCtrl: PageCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: Nil
-  override val version: (Int, Int) = 0 -> 0
-
+    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: pageCtrl :: Nil
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
-
   override lazy val filterQuery = new ParentFilterQuery(db, publicProperties)
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
@@ -46,7 +44,7 @@ class TheHiveQueryExecutor @Inject()(
       controllers.map(_.pageQuery) :::
       controllers.map(_.outputQuery) :::
       controllers.flatMap(_.extraQueries)
-
+  override val version: (Int, Int) = 0 -> 0
   val `case`: QueryCtrl       = queryCtrlBuilder(caseCtrl, this)
   val task: QueryCtrl         = queryCtrlBuilder(taskCtrl, this)
   val log: QueryCtrl          = queryCtrlBuilder(logCtrl, this)
@@ -59,6 +57,7 @@ class TheHiveQueryExecutor @Inject()(
   val audit: QueryCtrl        = queryCtrlBuilder(auditCtrl, this)
   val profile: QueryCtrl      = queryCtrlBuilder(profileCtrl, this)
   val tag: QueryCtrl          = queryCtrlBuilder(tagCtrl, this)
+  val page: QueryCtrl         = queryCtrlBuilder(pageCtrl, this)
 }
 
 object ParentIdFilter {
@@ -127,6 +126,8 @@ class ParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
 }
 
 class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(db, publicProperties) {
+  override val name: String = "filter"
+
   override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
     FieldsParser("parentIdFilter") {
       case (path, FObjOne("_and", FSeq(fields))) =>
@@ -144,7 +145,7 @@ class ParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _
       case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
         paramParser(tpe, properties).apply(path, queryField).map(query => new ParentQueryInputFilter(query))
     }.orElse(InputFilter.fieldsParser(tpe, properties))
-  override val name: String = "filter"
+
   override def checkFrom(t: ru.Type): Boolean =
     SubType(t, ru.typeOf[TaskSteps]) || SubType(t, ru.typeOf[ObservableSteps]) || SubType(t, ru.typeOf[LogSteps])
   override def toType(t: ru.Type): ru.Type = t

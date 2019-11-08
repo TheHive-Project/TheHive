@@ -194,6 +194,8 @@ class Router @Inject()(
     case POST(p"/page")              => pageCtrl.create
     case PATCH(p"/page/$idOrTitle")  => pageCtrl.update(idOrTitle)
     case DELETE(p"/page/$idOrTitle") => pageCtrl.delete(idOrTitle)
+    case POST(p"/page/_search")      => queryExecutor.page.search
+    case POST(p"/page/_stats")       => queryExecutor.page.stats
   }
 }
 /*

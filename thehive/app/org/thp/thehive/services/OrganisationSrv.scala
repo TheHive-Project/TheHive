@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -15,6 +11,9 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.util.{Success, Try}
 
 object OrganisationSrv {
   val administration = Organisation("admin", "organisation for administration")
@@ -88,13 +87,11 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         .filter(_.hasId(orgId))
     )
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
-
   def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
 
-  def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
+  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
 
-  def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
+  def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
 
   def shares: ShareSteps = new ShareSteps(raw.outTo[OrganisationShare])
 
@@ -107,6 +104,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       .inTo[UserRole]
   )
 
+  def pages: PageSteps = new PageSteps(raw.outTo[OrganisationPage])
+
   def alerts: AlertSteps = new AlertSteps(raw.inTo[AlertOrganisation])
 
   def dashboards: DashboardSteps = new DashboardSteps(raw.outTo[OrganisationDashboard])
@@ -116,8 +115,11 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     else
       this.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
 
-  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
+  def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
+
   def visibleOrganisationsTo: OrganisationSteps   = new OrganisationSteps(raw.unionFlat(identity, _.inTo[OrganisationOrganisation]).dedup())
+
+  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
 

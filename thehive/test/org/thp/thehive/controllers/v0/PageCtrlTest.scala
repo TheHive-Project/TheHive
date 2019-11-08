@@ -28,7 +28,8 @@ class PageCtrlTest extends PlaySpecification with Mockito {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val pageCtrl: PageCtrl = app.instanceOf[PageCtrl]
+    val pageCtrl: PageCtrl   = app.instanceOf[PageCtrl]
+    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
 
     def createPage(title: String, content: String) = {
       val request = FakeRequest("POST", "/api/page")
@@ -113,6 +114,46 @@ class PageCtrlTest extends PlaySpecification with Mockito {
         val resultFailed = pageCtrl.get(page.id)(requestFailed)
 
         status(resultFailed) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
+      }
+
+      "search a page" in {
+        createPage("test title 5", "test content 5")
+        createPage("test title 6", "test content 6")
+        createPage("test title 7", "test content 7")
+        val json = Json.parse("""{
+             "range":"all",
+             "sort":[
+                "-updatedAt",
+                "-createdAt"
+             ],
+             "query":{
+                "_and":[
+                   {
+                      "_not":{
+                         "title":"test title 7"
+                      }
+                   },
+                   {
+                      "_or":[
+                         {
+                            "content":"test content 5"
+                         },
+                         {
+                            "title":"test title 6"
+                         }
+                      ]
+                   }
+                ]
+             }
+          }""".stripMargin)
+
+        val request = FakeRequest("POST", s"/api/page/_search")
+          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
+          .withJsonBody(json)
+        val result = theHiveQueryExecutor.page.search(request)
+
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        contentAsJson(result).as[List[OutputPage]].length shouldEqual 2
       }
     }
   }
