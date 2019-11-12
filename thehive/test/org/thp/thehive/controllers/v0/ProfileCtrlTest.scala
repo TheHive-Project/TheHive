@@ -3,8 +3,8 @@ package org.thp.thehive.controllers.v0
 import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.{AppBuilder, AuthenticationError}
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.{AppBuilder, AuthenticationError}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputProfile
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
@@ -107,14 +107,18 @@ class ProfileCtrlTest extends PlaySpecification with Mockito {
       }
 
       "search a profile" in {
-        createProfile("title test 5", Set(Permissions.manageCase,
-          Permissions.manageObservable,
-          Permissions.manageAlert,
-          Permissions.manageTask,
-          Permissions.manageAction,
-          Permissions.manageAnalyse))
-        createProfile("title test 6", Set(Permissions.manageCase,
-          Permissions.manageObservable))
+        createProfile(
+          "title test 5",
+          Set(
+            Permissions.manageCase,
+            Permissions.manageObservable,
+            Permissions.manageAlert,
+            Permissions.manageTask,
+            Permissions.manageAction,
+            Permissions.manageAnalyse
+          )
+        )
+        createProfile("title test 6", Set(Permissions.manageCase, Permissions.manageObservable))
         createProfile("title test 7", Set.empty)
         val json = Json.parse("""{
              "range":"all",
