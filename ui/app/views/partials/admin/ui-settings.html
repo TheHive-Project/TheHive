@@ -18,6 +18,17 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="col-md-3 control-label">Use <strong>AND</strong> instead of <strong>OR</strong> for alert filtering</label>
+                        <div class="col-md-9">
+                            <div class="checkbox">
+                                <label>
+                                    <input name="tagsUseAndCheckbox" type="checkbox" ng-model="$vm.configs.useAndFiltering"> Check this to change how alert filters are combined
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mt-s">
                         <button class="btn btn-primary pull-right" ng-disabled="settingsForm.$invalid" type="submit">Save</button>
                     </div>
