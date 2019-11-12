@@ -103,6 +103,46 @@ class DashboardCtrlTest extends PlaySpecification with Mockito {
 
         status(resultGet) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
       }
+
+      "search a dashboard" in {
+        createDashboard("title test 5", "desc test 5", "Shared", "def test 5")
+        createDashboard("title test 6", "desc test 6", "Private", "def test 6")
+        createDashboard("title test 7", "desc test 7", "Shared", "def test 7")
+        val json = Json.parse("""{
+             "range":"all",
+             "sort":[
+                "-updatedAt",
+                "-createdAt"
+             ],
+             "query":{
+                "_and":[
+                   {
+                      "_not":{
+                         "title":"title test 7"
+                      }
+                   },
+                   {
+                      "_and":[
+                         {
+                            "status":"Private"
+                         },
+                         {
+                            "title":"title test 6"
+                         }
+                      ]
+                   }
+                ]
+             }
+          }""".stripMargin)
+
+        val request = FakeRequest("POST", s"/api/dashboard/_search")
+          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
+          .withJsonBody(json)
+        val result = theHiveQueryExecutor.dashboard.search(request)
+
+        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+        contentAsJson(result).as[List[OutputDashboard]].length shouldEqual 1
+      }
     }
   }
 }
