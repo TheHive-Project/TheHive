@@ -129,7 +129,7 @@ class DescribeCtrl @Inject()(
       .auth { _ =>
         entityControllers.get(modelName) match {
           case Some(ctrl) => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(describe(modelName, ctrl))))
-          case None       => Failure(NotFoundError(s"Modlel $modelName not found"))
+          case None       => Failure(NotFoundError(s"Model $modelName not found"))
         }
       }
 
