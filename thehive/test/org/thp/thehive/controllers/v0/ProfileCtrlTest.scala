@@ -127,6 +127,13 @@ class ProfileCtrlTest extends PlaySpecification with Mockito {
                 "-createdAt"
              ],
              "query":{
+              "_and":[
+                   {
+                      "_is":{
+                         "name":"title test 7"
+                      }
+                   }
+                ]
              }
           }""".stripMargin)
 
@@ -136,7 +143,7 @@ class ProfileCtrlTest extends PlaySpecification with Mockito {
         val result = theHiveQueryExecutor.profile.search(request)
 
         status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-        contentAsJson(result).as[List[OutputProfile]] must not(beEmpty)
+        contentAsJson(result).as[List[OutputProfile]].length shouldEqual 1
       }
     }
   }
