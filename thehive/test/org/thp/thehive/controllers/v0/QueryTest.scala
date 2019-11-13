@@ -49,7 +49,7 @@ class QueryTest extends PlaySpecification with Mockito {
   )
 
   val queryExecutor: QueryExecutor = new QueryExecutor {
-    override val db: Database                                      = null // FIXME
+    override val db: Database                                      = mock[Database]
     override val version: (Int, Int)                               = 0 -> 0
     override lazy val queries: Seq[ParamQuery[_]]                  = Seq(taskCtrl.initialQuery, taskCtrl.pageQuery, taskCtrl.outputQuery)
     override lazy val publicProperties: List[PublicProperty[_, _]] = taskCtrl.publicProperties
