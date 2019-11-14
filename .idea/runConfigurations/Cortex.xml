@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TheHive" type="Specs2RunConfiguration" factoryName="Specs2" show_console_on_std_err="false" show_console_on_std_out="false">
-    <module name="thehive-core" />
+  <configuration default="false" name="Cortex" type="Specs2RunConfiguration" factoryName="Specs2" show_console_on_std_err="false" show_console_on_std_out="false">
+    <module name="thehive-cortex" />
     <extension name="coverage" sample_coverage="false">
       <pattern>
         <option name="PATTERN" value="org.thp.*" />
