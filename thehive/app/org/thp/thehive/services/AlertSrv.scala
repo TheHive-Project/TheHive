@@ -90,7 +90,7 @@ class AlertSrv @Inject()(
       .tags
       .toIterator
       .foldLeft((tags, Set.empty[Tag with Entity])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove) // TODO need check if contains method works
+        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
         case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
       }
     for {
