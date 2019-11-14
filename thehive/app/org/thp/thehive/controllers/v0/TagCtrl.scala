@@ -41,8 +41,8 @@ class TagCtrl @Inject()(
 
   def importTaxonomy: Action[AnyContent] =
     entryPoint("import taxonomy")
-      .extract("file", FieldsParser.file.optional)
-      .extract("content", FieldsParser.jsObject.optional)
+      .extract("file", FieldsParser.file.optional.on("file"))
+      .extract("content", FieldsParser.jsObject.optional.on("content"))
       .authTransaction(db) { implicit request => implicit graph =>
         if (request.permissions.contains(Permissions.manageTag)) {
           val file: Option[FFile]       = request.body("file")
