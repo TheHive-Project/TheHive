@@ -82,6 +82,7 @@ class AlertSrvTest extends PlaySpecification {
       }
 
       "update tags" in {
+        // Get some data first
         val a = db
           .tryTransaction(
             implicit graph => createAlert("test 2", "test 2", "test desc 2", Set("tag3", "tag4"))
@@ -92,18 +93,29 @@ class AlertSrvTest extends PlaySpecification {
         }.head
         val tag5 = db
           .tryTransaction(
-            implicit graph => tagSrv.create(Tag("_autocreate", "tag5", Some("tag5"), None, 0))
+            implicit graph => tagSrv.create(Tag("_autocreate", "tag5", None, None, 0))
           )
           .get
 
+        // Test updateTags
         val r = db.tryTransaction { implicit graph =>
           alertSrv.updateTags(a.alert, Set(tag3, tag5))
         }
-
         r must beSuccessfulTry
-
         db.roTransaction { implicit graph =>
           alertSrv.get(a.alert).tags.toList must contain(exactly(tag3, tag5))
+        }
+
+        // Test updateTagNames
+        val r2 = db.tryTransaction { implicit graph =>
+          alertSrv.updateTagNames(a.alert, Set("tag5", "tag6"))
+        }
+        r2 must beSuccessfulTry
+        val tag6 = db.roTransaction { implicit graph =>
+          tagSrv.initSteps.toList.filter(t => t.predicate == "tag6")
+        }.head
+        db.roTransaction { implicit graph =>
+          alertSrv.get(a.alert).tags.toList must contain(exactly(tag5, tag6))
         }
       }
     }
