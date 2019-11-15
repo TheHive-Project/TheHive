@@ -129,7 +129,7 @@ class AlertSrv @Inject()(
       .hasId(alert._id)
       .exists()
     if (alreadyExistInThatCase)
-      Failure(CreateError("Observable already exist"))
+      Failure(CreateError("Observable already exists"))
     else
       for {
         _ <- alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)

@@ -6,5 +6,9 @@
   {
     "from": "c.fr",
     "to": "data-c.fr"
+  },
+  {
+    "from": "perdu.com",
+    "to": "data-perdu.com"
   }
 ]

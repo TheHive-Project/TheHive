@@ -4,10 +4,10 @@ import java.util.Date
 
 import gremlin.scala.Graph
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{AppBuilder, CreateError}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
@@ -32,6 +32,8 @@ class AlertSrvTest extends PlaySpecification {
     val db: Database                      = app.instanceOf[Database]
     val orgaSrv                           = app.instanceOf[OrganisationSrv]
     val tagSrv                            = app.instanceOf[TagSrv]
+    val observableSrv                     = app.instanceOf[ObservableSrv]
+    val observableTypeSrv                 = app.instanceOf[ObservableTypeSrv]
     implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
     def createAlert(tp: String, title: String, description: String, tags: Set[String])(implicit graph: Graph) = alertSrv.create(
@@ -116,6 +118,67 @@ class AlertSrvTest extends PlaySpecification {
         }.head
         db.roTransaction { implicit graph =>
           alertSrv.get(a.alert).tags.toList must contain(exactly(tag5, tag6))
+        }
+      }
+
+      "add tags" in {
+        // Get some data first
+        val a = db
+          .tryTransaction(
+            implicit graph => createAlert("test 3", "test 3", "test desc 3", Set("tag7", "tag8"))
+          )
+          .get
+        val tag9 = db
+          .tryTransaction(
+            implicit graph => tagSrv.create(Tag("_autocreate", "tag9", None, None, 0))
+          )
+          .get
+
+        // Test addTags
+        val r = db.tryTransaction { implicit graph =>
+          alertSrv.addTags(a.alert, Set("tag7", tag9.predicate))
+        }
+        r must beSuccessfulTry
+        db.roTransaction { implicit graph =>
+          alertSrv.get(a.alert).tags.toList.map(_.predicate) must contain(exactly("tag7", "tag9", "tag8"))
+        }
+      }
+
+      "add an observable if not existing" in {
+        // Get some data first
+        val alert = db
+          .tryTransaction(
+            implicit graph => createAlert("test 4", "test 4", "test desc 4", Set.empty)
+          )
+          .get
+        val alert4 = db.roTransaction { implicit graph =>
+          alertSrv.initSteps.has("description", "description of alert #4").getOrFail()
+        }.get
+        val similarObs = db
+          .tryTransaction(
+            implicit graph => {
+              observableSrv.create(
+                Observable(Some("if you are lost"), 1, ioc = false, sighted = true),
+                observableTypeSrv.get("domain").getOrFail().get,
+                "perdu.com",
+                Set("tag10"),
+                Nil
+              )
+            }
+          )
+          .get
+
+        // Test addObservable
+        db.tryTransaction { implicit graph =>
+          alertSrv.addObservable(alert4, similarObs)
+        }.get must throwA[CreateError]
+
+        val r = db.tryTransaction { implicit graph =>
+          alertSrv.addObservable(alert.alert, similarObs)
+        }
+        r must beSuccessfulTry
+        db.roTransaction { implicit graph =>
+          alertSrv.get(alert.alert).observables.toList must contain(similarObs.observable)
         }
       }
     }

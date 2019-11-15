@@ -10,5 +10,9 @@
   {
     "from": "helloworld",
     "to": "file"
+  },
+  {
+    "from": "perdu.com",
+    "to": "domain"
   }
 ]
