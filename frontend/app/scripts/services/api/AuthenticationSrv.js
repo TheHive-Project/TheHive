@@ -1,20 +1,20 @@
 (function() {
-  "use strict";
+  'use strict';
   angular
-    .module("theHiveServices")
-    .factory("AuthenticationSrv", function($http, $q, UtilsSrv, SecuritySrv) {
+    .module('theHiveServices')
+    .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv) {
       var self = {
         currentUser: null,
         login: function(username, password) {
           return $http
-            .post("./api/login", {
+            .post('./api/login', {
               user: username,
               password: password
             });
         },
         logout: function(success, failure) {
           $http
-            .get("./api/logout")
+            .get('./api/logout')
             .then(function(data, status, headers, config) {
               self.currentUser = null;
 
@@ -31,7 +31,7 @@
         current: function() {
           var result = {};
           return $http
-            .get("./api/v1/user/current")
+            .get('./api/v1/user/current')
             .then(function(response) {
               self.currentUser = response.data;
               UtilsSrv.shallowClearAndCopy(response.data, result);
@@ -44,7 +44,7 @@
             });
         },
         ssoLogin: function(code, state) {
-          var url = angular.isDefined(code) && angular.isDefined(state) ? "./api/ssoLogin?code=" + code + "&state=" + state : "./api/ssoLogin";
+          var url = angular.isDefined(code) && angular.isDefined(state) ? './api/ssoLogin?code=' + code + '&state=' + state : './api/ssoLogin';
           return $http.post(url, {});
         },
         isSuperAdmin: function() {
