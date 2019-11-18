@@ -36,6 +36,8 @@ class AlertSrvTest extends PlaySpecification {
     val observableSrv                     = app.instanceOf[ObservableSrv]
     val observableTypeSrv                 = app.instanceOf[ObservableTypeSrv]
     val customFieldSrv                    = app.instanceOf[CustomFieldSrv]
+    val caseTemplateSrv                   = app.instanceOf[CaseTemplateSrv]
+    val caseSrv                           = app.instanceOf[CaseSrv]
     implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
     def createAlert(tp: String, title: String, description: String, tags: Set[String])(implicit graph: Graph) = alertSrv.create(
@@ -57,7 +59,7 @@ class AlertSrvTest extends PlaySpecification {
       orgaSrv.getOrFail("cert").get,
       tags,
       Map("string1" -> Some("lol")),
-      None
+      Some(caseTemplateSrv.initSteps.get("spam").richCaseTemplate.getOrFail().get)
     )
 
     s"[$name] alert service" should {
@@ -242,6 +244,66 @@ class AlertSrvTest extends PlaySpecification {
         // Unfollow it
         db.tryTransaction(implicit graph => alertSrv.unfollowAlert(a._id))
         getAlert.follow must beFalse
+      }
+
+      "create a case" in {
+        val a = db
+          .tryTransaction(
+            implicit graph => createAlert("test 8", "test 8", "test desc 8", Set.empty)
+          )
+          .get
+
+        val r = db.tryTransaction(
+          implicit graph =>
+            alertSrv.createCase(
+              a,
+              None,
+              orgaSrv.getOrFail("cert").get
+            )
+        )
+
+        r must beSuccessfulTry
+        r.get.`case`.title shouldEqual "[SPAM] test 8"
+      }
+
+      "merge a case" in {
+        // Create an alert with observables
+        val a = db
+          .tryTransaction(
+            implicit graph => createAlert("test 9", "test 9", "test desc 9", Set("tag11", "tag12"))
+          )
+          .get
+        val obs = db
+          .tryTransaction(
+            implicit graph => {
+              observableSrv.create(
+                Observable(Some("obs domain"), 1, ioc = false, sighted = false),
+                observableTypeSrv.get("domain").getOrFail().get,
+                "example.com",
+                Set[String](),
+                Nil
+              )
+            }
+          )
+          .get
+        db.tryTransaction { implicit graph =>
+          alertSrv.addObservable(a.alert, obs)
+        } must beSuccessfulTry
+
+        // Test case #1 merge
+        val r = db
+          .tryTransaction(implicit graph => alertSrv.mergeInCase(a._id, "#1"))
+
+        r must beSuccessfulTry.which(c => {
+          val richCase = db.roTransaction(implicit graph => caseSrv.get(c).richCase.getOrFail().get)
+
+          richCase.tags.map(_.predicate) must contain(exactly("tag11", "tag12"))
+          richCase.description must contain(s"\n  \n#### Merged with alert #${a.alert.sourceRef} ${a.alert.title}\n\n${a.alert.description.trim}")
+          db.roTransaction(implicit graph => {
+            caseSrv.get(c).observables.toList must contain(obs.observable)
+            caseSrv.get(c).alert.getOrFail() must beSuccessfulTry
+          })
+        })
       }
     }
   }
