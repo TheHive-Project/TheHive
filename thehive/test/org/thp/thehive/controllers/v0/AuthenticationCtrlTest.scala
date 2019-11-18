@@ -6,6 +6,7 @@ import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
@@ -31,13 +32,13 @@ class AuthenticationCtrlTest extends PlaySpecification with Mockito {
 
     "login and logout users" in {
       val request = FakeRequest("POST", "/api/v0/login")
-        .withHeaders("X-Organisation" -> "admin")
         .withJsonBody(
           Json.parse("""{"user": "user3@thehive.local", "password": "secret"}""")
         )
       val result = authenticationCtrl.login()(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      contentAsJson(result).as[OutputUser].name shouldEqual "only on admin"
 
       val requestOut = FakeRequest("GET", "/api/v0/logout")
       val resultOut  = authenticationCtrl.logout()(requestOut)

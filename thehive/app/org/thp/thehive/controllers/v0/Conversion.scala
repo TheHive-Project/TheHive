@@ -496,6 +496,25 @@ object Conversion {
       .transform
   )
 
+  implicit val simpleUserOutput: Outputer.Aux[User with Entity, OutputUser] = Outputer[User with Entity, OutputUser](
+    u =>
+      u.asInstanceOf[User]
+        .into[OutputUser]
+        .withFieldConst(_._id, u._id)
+        .withFieldConst(_.id, u._id)
+        .withFieldConst(_.organisation, "")
+        .withFieldConst(_.roles, Set[String]())
+        .withFieldRenamed(_.login, _.id)
+        .withFieldComputed(_.hasKey, _.apikey.isDefined)
+        .withFieldComputed(_.status, u => if (u.locked) "Locked" else "Ok")
+        .withFieldConst(_.createdBy, u._createdBy)
+        .withFieldConst(_.createdAt, u._createdAt)
+        .withFieldConst(_.updatedBy, u._updatedBy)
+        .withFieldConst(_.updatedAt, u._updatedAt)
+        .withFieldConst(_._type, "user")
+        .transform
+  )
+
   implicit val pageOutput: Outputer.Aux[Page with Entity, OutputPage] = Outputer[Page with Entity, OutputPage](
     p =>
       p.asInstanceOf[Page]
