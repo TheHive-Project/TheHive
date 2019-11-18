@@ -203,6 +203,26 @@ class AlertSrvTest extends PlaySpecification {
         updatedAlert.customFields must not(beEmpty)
         updatedAlert.customFields.find(_.name == "string1").get.value must beSome.which(v => v shouldEqual "sad")
       }
+
+      "mark as read/unread" in {
+        val a = db
+          .tryTransaction(
+            implicit graph => createAlert("test 6", "test 6", "test desc 6", Set.empty)
+          )
+          .get
+
+        a.alert.read must beFalse
+
+        def getAlert = db.roTransaction(implicit graph => alertSrv.getOrFail(a._id).get)
+
+        // Read it
+        db.tryTransaction(implicit graph => alertSrv.markAsRead(a._id))
+        getAlert.read must beTrue
+
+        // Unread it
+        db.tryTransaction(implicit graph => alertSrv.markAsUnread(a._id))
+        getAlert.read must beFalse
+      }
     }
   }
 }
