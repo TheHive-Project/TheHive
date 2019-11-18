@@ -16,7 +16,7 @@
                                     <th>Name</th>
                                     <th style="width: 300px">Created By</th>
                                     <th style="width: 160px">Created At</th>
-                                    <th style="width: 150px"></th>
+                                    <th style="width: 250px"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -34,6 +34,11 @@
                                     </td>
                                     <td>{{org.createdAt | showDate}}</td>
                                     <td>
+                                        <span class="mr-xs text-primary">
+                                            <a ui-sref="app.administration.organisations-details({organisation: org.name})">
+                                                <i class="fa fa-cog"></i> Configure
+                                            </a>
+                                        </span>
                                         <span class="clickable mr-xs text-primary" ng-click="$vm.showNewOrg('edit', org)">
                                             <i class="fa fa-edit"></i> Edit</span>
                                         <span class="clickable mr-xs text-primary" ng-click="$vm.showLinks(org)" ng-if="org.name !== 'admin'">
