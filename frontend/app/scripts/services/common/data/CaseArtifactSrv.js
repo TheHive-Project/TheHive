@@ -45,10 +45,10 @@
                 });
             };
 
-            this.removeShare = function(id) {
-                return $http.delete('./api/observable/shares', {
+            this.removeShare = function(id, share) {
+                return $http.delete('./api/observable/'+id+'/shares', {
                     data: {
-                        ids: [id]
+                        organisations: [share.organisationName]
                     },
                     headers: {
                         'Content-Type': 'application/json'

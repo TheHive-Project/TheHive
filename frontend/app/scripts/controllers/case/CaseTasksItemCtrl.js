@@ -262,7 +262,7 @@
                     });
             };
 
-            $scope.removeShare = function(id) {
+            $scope.removeShare = function(share) {
                 var modalInstance = ModalSrv.confirm(
                     'Remove task share',
                     'Are you sure you want to remove this sharing rule?', {
@@ -273,7 +273,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseTaskSrv.removeShare(id);
+                        return CaseTaskSrv.removeShare($scope.task.id, share);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();

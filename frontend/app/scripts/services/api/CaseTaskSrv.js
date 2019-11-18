@@ -23,10 +23,10 @@
                 });
             };
 
-            this.removeShare = function(id) {
-                return $http.delete('./api/task/shares', {
+            this.removeShare = function(id, share) {
+                return $http.delete('./api/task/'+id+'/shares', {
                     data: {
-                        ids: [id]
+                        organisations: [share.organisationName]
                     },
                     headers: {
                         'Content-Type': 'application/json'

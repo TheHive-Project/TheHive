@@ -20,7 +20,7 @@
                     <td ng-if="$ctrl.readOnly">{{share.profileName}}</td>
                     <td>{{share.createdAt | shortDate}}</td>
                     <td class="text-right">
-                        <span class="clickable text-danger" ng-click="$ctrl.remove(share._id)">
+                        <span class="clickable text-danger" ng-click="$ctrl.remove(share)">
                             <i class="fa fa-trash"></i> Delete
                         </span>
                     </td>

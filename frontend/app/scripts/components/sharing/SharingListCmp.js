@@ -4,9 +4,9 @@
     angular.module('theHiveComponents')
         .component('sharingList', {
             controller: function() {
-                this.remove = function(id) {
+                this.remove = function(share) {
                     this.onDelete({
-                        id: id
+                        share: share
                     });
                 };
             },

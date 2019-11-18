@@ -62,10 +62,10 @@
                 return $http.patch('./api/case/share/' + id, patch);
             };
 
-            this.removeShare = function(id) {                
-                return $http.delete('./api/case/shares', {
+            this.removeShare = function(id, share) {
+                return $http.delete('./api/case/'+id+'/shares', {
                     data: {
-                        ids: [id]
+                        organisations: [share.organisationName]
                     },
                     headers: {
                         'Content-Type': 'application/json'

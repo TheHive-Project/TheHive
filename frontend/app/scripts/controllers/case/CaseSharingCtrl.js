@@ -80,7 +80,7 @@
                 });
             };
 
-            this.removeShare = function(id) {
+            this.removeShare = function(share) {
                 var modalInstance = ModalSrv.confirm(
                     'Remove case share',
                     'Are you sure you want to remove this sharing rule?', {
@@ -91,7 +91,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseSrv.removeShare(id);
+                        return CaseSrv.removeShare(self.caseId, share);
                     })
                     .then(function(/*response*/) {
                         self.load();
