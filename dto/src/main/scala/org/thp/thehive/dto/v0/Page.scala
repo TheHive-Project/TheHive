@@ -6,7 +6,10 @@ import play.api.libs.json._
 
 case class InputPage(
     title: String,
-    content: String
+    content: String,
+    slug: String,
+    order: Option[Int],
+    category: String
 )
 
 object InputPage {
@@ -22,7 +25,10 @@ case class OutputPage(
     updatedAt: Option[Date] = None,
     title: String,
     content: String,
-    _type: String
+    _type: String,
+    slug: String,
+    order: Int,
+    category: String
 )
 
 object OutputPage {

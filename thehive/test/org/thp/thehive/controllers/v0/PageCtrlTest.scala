@@ -31,10 +31,10 @@ class PageCtrlTest extends PlaySpecification with Mockito {
     val pageCtrl: PageCtrl   = app.instanceOf[PageCtrl]
     val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
 
-    def createPage(title: String, content: String) = {
+    def createPage(title: String, content: String, order: Int, slug: String, cat: String) = {
       val request = FakeRequest("POST", "/api/page")
         .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-        .withJsonBody(Json.parse(s"""{"title": "$title", "content": "$content"}"""))
+        .withJsonBody(Json.parse(s"""{"title": "$title", "content": "$content", "slug": "$slug", "category": "$cat", "order": $order}"""))
       val result = pageCtrl.create(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -44,21 +44,24 @@ class PageCtrlTest extends PlaySpecification with Mockito {
 
     s"$name page controller" should {
       "create a simple page if allowed" in {
-        val page = createPage("test title", "test content")
+        val page = createPage("test title", "test content", 0, "test slug", "test cat")
 
         page.title shouldEqual "test title"
         page.content shouldEqual "test content"
+        page.slug shouldEqual "test slug"
+        page.category shouldEqual "test cat"
+        page.order shouldEqual 0
 
         val requestFailed = FakeRequest("POST", "/api/page")
           .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-          .withJsonBody(Json.parse("""{"title": "", "content": ""}"""))
+          .withJsonBody(Json.parse("""{"title": "", "content": "", "slug": "", "category": ""}"""))
         val resultFailed = pageCtrl.create(requestFailed)
 
         status(resultFailed) must equalTo(403).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
       }
 
       "get a page by id or title" in {
-        val page = createPage("test title 2", "test content 2")
+        val page = createPage("test title 2", "test content 2", 1, "test slug 2", "test cat 2")
 
         val request = FakeRequest("GET", s"/api/page/${page.id}")
           .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
@@ -85,7 +88,7 @@ class PageCtrlTest extends PlaySpecification with Mockito {
       }
 
       "update a page if allowed" in {
-        val page = createPage("test title 3", "test content 3")
+        val page = createPage("test title 3", "test content 3", 2, "test slug 3", "test cat 3")
 
         val request = FakeRequest("PATCH", s"/api/page/${page.title}")
           .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
@@ -101,7 +104,7 @@ class PageCtrlTest extends PlaySpecification with Mockito {
       }
 
       "remove a page" in {
-        val page = createPage("test title 4", "test content 4")
+        val page = createPage("test title 4", "test content 4", 3, "test slug 4", "test cat 4")
 
         val request = FakeRequest("DELETE", s"/api/page/${page.title}")
           .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
@@ -117,9 +120,9 @@ class PageCtrlTest extends PlaySpecification with Mockito {
       }
 
       "search a page" in {
-        createPage("test title 5", "test content 5")
-        createPage("test title 6", "test content 6")
-        createPage("test title 7", "test content 7")
+        createPage("test title 5", "test content 5", 4, "test slug 5", "test cat 5")
+        createPage("test title 6", "test content 6", 5, "test slug 6", "test cat 6")
+        createPage("test title 7", "test content 7", 6, "test slug 7", "test cat 7")
         val json = Json.parse("""{
              "range":"all",
              "sort":[

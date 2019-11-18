@@ -536,6 +536,7 @@ object Conversion {
     def toPage: Page =
       inputPage
         .into[Page]
+        .withFieldComputed(_.order, _.order.getOrElse(0))
         .transform
   }
 
