@@ -10,6 +10,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AppBuilder, CreateError}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.JsString
 import play.api.test.PlaySpecification
 
 import scala.util.Try
@@ -34,6 +35,7 @@ class AlertSrvTest extends PlaySpecification {
     val tagSrv                            = app.instanceOf[TagSrv]
     val observableSrv                     = app.instanceOf[ObservableSrv]
     val observableTypeSrv                 = app.instanceOf[ObservableTypeSrv]
+    val customFieldSrv                    = app.instanceOf[CustomFieldSrv]
     implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
     def createAlert(tp: String, title: String, description: String, tags: Set[String])(implicit graph: Graph) = alertSrv.create(
@@ -54,7 +56,7 @@ class AlertSrvTest extends PlaySpecification {
       ),
       orgaSrv.getOrFail("cert").get,
       tags,
-      Map("float1" -> Some(2.3.toFloat)),
+      Map("string1" -> Some("lol")),
       None
     )
 
@@ -180,6 +182,26 @@ class AlertSrvTest extends PlaySpecification {
         db.roTransaction { implicit graph =>
           alertSrv.get(alert.alert).observables.toList must contain(similarObs.observable)
         }
+      }
+
+      "update custom fields" in {
+        val a = db
+          .tryTransaction(
+            implicit graph => createAlert("test 5", "test 5", "test desc 5", Set.empty)
+          )
+          .get
+
+        val cfv = db.roTransaction { implicit graph =>
+          customFieldSrv.getOrFail("string1").get
+        }
+        val r = db.tryTransaction(implicit graph => alertSrv.updateCustomField(a.alert, Seq((cfv, JsString("sad")))))
+
+        r must beSuccessfulTry
+
+        val updatedAlert = db.roTransaction(implicit graph => alertSrv.initSteps.get(a.alert._id).richAlert.getOrFail().get)
+
+        updatedAlert.customFields must not(beEmpty)
+        updatedAlert.customFields.find(_.name == "string1").get.value must beSome.which(v => v shouldEqual "sad")
       }
     }
   }
