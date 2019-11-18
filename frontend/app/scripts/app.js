@@ -187,7 +187,7 @@ angular.module('thehive', [
             .state('app.administration', {
                 abstract: true,
                 url: 'administration',
-                template: '<ui-view/>',
+                template: '<ui-view/>'
             })
             .state('app.administration.profiles', {
                 url: '/profiles',

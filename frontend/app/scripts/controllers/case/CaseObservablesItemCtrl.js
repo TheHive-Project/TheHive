@@ -176,7 +176,6 @@
                 range: 'all',
                 sort: ['-startDate']
             }).then(function(response) {
-                console.log(response);
                 $scope.similarArtifacts = response;
             });
 
@@ -304,7 +303,7 @@
                     });
             };
 
-            $scope.removeShare = function(id) {
+            $scope.removeShare = function(share) {
                 var modalInstance = ModalSrv.confirm(
                     'Remove observable share',
                     'Are you sure you want to remove this sharing rule?', {
@@ -315,7 +314,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseArtifactSrv.removeShare(id);
+                        return CaseArtifactSrv.removeShare($scope.artifact.id, share);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();
