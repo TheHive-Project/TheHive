@@ -23,6 +23,7 @@ class ActionOperationSrv @Inject()(
     taskSrv: TaskSrv,
     alertSrv: AlertSrv,
     logSrv: LogSrv,
+    organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
     userSrv: UserSrv,
     shareSrv: ShareSrv
@@ -61,9 +62,10 @@ class ActionOperationSrv @Inject()(
 
       case CreateTask(title, description, _, _) =>
         for {
-          c           <- Try(relatedCase.get)
-          createdTask <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask, None)
-          _           <- shareSrv.shareCaseTask(c, createdTask)
+          case0        <- Try(relatedCase.get)
+          createdTask  <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask, None)
+          organisation <- organisationSrv.getOrFail(authContext.organisation)
+          _            <- shareSrv.shareTask(createdTask, case0, organisation)
         } yield updateOperation(operation)
 
       case AddCustomFields(name, _, value, _, _) =>

@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
@@ -9,12 +9,12 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
-import org.thp.thehive.models.{Organisation, Permissions}
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 
 @Singleton
@@ -35,50 +35,33 @@ class ShareCtrl @Inject()(
       .extract("shares", FieldsParser[InputShare].sequence.on("shares"))
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShares: Seq[InputShare] = request.body("shares")
-        if (userSrv.current.can(Permissions.manageShare).exists()) {
-          // No more magic removal atm
-//          caseSrv
-//            .get(caseId)
-//            .shares
-//            .richShare
-//            .toList
-//            .filter(
-//              rs =>
-//                rs.organisationName != request.organisation && !inputShares
-//                  .exists(is => is.profile == rs.profileName && is.organisationName == rs.organisationName)
-//            )
-//            .foreach(rs => shareSrv.get(rs.share).remove())
-
-          val (_, failures) = inputShares
-            .map(is => share(is, request.organisation, caseId))
-            .partition(_.isSuccess)
-          if (failures.nonEmpty) Success(Results.InternalServerError(failures.map(_.failed.get).head.getMessage))
-          else Success(Results.Created)
-        } else Failure(AuthorizationError("You are not permitted to manage share"))
+        caseSrv
+          .get(caseId)
+          .can(Permissions.manageShare)
+          .getOrFail()
+          .flatMap { `case` =>
+            inputShares.toTry { inputShare =>
+              for {
+                organisation <- organisationSrv
+                  .get(request.organisation)
+                  .visibleOrganisationsFrom
+                  .get(inputShare.organisationName)
+                  .getOrFail()
+                profile   <- profileSrv.getOrFail(inputShare.profile)
+                share     <- shareSrv.shareCase(`case`, organisation, profile)
+                richShare <- shareSrv.get(share).richShare.getOrFail()
+                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
+                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
+              } yield richShare.toJson
+            }
+          }
+          .map(shares => Results.Ok(JsArray(shares)))
       }
 
-  private def share(inputShare: InputShare, organisation: String, caseId: String)(implicit graph: Graph, authContext: AuthContext) =
-    for {
-      organisation <- organisationSrv
-        .get(organisation)
-        .visibleOrganisationsFrom
-        .get(inputShare.organisationName)
-        .getOrFail()
-      case0     <- caseSrv.getOrFail(caseId)
-      profile   <- profileSrv.getOrFail(inputShare.profile)
-      share     <- shareSrv.shareCase(case0, organisation, profile)
-      richShare <- shareSrv.get(share).richShare.getOrFail()
-      _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-      _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-    } yield richShare
-
-  def removeShare(id: String): Action[AnyContent] =
+  def removeShare(shareId: String): Action[AnyContent] =
     entryPoint("remove share")
       .authTransaction(db) { implicit request => implicit graph =>
-        for {
-          organisation <- userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail()
-          _            <- removeShare(id, organisation, None)
-        } yield Results.NoContent
+        doRemoveShare(shareId).map(_ => Results.NoContent)
       }
 
   def removeShares(): Action[AnyContent] =
@@ -86,133 +69,129 @@ class ShareCtrl @Inject()(
       .extract("shares", FieldsParser[String].sequence.on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
         val shareIds: Seq[String] = request.body("shares")
-
-        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
-          shareIds
-            .toTry(id => removeShare(id, organisation, None))
-            .map(_ => Results.NoContent)
-        }
+        shareIds.toTry(doRemoveShare(_)).map(_ => Results.NoContent)
       }
 
-  def removeShareTasks(): Action[AnyContent] =
+  def removeTaskShares(taskId: String): Action[AnyContent] =
     entryPoint("remove share tasks")
-      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val shareIds: Seq[String] = request.body("shares")
+        val organisations: Seq[String] = request.body("organisations")
 
-        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
-          shareIds
-            .toTry(id => removeShare(id, organisation, Some("task")))
-            .map(_ => Results.NoContent)
-        }
+        taskSrv
+          .getOrFail(taskId)
+          .flatMap { task =>
+            organisations.toTry { organisationName =>
+              organisationSrv
+                .getOrFail(organisationName)
+                .flatMap(shareSrv.removeShareTasks(task, _))
+            }
+          }
+          .map(_ => Results.NoContent)
       }
 
-  def removeShareObservables(): Action[AnyContent] =
+  def removeObservableShares(observableId: String): Action[AnyContent] =
     entryPoint("remove share observables")
-      .extract("shares", FieldsParser[String].sequence.on("ids"))
+      .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val shareIds: Seq[String] = request.body("shares")
+        val organisations: Seq[String] = request.body("organisations")
 
-        userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail().flatMap { organisation =>
-          shareIds
-            .toTry(id => removeShare(id, organisation, Some("observable")))
-            .map(_ => Results.NoContent)
-        }
+        observableSrv
+          .getOrFail(observableId)
+          .flatMap { observable =>
+            organisations.toTry { organisationName =>
+              organisationSrv
+                .getOrFail(organisationName)
+                .flatMap(shareSrv.removeShareObservable(observable, _))
+            }
+          }
+          .map(_ => Results.NoContent)
       }
 
-  private def removeShare(id: String, organisation: Organisation with Entity, entity: Option[String])(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ) =
-    for {
-      relatedOrg <- shareSrv.get(id).organisation.getOrFail()
-      if relatedOrg.name != organisation.name
-      share <- shareSrv.get(id).getOrFail()
-      _ = entity.map {
-        case "task"       => shareSrv.removeShareTasks(share)
-        case "observable" => shareSrv.removeShareObservable(share)
-        case _            => shareSrv.remove(share)
-      } getOrElse shareSrv.remove(share)
-    } yield ()
+  private def doRemoveShare(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    if (!shareSrv.get(shareId).`case`.can(Permissions.manageShare).exists())
+      Failure(AuthorizationError("You are not authorized to remove share"))
+    else if (!shareSrv.get(shareId).byOrganisationName(authContext.organisation).exists())
+      Failure(AuthorizationError("You can't remove your share"))
+    else
+      shareSrv.remove(shareId)
 
-  def updateShare(id: String): Action[AnyContent] =
+  def updateShare(shareId: String): Action[AnyContent] =
     entryPoint("update share")
       .extract("profile", FieldsParser.string.on("profile"))
       .authTransaction(db) { implicit request => implicit graph =>
         val profile: String = request.body("profile")
+        if (!shareSrv.get(shareId).`case`.can(Permissions.manageShare).exists())
+          Failure(AuthorizationError("You are not authorized to remove share"))
         for {
-          _         <- userSrv.current.organisations(Permissions.manageShare).get(request.organisation).getOrFail()
-          richShare <- shareSrv.get(id).richShare.getOrFail()
+          richShare <- shareSrv.get(shareId).richShare.getOrFail()
           _ <- organisationSrv
             .get(request.organisation)
             .visibleOrganisationsFrom
             .get(richShare.organisationName)
             .getOrFail()
-          p <- profileSrv.getOrFail(profile)
-          _ <- shareSrv.update(p, richShare.share)
+          profile <- profileSrv.getOrFail(profile)
+          _       <- shareSrv.update(richShare.share, profile)
         } yield Results.Ok
       }
 
   def listShareCases(caseId: String): Action[AnyContent] =
     entryPoint("list case shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageShare)) {
-          Success(
-            Results.Ok(
-              JsArray(
-                caseSrv
-                  .get(caseId)
-                  .shares
-                  .filter(_.organisation.hasNot("name", request.organisation))
-                  .richShare
-                  .toList
-                  .map(_.toJson)
-              )
+        Success(
+          Results.Ok(
+            JsArray(
+              caseSrv
+                .get(caseId)
+                .can(Permissions.manageShare)
+                .shares
+                .filter(_.organisation.hasNot("name", request.organisation).visible)
+                .richShare
+                .toList
+                .map(_.toJson)
             )
           )
-        } else Success(Results.Forbidden)
+        )
       }
 
   def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
     entryPoint("list task shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageShare)) {
-          Success(
-            Results.Ok(
-              JsArray(
-                caseSrv
-                  .get(caseId)
-                  .shares
-                  .filter(_.organisation.hasNot("name", request.organisation))
-                  .byTask(taskId)
-                  .richShare
-                  .toList
-                  .map(_.toJson)
-              )
+        Success(
+          Results.Ok(
+            JsArray(
+              caseSrv
+                .get(caseId)
+                .can(Permissions.manageShare)
+                .shares
+                .filter(_.organisation.hasNot("name", request.organisation).visible)
+                .byTask(taskId)
+                .richShare
+                .toList
+                .map(_.toJson)
             )
           )
-        } else Success(Results.Forbidden)
+        )
       }
 
-  def listShareObservables(caseId: String, obsId: String): Action[AnyContent] =
+  def listShareObservables(caseId: String, observableId: String): Action[AnyContent] =
     entryPoint("list observable shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageShare)) {
-          Success(
-            Results.Ok(
-              JsArray(
-                caseSrv
-                  .get(caseId)
-                  .shares
-                  .filter(_.organisation.hasNot("name", request.organisation))
-                  .byObservable(obsId)
-                  .richShare
-                  .toList
-                  .map(_.toJson)
-              )
+        Success(
+          Results.Ok(
+            JsArray(
+              caseSrv
+                .get(caseId)
+                .can(Permissions.manageShare)
+                .shares
+                .filter(_.organisation.hasNot("name", request.organisation).visible)
+                .byObservable(observableId)
+                .richShare
+                .toList
+                .map(_.toJson)
             )
           )
-        } else Success(Results.Forbidden)
+        )
       }
 
   def shareTask(taskId: String): Action[AnyContent] =
@@ -220,10 +199,11 @@ class ShareCtrl @Inject()(
       .extract("organisations", FieldsParser.string.sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisationIds: Seq[String] = request.body("organisations")
+
         for {
           task          <- taskSrv.getOrFail(taskId)
-          organisations <- organisationIds.toTry(organisationSrv.getOrFail)
-          _             <- organisationSrv.getOrFail(request.organisation)
+          _             <- taskSrv.get(task).`case`.can(Permissions.manageShare).existsOrFail()
+          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail())
           _             <- shareSrv.addTaskShares(task, organisations)
         } yield Results.NoContent
       }
@@ -235,8 +215,8 @@ class ShareCtrl @Inject()(
         val organisationIds: Seq[String] = request.body("organisations")
         for {
           observable    <- observableSrv.getOrFail(observableId)
-          organisations <- organisationIds.toTry(organisationSrv.getOrFail)
-          _             <- organisationSrv.getOrFail(request.organisation)
+          _             <- observableSrv.get(observable).`case`.can(Permissions.manageShare).existsOrFail()
+          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail())
           _             <- shareSrv.addObservableShares(observable, organisations)
         } yield Results.NoContent
       }

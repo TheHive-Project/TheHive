@@ -1,10 +1,10 @@
 package org.thp.thehive.services
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Try}
 
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
@@ -45,15 +45,7 @@ class ShareSrv @Inject()(
       authContext: AuthContext
   ): Try[Share with Entity] =
     get(`case`, organisation).headOption() match {
-      case Some(existingShare) =>
-        // Only addition atm, no update
-        /*if (!get(existingShare).profile.has("name", P.eq[String](profile.name)).exists()) {
-          get(existingShare).outToE[ShareProfile].remove()
-          shareProfileSrv
-            .create(ShareProfile(), existingShare, profile)
-            .map(_ => existingShare)
-        } else*/
-        Success(existingShare)
+      case Some(_) => Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
       case None =>
         for {
           createdShare <- createEntity(Share())
@@ -68,68 +60,64 @@ class ShareSrv @Inject()(
     initSteps.relatedTo(`case`).relatedTo(organisation)
 
   def update(
-      profile: Profile with Entity,
-      share: Share with Entity
+      share: Share with Entity,
+      profile: Profile with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[ShareProfile with Entity] = {
     get(share).outToE[ShareProfile].remove()
     for {
-      newShareProf <- shareProfileSrv.create(ShareProfile(), share, profile)
-      c            <- get(share).`case`.getOrFail()
-      o            <- get(share).organisation.getOrFail()
-      _            <- auditSrv.share.shareCase(c, o, profile)
-    } yield newShareProf
+      newShareProfile <- shareProfileSrv.create(ShareProfile(), share, profile)
+      case0           <- get(share).`case`.getOrFail()
+      organisation    <- get(share).organisation.getOrFail()
+      _               <- auditSrv.share.shareCase(case0, organisation, profile)
+    } yield newShareProfile
   }
 
-  def remove(share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(share).remove()
+  def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      c <- get(share).`case`.getOrFail()
-      o <- get(share).organisation.getOrFail()
-      _ <- auditSrv.share.unshareCase(c, o)
-    } yield ()
-  }
+      case0        <- get(shareId).`case`.getOrFail()
+      organisation <- get(shareId).organisation.getOrFail()
+      _            <- auditSrv.share.unshareCase(case0, organisation)
+    } yield get(shareId).remove()
 
   /**
-    * Unshare all Tasks for a given Share (Case <=> Organisation)
-    * @param share the given share to clean
+    * Unshare Task for a given Organisation
+    * @param task task to unshare
+    * @param organisation organisation the task must be unshared with
     * @return
     */
-  def removeShareTasks(share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Seq[Unit]] = {
-    val tasks = get(share).tasks.toList
-    get(share)
-      .outToE[ShareTask]
-      .remove()
-    tasks.toTry(
-      t =>
-        for {
-          c <- taskSrv.get(t).`case`.getOrFail()
-          o <- get(share).organisation.getOrFail()
-          _ <- auditSrv.share.unshareTask(t, c, o)
-        } yield ()
-    )
-  }
+  def removeShareTasks(
+      task: Task with Entity,
+      organisation: Organisation with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      shareTask <- taskSrv
+        .get(task)
+        .inToE[ShareTask]
+        .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
+        .getOrFail()
+      case0 <- taskSrv.get(task).`case`.getOrFail()
+      _     <- auditSrv.share.unshareTask(task, case0, organisation)
+    } yield shareTaskSrv.get(shareTask.id().toString).remove()
 
   /**
-    * Unshare all Observables for a given Share (Case <=> Organisation)
-    * @param share the given share to clean
+    * Unshare Task for a given Organisation
+    * @param observable observable to unshare
+    * @param organisation organisation the task must be unshared with
     * @return
     */
   def removeShareObservable(
-      share: Share with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[Seq[Unit]] = {
-    val observables = get(share).observables.toList
-    get(share)
-      .outToE[ShareObservable]
-      .remove()
-    observables.toTry(
-      obs =>
-        for {
-          c <- observableSrv.get(obs).`case`.getOrFail()
-          o <- get(share).organisation.getOrFail()
-          _ <- auditSrv.share.unshareObservable(obs, c, o)
-        } yield ()
-    )
-  }
+      observable: Observable with Entity,
+      organisation: Organisation with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      shareObservable <- taskSrv
+        .get(observable)
+        .inToE[ShareObservable]
+        .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
+        .getOrFail()
+      case0 <- observableSrv.get(observable).`case`.getOrFail()
+      _     <- auditSrv.share.unshareObservable(observable, case0, organisation)
+    } yield shareObservableSrv.get(shareObservable.id().toString).remove()
 
   /**
     * Shares all the tasks for an already shared case
@@ -145,34 +133,32 @@ class ShareSrv @Inject()(
     * Shares a task for an already shared case
     * @return
     */
-  def shareCaseTask(`case`: Case with Entity, richTask: RichTask)(
+  def shareTask(
+      richTask: RichTask,
+      `case`: Case with Entity,
+      organisation: Organisation with Entity
+  )(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- caseSrv
-        .get(`case`)
-        .share
-        .getOrFail()
-      _ = shareTaskSrv.create(ShareTask(), share, richTask.task)
-      _ <- auditSrv.task.create(richTask.task, richTask.toJson)
+      share <- get(`case`, organisation).getOrFail()
+      _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
+      _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
 
   /**
     * Shares an observable for an already shared case
     * @return
     */
-  def shareCaseObservable(`case`: Case with Entity, richObservable: RichObservable)(
+  def shareObservable(richObservable: RichObservable, `case`: Case with Entity, organisation: Organisation with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- caseSrv
-        .get(`case`)
-        .share
-        .getOrFail()
-      _ <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
-      _ <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
+      share <- get(`case`, organisation).getOrFail()
+      _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
+      _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
 
   /**
@@ -207,12 +193,12 @@ class ShareSrv @Inject()(
       }
     orgsToRemove.foreach(o => taskSrv.get(task).share(o.name).remove())
     orgsToAdd
-      .toTry { o =>
+      .toTry { organisation =>
         for {
           case0 <- taskSrv.get(task).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
           _     <- shareTaskSrv.create(ShareTask(), share, task)
-          _     <- auditSrv.share.shareTask(task, case0, o)
+          _     <- auditSrv.share.shareTask(task, case0, organisation)
         } yield ()
       }
       .map(_ => ())
@@ -230,12 +216,12 @@ class ShareSrv @Inject()(
 
     organisations
       .filterNot(existingOrgs.contains)
-      .toTry { o =>
+      .toTry { organisation =>
         for {
           case0 <- taskSrv.get(task).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
           _     <- shareTaskSrv.create(ShareTask(), share, task)
-          _     <- auditSrv.share.shareTask(task, case0, o)
+          _     <- auditSrv.share.shareTask(task, case0, organisation)
         } yield ()
       }
       .map(_ => ())
@@ -253,12 +239,12 @@ class ShareSrv @Inject()(
 
     organisations
       .filterNot(existingOrgs.contains)
-      .toTry { o =>
+      .toTry { organisation =>
         for {
           case0 <- observableSrv.get(observable).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
-          _     <- auditSrv.share.shareObservable(observable, case0, o)
+          _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()
       }
       .map(_ => ())
@@ -286,12 +272,12 @@ class ShareSrv @Inject()(
       }
     orgsToRemove.foreach(o => observableSrv.get(observable).share(o.name).remove())
     orgsToAdd
-      .toTry { o =>
+      .toTry { organisation =>
         for {
           case0 <- observableSrv.get(observable).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(o.name).getOrFail()
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
-          _     <- auditSrv.share.shareObservable(observable, case0, o)
+          _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()
       }
       .map(_ => ())
@@ -318,9 +304,14 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
       .filter(_.hasId(taskId))
   )
 
-  def byObservable(obsId: String): ShareSteps = this.filter(
+  def byObservable(observableId: String): ShareSteps = this.filter(
     _.outTo[ShareObservable]
-      .filter(_.hasId(obsId))
+      .filter(_.hasId(observableId))
+  )
+
+  def byOrganisationName(organisationName: String): ShareSteps = this.filter(
+    _.inTo[OrganisationShare]
+      .filter(_.has("name", organisationName))
   )
 
   def observables = new ObservableSteps(raw.outTo[ShareObservable])

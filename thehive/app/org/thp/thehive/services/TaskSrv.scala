@@ -130,7 +130,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       )
     )
 
-  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase])
+  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase]) // TODO add distinct ? task/case can have several shares
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 
@@ -178,9 +178,5 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
 
   def share(organistionName: String): ShareSteps =
-    new ShareSteps(
-      raw
-        .inTo[ShareTask]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
-    )
+    new ShareSteps(this.inTo[ShareTask].filter(_.inTo[OrganisationShare].has("name", organistionName)).raw)
 }

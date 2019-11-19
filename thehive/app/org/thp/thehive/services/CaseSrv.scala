@@ -27,6 +27,7 @@ class CaseSrv @Inject()(
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     userSrv: UserSrv,
+    organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
@@ -63,7 +64,7 @@ class CaseSrv @Inject()(
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.owner)).toTry {
         case (task, owner) => taskSrv.create(task, owner)
       }
-      _ <- createdTasks.toTry(t => shareSrv.shareCaseTask(createdCase, t))
+      _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[RichCustomField]](Nil)(_.customFields)
         .map(cf => cf.name -> cf.value)
@@ -156,8 +157,9 @@ class CaseSrv @Inject()(
       Failure(CreateError("Observable already exist"))
     else
       for {
-        _ <- shareSrv.shareCaseObservable(`case`, richObservable)
-        _ <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
+        organisation <- organisationSrv.getOrFail(authContext.organisation)
+        _            <- shareSrv.shareObservable(richObservable, `case`, organisation)
+        _            <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
       } yield ()
   }
 

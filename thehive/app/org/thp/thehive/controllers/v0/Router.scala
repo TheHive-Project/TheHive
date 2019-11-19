@@ -40,16 +40,16 @@ class Router @Inject()(
     case POST(p"/login") => authenticationCtrl.login
 //    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
-    case POST(p"/case/$id/shares")                => shareCtrl.shareCase(id)
-    case DELETE(p"/case/shares")                  => shareCtrl.removeShares()
-    case DELETE(p"/task/shares")                  => shareCtrl.removeShareTasks()
-    case DELETE(p"/observable/shares")            => shareCtrl.removeShareObservables()
-    case GET(p"/case/$id/shares")                 => shareCtrl.listShareCases(id)
-    case GET(p"/case/$id/task/$tId/shares")       => shareCtrl.listShareTasks(id, tId)
-    case GET(p"/case/$id/observable/$oId/shares") => shareCtrl.listShareObservables(id, oId)
-    case POST(p"/case/task/$tId/shares")          => shareCtrl.shareTask(tId)
-    case DELETE(p"/case/share/$id")               => shareCtrl.removeShare(id)
-    case PATCH(p"/case/share/$id")                => shareCtrl.updateShare(id)
+    case POST(p"/case/$id/shares")                             => shareCtrl.shareCase(id)
+    case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
+    case DELETE(p"/task/$taskId/shares")                       => shareCtrl.removeTaskShares(taskId)
+    case DELETE(p"/observable/$observableId/shares")           => shareCtrl.removeObservableShares(observableId)
+    case GET(p"/case/$caseIdd/shares")                         => shareCtrl.listShareCases(caseIdd)
+    case GET(p"/case/$caseId/task/$taskId/shares")             => shareCtrl.listShareTasks(caseId, taskId)
+    case GET(p"/case/$caseId/observable/$observableId/shares") => shareCtrl.listShareObservables(caseId, observableId)
+    case POST(p"/case/task/$taskId/shares")                    => shareCtrl.shareTask(taskId)
+    case DELETE(p"/case/share/$shareId")                       => shareCtrl.removeShare(shareId)
+    case PATCH(p"/case/share/$shareId")                        => shareCtrl.updateShare(shareId)
 
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create // Audit ok

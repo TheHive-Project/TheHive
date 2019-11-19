@@ -57,10 +57,11 @@ class TaskCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
         for {
-          case0       <- caseSrv.getOrFail(caseId)
-          owner       <- inputTask.owner.map(userSrv.getOrFail).flip
-          createdTask <- taskSrv.create(inputTask.toTask, owner)
-          _           <- shareSrv.shareCaseTask(case0, createdTask)
+          case0        <- caseSrv.getOrFail(caseId)
+          owner        <- inputTask.owner.map(userSrv.getOrFail).flip
+          createdTask  <- taskSrv.create(inputTask.toTask, owner)
+          organisation <- organisationSrv.getOrFail(request.organisation)
+          _            <- shareSrv.shareTask(createdTask, case0, organisation)
         } yield Results.Created(createdTask.toJson)
       }
 

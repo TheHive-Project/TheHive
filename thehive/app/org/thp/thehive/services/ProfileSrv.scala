@@ -5,7 +5,7 @@ import scala.util.{Failure, Try}
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
@@ -85,4 +85,7 @@ class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Grap
     else getByName(idOrName)
 
   def getByName(name: String): ProfileSteps = new ProfileSteps(raw.has(Key("name") of name))
+
+  def contains(permission: Permission): ProfileSteps =
+    this.has("permissions", permission)
 }
