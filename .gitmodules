@@ -1,4 +1,4 @@
 [submodule "ScalliGraph"]
 	path = ScalliGraph
-	url = git@github.com:BillOTei/ScalliGraph.git
+	url = ../scalligraph.git
 	branch = develop
