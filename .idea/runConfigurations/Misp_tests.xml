@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Scalligraph" type="Specs2RunConfiguration" factoryName="Specs2" show_console_on_std_err="false" show_console_on_std_out="false">
-    <module name="scalligraph-core-test" />
+  <configuration default="false" name="Misp tests" type="Specs2RunConfiguration" factoryName="Specs2" folderName="misp" show_console_on_std_err="false" show_console_on_std_out="false">
+    <module name="thehive-misp" />
     <extension name="coverage" sample_coverage="false">
       <pattern>
         <option name="PATTERN" value="org.thp.*" />

@@ -1,29 +1,28 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TheHive" type="Specs2RunConfiguration" factoryName="Specs2" show_console_on_std_err="false" show_console_on_std_out="false">
-    <module name="thehive-core" />
-    <extension name="coverage" sample_coverage="false">
-      <pattern>
-        <option name="PATTERN" value="org.thp.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
+  <configuration default="false" name="TheHive" type="Play2FrameworkRunConfigurations" factoryName="Play 2 App" show_console_on_std_err="false" show_console_on_std_out="false">
+    <module name="thehive" />
     <option name="allowRunningInParallel" value="false" />
-    <option name="testKind" value="All in package" />
-    <option name="classBuf">
-      <list />
+    <option name="enableSbtGlobalPlugins" value="false" />
+    <option name="play2EnvVariables">
+      <map>
+        <entry key="-Dlogger.file" value="conf/logback.xml" />
+      </map>
     </option>
-    <option name="envs">
-      <map />
+    <option name="play2IsNonDefaultInstallDirUsed" value="false" />
+    <option name="play2JpdaPort" value="9999" />
+    <option name="play2JvmOptions">
+      <array>
+        <option value="-Xms512M" />
+        <option value="-Xmx1024M" />
+        <option value="-Xss1M" />
+        <option value="-XX:+CMSClassUnloadingEnabled" />
+        <option value="-XX:MaxPermSize=256M" />
+      </array>
     </option>
-    <option name="javaOptions" value="" />
-    <option name="jrePath" />
-    <option name="searchTest" value="In single module" />
-    <option name="showProgressMessages" value="true" />
-    <option name="testArgs" value="" />
-    <option name="testPackagePath" value="" />
-    <option name="useSbt" value="false" />
-    <option name="useUiWithSbt" value="false" />
-    <option name="workingDirectory" value="$PROJECT_DIR$" />
+    <option name="play2NeedOpenInBrowser" value="false" />
+    <option name="play2NonDefaultInstallDir" value="" />
+    <option name="play2OpenUrl" value="http://localhost:9000" />
+    <option name="play2isAutoReloadEnabled" value="false" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
