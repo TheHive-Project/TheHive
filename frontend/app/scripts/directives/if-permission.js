@@ -9,7 +9,7 @@
                     return s.trim(item);
                 });
 
-                if(attrs.allowed) {
+                if(attrs.allowed !== undefined) {
                     // Check the list of specified allowed permissions
                     if(!SecuritySrv.checkPermissions(requiredPermissions, attrs.allowed)) {
                         element.remove();
