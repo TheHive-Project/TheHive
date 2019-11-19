@@ -72,7 +72,7 @@ class TagCtrlTest extends PlaySpecification with Mockito {
         contentAsString(result) shouldEqual "2"
       }
 
-      "import a taxonomy file if allowed" in {
+      "import a taxonomy file if allowed and not existing" in {
         WithFakeTaxonomyFile { tempFile =>
           val files = Seq(FilePart("file", "machinetag.json", Some("application/json"), tempFile))
           val request = FakeRequest(
@@ -84,7 +84,7 @@ class TagCtrlTest extends PlaySpecification with Mockito {
           val result = tagCtrl.importTaxonomy(request)
 
           status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-          contentAsString(result) shouldEqual "1"
+          contentAsString(result) shouldEqual "2"
         }
       }
 
@@ -160,6 +160,16 @@ object WithFakeTaxonomyFile {
                                     "value": "password-guessing",
                                     "expanded": "Password guessing",
                                     "description": "Access was gained through guessing passwords through trial and error."
+                                  },
+                                  {
+                                    "value": "password-guessing",
+                                    "expanded": "Password guessing",
+                                    "description": "Access was gained through guessing passwords through trial and error."
+                                  },
+                                  {
+                                    "value": "brute-force",
+                                    "expanded": "Brute forcing",
+                                    "description": "Yeah..."
                                   }
                                 ]
                               }""".stripMargin.getBytes
