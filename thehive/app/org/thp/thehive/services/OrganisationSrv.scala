@@ -59,15 +59,12 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
           .flatMap(auditSrv.organisation.update(_, updatedFields))
     }
 
-  def link(
-      fromOrg: Organisation with Entity,
-      toOrg: Organisation with Entity
-  )(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
-    val existing = get(fromOrg).link(toOrg._id).exists()
+  def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =
+    fromOrg._id == toOrg._id || get(fromOrg).links.hasId(toOrg._id).exists()
 
-    if (existing || fromOrg._id == toOrg._id) Success(())
+  def link(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
+    if (linkExists(fromOrg, toOrg)) Success(())
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
-  }
 
   def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Unit =
     get(fromOrg)
@@ -79,13 +76,6 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
 
 @EntitySteps[Organisation]
 class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Organisation](raw) {
-
-  def link(orgId: String): OrganisationSteps =
-    newInstance(
-      raw
-        .outTo[OrganisationOrganisation]
-        .filter(_.hasId(orgId))
-    )
 
   def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
 
@@ -117,7 +107,7 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
 
-  def visibleOrganisationsTo: OrganisationSteps   = new OrganisationSteps(raw.unionFlat(identity, _.inTo[OrganisationOrganisation]).dedup())
+  def visibleOrganisationsTo: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.inTo[OrganisationOrganisation]).dedup())
 
   def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
 

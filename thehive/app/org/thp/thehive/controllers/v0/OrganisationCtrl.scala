@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
@@ -11,9 +11,10 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{NotFoundError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
-import org.thp.thehive.models.{Organisation, OrganisationOrganisation, Permissions}
+import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
 
 @Singleton
@@ -97,64 +98,41 @@ class OrganisationCtrl @Inject()(
 
   def link(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
     entryPoint("link organisations")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         for {
-          fromOrg <- userSrv
-            .current
-            .organisations(Permissions.manageOrganisation)
-            .get(fromOrganisationId)
-            .getOrFail()
-          toOrg <- userSrv
-            .current
-            .organisations(Permissions.manageOrganisation)
-            .get(toOrganisationId)
-            .getOrFail()
-          _ <- organisationSrv.link(fromOrg, toOrg)
+          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
+          toOrg   <- organisationSrv.getOrFail(toOrganisationId)
+          _       <- organisationSrv.link(fromOrg, toOrg)
         } yield Results.Created
       }
 
   def bulkLink(fromOrganisationId: String): Action[AnyContent] =
     entryPoint("link multiple organisations")
       .extract("organisations", FieldsParser.string.sequence.on("organisations"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
-        val (_, failures) = {
-          for {
-            fromOrg <- userSrv
-              .current
-              .organisations(Permissions.manageOrganisation)
-              .get(fromOrganisationId)
-              .headOption()
-              .toSeq
-            _ = organisationSrv.get(fromOrg).outToE[OrganisationOrganisation].remove()
-            orgId <- organisations
-            toOrg <- userSrv
-              .current
-              .organisations(Permissions.manageOrganisation)
-              .get(orgId)
-              .headOption()
-          } yield organisationSrv.link(fromOrg, toOrg)
-        } partition (_.isSuccess)
 
-        if (failures.nonEmpty) Success(Results.InternalServerError(failures.map(_.failed.get).head.getMessage))
-        else Success(Results.Created)
+        organisationSrv
+          .getOrFail(fromOrganisationId)
+          .flatMap { fromOrg =>
+            organisations.toTry { toOrgId =>
+              for {
+                toOrg <- organisationSrv.getOrFail(toOrgId)
+                _     <- organisationSrv.link(fromOrg, toOrg)
+              } yield ()
+            }
+          }
+          .map(_ => Results.Created)
       }
 
   def unlink(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
     entryPoint("unlink organisations")
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         for {
-          fromOrg <- userSrv
-            .current
-            .organisations(Permissions.manageOrganisation)
-            .get(fromOrganisationId)
-            .getOrFail()
-          toOrg <- userSrv
-            .current
-            .organisations(Permissions.manageOrganisation)
-            .get(toOrganisationId)
-            .getOrFail()
-          _ = organisationSrv.unlink(fromOrg, toOrg)
+          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
+          toOrg   <- organisationSrv.getOrFail(toOrganisationId)
+          _ <- if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.unlink(fromOrg, toOrg))
+          else Failure(NotFoundError(s"Organisation $fromOrganisationId is not linked to $toOrganisationId"))
         } yield Results.NoContent
       }
 
