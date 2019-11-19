@@ -23,7 +23,7 @@
 
                 this.useAndFiltering = UiSettingsSrv.useAndFiltering();
 
-                this.filterString = ' AND ' ? self.useAndFiltering : ' OR ';
+                this.filterString = self.useAndFiltering ? ' AND ' : ' OR ';
 
                 this.initContext = function(state) {
                     var storedContext = localStorageService.get(self.sectionName);
