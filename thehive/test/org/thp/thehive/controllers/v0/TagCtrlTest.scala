@@ -211,7 +211,7 @@ object WithFakeTaxonomyFile {
                                 "expanded": "Access method",
                                 "predicates": [
                                   {
-                                    "value": "password-guessing",
+                                    "value": "password-guessing2",
                                     "expanded": "Password guessing",
                                     "description": "Access was gained through guessing passwords through trial and error."
                                   },
@@ -221,7 +221,7 @@ object WithFakeTaxonomyFile {
                                     "description": "Access was gained through guessing passwords through trial and error."
                                   },
                                   {
-                                    "value": "brute-force",
+                                    "value": "brute-force2",
                                     "expanded": "Brute forcing",
                                     "description": "Yeah..."
                                   }
