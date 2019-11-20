@@ -268,11 +268,7 @@ class AlertSrvTest extends PlaySpecification {
 
       "merge a case" in {
         // Create an alert with observables
-        val a = db
-          .tryTransaction(
-            implicit graph => createAlert("test 9", "test 9", "test desc 9", Set("tag11", "tag12"))
-          )
-          .get
+        val a = db.tryTransaction(implicit graph => createAlert("test 9", "test 9", "test desc 9", Set("tag11", "tag12"))).get
         val obs = db
           .tryTransaction(
             implicit graph => {
@@ -304,6 +300,38 @@ class AlertSrvTest extends PlaySpecification {
             caseSrv.get(c).alert.getOrFail() must beSuccessfulTry
           })
         })
+      }
+
+      "remove totally an alert and its dependencies" in {
+        // Create an alert with observables
+        val a = db.tryTransaction(implicit graph => createAlert("test 10", "test 10", "test desc 10", Set[String]())).get
+        val obs = db
+          .tryTransaction(implicit graph => {
+            observableSrv.create(
+              Observable(Some("obs domain"), 1, ioc = false, sighted = false),
+              observableTypeSrv.get("domain").getOrFail().get,
+              "example.com",
+              Set[String](),
+              Nil
+            )
+          })
+          .get
+        db.tryTransaction { implicit graph =>
+          alertSrv.addObservable(a.alert, obs)
+        } must beSuccessfulTry
+        db.roTransaction { implicit graph =>
+          observableSrv.initSteps.get(obs.observable).exists() must beTrue
+          alertSrv.initSteps.get(a.alert).exists() must beTrue
+        }
+
+        // Test removal
+        db.tryTransaction { implicit graph =>
+          alertSrv.cascadeRemove(a.alert)
+        } must beSuccessfulTry
+        db.roTransaction { implicit graph =>
+          observableSrv.initSteps.get(obs.observable).exists() must beFalse
+          alertSrv.initSteps.get(a.alert).exists() must beFalse
+        }
       }
     }
   }
