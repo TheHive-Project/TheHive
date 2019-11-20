@@ -65,15 +65,17 @@ class TagCtrl @Inject()(
       }
     }
 
-  def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] = {
+  def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] =
     for {
-      value <- values.foldLeft((Seq[JsObject](), Seq[String]())) { (acc, v) =>
-        val predicateOpt = (v \ "predicate").asOpt[String]
-        if (predicateOpt.isDefined && acc._2.contains(predicateOpt.get)) acc
-        else (acc._1 :+ v, predicateOpt.fold(acc._2)(acc._2 :+ _))
-      }._1
+      value <- values
+        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
+        ._1
       predicate <- (value \ "predicate").asOpt[String].toList
-      entry     <- (value \ "entry").asOpt[Seq[JsObject]].getOrElse(Nil)
+      entry     <- (value \ "entry")
+        .asOpt[Seq[JsObject]]
+        .getOrElse(Nil)
+        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+        ._1
       v         <- (entry \ "value").asOpt[String]
       colour = (entry \ "colour")
         .asOpt[String]
@@ -81,17 +83,18 @@ class TagCtrl @Inject()(
         .getOrElse(0) // black
       e = (entry \ "description").asOpt[String] orElse (entry \ "expanded").asOpt[String]
     } yield Tag(namespace, predicate, Some(v), e, colour)
-  }
 
   def parseColour(colour: String): Int = if (colour(0) == '#') Try(Integer.parseUnsignedInt(colour.tail, 16)).getOrElse(0) else 0
 
-  def parsePredicates(namespace: String, predicates: Seq[JsObject]): Seq[Tag] = {
+  private def distinct(valueOpt: Option[String], acc: (Seq[JsObject], Seq[String]), v: JsObject): (Seq[JsObject], Seq[String]) =
+    if (valueOpt.isDefined && acc._2.contains(valueOpt.get)) acc
+    else (acc._1 :+ v, valueOpt.fold(acc._2)(acc._2 :+ _))
+
+  def parsePredicates(namespace: String, predicates: Seq[JsObject]): Seq[Tag] =
     for {
-      predicate <- predicates.foldLeft((Seq[JsObject](), Seq[String]())) { (acc, v) =>
-        val valueOpt = (v \ "value").asOpt[String]
-        if (valueOpt.isDefined && acc._2.contains(valueOpt.get)) acc
-        else (acc._1 :+ v, valueOpt.fold(acc._2)(acc._2 :+ _))
-      }._1
+      predicate <- predicates
+        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+        ._1
       v <- (predicate \ "value").asOpt[String]
       e = (predicate \ "expanded").asOpt[String]
       colour = (predicate \ "colour")
@@ -99,7 +102,6 @@ class TagCtrl @Inject()(
         .map(parseColour)
         .getOrElse(0) // black
     } yield Tag(namespace, v, None, e, colour)
-  }
 
   def get(tagId: String): Action[AnyContent] =
     entryPoint("get tag")

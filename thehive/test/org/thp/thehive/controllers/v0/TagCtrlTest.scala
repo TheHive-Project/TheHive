@@ -70,6 +70,55 @@ class TagCtrlTest extends PlaySpecification with Mockito {
 
         status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
         contentAsString(result) shouldEqual "2"
+
+        val request2 = FakeRequest("POST", "/api/tag/_import")
+          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "cert")
+          .withJsonBody(Json.parse(s"""{
+               "content":{
+                  "namespace":"dark-web",
+                  "expanded":"Dark Web",
+                  "description":"Criminal motivation on the dark web: A categorisation model for law enforcement.",
+                  "version":3,
+                  "predicates":[
+                     {
+                        "value":"topic",
+                        "description":"Topic associated with the materials tagged",
+                        "expanded":"Topic"
+                     },
+                     {
+                        "value":"topic",
+                        "description":"Topic associated with the materials tagged",
+                        "expanded":"Topic"
+                     },
+                     {
+                        "value":"structure",
+                        "description":"Structure of the materials tagged",
+                        "expanded":"Structure"
+                     }
+                  ],
+                  "values":[
+                     {
+                        "predicate":"topic",
+                        "entry":[
+                           {
+                              "value":"drugs-narcotics",
+                              "expanded":"Drugs/Narcotics",
+                              "description":"Illegal drugs/chemical compounds for consumption/ingestion..."
+                           },
+                           {
+                              "value":"drugs-narcotics",
+                              "expanded":"Drugs/Narcotics",
+                              "description":"Illegal drugs/chemical compounds for consumption/ingestion..."
+                           }
+                        ]
+                     }
+                  ]
+               }
+            }""".stripMargin))
+        val result2 = tagCtrl.importTaxonomy(request2)
+
+        status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
+        contentAsString(result2) shouldEqual "1"
       }
 
       "import a taxonomy file if allowed and not existing" in {
@@ -85,6 +134,11 @@ class TagCtrlTest extends PlaySpecification with Mockito {
 
           status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
           contentAsString(result) shouldEqual "2"
+
+          val resultBis = tagCtrl.importTaxonomy(request)
+
+          status(resultBis) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultBis)}")
+          contentAsString(resultBis) shouldEqual "0"
         }
       }
 
