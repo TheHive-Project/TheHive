@@ -1,5 +1,7 @@
 package org.thp.thehive.models
-import org.thp.scalligraph.models.{DefineIndex, IndexType}
+import java.util.Date
+
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @VertexEntity
@@ -14,3 +16,13 @@ case class OrganisationOrganisation()
 
 @EdgeEntity[Organisation, Page]
 case class OrganisationPage()
+
+case class RichOrganisation(organisation: Organisation with Entity, links: Seq[Organisation with Entity]) {
+  def name: String               = organisation.name
+  def description: String        = organisation.description
+  def _id: String                = organisation._id
+  val _createdAt: Date           = organisation._createdAt
+  val _createdBy: String         = organisation._createdBy
+  val _updatedAt: Option[Date]   = organisation._updatedAt
+  val _updatedBy: Option[String] = organisation._updatedBy
+}

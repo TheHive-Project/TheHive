@@ -19,7 +19,8 @@ case class OutputOrganisation(
     createdBy: String,
     updatedAt: Option[Date],
     updatedBy: Option[String],
-    _type: String
+    _type: String,
+    links: Seq[String]
 )
 
 object OutputOrganisation {

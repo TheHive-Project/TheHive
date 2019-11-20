@@ -65,6 +65,7 @@ class OrganisationCtrl @Inject()(
         organisationSrv
           .get(organisationId)
           .visible
+          .richOrganisation
           .getOrFail()
           .map(organisation => Results.Ok(organisation.toJson))
       }
@@ -75,6 +76,7 @@ class OrganisationCtrl @Inject()(
         val organisations = organisationSrv
           .initSteps
           .visible
+          .richOrganisation
           .toIterator
           .map(_.toJson)
           .toSeq

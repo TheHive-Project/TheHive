@@ -384,7 +384,25 @@ object Conversion {
           organisation._createdBy,
           organisation._updatedAt,
           organisation._updatedBy,
-          "organisation"
+          "organisation",
+          Nil
+        )
+    )
+
+  implicit val richOrganisationOutput: Outputer.Aux[RichOrganisation, OutputOrganisation] =
+    Outputer[RichOrganisation, OutputOrganisation](
+      organisation =>
+        OutputOrganisation(
+          organisation.name,
+          organisation.description,
+          organisation._id,
+          organisation._id,
+          organisation._createdAt,
+          organisation._createdBy,
+          organisation._updatedAt,
+          organisation._updatedBy,
+          "organisation",
+          organisation.links.map(_.name)
         )
     )
 

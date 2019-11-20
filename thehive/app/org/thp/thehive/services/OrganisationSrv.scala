@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import gremlin.scala._
+import scala.collection.JavaConverters._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -8,11 +9,10 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
-
 import scala.util.{Success, Try}
 
 object OrganisationSrv {
@@ -104,6 +104,17 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
     if (authContext.permissions.contains(Permissions.manageOrganisation)) this
     else
       this.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
+
+  def richOrganisation: Traversal[RichOrganisation, RichOrganisation] =
+    this
+      .project(
+        _.apply(By[Vertex]())
+          .and(By(__[Vertex].outTo[OrganisationOrganisation].fold))
+      )
+      .map {
+        case (organisation, linkedOrganisations) =>
+          RichOrganisation(organisation.as[Organisation], linkedOrganisations.asScala.map(_.as[Organisation]))
+      }
 
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
 
