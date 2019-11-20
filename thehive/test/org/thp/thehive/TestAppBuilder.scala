@@ -33,4 +33,5 @@ object TestAppBuilder {
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")
       .addConfiguration("play.mailer.debug = yes")
+      .addConfiguration("storage.localfs.location = /tmp/thp")
 }

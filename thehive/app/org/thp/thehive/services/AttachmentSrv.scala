@@ -57,6 +57,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
 
+  // FIXME shouldn't it be attachment.attachmentId instead according to the create methods?
   def stream(attachment: Attachment with Entity): InputStream = storageSrv.loadBinary(attachment._id)
 
   def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph): Try[Unit] =
