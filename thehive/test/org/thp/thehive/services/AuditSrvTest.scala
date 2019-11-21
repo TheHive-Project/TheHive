@@ -87,10 +87,10 @@ class AuditSrvTest extends PlaySpecification {
 
       "have healthy steps" in db.roTransaction { implicit graph =>
         // Create an audit
-        db.tryTransaction(implicit graph => {
-          val t = taskSrv.create(Task("test audit 2", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
-          shareSrv.shareTask(t.get, caseSrv.get("#2").getOrFail().get, orgaSrv.getOrFail("cert").get)
-        })
+        val t = db.tryTransaction(implicit graph => {
+          taskSrv.create(Task("test audit 2", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
+        }).get
+        db.tryTransaction(implicit graph => shareSrv.shareTask(t, caseSrv.get("#2").getOrFail().get, orgaSrv.getOrFail("cert").get))
 
         val audits = auditSrv.initSteps.toList
 
@@ -99,6 +99,7 @@ class AuditSrvTest extends PlaySpecification {
         val audit = audits.head
 
         auditSrv.initSteps.get(audit).organisation.toList must not(beEmpty)
+        auditSrv.initSteps.get(audit).auditContextObjectOrganisation.toList.length shouldEqual 1
       }
     }
   }
