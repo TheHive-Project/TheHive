@@ -273,7 +273,8 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
       .choose[Label, Vertex](
         on = _.label(),
         BranchCase("Case", new CaseSteps(_).organisations.raw),
-        BranchCase("CaseTemplate", new TaskSteps(_).`case`.organisations.raw),
+        BranchCase("Task", new TaskSteps(_).`case`.organisations.raw),
+        BranchCase("CaseTemplate", new CaseTemplateSteps(_).organisation.raw),
         BranchCase("Alert", new AlertSteps(_).organisation.raw),
         BranchCase("User", new UserSteps(_).organisations.raw),
         BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)

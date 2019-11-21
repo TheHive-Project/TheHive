@@ -215,6 +215,8 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
         }
     )
 
+  def organisation = new OrganisationSteps(raw.outTo[CaseTemplateOrganisation])
+
   def tasks = new TaskSteps(raw.outTo[CaseTemplateTask])
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTemplateTag])

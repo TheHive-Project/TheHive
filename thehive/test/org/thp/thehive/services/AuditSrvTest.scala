@@ -84,6 +84,22 @@ class AuditSrvTest extends PlaySpecification {
           }
         }) must beSuccessfulTry
       }
+
+      "have healthy steps" in db.roTransaction { implicit graph =>
+        // Create an audit
+        db.tryTransaction(implicit graph => {
+          val t = taskSrv.create(Task("test audit 2", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
+          shareSrv.shareTask(t.get, caseSrv.get("#2").getOrFail().get, orgaSrv.getOrFail("cert").get)
+        })
+
+        val audits = auditSrv.initSteps.toList
+
+        audits must not(beEmpty)
+
+        val audit = audits.head
+
+        auditSrv.initSteps.get(audit).organisation.getOrFail() must beSuccessfulTry.which(o => o.name shouldEqual "cert")
+      }
     }
   }
 }
