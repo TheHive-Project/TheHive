@@ -98,7 +98,7 @@ class AuditSrvTest extends PlaySpecification {
 
         val audit = audits.head
 
-        auditSrv.initSteps.get(audit).organisation.getOrFail() must beSuccessfulTry.which(o => o.name shouldEqual "cert")
+        auditSrv.initSteps.get(audit).organisation.toList must not(beEmpty)
       }
     }
   }
