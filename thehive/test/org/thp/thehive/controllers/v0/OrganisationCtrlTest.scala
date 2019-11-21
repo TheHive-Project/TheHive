@@ -58,7 +58,7 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         val resultBulkLink = organisationCtrl.bulkLink("admin")(requestBulkLink)
 
         status(resultBulkLink) shouldEqual 201
-        listLinks("admin", "admin@thehive.local").length shouldEqual 1
+        listLinks("admin", "admin@thehive.local") must contain(resultOrganisation)
 
         val requestBulkLinkDel = FakeRequest("PUT", s"/api/organisation/admin/links")
           .withHeaders("user" -> "admin@thehive.local")
