@@ -67,6 +67,23 @@ class AuditSrvTest extends PlaySpecification {
         r.length shouldEqual 2
         r.head shouldEqual audits.filter(_.mainAction).minBy(_._createdAt)
       })
+
+      "merge audits" in {
+        val auditedTask = db
+          .tryTransaction(
+            implicit graph => taskSrv.create(Task("test audit 1", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
+          )
+          .get
+        db.tryTransaction(implicit graph => {
+          auditSrv.mergeAudits(taskSrv.update(taskSrv.get(auditedTask._id), Nil)) {
+            case (taskSteps, updatedFields) =>
+              taskSteps
+                .newInstance()
+                .getOrFail()
+                .flatMap(auditSrv.task.update(_, updatedFields))
+          }
+        }) must beSuccessfulTry
+      }
     }
   }
 }
