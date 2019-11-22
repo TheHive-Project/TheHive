@@ -2,17 +2,19 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.util.Try
-
-import play.api.test.PlaySpecification
-
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, Permission}
+import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+
+import scala.util.{Success, Try}
 
 class CaseSrvTest extends PlaySpecification {
   val dummyUserSrv = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert")
@@ -188,6 +190,39 @@ class CaseSrvTest extends PlaySpecification {
         caseSrv.getOrFail("#4") must beSuccessfulTry.which { `case`: Case with Entity =>
           `case`.title must_=== "new title"
         }
+      }
+
+      "get correct next case number" in db.roTransaction { implicit graph =>
+        caseSrv.nextCaseNumber shouldEqual 5
+      }
+
+      "close a case properly" in {
+        val updates = Seq(PropertyUpdater(FPathElem("status"), CaseStatus.Resolved) { (vertex, _, _, _) =>
+          vertex.property("status", CaseStatus.Resolved)
+          Success(Json.obj("status" -> CaseStatus.Resolved))
+        })
+
+        val r = db.tryTransaction(implicit graph => caseSrv.update(caseSrv.get("#1"), updates))
+
+        r must beSuccessfulTry
+
+        val updatedCase = db.roTransaction(implicit graph => caseSrv.get("#1").getOrFail().get)
+        updatedCase.status shouldEqual CaseStatus.Resolved
+        updatedCase.endDate must beSome
+      }
+
+      "upsert case tags" in db.roTransaction { implicit graph =>
+        val c3           = caseSrv.get("#3").getOrFail().get
+        val existingTags = caseSrv.get(c3).tags.toList.map(_.value.get)
+
+        existingTags must contain(exactly("t2", "t1"))
+
+        val r = db.tryTransaction(
+          implicit graph => caseSrv.updateTagNames(c3, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
+        )
+
+        r must beSuccessfulTry
+        db.roTransaction(implicit graph => caseSrv.get(c3).tags.toList.map(_.value.get) must contain(exactly("t2", "yolo")))
       }
     }
   }
