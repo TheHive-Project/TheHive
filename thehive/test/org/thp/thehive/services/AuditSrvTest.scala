@@ -100,6 +100,22 @@ class AuditSrvTest extends PlaySpecification {
 
         auditSrv.initSteps.get(audit).organisation.toList must not(beEmpty)
         auditSrv.initSteps.get(audit).auditContextObjectOrganisation.toList.length shouldEqual 1
+        auditSrv.initSteps.get(audit).visible.exists() must beTrue
+
+        // Create an audit for another organisation
+        val newAuthCtx =  DummyUserSrv(userId = "user2@thehive.local").authContext
+        val t2 = db.tryTransaction(graph => {
+          taskSrv.create(Task("test audit 3", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)(graph, newAuthCtx)
+        }).get
+        db.tryTransaction(graph => shareSrv.shareTask(t2, caseSrv.get("#4")(graph).getOrFail().get, orgaSrv.getOrFail("admin")(graph).get)(graph, newAuthCtx))
+
+        val newAudits = db.roTransaction(implicit graph => auditSrv.initSteps.toList)
+
+        newAudits must not(beEmpty)
+
+        val unvisibleAudit = newAudits.maxBy(_._createdAt)
+
+        db.roTransaction(implicit graph => auditSrv.initSteps.get(unvisibleAudit).visible.exists() must beFalse)
       }
     }
   }
