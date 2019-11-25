@@ -138,7 +138,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),
-            ("string1", "stobservableSrvring", Some("string1 custom field"))
+            ("string1", "string", Some("string1 custom field"))
           )
         )
       }
@@ -306,6 +306,11 @@ class CaseSrvTest extends PlaySpecification {
           taskSrv.get(tasks.head).exists() must beFalse
           caseSrv.get("#1").exists() must beFalse
         })
+      }
+
+      "show available cases" in db.roTransaction { implicit graph =>
+        caseSrv.isAvailable("#4") must beFalse
+        caseSrv.isAvailable("#1") must beTrue
       }
     }
   }
