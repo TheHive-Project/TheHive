@@ -386,6 +386,17 @@ class CaseSrvTest extends PlaySpecification {
         db.tryTransaction(implicit graph => caseSrv.assign(c8, userSrv.get("user2@thehive.local").getOrFail().get)) must beSuccessfulTry
         checkAssignee(beTrue)
       }
+
+      "show only visible cases" in db.roTransaction { implicit graph =>
+        caseSrv.get("#4").visible.getOrFail() must beFailedTry
+      }
+
+      "forbid correctly case access" in db.roTransaction { implicit graph =>
+        caseSrv
+          .get("#1")
+          .can(Permissions.manageCase)(DummyUserSrv(userId = "user2@thehive.local", organisation = "cert").authContext)
+          .exists() must beFalse
+      }
     }
   }
 }
