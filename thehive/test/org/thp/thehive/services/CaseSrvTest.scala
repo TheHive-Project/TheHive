@@ -397,6 +397,18 @@ class CaseSrvTest extends PlaySpecification {
           .can(Permissions.manageCase)(DummyUserSrv(userId = "user2@thehive.local", organisation = "cert").authContext)
           .exists() must beFalse
       }
+
+      "show linked cases" in db.roTransaction { implicit graph =>
+        caseSrv.get("#1").linkedCases must beEmpty
+        val observables = observableSrv.initSteps.richObservable.toList
+        val hfr         = observables.find(_.message.contains("Some weird domain")).get
+
+        db.tryTransaction(implicit graph => {
+          caseSrv.addObservable(caseSrv.get("#2").getOrFail().get, hfr)
+        })
+
+        db.roTransaction(implicit graph => caseSrv.get("#1").linkedCases must not(beEmpty))
+      }
     }
   }
 }
