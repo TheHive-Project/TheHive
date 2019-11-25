@@ -25,7 +25,7 @@ function usage {
 		--cortex-port <port>	| define port to connect to Cortex (default: 9000)
 		--cortex-url <url>	| add Cortex connection
 		--cortex-hostname <host>| resolve this hostname to find Cortex instances
-		--cortex-key <key>      | define Cortex key 
+		--cortex-key <key>      | define Cortex key
 	_EOF_
 	exit 1
 }
@@ -61,9 +61,10 @@ then
 	then
 		if test -z "$SECRET"
 		then
+			echo Using randomly generated secret.
 			SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
 		fi
-		echo Using secret: $SECRET
+		echo Using provided secret.
 		echo play.http.secret.key=\"$SECRET\" >> $CONFIG_FILE
 	fi
 
