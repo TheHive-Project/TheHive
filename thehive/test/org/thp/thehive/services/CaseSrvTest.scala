@@ -3,12 +3,12 @@ package org.thp.thehive.services
 import java.util.Date
 
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{AppBuilder, CreateError}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import play.api.libs.json.Json
@@ -30,11 +30,13 @@ class CaseSrvTest extends PlaySpecification {
   def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
 
   def specs(name: String, app: AppBuilder): Fragment = {
-    val caseSrv: CaseSrv                  = app.instanceOf[CaseSrv]
-    val orgaSrv: OrganisationSrv          = app.instanceOf[OrganisationSrv]
-    val tagSrv: TagSrv                    = app.instanceOf[TagSrv]
-    val db: Database                      = app.instanceOf[Database]
-    implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
+    val caseSrv: CaseSrv                     = app.instanceOf[CaseSrv]
+    val orgaSrv: OrganisationSrv             = app.instanceOf[OrganisationSrv]
+    val tagSrv: TagSrv                       = app.instanceOf[TagSrv]
+    val observableSrv: ObservableSrv         = app.instanceOf[ObservableSrv]
+    val observableTypeSrv: ObservableTypeSrv = app.instanceOf[ObservableTypeSrv]
+    val db: Database                         = app.instanceOf[Database]
+    implicit val authContext: AuthContext    = dummyUserSrv.getSystemAuthContext
 
     s"[$name] case service" should {
 
@@ -255,6 +257,38 @@ class CaseSrvTest extends PlaySpecification {
         db.roTransaction(implicit graph => {
           caseSrv.initSteps.has("title", "case 5").tags.toList.length shouldEqual currentLen + 1
         })
+      }
+
+      "add an observable if not existing" in db.roTransaction { implicit graph =>
+        val c1          = caseSrv.get("#1").getOrFail().get
+        val observables = observableSrv.initSteps.richObservable.toList
+
+        observables must not(beEmpty)
+
+        val hfr = observables.find(_.message.contains("Some weird domain")).get
+
+        db.tryTransaction(implicit graph => {
+            caseSrv.addObservable(c1, hfr)
+          })
+          .get must throwA[CreateError]
+
+        val newObs = db
+          .tryTransaction(
+            implicit graph => {
+              observableSrv.create(
+                Observable(Some("if you feel lost"), 1, ioc = false, sighted = true),
+                observableTypeSrv.get("domain").getOrFail().get,
+                "lost.com",
+                Set[String](),
+                Nil
+              )
+            }
+          )
+          .get
+
+        db.tryTransaction(implicit graph => {
+          caseSrv.addObservable(c1, newObs)
+        }) must beSuccessfulTry
       }
     }
   }
