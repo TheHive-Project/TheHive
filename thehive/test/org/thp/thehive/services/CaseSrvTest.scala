@@ -2,6 +2,7 @@ package org.thp.thehive.services
 
 import java.util.Date
 
+import org.specs2.matcher.Matcher
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
@@ -36,6 +37,7 @@ class CaseSrvTest extends PlaySpecification {
     val taskSrv: TaskSrv                     = app.instanceOf[TaskSrv]
     val observableSrv: ObservableSrv         = app.instanceOf[ObservableSrv]
     val observableTypeSrv: ObservableTypeSrv = app.instanceOf[ObservableTypeSrv]
+    val userSrv: UserSrv                     = app.instanceOf[UserSrv]
     val db: Database                         = app.instanceOf[Database]
     implicit val authContext: AuthContext    = dummyUserSrv.getSystemAuthContext
 
@@ -311,6 +313,78 @@ class CaseSrvTest extends PlaySpecification {
       "show available cases" in db.roTransaction { implicit graph =>
         caseSrv.isAvailable("#4") must beFalse
         caseSrv.isAvailable("#1") must beTrue
+      }
+
+      "set or unset case impact status" in db.roTransaction(implicit graph => {
+        val c1 = db
+          .tryTransaction(
+            implicit graph =>
+              caseSrv.create(
+                Case(0, "case 6", "desc 6", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+                None,
+                orgaSrv.getOrFail("cert").get,
+                tagSrv.initSteps.toList.toSet,
+                Map.empty,
+                None,
+                Nil
+              )
+          )
+          .get
+
+        caseSrv.get(c1._id).impactStatus.exists() must beFalse
+        db.tryTransaction(implicit graph => caseSrv.setImpactStatus(c1.`case`, "WithImpact")) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseSrv.get(c1._id).impactStatus.exists() must beTrue)
+        db.tryTransaction(implicit graph => caseSrv.unsetImpactStatus(c1.`case`)) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseSrv.get(c1._id).impactStatus.exists() must beFalse)
+      })
+
+      "set or unset case resolution status" in db.roTransaction(implicit graph => {
+        val c7 = db
+          .tryTransaction(
+            implicit graph =>
+              caseSrv.create(
+                Case(0, "case 7", "desc 7", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+                None,
+                orgaSrv.getOrFail("cert").get,
+                tagSrv.initSteps.toList.toSet,
+                Map.empty,
+                None,
+                Nil
+              )
+          )
+          .get
+
+        caseSrv.get(c7._id).resolutionStatus.exists() must beFalse
+        db.tryTransaction(implicit graph => caseSrv.setResolutionStatus(c7.`case`, "Duplicated")) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseSrv.get(c7._id).resolutionStatus.exists() must beTrue)
+        db.tryTransaction(implicit graph => caseSrv.unsetResolutionStatus(c7.`case`)) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseSrv.get(c7._id).resolutionStatus.exists() must beFalse)
+      })
+
+      "assign/unassign a case" in {
+        val c8 = db
+          .tryTransaction(
+            implicit graph =>
+              caseSrv.create(
+                Case(0, "case 8", "desc 8", 2, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+                Some(userSrv.get("user1@thehive.local").getOrFail().get),
+                orgaSrv.getOrFail("cert").get,
+                tagSrv.initSteps.toList.toSet,
+                Map.empty,
+                None,
+                Nil
+              )
+          )
+          .get
+          .`case`
+
+        def checkAssignee(status: Matcher[Boolean]) = db.roTransaction(implicit graph => caseSrv.get(c8).assignee.exists() must status)
+
+        checkAssignee(beTrue)
+        db.tryTransaction(implicit graph => caseSrv.unassign(c8)) must beSuccessfulTry
+        checkAssignee(beFalse)
+        db.tryTransaction(implicit graph => caseSrv.assign(c8, userSrv.get("user2@thehive.local").getOrFail().get)) must beSuccessfulTry
+        checkAssignee(beTrue)
       }
     }
   }
