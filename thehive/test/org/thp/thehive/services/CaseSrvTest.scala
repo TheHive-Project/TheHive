@@ -33,6 +33,7 @@ class CaseSrvTest extends PlaySpecification {
     val caseSrv: CaseSrv                     = app.instanceOf[CaseSrv]
     val orgaSrv: OrganisationSrv             = app.instanceOf[OrganisationSrv]
     val tagSrv: TagSrv                       = app.instanceOf[TagSrv]
+    val taskSrv: TaskSrv                     = app.instanceOf[TaskSrv]
     val observableSrv: ObservableSrv         = app.instanceOf[ObservableSrv]
     val observableTypeSrv: ObservableTypeSrv = app.instanceOf[ObservableTypeSrv]
     val db: Database                         = app.instanceOf[Database]
@@ -137,7 +138,7 @@ class CaseSrvTest extends PlaySpecification {
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),
-            ("string1", "string", Some("string1 custom field"))
+            ("string1", "stobservableSrvring", Some("string1 custom field"))
           )
         )
       }
@@ -289,6 +290,22 @@ class CaseSrvTest extends PlaySpecification {
         db.tryTransaction(implicit graph => {
           caseSrv.addObservable(c1, newObs)
         }) must beSuccessfulTry
+      }
+
+      "remove a case and its dependencies" in db.roTransaction { implicit graph =>
+        val c1          = caseSrv.get("#1").getOrFail().get
+        val observables = caseSrv.get("#1").observables.toList
+        val tasks       = caseSrv.get("#1").tasks.toList
+
+        observables must not(beEmpty)
+        tasks must not(beEmpty)
+
+        db.tryTransaction(implicit graph => caseSrv.cascadeRemove(c1)) must beSuccessfulTry
+        db.roTransaction(implicit graph => {
+          observableSrv.get(observables.head).exists() must beFalse
+          taskSrv.get(tasks.head).exists() must beFalse
+          caseSrv.get("#1").exists() must beFalse
+        })
       }
     }
   }
