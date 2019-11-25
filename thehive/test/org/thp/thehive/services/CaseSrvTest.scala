@@ -31,6 +31,8 @@ class CaseSrvTest extends PlaySpecification {
 
   def specs(name: String, app: AppBuilder): Fragment = {
     val caseSrv: CaseSrv                  = app.instanceOf[CaseSrv]
+    val orgaSrv: OrganisationSrv          = app.instanceOf[OrganisationSrv]
+    val tagSrv: TagSrv                    = app.instanceOf[TagSrv]
     val db: Database                      = app.instanceOf[Database]
     implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
@@ -223,6 +225,36 @@ class CaseSrvTest extends PlaySpecification {
 
         r must beSuccessfulTry
         db.roTransaction(implicit graph => caseSrv.get(c3).tags.toList.map(_.value.get) must contain(exactly("t2", "yolo")))
+      }
+
+      "add new tags and not previous ones" in {
+        // Create a case with tags first
+        val c = db
+          .tryTransaction(
+            implicit graph =>
+              caseSrv.create(
+                Case(0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+                None,
+                orgaSrv.getOrFail("cert").get,
+                tagSrv.initSteps.toList.toSet,
+                Map.empty,
+                None,
+                Nil
+              )
+          )
+          .get
+
+        c.tags must not(beEmpty)
+
+        val currentLen = c.tags.length
+
+        db.tryTransaction(
+          implicit graph => caseSrv.addTags(c.`case`, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""))
+        ) must beSuccessfulTry
+
+        db.roTransaction(implicit graph => {
+          caseSrv.initSteps.has("title", "case 5").tags.toList.length shouldEqual currentLen + 1
+        })
       }
     }
   }
