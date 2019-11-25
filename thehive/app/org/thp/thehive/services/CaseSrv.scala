@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList, Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
@@ -20,6 +15,10 @@ import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseSrv @Inject()(
@@ -77,17 +76,6 @@ class CaseSrv @Inject()(
     } yield richCase
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
-
-  def createCustomField(
-      `case`: Case with Entity,
-      customFieldName: String,
-      customFieldValue: Option[Any]
-  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
-    for {
-      cf   <- customFieldSrv.getOrFail(customFieldName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue)
-      ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
-    } yield RichCustomField(cf, ccfe)
 
   override def update(
       steps: CaseSteps,
@@ -152,9 +140,9 @@ class CaseSrv @Inject()(
       .visible
       .`case`
       .hasId(`case`._id)
-      .exists()
+      .exists() || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists()
     if (alreadyExistInThatCase)
-      Failure(CreateError("Observable already exist"))
+      Failure(CreateError("Observable already exists"))
     else
       for {
         organisation <- organisationSrv.getOrFail(authContext.organisation)
@@ -182,17 +170,6 @@ class CaseSrv @Inject()(
       .map(initSteps.getByNumber(_))
       .getOrElse(super.getByIds(idOrNumber))
 
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any])(
-      implicit graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] = {
-    val cfv = get(`case`).customFields(customFieldName)
-    if (cfv.newInstance().exists())
-      cfv.setValue(value)
-    else
-      createCustomField(`case`, customFieldName, value).map(_ => ())
-  }
-
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
     get(`case`).customFields(customFieldName).richCustomField.headOption()
 
@@ -211,6 +188,28 @@ class CaseSrv @Inject()(
       .toTry { case (cf, v) => setOrCreateCustomField(`case`, cf.name, Some(v)) }
       .map(_ => ())
   }
+
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val cfv = get(`case`).customFields(customFieldName)
+    if (cfv.newInstance().exists())
+      cfv.setValue(value)
+    else
+      createCustomField(`case`, customFieldName, value).map(_ => ())
+  }
+
+  def createCustomField(
+      `case`: Case with Entity,
+      customFieldName: String,
+      customFieldValue: Option[Any]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    for {
+      cf   <- customFieldSrv.getOrFail(customFieldName)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue)
+      ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
+    } yield RichCustomField(cf, ccfe)
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
@@ -332,8 +331,6 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
-
   def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
     raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
   )
@@ -352,6 +349,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .has(Key("login") of authContext.userId)
       )
     )
+
+  override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
 
   override def newInstance(): CaseSteps = new CaseSteps(raw.clone())
 
