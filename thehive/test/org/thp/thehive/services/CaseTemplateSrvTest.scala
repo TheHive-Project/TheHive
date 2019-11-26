@@ -3,13 +3,16 @@ package org.thp.thehive.services
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class CaseTemplateSrvTest extends PlaySpecification {
   val dummyUserSrv = DummyUserSrv(userId = "user5@thehive.local", organisation = "cert")
@@ -90,6 +93,43 @@ class CaseTemplateSrvTest extends PlaySpecification {
           db.roTransaction(implicit graph => caseTemplateSrv.initSteps.has("name", "case template test 2").richCaseTemplate.getOrFail())
 
         updatedCaseTemplate.get.tasks must contain(task1)
+      }
+
+      "update a case template" in {
+        val caseTemplate = createTemplate("case template test 3", "desc ctt3")
+        val updates = Seq(
+          PropertyUpdater(FPathElem("name"), "updated") { (vertex, _, _, _) =>
+            vertex.property("name", "updated")
+            Success(Json.obj("name" -> "updated"))
+          },
+          PropertyUpdater(FPathElem("flag"), true) { (vertex, _, _, _) =>
+            vertex.property("flag", true)
+            Success(Json.obj("flag" -> true))
+          }
+        )
+
+        db.tryTransaction(implicit graph => caseTemplateSrv.update(caseTemplateSrv.get(caseTemplate.caseTemplate), updates)) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).getOrFail()) must beSuccessfulTry.which(c => {
+          c.name shouldEqual "updated"
+          c.flag must beTrue
+        })
+      }
+
+      "update case template tags" in {
+        val caseTemplate = createTemplate("case template test 4", "desc ctt4")
+        val newTags =
+          Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
+
+        db.tryTransaction(
+          implicit graph =>
+            caseTemplateSrv.updateTagNames(
+              caseTemplate.caseTemplate,
+              newTags
+            )
+        ) must beSuccessfulTry
+        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
+          c => c.tags.flatMap(_.value) must containTheSameElementsAs(Seq("t2", "newOne2", "newOne3"))
+        )
       }
     }
   }
