@@ -34,6 +34,7 @@ class CaseTemplateSrvTest extends PlaySpecification {
     val userSrv                           = app.instanceOf[UserSrv]
     val tagSrv: TagSrv                    = app.instanceOf[TagSrv]
     val taskSrv: TaskSrv                  = app.instanceOf[TaskSrv]
+    val customFieldSrv                    = app.instanceOf[CustomFieldSrv]
     implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
 
     def createTemplate(name: String, desc: String) = {
@@ -130,6 +131,45 @@ class CaseTemplateSrvTest extends PlaySpecification {
         db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
           c => c.tags.flatMap(_.value) must containTheSameElementsAs(Seq("t2", "newOne2", "newOne3"))
         )
+      }
+
+      "add tags to a case template" in {
+        val caseTemplate = createTemplate("case template test 5", "desc ctt5")
+
+        db.tryTransaction(
+          implicit graph =>
+            caseTemplateSrv
+              .addTags(caseTemplate.caseTemplate, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2""""))
+        ) must beSuccessfulTry
+
+        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
+          c => c.tags.flatMap(_.value) must containTheSameElementsAs(Seq("t2", "newOne", "newOne2"))
+        )
+      }
+
+      "update/create case template custom fields" in db.roTransaction { implicit graph =>
+        val caseTemplate = createTemplate("case template test 6", "desc ctt6")
+
+        caseTemplate.customFields.flatMap(_.value) must containTheSameElementsAs(Seq("love", false))
+
+        val string1 = customFieldSrv.get("string1").getOrFail().get
+        val bool1 = customFieldSrv.get("boolean1").getOrFail().get
+        val integer1 = customFieldSrv.get("integer1").getOrFail().get
+
+        db.tryTransaction(
+          implicit graph =>
+            caseTemplateSrv
+              .updateCustomField(caseTemplate.caseTemplate, Seq((string1, "hate"), (bool1, true), (integer1, 1)))
+        ) must beSuccessfulTry
+
+        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
+          c => c.customFields.flatMap(_.value) must containTheSameElementsAs(Seq("hate", true, 1))
+        )
+      }
+
+      "give access to case templates if permitted" in db.roTransaction { implicit graph =>
+        caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate).toList must not(beEmpty)
+        caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate)(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert").authContext).toList must beEmpty
       }
     }
   }
