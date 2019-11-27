@@ -64,24 +64,24 @@ case class RichAlert(
     caseId: Option[String],
     caseTemplate: Option[String]
 ) {
-  val _id: String                  = alert._id
-  val _createdAt: Date             = alert._createdAt
-  val _createdBy: String           = alert._createdBy
-  val _updatedAt: Option[Date]     = alert._updatedAt
-  val _updatedBy: Option[String]   = alert._updatedBy
-  val `type`: String               = alert.`type`
-  val source: String               = alert.source
-  val sourceRef: String            = alert.sourceRef
-  val externalLink: Option[String] = alert.externalLink
-  val title: String                = alert.title
-  val description: String          = alert.description
-  val severity: Int                = alert.severity
-  val date: Date                   = alert.date
-  val lastSyncDate: Date           = alert.lastSyncDate
-  val tlp: Int                     = alert.tlp
-  val pap: Int                     = alert.pap
-  val read: Boolean                = alert.read
-  val follow: Boolean              = alert.follow
+  def _id: String                  = alert._id
+  def _createdAt: Date             = alert._createdAt
+  def _createdBy: String           = alert._createdBy
+  def _updatedAt: Option[Date]     = alert._updatedAt
+  def _updatedBy: Option[String]   = alert._updatedBy
+  def `type`: String               = alert.`type`
+  def source: String               = alert.source
+  def sourceRef: String            = alert.sourceRef
+  def externalLink: Option[String] = alert.externalLink
+  def title: String                = alert.title
+  def description: String          = alert.description
+  def severity: Int                = alert.severity
+  def date: Date                   = alert.date
+  def lastSyncDate: Date           = alert.lastSyncDate
+  def tlp: Int                     = alert.tlp
+  def pap: Int                     = alert.pap
+  def read: Boolean                = alert.read
+  def follow: Boolean              = alert.follow
 }
 
 object RichAlert {

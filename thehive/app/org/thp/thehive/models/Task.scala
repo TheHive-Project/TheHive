@@ -36,18 +36,18 @@ case class RichTask(
     task: Task with Entity,
     owner: Option[User with Entity]
 ) {
-  val _id: String                 = task._id
-  val _createdBy: String          = task._createdBy
-  val _updatedBy: Option[String]  = task._updatedBy
-  val _createdAt: Date            = task._createdAt
-  val _updatedAt: Option[Date]    = task._updatedAt
-  val title: String               = task.title
-  val group: String               = task.group
-  val description: Option[String] = task.description
-  val status: TaskStatus.Value    = task.status
-  val flag: Boolean               = task.flag
-  val startDate: Option[Date]     = task.startDate
-  val endDate: Option[Date]       = task.endDate
-  val order: Int                  = task.order
-  val dueDate: Option[Date]       = task.dueDate
+  def _id: String                 = task._id
+  def _createdBy: String          = task._createdBy
+  def _updatedBy: Option[String]  = task._updatedBy
+  def _createdAt: Date            = task._createdAt
+  def _updatedAt: Option[Date]    = task._updatedAt
+  def title: String               = task.title
+  def group: String               = task.group
+  def description: Option[String] = task.description
+  def status: TaskStatus.Value    = task.status
+  def flag: Boolean               = task.flag
+  def startDate: Option[Date]     = task.startDate
+  def endDate: Option[Date]       = task.endDate
+  def order: Int                  = task.order
+  def dueDate: Option[Date]       = task.dueDate
 }

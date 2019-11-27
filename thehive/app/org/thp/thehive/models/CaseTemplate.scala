@@ -51,18 +51,18 @@ case class RichCaseTemplate(
     tasks: Seq[RichTask],
     customFields: Seq[RichCustomField]
 ) {
-  val _id: String                 = caseTemplate._id
-  val _createdBy: String          = caseTemplate._createdBy
-  val _updatedBy: Option[String]  = caseTemplate._updatedBy
-  val _createdAt: Date            = caseTemplate._createdAt
-  val _updatedAt: Option[Date]    = caseTemplate._updatedAt
-  val name: String                = caseTemplate.name
-  val displayName: String         = caseTemplate.displayName
-  val titlePrefix: Option[String] = caseTemplate.titlePrefix
-  val description: Option[String] = caseTemplate.description
-  val severity: Option[Int]       = caseTemplate.severity
-  val flag: Boolean               = caseTemplate.flag
-  val tlp: Option[Int]            = caseTemplate.tlp
-  val pap: Option[Int]            = caseTemplate.pap
-  val summary: Option[String]     = caseTemplate.summary
+  def _id: String                 = caseTemplate._id
+  def _createdBy: String          = caseTemplate._createdBy
+  def _updatedBy: Option[String]  = caseTemplate._updatedBy
+  def _createdAt: Date            = caseTemplate._createdAt
+  def _updatedAt: Option[Date]    = caseTemplate._updatedAt
+  def name: String                = caseTemplate.name
+  def displayName: String         = caseTemplate.displayName
+  def titlePrefix: Option[String] = caseTemplate.titlePrefix
+  def description: Option[String] = caseTemplate.description
+  def severity: Option[Int]       = caseTemplate.severity
+  def flag: Boolean               = caseTemplate.flag
+  def tlp: Option[Int]            = caseTemplate.tlp
+  def pap: Option[Int]            = caseTemplate.pap
+  def summary: Option[String]     = caseTemplate.summary
 }

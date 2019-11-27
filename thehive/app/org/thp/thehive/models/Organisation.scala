@@ -21,8 +21,8 @@ case class RichOrganisation(organisation: Organisation with Entity, links: Seq[O
   def name: String               = organisation.name
   def description: String        = organisation.description
   def _id: String                = organisation._id
-  val _createdAt: Date           = organisation._createdAt
-  val _createdBy: String         = organisation._createdBy
-  val _updatedAt: Option[Date]   = organisation._updatedAt
-  val _updatedBy: Option[String] = organisation._updatedBy
+  def _createdAt: Date           = organisation._createdAt
+  def _createdBy: String         = organisation._createdBy
+  def _updatedAt: Option[Date]   = organisation._updatedAt
+  def _updatedBy: Option[String] = organisation._updatedBy
 }

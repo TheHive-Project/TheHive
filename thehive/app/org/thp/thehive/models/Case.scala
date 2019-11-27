@@ -88,22 +88,22 @@ case class RichCase(
     customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {
-  val _id: String                = `case`._id
-  val _createdBy: String         = `case`._createdBy
-  val _updatedBy: Option[String] = `case`._updatedBy
-  val _createdAt: Date           = `case`._createdAt
-  val _updatedAt: Option[Date]   = `case`._updatedAt
-  val number: Int                = `case`.number
-  val title: String              = `case`.title
-  val description: String        = `case`.description
-  val severity: Int              = `case`.severity
-  val startDate: Date            = `case`.startDate
-  val endDate: Option[Date]      = `case`.endDate
-  val flag: Boolean              = `case`.flag
-  val tlp: Int                   = `case`.tlp
-  val pap: Int                   = `case`.pap
-  val status: CaseStatus.Value   = `case`.status
-  val summary: Option[String]    = `case`.summary
+  def _id: String                = `case`._id
+  def _createdBy: String         = `case`._createdBy
+  def _updatedBy: Option[String] = `case`._updatedBy
+  def _createdAt: Date           = `case`._createdAt
+  def _updatedAt: Option[Date]   = `case`._updatedAt
+  def number: Int                = `case`.number
+  def title: String              = `case`.title
+  def description: String        = `case`.description
+  def severity: Int              = `case`.severity
+  def startDate: Date            = `case`.startDate
+  def endDate: Option[Date]      = `case`.endDate
+  def flag: Boolean              = `case`.flag
+  def tlp: Int                   = `case`.tlp
+  def pap: Int                   = `case`.pap
+  def status: CaseStatus.Value   = `case`.status
+  def summary: Option[String]    = `case`.summary
 }
 
 object RichCase {

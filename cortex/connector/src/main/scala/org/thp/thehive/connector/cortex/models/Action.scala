@@ -26,19 +26,19 @@ case class Action(
 )
 
 case class RichAction(action: Action with Entity, context: Entity) {
-  val _id: String                         = action._id
-  val _createdAt: Date                    = action._createdAt
-  val _createdBy: String                  = action._createdBy
-  val responderId: String                 = action.responderId
-  val responderName: Option[String]       = action.responderName
-  val responderDefinition: Option[String] = action.responderDefinition
-  val status: JobStatus.Value             = action.status
-  val startDate: Date                     = action.startDate
-  val endDate: Option[Date]               = action.endDate
-  val report: Option[JsObject]            = action.report
-  val cortexId: Option[String]            = action.cortexId
-  val cortexJobId: Option[String]         = action.cortexJobId
-  val operations: Seq[JsObject]           = action.operations
+  def _id: String                         = action._id
+  def _createdAt: Date                    = action._createdAt
+  def _createdBy: String                  = action._createdBy
+  def responderId: String                 = action.responderId
+  def responderName: Option[String]       = action.responderName
+  def responderDefinition: Option[String] = action.responderDefinition
+  def status: JobStatus.Value             = action.status
+  def startDate: Date                     = action.startDate
+  def endDate: Option[Date]               = action.endDate
+  def report: Option[JsObject]            = action.report
+  def cortexId: Option[String]            = action.cortexId
+  def cortexJobId: Option[String]         = action.cortexJobId
+  def operations: Seq[JsObject]           = action.operations
 }
 
 case class ActionContext()
