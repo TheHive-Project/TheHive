@@ -171,6 +171,14 @@ class CaseTemplateSrvTest extends PlaySpecification {
         caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate).toList must not(beEmpty)
         caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate)(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert").authContext).toList must beEmpty
       }
+
+      "show only visible case templates" in db.roTransaction { implicit graph =>
+        val certTemplate = createTemplate("case template test 7", "desc ctt7")
+        val adminAuthCtx = DummyUserSrv(userId = "user3@thehive.local").authContext
+
+        caseTemplateSrv.initSteps.get(certTemplate._id).visible.exists() must beTrue
+        caseTemplateSrv.initSteps.get(certTemplate._id).visible(adminAuthCtx).exists() must beFalse
+      }
     }
   }
 }
