@@ -24,12 +24,13 @@ case class RichObservable(
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
     tags: Seq[Tag with Entity],
-    extensions: Seq[KeyValue with Entity]
+    extensions: Seq[KeyValue with Entity],
+    reportTags: Seq[ReportTag with Entity]
 ) {
-  val message: Option[String] = observable.message
-  val tlp: Int                = observable.tlp
-  val ioc: Boolean            = observable.ioc
-  val sighted: Boolean        = observable.sighted
+  def message: Option[String] = observable.message
+  def tlp: Int                = observable.tlp
+  def ioc: Boolean            = observable.ioc
+  def sighted: Boolean        = observable.sighted
 }
 
 @DefineIndex(IndexType.unique, "data")

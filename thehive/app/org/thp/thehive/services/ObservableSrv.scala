@@ -66,7 +66,7 @@ class ObservableSrv @Inject()(
       _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
       tags              <- addTags(createdObservable, tagNames)
       ext               <- addExtensions(createdObservable, extensions)
-    } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, ext)
+    } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, ext, Nil)
 
   def create(observable: Observable, `type`: ObservableType with Entity, dataValue: String, tagNames: Set[String], extensions: Seq[KeyValue])(
       implicit graph: Graph,
@@ -79,7 +79,7 @@ class ObservableSrv @Inject()(
       _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
       tags              <- addTags(createdObservable, tagNames)
       ext               <- addExtensions(createdObservable, extensions)
-    } yield RichObservable(createdObservable, `type`, Some(data), None, tags, ext)
+    } yield RichObservable(createdObservable, `type`, Some(data), None, tags, ext, Nil)
 
   def addTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Seq[Tag with Entity]] = {
     val currentTags = get(observable)
@@ -205,16 +205,18 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
             .and(By(__[Vertex].outTo[ObservableAttachment].fold))
             .and(By(__[Vertex].outTo[ObservableTag].fold))
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
+            .and(By(__[Vertex].outTo[ObservableReportTag].fold))
         )
         .map {
-          case (observable, tpe, data, attachment, tags, extensions) =>
+          case (observable, tpe, data, attachment, tags, extensions, reportTags) =>
             RichObservable(
               observable.as[Observable],
               onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
               tags.asScala.map(_.as[Tag]),
-              extensions.asScala.map(_.as[KeyValue])
+              extensions.asScala.map(_.as[KeyValue]),
+              reportTags.asScala.map(_.as[ReportTag])
             )
         }
     )
@@ -231,17 +233,19 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
             .and(By(__[Vertex].outTo[ObservableAttachment].fold))
             .and(By(__[Vertex].outTo[ObservableTag].fold))
             .and(By(__[Vertex].outTo[ObservableKeyValue].fold))
+            .and(By(__[Vertex].outTo[ObservableReportTag].fold))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
-          case (observable, tpe, data, attachment, tags, extensions, renderedEntity) =>
+          case (observable, tpe, data, attachment, tags, extensions, reportTags, renderedEntity) =>
             RichObservable(
               observable.as[Observable],
               onlyOneOf[Vertex](tpe).as[ObservableType],
               atMostOneOf[Vertex](data).map(_.as[Data]),
               atMostOneOf[Vertex](attachment).map(_.as[Attachment]),
               tags.asScala.map(_.as[Tag]),
-              extensions.asScala.map(_.as[KeyValue])
+              extensions.asScala.map(_.as[KeyValue]),
+              reportTags.asScala.map(_.as[ReportTag])
             ) -> renderedEntity
         }
     )
@@ -251,6 +255,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertObservable])
 
   def tags: TagSteps = new TagSteps(raw.outTo[ObservableTag])
+
+  def reportTags: ReportTagSteps = new ReportTagSteps(raw.outTo[ObservableReportTag])
 
   def removeTags(tags: Set[Tag with Entity]): Unit =
     if (tags.nonEmpty)

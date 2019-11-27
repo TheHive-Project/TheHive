@@ -309,10 +309,10 @@ class AlertCtrlTest extends PlaySpecification with Mockito {
       observables must contain(
         exactly(
           beLike[RichObservable] {
-            case RichObservable(obs, tpe, Some(data), None, tags, _) if tpe.name == "domain" && data.data == "c.fr" => ok
+            case RichObservable(obs, tpe, Some(data), None, tags, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
           },
           beLike[RichObservable] {
-            case RichObservable(obs, tpe, None, Some(attachment), tags, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
+            case RichObservable(obs, tpe, None, Some(attachment), tags, _, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
           }
         )
       )

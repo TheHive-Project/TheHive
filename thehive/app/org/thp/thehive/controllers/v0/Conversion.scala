@@ -2,13 +2,14 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import play.api.libs.json.{JsObject, JsValue, Json, Writes}
+
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, JsValue, Json}
 
 object Conversion {
   implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
@@ -324,6 +325,9 @@ object Conversion {
         .transform
   }
 
+  implicit val reportTagWrites: Writes[ReportTag] = Writes[ReportTag] { tag =>
+    Json.obj("level" -> tag.level.toString, "namespace" -> tag.namespace, "predicate" -> tag.predicate, "value" -> tag.value)
+  }
   implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](
     _.into[OutputObservable]
       .withFieldConst(_._type, "case_artifact")
@@ -338,6 +342,22 @@ object Conversion {
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.data, _.data.map(_.data))
       .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+      .withFieldComputed(
+        _.reports,
+        a =>
+          JsObject(
+            a.reportTags
+              .groupBy(_.origin)
+              .map {
+                case (origin, tags) =>
+                  origin -> Json.obj(
+                    "taxonomies" -> tags.map { t =>
+                      Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value)
+                    }
+                  )
+              }
+          )
+      )
       .withFieldConst(_.stats, JsObject.empty)
       .transform
   )
@@ -360,6 +380,16 @@ object Conversion {
           .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
           .withFieldComputed(_.data, _.data.map(_.data))
           .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+          .withFieldComputed(
+            _.reports,
+            a =>
+              JsObject(
+                a.reportTags
+                  .map(
+                    t => t.origin -> Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value)
+                  )
+              )
+          )
           .withFieldConst(_.stats, richObservableWithStats._2)
           .transform
     )
