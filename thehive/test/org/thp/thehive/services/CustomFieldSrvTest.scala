@@ -1,17 +1,20 @@
 package org.thp.thehive.services
 
+import java.util.Date
+
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.{AppBuilder, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import play.api.libs.json.{JsBoolean, JsNumber, JsValue}
+import play.api.libs.json._
 import play.api.test.PlaySpecification
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class CustomFieldSrvTest extends PlaySpecification {
   val dummyUserSrv = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert")
@@ -84,6 +87,25 @@ class CustomFieldSrvTest extends PlaySpecification {
 
         db.roTransaction(implicit graph => customFieldSrv.useCount(cf2)) shouldEqual Map("Case" -> 1)
         db.roTransaction(implicit graph => customFieldSrv.useCount(cf3)) shouldEqual Map("Case" -> 2)
+      }
+
+      "update a custom field" in {
+        val now   = new Date()
+        val cf    = createCF("cf 4", "desc cf 4", CustomFieldType.date, Seq(JsString(now.toString)))
+        val updates = Seq(
+          PropertyUpdater(FPathElem("description"), "updated") { (vertex, _, _, _) =>
+            vertex.property("description", "updated")
+            Success(Json.obj("description" -> "updated"))
+          }
+        )
+
+        db.tryTransaction { implicit graph =>
+          customFieldSrv.update(customFieldSrv.get(cf), updates)
+        } must beSuccessfulTry
+
+        val updatedCF = db.roTransaction(implicit graph => customFieldSrv.get(cf).getOrFail().get)
+
+        updatedCF.description shouldEqual "updated"
       }
     }
   }
