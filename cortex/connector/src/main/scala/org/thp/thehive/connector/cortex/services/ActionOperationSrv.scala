@@ -43,24 +43,24 @@ class ActionOperationSrv @Inject()(
   def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(
       implicit graph: Graph,
       authContext: AuthContext
-  ): Try[ActionOperation] = {
+  ): Try[ActionOperationStatus] = {
 
-    def updateOperation(operation: ActionOperation) = operation.updateStatus(ActionOperationStatus.Success, "Success")
+    def updateOperation(operation: ActionOperation) = ActionOperationStatus(operation, success = true, "Success")
 
     operation match {
-      case AddTagToCase(tag, _, _) =>
+      case AddTagToCase(tag) =>
         for {
           c <- Try(relatedCase.get)
           _ <- caseSrv.addTags(c, Set(tag))
         } yield updateOperation(operation)
 
-      case AddTagToArtifact(tag, _, _) =>
+      case AddTagToArtifact(tag) =>
         for {
           obs <- observableSrv.getOrFail(entity._id)
           _   <- observableSrv.addTags(obs, Set(tag))
         } yield updateOperation(operation)
 
-      case CreateTask(title, description, _, _) =>
+      case CreateTask(title, description) =>
         for {
           case0        <- Try(relatedCase.get)
           createdTask  <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask, None)
@@ -68,31 +68,31 @@ class ActionOperationSrv @Inject()(
           _            <- shareSrv.shareTask(createdTask, case0, organisation)
         } yield updateOperation(operation)
 
-      case AddCustomFields(name, _, value, _, _) =>
+      case AddCustomFields(name, _, value) =>
         for {
           c <- Try(relatedCase.get)
           _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))
         } yield updateOperation(operation)
 
-      case CloseTask(_, _) =>
+      case CloseTask() =>
         for {
           t <- Try(relatedTask.get)
           _ <- taskSrv.get(t).update("status" -> TaskStatus.Completed)
         } yield updateOperation(operation)
 
-      case MarkAlertAsRead(_, _) =>
+      case MarkAlertAsRead() =>
         entity match {
           case a: Alert => alertSrv.markAsRead(a._id).map(_ => updateOperation(operation))
           case x        => Failure(new Exception(s"Wrong entity for MarkAlertAsRead: ${x.getClass}"))
         }
 
-      case AddLogToTask(content, _, _, _) =>
+      case AddLogToTask(content, _) =>
         for {
           t <- Try(relatedTask.get)
           _ <- logSrv.create(Log(content, new Date(), deleted = false), t)
         } yield updateOperation(operation)
 
-      case AddArtifactToCase(_, dataType, dataMessage, _, _) =>
+      case AddArtifactToCase(_, dataType, dataMessage) =>
         for {
           c       <- Try(relatedCase.get)
           obsType <- observableTypeSrv.getOrFail(dataType)
@@ -106,7 +106,7 @@ class ActionOperationSrv @Inject()(
           _ <- caseSrv.addObservable(c, richObservable)
         } yield updateOperation(operation)
 
-      case AssignCase(owner, _, _) =>
+      case AssignCase(owner) =>
         for {
           c <- Try(relatedCase.get)
           u <- userSrv.get(owner).getOrFail()
@@ -114,7 +114,7 @@ class ActionOperationSrv @Inject()(
           _ <- caseSrv.assign(c, u)
         } yield updateOperation(operation)
 
-      case AddTagToAlert(tag, _, _) =>
+      case AddTagToAlert(tag) =>
         entity match {
           case a: Alert => alertSrv.addTags(a, Set(tag)).map(_ => updateOperation(operation))
           case x        => Failure(new Exception(s"Wrong entity for AddTagToAlert: ${x.getClass}"))
@@ -128,6 +128,6 @@ class ActionOperationSrv @Inject()(
   } recover {
     case e =>
       logger.error("Operation execution fails", e)
-      operation.updateStatus(ActionOperationStatus.Failure, e.getMessage)
+      ActionOperationStatus(operation, success = false, e.getMessage)
   }
 }

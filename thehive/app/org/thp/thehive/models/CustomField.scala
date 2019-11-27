@@ -208,14 +208,10 @@ case class CustomField(
 )
 
 case class RichCustomField(customField: CustomField with Entity, customFieldValue: CustomFieldValue[_] with Entity) {
-  def name: String        = customField.name
-  def description: String = customField.description
-
-  def typeName: String = customField.`type`.toString
-
-  def value: Option[Any] = `type`.getValue(customFieldValue)
-
+  def name: String               = customField.name
+  def description: String        = customField.description
+  def typeName: String           = customField.`type`.toString
+  def value: Option[Any]         = `type`.getValue(customFieldValue)
   def `type`: CustomFieldType[_] = CustomFieldType.map(customField.`type`)
-
-  def toJson: JsValue = value.fold[JsValue](JsNull)(`type`.writes.asInstanceOf[Writes[Any]].writes)
+  def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.writes.asInstanceOf[Writes[Any]].writes)
 }

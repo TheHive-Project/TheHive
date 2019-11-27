@@ -5,7 +5,7 @@ import play.api.Logger
 import gremlin.scala.P
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services._
@@ -77,14 +77,14 @@ class ServiceHelper @Inject()(
     * @return
     */
   def flattenList(
-      l: Iterable[Seq[(OutputCortexWorker, String)]],
-      f: ((OutputCortexWorker, Seq[String])) => Boolean
-  ): Map[OutputCortexWorker, Seq[String]] =
+      l: Iterable[Seq[(OutputWorker, String)]]
+//      f: ((OutputWorker, Seq[String])) => Boolean
+  ): Map[OutputWorker, Seq[String]] =
     l                     // Iterable[Seq[(worker, cortexId)]]
     .flatten              // Seq[(worker, cortexId)]
       .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
       .values             // Seq[Seq[(worker, cortexId)]]
       .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-      .filter(w => f(w))
+//      .filter(w => f(w))
       .toMap
 }

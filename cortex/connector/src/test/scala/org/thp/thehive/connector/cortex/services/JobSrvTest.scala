@@ -14,7 +14,7 @@ import akka.actor.Terminated
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.cortex.dto.v0.CortexOutputJob
+import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
@@ -79,7 +79,7 @@ class JobSrvTest extends PlaySpecification with Mockito {
           val dataSource = Source.fromResource("cortex-jobs.json")
           val data       = dataSource.mkString
           dataSource.close()
-          Json.parse(data).as[List[CortexOutputJob]].find(_.id == "ZWu85Q1OCVNx03hXK4df")
+          Json.parse(data).as[List[OutputJob]].find(_.id == "ZWu85Q1OCVNx03hXK4df")
         }
 
         val cortexOutputJob = cortexOutputJobOpt.get

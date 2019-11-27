@@ -12,7 +12,7 @@ import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.{CortexOutputArtifact, CortexOutputJob, InputCortexArtifact, Attachment => CortexAttachment}
+import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
@@ -26,10 +26,9 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv}
+import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, ReportTagSrv}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -41,11 +40,12 @@ class JobSrv @Inject()(
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
+    reportTagSrv: ReportTagSrv,
+    serviceHelper: ServiceHelper,
+    auditSrv: CortexAuditSrv,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
-    implicit val mat: Materializer,
-    serviceHelper: ServiceHelper,
-    auditSrv: CortexAuditSrv
+    implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
 
   lazy val logger         = Logger(getClass)
@@ -77,13 +77,13 @@ class JobSrv @Inject()(
       cortexArtifact <- (observable.attachment, observable.data) match {
         case (None, Some(data)) =>
           Future.successful(
-            InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
           )
         case (Some(a), None) =>
           val data       = StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.attachmentId))
           val attachment = CortexAttachment(a.name, a.size, a.contentType, data)
           Future.successful(
-            InputCortexArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -97,7 +97,7 @@ class JobSrv @Inject()(
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
 
-  private def fromCortexOutputJob(j: CortexOutputJob): Job =
+  private def fromCortexOutputJob(j: CortexJob): Job =
     j.into[Job]
       .withFieldComputed(_.workerId, _.workerId)
       .withFieldComputed(_.workerName, _.workerName)
@@ -136,7 +136,7 @@ class JobSrv @Inject()(
     * @param authContext  the auth context for db queries
     * @return the updated job
     */
-  def finished(cortexId: String, jobId: String, cortexJob: CortexOutputJob)(
+  def finished(cortexId: String, jobId: String, cortexJob: CortexJob)(
       implicit authContext: AuthContext
   ): Future[Job with Entity] =
     for {
@@ -146,6 +146,7 @@ class JobSrv @Inject()(
         .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
       _   <- importCortexArtifacts(job, cortexJob, cortexClient)
+      _   <- Future.fromTry(importAnalyzerTags(job, cortexJob))
     } yield job
 
   /**
@@ -156,7 +157,7 @@ class JobSrv @Inject()(
     * @param authContext the authentication context
     * @return the updated job
     */
-  def updateJobStatus(jobId: String, cortexJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Job with Entity] =
+  private def updateJobStatus(jobId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject])
@@ -174,6 +175,15 @@ class JobSrv @Inject()(
       }
     }
 
+  private def importAnalyzerTags(job: Job with Entity, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Unit] =
+    db.tryTransaction { implicit graph =>
+      val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
+      for {
+        observable <- get(job).observable.getOrFail()
+        _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
+      } yield ()
+    }
+
   /**
     * Create observable for each artifact of the job report
     *
@@ -183,7 +193,7 @@ class JobSrv @Inject()(
     * @param authContext the authentication context
     * @return
     */
-  def importCortexArtifacts(job: Job with Entity, cortexJob: CortexOutputJob, cortexClient: CortexClient)(
+  private def importCortexArtifacts(job: Job with Entity, cortexJob: CortexJob, cortexClient: CortexClient)(
       implicit authContext: AuthContext
   ): Future[Done] = {
     val artifacts = cortexJob
@@ -219,9 +229,9 @@ class JobSrv @Inject()(
     * @param authContext  the auth context necessary for db persistence
     * @return
     */
-  def importCortexAttachment(
+  private def importCortexAttachment(
       job: Job with Entity,
-      artifact: CortexOutputArtifact,
+      artifact: OutputArtifact,
       attachmentType: ObservableType with Entity,
       cortexClient: CortexClient
   )(

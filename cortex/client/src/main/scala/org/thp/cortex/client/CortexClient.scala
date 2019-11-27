@@ -51,9 +51,9 @@ class CortexClient(
       ec
     )
 
-  lazy val job            = new BaseClient[CortexInputJob, CortexOutputJob](s"$strippedUrl/api/job")
-  lazy val analyser       = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/analyzer")
-  lazy val responder      = new BaseClient[InputCortexWorker, OutputCortexWorker](s"$strippedUrl/api/responder")
+  lazy val job            = new BaseClient[InputJob, OutputJob](s"$strippedUrl/api/job")
+  lazy val analyser       = new BaseClient[InputWorker, OutputWorker](s"$strippedUrl/api/analyzer")
+  lazy val responder      = new BaseClient[InputWorker, OutputWorker](s"$strippedUrl/api/responder")
   lazy val logger         = Logger(getClass)
   val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
@@ -62,7 +62,7 @@ class CortexClient(
     *
     * @return
     */
-  def listAnalyser(range: Option[String] = None): Future[Seq[OutputCortexWorker]] = analyser.list(range = range)
+  def listAnalyser(range: Option[String] = None): Future[Seq[OutputWorker]] = analyser.list(range = range)
 
   /**
     * GET analyzer by id
@@ -70,7 +70,7 @@ class CortexClient(
     * @param id guess
     * @return
     */
-  def getAnalyzer(id: String): Future[OutputCortexWorker] = analyser.get(id)
+  def getAnalyzer(id: String): Future[OutputWorker] = analyser.get(id)
 
   /**
     * GET analyzer by dataType
@@ -78,7 +78,7 @@ class CortexClient(
     * @param dataType guess
     * @return
     */
-  def listAnalyzersByType(dataType: String, range: Option[String] = None): Future[Seq[OutputCortexWorker]] = analyser.list(s"/type/$dataType", range)
+  def listAnalyzersByType(dataType: String, range: Option[String] = None): Future[Seq[OutputWorker]] = analyser.list(s"/type/$dataType", range)
 
   /**
     * Search an analyzer by name
@@ -86,7 +86,7 @@ class CortexClient(
     * @param analyzerName the name to search for
     * @return
     */
-  def getAnalyzerByName(analyzerName: String): Future[OutputCortexWorker] =
+  def getAnalyzerByName(analyzerName: String): Future[OutputWorker] =
     analyser
       .search[SearchQuery](SearchQuery("name", analyzerName, "0-1"))
       .map(_.headOption.getOrElse(throw ApplicationError(404, JsString(s"Analyzer $analyzerName not found"))))
@@ -99,7 +99,7 @@ class CortexClient(
     *               (in case the job terminates in the meantime)
     * @return
     */
-  def getReport(jobId: String, atMost: Duration): Future[CortexOutputJob] = job.get(jobId, s"/waitreport?atMost=$atMost")
+  def getReport(jobId: String, atMost: Duration): Future[OutputJob] = job.get(jobId, s"/waitreport?atMost=$atMost")
 
   /**
     * Submits an artifact for analyze with the appropriate analyzer selection
@@ -108,7 +108,7 @@ class CortexClient(
     * @param artifact the artifact to analyze
     * @return
     */
-  def analyse(analyzerId: String, artifact: InputCortexArtifact): Future[CortexOutputJob] = {
+  def analyse(analyzerId: String, artifact: InputArtifact): Future[OutputJob] = {
     val requestBody = Json.toJson(artifact)
     val result = artifact.attachment match {
       case None =>
@@ -126,8 +126,8 @@ class CortexClient(
           )
     }
     result.transform {
-      case Success(r) if r.status == Status.CREATED => Success(r.json.as[CortexOutputJob])
-      case Success(r)                               => Try(r.json.as[CortexOutputJob])
+      case Success(r) if r.status == Status.CREATED => Success(r.json.as[OutputJob])
+      case Success(r)                               => Try(r.json.as[OutputJob])
       case Failure(t)                               => throw t
     }
   }
@@ -149,7 +149,7 @@ class CortexClient(
     * @param id the id to look for
     * @return
     */
-  def getResponder(id: String): Future[OutputCortexWorker] = responder.get(id)
+  def getResponder(id: String): Future[OutputWorker] = responder.get(id)
 
   /**
     * Search a responder by name
@@ -157,7 +157,7 @@ class CortexClient(
     * @param responderName the name to search for
     * @return
     */
-  def getResponderByName(responderName: String): Future[OutputCortexWorker] =
+  def getResponderByName(responderName: String): Future[OutputWorker] =
     responder
       .search[SearchQuery](SearchQuery("name", responderName, "0-1"))
       .map(_.headOption.getOrElse(throw ApplicationError(404, JsString(s"Responder $responderName not found"))))
@@ -168,7 +168,7 @@ class CortexClient(
     * @param entityType the type to search for
     * @return
     */
-  def getRespondersByType(entityType: String): Future[Seq[OutputCortexWorker]] =
+  def getRespondersByType(entityType: String): Future[Seq[OutputWorker]] =
     responder
       .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "all"))
 
@@ -177,7 +177,7 @@ class CortexClient(
     * @param query the query that should look like {query: {...}}
     * @return
     */
-  def searchResponders(query: JsObject): Future[Seq[OutputCortexWorker]] =
+  def searchResponders(query: JsObject): Future[Seq[OutputWorker]] =
     responder
       .search[SearchQuery](SearchQuery("", "", "all", Some(query)))
 
@@ -188,13 +188,13 @@ class CortexClient(
     * @param action the action to execute
     * @return
     */
-  def execute(responderId: String, action: InputCortexAction): Future[CortexOutputJob] = {
+  def execute(responderId: String, action: InputAction): Future[OutputJob] = {
     val requestBody = Json.toJson(action)
     val result      = auth(ws.url(s"$strippedUrl/api/responder/$responderId/run")).post(requestBody)
 
     result.transform {
-      case Success(r) if r.status == Status.CREATED => Success(r.json.as[CortexOutputJob])
-      case Success(r)                               => Try(r.json.as[CortexOutputJob])
+      case Success(r) if r.status == Status.CREATED => Success(r.json.as[OutputJob])
+      case Success(r)                               => Try(r.json.as[OutputJob])
       case Failure(t)                               => throw t
     }
   }

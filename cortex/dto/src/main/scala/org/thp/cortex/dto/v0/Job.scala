@@ -2,19 +2,17 @@ package org.thp.cortex.dto.v0
 
 import java.util.Date
 
-import scala.util.Try
-
 import play.api.libs.json._
 
-object CortexJobStatus extends Enumeration {
-  val InProgress, Success, Failure, Waiting, Unknown, Deleted = Value
+object JobStatus extends Enumeration {
+  val InProgress, Success, Failure, Waiting, Deleted = Value
 }
 
-object CortexJobType extends Enumeration {
-  val unknown, analyzer, responder = Value
+object JobType extends Enumeration {
+  val analyzer, responder = Value
 }
 
-case class CortexInputJob(
+case class InputJob(
     id: String,
     workerId: String,
     workerName: String,
@@ -22,11 +20,11 @@ case class CortexInputJob(
     date: Date
 )
 
-object CortexInputJob {
-  implicit val format: OFormat[CortexInputJob] = Json.format[CortexInputJob]
+object InputJob {
+  implicit val format: OFormat[InputJob] = Json.format[InputJob]
 }
 
-case class CortexOutputJob(
+case class OutputJob(
     id: String,
     workerId: String,
     workerName: String,
@@ -34,110 +32,94 @@ case class CortexOutputJob(
     date: Date,
     startDate: Option[Date],
     endDate: Option[Date],
-    status: CortexJobStatus.Value,
+    status: JobStatus.Value,
     data: Option[String],
     attachment: Option[JsObject],
     organization: String,
     dataType: String,
-    attributes: JsObject,
-    report: Option[CortexOutputReport],
-    `type`: CortexJobType.Value
+    report: Option[OutputReport],
+    `type`: JobType.Value
 )
 
-case class CortexOutputAttachment(id: String, name: Option[String], contentType: Option[String])
+case class OutputAttachment(id: String, name: Option[String], contentType: Option[String])
 
-object CortexOutputAttachment {
-  implicit val format: Format[CortexOutputAttachment] = Json.format[CortexOutputAttachment]
+object OutputAttachment {
+  implicit val format: Format[OutputAttachment] = Json.format[OutputAttachment]
 }
 
-case class CortexOutputArtifact(
+case class OutputArtifact(
     dataType: String,
     data: Option[String],
-    attachment: Option[CortexOutputAttachment],
+    attachment: Option[OutputAttachment],
     message: Option[String],
     tlp: Int,
     tags: Set[String]
 )
 
-object CortexOutputArtifact {
-  implicit val format: Format[CortexOutputArtifact] = Json.format[CortexOutputArtifact]
+object OutputArtifact {
+  implicit val format: Format[OutputArtifact] = Json.format[OutputArtifact]
 }
 
-case class CortexOutputReport(
-    summary: JsObject,
-    full: JsObject,
+case class OutputMinireport(level: String, namespace: String, predicate: String, value: JsValue)
+
+object OutputMinireport {
+  implicit val format: Format[OutputMinireport] = Json.format[OutputMinireport]
+
+}
+
+case class OutputReport(
+    summary: Seq[OutputMinireport],
+    full: Option[JsObject],
     success: Boolean,
-    artifacts: Seq[CortexOutputArtifact],
-    operations: Seq[CortexOutputOperation],
+    artifacts: Seq[OutputArtifact],
+    operations: Seq[JsObject],
     errorMessage: Option[String],
     input: Option[String]
 )
 
-object CortexOutputReport {
-  implicit val writes: Writes[CortexOutputReport] = Json.writes[CortexOutputReport]
-  implicit val reads: Reads[CortexOutputReport] = Reads[CortexOutputReport](json => {
-    if ((json \ "success").as[Boolean]) {
-      for {
-        summary <- (json \ "summary").validate[JsObject]
-        full    <- (json \ "full").validate[JsObject]
-        success <- (json \ "success").validate[Boolean]
-        artifacts  = (json \ "artifacts").asOpt[List[CortexOutputArtifact]].getOrElse(Nil)
-        operations = (json \ "operations").asOpt[List[CortexOutputOperation]].getOrElse(Nil)
-      } yield CortexOutputReport(
-        summary,
-        full,
-        success,
-        artifacts,
-        operations,
-        None,
-        None
+object OutputReport {
+  implicit val writes: Writes[OutputReport] = Json.writes[OutputReport]
+  implicit val reads: Reads[OutputReport] = Reads[OutputReport] { json =>
+    JsSuccess(
+      OutputReport(
+        (json \ "summary" \ "taxonomies").asOpt[Seq[OutputMinireport]].getOrElse(Nil),
+        (json \ "full").asOpt[JsObject],
+        (json \ "success").asOpt[Boolean].contains(true),
+        (json \ "artifacts").asOpt[Seq[OutputArtifact]].getOrElse(Nil),
+        (json \ "operations").asOpt[Seq[JsObject]].getOrElse(Nil),
+        (json \ "errorMessage").asOpt[String],
+        (json \ "input").asOpt[String]
       )
-    } else {
-      for {
-        success <- (json \ "success").validate[Boolean]
-        error = (json \ "errorMessage").asOpt[String]
-        input = (json \ "input").asOpt[String]
-      } yield CortexOutputReport(
-        JsObject.empty,
-        JsObject.empty,
-        success,
-        Nil,
-        Nil,
-        error,
-        input
-      )
-    }
-  })
+    )
+  }
 }
 
-object CortexOutputJob {
-  private def filterObject(json: JsObject, attributes: String*): JsObject =
-    JsObject(attributes.flatMap(a => (json \ a).asOpt[JsValue].map(a -> _)))
-
-  implicit val writes: Writes[CortexOutputJob] = Json.writes[CortexOutputJob]
-  implicit val cortexJobReads: Reads[CortexOutputJob] = Reads[CortexOutputJob](
+object OutputJob {
+  implicit val jobStatusFormat: Format[JobStatus.Value] = Json.formatEnum(JobStatus)
+  implicit val jobTypeFormat: Format[JobType.Value]     = Json.formatEnum(JobType)
+  implicit val writes: Writes[OutputJob]                = Json.writes[OutputJob]
+  implicit val reads: Reads[OutputJob] = Reads[OutputJob](
     json =>
       for {
-        id         <- (json \ "id").validate[String]
-        analyzerId <- (json \ "workerId").orElse(json \ "analyzerId").validate[String]
-        analyzerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(analyzerId)
-        analyzerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
-        attributes         = (json \ "attributes").asOpt[JsObject].getOrElse(filterObject(json.as[JsObject], "tlp", "message", "parameters", "pap", "tpe"))
-        data               = (json \ "data").asOpt[String]
-        attachment         = (json \ "attachment").asOpt[JsObject]
+        id       <- (json \ "id").validate[String]
+        workerId <- (json \ "workerId").orElse(json \ "analyzerId").validate[String]
+        workerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(workerId)
+        workerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(workerId)
+        data             = (json \ "data").asOpt[String]
+        attachment       = (json \ "attachment").asOpt[JsObject]
         date <- (json \ "date").validate[Date]
         startDate = (json \ "startDate").asOpt[Date]
         endDate   = (json \ "endDate").asOpt[Date]
-        status       <- (json \ "status").validate[String].map(s => Try(CortexJobStatus.withName(s)).getOrElse(CortexJobStatus.Unknown))
+        status       <- (json \ "status").validate[JobStatus.Value]
         organization <- (json \ "organization").validate[String]
         dataType     <- (json \ "dataType").validate[String]
-        report = (json \ "report").asOpt[CortexOutputReport]
-        jobType <- (json \ "type").validate[String].map(t => Try(CortexJobType.withName(t)).getOrElse(CortexJobType.unknown))
-      } yield CortexOutputJob(
+        report = (json \ "report").asOpt[OutputReport]
+        jobType <- (json \ "type").validate[JobType.Value]
+      } yield OutputJob(
         id,
-        analyzerId,
-        analyzerName,
-        analyzerDefinition,
+        workerId,
+        workerName,
+        workerDefinition,
         date,
         startDate,
         endDate,
@@ -146,7 +128,6 @@ object CortexOutputJob {
         attachment,
         organization,
         dataType,
-        attributes,
         report,
         jobType
       )

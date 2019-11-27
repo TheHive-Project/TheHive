@@ -5,10 +5,10 @@ import scala.concurrent.duration._
 
 import play.api.Logger
 
-import akka.actor.{Timers, _}
+import akka.actor._
 import akka.pattern.pipe
 import javax.inject.Inject
-import org.thp.cortex.dto.v0.{CortexJobStatus, CortexJobType, CortexOutputJob}
+import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 
 object CortexActor {
@@ -48,60 +48,46 @@ class CortexActor @Inject()(connector: Connector, jobSrv: JobSrv, actionSrv: Act
       }
       context.become(receive(cj :: checkedJobs, failuresCount))
 
+    case CheckJobs if checkedJobs.isEmpty =>
+      logger.debug("CortexActor has empty checkedJobs state, stopping ticks")
+      timers.cancel(CheckJobsKey)
+
     case CheckJobs =>
-      if (checkedJobs.isEmpty) {
-        logger.debug("CortexActor has empty checkedJobs state, stopping ticks")
-        timers.cancel(CheckJobsKey)
-      } else
-        checkedJobs
-          .foreach {
-            case CheckJob(_, cortexJobId, _, cortexId, _) =>
-              connector
-                .clients
-                .find(_.name == cortexId)
-                .fold(logger.error(s"Receive a CheckJob for an unknown cortexId: $cortexId")) { client =>
-                  client.getReport(cortexJobId, 1.second).pipeTo(self)
-                  ()
-                }
-          }
+      checkedJobs
+        .foreach {
+          case CheckJob(_, cortexJobId, _, cortexId, _) =>
+            connector
+              .clients
+              .find(_.name == cortexId)
+              .fold(logger.error(s"Receive a CheckJob for an unknown cortexId: $cortexId")) { client =>
+                client.getReport(cortexJobId, 1.second).pipeTo(self)
+                ()
+              }
+        }
 
-    case j: CortexOutputJob =>
-      j.status match {
-        case CortexJobStatus.InProgress | CortexJobStatus.Waiting =>
-          logger.info(s"CortexActor received ${j.status} from client, retrying in ${connector.refreshDelay}")
+    case cortexJob: CortexJob if cortexJob.status == JobStatus.Success || cortexJob.status == JobStatus.Failure =>
+      checkedJobs.find(_.cortexJobId == cortexJob.id) match {
+        case Some(CheckJob(Some(jobId), cortexJobId, _, cortexId, authContext)) if cortexJob.`type` == JobType.analyzer =>
+          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${cortexJob.status}, updating job $jobId")
+          jobSrv.finished(cortexId, jobId, cortexJob)(authContext)
+          context.become(receive(checkedJobs.filterNot(_.cortexJobId == cortexJob.id), failuresCount))
 
-        case CortexJobStatus.Unknown =>
-          logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${connector.refreshDelay}")
+        case Some(CheckJob(_, cortexJobId, Some(actionId), cortexId, authContext)) if cortexJob.`type` == JobType.responder =>
+          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${cortexJob.status}, updating action $actionId")
+          actionSrv.finished(actionId, cortexJob)(authContext)
+          context.become(receive(checkedJobs.filterNot(_.cortexJobId == cortexJob.id), failuresCount))
 
-        case CortexJobStatus.Success | CortexJobStatus.Failure =>
-          checkedJobs.find(_.cortexJobId == j.id) match {
-            case Some(job) if j.`type` == CortexJobType.analyzer =>
-              logger.info(
-                s"Job ${j.id} in cortex ${job.cortexId} has finished with status ${j.status}, " +
-                  s"updating job ${job.jobId.get}"
-              )
-              if (j.status == CortexJobStatus.Failure) logger.warn(s"Job ${j.id} has failed in Cortex")
+        case Some(_) =>
+          logger.error(s"CortexActor received job output $cortexJob but with unknown type ${cortexJob.`type`}")
 
-              jobSrv.finished(job.cortexId, job.jobId.get, j)(job.authContext)
-              context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
-
-            case Some(job) if j.`type` == CortexJobType.responder =>
-              logger.info(
-                s"Job ${j.id} in cortex ${job.cortexId} has finished with status ${j.status}, " +
-                  s"updating action ${job.actionId.get}"
-              )
-              if (j.status == CortexJobStatus.Failure) logger.warn(s"Job ${j.id} has failed in Cortex")
-
-              actionSrv.finished(job.actionId.get, j)(job.authContext)
-              context.become(receive(checkedJobs.filterNot(_.cortexJobId == j.id), failuresCount))
-
-            case Some(_) =>
-              logger.error(s"CortexActor received job output $j but with unknown type ${j.`type`}")
-
-            case None =>
-              logger.error(s"CortexActor received job output $j but did not have it in state $checkedJobs")
-          }
+        case None =>
+          logger.error(s"CortexActor received job output $cortexJob but did not have it in state $checkedJobs")
       }
+    case cortexJob: CortexJob if cortexJob.status == JobStatus.InProgress || cortexJob.status == JobStatus.Waiting =>
+      logger.info(s"CortexActor received ${cortexJob.status} from client, retrying in ${connector.refreshDelay}")
+
+    case _: CortexJob =>
+      logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${connector.refreshDelay}")
 
     case Status.Failure(e) if failuresCount < connector.maxRetryOnError =>
       logger.error(

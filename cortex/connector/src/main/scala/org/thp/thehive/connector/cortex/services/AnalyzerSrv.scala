@@ -6,7 +6,7 @@ import scala.util.{Failure, Success}
 import play.api.Logger
 
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.auth.AuthContext
 
 @Singleton
@@ -19,7 +19,7 @@ class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper, 
     *
     * @return
     */
-  def listAnalyzer(range: Option[String])(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  def listAnalyzer(range: Option[String])(implicit authContext: AuthContext): Future[Map[CortexWorker, Seq[String]]] =
     Future
       .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
         client
@@ -31,9 +31,9 @@ class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper, 
               Success(Nil)
           }
       }
-      .map(serviceHelper.flattenList(_, _ => true))
+      .map(serviceHelper.flattenList)
 
-  def listAnalyzerByType(dataType: String)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  def listAnalyzerByType(dataType: String)(implicit authContext: AuthContext): Future[Map[CortexWorker, Seq[String]]] =
     Future
       .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
         client
@@ -45,9 +45,9 @@ class AnalyzerSrv @Inject()(connector: Connector, serviceHelper: ServiceHelper, 
               Success(Nil)
           }
       }
-      .map(serviceHelper.flattenList(_, _ => true))
+      .map(serviceHelper.flattenList)
 
-  def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(OutputCortexWorker, Seq[String])] =
+  def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(CortexWorker, Seq[String])] =
     Future
       .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
         client

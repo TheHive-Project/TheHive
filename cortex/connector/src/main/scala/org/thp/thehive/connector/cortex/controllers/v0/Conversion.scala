@@ -5,7 +5,7 @@ import java.util.Date
 import play.api.libs.json.{JsArray, JsObject}
 
 import io.scalaland.chimney.dsl._
-import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.dto.v0.{InputAction, InputAnalyzerTemplate, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
@@ -20,7 +20,7 @@ object Conversion {
         .into[Action]
         .withFieldConst(_.responderName, None)
         .withFieldConst(_.responderDefinition, None)
-        .withFieldConst(_.status, JobStatus.Unknown)
+        .withFieldConst(_.status, JobStatus.Waiting)
         .withFieldComputed(_.parameters, _.parameters.getOrElse(JsObject.empty))
         .withFieldConst(_.startDate, new Date())
         .withFieldConst(_.endDate, None)
@@ -53,6 +53,7 @@ object Conversion {
         .withFieldComputed(_.endDate, _.endDate)
         .withFieldComputed(_.cortexId, _.cortexId)
         .withFieldComputed(_.cortexJobId, _.cortexJobId)
+        .withFieldConst(_.report, None)
         .withFieldConst(_.id, job._id)
         .transform
   )
@@ -75,8 +76,8 @@ object Conversion {
         .transform
   }
 
-  implicit val workerOutput: Outputer.Aux[(OutputCortexWorker, Seq[String]), OutputWorker] =
-    Outputer[(OutputCortexWorker, Seq[String]), OutputWorker](
+  implicit val workerOutput: Outputer.Aux[(CortexWorker, Seq[String]), OutputWorker] =
+    Outputer[(CortexWorker, Seq[String]), OutputWorker](
       worker =>
         worker
           ._1

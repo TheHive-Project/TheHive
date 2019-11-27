@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
@@ -39,7 +39,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       "get a list of Cortex workers" in {
         val r = await(analyzerSrv.listAnalyzer(Some("all"))(dummyUserSrv.authContext))
         val outputWorker2 =
-          OutputCortexWorker(
+          OutputWorker(
             "anaTest2",
             "anaTest2",
             "2",
@@ -49,7 +49,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             2
           )
         val outputWorker1 =
-          OutputCortexWorker(
+          OutputWorker(
             "anaTest1",
             "anaTest1",
             "1",
@@ -65,7 +65,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       "get Cortex worker by id" in {
         val r = await(analyzerSrv.getAnalyzer("anaTest2")(dummyUserSrv.authContext))
         val outputWorker =
-          OutputCortexWorker(
+          OutputWorker(
             "anaTest2",
             "anaTest2",
             "2",
@@ -81,7 +81,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
       "get a list of Cortex workers by dataType" in {
         val r = await(analyzerSrv.listAnalyzerByType("test")(dummyUserSrv.authContext))
         val outputWorker2 =
-          OutputCortexWorker(
+          OutputWorker(
             "anaTest2",
             "anaTest2",
             "2",
@@ -91,7 +91,7 @@ class AnalyzerSrvTest extends PlaySpecification with Mockito {
             2
           )
         val outputWorker1 =
-          OutputCortexWorker(
+          OutputWorker(
             "anaTest1",
             "anaTest1",
             "1",

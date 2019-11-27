@@ -5,7 +5,7 @@ import java.util.Date
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.PlaySpecification
 
 import akka.actor.Terminated
@@ -26,20 +26,20 @@ class CortexClientTest extends PlaySpecification with Mockito {
 
   s"CortexClient" should {
     "handle requests properly" in {
-      val analyzers: Seq[OutputCortexWorker] = await(client.listAnalyser())
+      val analyzers: Seq[OutputWorker] = await(client.listAnalyser())
 
       analyzers.length shouldEqual 2
       analyzers.head.name shouldEqual "anaTest1"
 
-      val oneAnalyzer: OutputCortexWorker = await(client.getAnalyzer("anaTest2"))
+      val oneAnalyzer: OutputWorker = await(client.getAnalyzer("anaTest2"))
 
       oneAnalyzer.id shouldEqual "anaTest2"
       oneAnalyzer.name shouldEqual "anaTest2"
 
-      val searchedAnalyzer: OutputCortexWorker = await(client.getAnalyzerByName("anaTest1"))
+      val searchedAnalyzer: OutputWorker = await(client.getAnalyzerByName("anaTest1"))
 
       searchedAnalyzer should equalTo(
-        OutputCortexWorker(
+        OutputWorker(
           id = "anaTest1",
           name = "anaTest1",
           version = "1",
@@ -50,10 +50,10 @@ class CortexClientTest extends PlaySpecification with Mockito {
         )
       )
 
-      val outputJob: CortexOutputJob = await(client.analyse(searchedAnalyzer.id, InputCortexArtifact(1, 1, "test", "test", Some("test"), None)))
+      val outputJob: OutputJob = await(client.analyse(searchedAnalyzer.id, InputArtifact(1, 1, "test", "test", Some("test"), None)))
 
       outputJob should equalTo(
-        CortexOutputJob(
+        OutputJob(
           id = "AWuYKFatq3Rtqym9DFmL",
           workerId = "anaTest1",
           workerName = "anaTest1",
@@ -61,33 +61,24 @@ class CortexClientTest extends PlaySpecification with Mockito {
           date = new Date(1561625908856L),
           startDate = None,
           endDate = None,
-          status = CortexJobStatus.Waiting,
+          status = JobStatus.Waiting,
           data = Some("https://www.faux-texte.com/lorem-ipsum-2.htm"),
           attachment = None,
           organization = "test",
           dataType = "domain",
-          attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2),
+//          attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2),
           None,
-          CortexJobType.analyzer
+          JobType.analyzer
         )
       )
 
       val successfulJob = await(client.getReport("XQuYKFert7Rtcvm9DFmT", 0.second))
 
       successfulJob.report must beSome(
-        CortexOutputReport(
-          summary = Json.parse("""{
-                                       "taxonomies": [
-                                         {
-                                           "level": "info",
-                                           "namespace": "test",
-                                           "predicate": "data",
-                                           "value": "test"
-                                         }
-                                       ]
-                                     }""").as[JsObject],
+        OutputReport(
+          summary = Seq(OutputMinireport("info", "test", "data", JsString("test"))),
           success = true,
-          full = Json.parse("""{
+          full = Some(Json.parse("""{
                                     "data": "imageedit_2_3904987689.jpg",
                                     "input": {
                                       "file": "attachment7619802021796183482",
@@ -112,7 +103,7 @@ class CortexClientTest extends PlaySpecification with Mockito {
                                       },
                                       "pap": 2
                                     }
-                                  }""").as[JsObject],
+                                  }""").as[JsObject]),
           artifacts = Json.parse("""[
                                          {
                                            "attachment": {
@@ -135,17 +126,17 @@ class CortexClientTest extends PlaySpecification with Mockito {
                                            ],
                                            "tlp": 2
                                          }
-                                       ]""").as[List[CortexOutputArtifact]],
-          operations = JsArray.empty.as[List[CortexOutputOperation]],
+                                       ]""").as[List[OutputArtifact]],
+          operations = Nil,
           errorMessage = None,
           input = None
         )
       )
 
-      val searchedResponder: OutputCortexWorker = await(client.getResponderByName("respTest1"))
+      val searchedResponder: OutputWorker = await(client.getResponderByName("respTest1"))
 
       searchedResponder should equalTo(
-        OutputCortexWorker(
+        OutputWorker(
           id = "respTest1",
           name = "respTest1",
           version = "1",
@@ -159,7 +150,7 @@ class CortexClientTest extends PlaySpecification with Mockito {
       val responder = await(client.getResponder("respTest2"))
 
       responder should equalTo(
-        OutputCortexWorker(
+        OutputWorker(
           id = "respTest2",
           name = "respTest2",
           version = "2",

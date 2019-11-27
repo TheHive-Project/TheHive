@@ -8,7 +8,7 @@ import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import org.thp.thehive.models.Observable
 
 object JobStatus extends Enumeration {
-  val InProgress, Success, Failure, Waiting, Deleted, Unknown = Value
+  val InProgress, Success, Failure, Waiting, Deleted = Value
 }
 
 @EdgeEntity[Observable, Job]

@@ -7,7 +7,7 @@ import play.api.Logger
 import play.api.libs.json.JsObject
 
 import javax.inject.{Inject, Singleton}
-import org.thp.cortex.dto.v0.OutputCortexWorker
+import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
@@ -37,7 +37,7 @@ class ResponderSrv @Inject()(
   def getRespondersByType(
       entityType: String,
       entityId: String
-  )(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  )(implicit authContext: AuthContext): Future[Map[OutputWorker, Seq[String]]] =
     for {
       entity        <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.get(toObjectType(entityType), entityId, Permissions.manageAction)))
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
@@ -53,7 +53,7 @@ class ResponderSrv @Inject()(
                   Success(Nil)
               }
         )
-    } yield serviceHelper.flattenList(responders, w => w._1.maxTlp >= tlp && w._1.maxPap >= pap)
+    } yield serviceHelper.flattenList(responders).filter { case (w, _) => w.maxTlp >= tlp && w.maxPap >= pap }
 
   /**
     * Search responders, not used as of 08/19
@@ -61,18 +61,17 @@ class ResponderSrv @Inject()(
     * @param authContext auth context for organisation filter
     * @return
     */
-  def searchResponders(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputCortexWorker, Seq[String]]] =
+  def searchResponders(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation))(
-        client =>
-          client
-            .searchResponders(query)
-            .transform {
-              case Success(analyzers) => Success(analyzers.map(_ -> client.name))
-              case Failure(error) =>
-                logger.error(s"List Cortex analyzers fails on ${client.name}", error)
-                Success(Nil)
-            }
-      )
-      .map(serviceHelper.flattenList(_, _ => true))
+      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
+        client
+          .searchResponders(query)
+          .transform {
+            case Success(analyzers) => Success(analyzers.map(_ -> client.name))
+            case Failure(error) =>
+              logger.error(s"List Cortex analyzers fails on ${client.name}", error)
+              Success(Nil)
+          }
+      }
+      .map(serviceHelper.flattenList)
 }

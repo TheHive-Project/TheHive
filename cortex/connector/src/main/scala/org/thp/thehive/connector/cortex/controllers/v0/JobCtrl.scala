@@ -1,8 +1,11 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.Logger
+import play.api.libs.json.{JsNull, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
@@ -53,7 +56,7 @@ class JobCtrl @Inject()(
           .visible
           .getOrFail()
           .map { job =>
-            Results.Ok(job.toJson)
+            Results.Ok(job.toJson.as[JsObject] + ("report" -> job.report.getOrElse(JsNull)))
           }
       }
 
@@ -67,12 +70,12 @@ class JobCtrl @Inject()(
           val analyzerId: String = request.body("analyzerId")
           val cortexId: String   = request.body("cortexId")
           db.roTransaction { implicit graph =>
-            val artifactId: String = request.body("artifactId")
-            for {
-              o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
-              c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
-            } yield (o, c)
-          }
+              val artifactId: String = request.body("artifactId")
+              for {
+                o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
+                c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
+              } yield (o, c)
+            }
             .fold(error => errorHandler.onServerError(request, error), {
               case (o, c) =>
                 jobSrv

@@ -6,7 +6,7 @@ import akka.stream.Materializer
 import org.specs2.mock.Mockito
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.cortex.dto.v0.CortexOutputJob
+import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContextImpl
 import org.thp.scalligraph.models._
@@ -62,7 +62,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
             responderId = "respTest1",
             responderName = Some("respTest1"),
             responderDefinition = None,
-            status = JobStatus.Unknown,
+            status = JobStatus.Waiting,
             objectType = "Task",
             objectId = task1._id,
             parameters = Json.obj("test" -> true),
@@ -79,7 +79,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           richAction.responderId shouldEqual "respTest1"
 
           val cortexOutputJobOpt = readJsonResource("cortex-jobs.json")
-            .as[List[CortexOutputJob]]
+            .as[List[OutputJob]]
             .find(_.id == "AWu78Q1OCVNz03gXK4df")
 
           cortexOutputJobOpt must beSome
@@ -107,7 +107,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                 "message" -> "Success",
                 "name"    -> "date1",
                 "tpe"     -> "date",
-                "value"   -> "1562157321892"
+                "value"   -> 1562157321892L
               ),
               Json.obj(
                 "type"    -> "AddCustomFields",
@@ -115,7 +115,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                 "message" -> "Success",
                 "name"    -> "float1",
                 "tpe"     -> "float",
-                "value"   -> "15.54"
+                "value"   -> 15.54
               ),
               Json.obj(
                 "type"    -> "AddCustomFields",
@@ -123,16 +123,15 @@ class ActionSrvTest extends PlaySpecification with Mockito {
                 "message" -> "Success",
                 "name"    -> "boolean1",
                 "tpe"     -> "boolean",
-                "value"   -> "false"
+                "value"   -> false
               ),
               Json.obj("type" -> "AssignCase", "status" -> "Success", "message" -> "Success", "owner" -> "user2@thehive.local"),
               Json.obj(
-                "type"        -> "AddArtifactToCase",
-                "status"      -> "Success",
-                "message"     -> "Success",
-                "data"        -> "testObservable",
-                "dataType"    -> "mail-subject",
-                "dataMessage" -> "test observable from action"
+                "type"     -> "AddArtifactToCase",
+                "status"   -> "Success",
+                "message"  -> "Success",
+                "data"     -> "testObservable",
+                "dataType" -> "mail-subject"
               )
             )
           )
@@ -178,7 +177,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
             responderId = "respTest1",
             responderName = Some("respTest1"),
             responderDefinition = None,
-            status = JobStatus.Unknown,
+            status = JobStatus.Waiting,
             objectType = "Log",
             objectId = log1._id,
             parameters = Json.obj(),
@@ -193,7 +192,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           val richAction = await(actionSrv.execute(inputAction, log1)(actionCtrl.entityWrites, authContextUser2))
 
           val cortexOutputJobOpt = readJsonResource("cortex-jobs.json")
-            .as[List[CortexOutputJob]]
+            .as[List[OutputJob]]
             .find(_.id == "FDs5Q1ODXCz03gXK4df")
           cortexOutputJobOpt must beSome
 
@@ -232,7 +231,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
               responderId = "respTest1",
               responderName = Some("respTest1"),
               responderDefinition = None,
-              status = JobStatus.Unknown,
+              status = JobStatus.Waiting,
               objectType = "Alert",
               objectId = alert._id,
               parameters = Json.obj(),
@@ -247,7 +246,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
             val richAction = await(actionSrv.execute(inputAction, alert)(actionCtrl.entityWrites, authContextUser2))
 
             val cortexOutputJob = readJsonResource("cortex-jobs.json")
-              .as[List[CortexOutputJob]]
+              .as[List[OutputJob]]
               .find(_.id == "FGv4E3ODXCz03gXK6jk")
             cortexOutputJob must beSome
             val updatedActionTry = actionSrv.finished(richAction._id, cortexOutputJob.get)(authContextUser2)

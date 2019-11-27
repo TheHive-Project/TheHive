@@ -16,21 +16,21 @@ import akka.stream.scaladsl._
 import javax.inject.{Inject, Provider}
 import mockws.MockWS
 import org.thp.client.NoAuthentication
-import org.thp.cortex.dto.v0.{CortexOutputJob, OutputCortexWorker}
+import org.thp.cortex.dto.v0.{OutputJob, OutputWorker}
 
 class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
     extends Provider[CortexClient] {
-  lazy val analyzers: Seq[OutputCortexWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputCortexWorker]]
-  lazy val jobs: Seq[CortexOutputJob]          = readResourceAsJson("/jobs.json").as[Seq[CortexOutputJob]]
-  lazy val responders: Seq[OutputCortexWorker] = readResourceAsJson("/responders.json").as[Seq[OutputCortexWorker]]
-  val apiJobIdWaitReport: Regex                = "^/api/job/([^/]*)/waitreport\\?atMost=\\d+ \\w+$".r
-  val apiAnalyzerId: Regex                     = "^/api/analyzer/([^/]*)$".r
-  val apiAnalyzer: Regex                       = "/api/analyzer(?:\\?.*)?".r
-  val apiAnalyzerDataType: Regex               = "^/api/analyzer/type/([^/]*)$".r
-  val apiAnalyzerIdRun: Regex                  = "^/api/analyzer/([^/]*)/run$".r
-  val apiDatastoreId: Regex                    = "^/api/datastore/([^/]*)$".r
-  val apiResponderId: Regex                    = "^/api/responder/([^/]*)$".r
-  val apiResponderIdRun: Regex                 = "^/api/responder/([^/]*)/run$".r
+  lazy val analyzers: Seq[OutputWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputWorker]]
+  lazy val jobs: Seq[OutputJob]          = readResourceAsJson("/jobs.json").as[Seq[OutputJob]]
+  lazy val responders: Seq[OutputWorker] = readResourceAsJson("/responders.json").as[Seq[OutputWorker]]
+  val apiJobIdWaitReport: Regex          = "^/api/job/([^/]*)/waitreport\\?atMost=\\d+ \\w+$".r
+  val apiAnalyzerId: Regex               = "^/api/analyzer/([^/]*)$".r
+  val apiAnalyzer: Regex                 = "/api/analyzer(?:\\?.*)?".r
+  val apiAnalyzerDataType: Regex         = "^/api/analyzer/type/([^/]*)$".r
+  val apiAnalyzerIdRun: Regex            = "^/api/analyzer/([^/]*)/run$".r
+  val apiDatastoreId: Regex              = "^/api/datastore/([^/]*)$".r
+  val apiResponderId: Regex              = "^/api/responder/([^/]*)$".r
+  val apiResponderIdRun: Regex           = "^/api/responder/([^/]*)/run$".r
 
   val ws = MockWS {
     case (GET, apiJobIdWaitReport(id))        => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))

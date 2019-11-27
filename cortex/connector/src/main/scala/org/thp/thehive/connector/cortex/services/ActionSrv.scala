@@ -8,7 +8,7 @@ import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.Inject
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.{CortexOutputJob, InputCortexAction}
+import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
@@ -97,9 +97,9 @@ class ActionSrv @Inject()(
     } yield createdAction
   }
 
-  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): InputCortexAction =
+  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): CortexAction =
     action
-      .into[InputCortexAction]
+      .into[CortexAction]
       .withFieldConst(_.dataType, s"thehive:${action.objectType}")
       .withFieldConst(_.label, label)
       .withFieldConst(_.data, data)
@@ -130,16 +130,15 @@ class ActionSrv @Inject()(
     * updates it
     *
     * @param actionId        the action to update
-    * @param cortexOutputJob the result Cortex job
+    * @param cortexJob the result Cortex job
     * @param authContext     context for db queries
     * @return
     */
-  def finished(actionId: String, cortexOutputJob: CortexOutputJob)(implicit authContext: AuthContext): Try[Action with Entity] =
+  def finished(actionId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
     db.tryTransaction { implicit graph =>
-      val operations = cortexOutputJob
+      val operations = cortexJob
         .report
-        .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.toActionOperation))
-        .filter(_.status == ActionOperationStatus.Waiting)
+        .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
         .map { operation =>
           (for {
             action <- getByIds(actionId).richAction.getOrFail()
@@ -150,20 +149,19 @@ class ActionSrv @Inject()(
               relatedTask(actionId)
             )
           } yield updatedOperation)
-            .fold(t => operation.updateStatus(ActionOperationStatus.Failure, t.getMessage), identity)
+            .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
         }
 
       for {
         updated <- getByIds(actionId).update(
-          "status"     -> cortexOutputJob.status.toJobStatus,
-          "report"     -> cortexOutputJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
+          "status"     -> cortexJob.status.toJobStatus,
+          "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
           "endDate"    -> Some(new Date()),
           "operations" -> operations.map(Json.toJsObject(_))
         )
       } yield {
         relatedCase(updated._id)
-          .orElse(relatedTask(updated._id))
-          .orElse(get(updated._id).context.headOption())
+          .orElse(get(updated._id).context.headOption()) // FIXME an action context is it an audit context ?
           .foreach(relatedEntity => auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString)))
 
         updated

@@ -2,7 +2,7 @@ package org.thp.cortex.dto.v0
 
 import play.api.libs.json.{Json, OFormat, Reads, Writes}
 
-case class OutputCortexWorker(
+case class OutputWorker(
     id: String,
     name: String,
     version: String,
@@ -12,9 +12,9 @@ case class OutputCortexWorker(
     maxPap: Long
 )
 
-object OutputCortexWorker {
-  implicit val writes: Writes[OutputCortexWorker] = Json.writes[OutputCortexWorker]
-  implicit val reads: Reads[OutputCortexWorker] = Reads[OutputCortexWorker](
+object OutputWorker {
+  implicit val writes: Writes[OutputWorker] = Json.writes[OutputWorker]
+  implicit val reads: Reads[OutputWorker] = Reads[OutputWorker](
     json =>
       for {
         id           <- (json \ "id").validate[String]
@@ -24,7 +24,7 @@ object OutputCortexWorker {
         dataTypeList <- (json \ "dataTypeList").validate[Seq[String]]
         maxTlp = (json \ "maxTlp").asOpt[Long].getOrElse(3L)
         maxPap = (json \ "maxPap").asOpt[Long].getOrElse(3L)
-      } yield OutputCortexWorker(
+      } yield OutputWorker(
         id,
         name,
         version,
@@ -36,8 +36,8 @@ object OutputCortexWorker {
   )
 }
 
-case class InputCortexWorker(id: String, name: String, description: String, dataTypeList: Seq[String])
+case class InputWorker(id: String, name: String, description: String, dataTypeList: Seq[String])
 
-object InputCortexWorker {
-  implicit val format: OFormat[InputCortexWorker] = Json.format[InputCortexWorker]
+object InputWorker {
+  implicit val format: OFormat[InputWorker] = Json.format[InputWorker]
 }
