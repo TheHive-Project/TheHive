@@ -8,7 +8,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import play.api.libs.json.{JsBoolean, JsValue}
+import play.api.libs.json.{JsBoolean, JsNumber, JsValue}
 import play.api.test.PlaySpecification
 
 import scala.util.Try
@@ -71,6 +71,19 @@ class CustomFieldSrvTest extends PlaySpecification {
         } must beSuccessfulTry
 
         db.roTransaction(implicit graph => caseSrv.get("#3").customFields.richCustomField.toList) must beEmpty
+      }
+
+      "count use of custom fields" in {
+        val cf2 = createCF("cf 2", "desc cf 2", CustomFieldType.string, Nil)
+        val cf3 = createCF("cf 3", "desc cf 3", CustomFieldType.float, Seq(JsNumber(23.23)))
+        db.tryTransaction { implicit graph =>
+          caseSrv.setOrCreateCustomField(caseSrv.get("#1").getOrFail().get, "cf 2", None)
+          caseSrv.setOrCreateCustomField(caseSrv.get("#1").getOrFail().get, "cf 3", Some(23.23))
+          caseSrv.setOrCreateCustomField(caseSrv.get("#2").getOrFail().get, "cf 3", Some(23.23))
+        }
+
+        db.roTransaction(implicit graph => customFieldSrv.useCount(cf2)) shouldEqual Map("Case" -> 1)
+        db.roTransaction(implicit graph => customFieldSrv.useCount(cf3)) shouldEqual Map("Case" -> 2)
       }
     }
   }
