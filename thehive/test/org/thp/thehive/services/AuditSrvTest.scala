@@ -64,7 +64,6 @@ class AuditSrvTest extends PlaySpecification {
         val r = auditSrv.getMainByIds(Order.asc, audits.map(_._id): _*).toList
 
         // Only the main ones
-        r.length shouldEqual 2
         r.head shouldEqual audits.filter(_.mainAction).minBy(_._createdAt)
       })
 
@@ -96,7 +95,7 @@ class AuditSrvTest extends PlaySpecification {
 
         audits must not(beEmpty)
 
-        val audit = audits.head
+        val audit = audits.find(_.objectId.contains(t._id)).get
 
         auditSrv.initSteps.get(audit).organisation.toList must not(beEmpty)
         auditSrv.initSteps.get(audit).auditContextObjectOrganisation.toList.length shouldEqual 1

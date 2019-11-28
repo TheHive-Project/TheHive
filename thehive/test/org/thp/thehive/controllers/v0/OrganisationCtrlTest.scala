@@ -125,7 +125,8 @@ class OrganisationCtrlTest extends PlaySpecification with Mockito {
         val resultLinks = organisationCtrl.listLinks("admin")(requestLinks)
 
         status(resultLinks) shouldEqual 200
-        contentAsJson(resultLinks).as[List[OutputOrganisation]].length shouldEqual 1
+        val r = contentAsJson(resultLinks).as[List[OutputOrganisation]]
+        r must not(beEmpty)
       }
 
       "link and unlink organisations" in {
