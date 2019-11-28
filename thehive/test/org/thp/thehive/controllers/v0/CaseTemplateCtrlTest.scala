@@ -107,7 +107,8 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
             "tlp":3,
             "pap":3,
             "tags":[
-               "tg${Random.nextInt}"
+               "tg${Random.nextInt}",
+               ${output.tags.map(t => s""""$t"""").mkString(",")}
             ],
             "customFields":{},
             "description":"patched"
