@@ -295,18 +295,24 @@ class CaseSrvTest extends PlaySpecification {
       }
 
       "remove a case and its dependencies" in db.roTransaction { implicit graph =>
-        val c1          = caseSrv.get("#1").getOrFail().get
-        val observables = caseSrv.get("#1").observables.toList
-        val tasks       = caseSrv.get("#1").tasks.toList
+        val c1 = db
+          .tryTransaction(
+            implicit graph =>
+              caseSrv.create(
+                Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+                None,
+                orgaSrv.getOrFail("cert").get,
+                Set[Tag with Entity](),
+                Map.empty,
+                None,
+                Nil
+              )
+          )
+          .get
 
-        observables must not(beEmpty)
-        tasks must not(beEmpty)
-
-        db.tryTransaction(implicit graph => caseSrv.cascadeRemove(c1)) must beSuccessfulTry
+        db.tryTransaction(implicit graph => caseSrv.cascadeRemove(c1.`case`)) must beSuccessfulTry
         db.roTransaction(implicit graph => {
-          observableSrv.get(observables.head).exists() must beFalse
-          taskSrv.get(tasks.head).exists() must beFalse
-          caseSrv.get("#1").exists() must beFalse
+          caseSrv.get(c1._id).exists() must beFalse
         })
       }
 
