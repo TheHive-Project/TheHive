@@ -118,6 +118,44 @@ class DashboardSrvTest extends PlaySpecification {
         updatedDash.shared must beFalse
         updatedDash.definition shouldEqual "updated"
       }
+
+      "update dashboard share status" in {
+        val d = createDashboard(
+          "dashboard test 3",
+          shared = false,
+          "definition"
+        )
+
+        db.tryTransaction(implicit graph => dashboardSrv.shareUpdate(d, status = true)) must beSuccessfulTry
+        val updatedDash = db.roTransaction(implicit graph => dashboardSrv.get(d).getOrFail().get)
+
+        updatedDash.shared must beTrue
+      }
+
+      "remove a dashboard" in {
+        val d = createDashboard(
+          "dashboard test 4",
+          shared = true,
+          "definition"
+        )
+
+        db.roTransaction(implicit graph => dashboardSrv.get(d).exists()) must beTrue
+        db.tryTransaction(implicit graph => dashboardSrv.remove(d)) must beSuccessfulTry
+        db.roTransaction(implicit graph => dashboardSrv.get(d).exists()) must beFalse
+      }
+
+      "show only visible dashboards" in {
+        val d = createDashboard(
+          "dashboard test 5",
+          shared = true,
+          "definition"
+        )
+
+        db.roTransaction(implicit graph => dashboardSrv.get(d).visible.exists()) must beTrue
+        db.roTransaction(
+          implicit graph => dashboardSrv.get(d).visible(DummyUserSrv(userId = "user2@thehive.local").authContext).exists()
+        ) must beFalse
+      }
     }
   }
 }
