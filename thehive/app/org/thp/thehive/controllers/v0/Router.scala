@@ -7,6 +7,7 @@ import play.api.routing.sird._
 
 @Singleton
 class Router @Inject()(
+    statsCtrl: StatsCtrl,
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     userCtrl: UserCtrl,
@@ -33,6 +34,8 @@ class Router @Inject()(
 ) extends SimpleRouter {
 
   override def routes: Routes = {
+
+    case POST(p"/_stats") => statsCtrl.stats
 
     case GET(p"/status") => statusCtrl.get
     case GET(p"/health") => statusCtrl.health
