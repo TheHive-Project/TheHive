@@ -1,17 +1,15 @@
 package org.thp.thehive.controllers.v0
 
 import scala.util.{Failure, Success, Try}
-
 import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AuthorizationError, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
@@ -72,6 +70,23 @@ class ShareCtrl @Inject()(
         shareIds.toTry(doRemoveShare(_)).map(_ => Results.NoContent)
       }
 
+  def removeShares(caseId: String): Action[AnyContent] =
+    entryPoint("remove share")
+      .extract("organisations", FieldsParser[String].sequence.on("organisations"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val organisations: Seq[String] = request.body("organisations")
+        organisations
+          .toTry { organisationId =>
+            for {
+              organisation <- organisationSrv.get(organisationId).getOrFail()
+              _            <- if (organisation.name == request.organisation) Failure(BadRequestError("You cannot remove your own share")) else Success(())
+              shareId      <- caseSrv.get(caseId).can(Permissions.manageShare).share(organisationId)._id.getOrFail()
+              _            <- shareSrv.remove(shareId)
+            } yield ()
+          }
+          .map(_ => Results.NoContent)
+      }
+
   def removeTaskShares(taskId: String): Action[AnyContent] =
     entryPoint("remove share tasks")
       .extract("organisations", FieldsParser[String].sequence.on("organisations"))
@@ -111,7 +126,7 @@ class ShareCtrl @Inject()(
   private def doRemoveShare(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     if (!shareSrv.get(shareId).`case`.can(Permissions.manageShare).exists())
       Failure(AuthorizationError("You are not authorized to remove share"))
-    else if (!shareSrv.get(shareId).byOrganisationName(authContext.organisation).exists())
+    else if (shareSrv.get(shareId).byOrganisationName(authContext.organisation).exists())
       Failure(AuthorizationError("You can't remove your share"))
     else
       shareSrv.remove(shareId)
