@@ -43,7 +43,7 @@ class CaseTemplateSrv @Inject()(
   def create(
       caseTemplate: CaseTemplate,
       organisation: Organisation with Entity,
-      tagNames: Seq[String],
+      tagNames: Set[String],
       tasks: Seq[(Task, Option[User with Entity])],
       customFields: Seq[(String, Option[Any])]
   )(

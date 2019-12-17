@@ -53,7 +53,7 @@ class CaseTemplateSrvTest extends PlaySpecification {
               Some(s"summary $name")
             ),
             orgaSrv.getOrFail("cert").get,
-            Seq("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""),
+            Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""),
             Seq(
               (
                 Task(s"task case template $name", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
@@ -152,8 +152,8 @@ class CaseTemplateSrvTest extends PlaySpecification {
 
         caseTemplate.customFields.flatMap(_.value) must containTheSameElementsAs(Seq("love", false))
 
-        val string1 = customFieldSrv.get("string1").getOrFail().get
-        val bool1 = customFieldSrv.get("boolean1").getOrFail().get
+        val string1  = customFieldSrv.get("string1").getOrFail().get
+        val bool1    = customFieldSrv.get("boolean1").getOrFail().get
         val integer1 = customFieldSrv.get("integer1").getOrFail().get
 
         db.tryTransaction(

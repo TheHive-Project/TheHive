@@ -12,7 +12,7 @@ case class InputCaseTemplate(
     titlePrefix: Option[String],
     description: Option[String],
     severity: Option[Int] = None,
-    tags: Seq[String] = Nil,
+    tags: Set[String] = Set.empty,
     flag: Option[Boolean] = None,
     tlp: Option[Int] = None,
     pap: Option[Int] = None,
