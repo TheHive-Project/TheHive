@@ -58,10 +58,13 @@ class ActionSrv @Inject()(
     * @param authContext necessary auth context
     * @return
     */
-  def execute(action: Action, entity: Entity)(implicit writes: OWrites[Entity], authContext: AuthContext): Future[RichAction] = {
+  def execute(entity: Entity, cortexId: Option[String], workerId: String, parameters: JsObject)(
+      implicit writes: OWrites[Entity],
+      authContext: AuthContext
+  ): Future[RichAction] = {
     val cortexClients = serviceHelper.availableCortexClients(connector.clients, authContext.organisation)
     for {
-      client <- action.cortexId match {
+      client <- cortexId match {
         case Some(cortexId) =>
           cortexClients
             .find(_.name == cortexId)
@@ -69,43 +72,38 @@ class ActionSrv @Inject()(
         case None if cortexClients.nonEmpty =>
           Future.firstCompletedOf {
             cortexClients
-              .map(client => client.getResponder(action.responderId).map(_ => client))
+              .map(client => client.getResponder(workerId).map(_ => client))
           }
 
-        case None => Future.failed(NotFoundError(s"Responder ${action.responderId} not found"))
+        case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
-      inputCortexAction = toCortexAction(action, label, tlp, pap, writes.writes(entity))
-      job <- client.execute(action.responderId, inputCortexAction)
-      updatedAction = action.copy(
-        responderName = Some(job.workerName),
-        responderDefinition = Some(job.workerDefinition),
-        status = job.status.toJobStatus,
-        startDate = job.startDate.getOrElse(new Date()),
-        cortexId = Some(client.name),
-        cortexJobId = Some(job.id)
+      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${entity._model.label}", tlp, pap, parameters)
+      job <- client.execute(workerId, inputCortexAction)
+      action = Action(
+        job.workerId,
+        job.workerName,
+        job.workerDefinition,
+        job.status.toJobStatus,
+        parameters: JsObject,
+        new Date,
+        job.endDate: Option[Date],
+        job.report.flatMap(_.full),
+        client.name,
+        job.id,
+        job.report.fold[Seq[JsObject]](Nil)(_.operations)
       )
       createdAction <- Future.fromTry {
         db.tryTransaction { implicit graph =>
           for {
-            a <- create(updatedAction, entity)
-            _ <- auditSrv.action.create(a.action, entity, a.toJson)
-          } yield a
+            richAction <- create(action, entity)
+            _          <- auditSrv.action.create(richAction.action, entity, richAction.toJson)
+          } yield richAction
         }
       }
       _ = cortexActor ! CheckJob(None, job.id, Some(createdAction._id), client.name, authContext)
     } yield createdAction
   }
-
-  def toCortexAction(action: Action, label: String, tlp: Int, pap: Int, data: JsObject): CortexAction =
-    action
-      .into[CortexAction]
-      .withFieldConst(_.dataType, s"thehive:${action.objectType}")
-      .withFieldConst(_.label, label)
-      .withFieldConst(_.data, data)
-      .withFieldConst(_.tlp, tlp)
-      .withFieldConst(_.pap, pap)
-      .transform
 
   /**
     * Creates an Action with necessary ActionContext edge

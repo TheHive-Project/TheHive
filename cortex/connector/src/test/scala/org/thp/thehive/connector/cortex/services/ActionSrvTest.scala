@@ -13,10 +13,10 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
-import org.thp.thehive.connector.cortex.models.{Action, JobStatus, TheHiveCortexSchemaProvider}
+import org.thp.thehive.connector.cortex.models.{JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, CaseSrv, OrganisationSrv, TaskSrv}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.{NoMaterializer, PlaySpecification}
 
 import scala.io.Source
@@ -58,25 +58,9 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           t1 must beSome
           val task1 = t1.get
 
-          val inputAction = Action(
-            responderId = "respTest1",
-            responderName = Some("respTest1"),
-            responderDefinition = None,
-            status = JobStatus.Waiting,
-            objectType = "Task",
-            objectId = task1._id,
-            parameters = Json.obj("test" -> true),
-            startDate = new Date(),
-            endDate = None,
-            report = None,
-            cortexId = None,
-            cortexJobId = None,
-            operations = Nil
-          )
+          val richAction = await(actionSrv.execute(task1, None, "respTest1", JsObject.empty)(actionCtrl.entityWrites, dummyUserSrv.authContext))
 
-          val richAction = await(actionSrv.execute(inputAction, task1)(actionCtrl.entityWrites, dummyUserSrv.authContext))
-
-          richAction.responderId shouldEqual "respTest1"
+          richAction.workerId shouldEqual "respTest1"
 
           val cortexOutputJobOpt = readJsonResource("cortex-jobs.json")
             .as[List[OutputJob]]
@@ -173,23 +157,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           l1 must beSome
           val log1 = l1.get
 
-          val inputAction = Action(
-            responderId = "respTest1",
-            responderName = Some("respTest1"),
-            responderDefinition = None,
-            status = JobStatus.Waiting,
-            objectType = "Log",
-            objectId = log1._id,
-            parameters = Json.obj(),
-            startDate = new Date(),
-            endDate = None,
-            report = None,
-            cortexId = None,
-            cortexJobId = None,
-            operations = Nil
-          )
-
-          val richAction = await(actionSrv.execute(inputAction, log1)(actionCtrl.entityWrites, authContextUser2))
+          val richAction = await(actionSrv.execute(log1, None, "respTest1", JsObject.empty)(actionCtrl.entityWrites, authContextUser2))
 
           val cortexOutputJobOpt = readJsonResource("cortex-jobs.json")
             .as[List[OutputJob]]
@@ -227,23 +195,7 @@ class ActionSrvTest extends PlaySpecification with Mockito {
           alertSrv.initSteps.has("sourceRef", "ref1").getOrFail() must beSuccessfulTry.which { alert =>
             alert.read must beFalse
 
-            val inputAction = Action(
-              responderId = "respTest1",
-              responderName = Some("respTest1"),
-              responderDefinition = None,
-              status = JobStatus.Waiting,
-              objectType = "Alert",
-              objectId = alert._id,
-              parameters = Json.obj(),
-              startDate = new Date(),
-              endDate = None,
-              report = None,
-              cortexId = None,
-              cortexJobId = None,
-              operations = Nil
-            )
-
-            val richAction = await(actionSrv.execute(inputAction, alert)(actionCtrl.entityWrites, authContextUser2))
+            val richAction = await(actionSrv.execute(alert, None, "respTest1", JsObject.empty)(actionCtrl.entityWrites, authContextUser2))
 
             val cortexOutputJob = readJsonResource("cortex-jobs.json")
               .as[List[OutputJob]]

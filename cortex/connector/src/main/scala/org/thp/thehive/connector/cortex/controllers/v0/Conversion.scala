@@ -13,26 +13,12 @@ import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 
 object Conversion {
-  implicit class InputActionOps(inputAction: InputAction) {
-
-    def toAction: Action =
-      inputAction
-        .into[Action]
-        .withFieldConst(_.responderName, None)
-        .withFieldConst(_.responderDefinition, None)
-        .withFieldConst(_.status, JobStatus.Waiting)
-        .withFieldComputed(_.parameters, _.parameters.getOrElse(JsObject.empty))
-        .withFieldConst(_.startDate, new Date())
-        .withFieldConst(_.endDate, None)
-        .withFieldConst(_.report, None)
-        .withFieldConst(_.cortexJobId, None)
-        .withFieldConst(_.operations, Nil)
-        .withFieldComputed(_.objectType, a => toObjectType(a.objectType))
-        .transform
-  }
 
   implicit val actionOutput: Outputer.Aux[RichAction, OutputAction] = Outputer[RichAction, OutputAction](
     _.into[OutputAction]
+      .withFieldRenamed(_.workerId, _.responderId)
+      .withFieldRenamed(_.workerName, _.responderName)
+      .withFieldRenamed(_.workerDefinition, _.responderDefinition)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldComputed(_.objectId, _.context._id)
       .withFieldComputed(_.objectType, _.context._model.label)

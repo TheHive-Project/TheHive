@@ -2,13 +2,14 @@ package org.thp.thehive.connector.cortex.models
 
 import java.util.Date
 
-import play.api.libs.json.JsObject
-
+import play.api.libs.json.{Format, JsObject, Json}
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 import org.thp.thehive.models.Observable
 
 object JobStatus extends Enumeration {
   val InProgress, Success, Failure, Waiting, Deleted = Value
+
+  implicit val format: Format[JobStatus.Value] = Json.formatEnum(JobStatus)
 }
 
 @EdgeEntity[Observable, Job]

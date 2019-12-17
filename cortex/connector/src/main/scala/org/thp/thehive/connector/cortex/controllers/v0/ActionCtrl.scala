@@ -68,13 +68,13 @@ class ActionCtrl @Inject()(
     entryPoint("create action")
       .extract("action", FieldsParser[InputAction])
       .asyncAuth { implicit request =>
-        val action: CortexAction = request.body("action").toAction
+        val action: InputAction = request.body("action")
         val tryEntity = db.roTransaction { implicit graph =>
           entityHelper.get(action.objectType, action.objectId, Permissions.manageAction)
         }
         for {
           entity <- Future.fromTry(tryEntity)
-          action <- actionSrv.execute(action, entity)
+          action <- actionSrv.execute(entity, action.cortexId, action.responderId, action.parameters.getOrElse(JsObject.empty))
         } yield Results.Ok(action.toJson)
       }
 

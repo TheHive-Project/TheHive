@@ -10,35 +10,33 @@ import org.thp.scalligraph.models._
 
 @VertexEntity
 case class Action(
-    responderId: String,
-    responderName: Option[String],
-    responderDefinition: Option[String],
+    workerId: String,
+    workerName: String,
+    workerDefinition: String,
     status: JobStatus.Value,
-    objectType: String,
-    objectId: String,
     parameters: JsObject,
     startDate: Date,
     endDate: Option[Date],
     report: Option[JsObject],
-    cortexId: Option[String],
-    cortexJobId: Option[String],
+    cortexId: String,
+    cortexJobId: String,
     operations: Seq[JsObject]
 )
 
 case class RichAction(action: Action with Entity, context: Entity) {
-  def _id: String                         = action._id
-  def _createdAt: Date                    = action._createdAt
-  def _createdBy: String                  = action._createdBy
-  def responderId: String                 = action.responderId
-  def responderName: Option[String]       = action.responderName
-  def responderDefinition: Option[String] = action.responderDefinition
-  def status: JobStatus.Value             = action.status
-  def startDate: Date                     = action.startDate
-  def endDate: Option[Date]               = action.endDate
-  def report: Option[JsObject]            = action.report
-  def cortexId: Option[String]            = action.cortexId
-  def cortexJobId: Option[String]         = action.cortexJobId
-  def operations: Seq[JsObject]           = action.operations
+  def _id: String               = action._id
+  def _createdAt: Date          = action._createdAt
+  def _createdBy: String        = action._createdBy
+  def workerId: String          = action.workerId
+  def workerName: String        = action.workerName
+  def workerDefinition: String  = action.workerDefinition
+  def status: JobStatus.Value   = action.status
+  def startDate: Date           = action.startDate
+  def endDate: Option[Date]     = action.endDate
+  def report: Option[JsObject]  = action.report
+  def cortexId: String          = action.cortexId
+  def cortexJobId: String       = action.cortexJobId
+  def operations: Seq[JsObject] = action.operations
 }
 
 case class ActionContext()

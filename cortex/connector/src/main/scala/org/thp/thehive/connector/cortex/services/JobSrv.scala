@@ -165,7 +165,7 @@ class JobSrv @Inject()(
         val endDate = new Date()
         for {
           job <- get(job).update(
-            "report"  -> report,
+            "report"  -> report, // FIXME remove useless data in report (artifacts, operations, ...) only keep full ?
             "status"  -> status,
             "endDate" -> endDate
           )
@@ -211,7 +211,7 @@ class JobSrv @Inject()(
                   observableSrv
                     .create(artifact.toObservable, dataType, artifact.data.get, artifact.tags, Nil)
                     .flatMap { richObservable =>
-                      reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+                      addObservable(job, richObservable.observable)
                     }
                 }
               }
@@ -220,6 +220,12 @@ class JobSrv @Inject()(
       }
       .map(_ => Done)
   }
+
+  def addObservable(
+      job: Job with Entity,
+      observable: Observable with Entity
+  )(implicit graph: Graph, authContext: AuthContext): Try[ReportObservable with Entity] =
+    reportObservableSrv.create(ReportObservable(), job, observable)
 
   /**
     * Downloads and import the attachment file for an artifact of type file
