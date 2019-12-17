@@ -32,8 +32,8 @@ object Tag {
 
   val namespacePredicateValueColour: Regex =
     "([\\p{Alnum}\\p{Blank}+-_]+)\\.([\\p{Alnum}\\p{Blank}:+-_]+)=\"([\\p{Print}&&[^\"]]+)\"#(\\p{XDigit}{6})".r
-  val namespacePredicateValue: Regex = "([\\p{Alnum}\\p{Blank}+-_]+)\\.([\\p{Alnum}\\p{Blank}:+-_]+)=\"([\\p{Print}&&[^\"]]+)\"".r
-  val namespacePredicate: Regex      = "([\\p{Alnum}\\p{Blank}+-_]+)\\.([\\p{Alnum}\\p{Blank}:+-_]+)".r
+  val namespacePredicateValue: Regex = "([\\p{Alnum}\\p{Blank}+-_]+)[\\.:]([\\p{Alnum}\\p{Blank}:+-_]+)=\"?([\\p{Print}&&[^\"]]+)\"?".r
+  val namespacePredicate: Regex      = "([\\p{Alnum}\\p{Blank}+-_]+)[\\.:]([\\p{Alnum}\\p{Blank}:+-_]+)".r
   val PredicateValue: Regex          = "([\\p{Alnum}\\p{Blank}:+-_]+)=\"([\\p{Print}&&[^\"]]+)\"".r
   val predicate: Regex               = "([\\p{Alnum}\\p{Blank}+-_]+)".r
 
