@@ -72,6 +72,9 @@ class ShareSrv @Inject()(
     } yield newShareProfile
   }
 
+  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_))
+
   def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       case0        <- get(shareId).`case`.getOrFail()
@@ -300,18 +303,15 @@ class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def tasks = new TaskSteps(raw.outTo[ShareTask])
 
   def byTask(taskId: String): ShareSteps = this.filter(
-    _.outTo[ShareTask]
-      .filter(_.hasId(taskId))
+    _.outTo[ShareTask].hasId(taskId)
   )
 
   def byObservable(observableId: String): ShareSteps = this.filter(
-    _.outTo[ShareObservable]
-      .filter(_.hasId(observableId))
+    _.outTo[ShareObservable].hasId(observableId)
   )
 
   def byOrganisationName(organisationName: String): ShareSteps = this.filter(
-    _.inTo[OrganisationShare]
-      .filter(_.has("name", organisationName))
+    _.inTo[OrganisationShare].has("name", organisationName)
   )
 
   def observables = new ObservableSteps(raw.outTo[ShareObservable])

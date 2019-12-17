@@ -46,7 +46,7 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv, organisationSrv: Or
       val organisationFieldName = configuration.getOptional[String]("user.organisationFieldName")
       val defaultProfile        = configuration.getOptional[String]("user.defaults.profile")
       val defaultOrg            = configuration.getOptional[String]("user.defaults.organisation")
-      def readData(json: JsObject, field: Option[String], default: Option[String]) =
+      def readData(json: JsObject, field: Option[String], default: Option[String]): Try[String] =
         Try((json \ field.get).as[String]).orElse(Try(default.get))
 
       db.tryTransaction { implicit graph =>
