@@ -127,7 +127,7 @@ class CaseTemplateCtrlTest extends PlaySpecification with Mockito {
         val updatedOutput = contentAsJson(resultGet).as[OutputCaseTemplate]
 
         updatedOutput.displayName shouldEqual "patched"
-        updatedOutput.tags.size shouldEqual 3
+        updatedOutput.tags.size shouldEqual 1
         updatedOutput.name shouldEqual "tmp basic case 4"
         updatedOutput.tlp must beSome(3)
         updatedOutput.pap must beSome(3)
