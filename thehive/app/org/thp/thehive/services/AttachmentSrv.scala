@@ -3,12 +3,13 @@ package org.thp.thehive.services
 import java.io.InputStream
 import java.nio.file.Files
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 import play.api.Configuration
 
-import akka.stream.IOResult
+import akka.NotUsed
+import akka.stream.{IOResult, Materializer}
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import gremlin.scala.{Graph, GremlinScala, Vertex}
@@ -24,10 +25,10 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 
 @Singleton
-class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database)
+class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer, ec: ExecutionContext)
     extends VertexSrv[Attachment, AttachmentSteps] {
 
-  val hashers = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
+  val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AttachmentSteps = new AttachmentSteps(raw)
 
@@ -48,6 +49,15 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
     storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
+  }
+
+  def create(filename: String, size: Long, contentType: String, data: Source[ByteString, NotUsed])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Attachment with Entity] = {
+    val hs = hashers.fromBinary(data)
+    val id = hs.head.toString
+    storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
   }
 
   override def get(idOrAttachmentId: String)(implicit graph: Graph): AttachmentSteps =
