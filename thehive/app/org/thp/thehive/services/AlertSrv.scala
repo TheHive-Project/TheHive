@@ -52,7 +52,7 @@ class AlertSrv @Inject()(
       organisation: Organisation with Entity,
       tagNames: Set[String],
       customFields: Map[String, Option[Any]],
-      caseTemplate: Option[RichCaseTemplate]
+      caseTemplate: Option[CaseTemplate with Entity]
   )(
       implicit graph: Graph,
       authContext: AuthContext
@@ -64,8 +64,8 @@ class AlertSrv @Inject()(
       for {
         createdAlert <- createEntity(alert)
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
-        _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct.caseTemplate)).flip
-        tags         <- tagNames.toTry(tagSrv.getOrCreate)
+        _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
+        tags         <- tagNames.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
         richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))

@@ -169,7 +169,10 @@ class CaseTemplateSrvTest extends PlaySpecification {
 
       "give access to case templates if permitted" in db.roTransaction { implicit graph =>
         caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate).toList must not(beEmpty)
-        caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate)(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert").authContext).toList must beEmpty
+        caseTemplateSrv
+          .initSteps
+          .can(Permissions.manageCaseTemplate)(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert").authContext)
+          .toList must beEmpty
       }
 
       "show only visible case templates" in db.roTransaction { implicit graph =>

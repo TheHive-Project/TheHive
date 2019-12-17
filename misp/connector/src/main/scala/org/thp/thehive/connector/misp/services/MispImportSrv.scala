@@ -340,7 +340,7 @@ class MispImportSrv @Inject()(
       organisation: Organisation with Entity,
       mispOrganisation: String,
       event: Event,
-      caseTemplate: Option[RichCaseTemplate]
+      caseTemplate: Option[CaseTemplate with Entity]
   )(
       implicit authContext: AuthContext
   ): Try[Alert with Entity] = {
@@ -381,7 +381,7 @@ class MispImportSrv @Inject()(
     Future.fromTry(client.currentOrganisationName).flatMap { mispOrganisation =>
       lazy val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
         db.roTransaction { implicit graph =>
-          caseTemplateSrv.get(caseTemplateName).richCaseTemplate.headOption()
+          caseTemplateSrv.get(caseTemplateName).headOption()
         }
       }
       val organisations = db.roTransaction { implicit graph =>

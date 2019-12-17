@@ -86,7 +86,7 @@ class AlertCtrl @Inject()(
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
         for {
           organisation    <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
-          caseTemplate    <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
+          caseTemplate    <- caseTemplateName.map(caseTemplateSrv.get(_).visible.getOrFail()).flip
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))

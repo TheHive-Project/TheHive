@@ -59,7 +59,7 @@ class AlertSrvTest extends PlaySpecification {
       orgaSrv.getOrFail("cert").get,
       tags,
       Map("string1" -> Some("lol")),
-      Some(caseTemplateSrv.initSteps.get("spam").richCaseTemplate.getOrFail().get)
+      Some(caseTemplateSrv.getOrFail("spam").get)
     )
 
     s"[$name] alert service" should {

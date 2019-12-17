@@ -58,7 +58,6 @@ class AlertCtrl @Inject()(
             caseTemplateSrv
               .get(ct)
               .visible
-              .richCaseTemplate
               .getOrFail()
           }.flip
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
