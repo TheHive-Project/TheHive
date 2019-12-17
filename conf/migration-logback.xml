@@ -20,6 +20,9 @@
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
         <encoder>
             <pattern>%coloredLevel %logger{15} - %message%n%xException{10}
             </pattern>
@@ -47,6 +50,7 @@
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE"/>
+        <appender-ref ref="ASYNCSTDOUT"/>
     </root>
 
 </configuration>

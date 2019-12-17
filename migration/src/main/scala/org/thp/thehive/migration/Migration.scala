@@ -2,104 +2,111 @@ package org.thp.thehive.migration
 
 import java.io.File
 
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
-
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.{ ApplicationLifecycle, DefaultApplicationLifecycle }
-import play.api.{ Configuration, Environment, Logger }
-
+import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, Materializer }
-import com.google.inject.name.Names
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import com.typesafe.config.ConfigFactory
-import javax.inject.{ Inject, Singleton }
-import net.codingwell.scalaguice.ScalaModule
-import org.thp.scalligraph.auth.{ UserSrv => UserDB }
-import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{ Database, Schema }
-import org.thp.scalligraph.services.{ LocalFileSystemStorageSrv, StorageSrv }
-import org.thp.thehive.models.{ SchemaUpdater => TheHiveSchemaUpdater, _ }
-// import org.thp.thehive.connector.cortex.models.{SchemaUpdater ⇒ CortexSchemaUpdater} // TODO add cortex schema
-import org.thp.thehive.services._
+import org.thp.scalligraph.NotFoundError
+import play.api.libs.logback.LogbackLoggerConfigurator
+import play.api.{Configuration, Environment, Logger}
 
-@Singleton
-class Migration @Inject()(
-    config: Configuration,
-    organisationSrv: OrganisationSrv,
-    schema: TheHiveSchema,
-    implicit val db: Database,
-    userDB: UserDB,
-    userMigration: UserMigration,
-    dbListMigration: DBListMigration,
-    caseTemplateMigration: CaseTemplateMigration,
-    caseMigration: CaseMigration,
-    alertMigration: AlertMigration,
-    system: ActorSystem
-) {
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.reflect.{classTag, ClassTag}
+import scala.util.{Failure, Success, Try}
 
-  lazy val logger = Logger(getClass)
+class Migration(input: Input, output: Output, implicit val ec: ExecutionContext, implicit val mat: Materializer) {
+  lazy val logger: Logger = Logger(getClass)
 
-  def migrate(): Unit =
-    userMigration.withUser("init") { implicit authContext =>
-      // create default organisation
-      val organisationName = config.get[String]("organisation.name")
-      val defaultOrganisation = Try(db.transaction(implicit graph => organisationSrv.create(Organisation(organisationName))))
-        .orElse(db.transaction(implicit graph => organisationSrv.getOrFail(organisationName)))
-        .get
-      logger.info(s"organisation $organisationName created")
+  implicit class IdMappingOps(idMappings: Seq[IdMapping]) {
 
-      Terminal { terminal =>
-        userMigration.importUsers(terminal, defaultOrganisation)
-        dbListMigration.importDBLists(terminal)
-        caseTemplateMigration.importCaseTemplates(terminal, defaultOrganisation)
-        caseMigration.importCases(terminal, defaultOrganisation)
-        alertMigration.importAlerts(terminal, defaultOrganisation)
+    def fromInput(id: String): Try[String] =
+      idMappings
+        .find(_.inputId == id)
+        .fold[Try[String]](Failure(NotFoundError(s"Id $id not found")))(m => Success(m.outputId))
+  }
+
+  def migrate[A: ClassTag](source: Source[A, NotUsed], create: A => Try[IdMapping]): Future[Seq[IdMapping]] =
+    source
+      .map(create)
+      .mapConcat {
+        case Success(idMapping) => List(idMapping)
+        case Failure(error) =>
+          logger.error(s"${classTag[A].runtimeClass.getSimpleName} creation failure", error)
+          Nil
       }
-    }
-}
+      .runWith(Sink.seq)
 
-class DummyMigrationOperations extends MigrationOperations {
-  override val operations: PartialFunction[DatabaseState, Seq[Operation]] = PartialFunction.empty
-  override def beginMigration(version: Int): Future[Unit]                 = Future.successful(())
-  override def endMigration(version: Int): Future[Unit]                   = Future.successful(())
-}
+  def migrateWithParent[A: ClassTag](
+      parentIds: Seq[IdMapping],
+      source: Source[(String, A), NotUsed],
+      create: (String, A) => Try[IdMapping]
+  ): Future[Seq[IdMapping]] =
+    source
+      .map {
+        case (parentId, a) =>
+          parentIds.fromInput(parentId).flatMap(create(_, a))
+      }
+      .mapConcat {
+        case Success(idMapping) => List(idMapping)
+        case Failure(error) =>
+          logger.error(s"${classTag[A].runtimeClass.getSimpleName} creation failure", error)
+          Nil
+      }
+      .runWith(Sink.seq)
 
-class MigrationModule(configuration: Configuration) extends ScalaModule {
-  override def configure(): Unit = {
-    val system = ActorSystem("TheHiveMigration")
-    bind[ActorSystem].toInstance(system)
-    bind[ExecutionContext].toInstance(system.dispatcher)
-    bind[Materializer].toInstance(ActorMaterializer()(system))
-
-    bind[immutable.Set[BaseModelDef]].toInstance(Set.empty)
-    bind[Int].annotatedWithName("databaseVersion").toInstance(14)
-    bind[MigrationOperations].to[DummyMigrationOperations]
-    bind[UserDB].to[LocalUserSrv]
-    bind[Database].to[JanusDatabase]
-//    bind[Database].to[OrientDatabase]
-//    bind[Database].to[RemoteJanusDatabase]
-    bind[StorageSrv].to[LocalFileSystemStorageSrv]
-//    bind[StorageSrv].to[HadoopStorageSrv]
-    bind[Configuration].toInstance(configuration)
-    bind[Environment].toInstance(Environment.simple())
-    bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-    bind[Schema].to[TheHiveSchema]
-    bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
-    bind[TheHiveSchemaUpdater].asEagerSingleton()
-    ()
+  def process(removeData: Boolean): Future[Unit] = {
+    if (removeData) output.removeData()
+    for {
+      profileIds          <- migrate(input.listProfiles, output.createProfile)
+      organisationIds     <- migrate(input.listOrganisations, output.createOrganisation)
+      userIds             <- migrate(input.listUsers, output.createUser)
+      impactStatusIds     <- migrate(input.listImpactStatus, output.createImpactStatus)
+      resolutionStatusIds <- migrate(input.listResolutionStatus, output.createResolutionStatus)
+      customFieldsIds     <- migrate(input.listCustomFields, output.createCustomField)
+      observableTypeIds   <- migrate(input.listObservableTypes, output.createObservableTypes)
+      caseTemplateIds     <- migrate(input.listCaseTemplate, output.createCaseTemplate)
+      caseTemplateTaskIds <- migrateWithParent(caseTemplateIds, input.listCaseTemplateTask, output.createCaseTemplateTask)
+      caseIds             <- migrate(input.listCases, output.createCase)
+      caseObservableIds   <- migrateWithParent(caseIds, input.listCaseObservables, output.createCaseObservable)
+      caseTaskIds         <- migrateWithParent(caseIds, input.listCaseTasks, output.createCaseTask)
+      caseTaskLogIds      <- migrateWithParent(caseTaskIds, input.listCaseTaskLogs, output.createCaseTaskLog)
+//      alertIds            <- migrate(input.listAlerts, output.createAlert)
+//      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables, output.createAlertObservable)
+      jobIds           <- migrateWithParent(caseObservableIds, input.listJobs, output.createJob)
+      jobObservableIds <- migrateWithParent(jobIds, input.listJobObservables, output.createJobObservable)
+      actionIds <- migrateWithParent(
+        caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds /* ++ alertIds */,
+        input.listAction,
+        output.createAction
+      )
+    } yield ()
   }
 }
 
 object Start extends App {
-  val config = new Configuration(ConfigFactory.parseFileAnySyntax(new File("conf/migration.conf"))) // TODO read filename from argument
-//  (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
-  new GuiceApplicationBuilder()
-    .loadConfig(config)
-    .load(new MigrationModule(config), new EhCacheModule)
-    .injector()
-    .instanceOf[Migration]
-    .migrate()
+
+  val config =
+    ConfigFactory
+      .parseFileAnySyntax(new File("conf/migration.conf"))
+      .withFallback(ConfigFactory.parseResources("play/reference-overrides.conf"))
+      .withFallback(ConfigFactory.defaultReference())
+      .resolve() // TODO read filename from argument
+  implicit val actorSystem = ActorSystem("TheHiveMigration", config)
+
+  (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
+
+  val input = config.getString("input.name") match {
+    case _ => th3.Input(Configuration(config.getConfig("input").withFallback(config)))
+  }
+
+  val output = config.getString("output.name") match {
+    case _ => th4.Output(Configuration(config.getConfig("output").withFallback(config)))
+  }
+  val removeData = config.getBoolean("output.removeData")
+
+  val process = new Migration(input, output, actorSystem.dispatcher, ActorMaterializer()(actorSystem)).process(removeData)
+  Await.ready(process, Duration.Inf)
   System.exit(0)
 }

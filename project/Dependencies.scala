@@ -31,7 +31,7 @@ object Dependencies {
   lazy val apacheConfiguration     = "commons-configuration"    % "commons-configuration"               % "1.10"
   lazy val macroParadise           = "org.scalamacros"          % "paradise"                            % "2.1.1" cross CrossVersion.full
   lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.3.3"
-  lazy val elastic4play            = "org.thehive-project"      %% "elastic4play"                       % "1.10.0" /*exclude ("org.apache.logging.log4j", "log4j-core") exclude("org.apache.logging.log4j", "log4j-api") exclude("org.apache.logging.log4j", "log4j-1.2-api") */
+  lazy val elastic4play            = "org.thehive-project"      %% "elastic4play"                       % "1.11.5" /*exclude ("org.apache.logging.log4j", "log4j-core") exclude("org.apache.logging.log4j", "log4j-api") exclude("org.apache.logging.log4j", "log4j-1.2-api") */
   lazy val log4jOverSlf4j          = "org.slf4j"                % "log4j-over-slf4j"                    % "1.7.25"
   lazy val log4jToSlf4j            = "org.apache.logging.log4j" % "log4j-to-slf4j"                      % "2.9.1"
   lazy val reflections             = "org.reflections"          % "reflections"                         % "0.9.11"
@@ -41,6 +41,7 @@ object Dependencies {
   lazy val handlebars              = "com.github.jknack"        % "handlebars"                          % "4.1.2"
   lazy val playMailer              = "com.typesafe.play"        %% "play-mailer"                        % "6.0.1"
   lazy val playMailerGuice         = "com.typesafe.play"        %% "play-mailer-guice"                  % "6.0.1"
+  lazy val jts                     = "com.vividsolutions"       % "jts"                                 % "1.13"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

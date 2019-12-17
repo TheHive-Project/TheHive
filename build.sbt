@@ -249,22 +249,24 @@ lazy val mispClient = (project in file("misp/client"))
     )
   )
 
-//lazy val thehiveMigration = (project in file("migration"))
-//  .enablePlugins(JavaAppPackaging)
-//  .dependsOn(scalligraph)
-//  .dependsOn(thehiveCore)
-//  .settings(commonSettings)
-//  .settings(
-//    name := "thehive-migration",
-//    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
-//    crossScalaVersions := Seq(scala212),
-//    libraryDependencies ++= Seq(
-//      elastic4play,
-//      ehcache,
-//      specs % Test
-//    ),
-//    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
-//    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
-//    fork := true,
-//    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
-//  )
+lazy val thehiveMigration = (project in file("migration"))
+  .enablePlugins(JavaAppPackaging)
+  .dependsOn(scalligraph)
+  .dependsOn(thehiveCore)
+  .dependsOn(thehiveCortex)
+  .settings(commonSettings)
+  .settings(
+    name := "thehive-migration",
+    resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
+    crossScalaVersions := Seq(scala212),
+    libraryDependencies ++= Seq(
+      elastic4play,
+      jts,
+      ehcache,
+      specs % Test
+    ),
+    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+    resourceDirectory in Compile := baseDirectory.value / ".." / "conf",
+    fork := true,
+    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
+  )
