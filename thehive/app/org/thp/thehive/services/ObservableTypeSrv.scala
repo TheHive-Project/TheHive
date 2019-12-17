@@ -3,11 +3,14 @@ package org.thp.thehive.services
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntitySteps
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
+
+import scala.util.Try
 
 @Singleton
 class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[ObservableType, ObservableTypeSteps] {
@@ -36,6 +39,9 @@ class ObservableTypeSrv @Inject()(auditSrv: AuditSrv)(implicit db: Database) ext
   override def get(idOrName: String)(implicit graph: Graph): ObservableTypeSteps =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
+
+  def create(observableType: ObservableType)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] =
+    createEntity(observableType)
 }
 
 @EntitySteps[ObservableType]
