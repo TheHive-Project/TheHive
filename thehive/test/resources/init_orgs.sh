@@ -27,5 +27,8 @@ do
     curl -s -w '%{http_code}\n' -o /dev/null -u${ORG}user:${ORG}user http://127.0.0.1:9000/api/alert -H 'Content-type: application/json' -H "X-Organisation: $ORG" -d '{"type": "init", "source": "init_script", "sourceRef": "alert_'$ORG'_'$I'", "title": "alert #'$I' ('$ORG')", "description": "An alert", "date": '$(date +%s)000'}'
   done
 done
-
+echo -n "Link cert to csirt and soc ... "
+curl -s -w '%{http_code}\n' -o /dev/null -uadmin:secret -XPUT http://127.0.0.1:9000/api/organisation/cert/links -H 'Content-type: application/json' -d '{"organisations":["csirt","soc"]}'
+echo -n "Link csirt to soc ... "
+curl -s -w '%{http_code}\n' -o /dev/null -uadmin:secret -XPUT http://127.0.0.1:9000/api/organisation/csirt/links -H 'Content-type: application/json' -d '{"organisations":["soc"]}'
 
