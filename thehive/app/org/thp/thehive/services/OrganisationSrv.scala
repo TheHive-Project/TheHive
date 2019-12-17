@@ -14,6 +14,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
 import scala.util.{Success, Try}
+import org.thp.scalligraph.RichSeq
 
 object OrganisationSrv {
   val administration = Organisation("admin", "organisation for administration")
@@ -66,12 +67,28 @@ class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditS
     if (linkExists(fromOrg, toOrg)) Success(())
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
 
-  def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Unit =
-    get(fromOrg)
-      .outToE[OrganisationOrganisation]
-      .filter(_.otherV().hasId(toOrg._id))
-      .remove()
+  def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
+    Success(
+      get(fromOrg)
+        .outToE[OrganisationOrganisation]
+        .filter(_.otherV().hasId(toOrg._id))
+        .remove()
+    )
 
+  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[String])(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
+    val (orgToAdd, orgToRemove) = get(fromOrg)
+      .links
+      .name
+      .toIterator
+      .foldLeft((toOrganisations.toSet, Set.empty[String])) {
+        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
+        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
+      }
+    for {
+      _ <- orgToAdd.toTry(getOrFail(_).flatMap(link(fromOrg, _)))
+      _ <- orgToRemove.toTry(getOrFail(_).flatMap(unlink(fromOrg, _)))
+    } yield ()
+  }
 }
 
 @EntitySteps[Organisation]

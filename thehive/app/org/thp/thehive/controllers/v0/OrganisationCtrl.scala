@@ -1,21 +1,20 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{NotFoundError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
+import play.api.libs.json.JsArray
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success}
 
 @Singleton
 class OrganisationCtrl @Inject()(
@@ -114,22 +113,15 @@ class OrganisationCtrl @Inject()(
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
 
-        organisationSrv
-          .getOrFail(fromOrganisationId)
-          .flatMap { fromOrg =>
-            organisations.toTry { toOrgId =>
-              for {
-                toOrg <- organisationSrv.getOrFail(toOrgId)
-                _     <- organisationSrv.link(fromOrg, toOrg)
-              } yield ()
-            }
-          }
-          .map(_ => Results.Created)
+        for {
+          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
+          _       <- organisationSrv.updateLink(fromOrg, organisations)
+        } yield Results.Created
       }
 
   def unlink(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
     entryPoint("unlink organisations")
-      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { _ => implicit graph =>
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
           toOrg   <- organisationSrv.getOrFail(toOrganisationId)
