@@ -379,7 +379,7 @@ class Output @Inject()(
       } yield IdMapping(inputAction.metaData.id, action._id)
   }
 
-  def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit] = authTransaction(inputAudit.metaData.createdBy) {
+  override def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit] = authTransaction(inputAudit.metaData.createdBy) {
     implicit graph => implicit authContext =>
       logger.info(s"Create audit ${inputAudit.audit.action} on ${inputAudit.audit.objectType} ${inputAudit.audit.objectId}")
       for {
@@ -387,27 +387,13 @@ class Output @Inject()(
           t <- inputAudit.audit.objectType
           i <- inputAudit.audit.objectId
         } yield getEntity(t, i)).flip
-        ctxType = obj.map(_._model.label).flatMap {
-          case "Case"              => Some("Case")
-          case "Task"              => Some("Task")
-          case "Observable"        => Some("Observable")
-          case "Log"               => Some("Task")
-          case "CaseTemplate"      => Some("CaseTemplate")
-          case "TaskInTemplate"    => Some("CaseTemplate")
-          case "Alert"             => Some("Alert")
-          case "AlertToCase"       => Some("Alert")
-          case "Share"             => Some("Case")
-          case "ObservableInAlert" => Some("Alert")
-          case "User"              => Some("User")
-          case "Dashboard"         => Some("Dashboard")
-          case "Organisation"      => Some("Organisation")
-          case "Profile"           => Some("Profile")
-          case "CustomField"       => Some("CustomField")
-          case "Page"              => Some("Page")
-          case _                   => None
+        ctxType = obj.map(_._model.label).map {
+          case "Log"   => "Task"
+          case "Share" => "Case"
+          case other   => other
         }
         context <- ctxType.map(getEntity(_, contextId)).flip
-        audit   <- auditSrv.create(inputAudit.audit, context, obj)
+        _       <- auditSrv.create(inputAudit.audit, context, obj)
       } yield ()
   }
 }

@@ -5,6 +5,7 @@ import akka.stream.scaladsl.Source
 import org.thp.thehive.migration.dto.{
   InputAction,
   InputAlert,
+  InputAudit,
   InputCase,
   InputCaseTemplate,
   InputCustomField,
@@ -39,4 +40,5 @@ trait Input {
   def listJobs: Source[(String, InputJob), NotUsed]
   def listJobObservables: Source[(String, InputObservable), NotUsed]
   def listAction: Source[(String, InputAction), NotUsed]
+  def listAudit: Source[(String, InputAudit), NotUsed]
 }

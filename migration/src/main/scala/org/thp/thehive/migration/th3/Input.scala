@@ -265,4 +265,9 @@ class Input @Inject()(configuration: Configuration, dbFind: DBFind, dbGet: DBGet
       indexName => search(indexName).query(termQuery("relations", "action"))
     )._1
       .read[(String, InputAction)]
+
+  override def listAudit: Source[(String, InputAudit), NotUsed] =
+    dbFind(Some("all"), Nil)(
+      indexName => search(indexName).query(termQuery("relations", "audit"))
+    )._1.read[(String, InputAudit)]
 }

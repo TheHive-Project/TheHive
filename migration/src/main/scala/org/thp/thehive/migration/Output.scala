@@ -4,6 +4,7 @@ import scala.util.Try
 import org.thp.thehive.migration.dto.{
   InputAction,
   InputAlert,
+  InputAudit,
   InputCase,
   InputCaseTemplate,
   InputCustomField,
@@ -39,4 +40,5 @@ trait Output {
   def createJob(observableId: String, inputJob: InputJob): Try[IdMapping]
   def createJobObservable(jobId: String, inputObservable: InputObservable): Try[IdMapping]
   def createAction(objectId: String, inputAction: InputAction): Try[IdMapping]
+  def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit]
 }

@@ -38,11 +38,11 @@ class Migration(input: Input, output: Output, implicit val ec: ExecutionContext,
       }
       .runWith(Sink.seq)
 
-  def migrateWithParent[A: ClassTag](
+  def migrateWithParent[A: ClassTag, I](
       parentIds: Seq[IdMapping],
       source: Source[(String, A), NotUsed],
-      create: (String, A) => Try[IdMapping]
-  ): Future[Seq[IdMapping]] =
+      create: (String, A) => Try[I]
+  ): Future[Seq[I]] =
     source
       .map {
         case (parentId, a) =>
@@ -72,14 +72,20 @@ class Migration(input: Input, output: Output, implicit val ec: ExecutionContext,
       caseObservableIds   <- migrateWithParent(caseIds, input.listCaseObservables, output.createCaseObservable)
       caseTaskIds         <- migrateWithParent(caseIds, input.listCaseTasks, output.createCaseTask)
       caseTaskLogIds      <- migrateWithParent(caseTaskIds, input.listCaseTaskLogs, output.createCaseTaskLog)
-//      alertIds            <- migrate(input.listAlerts, output.createAlert)
-//      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables, output.createAlertObservable)
-      jobIds           <- migrateWithParent(caseObservableIds, input.listJobs, output.createJob)
-      jobObservableIds <- migrateWithParent(jobIds, input.listJobObservables, output.createJobObservable)
+      alertIds            <- migrate(input.listAlerts, output.createAlert)
+      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables, output.createAlertObservable)
+      jobIds              <- migrateWithParent(caseObservableIds, input.listJobs, output.createJob)
+      jobObservableIds    <- migrateWithParent(jobIds, input.listJobObservables, output.createJobObservable)
       actionIds <- migrateWithParent(
-        caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds /* ++ alertIds */,
+        caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds,
         input.listAction,
         output.createAction
+      )
+      _ <- migrateWithParent(
+        profileIds ++ organisationIds ++ userIds ++ impactStatusIds ++ resolutionStatusIds ++ customFieldsIds ++ observableTypeIds ++ caseTemplateIds ++ caseTemplateTaskIds ++
+          caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds ++ alertObservableIds ++ jobIds ++ jobObservableIds ++ actionIds,
+        input.listAudit,
+        output.createAudit
       )
     } yield ()
   }

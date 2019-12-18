@@ -12,6 +12,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import org.thp.thehive.controllers.v0
 
 trait Conversion {
 
@@ -412,7 +413,7 @@ trait Conversion {
       operations  <- (json \ "operations").validateOpt[String]
     } yield objectId -> InputAction(
       metaData,
-      objectType,
+      v0.Conversion.toObjectType(objectType),
       Action(
         workerId,
         workerName.getOrElse(workerId),
@@ -425,6 +426,36 @@ trait Conversion {
         cortexId.getOrElse("unknown"),
         cortexJobId.getOrElse("unknown"),
         operations.flatMap(Json.parse(_).asOpt[Seq[JsObject]]).getOrElse(Nil)
+      )
+    )
+  }
+
+  implicit val auditReads: Reads[(String, InputAudit)] = Reads[(String, InputAudit)] { json =>
+    for {
+      metaData   <- json.validate[MetaData]
+      requestId  <- (json \ "requestId").validate[String]
+      operation  <- (json \ "operation").validate[String]
+      mainAction <- (json \ "base").validate[Boolean]
+      objectId   <- (json \ "objectId").validateOpt[String]
+      objectType <- (json \ "objectType").validateOpt[String]
+      details    <- (json \ "details").validateOpt[JsObject]
+      rootId     <- (json \ "rootId").validate[String]
+    } yield (
+      rootId,
+      InputAudit(
+        metaData,
+        Audit(
+          requestId,
+          operation match {
+            case "Update"   => "update"
+            case "Creation" => "create"
+            case "Delete"   => "delete"
+          },
+          mainAction,
+          objectId,
+          objectType,
+          details.map(_.toString)
+        )
       )
     )
   }
