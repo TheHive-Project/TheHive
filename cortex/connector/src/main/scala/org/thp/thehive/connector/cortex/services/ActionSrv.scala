@@ -5,7 +5,6 @@ import java.util.Date
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
-import io.scalaland.chimney.dsl._
 import javax.inject.Inject
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
@@ -53,7 +52,6 @@ class ActionSrv @Inject()(
     * creates a job on Cortex side and then persist the
     * Action, looking forward job completion
     *
-    * @param action      the initial data
     * @param entity      the Entity to execute an Action upon
     * @param authContext necessary auth context
     * @return
