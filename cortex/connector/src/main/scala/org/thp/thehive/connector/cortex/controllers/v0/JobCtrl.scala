@@ -1,25 +1,23 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.concurrent.{ExecutionContext, Future}
-
-import play.api.Logger
-import play.api.libs.json.{JsNull, JsObject}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
-import org.thp.thehive.connector.cortex.models.Job
+import org.thp.thehive.connector.cortex.models.RichJob
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
-import org.thp.thehive.services.ObservableSrv
 import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.ObservableSrv
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class JobCtrl @Inject()(
@@ -41,12 +39,12 @@ class JobCtrl @Inject()(
     FieldsParser[IdOrName],
     (param, graph, authContext) => jobSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, JobSteps, PagedResult[Job with Entity]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, JobSteps, PagedResult[RichJob]](
     "page",
     FieldsParser[OutputParam],
-    (range, jobSteps, _) => jobSteps.page(range.from, range.to, withTotal = true)
+    (range, jobSteps, _) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob)
   )
-  override val outputQuery: Query = Query.output[Job with Entity]()
+  override val outputQuery: Query = Query.output[RichJob]()
 
   def get(jobId: String): Action[AnyContent] =
     entryPoint("get job")
@@ -54,10 +52,9 @@ class JobCtrl @Inject()(
         jobSrv
           .getByIds(jobId)
           .visible
+          .richJob
           .getOrFail()
-          .map { job =>
-            Results.Ok(job.toJson.as[JsObject] + ("report" -> job.report.getOrElse(JsNull)))
-          }
+          .map(job => Results.Ok(job.toJson))
       }
 
   def create: Action[AnyContent] =

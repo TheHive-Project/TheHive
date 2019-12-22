@@ -18,17 +18,19 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
-import org.thp.thehive.connector.cortex.models.{Job, JobStatus, ObservableJob, ReportObservable}
+import org.thp.thehive.connector.cortex.models.{Job, JobStatus, ObservableJob, ReportObservable, RichJob}
 import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, ReportTagSrv}
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
+
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -67,7 +69,7 @@ class JobSrv @Inject()(
     */
   def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
       implicit authContext: AuthContext
-  ): Future[Job with Entity] =
+  ): Future[RichJob] =
     for {
       cortexClient <- serviceHelper
         .availableCortexClients(connector.clients, authContext.organisation)
@@ -92,7 +94,7 @@ class JobSrv @Inject()(
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
       _ <- Future.fromTry(db.tryTransaction { implicit graph =>
-        auditSrv.job.create(createdJob, observable.observable, createdJob.toJson)
+        auditSrv.job.create(createdJob.job, observable.observable, createdJob.toJson)
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
@@ -119,11 +121,11 @@ class JobSrv @Inject()(
     * @param authContext the implicit auth needed
     * @return
     */
-  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Job with Entity] =
+  def create(job: Job, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichJob] =
     for {
       createdJob <- createEntity(job)
       _          <- observableJobSrv.create(ObservableJob(), observable, createdJob)
-    } yield createdJob
+    } yield RichJob(createdJob, Nil)
 
   /**
     * Once a job has finished on Cortex side
@@ -160,12 +162,12 @@ class JobSrv @Inject()(
   private def updateJobStatus(jobId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
-        val report  = cortexJob.report.map(r => Json.toJson(r).as[JsObject])
+        val report  = cortexJob.report.flatMap(r => r.full orElse r.errorMessage.map(m => Json.obj("errorMessage" -> m)))
         val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
           job <- get(job).update(
-            "report"  -> report, // FIXME remove useless data in report (artifacts, operations, ...) only keep full ?
+            "report"  -> report,
             "status"  -> status,
             "endDate" -> endDate
           )
@@ -321,4 +323,17 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     * @return
     */
   def reportObservables: ObservableSteps = new ObservableSteps(raw.outTo[ReportObservable])
+
+  def richJob: Traversal[RichJob, RichJob] =
+    Traversal(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(newInstance(__[Vertex]).reportObservables.richObservable.fold.raw))
+        )
+        .map {
+          case (job, observables) =>
+            RichJob(job.as[Job], observables.asScala)
+        }
+    )
 }

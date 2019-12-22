@@ -1,18 +1,15 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import java.util.Date
-
-import play.api.libs.json.{JsArray, JsObject}
-
 import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.connector.cortex.dto.v0.{InputAction, InputAnalyzerTemplate, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
+import org.thp.thehive.connector.cortex.dto.v0.{InputAnalyzerTemplate, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
 import org.thp.thehive.connector.cortex.models._
-import org.thp.thehive.controllers.v0.Conversion.toObjectType
+import play.api.libs.json.{JsArray, JsFalse, Json}
 
 object Conversion {
+  import org.thp.thehive.controllers.v0.Conversion._
 
   implicit val actionOutput: Outputer.Aux[RichAction, OutputAction] = Outputer[RichAction, OutputAction](
     _.into[OutputAction]
@@ -27,10 +24,9 @@ object Conversion {
       .transform
   )
 
-  implicit val jobOutput: Outputer.Aux[Job with Entity, OutputJob] = Outputer[Job with Entity, OutputJob](
+  implicit val jobOutput: Outputer.Aux[RichJob, OutputJob] = Outputer[RichJob, OutputJob](
     job =>
       job
-        .asInstanceOf[Job]
         .into[OutputJob]
         .withFieldComputed(_.analyzerId, _.workerId)
         .withFieldComputed(_.analyzerName, _.workerName)
@@ -39,7 +35,14 @@ object Conversion {
         .withFieldComputed(_.endDate, _.endDate)
         .withFieldComputed(_.cortexId, _.cortexId)
         .withFieldComputed(_.cortexJobId, _.cortexJobId)
-        .withFieldConst(_.report, None)
+        .withFieldComputed(
+          _.report,
+          j =>
+            j.report.map {
+              case r if j.status == JobStatus.Success => Json.obj("success" -> true, "full" -> r, "artifacts" -> j.observables.map(_.toJson))
+              case r                                  => r + ("success" -> JsFalse)
+            }
+        )
         .withFieldConst(_.id, job._id)
         .transform
   )
