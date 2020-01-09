@@ -19,7 +19,7 @@
   },
   {
     "id": "task3",
-    "title": "case 3 task 1",
+    "title": "case 2 task 1",
     "group": "group1",
     "description": "description task 3",
     "status": "Waiting",
@@ -28,7 +28,7 @@
   },
   {
     "id": "task4",
-    "title": "case 4 task 1",
+    "title": "case 2 task 2",
     "group": "group1",
     "description": "description task 4",
     "status": "Waiting",
@@ -37,29 +37,11 @@
   },
   {
     "id": "task5",
-    "title": "case 4 task 2",
+    "title": "case 3 task 1",
     "group": "group1",
     "description": "description task 5",
     "status": "Waiting",
     "flag": true,
     "order": 0
-  },
-  {
-    "id": "task6",
-    "title": "case 3 task 2",
-    "group": "group1",
-    "description": "description task 6",
-    "status": "Waiting",
-    "flag": true,
-    "order": 1
-  },
-  {
-    "id": "task7",
-    "title": "case 3 task 3",
-    "group": "group1",
-    "description": "description task 7",
-    "status": "Waiting",
-    "flag": true,
-    "order": 2
   }
 ]

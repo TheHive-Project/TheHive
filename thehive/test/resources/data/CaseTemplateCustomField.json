@@ -1,11 +1,4 @@
 [
-  {
-    "from": "spam",
-    "to": "string1",
-    "stringValue": "string1 custom field"
-  },
-  {
-    "from": "spam",
-    "to": "boolean1"
-  }
+  {"from": "spam", "to": "string1", "stringValue": "string1 custom field"},
+  {"from": "spam", "to": "boolean1"}
 ]

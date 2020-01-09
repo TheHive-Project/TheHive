@@ -24,7 +24,7 @@ class ConfigCtrl @Inject()(
     db: Database
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   implicit val configWrites: Writes[ConfigItem[_, _]] = Writes[ConfigItem[_, _]](
     item =>

@@ -22,8 +22,8 @@ import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, RoleSrv, UserSrv}
 @Singleton
 class TheHiveSchema @Inject()(injector: Injector) extends Schema {
 
-  lazy val logger   = Logger(getClass)
-  val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
+  lazy val logger: Logger = Logger(getClass)
+  val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

@@ -1,4 +1,4 @@
-package org.thp.thehive.models
+package org.thp.thehive
 
 import java.io.File
 
@@ -17,6 +17,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
@@ -40,10 +41,11 @@ class DatabaseBuilder @Inject()(
     dataSrv: DataSrv,
     logSrv: LogSrv,
     alertSrv: AlertSrv,
-    attachmentSrv: AttachmentSrv
+    attachmentSrv: AttachmentSrv,
+    pageSrv: PageSrv
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
 
@@ -70,7 +72,8 @@ class DatabaseBuilder @Inject()(
           createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
           createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
           createVertex(attachmentSrv, FieldsParser[Attachment]) ++
-          createVertex(tagSrv, FieldsParser[Tag])
+          createVertex(tagSrv, FieldsParser[Tag]) ++
+          createVertex(pageSrv, FieldsParser[Page])
 
       createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
       createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
@@ -113,6 +116,8 @@ class DatabaseBuilder @Inject()(
       createEdge(alertSrv.alertCaseTemplateSrv, alertSrv, caseTemplateSrv, FieldsParser[AlertCaseTemplate], idMap)
       createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
       createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
+
+      createEdge(pageSrv.organisationPageSrv, organisationSrv, pageSrv, FieldsParser[OrganisationPage], idMap)
 
       Success(())
     }

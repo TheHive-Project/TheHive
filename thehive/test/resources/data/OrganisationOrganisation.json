@@ -1,6 +1,6 @@
 [
   {
-    "from": "admin",
-    "to": "cert"
+    "from": "cert",
+    "to": "soc"
   }
 ]

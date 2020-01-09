@@ -1,42 +1,12 @@
 [
-  {
-    "from": "alert1",
-    "to": "tagtest"
-  },
-  {
-    "from": "alert1",
-    "to": "tagalert"
-  },
-  {
-    "from": "alert2",
-    "to": "tagtest"
-  },
-  {
-    "from": "alert2",
-    "to": "tagalert"
-  },
-  {
-    "from": "alert3",
-    "to": "tagtest"
-  },
-  {
-    "from": "alert3",
-    "to": "tagalert"
-  },
-  {
-    "from": "alert4",
-    "to": "tagtest"
-  },
-  {
-    "from": "alert4",
-    "to": "tagalert"
-  },
-  {
-    "from": "alert5",
-    "to": "tagtest"
-  },
-  {
-    "from": "alert5",
-    "to": "tagalert"
-  }
+  {"from": "alert1", "to": "tagtest"},
+  {"from": "alert1", "to": "tagalert"},
+  {"from": "alert2", "to": "tagtest"},
+  {"from": "alert2", "to": "tagalert"},
+  {"from": "alert3", "to": "tagtest"},
+  {"from": "alert3", "to": "tagalert"},
+  {"from": "alert4", "to": "tagtest"},
+  {"from": "alert4", "to": "tagalert"},
+  {"from": "alert5", "to": "tagtest"},
+  {"from": "alert5", "to": "tagalert"}
 ]

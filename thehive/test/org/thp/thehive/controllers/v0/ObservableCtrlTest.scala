@@ -4,20 +4,15 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import scala.util.Try
-
 import play.api.Configuration
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
-import play.api.test.{FakeRequest, NoMaterializer, NoTemporaryFileCreator, PlaySpecification}
+import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
 
-import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
@@ -25,7 +20,7 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AlertSrv, DataSrv, OrganisationSrv}
+import org.thp.thehive.services.DataSrv
 
 case class TestObservable(
     dataType: String,
@@ -44,32 +39,13 @@ object TestObservable {
     outputObservable.into[TestObservable].transform
 }
 
-class ObservableCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
-  implicit val mat: Materializer = NoMaterializer
+class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
+  "observable controller" should {
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val observableCtrl: ObservableCtrl      = app.instanceOf[ObservableCtrl]
-    val queryExecutor: TheHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
-    val caseCtrl: CaseCtrl                  = app.instanceOf[CaseCtrl]
-    val hashers                             = Hasher(app.instanceOf[Configuration].get[Seq[String]]("attachment.hash"): _*)
-
-    s"[$name] observable controller" should {
-
-      "be able to create an observable with string data" in {
-        val request = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse("""
+    "be able to create an observable with string data" in testApp { app =>
+      val request = FakeRequest("POST", s"/api/case/#1/artifact")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
                 "ioc":false,
@@ -80,23 +56,23 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "data":"multi\nline\ntest"
               }
             """.stripMargin))
-        val result = observableCtrl.create("#1")(request)
+      val result = app[ObservableCtrl].create("#1")(request)
 
-        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
-        val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
+      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
-        createdObservables must have size 3
-        createdObservables.map(_.dataType) must contain(be_==("autonomous-system")).forall
-        createdObservables.flatMap(_.data) must contain(exactly("multi", "line", "test"))
-        createdObservables.map(_.sighted) must contain(beFalse).forall
-        createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
-        createdObservables.map(_.tags) must contain(be_==(Set("tagfile"))).forall
-      }
+      createdObservables must have size 3
+      createdObservables.map(_.dataType) must contain(be_==("autonomous-system")).forall
+      createdObservables.flatMap(_.data) must contain(exactly("multi", "line", "test"))
+      createdObservables.map(_.sighted) must contain(beFalse).forall
+      createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
+      createdObservables.map(_.tags) must contain(be_==(Set("tagfile"))).forall
+    }
 
-      "be able to create and search 2 observables with data array" in {
-        val request = FakeRequest("POST", s"/api/case/#4/artifact")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
-          .withJsonBody(Json.parse("""
+    "be able to create and search 2 observables with data array" in testApp { app =>
+      val request = FakeRequest("POST", s"/api/case/#1/artifact")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse("""
               {
                 "dataType":"autonomous-system",
                 "ioc":false,
@@ -107,29 +83,29 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "data":["observable", "in", "array"]
               }
             """.stripMargin))
-        val result = observableCtrl.create("#4")(request)
+      val result = app[ObservableCtrl].create("#1")(request)
 
-        status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-        val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
+      val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
-        createdObservables must have size 3
-        createdObservables.map(_.dataType) must contain(be_==("autonomous-system")).forall
-        createdObservables.flatMap(_.data) must contain(exactly("observable", "in", "array"))
-        createdObservables.map(_.sighted) must contain(beFalse).forall
-        createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
-        createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
+      createdObservables must have size 3
+      createdObservables.map(_.dataType) must contain(be_==("autonomous-system")).forall
+      createdObservables.flatMap(_.data) must contain(exactly("observable", "in", "array"))
+      createdObservables.map(_.sighted) must contain(beFalse).forall
+      createdObservables.map(_.message) must contain(beSome("love exciting and new")).forall
+      createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
-        val requestCase =
-          FakeRequest("GET", s"/api/v0/case/#4").withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
-        val resultCaseGet = caseCtrl.get("#4")(requestCase)
+      val requestCase =
+        FakeRequest("GET", s"/api/v0/case/#1").withHeaders("user" -> "certuser@thehive.local")
+      val resultCaseGet = app[CaseCtrl].get("#1")(requestCase)
 
-        status(resultCaseGet) shouldEqual 200
+      status(resultCaseGet) shouldEqual 200
 
-        val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
-        val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
-          .withJsonBody(Json.parse(s"""
+      val resultCase = contentAsJson(resultCaseGet).as[OutputCase]
+      val requestSearch = FakeRequest("POST", s"/api/case/artifact/_search?range=all&sort=-startDate&nstats=true")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse(s"""
               {
                 "query":{
                    "_and":[
@@ -152,21 +128,21 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 }
              }
             """.stripMargin))
-        val resultSearch = queryExecutor.observable.search(requestSearch)
+      val resultSearch = app[TheHiveQueryExecutor].observable.search(requestSearch)
 
-        status(resultSearch) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
+      status(resultSearch) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
 
-        val resSearchObservables = contentAsJson(resultSearch).as[Seq[OutputObservable]]
+      val resSearchObservables = contentAsJson(resultSearch).as[Seq[OutputObservable]]
 
-        resSearchObservables must have size 3
-        resSearchObservables.flatMap(_.data) must contain(exactly("observable", "in", "array"))
-      }
+      resSearchObservables must have size 4
+      resSearchObservables.flatMap(_.data) must contain(exactly("observable", "in", "array", "h.fr"))
+    }
 
-      "be able to create and get 2 observables with string data and attachment" in {
-        WithFakeTemporaryFile { tempFile =>
-          val hashes    = hashers.fromPath(tempFile.path).map(_.toString)
-          val files     = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
-          val dataParts = Map("_json" -> Seq("""
+    "be able to create and get 2 observables with string data and attachment" in testApp { app =>
+      WithFakeTemporaryFile { tempFile =>
+        val hashes    = Hasher(app.apply[Configuration].get[Seq[String]]("attachment.hash"): _*).fromPath(tempFile.path).map(_.toString)
+        val files     = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
+        val dataParts = Map("_json" -> Seq("""
               {
                 "dataType":"ip",
                 "ioc":false,
@@ -177,69 +153,40 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "data":"127.0.0.1\n127.0.0.2"
               }
             """))
-          val request = FakeRequest(
-            "POST",
-            s"/api/case/#1/artifact",
-            Headers("user" -> "user1@thehive.local"),
-            body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
-          )
-          val result = observableCtrl.create("#1")(request)
-          status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
-          val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
-
-          createdObservables must have size 3
-          createdObservables.map(_.dataType) must contain(be_==("ip")).forall
-          createdObservables.flatMap(_.data) must contain(exactly("127.0.0.1", "127.0.0.2"))
-          createdObservables.map(_.sighted) must contain(beFalse).forall
-          createdObservables.map(_.message) must contain(beSome("localhost")).forall
-          createdObservables.map(_.tags) must contain(be_==(Set("local", "host"))).forall
-          val attachmentOption = createdObservables.flatMap(_.attachment).headOption
-          attachmentOption must beSome
-          val attachment = attachmentOption.get
-          attachment.name must beEqualTo("myfile.txt")
-          attachment.hashes must containTheSameElementsAs(hashes)
-          attachment.size must beEqualTo(tempFile.length())
-          attachment.contentType must beEqualTo("text/plain")
-
-          createdObservables.foreach(obs => obs must equalTo(getObservable(obs._id, observableCtrl)))
-          ok
-        }
-
-      }
-
-      "be able to retrieve an observable" in {
-        val maybeObservable = app.instanceOf[Database].roTransaction { implicit graph =>
-          app
-            .instanceOf[AlertSrv]
-            .initSteps
-            .getBySourceId("testType", "testSource", "ref1")
-            .observables
-            .headOption()
-        }
-        maybeObservable must beSome
-        val observableId = maybeObservable.get._id
-        val getRequest = FakeRequest("GET", s"/api/case/artifact/$observableId")
-          .withHeaders("user" -> "user1@thehive.local")
-        val getResult = observableCtrl.get(observableId)(getRequest)
-
-        status(getResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(getResult)}")
-        TestObservable(contentAsJson(getResult).as[OutputObservable]) must equalTo(
-          TestObservable(
-            dataType = "domain",
-            data = Some("h.fr"),
-            tlp = 3,
-            tags = Set("testNamespace.testPredicate=\"testDomain\""),
-            ioc = true,
-            message = Some("Some weird domain")
-          )
+        val request = FakeRequest(
+          "POST",
+          s"/api/case/#1/artifact",
+          Headers("user" -> "certuser@thehive.local"),
+          body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
         )
-      }
+        val result = app[ObservableCtrl].create("#1")(request)
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+        val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
-      "be able to update and bulk update observables" in {
-        val resObservable = createDummyObservable(observableCtrl)
-        val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(s"""
+        createdObservables must have size 3
+        createdObservables.map(_.dataType) must contain(be_==("ip")).forall
+        createdObservables.flatMap(_.data) must contain(exactly("127.0.0.1", "127.0.0.2"))
+        createdObservables.map(_.sighted) must contain(beFalse).forall
+        createdObservables.map(_.message) must contain(beSome("localhost")).forall
+        createdObservables.map(_.tags) must contain(be_==(Set("local", "host"))).forall
+        val attachmentOption = createdObservables.flatMap(_.attachment).headOption
+        attachmentOption must beSome
+        val attachment = attachmentOption.get
+        attachment.name must beEqualTo("myfile.txt")
+        attachment.hashes must containTheSameElementsAs(hashes)
+        attachment.size must beEqualTo(tempFile.length())
+        attachment.contentType must beEqualTo("text/plain")
+
+        createdObservables.foreach(obs => obs must equalTo(getObservable(obs._id, app[ObservableCtrl])))
+        ok
+      }
+    }
+
+    "be able to update and bulk update observables" in testApp { app =>
+      val resObservable = createDummyObservable(app[ObservableCtrl])
+      val requestUp = FakeRequest("PATCH", s"/api/case/artifact/_bulk")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse(s"""
               {
                 "ids":${Json.toJson(resObservable.map(_._id))},
                 "ioc":true,
@@ -249,63 +196,62 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
                 "tags":["tagfileUp"]
               }
             """))
-        val resultUp = observableCtrl.bulkUpdate(requestUp)
+      val resultUp = app[ObservableCtrl].bulkUpdate(requestUp)
 
-        status(resultUp) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultUp)}")
+      status(resultUp) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultUp)}")
 
-        val resObsUpdated = resObservable.map(obs => getObservable(obs._id, observableCtrl))
+      val resObsUpdated = resObservable.map(obs => getObservable(obs._id, app[ObservableCtrl]))
 
-        resObsUpdated.map(_.tags) must contain(be_==(Set("tagfileUp"))).forall
-        resObsUpdated.map(_.message) must contain(beSome("love exciting and new edited")).forall
-        resObsUpdated.map(_.ioc) must contain(beTrue).forall
-        resObsUpdated.map(_.sighted) must contain(beTrue).forall
-      }
+      resObsUpdated.map(_.tags) must contain(be_==(Set("tagfileUp"))).forall
+      resObsUpdated.map(_.message) must contain(beSome("love exciting and new edited")).forall
+      resObsUpdated.map(_.ioc) must contain(beTrue).forall
+      resObsUpdated.map(_.sighted) must contain(beTrue).forall
+    }
 
-      "create 2 observables with the same data" in {
-        val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse("""
+    "create 2 observables with the same data" in testApp { app =>
+      val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse("""
               {
                 "dataType":"hostname",
                 "message":"here",
                 "data":"localhost"
               }
             """))
-        val result1 = observableCtrl.create("#1")(request1)
-        status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
+      val result1 = app[ObservableCtrl].create("#1")(request1)
+      status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
-        getData("localhost", app) must have size 1
+      getData("localhost", app) must have size 1
 
-        val request2 = FakeRequest("POST", s"/api/case/#3/artifact")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse("""
+      val request2 = FakeRequest("POST", s"/api/case/#2/artifact")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse("""
               {
                 "dataType":"domain",
                 "message":"good place",
                 "data":"localhost"
               }
             """))
-        val result2 = observableCtrl.create("#3")(request2)
-        status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
+      val result2 = app[ObservableCtrl].create("#2")(request2)
+      status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
-        getData("localhost", app) must have size 1
-      }
+      getData("localhost", app) must have size 1
+    }
 
-      "delete an observable" in {
-        val resObservable = createDummyObservable(observableCtrl)
-        val observableId  = resObservable.head._id
-        val requestDelete = FakeRequest("DELETE", s"/api/case/artifact/$observableId")
-          .withHeaders("user" -> "user1@thehive.local")
-        val resultDelete = observableCtrl.delete(observableId)(requestDelete)
+    "delete an observable" in testApp { app =>
+      val resObservable = createDummyObservable(app[ObservableCtrl])
+      val observableId  = resObservable.head._id
+      val requestDelete = FakeRequest("DELETE", s"/api/case/artifact/$observableId")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val resultDelete = app[ObservableCtrl].delete(observableId)(requestDelete)
 
-        status(resultDelete) shouldEqual 204
-      }
+      status(resultDelete) shouldEqual 204
     }
   }
 
   def getObservable(id: String, observableCtrl: ObservableCtrl): OutputObservable = {
     val requestGet = FakeRequest("GET", s"/api/case/artifact/$id")
-      .withHeaders("user" -> "user1@thehive.local")
+      .withHeaders("user" -> "certuser@thehive.local")
     val resultGet = observableCtrl.get(id)(requestGet)
 
     status(resultGet) shouldEqual 200
@@ -314,7 +260,7 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
 
   def createDummyObservable(observableCtrl: ObservableCtrl): Seq[OutputObservable] = {
     val request = FakeRequest("POST", s"/api/case/#1/artifact")
-      .withHeaders("user" -> "user1@thehive.local")
+      .withHeaders("user" -> "certuser@thehive.local")
       .withJsonBody(Json.parse(s"""
               {
                 "dataType":"autonomous-system",
@@ -333,8 +279,8 @@ class ObservableCtrlTest extends PlaySpecification with Mockito {
   }
 
   def getData(data: String, app: AppBuilder): List[Data with Entity] = {
-    val dataSrv: DataSrv = app.instanceOf[DataSrv]
-    val db: Database     = app.instanceOf[Database]
+    val dataSrv: DataSrv = app.apply[DataSrv]
+    val db: Database     = app.apply[Database]
     db.roTransaction { implicit graph =>
       dataSrv.initSteps.getByData(data).toList
     }

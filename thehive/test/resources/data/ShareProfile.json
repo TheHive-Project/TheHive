@@ -1,22 +1,6 @@
 [
-  {
-    "from": "case1-cert",
-    "to": "all"
-  },
-  {
-    "from": "case2-cert",
-    "to": "all"
-  },
-  {
-    "from": "case3-cert",
-    "to": "all"
-  },
-  {
-    "from": "case3-admin",
-    "to": "read-only"
-  },
-  {
-    "from": "case4-admin",
-    "to": "all"
-  }
+  {"from": "case1-cert", "to": "all"},
+  {"from": "case2-cert", "to": "all"},
+  {"from": "case2-soc", "to": "read-only"},
+  {"from": "case3-soc", "to": "all"}
 ]

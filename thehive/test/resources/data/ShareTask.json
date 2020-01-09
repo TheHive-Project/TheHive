@@ -1,30 +1,7 @@
 [
-  {
-    "from": "case1-cert",
-    "to": "task1"
-  },
-  {
-    "from": "case1-cert",
-    "to": "task2"
-  },
-  {
-    "from": "case3-cert",
-    "to": "task3"
-  },
-  {
-    "from": "case4-admin",
-    "to": "task4"
-  },
-  {
-    "from": "case4-admin",
-    "to": "task5"
-  },
-  {
-    "from": "case3-admin",
-    "to": "task6"
-  },
-  {
-    "from": "case3-admin",
-    "to": "task7"
-  }
+  {"from": "case1-cert", "to": "task1"},
+  {"from": "case1-cert", "to": "task2"},
+  {"from": "case2-soc", "to": "task3"},
+  {"from": "case2-cert", "to": "task4"},
+  {"from": "case3-soc", "to": "task5"}
 ]

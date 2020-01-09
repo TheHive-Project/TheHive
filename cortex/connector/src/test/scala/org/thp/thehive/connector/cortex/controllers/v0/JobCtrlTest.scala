@@ -1,54 +1,23 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.util.Try
-
 import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import play.api.test.{FakeRequest, PlaySpecification}
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.services.CortexActor
-import org.thp.thehive.models.{DatabaseBuilder, Permissions}
-import org.thp.thehive.services.{ObservableSrv, OrganisationSrv}
+import org.thp.thehive.services.ObservableSrv
 
-class JobCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
-  implicit val mat: Materializer = NoMaterializer
+class JobCtrlTest extends PlaySpecification with TestAppBuilder {
+  "job controller" should {
+    "get a job" in testApp { app =>
+      val observable = app[Database].roTransaction { implicit graph =>
+        app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail().get
+      }
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-      .bindActor[CortexActor]("cortex-actor")
-
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val db                  = app.instanceOf[Database]
-    val observableSrv       = app.instanceOf[ObservableSrv]
-    val cortexQueryExecutor = app.instanceOf[CortexQueryExecutor]
-
-    s"[$name] job controller" should {
-      "get a job" in {
-        val maybeObservable = db.roTransaction { implicit graph =>
-          observableSrv.initSteps.has("message", "Some weird domain").getOrFail()
-        }
-
-        maybeObservable must beSuccessfulTry
-
-        val observable = maybeObservable.get
-        val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
-          .withJsonBody(Json.parse(s"""
+      val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
+        .withHeaders("user" -> "user2@thehive.local")
+        .withJsonBody(Json.parse(s"""
               {
                  "query":{
                     "_and":[
@@ -64,15 +33,14 @@ class JobCtrlTest extends PlaySpecification with Mockito {
                  }
               }
             """.stripMargin))
-        val resultSearch = cortexQueryExecutor.job.search(requestSearch)
+      val resultSearch = app[CortexQueryExecutor].job.search(requestSearch)
+      status(resultSearch) shouldEqual 200
+    }
 
-        status(resultSearch) shouldEqual 200
-      }
-
-      "get stats for a job" in {
-        val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> OrganisationSrv.administration.name)
-          .withJsonBody(Json.parse(s"""
+    "get stats for a job" in testApp { app =>
+      val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
+        .withHeaders("user" -> "user2@thehive.local")
+        .withJsonBody(Json.parse(s"""
                                    {
                                      "query": {
                                        "_and": [{
@@ -93,10 +61,9 @@ class JobCtrlTest extends PlaySpecification with Mockito {
                                      }]
                                    }
             """.stripMargin))
-        val result = cortexQueryExecutor.job.stats(request)
+      val result = app[CortexQueryExecutor].job.stats(request)
 
-        status(result) shouldEqual 200
-      }
+      status(result) shouldEqual 200
     }
   }
 }

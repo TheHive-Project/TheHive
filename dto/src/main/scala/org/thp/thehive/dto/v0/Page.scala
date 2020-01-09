@@ -7,7 +7,6 @@ import play.api.libs.json._
 case class InputPage(
     title: String,
     content: String,
-    slug: String,
     order: Option[Int],
     category: String
 )

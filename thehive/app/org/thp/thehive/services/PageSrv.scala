@@ -21,9 +21,9 @@ class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv,
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): PageSteps = new PageSteps(raw)
 
-  override def get(idOrTitle: String)(implicit graph: Graph): PageSteps =
-    if (db.isValidId(idOrTitle)) getByIds(idOrTitle)
-    else initSteps.getByTitle(idOrTitle)
+  override def get(idOrSlug: String)(implicit graph: Graph): PageSteps =
+    if (db.isValidId(idOrSlug)) getByIds(idOrSlug)
+    else initSteps.getBySlug(idOrSlug)
 
   def create(page: Page)(implicit authContext: AuthContext, graph: Graph): Try[Page with Entity] =
     for {
@@ -52,6 +52,7 @@ class PageSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   override def newInstance(): PageSteps                             = new PageSteps(raw.clone())
 
   def getByTitle(title: String): PageSteps = this.has("title", title)
+  def getBySlug(slug: String): PageSteps   = this.has("slug", slug)
 
   def visible(implicit authContext: AuthContext): PageSteps = this.filter(
     _.inTo[OrganisationPage]

@@ -14,9 +14,6 @@ case class OrganisationShare()
 @EdgeEntity[Organisation, Organisation]
 case class OrganisationOrganisation()
 
-@EdgeEntity[Organisation, Page]
-case class OrganisationPage()
-
 case class RichOrganisation(organisation: Organisation with Entity, links: Seq[Organisation with Entity]) {
   def name: String               = organisation.name
   def description: String        = organisation.description

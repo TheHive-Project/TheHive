@@ -1,22 +1,6 @@
 [
-  {
-    "from": "cert",
-    "to": "case1-cert"
-  },
-  {
-    "from": "cert",
-    "to": "case2-cert"
-  },
-  {
-    "from": "cert",
-    "to": "case3-cert"
-  },
-  {
-    "from": "admin",
-    "to": "case3-admin"
-  },
-  {
-    "from": "admin",
-    "to": "case4-admin"
-  }
+  {"from": "cert", "to": "case1-cert"},
+  {"from": "cert", "to": "case2-cert"},
+  {"from": "soc", "to": "case2-soc"},
+  {"from": "soc", "to": "case3-soc"}
 ]

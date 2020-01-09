@@ -584,6 +584,7 @@ object Conversion {
     def toPage: Page =
       inputPage
         .into[Page]
+        .withFieldComputed(_.slug, _.title.replaceAll("[^\\p{Alnum}]+", "_"))
         .withFieldComputed(_.order, _.order.getOrElse(0))
         .transform
   }

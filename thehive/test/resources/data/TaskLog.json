@@ -1,6 +1,3 @@
 [
-  {
-    "from": "task4",
-    "to": "log1"
-  }
+  {"from": "task4", "to": "log1"}
 ]

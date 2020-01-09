@@ -1,10 +1,5 @@
 [
-  {
-    "from": "case1-cert",
-    "to": "h.fr"
-  },
-  {
-    "from": "case1-cert",
-    "to": "helloworld"
-  }
+  {"from": "case1-cert", "to": "h.fr"},
+  {"from": "case2-cert", "to": "helloworld"},
+  {"from": "case2-soc", "to": "helloworld"}
 ]

@@ -1,35 +1,41 @@
 [
   {
-    "id": "user1",
-    "login": "user1@thehive.local",
-    "name": "Thomas",
-    "locked": false
-  },
-  {
-    "id": "user2",
-    "login": "user2@thehive.local",
-    "name": "U",
+    "id": "certuser",
+    "login": "certuser@thehive.local",
+    "name": "certuser",
     "locked": false,
     "password": "*random*seed*,d57cb64654764ab43edfc76a0a84e4e2fda867e761ab5a82859b00ad8412b2a1"
   },
   {
-    "id": "user3",
-    "login": "user3@thehive.local",
-    "name": "only on admin",
-    "locked": false,
-    "password": "*random*seed*,799523c20727fcf99ec5a9a98ff728e5897e7f17a453af396b2a6b7fae441e20"
+    "id": "socuser",
+    "login": "socuser@thehive.local",
+    "name": "socuser",
+    "locked": false
   },
   {
-    "id": "user4",
-    "login": "user4@thehive.local",
-    "name": "admin of cert",
+    "id": "certadmin",
+    "login": "certadmin@thehive.local",
+    "name": "certadmin",
+    "locked": false
+  },
+  {
+    "id": "socadmin",
+    "login": "socadmin@thehive.local",
+    "name": "socadmin",
+    "locked": false
+  },
+  {
+    "id": "certro",
+    "login": "certro@thehive.local",
+    "name": "certro",
     "locked": true,
     "apikey": "azertyazerty"
   },
   {
-    "id": "user5",
-    "login": "user5@thehive.local",
-    "name": "org admin of cert",
-    "locked": false
+    "id": "socro",
+    "login": "socro@thehive.local",
+    "name": "socro",
+    "locked": false,
+    "password": "*random*seed*,d57cb64654764ab43edfc76a0a84e4e2fda867e761ab5a82859b00ad8412b2a1"
   }
 ]

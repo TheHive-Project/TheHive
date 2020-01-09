@@ -135,9 +135,9 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
 
-  def visibleOrganisationsTo: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.inTo[OrganisationOrganisation]).dedup())
+  def visibleOrganisationsTo: OrganisationSteps = new OrganisationSteps(raw.unionFlat(_.identity(), _.inTo[OrganisationOrganisation]).dedup())
 
-  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(identity, _.outTo[OrganisationOrganisation]).dedup())
+  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(_.identity(), _.outTo[OrganisationOrganisation]).dedup())
 
   def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
 

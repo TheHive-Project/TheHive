@@ -3,19 +3,19 @@ package org.thp.thehive.controllers.v0
 import java.nio.file.Files
 
 import javax.inject.Inject
+import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AuthorizationError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
 import org.thp.thehive.services.{TagSrv, TagSteps}
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 class TagCtrl @Inject()(
     entryPoint: EntryPoint,
@@ -42,19 +42,17 @@ class TagCtrl @Inject()(
     entryPoint("import taxonomy")
       .extract("file", FieldsParser.file.optional.on("file"))
       .extract("content", FieldsParser.jsObject.optional.on("content"))
-      .authTransaction(db) { implicit request => implicit graph =>
-        if (request.permissions.contains(Permissions.manageTag)) {
-          val file: Option[FFile]       = request.body("file")
-          val content: Option[JsObject] = request.body("content")
-          val tags = file
-            .fold(Seq.empty[Tag])(ffile => parseTaxonomy(Json.parse(Files.newInputStream(ffile.filepath)))) ++
-            content.fold(Seq.empty[Tag])(parseTaxonomy)
+      .authPermittedTransaction(db, Permissions.manageTag) { implicit request => implicit graph =>
+        val file: Option[FFile]       = request.body("file")
+        val content: Option[JsObject] = request.body("content")
+        val tags = file
+          .fold(Seq.empty[Tag])(ffile => parseTaxonomy(Json.parse(Files.newInputStream(ffile.filepath)))) ++
+          content.fold(Seq.empty[Tag])(parseTaxonomy)
 
-          tags
-            .filterNot(tagSrv.initSteps.get(_).exists())
-            .toTry(tagSrv.create)
-            .map(ts => Results.Ok(JsNumber(ts.size)))
-        } else Failure(AuthorizationError("You don't have permission to manage tags"))
+        tags
+          .filterNot(tagSrv.initSteps.get(_).exists())
+          .toTry(tagSrv.create)
+          .map(ts => Results.Ok(JsNumber(ts.size)))
       }
 
   def parseTaxonomy(taxonomy: JsValue): Seq[Tag] =
@@ -71,12 +69,12 @@ class TagCtrl @Inject()(
         .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
         ._1
       predicate <- (value \ "predicate").asOpt[String].toList
-      entry     <- (value \ "entry")
+      entry <- (value \ "entry")
         .asOpt[Seq[JsObject]]
         .getOrElse(Nil)
         .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
         ._1
-      v         <- (entry \ "value").asOpt[String]
+      v <- (entry \ "value").asOpt[String]
       colour = (entry \ "colour")
         .asOpt[String]
         .map(parseColour)

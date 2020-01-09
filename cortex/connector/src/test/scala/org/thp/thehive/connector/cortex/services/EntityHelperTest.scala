@@ -1,95 +1,62 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.util.Try
+import play.api.test.PlaySpecification
 
-import play.api.test.{NoMaterializer, PlaySpecification}
-
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.models.{DatabaseBuilder, Permissions}
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
 
-class EntityHelperTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
-  implicit val mat: Materializer = NoMaterializer
+class EntityHelperTest extends PlaySpecification with TestAppBuilder {
+  implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
+  "entity helper" should {
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val entityHelper                      = app.instanceOf[EntityHelper]
-    val db                                = app.instanceOf[Database]
-    implicit val authContext: AuthContext = AuthContextImpl("user1@thehive.local", "user1", "cert", "", Permissions.all)
-
-    s"[$name] entity helper" should {
-
-      "return appropriate entity threat levels" in db.roTransaction { implicit graph =>
-        val taskSrv: TaskSrv = app.instanceOf[TaskSrv]
-        val t1               = taskSrv.initSteps.toList.find(_.title == "case 1 task 1")
-        t1 must beSome
-        val task1 = t1.get
-
-        val successTask = entityHelper.entityInfo(task1)
-        val failureTask = entityHelper.entityInfo(task1)(graph, dummyUserSrv.authContext)
-
-        successTask must beSuccessfulTry
-        failureTask must beFailedTry
-
-        val (_, tlpTask, papTask) = successTask.get
-
-        tlpTask shouldEqual 2
-        papTask shouldEqual 2
+    "return task info" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        for {
+          task              <- app[TaskSrv].initSteps.has("title", "case 1 task 1").getOrFail()
+          (title, tlp, pap) <- app[EntityHelper].entityInfo(task)
+        } yield (title, tlp, pap)
+      } must beASuccessfulTry.which {
+        case (title, tlp, pap) =>
+          title must beEqualTo("")
+          tlp must beEqualTo(2)
+          pap must beEqualTo(2)
       }
+    }
 
-      "return proper observable threat levels" in db.roTransaction { implicit graph =>
-        val observableSrv: ObservableSrv = app.instanceOf[ObservableSrv]
-        val o1                           = observableSrv.initSteps.has("tlp", 3).headOption()
-        o1 must beSome
-        val observable1 = o1.get
-
-        val successObs = entityHelper.entityInfo(observable1)
-        successObs must beSuccessfulTry
-
-        val (_, tlp, pap) = successObs.get
-        tlp shouldEqual 3
-        pap shouldEqual 2
+    "return observable info" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        for {
+          observable        <- app[ObservableSrv].initSteps.has("title", "case 1 task 1").getOrFail() // FIXME
+          (title, tlp, pap) <- app[EntityHelper].entityInfo(observable)
+        } yield (title, tlp, pap)
+      } must beASuccessfulTry.which {
+        case (title, tlp, pap) =>
+          title must beEqualTo("")
+          tlp must beEqualTo(2)
+          pap must beEqualTo(2)
       }
+    }
 
-      "find a manageable entity only (task)" in db.roTransaction { implicit graph =>
-        val taskSrv: TaskSrv = app.instanceOf[TaskSrv]
-        val t2               = taskSrv.initSteps.toList.find(_.title == "case 1 task 2")
-        t2 must beSome
-        val task2 = t2.get
+    "find a manageable entity only (task)" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        for {
+          task <- app[TaskSrv].initSteps.has("title", "case 1 task 1").getOrFail()
+          t    <- app[EntityHelper].get("Task", task._id, Permissions.manageAction)
+        } yield t
+      } must beSuccessfulTry
+    }
 
-        val successTask = entityHelper.get("Task", task2._id, Permissions.manageAction)
-        val failureTask = entityHelper.get("Task", task2._id, Permissions.manageAction)(graph, dummyUserSrv.authContext)
-
-        successTask must beSuccessfulTry
-        failureTask must beFailedTry
-      }
-
-      "find a manageable entity only (alert)" in db.roTransaction { implicit graph =>
-        val alertSrv: AlertSrv = app.instanceOf[AlertSrv]
-        val a1                 = alertSrv.get("testType;testSource;ref2").headOption()
-        a1 must beSome
-        val alert1 = a1.get
-
-        val successAlert = entityHelper.get("Alert", alert1._id, Permissions.manageAction)
-        successAlert must beSuccessfulTry
-      }
+    "find a manageable entity only (alert)" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        for {
+          alert <- app[AlertSrv].getOrFail("testType;testSource;ref2")
+          t     <- app[EntityHelper].get("Alert", alert._id, Permissions.manageAction)
+        } yield t
+      } must beSuccessfulTry
     }
   }
 }

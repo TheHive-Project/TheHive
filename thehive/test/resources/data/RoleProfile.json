@@ -1,26 +1,8 @@
 [
-  {
-    "from": "user1-cert",
-    "to": "analyst"
-  },
-  {
-    "from": "user2-cert",
-    "to": "read-only"
-  },
-  {
-    "from": "user2-admin",
-    "to": "incident-handler"
-  },
-  {
-    "from": "user3-admin",
-    "to": "admin"
-  },
-  {
-    "from": "user4-cert",
-    "to": "admin"
-  },
-  {
-    "from": "user5-cert",
-    "to": "org-admin"
-  }
+  {"from": "ro-cert", "to":  "read-only"},
+  {"from": "user-cert", "to":  "incident-handler"},
+  {"from": "admin-cert", "to":  "org-admin"},
+  {"from": "ro-soc", "to":  "read-only"},
+  {"from": "user-soc", "to":  "incident-handler"},
+  {"from": "admin-soc", "to":  "org-admin"}
 ]

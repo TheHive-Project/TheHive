@@ -1,150 +1,62 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
-import org.thp.scalligraph.{AppBuilder, AuthenticationError}
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
+
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputProfile
-import org.thp.thehive.models.{DatabaseBuilder, Permissions}
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
 
-import scala.util.Try
-
-class ProfileCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
-  implicit val mat: Materializer = NoMaterializer
-
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val profileCtrl: ProfileCtrl = app.instanceOf[ProfileCtrl]
-    val theHiveQueryExecutor     = app.instanceOf[TheHiveQueryExecutor]
-
-    def createProfile(name: String, permissions: Set[String]) = {
+class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
+  "profile controller" should {
+    "create a profile if allowed" in testApp { app =>
       val request = FakeRequest("POST", "/api/profile")
-        .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
-        .withJsonBody(Json.parse(s"""{"name": "$name", "permissions": ${Json.toJson(permissions)}}"""))
-      val result = profileCtrl.create(request)
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.parse(s"""{"name": "name test 1", "permissions": ["manageCase"]}"""))
+      val result = app[ProfileCtrl].create(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-      contentAsJson(result).as[OutputProfile]
+      val profile = contentAsJson(result).as[OutputProfile]
+      profile.name shouldEqual "name test 1"
+      profile.permissions shouldEqual List("manageCase")
     }
 
-    s"$name profile controller" should {
+    "get a profile" in testApp { app =>
+      val request = FakeRequest("GET", s"/api/profile/read-only")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result = app[ProfileCtrl].get("read-only")(request)
 
-      "create a profile if allowed" in {
-        val profile = createProfile("name test 1", Set("lol"))
+      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      contentAsJson(result).as[OutputProfile].name shouldEqual "read-only"
+    }
 
-        profile.name shouldEqual "name test 1"
-        profile.permissions shouldEqual List("lol")
+    "update a profile" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/profile/testProfile")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
+      val result = app[ProfileCtrl].update("testProfile")(request)
 
-        val requestFailed = FakeRequest("POST", "/api/profile")
-          .withHeaders("user" -> "user4@thehive.local", "X-Organisation" -> "admin")
-          .withJsonBody(Json.parse(s"""{"name": "$name", "permissions": ${Json.toJson(Set("perm"))}}"""))
-        val resultFailed = profileCtrl.create(requestFailed)
+      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val updatedProfile = contentAsJson(result).as[OutputProfile]
+      updatedProfile.permissions shouldEqual List("manageTask")
+    }
 
-        status(resultFailed) must throwA[AuthenticationError]
-      }
+    "delete a profile if allowed" in testApp { app =>
+      val request = FakeRequest("DELETE", s"/api/profile/testProfile")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result = app[ProfileCtrl].delete("testProfile")(request)
+      status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      "get a profile" in {
-        val profile = createProfile("name test 2", Set("manageCase", "manageUser"))
+      val requestGet = FakeRequest("GET", s"/api/profile/testProfile")
+        .withHeaders("user" -> "admin@thehive.local")
+      val resultGet = app[ProfileCtrl].get("testProfile")(requestGet)
 
-        val request = FakeRequest("GET", s"/api/profile/${profile.id}")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-        val result = profileCtrl.get(profile.id)(request)
+      status(resultGet) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
 
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-        contentAsJson(result).as[OutputProfile].name shouldEqual "name test 2"
-      }
+      val requestFailed = FakeRequest("DELETE", s"/api/profile/all")
+        .withHeaders("user" -> "admin@thehive.local")
+      val resultFailed = app[ProfileCtrl].delete("all")(requestFailed)
 
-      "update a profile" in {
-        val profile = createProfile("title test 3", Set.empty)
-
-        val request = FakeRequest("PATCH", s"/api/profile/${profile.id}")
-          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
-          .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
-        val result = profileCtrl.update(profile.id)(request)
-
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-        val updatedProfile = contentAsJson(result).as[OutputProfile]
-
-        updatedProfile.permissions shouldEqual List("manageTask")
-      }
-
-      "delete a profile if allowed" in {
-        val profile = createProfile("title test 4", Set.empty)
-
-        val request = FakeRequest("DELETE", s"/api/profile/${profile.id}")
-          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
-        val result = profileCtrl.delete(profile.id)(request)
-
-        status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-        val requestGet = FakeRequest("GET", s"/api/profile/${profile.id}")
-          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
-        val resultGet = profileCtrl.get(profile.id)(requestGet)
-
-        status(resultGet) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
-
-        val requestFailed = FakeRequest("DELETE", s"/api/profile/all")
-          .withHeaders("user" -> "user3@thehive.local", "X-Organisation" -> "admin")
-        val resultFailed = profileCtrl.delete("all")(requestFailed)
-
-        status(resultFailed) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
-      }
-
-      "search a profile" in {
-        createProfile(
-          "title test 5",
-          Set(
-            Permissions.manageCase,
-            Permissions.manageObservable,
-            Permissions.manageAlert,
-            Permissions.manageTask,
-            Permissions.manageAction,
-            Permissions.manageAnalyse
-          )
-        )
-        createProfile("title test 6", Set(Permissions.manageCase, Permissions.manageObservable))
-        createProfile("title test 7", Set.empty)
-        val json = Json.parse("""{
-             "range":"all",
-             "sort":[
-                "-updatedAt",
-                "-createdAt"
-             ],
-             "query":{
-              "_and":[
-                   {
-                      "_is":{
-                         "name":"title test 7"
-                      }
-                   }
-                ]
-             }
-          }""".stripMargin)
-
-        val request = FakeRequest("POST", s"/api/profile/_search")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-          .withJsonBody(json)
-        val result = theHiveQueryExecutor.profile.search(request)
-
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-        contentAsJson(result).as[List[OutputProfile]].length shouldEqual 1
-      }
+      status(resultFailed) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
     }
   }
 }

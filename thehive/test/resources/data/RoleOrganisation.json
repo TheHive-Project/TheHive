@@ -1,26 +1,8 @@
 [
-  {
-    "from": "user1-cert",
-    "to": "cert"
-  },
-  {
-    "from": "user2-cert",
-    "to": "cert"
-  },
-  {
-    "from": "user2-admin",
-    "to": "admin"
-  },
-  {
-    "from": "user3-admin",
-    "to": "admin"
-  },
-  {
-    "from": "user4-cert",
-    "to": "cert"
-  },
-  {
-    "from": "user5-cert",
-    "to": "cert"
-  }
+  {"from": "ro-cert", "to":  "cert"},
+  {"from": "user-cert", "to":  "cert"},
+  {"from": "admin-cert", "to":  "cert"},
+  {"from": "ro-soc", "to":  "soc"},
+  {"from": "user-soc", "to":  "soc"},
+  {"from": "admin-soc", "to":  "soc"}
 ]

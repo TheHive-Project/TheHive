@@ -1,187 +1,117 @@
 package org.thp.thehive.services
 
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
+import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
+import play.api.test.PlaySpecification
+
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
 
-import scala.util.{Success, Try}
+class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
+  implicit val authcontext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
 
-class CaseTemplateSrvTest extends PlaySpecification {
-  val dummyUserSrv = DummyUserSrv(userId = "user5@thehive.local", organisation = "cert")
+  "case template service" should {
+    "create a case template" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        app[CaseTemplateSrv].create(
+          caseTemplate = CaseTemplate(
+            name = "case template test 1",
+            displayName = "case template test 1",
+            titlePrefix = Some("[CTT]"),
+            description = Some("description ctt1"),
+            severity = Some(2),
+            flag = false,
+            tlp = Some(1),
+            pap = Some(3),
+            summary = Some("summary case template test 1")
+          ),
+          organisation = app[OrganisationSrv].getOrFail("cert").get,
+          tagNames = Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""),
+          tasks = Seq(
+            (
+              Task("task case template case template test 1", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
+              app[UserSrv].get("certuser@thehive.local").headOption()
+            )
+          ),
+          customFields = Seq(("string1", Some("love")), ("boolean1", Some(false)))
+        )
+      } must beASuccessfulTry
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val caseTemplateSrv: CaseTemplateSrv  = app.instanceOf[CaseTemplateSrv]
-    val db: Database                      = app.instanceOf[Database]
-    val orgaSrv                           = app.instanceOf[OrganisationSrv]
-    val userSrv                           = app.instanceOf[UserSrv]
-    val tagSrv: TagSrv                    = app.instanceOf[TagSrv]
-    val taskSrv: TaskSrv                  = app.instanceOf[TaskSrv]
-    val customFieldSrv                    = app.instanceOf[CustomFieldSrv]
-    implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
-
-    def createTemplate(name: String, desc: String) = {
-      val t = db.tryTransaction(
-        implicit graph =>
-          caseTemplateSrv.create(
-            CaseTemplate(
-              name,
-              name,
-              Some("[CTT]"),
-              Some(desc),
-              Some(2),
-              flag = false,
-              Some(1),
-              Some(3),
-              Some(s"summary $name")
-            ),
-            orgaSrv.getOrFail("cert").get,
-            Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""),
-            Seq(
-              (
-                Task(s"task case template $name", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
-                userSrv.get("user5@thehive.local").headOption()
-              )
-            ),
-            Seq(("string1", Some("love")), ("boolean1", Some(false)))
-          )
-      )
-
-      t must beSuccessfulTry
-
-      t.get
+      app[Database].roTransaction { implicit graph =>
+        app[TagSrv].initSteps.getByName("testNamespace", "testPredicate", Some("newOne")).exists() must beTrue
+        app[TaskSrv].initSteps.has("title", "task case template case template test 1").exists() must beTrue
+        val richCT = app[CaseTemplateSrv].initSteps.has("name", "case template test 1").richCaseTemplate.getOrFail().get
+        richCT.customFields.length shouldEqual 2
+      }
     }
 
-    s"[$name] case template service" should {
-      "create a case template" in {
-        val name = "case template test 1"
-        createTemplate(name, "description ctt1")
+    "add a task to a template" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          richTask     <- app[TaskSrv].create(Task("t1", "default", None, TaskStatus.Waiting, false, None, None, 1, None), None)
+          caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
+          _            <- app[CaseTemplateSrv].addTask(caseTemplate, richTask.task)
+        } yield ()
+      } must beSuccessfulTry
 
-        db.roTransaction(implicit graph => {
-          tagSrv.initSteps.getByName("testNamespace", "testPredicate", Some("newOne")).exists() must beTrue
-          taskSrv.initSteps.has("title", s"task case template $name").exists() must beTrue
-          val richCT = caseTemplateSrv.initSteps.has("name", name).richCaseTemplate.getOrFail().get
-          richCT.customFields.length shouldEqual 2
-        })
-      }
+      app[Database].roTransaction { implicit graph =>
+        app[CaseTemplateSrv].get("spam").tasks.has("title", "t1").exists()
+      } must beTrue
+    }
 
-      "add a task to a template" in {
-        val caseTemplate = createTemplate("case template test 2", "desc ctt2")
+    "update case template tags" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
+          _ <- app[CaseTemplateSrv].updateTagNames(
+            caseTemplate,
+            Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
+          )
+        } yield ()
+      } must beSuccessfulTry
+      app[Database].roTransaction { implicit graph =>
+        app[CaseTemplateSrv].get("spam").tags.toList.map(_.toString)
+      } must containTheSameElementsAs(
+        Seq("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"newOne2\"", "newNspc.newPred=\"newOne3\"")
+      )
+    }
 
-        caseTemplate.tasks.length shouldEqual 1
-
-        val task1 = db.roTransaction(implicit graph => taskSrv.initSteps.has("title", "case 1 task 1").richTask.getOrFail().get)
-
-        db.tryTransaction(implicit graph => caseTemplateSrv.addTask(caseTemplate.caseTemplate, task1.task)) must beSuccessfulTry
-        val updatedCaseTemplate =
-          db.roTransaction(implicit graph => caseTemplateSrv.initSteps.has("name", "case template test 2").richCaseTemplate.getOrFail())
-
-        updatedCaseTemplate.get.tasks must contain(task1)
-      }
-
-      "update a case template" in {
-        val caseTemplate = createTemplate("case template test 3", "desc ctt3")
-        val updates = Seq(
-          PropertyUpdater(FPathElem("name"), "updated") { (vertex, _, _, _) =>
-            vertex.property("name", "updated")
-            Success(Json.obj("name" -> "updated"))
-          },
-          PropertyUpdater(FPathElem("flag"), true) { (vertex, _, _, _) =>
-            vertex.property("flag", true)
-            Success(Json.obj("flag" -> true))
-          }
+    "add tags to a case template" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
+          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2""""))
+        } yield ()
+      } must beSuccessfulTry
+      app[Database].roTransaction { implicit graph =>
+        app[CaseTemplateSrv].get("spam").tags.toList.map(_.toString)
+      } must containTheSameElementsAs(
+        Seq(
+          "testNamespace.testPredicate=\"t2\"",
+          "testNamespace.testPredicate=\"newOne2\"",
+          "testNamespace.testPredicate=\"spam\"",
+          "testNamespace.testPredicate=\"src:mail\""
         )
+      )
+    }
 
-        db.tryTransaction(implicit graph => caseTemplateSrv.update(caseTemplateSrv.get(caseTemplate.caseTemplate), updates)) must beSuccessfulTry
-        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).getOrFail()) must beSuccessfulTry.which(c => {
-          c.name shouldEqual "updated"
-          c.flag must beTrue
-        })
-      }
+    "update/create case template custom fields" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          string1      <- app[CustomFieldSrv].getOrFail("string1")
+          bool1        <- app[CustomFieldSrv].getOrFail("boolean1")
+          integer1     <- app[CustomFieldSrv].getOrFail("integer1")
+          caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
+          _            <- app[CaseTemplateSrv].updateCustomField(caseTemplate, Seq((string1, JsString("hate")), (bool1, JsTrue), (integer1, JsNumber(1))))
+        } yield ()
+      } must beSuccessfulTry
 
-      "update case template tags" in {
-        val caseTemplate = createTemplate("case template test 4", "desc ctt4")
-        val newTags =
-          Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
-
-        db.tryTransaction(
-          implicit graph =>
-            caseTemplateSrv.updateTagNames(
-              caseTemplate.caseTemplate,
-              newTags
-            )
-        ) must beSuccessfulTry
-        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
-          c => c.tags.flatMap(_.value) must containTheSameElementsAs(Seq("t2", "newOne2", "newOne3"))
-        )
-      }
-
-      "add tags to a case template" in {
-        val caseTemplate = createTemplate("case template test 5", "desc ctt5")
-
-        db.tryTransaction(
-          implicit graph =>
-            caseTemplateSrv
-              .addTags(caseTemplate.caseTemplate, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2""""))
-        ) must beSuccessfulTry
-
-        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
-          c => c.tags.flatMap(_.value) must containTheSameElementsAs(Seq("t2", "newOne", "newOne2"))
-        )
-      }
-
-      "update/create case template custom fields" in db.roTransaction { implicit graph =>
-        val caseTemplate = createTemplate("case template test 6", "desc ctt6")
-
-        caseTemplate.customFields.flatMap(_.value) must containTheSameElementsAs(Seq("love", false))
-
-        val string1  = customFieldSrv.get("string1").getOrFail().get
-        val bool1    = customFieldSrv.get("boolean1").getOrFail().get
-        val integer1 = customFieldSrv.get("integer1").getOrFail().get
-
-        db.tryTransaction(
-          implicit graph =>
-            caseTemplateSrv
-              .updateCustomField(caseTemplate.caseTemplate, Seq((string1, "hate"), (bool1, true), (integer1, 1)))
-        ) must beSuccessfulTry
-
-        db.roTransaction(implicit graph => caseTemplateSrv.get(caseTemplate.caseTemplate).richCaseTemplate.getOrFail()) must beSuccessfulTry.which(
-          c => c.customFields.flatMap(_.value) must containTheSameElementsAs(Seq("hate", true, 1))
-        )
-      }
-
-      "give access to case templates if permitted" in db.roTransaction { implicit graph =>
-        caseTemplateSrv.initSteps.can(Permissions.manageCaseTemplate).toList must not(beEmpty)
-        caseTemplateSrv
-          .initSteps
-          .can(Permissions.manageCaseTemplate)(DummyUserSrv(userId = "user1@thehive.local", organisation = "cert").authContext)
-          .toList must beEmpty
-      }
-
-      "show only visible case templates" in db.roTransaction { implicit graph =>
-        val certTemplate = createTemplate("case template test 7", "desc ctt7")
-        val adminAuthCtx = DummyUserSrv(userId = "user3@thehive.local").authContext
-
-        caseTemplateSrv.initSteps.get(certTemplate._id).visible.exists() must beTrue
-        caseTemplateSrv.initSteps.get(certTemplate._id).visible(adminAuthCtx).exists() must beFalse
-      }
+      val expected: Seq[(String, JsValue)] = Seq("string1" -> JsString("hate"), "boolean1" -> JsTrue, "integer1" -> JsNumber(1))
+      app[Database].roTransaction { implicit graph =>
+        app[CaseTemplateSrv].get("spam").customFields.jsonValue.toList
+      } must contain(exactly(expected: _*))
     }
   }
 }

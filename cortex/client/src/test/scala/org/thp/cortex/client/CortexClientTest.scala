@@ -9,15 +9,14 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.PlaySpecification
 
 import akka.actor.Terminated
-import org.specs2.mock.Mockito
 import org.specs2.specification.core.Fragments
 import org.thp.cortex.dto.v0._
 import org.thp.scalligraph.AppBuilder
 
-class CortexClientTest extends PlaySpecification with Mockito {
-  lazy val app = AppBuilder()
+class CortexClientTest extends PlaySpecification {
+  lazy val app: AppBuilder = new AppBuilder()
   app.bindToProvider[CortexClient, TestCortexClientProvider]
-  val client: CortexClient = app.instanceOf[CortexClient]
+  val client: CortexClient = app[CortexClient]
 
   override def map(fragments: => Fragments): Fragments =
     fragments ^ step(afterAll())

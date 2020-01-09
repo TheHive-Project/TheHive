@@ -1,8 +1,13 @@
 package org.thp.thehive
 
+import java.io.File
+import java.nio.file.{Files, Paths}
+
+import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.models.{DatabaseProvider, Schema}
+import org.thp.scalligraph.janus.JanusDatabase
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.TheHiveSchema
@@ -11,11 +16,14 @@ import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, Em
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 
-object TestAppBuilder {
+object TestAppBuilderLock
 
-  def apply(dbProvider: DatabaseProvider): AppBuilder =
+trait TestAppBuilder {
+
+  val databaseName: String = "default"
+
+  def appConfigure: AppBuilder =
     (new AppBuilder)
-      .bindToProvider(dbProvider)
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchema]
@@ -34,4 +42,42 @@ object TestAppBuilder {
       .addConfiguration("play.mailer.mock = yes")
       .addConfiguration("play.mailer.debug = yes")
       .addConfiguration("storage.localfs.location = /tmp/thp")
+
+  def testApp[A](body: AppBuilder => A): A = {
+    TestAppBuilderLock.synchronized {
+      if (!Files.exists(Paths.get(s"target/janusgraph-test-database-$databaseName"))) {
+        val app = appConfigure
+          .addConfiguration(s"""
+                               |db {
+                               |  provider: janusgraph
+                               |  janusgraph {
+                               |    storage.backend: berkeleyje
+                               |    storage.directory: "target/janusgraph-test-database-$databaseName"
+                               |    berkeleyje.freeDisk: 2
+                               |  }
+                               |}
+                               |""".stripMargin)
+          .bind[Database, JanusDatabase]
+
+        app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
+      }
+    }
+    val storageDirectory = s"target/janusgraph-test-database-${math.random}"
+    FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), new File(storageDirectory))
+    try body(
+      appConfigure
+        .bind[Database, JanusDatabase]
+        .addConfiguration(s"""
+                             |db {
+                             |  provider: janusgraph
+                             |  janusgraph {
+                             |    storage.backend: berkeleyje
+                             |    storage.directory: $storageDirectory
+                             |    berkeleyje.freeDisk: 2
+                             |  }
+                             |}
+                             |""".stripMargin)
+    )
+    finally FileUtils.deleteDirectory(new File(storageDirectory))
+  }
 }

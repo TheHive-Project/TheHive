@@ -1,55 +1,20 @@
 package org.thp.thehive.services
 
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
+import play.api.test.PlaySpecification
+
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
 
-import scala.util.{Success, Try}
+class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
+  implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
 
-class DashboardSrvTest extends PlaySpecification {
-  val dummyUserSrv = DummyUserSrv(userId = "user1@thehive.local", organisation = "cert")
-
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val dashboardSrv: DashboardSrv        = app.instanceOf[DashboardSrv]
-    val orgaSrv                           = app.instanceOf[OrganisationSrv]
-    val db: Database                      = app.instanceOf[Database]
-    implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
-
-    def createDashboard(title: String, shared: Boolean, definition: String) = {
-      val r = db.tryTransaction(
-        implicit graph =>
-          dashboardSrv.create(
-            Dashboard(title, s"desc $title", shared, definition),
-            orgaSrv.getOrFail("cert").get
-          )
-      )
-
-      r must beSuccessfulTry
-
-      r.get
-    }
-
-    s"[$name] dashboard service" should {
-      "create dashboards" in {
-        val definition = """{
+  s" dashboard service" should {
+    "create dashboards" in testApp { app =>
+      val definition =
+        """{
              "period":"custom",
              "items":[
                 {
@@ -84,78 +49,34 @@ class DashboardSrvTest extends PlaySpecification {
                 "toDate":"2019-11-27T23:00:00.000Z"
              }
           }"""
-        val d = createDashboard(
-          "dashboard test 1",
-          shared = false,
-          definition
+      app[Database].tryTransaction { implicit graph =>
+        app[DashboardSrv].create(
+          Dashboard("dashboard test 1", "desc dashboard test 1", shared = false, definition),
+          app[OrganisationSrv].getOrFail("cert").get
         )
-
+      } must beASuccessfulTry.which { d =>
         d.title shouldEqual "dashboard test 1"
         d.shared shouldEqual false
         d.definition shouldEqual definition
       }
+    }
 
-      "update a dashboard" in {
-        val d = createDashboard(
-          "dashboard test 2",
-          shared = false,
-          "definition"
-        )
-        val updates = Seq(
-          PropertyUpdater(FPathElem("definition"), "updated") { (vertex, _, _, _) =>
-            vertex.property("definition", "updated")
-            Success(Json.obj("definition" -> "updated"))
-          },
-          PropertyUpdater(FPathElem("shared"), false) { (vertex, _, _, _) =>
-            vertex.property("shared", false)
-            Success(Json.obj("shared" -> false))
-          }
-        )
+    "update dashboard share status" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          dashboard <- app[DashboardSrv].getOrFail("FIXME")
+          _         <- app[DashboardSrv].shareUpdate(dashboard, status = true)
+        } yield ()
+      } must beSuccessfulTry
+    }
 
-        db.tryTransaction(implicit graph => dashboardSrv.update(dashboardSrv.get(d), updates)) must beSuccessfulTry
-        val updatedDash = db.roTransaction(implicit graph => dashboardSrv.get(d).getOrFail().get)
-
-        updatedDash.shared must beFalse
-        updatedDash.definition shouldEqual "updated"
-      }
-
-      "update dashboard share status" in {
-        val d = createDashboard(
-          "dashboard test 3",
-          shared = false,
-          "definition"
-        )
-
-        db.tryTransaction(implicit graph => dashboardSrv.shareUpdate(d, status = true)) must beSuccessfulTry
-        val updatedDash = db.roTransaction(implicit graph => dashboardSrv.get(d).getOrFail().get)
-
-        updatedDash.shared must beTrue
-      }
-
-      "remove a dashboard" in {
-        val d = createDashboard(
-          "dashboard test 4",
-          shared = true,
-          "definition"
-        )
-
-        db.roTransaction(implicit graph => dashboardSrv.get(d).exists()) must beTrue
-        db.tryTransaction(implicit graph => dashboardSrv.remove(d)) must beSuccessfulTry
-        db.roTransaction(implicit graph => dashboardSrv.get(d).exists()) must beFalse
-      }
-
-      "show only visible dashboards" in {
-        val d = createDashboard(
-          "dashboard test 5",
-          shared = true,
-          "definition"
-        )
-
-        db.roTransaction(implicit graph => dashboardSrv.get(d).visible.exists()) must beTrue
-        db.roTransaction(
-          implicit graph => dashboardSrv.get(d).visible(DummyUserSrv(userId = "user2@thehive.local").authContext).exists()
-        ) must beFalse
-      }
+    "remove a dashboard" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        for {
+          dashboard <- app[DashboardSrv].getOrFail("FIXME")
+          _         <- app[DashboardSrv].remove(dashboard)
+        } yield app[DashboardSrv].get("FIXME").exists()
+      } must beASuccessfulTry(false)
     }
   }
 }

@@ -160,9 +160,6 @@ class CaseSrv @Inject()(
       _ <- auditSrv.`case`.delete(`case`)
     } yield ()
 
-  def isAvailable(caseIdOrNumber: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(caseIdOrNumber).visible.exists()
-
   override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
     Success(idOrNumber)
       .filter(_.headOption.contains('#'))

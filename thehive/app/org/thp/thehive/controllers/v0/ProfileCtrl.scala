@@ -52,8 +52,7 @@ class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Pr
     entryPoint("get profile")
       .authRoTransaction(db) { _ => implicit graph =>
         profileSrv
-          .getByIds(profileId)
-          .getOrFail()
+          .getOrFail(profileId)
           .map { profile =>
             Results.Ok(profile.toJson)
           }
@@ -66,7 +65,7 @@ class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Pr
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("profile")
         if (request.permissions.contains(Permissions.manageProfile)) {
           profileSrv
-            .update(_.getByIds(profileId), propertyUpdaters)
+            .update(_.get(profileId), propertyUpdaters)
             .flatMap { case (profileSteps, _) => profileSteps.getOrFail() }
             .map(dashboard => Results.Ok(dashboard.toJson))
         } else

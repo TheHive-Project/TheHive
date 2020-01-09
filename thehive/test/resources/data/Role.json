@@ -1,20 +1,8 @@
 [
-  {
-    "id": "user1-cert"
-  },
-  {
-    "id": "user2-cert"
-  },
-  {
-    "id": "user2-admin"
-  },
-  {
-    "id": "user3-admin"
-  },
-  {
-    "id": "user4-cert"
-  },
-  {
-    "id": "user5-cert"
-  }
+  {"id": "ro-cert"},
+  {"id": "user-cert"},
+  {"id": "admin-cert"},
+  {"id": "ro-soc"},
+  {"id": "user-soc"},
+  {"id": "admin-soc"}
 ]

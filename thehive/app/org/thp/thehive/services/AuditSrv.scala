@@ -31,7 +31,7 @@ class AuditSrv @Inject()(
     eventSrv: EventSrv
 )(implicit db: Database, schema: Schema)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
-  lazy val logger: Logger = Logger(getClass)
+  lazy val logger: Logger                                 = Logger(getClass)
   lazy val userSrv: UserSrv                               = userSrvProvider.get
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
@@ -87,11 +87,11 @@ class AuditSrv @Inject()(
     }
   }
 
-  def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def flushPendingAudit()(implicit graph: Graph, authContext: AuthContext): Try[Unit] = flushPendingAudit(db.currentTransactionId(graph))
 
-    def createLastPending(tx: AnyRef)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-      logger.debug("Store last audit")
-      val p = pendingAudits(tx)
+  def flushPendingAudit(tx: AnyRef)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    logger.debug("Store last audit")
+    pendingAudits.get(tx).fold[Try[Unit]](Success(())) { p =>
       pendingAuditsLock.synchronized {
         pendingAudits = pendingAudits - tx
       }
@@ -110,23 +110,25 @@ class AuditSrv @Inject()(
         }
       }
     }
+  }
 
-    def createFromPending(tx: AnyRef, audit: Audit, context: Option[Entity], `object`: Option[Entity])(
-        implicit graph: Graph,
-        authContext: AuthContext
-    ): Try[Unit] = {
-      logger.debug(s"Store audit entity: $audit")
-      for {
-        user         <- userSrv.current.getOrFail()
-        createdAudit <- createEntity(audit)
-        _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
-        _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
-        _ = context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip // this could fail on delete (context doesn't exist)
-      } yield transactionAuditIdsLock.synchronized {
-        transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
-      }
+  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Entity], `object`: Option[Entity])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    logger.debug(s"Store audit entity: $audit")
+    for {
+      user         <- userSrv.current.getOrFail()
+      createdAudit <- createEntity(audit)
+      _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
+      _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
+      _ = context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip // this could fail on delete (context doesn't exist)
+    } yield transactionAuditIdsLock.synchronized {
+      transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
     }
+  }
 
+  def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     def setupCallbacks(tx: AnyRef): Try[Unit] = {
       logger.debug("Setup callbacks for the current transaction")
       db.addTransactionListener {
@@ -139,7 +141,7 @@ class AuditSrv @Inject()(
           }
         case _ =>
       }
-      db.addCallback(() => createLastPending(tx))
+      db.addCallback(() => flushPendingAudit(tx))
       Success(())
     }
 
@@ -367,7 +369,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
     )
   )
 
-  override def newInstance(): AuditSteps                             = new AuditSteps(raw.clone())
+  override def newInstance(): AuditSteps = new AuditSteps(raw.clone())
 
   def `object`: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[Audited])
 

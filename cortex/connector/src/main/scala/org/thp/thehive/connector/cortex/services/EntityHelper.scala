@@ -83,7 +83,7 @@ class EntityHelper @Inject()(
     */
   def entityInfo(entity: Entity)(implicit graph: Graph, authContext: AuthContext): Try[(String, Int, Int)] =
     entity match {
-      case t: Task  => taskSrv.get(t).visible.`case`.getOrFail().map(c => (s"${t.title} (${t.status}", c.tlp, c.pap))
+      case t: Task  => taskSrv.get(t).visible.`case`.getOrFail().map(c => (s"${t.title} (${t.status})", c.tlp, c.pap))
       case c: Case  => caseSrv.get(c).visible.getOrFail().map(c => (s"#${c.number} ${c.title}", c.tlp, c.pap))
       case l: Log   => logSrv.get(l).visible.`case`.getOrFail().map(c => (s"${l.message} from ${l._createdBy}", c.tlp, c.pap))
       case a: Alert => alertSrv.get(a).visible.getOrFail().map(a => (s"[${a.source}:${a.sourceRef}] ${a.title}", a.tlp, a.pap))

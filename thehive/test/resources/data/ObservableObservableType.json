@@ -1,18 +1,6 @@
 [
-  {
-    "from": "h.fr",
-    "to": "domain"
-  },
-  {
-    "from": "c.fr",
-    "to": "domain"
-  },
-  {
-    "from": "helloworld",
-    "to": "file"
-  },
-  {
-    "from": "perdu.com",
-    "to": "domain"
-  }
+  {"from": "h.fr", "to": "domain"},
+  {"from": "c.fr", "to": "domain"},
+  {"from": "helloworld", "to": "file"},
+  {"from": "perdu.com", "to": "domain"}
 ]

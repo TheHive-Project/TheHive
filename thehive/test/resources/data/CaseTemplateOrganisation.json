@@ -1,6 +1,3 @@
 [
-  {
-    "from": "spam",
-    "to": "cert"
-  }
+  {"from": "spam", "to": "cert"}
 ]

@@ -1,6 +1,3 @@
 [
-  {
-    "from": "helloworld",
-    "to": "attachment-hello"
-  }
+  {"from": "helloworld", "to": "attachment-hello"}
 ]

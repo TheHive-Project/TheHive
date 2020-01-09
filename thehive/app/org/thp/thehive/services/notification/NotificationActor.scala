@@ -79,8 +79,8 @@ class NotificationActor @Inject()(
     implicit val db: Database
 ) extends Actor {
   import context.dispatcher
-  lazy val logger        = Logger(getClass)
-  val roles: Set[String] = configuration.get[Seq[String]]("roles").toSet
+  lazy val logger: Logger = Logger(getClass)
+  val roles: Set[String]  = configuration.get[Seq[String]]("roles").toSet
 
   // TODO this map must be updated (or cached)
   /* Map of OrganisationId -> Trigger -> (applied for that org ?, list of UserId) */

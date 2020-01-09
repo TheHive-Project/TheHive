@@ -1,170 +1,49 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Try
-
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v0.{OutputLog, OutputTask}
-import org.thp.thehive.models._
+import org.thp.thehive.services.{LogSrv, TaskSrv}
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
-class LogCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all, organisation = "admin")
-  implicit val mat: Materializer = NoMaterializer
+class LogCtrlTest extends PlaySpecification with TestAppBuilder {
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
+  "log controller" should {
 
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
+    "be able to create a log" in testApp { app =>
+      val task = app[Database].roTransaction { implicit graph =>
+        app[TaskSrv].initSteps.has("title", "case 1 task 1").headOption().get
+      }
 
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val logCtrl: LogCtrl     = app.instanceOf[LogCtrl]
-    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
-
-    def tasksList: Seq[OutputTask] = {
-      val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "user1@thehive.local")
-      val resultList  = theHiveQueryExecutor.task.search(requestList)
-
-      status(resultList) shouldEqual 200
-
-      contentAsJson(resultList).as[Seq[OutputTask]]
-    }
-
-    s"[$name] log controller" should {
-
-      "be able to create, retrieve and patch a log" in {
-        val task = tasksList.find(_.title == "case 1 task 1").get
-        val request = FakeRequest("POST", s"/api/case/task/${task.id}/log")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse("""
+      val request = FakeRequest("POST", s"/api/case/task/${task._id}/log")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse("""
               {"message":"log 1\n\n### yeahyeahyeahs", "deleted":false}
             """.stripMargin))
-        val result = logCtrl.create(task.id)(request)
+      val result = app[LogCtrl].create(task._id)(request)
 
-        status(result) shouldEqual 201
+      status(result) shouldEqual 201
 
-        val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(s"""
-              {
-                "query":{
-                   "_and":[
-                      {
-                         "_and":[
-                            {
-                               "_parent":{
-                                  "_type":"case_task",
-                                  "_query":{
-                                     "_id":"${task.id}"
-                                  }
-                               }
-                            },
-                            {
-                               "_not":{
-                                  "status":"Deleted"
-                               }
-                            }
-                         ]
-                      }
-                   ]
-                }
-             }
-            """.stripMargin))
-        val resultSearch = theHiveQueryExecutor.log.search(requestSearch)
+      app[Database].roTransaction { implicit graph =>
+        app[TaskSrv].get(task).logs.has("message", "log 1\n\n### yeahyeahyeahs").exists()
+      } must beTrue
+    }
 
-        status(resultSearch) shouldEqual 200
-
-        val logJson = contentAsJson(resultSearch)
-        val log     = logJson.as[Seq[OutputLog]].head
-        val expected = OutputLog(
-          _id = log._id,
-          id = log.id,
-          createdBy = "user1@thehive.local",
-          createdAt = log.createdAt,
-          _type = "case_task_log",
-          message = "log 1\n\n### yeahyeahyeahs",
-          startDate = log.createdAt,
-          status = "Ok",
-          owner = "user1@thehive.local"
-        )
-
-        logJson.toString shouldEqual Json.toJson(Seq(expected)).toString
-
-        val requestPatch = FakeRequest("PATCH", s"/api/case/task/log/${log.id}")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(s"""
-              {
-                "message":"yeah",
-                "deleted": true
-             }
-            """.stripMargin))
-        val resultPatch = logCtrl.update(log.id)(requestPatch)
-
-        status(resultPatch) shouldEqual 204
+    "be able to create and remove a log" in testApp { app =>
+      val log = app[Database].roTransaction { implicit graph =>
+        app[LogSrv].initSteps.has("message", "log for action test").getOrFail().get
       }
 
-      "be able to create and remove a log" in {
-        val task = tasksList.find(_.title == "case 1 task 1").get
+      val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log._id}").withHeaders("user" -> "certuser@thehive.local")
+      val resultDelete  = app[LogCtrl].delete(log._id)(requestDelete)
 
-        val requestSearch = FakeRequest("POST", s"/api/case/task/log/_search")
-          .withHeaders("user" -> "user1@thehive.local")
-          .withJsonBody(Json.parse(s"""
-              {
-                "query":{
-                   "_and":[
-                      {
-                         "_and":[
-                            {
-                               "_parent":{
-                                  "_type":"case_task",
-                                  "_query":{
-                                     "_id":"${task.id}"
-                                  }
-                               }
-                            },
-                            {
-                               "_not":{
-                                  "status":"Deleted"
-                               }
-                            }
-                         ]
-                      }
-                   ]
-                }
-             }
-            """.stripMargin))
-        val resultSearch = theHiveQueryExecutor.log.search(requestSearch)
+      status(resultDelete) shouldEqual 204
 
-        status(resultSearch) shouldEqual 200
-
-        val logJson = contentAsJson(resultSearch)
-        val log     = logJson.as[Seq[OutputLog]].head
-
-        val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log.id}").withHeaders("user" -> "user1@thehive.local")
-        val resultDelete  = logCtrl.delete(log.id)(requestDelete)
-
-        status(resultDelete) shouldEqual 204
-
-        val resultSearch2 = theHiveQueryExecutor.log.search(requestSearch)
-
-        status(resultSearch2) shouldEqual 200
-
-        val emptyList = contentAsJson(resultSearch2)
-
-        emptyList.as[Seq[OutputLog]].size shouldEqual 0
+      val deletedLog = app[Database].roTransaction { implicit graph =>
+        app[LogSrv].initSteps.has("message", "log for action test").headOption()
       }
+      deletedLog should beNone
     }
   }
-
 }

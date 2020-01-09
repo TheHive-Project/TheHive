@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ObservableCtrl" type="Specs2RunConfiguration" factoryName="Specs2" folderName="thehive.v0" show_console_on_std_err="false" show_console_on_std_out="false">
+    <module name="thehive-core" />
+    <option name="allowRunningInParallel" value="false" />
+    <option name="testKind" value="Class" />
+    <option name="envs">
+      <map />
+    </option>
+    <option name="javaOptions" value="-Dlogger.file=conf/logback.xml" />
+    <option name="jrePath" />
+    <option name="searchTest" value="Across module dependencies" />
+    <option name="showProgressMessages" value="true" />
+    <option name="testArgs" value="" />
+    <option name="testClassPath" value="org.thp.thehive.controllers.v0.ObservableCtrlTest" />
+    <option name="useSbt" value="false" />
+    <option name="useUiWithSbt" value="false" />
+    <option name="workingDirectory" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

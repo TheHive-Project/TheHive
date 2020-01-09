@@ -1,17 +1,6 @@
 [
-  {
-    "id": "case1-cert"
-  },
-  {
-    "id": "case2-cert"
-  },
-  {
-    "id": "case3-cert"
-  },
-  {
-    "id": "case3-admin"
-  },
-  {
-    "id": "case4-admin"
-  }
+  {"id": "case1-cert"},
+  {"id": "case2-cert"},
+  {"id": "case2-soc"},
+  {"id": "case3-soc"}
 ]

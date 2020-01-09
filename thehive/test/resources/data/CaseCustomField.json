@@ -1,12 +1,4 @@
 [
-  {
-    "from": "case3",
-    "to": "string1",
-    "stringValue": "string1 custom field"
-  },
-  {
-    "from": "case3",
-    "to": "boolean1",
-    "booleanValue": true
-  }
+  {"from": "case3", "to": "string1", "stringValue": "string1 custom field"},
+  {"from": "case3", "to": "boolean1", "booleanValue": true}
 ]

@@ -1,14 +1,5 @@
 [
-  {
-    "from": "case1",
-    "to": "user1"
-  },
-  {
-    "from": "case2",
-    "to": "user2"
-  },
-  {
-    "from": "case3",
-    "to": "user1"
-  }
+  { "from": "case1", "to": "certuser@thehive.local"},
+  { "from": "case2", "to": "certuser@thehive.local"},
+  { "from": "case3", "to": "socuser@thehive.local"}
 ]

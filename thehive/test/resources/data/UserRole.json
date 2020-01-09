@@ -1,26 +1,8 @@
 [
-  {
-    "from": "user1",
-    "to": "user1-cert"
-  },
-  {
-    "from": "user2",
-    "to": "user2-cert"
-  },
-  {
-    "from": "user2",
-    "to": "user2-admin"
-  },
-  {
-    "from": "user3",
-    "to": "user3-admin"
-  },
-  {
-    "from": "user4",
-    "to": "user4-cert"
-  },
-  {
-    "from": "user5",
-    "to": "user5-cert"
-  }
+  {"from": "certro@thehive.local","to": "ro-cert"},
+  {"from": "certuser@thehive.local","to": "user-cert"},
+  {"from": "certadmin@thehive.local","to": "admin-cert"},
+  {"from": "socro@thehive.local","to": "ro-soc"},
+  {"from": "socuser@thehive.local","to": "user-soc"},
+  {"from": "socadmin@thehive.local","to": "admin-soc"}
 ]

@@ -1,49 +1,21 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.util.Try
+import play.api.test.{FakeRequest, PlaySpecification}
 
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
-
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.dto.v0.OutputWorker
-import org.thp.thehive.connector.cortex.services.CortexActor
-import org.thp.thehive.models.{DatabaseBuilder, Permissions}
 
-class AnalyzerCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
-  implicit val mat: Materializer = NoMaterializer
+class AnalyzerCtrlTest extends PlaySpecification with TestAppBuilder {
+  "analyzer controller" should {
+    "list analyzers" in testApp { app =>
+      val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "certuser@thehive.local")
+      val result  = app[AnalyzerCtrl].list(request)
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-      .bindActor[CortexActor]("cortex-actor")
+      status(result) shouldEqual 200
 
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
+      val resultList = contentAsJson(result).as[Seq[OutputWorker]]
 
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val analyzerCtrl: AnalyzerCtrl = app.instanceOf[AnalyzerCtrl]
-
-    s"[$name] analyzer controller" should {
-      "list analyzers" in {
-        val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "user1@thehive.local")
-        val result  = analyzerCtrl.list(request)
-
-        status(result) shouldEqual 200
-
-        val resultList = contentAsJson(result).as[Seq[OutputWorker]]
-
-        resultList must beEmpty
-      }
+      resultList must beEmpty
     }
   }
 }

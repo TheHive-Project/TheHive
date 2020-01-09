@@ -1,18 +1,6 @@
 [
-  {
-    "from": "case3",
-    "to": "tagt1"
-  },
-  {
-    "from": "case3",
-    "to": "tagt2"
-  },
-  {
-    "from": "case4",
-    "to": "tagt1"
-  },
-  {
-    "from": "case4",
-    "to": "tagt3"
-  }
+  {"from": "case3", "to": "tagt1"},
+  {"from": "case3", "to": "tagt2"},
+  {"from": "case1", "to": "tagt1"},
+  {"from": "case1", "to": "tagt3"}
 ]

@@ -34,17 +34,5 @@
     "tlp": 2,
     "pap": 2,
     "status": "Open"
-  },
-  {
-    "id": "case4",
-    "number": 4,
-    "title": "case#4",
-    "description": "description of case #4",
-    "severity": 3,
-    "startDate": 1531667370000,
-    "flag": false,
-    "tlp": 3,
-    "pap": 3,
-    "status": "Open"
   }
 ]

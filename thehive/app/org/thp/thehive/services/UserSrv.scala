@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.regex.Pattern
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Configuration
-import play.api.libs.json.JsObject
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -19,6 +14,11 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.Configuration
+import play.api.libs.json.JsObject
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 object UserSrv {
   val initPassword: String = "secret"
@@ -124,7 +124,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def visible(implicit authContext: AuthContext): UserSteps =
     if (authContext.permissions.contains(Permissions.manageOrganisation)) this
     else
-      this.filter(_.or(_.organisations.get(authContext.organisation), _.systemUser))
+      this.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
 
   override def newInstance(newRaw: GremlinScala[Vertex]): UserSteps = new UserSteps(newRaw)
   override def newInstance(): UserSteps                             = new UserSteps(raw.clone())
@@ -190,7 +190,14 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     this
       .project(
         _.apply(By[Vertex]())
-          .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold()))
+          .and(
+            By(
+              __[Vertex].coalesce(
+                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
+                _.constant(List.empty[Vertex].asJava)
+              )
+            )
+          )
           .and(By(__[Vertex].outTo[UserAttachment].fold()))
       )
       .collect {
@@ -198,6 +205,9 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           val profile = profiles.get(0).as[Profile]
           val avatar  = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
           RichUser(user.as[User], avatar, profile.name, profile.permissions, organisation)
+        case (user, _, attachment) =>
+          val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+          RichUser(user.as[User], avatar, "", Set.empty, organisation)
       }
 
   def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])

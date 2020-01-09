@@ -1,10 +1,4 @@
 [
-  {
-    "from": "spam",
-    "to": "tagspam"
-  },
-  {
-    "from": "spam",
-    "to": "tagsrc:mail"
-  }
+  {"from": "spam", "to": "tagspam"},
+  {"from": "spam", "to": "tagsrc:mail"}
 ]

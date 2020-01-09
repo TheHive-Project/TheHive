@@ -1,163 +1,77 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
-import org.specs2.mock.Mockito
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
+
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputPage
-import org.thp.thehive.models.{DatabaseBuilder, Permissions}
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, NoMaterializer, PlaySpecification}
+import org.thp.thehive.services.PageSrv
 
-import scala.util.Try
+class PageCtrlTest extends PlaySpecification with TestAppBuilder {
+//  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
+//    def createPage(title: String, content: String, order: Int, slug: String, cat: String) = {
+//      val request = FakeRequest("POST", "/api/page")
+//        .withHeaders("user" -> "certuser@thehive.local")
+//        .withJsonBody(Json.parse(s"""{"title": "$title", "content": "$content", "slug": "$slug", "category": "$cat", "order": $order}"""))
+//      val result = app[PageCtrl].create(request)
+//
+//      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+//
+//      contentAsJson(result).as[OutputPage]
+//    }
 
-class PageCtrlTest extends PlaySpecification with Mockito {
-  val dummyUserSrv               = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
-  implicit val mat: Materializer = NoMaterializer
-
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], dummyUserSrv.getSystemAuthContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment = {
-    val pageCtrl: PageCtrl   = app.instanceOf[PageCtrl]
-    val theHiveQueryExecutor = app.instanceOf[TheHiveQueryExecutor]
-
-    def createPage(title: String, content: String, order: Int, slug: String, cat: String) = {
+  s"page controller" should {
+    "create a simple page if allowed" in testApp { app =>
       val request = FakeRequest("POST", "/api/page")
-        .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-        .withJsonBody(Json.parse(s"""{"title": "$title", "content": "$content", "slug": "$slug", "category": "$cat", "order": $order}"""))
-      val result = pageCtrl.create(request)
+        .withHeaders("user" -> "certadmin@thehive.local")
+        .withJsonBody(Json.parse(s"""{"title": "test title", "content": "test content", "category": "test cat", "order": 0}"""))
+      val result = app[PageCtrl].create(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsJson(result).as[OutputPage]
+      val page = contentAsJson(result).as[OutputPage]
+
+      page.title shouldEqual "test title"
+      page.content shouldEqual "test content"
+      page.slug shouldEqual "test_title"
+      page.category shouldEqual "test cat"
+      page.order shouldEqual 0
     }
 
-    s"$name page controller" should {
-      "create a simple page if allowed" in {
-        val page = createPage("test title", "test content", 0, "test slug", "test cat")
+    "get a page by id or title" in testApp { app =>
+      val request = FakeRequest("GET", s"/api/page/how_to_create_a_case")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result = app[PageCtrl].get("how_to_create_a_case")(request)
 
-        page.title shouldEqual "test title"
-        page.content shouldEqual "test content"
-        page.slug shouldEqual "test slug"
-        page.category shouldEqual "test cat"
-        page.order shouldEqual 0
+      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val resultPage = contentAsJson(result).as[OutputPage]
+      resultPage.title shouldEqual "how to create a case"
+      resultPage.content shouldEqual "this page explain how to create a case"
+    }
 
-        val requestFailed = FakeRequest("POST", "/api/page")
-          .withHeaders("user" -> "user1@thehive.local", "X-Organisation" -> "cert")
-          .withJsonBody(Json.parse("""{"title": "", "content": "", "slug": "", "category": ""}"""))
-        val resultFailed = pageCtrl.create(requestFailed)
+    "update a page if allowed" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/page/how_to_create_a_case")
+        .withHeaders("user" -> "certadmin@thehive.local")
+        .withJsonBody(Json.parse("""{"title": "lol"}"""))
+      val result = app[PageCtrl].update("how_to_create_a_case")(request)
 
-        status(resultFailed) must equalTo(403).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
-      }
+      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val r = contentAsJson(result).as[OutputPage]
+      r.title shouldEqual "lol"
+      r.content shouldEqual "this page explain how to create a case"
+    }
 
-      "get a page by id or title" in {
-        val page = createPage("test title 2", "test content 2", 1, "test slug 2", "test cat 2")
+    "remove a page" in testApp { app =>
+      val request = FakeRequest("DELETE", s"/api/page/how_to_create_a_case")
+        .withHeaders("user" -> "certadmin@thehive.local")
+      val result = app[PageCtrl].delete("how_to_create_a_case")(request)
+      status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-        val request = FakeRequest("GET", s"/api/page/${page.id}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
-        val result = pageCtrl.get(page.id)(request)
-
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-        val resultPage = contentAsJson(result).as[OutputPage]
-
-        resultPage.title shouldEqual page.title
-        resultPage.content shouldEqual page.content
-
-        val requestFailed = FakeRequest("GET", s"/api/page/${page.id}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "admin")
-        val resultFailed = pageCtrl.get(page.id)(requestFailed)
-
-        status(resultFailed) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
-
-        val requestTitle = FakeRequest("GET", s"/api/page/${page.title}")
-          .withHeaders("user" -> "user2@thehive.local", "X-Organisation" -> "cert")
-        val resultTitle = pageCtrl.get(page.title)(requestTitle)
-
-        status(resultTitle) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultTitle)}")
-      }
-
-      "update a page if allowed" in {
-        val page = createPage("test title 3", "test content 3", 2, "test slug 3", "test cat 3")
-
-        val request = FakeRequest("PATCH", s"/api/page/${page.title}")
-          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-          .withJsonBody(Json.parse("""{"title": "lol"}"""))
-        val result = pageCtrl.update(page.title)(request)
-
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-        val r = contentAsJson(result).as[OutputPage]
-
-        r.title shouldEqual "lol"
-        r.content shouldEqual "test content 3"
-      }
-
-      "remove a page" in {
-        val page = createPage("test title 4", "test content 4", 3, "test slug 4", "test cat 4")
-
-        val request = FakeRequest("DELETE", s"/api/page/${page.title}")
-          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-        val result = pageCtrl.delete(page.title)(request)
-
-        status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
-
-        val requestFailed = FakeRequest("GET", s"/api/page/${page.id}")
-          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-        val resultFailed = pageCtrl.get(page.id)(requestFailed)
-
-        status(resultFailed) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
-      }
-
-      "search a page" in {
-        createPage("test title 5", "test content 5", 4, "test slug 5", "test cat 5")
-        createPage("test title 6", "test content 6", 5, "test slug 6", "test cat 6")
-        createPage("test title 7", "test content 7", 6, "test slug 7", "test cat 7")
-        val json = Json.parse("""{
-             "range":"all",
-             "sort":[
-                "-updatedAt",
-                "-createdAt"
-             ],
-             "query":{
-                "_and":[
-                   {
-                      "_not":{
-                         "title":"test title 7"
-                      }
-                   },
-                   {
-                      "_or":[
-                         {
-                            "content":"test content 5"
-                         },
-                         {
-                            "title":"test title 6"
-                         }
-                      ]
-                   }
-                ]
-             }
-          }""".stripMargin)
-
-        val request = FakeRequest("POST", s"/api/page/_search")
-          .withHeaders("user" -> "user5@thehive.local", "X-Organisation" -> "cert")
-          .withJsonBody(json)
-        val result = theHiveQueryExecutor.page.search(request)
-
-        status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
-        contentAsJson(result).as[List[OutputPage]].length shouldEqual 2
-      }
+      app[Database].roTransaction { implicit graph =>
+        app[PageSrv].get("how_to_create_a_case").exists()
+      } must beFalse
     }
   }
 }

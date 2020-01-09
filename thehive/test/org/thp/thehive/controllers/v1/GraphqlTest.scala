@@ -13,7 +13,7 @@
 //import org.thp.thehive.models._
 //import sangria.renderer.SchemaRenderer
 //
-//class GraphqlTest extends PlaySpecification with Mockito {
+//class GraphqlTest extends PlaySpecification  {
 //  val dummyUserSrv                 = DummyUserSrv()
 //  val authenticated: AuthenticateSrv = mock[AuthenticateSrv]
 //  authenticated.getContext(any[RequestHeader]) returns Success(dummyUserSrv.authContext)

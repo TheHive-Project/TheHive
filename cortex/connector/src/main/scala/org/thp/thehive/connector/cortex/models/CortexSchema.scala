@@ -14,8 +14,8 @@ import org.thp.scalligraph.models.{HasModel, Model, Schema}
 @Singleton
 class CortexSchema @Inject()() extends Schema {
 
-  lazy val logger   = Logger(getClass)
-  val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
+  lazy val logger: Logger = Logger(getClass)
+  val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)
   logger.info(s"Search models in org.thp.thehive.connector.cortex.models")
 
   lazy val reflectionClasses = new Reflections(

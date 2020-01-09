@@ -3,5 +3,10 @@
     "id": "cert",
     "name": "cert",
     "description": "cert"
+  },
+  {
+    "id": "soc",
+    "name": "soc",
+    "description": "soc"
   }
 ]

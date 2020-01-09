@@ -2,46 +2,21 @@ package org.thp.thehive.services.notification.triggers
 
 import java.util.Date
 
-import scala.util.Try
-
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
-import org.specs2.specification.core.{Fragment, Fragments}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DatabaseProviders, DummyUserSrv}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.AlertCtrl
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
-import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AuditSrv, OrganisationSrv, UserSrv}
 
-class AlertCreatedTest extends PlaySpecification {
-  val dummyUserSrv                      = DummyUserSrv(userId = "user1@thehive.local", organisation = "admin")
-  implicit val authContext: AuthContext = dummyUserSrv.getSystemAuthContext
+class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
 
-  Fragments.foreach(new DatabaseProviders().list) { dbProvider =>
-    val app: AppBuilder = TestAppBuilder(dbProvider)
-    step(setupDatabase(app)) ^ specs(dbProvider.name, app) ^ step(teardownDatabase(app))
-  }
-
-  def setupDatabase(app: AppBuilder): Try[Unit] =
-    app.instanceOf[DatabaseBuilder].build()(app.instanceOf[Database], authContext)
-
-  def teardownDatabase(app: AppBuilder): Unit = app.instanceOf[Database].drop()
-
-  def specs(name: String, app: AppBuilder): Fragment =
-    s"[$name] alert created trigger" should {
-      val db: Database = app.instanceOf[Database]
-      val alertCtrl    = app.instanceOf[AlertCtrl]
-      val alertSrv     = app.instanceOf[AlertSrv]
-      val userSrv      = app.instanceOf[UserSrv]
-      val auditSrv     = app.instanceOf[AuditSrv]
-      val orgSrv       = app.instanceOf[OrganisationSrv]
-
-      "be properly triggered on alert creation" in db.roTransaction { implicit graph =>
+  "alert created trigger" should {
+    "be properly triggered on alert creation" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
         val request = FakeRequest("POST", "/api/v0/alert")
           .withJsonBody(
             Json
@@ -63,36 +38,36 @@ class AlertCreatedTest extends PlaySpecification {
               )
               .as[JsObject]
           )
-          .withHeaders("user" -> "user1@thehive.local")
+          .withHeaders("user" -> "certuser@thehive.local")
 
-        val result = alertCtrl.create(request)
+        val result = app[AlertCtrl].create(request)
 
         status(result) should equalTo(201)
 
         val alertOutput = contentAsJson(result).as[OutputAlert]
-        val alert       = alertSrv.get(alertOutput.id).getOrFail()
+        val alert       = app[AlertSrv].get(alertOutput.id).getOrFail()
 
         alert must beSuccessfulTry
 
-        val audit = auditSrv.initSteps.has("objectId", alert.get._id).getOrFail()
+        val audit = app[AuditSrv].initSteps.has("objectId", alert.get._id).getOrFail()
 
         audit must beSuccessfulTry
 
-        val orga = orgSrv.get("cert").getOrFail()
+        val organisation = app[OrganisationSrv].get("cert").getOrFail()
 
-        orga must beSuccessfulTry
+        organisation must beSuccessfulTry
 
-        val user2 = userSrv.initSteps.getByName("user2@thehive.local").getOrFail()
-        val user1 = userSrv.initSteps.getByName("user1@thehive.local").getOrFail()
+        val user2 = app[UserSrv].getOrFail("certadmin@thehive.local")
+        val user1 = app[UserSrv].getOrFail("certuser@thehive.local")
 
         user2 must beSuccessfulTry
         user1 must beSuccessfulTry
 
         val alertCreated = new AlertCreated()
 
-        alertCreated.filter(audit.get, Some(alert.get), orga.get, user1.get) must beFalse
-        alertCreated.filter(audit.get, Some(alert.get), orga.get, user2.get) must beTrue
+        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user1.get) must beFalse
+        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user2.get) must beTrue
       }
     }
-
+  }
 }
