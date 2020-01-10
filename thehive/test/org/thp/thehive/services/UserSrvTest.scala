@@ -15,7 +15,7 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
     "create and get an user by his id" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[UserSrv].createEntity(
-          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None)
+          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None, totpSecret = None)
         ) must beSuccessfulTry
           .which { user =>
             app[UserSrv].getOrFail(user._id) must beSuccessfulTry(user)
@@ -25,7 +25,14 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
       "create and get an user by his login" in testApp { app =>
         app[Database].transaction { implicit graph =>
           app[UserSrv].createEntity(
-            User(login = "getByLoginTest@thehive.local", name = "test user (getByLogin)", apikey = None, locked = false, password = None)
+            User(
+              login = "getByLoginTest@thehive.local",
+              name = "test user (getByLogin)",
+              apikey = None,
+              locked = false,
+              password = None,
+              totpSecret = None
+            )
           ) must beSuccessfulTry
             .which { user =>
               app[UserSrv].getOrFail(user.login) must beSuccessfulTry(user)

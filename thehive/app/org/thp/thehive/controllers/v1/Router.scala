@@ -24,7 +24,10 @@ class Router @Inject()(
     case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-    case POST(p"/login") => authenticationCtrl.login()
+    case POST(p"/login")                 => authenticationCtrl.login()
+    case POST(p"/auth/totp/set")         => authenticationCtrl.totpSetSecret
+    case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
+    case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
 //    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     case POST(p"/case")                 => caseCtrl.create

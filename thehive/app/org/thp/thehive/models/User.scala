@@ -14,7 +14,8 @@ case class UserAttachment()
 
 @DefineIndex(IndexType.unique, "login")
 @VertexEntity
-case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String]) extends ScalligraphUser {
+case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String], totpSecret: Option[String])
+    extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
 

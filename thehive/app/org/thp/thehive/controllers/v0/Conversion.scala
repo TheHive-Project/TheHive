@@ -526,6 +526,7 @@ object Conversion {
         .withFieldConst(_.apikey, None)
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
+        .withFieldConst(_.totpSecret, None)
         //    .withFieldRenamed(_.roles, _.permissions)
         .transform
   }

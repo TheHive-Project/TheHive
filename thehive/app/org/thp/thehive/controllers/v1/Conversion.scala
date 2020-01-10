@@ -176,6 +176,7 @@ object Conversion {
         .withFieldConst(_.apikey, None)
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
+        .withFieldConst(_.totpSecret, None)
         //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unknown permissions are ignored
         .transform
   }

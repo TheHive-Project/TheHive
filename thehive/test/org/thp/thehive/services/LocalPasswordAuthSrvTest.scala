@@ -11,14 +11,14 @@ class LocalPasswordAuthSrvTest extends PlaySpecification with TestAppBuilder {
   "localPasswordAuth service" should {
     "be able to verify passwords" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        val user3                = app[UserSrv].getOrFail("certuser@thehive.local").get
+        val certuser             = app[UserSrv].getOrFail("certuser@thehive.local").get
         val localPasswordAuthSrv = app[LocalPasswordAuthProvider].apply(app[Configuration]).get.asInstanceOf[LocalPasswordAuthSrv]
         val request = FakeRequest("POST", "/api/v0/login")
           .withJsonBody(
             Json.parse("""{"user": "certuser@thehive.local", "password": "my-secret-password"}""")
           )
 
-        localPasswordAuthSrv.authenticate(user3.login, "my-secret-password", None)(request) must beSuccessfulTry
+        localPasswordAuthSrv.authenticate(certuser.login, "my-secret-password", None, None)(request) must beSuccessfulTry
       }
     }
   }

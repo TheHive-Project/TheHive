@@ -38,7 +38,9 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
         false
     }
 
-  override def authenticate(username: String, password: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
+  override def authenticate(username: String, password: String, organisation: Option[String], code: Option[String])(
+      implicit request: RequestHeader
+  ): Try[AuthContext] =
     db.roTransaction { implicit graph =>
         userSrv
           .getOrFail(username)

@@ -1,13 +1,13 @@
 package org.thp.thehive
 
 import play.api.libs.concurrent.AkkaGuiceSupport
-
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.HadoopStorageSrv
+import org.thp.thehive.services.TOTPAuthSrvProvider
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
@@ -32,7 +32,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 //    bind[UserSrv].to[LocalUserSrv]
     bind(classOf[UserSrv]).to(classOf[LocalUserSrv])
 //    bind[AuthSrv].toProvider[MultuAuthSrvProvider]
-    bind(classOf[AuthSrv]).toProvider(classOf[MultiAuthSrvProvider])
+    bind(classOf[AuthSrv]).toProvider(classOf[TOTPAuthSrvProvider])
 
     val authBindings = ScalaMultibinder.newSetBinder[AuthSrvProvider](binder)
     authBindings.addBinding.to[ADAuthProvider]

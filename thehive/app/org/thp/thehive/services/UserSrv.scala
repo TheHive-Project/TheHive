@@ -28,10 +28,12 @@ object UserSrv {
     name = "Default admin user",
     apikey = None,
     locked = false,
-    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initPassword))
+    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initPassword)),
+    totpSecret = None
   )
 
-  val system: User = User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None)
+  val system: User =
+    User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None, totpSecret = None)
 }
 
 @Singleton

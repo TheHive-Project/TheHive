@@ -58,7 +58,7 @@ class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv, organisationSrv: Or
           if orgaStr != OrganisationSrv.administration.name || profile.name == ProfileSrv.admin.name
           organisation <- organisationSrv.getOrFail(orgaStr)
           richUser <- userSrv.create(
-            User(userId, userId, None, locked = false, None),
+            User(userId, userId, None, locked = false, None, None),
             None,
             organisation,
             profile
