@@ -3,13 +3,14 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError}
+import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, MultiFactorCodeRequired}
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
 import org.thp.scalligraph.steps.StepsOps._
+import play.api.libs.json.Json
 
 @Singleton
 class AuthenticationCtrl @Inject()(
@@ -46,11 +47,29 @@ class AuthenticationCtrl @Inject()(
 
   def totpSetSecret: Action[AnyContent] =
     entryPoint("Set TOTP secret")
+      .extract("code", FieldsParser[Int].optional.on("code"))
       .authTransaction(db) { implicit request => implicit graph =>
         withTotpAuthSrv { totpAuthSrv =>
           totpAuthSrv.getSecret(request.userId) match {
             case Some(_) => Failure(BadRequestError("TOTP is already configured"))
-            case None    => totpAuthSrv.setSecret(request.userId).map(Results.Ok(_))
+            case None =>
+              request.session.get("totpSecret") match {
+                case None =>
+                  val secret = totpAuthSrv.generateSecret()
+                  Success(
+                    Results
+                      .Ok(Json.obj("secret" -> secret, "uri" -> totpAuthSrv.getSecretURI(request.userId, secret).toString))
+                      .withSession("totpSecret" -> secret)
+                  )
+                case Some(secret) =>
+                  val code: Option[Int] = request.body("code")
+                  code match {
+                    case Some(c) if totpAuthSrv.codeIsValid(secret, c) => totpAuthSrv.setSecret(request.userId, secret).map(_ => Results.NoContent)
+                    case Some(_)                                       => Failure(AuthenticationError("MFA code is invalid"))
+                    case None                                          => Failure(MultiFactorCodeRequired("MFA code is required"))
+                  }
+              }
+              totpAuthSrv.setSecret(request.userId).map(Results.Ok(_))
           }
         }
       }

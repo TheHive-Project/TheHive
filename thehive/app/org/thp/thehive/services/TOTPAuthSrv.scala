@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import gremlin.scala.Graph
@@ -76,15 +77,23 @@ class TOTPAuthSrv(
   def unsetSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     userSrv.get(username).update("totpSecret" -> None).map(_ => ())
 
-  def setSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[String] = {
+  def generateSecret(): String = {
     val key = Array.ofDim[Byte](20)
     Random.nextBytes(key)
-    val encodedKey = new Base32().encodeToString(key)
+    new Base32().encodeToString(key)
+  }
+
+  def setSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[String] =
+    setSecret(username, generateSecret())
+
+  def setSecret(username: String, secret: String)(implicit graph: Graph, authContext: AuthContext): Try[String] =
     userSrv
       .get(username)
-      .update("totpSecret" -> Some(encodedKey))
-      .map(_ => s"otpauth://totp/TheHive:$username?secret=$encodedKey&issuer=$issuerName")
-  }
+      .update("totpSecret" -> Some(secret))
+      .map(_ => secret)
+
+  def getSecretURI(username: String, secret: String): URI =
+    new URI("otauth", "totp", s"/TheHive:$username", s"secret=$secret&issuer=$issuerName", null)
 }
 
 @Singleton
