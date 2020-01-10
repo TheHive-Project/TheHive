@@ -42,6 +42,7 @@ object Dependencies {
   lazy val playMailer              = "com.typesafe.play"        %% "play-mailer"                        % "6.0.1"
   lazy val playMailerGuice         = "com.typesafe.play"        %% "play-mailer-guice"                  % "6.0.1"
   lazy val jts                     = "com.vividsolutions"       % "jts"                                 % "1.13"
+  lazy val pbkdf2                  = "io.github.nremond"        %% "pbkdf2-scala"                       % "0.6.5"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

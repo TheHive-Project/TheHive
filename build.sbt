@@ -90,7 +90,8 @@ lazy val thehiveCore = (project in file("thehive"))
       specs % Test,
       handlebars,
       playMailer,
-      playMailerGuice
+      playMailerGuice,
+      pbkdf2
     )
   )
 

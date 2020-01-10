@@ -1,10 +1,6 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Random, Success, Try}
-
-import play.api.mvc.RequestHeader
-import play.api.{Configuration, Logger}
-
+import io.github.nremond.SecureHash
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
@@ -12,31 +8,36 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError}
 import org.thp.thehive.models.User
+import play.api.mvc.RequestHeader
+import play.api.{Configuration, Logger}
+
+import scala.util.{Failure, Success, Try}
 
 object LocalPasswordAuthSrv {
 
-  def hashPassword(password: String): String = {
-    val seed = Random.nextString(10).replace(',', '!')
-    seed + "," + Hasher("SHA-256").fromString(seed + password).head.toString
-  }
+  def hashPassword(password: String): String =
+    SecureHash.createHash(password)
 }
 
 class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
-  lazy val logger                                      = Logger(getClass)
+  lazy val logger: Logger                              = Logger(getClass)
   import LocalPasswordAuthSrv._
 
-  def isValidPassword(user: User, password: String): Boolean =
-    user.password.map(_.split(",", 2)).fold(false) {
+  def isValidPasswordLegacy(hash: String, password: String): Boolean =
+    hash.split(",", 2) match {
       case Array(seed, pwd) =>
         val hash = Hasher("SHA-256").fromString(seed + password).head.toString
-        logger.trace(s"Authenticate user ${user.name} ($hash == $pwd)")
+        logger.trace(s"Legacy password authentication check  ($hash == $pwd)")
         hash == pwd
       case _ =>
-        logger.trace(s"Authenticate user ${user.name} (no password in database)")
+        logger.trace(s"Legacy password authenticate, invalid password format")
         false
     }
+
+  def isValidPassword(user: User, password: String): Boolean =
+    user.password.fold(false)(hash => SecureHash.validatePassword(password, hash) || isValidPasswordLegacy(hash, password))
 
   override def authenticate(username: String, password: String, organisation: Option[String], code: Option[String])(
       implicit request: RequestHeader
