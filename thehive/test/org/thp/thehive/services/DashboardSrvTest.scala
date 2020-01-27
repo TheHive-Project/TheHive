@@ -1,12 +1,12 @@
 package org.thp.thehive.services
 
 import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
 
 class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
@@ -14,7 +14,7 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
   s" dashboard service" should {
     "create dashboards" in testApp { app =>
       val definition =
-        """{
+        Json.parse("""{
              "period":"custom",
              "items":[
                 {
@@ -48,34 +48,44 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
                 "fromDate":"2019-07-08T22:00:00.000Z",
                 "toDate":"2019-11-27T23:00:00.000Z"
              }
-          }"""
+          }""").as[JsObject]
       app[Database].tryTransaction { implicit graph =>
         app[DashboardSrv].create(
-          Dashboard("dashboard test 1", "desc dashboard test 1", shared = false, definition),
+          Dashboard("dashboard test 1", "desc dashboard test 1", definition),
           app[OrganisationSrv].getOrFail("cert").get
         )
       } must beASuccessfulTry.which { d =>
         d.title shouldEqual "dashboard test 1"
-        d.shared shouldEqual false
+        d.organisationShares must beEmpty
         d.definition shouldEqual definition
       }
     }
 
-    "update dashboard share status" in testApp { app =>
+    "share a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].getOrFail("FIXME")
-          _         <- app[DashboardSrv].shareUpdate(dashboard, status = true)
+          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard soc").getOrFail()
+          _ = app[DashboardSrv].get(dashboard).visible.headOption() must beNone
+          _ <- app[DashboardSrv].share(dashboard, "cert", writable = false)
+          _ = app[DashboardSrv].get(dashboard).visible.headOption() must beSome
         } yield ()
-      } must beSuccessfulTry
+      } must beASuccessfulTry
     }
+//    "update dashboard share status" in testApp { app =>
+//      app[Database].tryTransaction { implicit graph =>
+//        for {
+//          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard-cert").getOrFail()
+//          _         <- app[DashboardSrv].shareUpdate(dashboard, status = true)
+//        } yield ()
+//      } must beSuccessfulTry
+//    }
 
     "remove a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].getOrFail("FIXME")
+          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard soc").getOrFail()
           _         <- app[DashboardSrv].remove(dashboard)
-        } yield app[DashboardSrv].get("FIXME").exists()
+        } yield app[DashboardSrv].initSteps.has("title", "dashboard soc").exists()
       } must beASuccessfulTry(false)
     }
   }

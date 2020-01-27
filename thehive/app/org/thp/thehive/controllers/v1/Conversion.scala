@@ -11,6 +11,7 @@ import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
 
 object Conversion {
+
   implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
     def toJson: JsValue = outputer.toOutput(o).toJson
     def toOutput: D     = outputer.toOutput(o).toOutput
@@ -191,35 +192,33 @@ object Conversion {
       .transform
   )
 
-  implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](
-    profile =>
-      profile
-        .asInstanceOf[Profile]
-        .into[OutputProfile]
-        .withFieldConst(_._id, profile._id)
-        .withFieldConst(_.id, profile._id)
-        .withFieldConst(_.updatedAt, profile._updatedAt)
-        .withFieldConst(_.updatedBy, profile._updatedBy)
-        .withFieldConst(_.createdAt, profile._createdAt)
-        .withFieldConst(_.createdBy, profile._createdBy)
-        .withFieldConst(_._type, "profile")
-        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
-        .transform
+  implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](profile =>
+    profile
+      .asInstanceOf[Profile]
+      .into[OutputProfile]
+      .withFieldConst(_._id, profile._id)
+      .withFieldConst(_.id, profile._id)
+      .withFieldConst(_.updatedAt, profile._updatedAt)
+      .withFieldConst(_.updatedBy, profile._updatedBy)
+      .withFieldConst(_.createdAt, profile._createdAt)
+      .withFieldConst(_.createdBy, profile._createdBy)
+      .withFieldConst(_._type, "profile")
+      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
+      .transform
   )
 
-  implicit val dashboardOutput: Outputer.Aux[Dashboard with Entity, OutputDashboard] = Outputer[Dashboard with Entity, OutputDashboard](
-    dashboard =>
-      dashboard
-        .asInstanceOf[Dashboard]
-        .into[OutputDashboard]
-        .withFieldConst(_._id, dashboard._id)
-        .withFieldComputed(_.status, d => if (d.shared) "Shared" else "Private")
-        .withFieldConst(_._type, "dashboard")
-        .withFieldConst(_._updatedAt, dashboard._updatedAt)
-        .withFieldConst(_._updatedBy, dashboard._updatedBy)
-        .withFieldConst(_._createdAt, dashboard._createdAt)
-        .withFieldConst(_._createdBy, dashboard._createdBy)
-        .transform
+  implicit val dashboardOutput: Outputer.Aux[RichDashboard, OutputDashboard] = Outputer[RichDashboard, OutputDashboard](dashboard =>
+    dashboard
+      .into[OutputDashboard]
+      .withFieldConst(_._id, dashboard._id)
+      .withFieldComputed(_.status, d => if (d.organisationShares.nonEmpty) "Shared" else "Private")
+      .withFieldConst(_._type, "dashboard")
+      .withFieldConst(_._updatedAt, dashboard._updatedAt)
+      .withFieldConst(_._updatedBy, dashboard._updatedBy)
+      .withFieldConst(_._createdAt, dashboard._createdAt)
+      .withFieldConst(_._createdBy, dashboard._createdBy)
+      .withFieldComputed(_.definition, _.definition.toString)
+      .transform
   )
 
   implicit val attachmentOutput: Outputer.Aux[Attachment with Entity, OutputAttachment] = Outputer[Attachment with Entity, OutputAttachment](
@@ -230,40 +229,38 @@ object Conversion {
       .transform
   )
 
-  implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](
-    richObservable =>
-      richObservable
-        .into[OutputObservable]
-        .withFieldConst(_._type, "case_artifact")
-        .withFieldComputed(_._id, _.observable._id)
-        .withFieldComputed(_._updatedAt, _.observable._updatedAt)
-        .withFieldComputed(_._updatedBy, _.observable._updatedBy)
-        .withFieldComputed(_._createdAt, _.observable._createdAt)
-        .withFieldComputed(_._createdBy, _.observable._createdBy)
-        .withFieldComputed(_.dataType, _.`type`.name)
-        .withFieldComputed(_.startDate, _.observable._createdAt)
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-        .withFieldComputed(_.data, _.data.map(_.data))
-        .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
-        .withFieldConst(_.stats, JsObject.empty)
-        .transform
+  implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](richObservable =>
+    richObservable
+      .into[OutputObservable]
+      .withFieldConst(_._type, "case_artifact")
+      .withFieldComputed(_._id, _.observable._id)
+      .withFieldComputed(_._updatedAt, _.observable._updatedAt)
+      .withFieldComputed(_._updatedBy, _.observable._updatedBy)
+      .withFieldComputed(_._createdAt, _.observable._createdAt)
+      .withFieldComputed(_._createdBy, _.observable._createdBy)
+      .withFieldComputed(_.dataType, _.`type`.name)
+      .withFieldComputed(_.startDate, _.observable._createdAt)
+      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.data, _.data.map(_.data))
+      .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+      .withFieldConst(_.stats, JsObject.empty)
+      .transform
   )
 
-  implicit val logOutput: Outputer.Aux[RichLog, OutputLog] = Outputer[RichLog, OutputLog](
-    richLog =>
-      richLog
-        .into[OutputLog]
-        .withFieldConst(_._type, "case_task_log")
-        .withFieldComputed(_._id, _._id)
-        .withFieldComputed(_._updatedAt, _._updatedAt)
-        .withFieldComputed(_._updatedBy, _._updatedBy)
-        .withFieldComputed(_._createdAt, _._createdAt)
-        .withFieldComputed(_._createdBy, _._createdBy)
-        .withFieldComputed(_.message, _.message)
-        .withFieldComputed(_.startDate, _._createdAt)
-        .withFieldComputed(_.owner, _._createdBy)
-        .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
-        .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
-        .transform
+  implicit val logOutput: Outputer.Aux[RichLog, OutputLog] = Outputer[RichLog, OutputLog](richLog =>
+    richLog
+      .into[OutputLog]
+      .withFieldConst(_._type, "case_task_log")
+      .withFieldComputed(_._id, _._id)
+      .withFieldComputed(_._updatedAt, _._updatedAt)
+      .withFieldComputed(_._updatedBy, _._updatedBy)
+      .withFieldComputed(_._createdAt, _._createdAt)
+      .withFieldComputed(_._createdBy, _._createdBy)
+      .withFieldComputed(_.message, _.message)
+      .withFieldComputed(_.startDate, _._createdAt)
+      .withFieldComputed(_.owner, _._createdBy)
+      .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
+      .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
+      .transform
   )
 }

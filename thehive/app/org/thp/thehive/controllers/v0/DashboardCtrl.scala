@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v0
 
 import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -10,8 +9,8 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
-import org.thp.thehive.models.Dashboard
-import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv}
+import org.thp.thehive.models.{Dashboard, RichDashboard}
+import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv, UserSrv}
 
 @Singleton
 class DashboardCtrl @Inject()(
@@ -19,7 +18,8 @@ class DashboardCtrl @Inject()(
     db: Database,
     properties: Properties,
     dashboardSrv: DashboardSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    userSrv: UserSrv
 ) extends QueryableCtrl {
   val entityName: String                           = "dashboard"
   val publicProperties: List[PublicProperty[_, _]] = properties.dashboard ::: metaProperties[DashboardSteps]
@@ -38,7 +38,7 @@ class DashboardCtrl @Inject()(
     FieldsParser[OutputParam],
     (range, dashboardSteps, _) => dashboardSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: Query = Query.output[Dashboard with Entity]()
+  val outputQuery: Query = Query.output[RichDashboard]()
 
   def create: Action[AnyContent] =
     entryPoint("create dashboard")
@@ -57,6 +57,7 @@ class DashboardCtrl @Inject()(
         dashboardSrv
           .getByIds(dashboardId)
           .visible
+          .richDashboard
           .getOrFail()
           .map { dashboard =>
             Results.Ok(dashboard.toJson)
@@ -69,16 +70,19 @@ class DashboardCtrl @Inject()(
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("dashboard")
         dashboardSrv
-          .update(_.getByIds(dashboardId) /*.can(Permissions.manageAlert)*/, propertyUpdaters) // TODO check permission
-          .flatMap { case (dashboardSteps, _) => dashboardSteps.getOrFail() }
+          .update(_.getByIds(dashboardId).canUpdate, propertyUpdaters) // TODO check permission
+          .flatMap { case (dashboardSteps, _) => dashboardSteps.richDashboard.getOrFail() }
           .map(dashboard => Results.Ok(dashboard.toJson))
       }
 
   def delete(dashboardId: String): Action[AnyContent] =
     entryPoint("delete dashboard")
       .authTransaction(db) { implicit request => implicit graph =>
-        dashboardSrv
-          .getOrFail(dashboardId)
+        userSrv
+          .current
+          .dashboards
+          .getByIds(dashboardId)
+          .getOrFail()
           .map { dashboard =>
             dashboardSrv.remove(dashboard)
             Results.NoContent

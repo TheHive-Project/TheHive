@@ -37,7 +37,7 @@ object UserSrv {
 }
 
 @Singleton
-class UserSrv @Inject()(configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, attachmentSrv: AttachmentSrv, implicit val db: Database)
+class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, attachmentSrv: AttachmentSrv, implicit val db: Database)
     extends VertexSrv[User, UserSteps] {
 
   override val initialValues: Seq[User] = Seq(UserSrv.init, UserSrv.system)
@@ -217,4 +217,6 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
 
   def systemUser: UserSteps = this.has("login", UserSrv.system.login)
+
+  def dashboards: DashboardSteps = new DashboardSteps(raw.inTo[DashboardUser])
 }

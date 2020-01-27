@@ -42,6 +42,7 @@ class DatabaseBuilder @Inject()(
     logSrv: LogSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
+    dashboardSrv: DashboardSrv,
     pageSrv: PageSrv
 ) {
 
@@ -73,7 +74,8 @@ class DatabaseBuilder @Inject()(
           createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
           createVertex(attachmentSrv, FieldsParser[Attachment]) ++
           createVertex(tagSrv, FieldsParser[Tag]) ++
-          createVertex(pageSrv, FieldsParser[Page])
+          createVertex(pageSrv, FieldsParser[Page]) ++
+          createVertex(dashboardSrv, FieldsParser[Dashboard])
 
       createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
       createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
@@ -119,6 +121,8 @@ class DatabaseBuilder @Inject()(
 
       createEdge(pageSrv.organisationPageSrv, organisationSrv, pageSrv, FieldsParser[OrganisationPage], idMap)
 
+      createEdge(dashboardSrv.dashboardUserSrv, dashboardSrv, userSrv, FieldsParser[DashboardUser], idMap)
+      createEdge(dashboardSrv.organisationDashboardSrv, organisationSrv, dashboardSrv, FieldsParser[OrganisationDashboard], idMap)
       Success(())
     }
   }

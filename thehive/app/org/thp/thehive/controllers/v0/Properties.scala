@@ -28,6 +28,7 @@ import org.thp.thehive.services.{
   LogSteps,
   ObservableSrv,
   ObservableSteps,
+  OrganisationSrv,
   OrganisationSteps,
   PageSteps,
   ProfileSrv,
@@ -45,13 +46,14 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class Properties @Inject()(
+class Properties @Inject() (
     caseSrv: CaseSrv,
     userSrv: UserSrv,
     alertSrv: AlertSrv,
     dashboardSrv: DashboardSrv,
     observableSrv: ObservableSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    organisationSrv: OrganisationSrv,
     taskSrv: TaskSrv,
     profileSrv: ProfileSrv,
     roleSrv: RoleSrv,
@@ -283,24 +285,24 @@ class Properties @Inject()(
     PublicPropertyListBuilder[DashboardSteps]
       .property("title", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
-      .property("definition", UniMapping.string)(_.field.updatable)
+      .property("definition", UniMapping.jsObject)(_.field.updatable)
       .property("status", UniMapping.string)(
-        _.select(_.shared.map(shared => if (shared) "Shared" else "Private")).custom { // TODO replace by choose step
+        _.select(_.richDashboard.map(d => if (d.organisationShares.nonEmpty) "Shared" else "Private")).custom { // TODO replace by choose step
           case (_, "Shared", vertex, _, graph, authContext) =>
             for {
-              d <- dashboardSrv.get(vertex)(graph).getOrFail()
-              _ <- dashboardSrv.shareUpdate(d, status = true)(graph, authContext)
+              dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
+              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
           case (_, "Private", vertex, _, graph, authContext) =>
             for {
-              d <- dashboardSrv.get(vertex)(graph).getOrFail()
-              _ <- dashboardSrv.shareUpdate(d, status = false)(graph, authContext)
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
+              _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
             } yield Json.obj("status" -> "Private")
 
           case (_, "Deleted", vertex, _, graph, authContext) =>
             for {
-              d <- dashboardSrv.get(vertex)(graph).getOrFail()
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
               _ <- dashboardSrv.remove(d)(graph, authContext)
             } yield Json.obj("status" -> "Deleted")
 
