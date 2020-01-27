@@ -25,7 +25,7 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 
 @Singleton
-class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer, ec: ExecutionContext)
+class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer, ec: ExecutionContext)
     extends VertexSrv[Attachment, AttachmentSteps] {
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
@@ -37,7 +37,9 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
     val id = hs.head.toString
     val is = Files.newInputStream(file.filepath)
     val result =
-      storageSrv.saveBinary(id, is).flatMap(_ => createEntity(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
+      storageSrv
+        .saveBinary("attachment", id, is)
+        .flatMap(_ => createEntity(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
     is.close()
     result
   }
@@ -48,7 +50,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
-    storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
+    storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
   def create(filename: String, size: Long, contentType: String, data: Source[ByteString, NotUsed])(
@@ -57,7 +59,7 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
-    storageSrv.saveBinary(id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
+    storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
   }
 
   override def get(idOrAttachmentId: String)(implicit graph: Graph): AttachmentSteps =
@@ -67,8 +69,9 @@ class AttachmentSrv @Inject()(configuration: Configuration, storageSrv: StorageS
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
 
-  // FIXME shouldn't it be attachment.attachmentId instead according to the create methods?
-  def stream(attachment: Attachment with Entity): InputStream = storageSrv.loadBinary(attachment._id)
+  def stream(attachment: Attachment with Entity): InputStream = storageSrv.loadBinary("attachment", attachment.attachmentId)
+
+  def exists(attachment: Attachment with Entity): Boolean = storageSrv.exists("attachment", attachment.attachmentId)
 
   def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph): Try[Unit] =
     // TODO handle Storage data removal
@@ -82,4 +85,6 @@ class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
   override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
 
   def getByAttachmentId(attachmentId: String): AttachmentSteps = this.has("attachmentId", attachmentId)
+
+  def visible(implicit authContext: AuthContext): AttachmentSteps = this // TODO
 }

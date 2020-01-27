@@ -1,9 +1,11 @@
 package org.thp.thehive.controllers.dav
 
-import scala.util.Success
-import scala.util.matching.Regex
-import scala.xml.{Node, NodeSeq}
-
+import akka.stream.scaladsl.StreamConverters
+import akka.util.ByteString
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.services.AttachmentSrv
 import play.api.Logger
 import play.api.http.{HttpEntity, Status, Writeable}
 import play.api.mvc._
@@ -11,13 +13,9 @@ import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
-import akka.stream.scaladsl.StreamConverters
-import akka.util.ByteString
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.StorageSrv
-import org.thp.thehive.services.AttachmentSrv
+import scala.util.Success
+import scala.util.matching.Regex
+import scala.xml.{Node, NodeSeq}
 
 @Singleton
 class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv, storageSrv: StorageSrv) extends SimpleRouter {
@@ -113,7 +111,7 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
           range match {
             case Some(rangeExtract(from, maybeTo)) =>
               logger.debug(s"Download attachment $id with range $from-$maybeTo")
-              val is = storageSrv.loadBinary(id)
+              val is = attachmentSrv.stream(attachment)
               is.skip(from.toLong)
               val to            = Option(maybeTo).fold(attachment.size)(_.toLong)
               val source        = StreamConverters.fromInputStream(() => is)
@@ -126,7 +124,7 @@ class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmen
               logger.debug(s"Download attachment $id")
               Result(
                 header = ResponseHeader(Status.OK, Map("Cache-Control" -> "immutable", "ETag" -> s""""$id"""")),
-                body = HttpEntity.Streamed(StreamConverters.fromInputStream(() => storageSrv.loadBinary(id)), None, None)
+                body = HttpEntity.Streamed(attachmentSrv.source(attachment), None, None)
               )
           }
         }
