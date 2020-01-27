@@ -2,20 +2,11 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Base64
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
-
-import play.api.http.HttpEntity
-import play.api.libs.json.{JsNull, JsObject, Json}
-import play.api.mvc._
-
-import akka.stream.scaladsl.StreamConverters
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.services.StorageSrv
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError, RichOptionTry}
@@ -23,9 +14,15 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.http.HttpEntity
+import play.api.libs.json.{JsNull, JsObject, Json}
+import play.api.mvc._
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
 
 @Singleton
-class UserCtrl @Inject()(
+class UserCtrl @Inject() (
     entrypoint: EntryPoint,
     db: Database,
     properties: Properties,
@@ -35,25 +32,28 @@ class UserCtrl @Inject()(
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    storageSrv: StorageSrv,
     implicit val ec: ExecutionContext
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "user"
   override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
+
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
     "getUser",
     FieldsParser[IdOrName],
     (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
   )
+
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[RichUser]()
+
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
   )
@@ -100,7 +100,7 @@ class UserCtrl @Inject()(
         for {
           user        <- userSrv.get(userId).getOrFail()
           _           <- userSrv.current.organisations(Permissions.manageUser).users.get(user).getOrFail()
-          updatedUser <- userSrv.get(user).update("locked" -> true)
+          updatedUser <- userSrv.get(user).updateOne("locked" -> true)
           _           <- auditSrv.user.delete(updatedUser)
         } yield Results.NoContent
       }
@@ -272,12 +272,12 @@ class UserCtrl @Inject()(
     entrypoint("get user avatar")
       .authTransaction(db) { implicit request => implicit graph =>
         userSrv.get(userId).visible.avatar.headOption() match {
-          case Some(avatar) if storageSrv.exists(avatar.attachmentId) =>
+          case Some(avatar) if attachmentSrv.exists(avatar) =>
             Success(
               Result(
                 header = ResponseHeader(200),
                 body = HttpEntity.Streamed(
-                  StreamConverters.fromInputStream(() => storageSrv.loadBinary(avatar.attachmentId)),
+                  attachmentSrv.source(avatar),
                   Some(avatar.size),
                   Some(avatar.contentType)
                 )

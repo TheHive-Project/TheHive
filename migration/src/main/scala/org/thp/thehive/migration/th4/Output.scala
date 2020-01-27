@@ -281,7 +281,7 @@ class Output @Inject()(
       createdUser <- if (userSrv.get(validUser.login).exists())
         userSrv
           .get(UserSrv.init.login)
-          .update("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
+          .updateOne("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
       else userSrv.createEntity(validUser)
       _ <- inputUser
         .avatar

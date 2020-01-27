@@ -18,7 +18,7 @@ import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
 
 @Singleton
-class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
+class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
     extends VertexSrv[Task, TaskSteps] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
@@ -75,17 +75,17 @@ class TaskSrv @Inject()(caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, 
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Task with Entity] = {
-    def setStatus() = get(t).update("status" -> s)
+    def setStatus() = get(t).updateOne("status" -> s)
 
     s match {
       case TaskStatus.Cancel | TaskStatus.Waiting => setStatus()
       case TaskStatus.Completed =>
-        t.endDate.fold(get(t).update("status" -> s, "endDate" -> Some(new Date())))(_ => setStatus())
+        t.endDate.fold(get(t).updateOne("status" -> s, "endDate" -> Some(new Date())))(_ => setStatus())
 
       case TaskStatus.InProgress =>
         for {
           _       <- get(t).user.headOption().fold(assign(t, o))(_ => Success(()))
-          updated <- t.startDate.fold(get(t).update("status" -> s, "startDate" -> Some(new Date())))(_ => setStatus())
+          updated <- t.startDate.fold(get(t).updateOne("status" -> s, "startDate" -> Some(new Date())))(_ => setStatus())
         } yield updated
 
       case _ => Failure(new Exception(s"Invalid TaskStatus $s for update"))

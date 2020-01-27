@@ -41,7 +41,7 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
       model: Base[E],
       graph: Graph,
       authContext: AuthContext
-  ): Try[E with Entity] = db.update(elementTraversal, fields, model, graph, authContext)
+  ): Try[Seq[E with Entity]] = db.update(elementTraversal, fields, model, graph, authContext)
 
   override def roTransaction[A](body: Graph => A): A                                                           = db.roTransaction(body)
   override def transaction[A](body: Graph => A): A                                                             = db.transaction(body)
@@ -60,21 +60,27 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override def drop(): Unit                                                                                    = db.drop()
 
   override def getSingleProperty[D, G](element: Element, key: String, mapping: SingleMapping[D, G]): D = db.getSingleProperty(element, key, mapping)
+
   override def getOptionProperty[D, G](element: Element, key: String, mapping: OptionMapping[D, G]): Option[D] =
     db.getOptionProperty(element, key, mapping)
   override def getListProperty[D, G](element: Element, key: String, mapping: ListMapping[D, G]): Seq[D] = db.getListProperty(element, key, mapping)
   override def getSetProperty[D, G](element: Element, key: String, mapping: SetMapping[D, G]): Set[D]   = db.getSetProperty(element, key, mapping)
   override def getProperty[D](element: Element, key: String, mapping: Mapping[D, _, _]): D              = db.getProperty(element, key, mapping)
+
   override def setSingleProperty[D, G](element: Element, key: String, value: D, mapping: SingleMapping[D, _]): Unit =
     db.setSingleProperty[D, G](element, key, value, mapping)
+
   override def setOptionProperty[D, G](element: Element, key: String, value: Option[D], mapping: OptionMapping[D, _]): Unit =
     db.setOptionProperty[D, G](element, key, value, mapping)
+
   override def setListProperty[D, G](element: Element, key: String, values: Seq[D], mapping: ListMapping[D, _]): Unit =
     db.setListProperty[D, G](element, key, values, mapping)
+
   override def setSetProperty[D, G](element: Element, key: String, values: Set[D], mapping: SetMapping[D, _]): Unit =
     db.setSetProperty[D, G](element, key, values, mapping)
   override def setProperty[D](element: Element, key: String, value: D, mapping: Mapping[D, _, _]): Unit    = db.setProperty(element, key, value, mapping)
   override def labelFilter[E <: Element](model: Model): GremlinScala[E] => GremlinScala[E]                 = db.labelFilter(model)
+  override def labelFilter[E <: Element](label: String): GremlinScala[E] => GremlinScala[E]                = db.labelFilter(label)
   override lazy val extraModels: Seq[Model]                                                                = db.extraModels
   override def addTransactionListener(listener: Consumer[Transaction.Status])(implicit graph: Graph): Unit = db.addTransactionListener(listener)
   override def mapPredicate[T](predicate: P[T]): P[T]                                                      = db.mapPredicate(predicate)

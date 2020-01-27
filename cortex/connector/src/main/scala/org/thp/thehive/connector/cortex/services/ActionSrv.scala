@@ -26,7 +26,7 @@ import play.api.libs.json.{JsObject, Json, OWrites}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class ActionSrv @Inject()(
+class ActionSrv @Inject() (
     @Named("cortex-actor") cortexActor: ActorRef,
     actionOperationSrv: ActionOperationSrv,
     entityHelper: EntityHelper,
@@ -149,7 +149,7 @@ class ActionSrv @Inject()(
         }
 
       for {
-        updated <- getByIds(actionId).update(
+        updated <- getByIds(actionId).updateOne(
           "status"     -> cortexJob.status.toJobStatus,
           "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
           "endDate"    -> Some(new Date()),

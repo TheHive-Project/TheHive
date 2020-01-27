@@ -21,7 +21,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class UserCtrl @Inject()(
+class UserCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,
@@ -33,22 +33,26 @@ class UserCtrl @Inject()(
     implicit val ec: ExecutionContext,
     roleSrv: RoleSrv
 ) extends QueryableCtrl {
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "user"
   override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
+
   override val initialQuery: Query =
     Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
     "getUser",
     FieldsParser[IdOrName],
     (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
   )
+
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[RichUser]()
+
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
   )
@@ -104,7 +108,7 @@ class UserCtrl @Inject()(
         for {
           user        <- userSrv.get(userId).getOrFail()
           _           <- userSrv.current.organisations(Permissions.manageUser).users.get(user).getOrFail()
-          updatedUser <- userSrv.get(user).update("locked" -> true)
+          updatedUser <- userSrv.get(user).updateOne("locked" -> true)
           _           <- auditSrv.user.delete(updatedUser)
         } yield Results.NoContent
       }

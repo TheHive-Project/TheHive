@@ -22,7 +22,7 @@ import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.controllers.v0.Conversion._
 
 @Singleton
-class AnalyzerTemplateSrv @Inject()(
+class AnalyzerTemplateSrv @Inject() (
     implicit db: Database,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[AnalyzerTemplate, AnalyzerTemplateSteps] {
@@ -86,18 +86,17 @@ class AnalyzerTemplateSrv @Inject()(
           val analyzerTemplate = readZipEntry(file, entry)
             .flatMap { content =>
               db.tryTransaction { implicit graph =>
-                {
+                for {
+                  updated <- get(analyzerId).updateOne("content" -> content)
+                  _       <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
+                } yield updated
+              } recoverWith {
+                case _ =>
                   for {
-                    updated <- get(analyzerId).update("content" -> content)
-                    _       <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
-                  } yield updated
-                } recoverWith {
-                  case _ =>
-                    for {
-                      created <- create(AnalyzerTemplate(analyzerId, content))
-                      _       <- auditSrv.analyzerTemplate.create(created, created.toJson)
-                    } yield created
-                }
+                    created <- create(AnalyzerTemplate(analyzerId, content))
+                    _       <- auditSrv.analyzerTemplate.create(created, created.toJson)
+                  } yield created
+
               }
             }
           templateMap + (analyzerId -> analyzerTemplate)

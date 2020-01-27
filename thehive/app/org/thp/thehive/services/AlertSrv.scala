@@ -21,7 +21,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 @Singleton
-class AlertSrv @Inject()(
+class AlertSrv @Inject() (
     caseSrv: CaseSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
@@ -180,25 +180,25 @@ class AlertSrv @Inject()(
 
   def markAsUnread(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("read" -> false)
+      alert <- get(alertId).updateOne("read" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("read" -> true)
+      alert <- get(alertId).updateOne("read" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("follow" -> true)
+      alert <- get(alertId).updateOne("follow" -> true)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update("follow" -> false)
+      alert <- get(alertId).updateOne("follow" -> false)
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
@@ -243,7 +243,7 @@ class AlertSrv @Inject()(
     for {
       _ <- caseSrv.addTags(`case`, get(alert).tags.toList.map(_.toString).toSet)
       description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-      c <- caseSrv.get(`case`).update("description" -> description)
+      c <- caseSrv.get(`case`).updateOne("description" -> description)
       _ <- importObservables(alert, `case`)
       _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
       _ <- markAsRead(alert._id)

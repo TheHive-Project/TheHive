@@ -6,7 +6,7 @@ import java.util.Date
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
-import akka.stream.scaladsl.{FileIO, StreamConverters}
+import akka.stream.scaladsl.FileIO
 import com.google.inject.name.Named
 import gremlin.scala._
 import io.scalaland.chimney.dsl._
@@ -35,9 +35,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class JobSrv @Inject()(
+class JobSrv @Inject() (
     connector: Connector,
-    storageSrv: StorageSrv,
     @Named("cortex-actor") cortexActor: ActorRef,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -50,7 +49,7 @@ class JobSrv @Inject()(
     implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
 
-  lazy val logger         = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
   val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
   val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
 
@@ -82,8 +81,7 @@ class JobSrv @Inject()(
             InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
           )
         case (Some(a), None) =>
-          val data       = StreamConverters.fromInputStream(() => storageSrv.loadBinary(a.attachmentId))
-          val attachment = CortexAttachment(a.name, a.size, a.contentType, data)
+          val attachment = CortexAttachment(a.name, a.size, a.contentType, attachmentSrv.source(a))
           Future.successful(
             InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
           )
@@ -166,7 +164,7 @@ class JobSrv @Inject()(
         val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
-          job <- get(job).update(
+          job <- get(job).updateOne(
             "report"  -> report,
             "status"  -> status,
             "endDate" -> endDate

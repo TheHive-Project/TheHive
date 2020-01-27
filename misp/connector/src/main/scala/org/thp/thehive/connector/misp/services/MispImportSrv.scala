@@ -25,7 +25,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class MispImportSrv @Inject()(
+class MispImportSrv @Inject() (
     connector: Connector,
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
@@ -100,11 +100,10 @@ class MispImportSrv @Inject()(
       .toTry(convertAttributeType(attribute.category, _))
       .map {
         case observables
-            if observables.exists(
-              o =>
-                o._1.isAttachment != (attribute.`type` == "attachment" ||
-                  attribute.`type` == "malware-sample") ||
-                  o._1.isAttachment == attribute.data.isEmpty
+            if observables.exists(o =>
+              o._1.isAttachment != (attribute.`type` == "attachment" ||
+                attribute.`type` == "malware-sample") ||
+                o._1.isAttachment == attribute.data.isEmpty
             ) =>
           logger.error(s"Attribute conversion return incompatible types (${attribute.`type`} / ${observables.map(_._1.name).mkString(",")}")
           Nil
@@ -211,7 +210,7 @@ class MispImportSrv @Inject()(
             (if (richObservable.ioc != observable.ioc) Seq("ioc"             -> observable.ioc) else Nil) ++
             (if (richObservable.sighted != observable.sighted) Seq("sighted" -> observable.sighted) else Nil)
           for { // update observable even if updateFields is empty in order to remove unupdated observables
-            updatedObservable <- observableSrv.get(richObservable.observable).update(updateFields: _*)
+            updatedObservable <- observableSrv.get(richObservable.observable).updateOne(updateFields: _*)
             _                 <- observableSrv.updateTagNames(updatedObservable, tags)
           } yield updatedObservable
       }
@@ -263,7 +262,7 @@ class MispImportSrv @Inject()(
         Future.fromTry {
           db.tryTransaction { implicit graph =>
             for { // update observable even if updateFields is empty in order to remove unupdated observables
-              updatedObservable <- observableSrv.get(richObservable.observable).update(updateFields: _*)
+              updatedObservable <- observableSrv.get(richObservable.observable).updateOne(updateFields: _*)
               _                 <- observableSrv.updateTagNames(updatedObservable, tags)
             } yield updatedObservable
           }
@@ -369,7 +368,7 @@ class MispImportSrv @Inject()(
               (if (richAlert.pap != alert.pap) Seq("pap"                            -> alert.pap) else Nil) ++
               (if (richAlert.externalLink != alert.externalLink) Seq("externalLink" -> alert.externalLink) else Nil)
             for {
-              updatedAlert <- if (updateFields.nonEmpty) alertSrv.get(richAlert.alert).update(updateFields: _*) else Success(richAlert.alert)
+              updatedAlert <- if (updateFields.nonEmpty) alertSrv.get(richAlert.alert).updateOne(updateFields: _*) else Success(richAlert.alert)
               _            <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
             } yield updatedAlert
         }
