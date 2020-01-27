@@ -56,92 +56,91 @@ case class OutputCase(
 )
 
 object OutputCase {
-  implicit val writes: OWrites[OutputCase] = OWrites[OutputCase](
-    c =>
-      Json.obj(
-        "_id"              -> c._id,
-        "id"               -> c.id,
-        "createdBy"        -> c.createdBy,
-        "updatedBy"        -> c.updatedBy,
-        "createdAt"        -> c.createdAt,
-        "updatedAt"        -> c.updatedAt,
-        "_type"            -> c._type,
-        "caseId"           -> c.caseId,
-        "title"            -> c.title,
-        "description"      -> c.description,
-        "severity"         -> c.severity,
-        "startDate"        -> c.startDate,
-        "endDate"          -> c.endDate,
-        "impactStatus"     -> c.impactStatus,
-        "resolutionStatus" -> c.resolutionStatus,
-        "tags"             -> c.tags,
-        "flag"             -> c.flag,
-        "tlp"              -> c.tlp,
-        "pap"              -> c.pap,
-        "status"           -> c.status,
-        "summary"          -> c.summary,
-        "owner"            -> c.owner,
-        "customFields"     -> c.customFields,
-        "stats"            -> c.stats,
-        "permissions"      -> c.permissions
-      )
+
+  implicit val writes: OWrites[OutputCase] = OWrites[OutputCase](c =>
+    Json.obj(
+      "_id"              -> c._id,
+      "id"               -> c.id,
+      "createdBy"        -> c.createdBy,
+      "updatedBy"        -> c.updatedBy,
+      "createdAt"        -> c.createdAt,
+      "updatedAt"        -> c.updatedAt,
+      "_type"            -> c._type,
+      "caseId"           -> c.caseId,
+      "title"            -> c.title,
+      "description"      -> c.description,
+      "severity"         -> c.severity,
+      "startDate"        -> c.startDate,
+      "endDate"          -> c.endDate,
+      "impactStatus"     -> c.impactStatus,
+      "resolutionStatus" -> c.resolutionStatus,
+      "tags"             -> c.tags,
+      "flag"             -> c.flag,
+      "tlp"              -> c.tlp,
+      "pap"              -> c.pap,
+      "status"           -> c.status,
+      "summary"          -> c.summary,
+      "owner"            -> c.owner,
+      "customFields"     -> c.customFields,
+      "stats"            -> c.stats,
+      "permissions"      -> c.permissions
+    )
   )
 
-  implicit val reads: Reads[OutputCase] = Reads[OutputCase](
-    j =>
-      for {
-        _id              <- (j \ "_id").validate[String]
-        id               <- (j \ "id").validate[String]
-        createdBy        <- (j \ "createdBy").validate[String]
-        updatedBy        <- (j \ "updatedBy").validateOpt[String]
-        createdAt        <- (j \ "createdAt").validate[Date]
-        updatedAt        <- (j \ "updatedAt").validateOpt[Date]
-        _type            <- (j \ "_type").validate[String]
-        caseId           <- (j \ "caseId").validate[Int]
-        title            <- (j \ "title").validate[String]
-        description      <- (j \ "description").validate[String]
-        severity         <- (j \ "severity").validate[Int]
-        startDate        <- (j \ "startDate").validate[Date]
-        endDate          <- (j \ "endDate").validateOpt[Date]
-        impactStatus     <- (j \ "impactStatus").validateOpt[String]
-        resolutionStatus <- (j \ "resolutionStatus").validateOpt[String]
-        tags             <- (j \ "tags").validate[Set[String]]
-        flag             <- (j \ "flag").validate[Boolean]
-        tlp              <- (j \ "tlp").validate[Int]
-        pap              <- (j \ "pap").validate[Int]
-        status           <- (j \ "status").validate[String]
-        summary          <- (j \ "summary").validateOpt[String]
-        owner            <- (j \ "owner").validateOpt[String]
-        customFields     <- (j \ "customFields").validate[JsObject]
-        stats            <- (j \ "stats").validate[JsValue]
-        permissions      <- (j \ "permissions").validate[Set[String]]
-      } yield OutputCase(
-        _id,
-        id,
-        createdBy,
-        updatedBy,
-        createdAt,
-        updatedAt,
-        _type,
-        caseId,
-        title,
-        description,
-        severity,
-        startDate,
-        endDate,
-        impactStatus,
-        resolutionStatus,
-        tags,
-        flag,
-        tlp,
-        pap,
-        status,
-        summary,
-        owner,
-        customFields,
-        stats,
-        permissions
-      )
+  implicit val reads: Reads[OutputCase] = Reads[OutputCase](j =>
+    for {
+      _id              <- (j \ "_id").validate[String]
+      id               <- (j \ "id").validate[String]
+      createdBy        <- (j \ "createdBy").validate[String]
+      updatedBy        <- (j \ "updatedBy").validateOpt[String]
+      createdAt        <- (j \ "createdAt").validate[Date]
+      updatedAt        <- (j \ "updatedAt").validateOpt[Date]
+      _type            <- (j \ "_type").validate[String]
+      caseId           <- (j \ "caseId").validate[Int]
+      title            <- (j \ "title").validate[String]
+      description      <- (j \ "description").validate[String]
+      severity         <- (j \ "severity").validate[Int]
+      startDate        <- (j \ "startDate").validate[Date]
+      endDate          <- (j \ "endDate").validateOpt[Date]
+      impactStatus     <- (j \ "impactStatus").validateOpt[String]
+      resolutionStatus <- (j \ "resolutionStatus").validateOpt[String]
+      tags             <- (j \ "tags").validate[Set[String]]
+      flag             <- (j \ "flag").validate[Boolean]
+      tlp              <- (j \ "tlp").validate[Int]
+      pap              <- (j \ "pap").validate[Int]
+      status           <- (j \ "status").validate[String]
+      summary          <- (j \ "summary").validateOpt[String]
+      owner            <- (j \ "owner").validateOpt[String]
+      customFields     <- (j \ "customFields").validate[JsObject]
+      stats            <- (j \ "stats").validate[JsValue]
+      permissions      <- (j \ "permissions").validate[Set[String]]
+    } yield OutputCase(
+      _id,
+      id,
+      createdBy,
+      updatedBy,
+      createdAt,
+      updatedAt,
+      _type,
+      caseId,
+      title,
+      description,
+      severity,
+      startDate,
+      endDate,
+      impactStatus,
+      resolutionStatus,
+      tags,
+      flag,
+      tlp,
+      pap,
+      status,
+      summary,
+      owner,
+      customFields,
+      stats,
+      permissions
+    )
   )
   implicit val format: OFormat[OutputCase] = OFormat(reads, writes)
 }

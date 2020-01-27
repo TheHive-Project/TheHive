@@ -22,7 +22,7 @@ import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
 
 @Singleton
-class ObservableSrv @Inject()(
+class ObservableSrv @Inject() (
     keyValueSrv: KeyValueSrv,
     dataSrv: DataSrv,
     attachmentSrv: AttachmentSrv,

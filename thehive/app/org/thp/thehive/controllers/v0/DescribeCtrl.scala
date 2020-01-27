@@ -23,7 +23,7 @@ import org.thp.thehive.services.CustomFieldSrv
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 
 @Singleton
-class DescribeCtrl @Inject()(
+class DescribeCtrl @Inject() (
     cacheApi: SyncCacheApi,
     entryPoint: EntryPoint,
     caseCtrl: CaseCtrl,

@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.{SchemaUpdater => TheHiveSchemaUpdater}
 
 @Singleton
-class SchemaUpdater @Inject()(thehiveSchemaUpdater: TheHiveSchemaUpdater, cortexSchema: CortexSchema, db: Database, userSrv: UserSrv) {
+class SchemaUpdater @Inject() (thehiveSchemaUpdater: TheHiveSchemaUpdater, cortexSchema: CortexSchema, db: Database, userSrv: UserSrv) {
   val latestVersion: Int = 1
 
   val currentVersion: Int = db.version("thehive-cortex")

@@ -17,7 +17,7 @@ import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 
-class ActionOperationSrv @Inject()(
+class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     taskSrv: TaskSrv,

@@ -15,7 +15,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
 
 @Singleton
-class AppendToFileProvider @Inject()(appConfig: ApplicationConfig, ec: ExecutionContext) extends NotifierProvider {
+class AppendToFileProvider @Inject() (appConfig: ApplicationConfig, ec: ExecutionContext) extends NotifierProvider {
   override val name: String = "AppendToFile"
 
   val templateConfig: ConfigItem[String, String] =

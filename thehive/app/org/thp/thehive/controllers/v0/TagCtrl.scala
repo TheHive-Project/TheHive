@@ -17,7 +17,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Try
 
-class TagCtrl @Inject()(
+class TagCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

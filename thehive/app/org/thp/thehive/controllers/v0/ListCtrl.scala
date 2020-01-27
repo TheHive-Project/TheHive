@@ -15,7 +15,7 @@ import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 
 @Singleton
-class ListCtrl @Inject()(entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
+class ListCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
 
   def list: Action[AnyContent] =
     entryPoint("list")

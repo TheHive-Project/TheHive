@@ -16,7 +16,7 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class CustomFieldCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, customFieldSrv: CustomFieldSrv) extends AuditRenderer {
+class CustomFieldCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Properties, customFieldSrv: CustomFieldSrv) extends AuditRenderer {
 
   def create: Action[AnyContent] =
     entryPoint("create custom field")

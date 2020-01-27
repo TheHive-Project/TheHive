@@ -20,7 +20,7 @@ import org.thp.scalligraph.services.VertexSrv
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, RoleSrv, UserSrv}
 
 @Singleton
-class TheHiveSchema @Inject()(injector: Injector) extends Schema {
+class TheHiveSchema @Inject() (injector: Injector) extends Schema {
 
   lazy val logger: Logger = Logger(getClass)
   val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)

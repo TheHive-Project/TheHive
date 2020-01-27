@@ -1,4 +1,5 @@
 package org.thp.thehive.models
+
 import java.util.Date
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}

@@ -1,4 +1,5 @@
 package org.thp.thehive.controllers.v1
+
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -13,7 +14,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import play.api.libs.json.Json
 
 @Singleton
-class AuthenticationCtrl @Inject()(
+class AuthenticationCtrl @Inject() (
     entryPoint: EntryPoint,
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,

@@ -6,7 +6,7 @@ import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
 @Singleton
-class Router @Inject()(
+class Router @Inject() (
     statsCtrl: StatsCtrl,
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,

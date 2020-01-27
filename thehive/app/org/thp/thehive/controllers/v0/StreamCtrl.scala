@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Success
 
 @Singleton
-class StreamCtrl @Inject()(
+class StreamCtrl @Inject() (
     entryPoint: EntryPoint,
     streamSrv: StreamSrv,
     auditSrv: AuditSrv,

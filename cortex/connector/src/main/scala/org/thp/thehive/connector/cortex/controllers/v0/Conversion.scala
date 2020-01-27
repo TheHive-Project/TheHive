@@ -24,27 +24,26 @@ object Conversion {
       .transform
   )
 
-  implicit val jobOutput: Outputer.Aux[RichJob, OutputJob] = Outputer[RichJob, OutputJob](
-    job =>
-      job
-        .into[OutputJob]
-        .withFieldComputed(_.analyzerId, _.workerId)
-        .withFieldComputed(_.analyzerName, _.workerName)
-        .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
-        .withFieldComputed(_.status, _.status.toString)
-        .withFieldComputed(_.endDate, _.endDate)
-        .withFieldComputed(_.cortexId, _.cortexId)
-        .withFieldComputed(_.cortexJobId, _.cortexJobId)
-        .withFieldComputed(
-          _.report,
-          j =>
-            j.report.map {
-              case r if j.status == JobStatus.Success => Json.obj("success" -> true, "full" -> r, "artifacts" -> j.observables.map(_.toJson))
-              case r                                  => r + ("success" -> JsFalse)
-            }
-        )
-        .withFieldConst(_.id, job._id)
-        .transform
+  implicit val jobOutput: Outputer.Aux[RichJob, OutputJob] = Outputer[RichJob, OutputJob](job =>
+    job
+      .into[OutputJob]
+      .withFieldComputed(_.analyzerId, _.workerId)
+      .withFieldComputed(_.analyzerName, _.workerName)
+      .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
+      .withFieldComputed(_.status, _.status.toString)
+      .withFieldComputed(_.endDate, _.endDate)
+      .withFieldComputed(_.cortexId, _.cortexId)
+      .withFieldComputed(_.cortexJobId, _.cortexJobId)
+      .withFieldComputed(
+        _.report,
+        j =>
+          j.report.map {
+            case r if j.status == JobStatus.Success => Json.obj("success" -> true, "full" -> r, "artifacts" -> j.observables.map(_.toJson))
+            case r                                  => r + ("success" -> JsFalse)
+          }
+      )
+      .withFieldConst(_.id, job._id)
+      .transform
   )
 
   implicit val analyzerTemplateOutput: Outputer.Aux[AnalyzerTemplate with Entity, OutputAnalyzerTemplate] =
@@ -66,12 +65,11 @@ object Conversion {
   }
 
   implicit val workerOutput: Outputer.Aux[(CortexWorker, Seq[String]), OutputWorker] =
-    Outputer[(CortexWorker, Seq[String]), OutputWorker](
-      worker =>
-        worker
-          ._1
-          .into[OutputWorker]
-          .withFieldConst(_.cortexIds, worker._2)
-          .transform
+    Outputer[(CortexWorker, Seq[String]), OutputWorker](worker =>
+      worker
+        ._1
+        .into[OutputWorker]
+        .withFieldConst(_.cortexIds, worker._2)
+        .transform
     )
 }

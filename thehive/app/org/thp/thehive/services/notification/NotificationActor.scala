@@ -37,7 +37,7 @@ object AuditNotificationMessage {
   implicit val format: Format[AuditNotificationMessage] = Json.format[AuditNotificationMessage]
 }
 
-class NotificationSrv @Inject()(
+class NotificationSrv @Inject() (
     userSrv: UserSrv,
     availableTriggers: immutable.Set[TriggerProvider],
     availableNotifiers: immutable.Set[NotifierProvider]
@@ -68,7 +68,7 @@ class NotificationSrv @Inject()(
     } yield notifier
 }
 
-class NotificationActor @Inject()(
+class NotificationActor @Inject() (
     configuration: Configuration,
     eventSrv: EventSrv,
     auditSrv: AuditSrv,

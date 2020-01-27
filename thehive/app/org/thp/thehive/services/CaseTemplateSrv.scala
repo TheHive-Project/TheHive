@@ -20,7 +20,7 @@ import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
-class CaseTemplateSrv @Inject()(
+class CaseTemplateSrv @Inject() (
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,

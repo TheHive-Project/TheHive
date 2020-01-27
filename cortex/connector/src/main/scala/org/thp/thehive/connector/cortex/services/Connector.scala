@@ -16,7 +16,7 @@ import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 
 @Singleton
-class Connector @Inject()(
+class Connector @Inject() (
     appConfig: ApplicationConfig,
     mat: Materializer,
     implicit val system: ActorSystem,

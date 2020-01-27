@@ -17,7 +17,7 @@ import org.thp.thehive.models.{Permissions, RichCaseTemplate}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
 
 @Singleton
-class CaseTemplateCtrl @Inject()(
+class CaseTemplateCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

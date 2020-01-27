@@ -134,7 +134,7 @@ class StreamActor(
 }
 
 @Singleton
-class StreamSrv @Inject()(
+class StreamSrv @Inject() (
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
     auditSrv: AuditSrv,
@@ -185,7 +185,7 @@ class StreamSrv @Inject()(
     // Check if stream actor exists
     eventSrv
       .publishAsk(StreamTopic(streamId))(Identify(1))(Timeout(2.seconds))
-//      .ask(s"/user/stream-$streamId", Identify(1))(Timeout(2.seconds))
+      //      .ask(s"/user/stream-$streamId", Identify(1))(Timeout(2.seconds))
       .flatMap {
         case ActorIdentity(1, Some(streamActor)) =>
           logger.debug(s"Stream actor found for stream $streamId")

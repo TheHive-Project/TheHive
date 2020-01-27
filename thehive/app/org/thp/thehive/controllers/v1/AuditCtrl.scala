@@ -16,7 +16,7 @@ import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
 
 @Singleton
-class AuditCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
+class AuditCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
 
   val entityName: String = "audit"
 

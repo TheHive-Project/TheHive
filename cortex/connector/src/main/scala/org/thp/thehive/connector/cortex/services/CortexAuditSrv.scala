@@ -11,7 +11,7 @@ import org.thp.thehive.models.Observable
 import org.thp.thehive.services.{AuditSrv, UserSrv}
 
 @Singleton
-class CortexAuditSrv @Inject()(
+class CortexAuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv

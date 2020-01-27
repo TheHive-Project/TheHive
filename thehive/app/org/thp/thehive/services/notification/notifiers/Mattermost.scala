@@ -20,7 +20,7 @@ object MattermostNotification {
 }
 
 @Singleton
-class MattermostProvider @Inject()(appConfig: ApplicationConfig, ws: WSClient, ec: ExecutionContext) extends NotifierProvider {
+class MattermostProvider @Inject() (appConfig: ApplicationConfig, ws: WSClient, ec: ExecutionContext) extends NotifierProvider {
   override val name: String                            = "Mattermost"
   implicit val optionStringRead: Reads[Option[String]] = Reads.optionNoError[String]
 

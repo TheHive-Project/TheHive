@@ -17,7 +17,7 @@ import org.thp.thehive.controllers.v0._
 import org.thp.thehive.services.ObservableSteps
 
 @Singleton
-class CortexQueryExecutor @Inject()(
+class CortexQueryExecutor @Inject() (
     jobCtrl: JobCtrl,
     jobSrv: JobSrv,
     queryCtrlBuilder: QueryCtrlBuilder,

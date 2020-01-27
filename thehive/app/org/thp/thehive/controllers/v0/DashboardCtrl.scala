@@ -13,7 +13,7 @@ import org.thp.thehive.models.{Dashboard, RichDashboard}
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv, UserSrv}
 
 @Singleton
-class DashboardCtrl @Inject()(
+class DashboardCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

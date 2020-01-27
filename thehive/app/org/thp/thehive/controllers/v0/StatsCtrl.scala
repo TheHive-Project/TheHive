@@ -10,7 +10,7 @@ import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
-class StatsCtrl @Inject()(
+class StatsCtrl @Inject() (
     entrypoint: EntryPoint,
     queryExecutor: TheHiveQueryExecutor,
     db: Database

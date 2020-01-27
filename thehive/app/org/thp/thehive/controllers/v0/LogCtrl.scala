@@ -15,7 +15,7 @@ import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
 
 @Singleton
-class LogCtrl @Inject()(
+class LogCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

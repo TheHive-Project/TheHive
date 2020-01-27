@@ -38,7 +38,7 @@ object ProfileSrv {
 }
 
 @Singleton
-class ProfileSrv @Inject()(auditSrv: AuditSrv)(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
+class ProfileSrv @Inject() (auditSrv: AuditSrv)(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
 
   lazy val all: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.all.name)(graph)).get
   override val initialValues: Seq[Profile] = Seq(

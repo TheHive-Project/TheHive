@@ -11,7 +11,7 @@ import javax.inject.{Inject, Provider, Singleton}
 import org.thp.thehive.controllers.{dav, v0, v1}
 
 @Singleton
-class TheHiveRouter @Inject()(
+class TheHiveRouter @Inject() (
     routerV0: v0.Router,
     routerV1: v1.Router,
     davRouter: dav.Router,
@@ -31,11 +31,11 @@ class TheHiveRouter @Inject()(
 }
 
 @ProvidedBy(classOf[AssetProvider])
-class AssetGetter @Inject()(get: String => Action[AnyContent]) {
+class AssetGetter @Inject() (get: String => Action[AnyContent]) {
   def at(name: String): Action[AnyContent] = get(name)
 }
 
-class AssetProvider @Inject()(environment: Environment, assets: Assets, extAssets: ExternalAssets) extends Provider[AssetGetter] {
+class AssetProvider @Inject() (environment: Environment, assets: Assets, extAssets: ExternalAssets) extends Provider[AssetGetter] {
   lazy val logger = Logger(getClass)
 
   val devResolver: String => Action[AnyContent] = {

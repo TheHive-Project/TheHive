@@ -13,7 +13,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
 
 @Singleton
-class StatusCtrl @Inject()(entryPoint: EntryPoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
+class StatusCtrl @Inject() (entryPoint: EntryPoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 

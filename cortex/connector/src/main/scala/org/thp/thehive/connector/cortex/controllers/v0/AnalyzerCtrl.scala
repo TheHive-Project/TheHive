@@ -14,7 +14,7 @@ import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 import org.thp.thehive.controllers.v0.Conversion._
 
 @Singleton
-class AnalyzerCtrl @Inject()(
+class AnalyzerCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     analyzerSrv: AnalyzerSrv,

@@ -14,7 +14,7 @@ import org.thp.thehive.models.{HealthStatus, ObservableType}
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 
 @Singleton
-class Connector @Inject()(appConfig: ApplicationConfig, system: ActorSystem, mat: Materializer, implicit val ec: ExecutionContext)
+class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, mat: Materializer, implicit val ec: ExecutionContext)
     extends TheHiveConnector {
   override val name: String = "misp"
 

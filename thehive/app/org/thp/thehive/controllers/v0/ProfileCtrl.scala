@@ -17,7 +17,7 @@ import org.thp.thehive.models.{Permissions, Profile}
 import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
 
 @Singleton
-class ProfileCtrl @Inject()(entryPoint: EntryPoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
+class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ProfileSteps](
     "getProfile",

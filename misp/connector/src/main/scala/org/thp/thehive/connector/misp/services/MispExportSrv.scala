@@ -18,7 +18,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 
 @Singleton
-class MispExportSrv @Inject()(
+class MispExportSrv @Inject() (
     connector: Connector,
     caseSrv: CaseSrv,
     attachmentSrv: AttachmentSrv,

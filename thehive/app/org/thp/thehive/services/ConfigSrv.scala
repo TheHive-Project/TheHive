@@ -19,7 +19,7 @@ import org.thp.thehive.services.notification.triggers.Trigger
 import shapeless.HNil
 
 @Singleton
-class ConfigSrv @Inject()(
+class ConfigSrv @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
 )(implicit val db: Database)

@@ -12,7 +12,7 @@ import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
 
 @Singleton
-class RoleSrv @Inject()(implicit val db: Database) extends VertexSrv[Role, RoleSteps] {
+class RoleSrv @Inject() (implicit val db: Database) extends VertexSrv[Role, RoleSteps] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]

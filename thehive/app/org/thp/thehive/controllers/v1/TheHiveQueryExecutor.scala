@@ -7,7 +7,7 @@ import org.thp.scalligraph.query._
 case class OutputParam(from: Long, to: Long, withStats: Boolean)
 
 @Singleton
-class TheHiveQueryExecutor @Inject()(
+class TheHiveQueryExecutor @Inject() (
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,
 //    logCtrl: LogCtrl,

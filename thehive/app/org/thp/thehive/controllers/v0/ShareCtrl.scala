@@ -16,7 +16,7 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 
 @Singleton
-class ShareCtrl @Inject()(
+class ShareCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     shareSrv: ShareSrv,

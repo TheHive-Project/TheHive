@@ -20,7 +20,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class JobCtrl @Inject()(
+class JobCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

@@ -21,7 +21,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class CaseSrv @Inject()(
+class CaseSrv @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,

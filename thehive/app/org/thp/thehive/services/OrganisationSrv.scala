@@ -21,7 +21,7 @@ object OrganisationSrv {
 }
 
 @Singleton
-class OrganisationSrv @Inject()(roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
+class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
     extends VertexSrv[Organisation, OrganisationSteps] {
 
   override val initialValues: Seq[Organisation] = Seq(OrganisationSrv.administration)

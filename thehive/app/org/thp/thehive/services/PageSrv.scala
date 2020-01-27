@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 import scala.util.Try
 
 @Singleton
-class PageSrv @Inject()(implicit db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page, PageSteps] {
+class PageSrv @Inject() (implicit db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page, PageSteps] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 

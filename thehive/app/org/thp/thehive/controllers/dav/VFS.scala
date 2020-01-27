@@ -7,7 +7,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services.CaseSrv
 
 @Singleton
-class VFS @Inject()(caseSrv: CaseSrv) {
+class VFS @Inject() (caseSrv: CaseSrv) {
 
   def get(path: List[String])(implicit graph: Graph, authContext: AuthContext): List[Resource] = path match {
     case Nil | "" :: Nil                        => List(StaticResource(""))

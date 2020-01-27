@@ -25,7 +25,7 @@ import scala.util.{Success, Try}
 case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
 
 @Singleton
-class AuditSrv @Inject()(
+class AuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv

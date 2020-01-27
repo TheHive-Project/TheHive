@@ -16,7 +16,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 
 @Singleton
-class DataSrv @Inject()()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
+class DataSrv @Inject() ()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DataSteps = new DataSteps(raw)
 
   def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =

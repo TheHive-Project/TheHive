@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 @Singleton
-class AuthenticationCtrl @Inject()(
+class AuthenticationCtrl @Inject() (
     entryPoint: EntryPoint,
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,

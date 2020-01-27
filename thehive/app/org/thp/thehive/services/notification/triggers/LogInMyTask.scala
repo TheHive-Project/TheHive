@@ -12,7 +12,7 @@ import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.LogSrv
 
 @Singleton
-class LogInMyTaskProvider @Inject()(logSrv: LogSrv) extends TriggerProvider {
+class LogInMyTaskProvider @Inject() (logSrv: LogSrv) extends TriggerProvider {
   override val name: String                               = "LogInMyTask"
   override def apply(config: Configuration): Try[Trigger] = Success(new LogInMyTask(logSrv))
 }

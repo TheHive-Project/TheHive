@@ -15,7 +15,7 @@ import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
 
 @Singleton
-class OrganisationCtrl @Inject()(
+class OrganisationCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

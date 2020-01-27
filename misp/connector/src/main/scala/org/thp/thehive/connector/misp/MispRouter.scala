@@ -8,9 +8,10 @@ import javax.inject.{Inject, Provider, Singleton}
 import org.thp.thehive.connector.misp.controllers.v0
 
 @Singleton
-class MispRouter @Inject()(routerV0: v0.Router, actionBuilder: DefaultActionBuilder) extends Provider[Router] {
+class MispRouter @Inject() (routerV0: v0.Router, actionBuilder: DefaultActionBuilder) extends Provider[Router] {
 
-  lazy val logger      = Logger(getClass)
+  lazy val logger = Logger(getClass)
+
   lazy val get: Router =
     //routerV1.withPrefix("/api/misp/v1/") orElse
     routerV0.withPrefix("/api/connector/misp/")

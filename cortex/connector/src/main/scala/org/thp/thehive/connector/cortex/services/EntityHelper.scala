@@ -14,7 +14,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class EntityHelper @Inject()(
+class EntityHelper @Inject() (
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,

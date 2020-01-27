@@ -1,4 +1,5 @@
 package org.thp.thehive.models
+
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.models.{DefineIndex, IndexType}
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}

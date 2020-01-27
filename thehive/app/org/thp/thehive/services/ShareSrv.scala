@@ -14,7 +14,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 @Singleton
-class ShareSrv @Inject()(
+class ShareSrv @Inject() (
     implicit val db: Database,
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],

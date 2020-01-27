@@ -12,7 +12,7 @@ import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.TaskSrv
 
 @Singleton
-class TaskAssignedProvider @Inject()(taskSrv: TaskSrv) extends TriggerProvider {
+class TaskAssignedProvider @Inject() (taskSrv: TaskSrv) extends TriggerProvider {
   override val name: String                               = "TaskAssigned"
   override def apply(config: Configuration): Try[Trigger] = Success(new TaskAssigned(taskSrv))
 }

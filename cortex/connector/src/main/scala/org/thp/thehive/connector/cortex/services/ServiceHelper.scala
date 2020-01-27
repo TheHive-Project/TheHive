@@ -11,7 +11,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services._
 
 @Singleton
-class ServiceHelper @Inject()(
+class ServiceHelper @Inject() (
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,
@@ -33,14 +33,13 @@ class ServiceHelper @Inject()(
     */
   def availableCortexClients(clients: Seq[CortexClient], organisationName: String): Iterable[CortexClient] = db.roTransaction { implicit graph =>
     val l = clients
-      .filter(
-        c =>
-          organisationFilter(
-            organisationSrv.initSteps,
-            c.includedTheHiveOrganisations,
-            c.excludedTheHiveOrganisations
-          ).toList
-            .exists(_.name == organisationName)
+      .filter(c =>
+        organisationFilter(
+          organisationSrv.initSteps,
+          c.includedTheHiveOrganisations,
+          c.excludedTheHiveOrganisations
+        ).toList
+          .exists(_.name == organisationName)
       )
 
     if (l.isEmpty) {
@@ -85,6 +84,6 @@ class ServiceHelper @Inject()(
       .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
       .values             // Seq[Seq[(worker, cortexId)]]
       .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-//      .filter(w => f(w))
+      //      .filter(w => f(w))
       .toMap
 }

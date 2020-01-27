@@ -33,7 +33,7 @@ import org.thp.thehive.services.{
 }
 
 @Singleton
-class Properties @Inject()(
+class Properties @Inject() (
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
     userSrv: UserSrv,

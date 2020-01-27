@@ -8,7 +8,8 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 
 @Singleton
-class Router @Inject()(mispCtrl: MispCtrl) extends SimpleRouter {
+class Router @Inject() (mispCtrl: MispCtrl) extends SimpleRouter {
+
   override val routes: Routes = {
     case GET(p"/_syncAlerts")  => mispCtrl.sync
     case GET(p"/_cleanAlerts") => mispCtrl.cleanMispAlerts

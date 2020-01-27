@@ -171,7 +171,7 @@ class MispClient(
       )
       // add ("deleted" → 1) to see also deleted attributes
       // add ("deleted" → "only") to see only deleted attributes
-//      .via(JsonFraming.objectScanner(Int.MaxValue))
+      //      .via(JsonFraming.objectScanner(Int.MaxValue))
       .via(JsonReader.select("$.response.Attribute[*]"))
       .mapConcat { data =>
         val maybeAttribute = Try(Json.parse(data.toArray[Byte]).as[Attribute])

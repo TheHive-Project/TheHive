@@ -66,7 +66,7 @@ class LocalKeyAuthSrv(
 }
 
 @Singleton
-class LocalKeyAuthProvider @Inject()(
+class LocalKeyAuthProvider @Inject() (
     db: Database,
     userSrv: UserSrv,
     localUserSrv: LocalUserSrv,

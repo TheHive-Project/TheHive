@@ -12,7 +12,7 @@ import org.reflections.util.ConfigurationBuilder
 import org.thp.scalligraph.models.{HasModel, Model, Schema}
 
 @Singleton
-class CortexSchema @Inject()() extends Schema {
+class CortexSchema @Inject() () extends Schema {
 
   lazy val logger: Logger = Logger(getClass)
   val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)

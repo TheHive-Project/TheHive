@@ -16,7 +16,7 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{ConfigSrv, UserConfigContext}
 
 @Singleton
-class ConfigCtrl @Inject()(
+class ConfigCtrl @Inject() (
     appConfig: ApplicationConfig,
     configSrv: ConfigSrv,
     userConfigContext: UserConfigContext,
@@ -26,14 +26,13 @@ class ConfigCtrl @Inject()(
 
   lazy val logger: Logger = Logger(getClass)
 
-  implicit val configWrites: Writes[ConfigItem[_, _]] = Writes[ConfigItem[_, _]](
-    item =>
-      Json.obj(
-        "path"         -> item.path,
-        "description"  -> item.description,
-        "defaultValue" -> item.getDefaultValueJson,
-        "value"        -> item.getJson
-      )
+  implicit val configWrites: Writes[ConfigItem[_, _]] = Writes[ConfigItem[_, _]](item =>
+    Json.obj(
+      "path"         -> item.path,
+      "description"  -> item.description,
+      "defaultValue" -> item.getDefaultValueJson,
+      "value"        -> item.getJson
+    )
   )
 
   implicit val jsonConfigLoader: ConfigLoader[JsValue] = (config: Config, path: String) =>

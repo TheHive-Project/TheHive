@@ -22,7 +22,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class AlertCtrl @Inject()(
+class AlertCtrl @Inject() (
     entrypoint: EntryPoint,
     db: Database,
     properties: Properties,

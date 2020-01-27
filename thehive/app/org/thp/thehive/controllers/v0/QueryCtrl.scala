@@ -144,7 +144,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
 }
 
 @Singleton
-class QueryCtrlBuilder @Inject()(entryPoint: EntryPoint, db: Database) {
+class QueryCtrlBuilder @Inject() (entryPoint: EntryPoint, db: Database) {
 
   def apply(ctrl: QueryableCtrl, queryExecutor: QueryExecutor): QueryCtrl =
     new QueryCtrl(entryPoint, db, ctrl, queryExecutor)

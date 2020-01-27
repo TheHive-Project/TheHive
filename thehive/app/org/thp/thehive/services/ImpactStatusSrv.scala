@@ -20,7 +20,8 @@ object ImpactStatusSrv {
 }
 
 @Singleton
-class ImpactStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ImpactStatus, ImpactStatusSteps] {
+class ImpactStatusSrv @Inject() (implicit db: Database) extends VertexSrv[ImpactStatus, ImpactStatusSteps] {
+
   override val initialValues: Seq[ImpactStatus] = Seq(
     ImpactStatusSrv.noImpact,
     ImpactStatusSrv.withImpact,

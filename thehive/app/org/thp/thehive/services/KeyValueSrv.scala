@@ -11,7 +11,7 @@ import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.KeyValue
 
 @Singleton
-class KeyValueSrv @Inject()()(implicit db: Database) extends VertexSrv[KeyValue, KeyValueSteps] {
+class KeyValueSrv @Inject() ()(implicit db: Database) extends VertexSrv[KeyValue, KeyValueSteps] {
   def create(e: KeyValue)(implicit graph: Graph, authContext: AuthContext): Try[KeyValue with Entity] = createEntity(e)
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): KeyValueSteps                 = new KeyValueSteps(raw)
 }

@@ -8,7 +8,7 @@ import org.thp.thehive.connector.cortex.services.{ActionSteps, AnalyzerTemplateS
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 
 @Singleton
-class Properties @Inject()() {
+class Properties @Inject() () {
 
   lazy val action: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[ActionSteps]

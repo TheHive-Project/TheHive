@@ -15,7 +15,7 @@ import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps}
 
 @Singleton
-class TaskCtrl @Inject()(
+class TaskCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

@@ -19,7 +19,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 @Singleton
-class LogSrv @Inject()(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
+class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
   val taskLogSrv                                                                 = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)

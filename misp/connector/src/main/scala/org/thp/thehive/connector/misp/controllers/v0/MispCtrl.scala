@@ -15,7 +15,7 @@ import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv, MispIm
 import org.thp.thehive.services.{AlertSrv, CaseSrv}
 
 @Singleton
-class MispCtrl @Inject()(
+class MispCtrl @Inject() (
     entryPoint: EntryPoint,
     mispImportSrv: MispImportSrv,
     mispExportSrv: MispExportSrv,
@@ -35,7 +35,7 @@ class MispCtrl @Inject()(
 
   def exportCase(mispId: String, caseIdOrNumber: String): Action[AnyContent] =
     entryPoint("export case into MISP")
-      .asyncAuth { implicit authContext =>
+      .asyncAuth { implicit authContext => // TODO check permission
         for {
           c <- Future.fromTry(db.roTransaction { implicit graph =>
             caseSrv

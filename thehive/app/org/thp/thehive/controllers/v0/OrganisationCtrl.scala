@@ -17,7 +17,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.{Failure, Success}
 
 @Singleton
-class OrganisationCtrl @Inject()(
+class OrganisationCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

@@ -23,7 +23,7 @@ import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
 
 @Singleton
-class AnalyzerTemplateCtrl @Inject()(
+class AnalyzerTemplateCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

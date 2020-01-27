@@ -14,7 +14,7 @@ import play.api.mvc.RequestHeader
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class LocalUserSrv @Inject()(db: Database, userSrv: UserSrv, organisationSrv: OrganisationSrv, profileSrv: ProfileSrv, configuration: Configuration)
+class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: OrganisationSrv, profileSrv: ProfileSrv, configuration: Configuration)
     extends ScalligraphUserSrv {
 
   override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =

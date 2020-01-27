@@ -7,7 +7,7 @@ import play.api.routing.sird._
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class Router @Inject()(
+class Router @Inject() (
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     userCtrl: UserCtrl,

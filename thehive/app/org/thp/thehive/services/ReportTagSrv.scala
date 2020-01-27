@@ -15,7 +15,7 @@ import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.{Observable, ObservableReportTag, ReportTag}
 
 @Singleton
-class ReportTagSrv @Inject()(observableSrv: ObservableSrv)(implicit db: Database) extends VertexSrv[ReportTag, ReportTagSteps] {
+class ReportTagSrv @Inject() (observableSrv: ObservableSrv)(implicit db: Database) extends VertexSrv[ReportTag, ReportTagSteps] {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ReportTagSteps = new ReportTagSteps(raw)

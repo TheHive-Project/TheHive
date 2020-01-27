@@ -13,7 +13,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
 
 @Singleton
-class EmailerProvider @Inject()(appConfig: ApplicationConfig, mailerClient: MailerClient, ec: ExecutionContext) extends NotifierProvider {
+class EmailerProvider @Inject() (appConfig: ApplicationConfig, mailerClient: MailerClient, ec: ExecutionContext) extends NotifierProvider {
   override val name: String = "Emailer"
 
   val subjectConfig: ConfigItem[String, String] =

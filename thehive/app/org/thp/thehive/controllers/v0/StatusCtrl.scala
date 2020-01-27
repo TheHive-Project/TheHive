@@ -17,7 +17,7 @@ import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector, UserSrv}
 
 @Singleton
-class StatusCtrl @Inject()(
+class StatusCtrl @Inject() (
     entryPoint: EntryPoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,

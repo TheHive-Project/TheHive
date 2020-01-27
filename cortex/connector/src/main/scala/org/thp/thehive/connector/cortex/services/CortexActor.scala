@@ -29,7 +29,7 @@ object CortexActor {
   * This actor is primarily used to check Job statuses on regular
   * ticks using the provided client for each job
   */
-class CortexActor @Inject()(connector: Connector, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
+class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
   import CortexActor._
   implicit val ec: ExecutionContext = context.dispatcher
   lazy val logger                   = Logger(getClass)

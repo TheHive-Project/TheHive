@@ -21,7 +21,8 @@ object ResolutionStatusSrv {
 }
 
 @Singleton
-class ResolutionStatusSrv @Inject()(implicit db: Database) extends VertexSrv[ResolutionStatus, ResolutionStatusSteps] {
+class ResolutionStatusSrv @Inject() (implicit db: Database) extends VertexSrv[ResolutionStatus, ResolutionStatusSteps] {
+
   override val initialValues = Seq(
     ResolutionStatusSrv.indeterminate,
     ResolutionStatusSrv.falsePositive,

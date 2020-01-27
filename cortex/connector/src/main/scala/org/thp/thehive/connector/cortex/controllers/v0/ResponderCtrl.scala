@@ -13,7 +13,7 @@ import org.thp.thehive.connector.cortex.services.ResponderSrv
 import org.thp.thehive.controllers.v0.Conversion._
 
 @Singleton
-class ResponderCtrl @Inject()(
+class ResponderCtrl @Inject() (
     entryPoint: EntryPoint,
     implicit val db: Database,
     responderSrv: ResponderSrv,

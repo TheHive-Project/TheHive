@@ -97,7 +97,7 @@ class TOTPAuthSrv(
 }
 
 @Singleton
-class TOTPAuthSrvProvider @Inject()(
+class TOTPAuthSrvProvider @Inject() (
     configuration: Configuration,
     appConfig: ApplicationConfig,
     authProviders: immutable.Set[AuthSrvProvider],

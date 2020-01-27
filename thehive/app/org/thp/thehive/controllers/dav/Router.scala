@@ -18,8 +18,8 @@ import scala.util.matching.Regex
 import scala.xml.{Node, NodeSeq}
 
 @Singleton
-class Router @Inject()(entrypoint: EntryPoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv, storageSrv: StorageSrv) extends SimpleRouter {
-  lazy val logger = Logger(getClass)
+class Router @Inject() (entrypoint: EntryPoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
+  lazy val logger: Logger = Logger(getClass)
 
   object PROPFIND {
 

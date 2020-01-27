@@ -13,7 +13,7 @@ import org.thp.thehive.services.{OrganisationSrv, PageSrv, PageSteps}
 import play.api.mvc._
 
 @Singleton
-class PageCtrl @Inject()(entryPoint: EntryPoint, pageSrv: PageSrv, db: Database, properties: Properties, organisationSrv: OrganisationSrv)
+class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database, properties: Properties, organisationSrv: OrganisationSrv)
     extends QueryableCtrl {
 
   override val entityName: String                           = "page"

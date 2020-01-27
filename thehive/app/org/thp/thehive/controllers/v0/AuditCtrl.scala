@@ -20,7 +20,7 @@ import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services._
 
 @Singleton
-class AuditCtrl @Inject()(
+class AuditCtrl @Inject() (
     entryPoint: EntryPoint,
     properties: Properties,
     auditSrv: AuditSrv,
@@ -36,6 +36,7 @@ class AuditCtrl @Inject()(
     FieldsParser[IdOrName],
     (param, graph, authContext) => auditSrv.get(param.idOrName)(graph).visible(authContext)
   )
+
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
   )

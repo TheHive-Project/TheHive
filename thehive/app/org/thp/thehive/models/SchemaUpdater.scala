@@ -7,7 +7,7 @@ import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.models.Database
 
 @Singleton
-class SchemaUpdater @Inject()(theHiveSchema: TheHiveSchema, db: Database, userSrv: UserSrv) {
+class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userSrv: UserSrv) {
   val latestVersion: Int = 1
 
   val currentVersion: Int = db.version("thehive")

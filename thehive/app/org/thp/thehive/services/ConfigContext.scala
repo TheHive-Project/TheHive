@@ -10,7 +10,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigContext
 
 @Singleton
-class UserConfigContext @Inject()(db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
+class UserConfigContext @Inject() (db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
   override def defaultPath(path: String): String = s"user.defaults.$path"
 
   override def getValue(context: AuthContext, path: String): Option[JsValue] =
@@ -27,17 +27,16 @@ class UserConfigContext @Inject()(db: Database, configSrv: ConfigSrv) extends Co
     }
 
   override def setValue(context: AuthContext, path: String, value: JsValue): Try[String] =
-    db.tryTransaction(
-      graph =>
-        configSrv
-          .user
-          .setConfigValue(context.userId, path, value)(graph, context)
-          .map(_ => s"user.${context.userId}.$path")
+    db.tryTransaction(graph =>
+      configSrv
+        .user
+        .setConfigValue(context.userId, path, value)(graph, context)
+        .map(_ => s"user.${context.userId}.$path")
     )
 }
 
 @Singleton
-class OrganisationConfigContext @Inject()(db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
+class OrganisationConfigContext @Inject() (db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
   override def defaultPath(path: String): String = s"organisation.defaults.$path"
 
   override def getValue(context: AuthContext, path: String): Option[JsValue] =
@@ -53,11 +52,11 @@ class OrganisationConfigContext @Inject()(db: Database, configSrv: ConfigSrv) ex
         .map(_.value)
     }
 
-  override def setValue(context: AuthContext, path: String, value: JsValue): Try[String] = db.tryTransaction(
-    graph =>
+  override def setValue(context: AuthContext, path: String, value: JsValue): Try[String] =
+    db.tryTransaction(graph =>
       configSrv
         .organisation
         .setConfigValue(context.organisation, path, value)(graph, context)
         .map(_ => s"organisation.${context.organisation}.$path")
-  )
+    )
 }

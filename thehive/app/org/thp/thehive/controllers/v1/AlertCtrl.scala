@@ -15,7 +15,7 @@ import org.thp.thehive.models.{Permissions, RichAlert}
 import org.thp.thehive.services._
 
 @Singleton
-class AlertCtrl @Inject()(
+class AlertCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,

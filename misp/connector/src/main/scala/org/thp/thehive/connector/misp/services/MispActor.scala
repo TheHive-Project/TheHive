@@ -16,7 +16,7 @@ object MispActor {
   case class EndOfSynchro(status: Try[Unit])
 }
 
-class MispActor @Inject()(
+class MispActor @Inject() (
     connector: Connector,
     mispImportSrv: MispImportSrv,
     userSrv: UserSrv
@@ -60,7 +60,7 @@ class MispActor @Inject()(
   }
 }
 
-class MispActorProvider @Inject()(system: ActorSystem, @Named("misp-actor-singleton") mispActorSingleton: ActorRef) extends Provider[ActorRef] {
+class MispActorProvider @Inject() (system: ActorSystem, @Named("misp-actor-singleton") mispActorSingleton: ActorRef) extends Provider[ActorRef] {
   lazy val logger = Logger(getClass)
   override def get(): ActorRef = {
     val cluster = Cluster(system)

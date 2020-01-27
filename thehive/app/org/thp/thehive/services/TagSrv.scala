@@ -13,7 +13,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models.Tag
 
 @Singleton
-class TagSrv @Inject()(appConfig: ApplicationConfig)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
+class TagSrv @Inject() (appConfig: ApplicationConfig)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
     appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")

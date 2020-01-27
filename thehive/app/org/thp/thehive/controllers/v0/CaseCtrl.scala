@@ -19,7 +19,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class CaseCtrl @Inject()(
+class CaseCtrl @Inject() (
     entryPoint: EntryPoint,
     db: Database,
     properties: Properties,
