@@ -1,0 +1,4 @@
+[
+  {"from": "cert", "to": "dashboard-cert", "writable": true},
+  {"from": "soc", "to": "dashboard-soc", "writable": false}
+]

@@ -1,0 +1,4 @@
+[
+  {"from": "dashboard-cert", "to": "certadmin"},
+  {"from": "dashboard-soc", "to": "socadmin"}
+]

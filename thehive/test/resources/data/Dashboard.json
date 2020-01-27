@@ -1,0 +1,80 @@
+[
+  {
+    "id": "dashboard-cert",
+    "title": "dashboard cert",
+    "description": "dashboard for cert organisation",
+    "definition": {
+      "period": "custom",
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "line",
+              "options": {
+                "title": "cases",
+                "entity": "case",
+                "field": "createdAt",
+                "interval": "1d",
+                "query": {
+                },
+                "series": [
+                  {
+                    "agg": "count",
+                    "field": null,
+                    "type": "line",
+                    "label": "cases"
+                  }
+                ]
+              },
+              "id": "37741393-eecc-16c9-f5b8-f0e668b403eb"
+            }
+          ]
+        }
+      ],
+      "customPeriod": {
+        "fromDate": "2019-07-08T22:00:00.000Z",
+        "toDate": "2019-11-27T23:00:00.000Z"
+      }
+    }
+  },
+  {
+    "id": "dashboard-soc",
+    "title": "dashboard soc",
+    "description": "dashboard for soc organisation",
+    "definition": {
+      "period": "custom",
+      "items": [
+        {
+          "type": "container",
+          "items": [
+            {
+              "type": "line",
+              "options": {
+                "title": "cases",
+                "entity": "case",
+                "field": "createdAt",
+                "interval": "1d",
+                "query": {
+                },
+                "series": [
+                  {
+                    "agg": "count",
+                    "field": null,
+                    "type": "line",
+                    "label": "cases"
+                  }
+                ]
+              },
+              "id": "37741393-eecc-16c9-f5b8-f0e668b403eb"
+            }
+          ]
+        }
+      ],
+      "customPeriod": {
+        "fromDate": "2019-07-08T22:00:00.000Z",
+        "toDate": "2019-11-27T23:00:00.000Z"
+      }
+    }
+  }
+]
