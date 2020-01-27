@@ -1,7 +1,15 @@
 package org.thp.thehive.migration.th4
 
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
+
+import play.api.inject.guice.GuiceInjector
+import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
+import play.api.libs.concurrent.AkkaGuiceSupport
+import play.api.{Configuration, Environment}
+
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import com.google.inject.Guice
 import com.google.inject.name.Names
 import gremlin.scala._
@@ -40,13 +48,6 @@ import org.thp.thehive.services.{
   TaskSrv,
   UserSrv
 }
-import play.api.inject.guice.GuiceInjector
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
-import play.api.libs.concurrent.AkkaGuiceSupport
-import play.api.{Configuration, Environment}
-
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
 
 object Output {
 
@@ -56,7 +57,7 @@ object Output {
         override def configure(): Unit = {
           bind[Configuration].toInstance(configuration)
           bind[ActorSystem].toInstance(actorSystem)
-          bind[Materializer].toInstance(ActorMaterializer())
+          bind[Materializer].toInstance(Materializer(actorSystem))
           bind[ExecutionContext].toInstance(actorSystem.dispatcher)
           bind[Injector].to[GuiceInjector]
           bind[UserDB].to[LocalUserSrv]
@@ -81,7 +82,7 @@ object Output {
 }
 
 @Singleton
-class Output @Inject()(
+class Output @Inject() (
     caseSrv: CaseSrv,
     observableSrvProvider: Provider[ObservableSrv],
     userSrv: UserSrv,

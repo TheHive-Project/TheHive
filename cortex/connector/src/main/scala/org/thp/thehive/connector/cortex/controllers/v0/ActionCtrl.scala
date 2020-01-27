@@ -82,6 +82,6 @@ class ActionCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           entity <- entityHelper.get(toObjectType(objectType), objectId, Permissions.manageAction)
-        } yield Results.Ok(Json.toJson(actionSrv.listForEntity(entity._id)))
+        } yield Results.Ok(Json.toJson(actionSrv.listForEntity(entity._id).map(_.toJson)))
       }
 }

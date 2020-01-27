@@ -240,7 +240,6 @@ class MispImportSrv @Inject() (
         val file = Files.createTempFile(s"misp-attachment-", "")
         (for {
           r <- src.runWith(FileIO.toPath(file))
-          _ <- Future.fromTry(r.status)
           fFile = FFile(filename, file, contentType)
           createdObservable <- Future.fromTry {
             db.tryTransaction { implicit graph =>

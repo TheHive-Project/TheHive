@@ -133,7 +133,7 @@ class MispClient(
     val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
     logger.debug(s"Search MISP events")
     Source
-      .fromFutureSource(postStream("events/index", query))
+      .futureSource(postStream("events/index", query))
       .via(JsonFraming.objectScanner(Int.MaxValue))
       .mapConcat { data =>
         val maybeEvent = Try(Json.parse(data.toArray[Byte]).as[Event])
@@ -163,7 +163,7 @@ class MispClient(
   def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] = {
     logger.debug(s"Search MISP attributes for event #$eventId ${publishDate.fold("")("from " + _)}")
     Source
-      .fromFutureSource(
+      .futureSource(
         postStream(
           "attributes/restSearch/json",
           Json.obj("request" -> Json.obj("timestamp" -> publishDate.fold(0L)(_.getTime / 1000), "eventid" -> eventId))

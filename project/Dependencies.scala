@@ -1,8 +1,8 @@
 import sbt._
 
 object Dependencies {
-  val janusVersion = "0.4.0"
-  val akkaVersion  = "2.5.23" // https://github.com/playframework/playframework/pull/9444
+  val janusVersion        = "0.4.0"
+  val akkaVersion: String = play.core.PlayVersion.akkaVersion
 
   lazy val specs                   = "com.typesafe.play"        %% "play-specs2"                        % play.core.PlayVersion.current
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current

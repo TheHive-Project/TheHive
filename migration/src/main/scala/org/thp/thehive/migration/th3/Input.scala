@@ -2,27 +2,29 @@ package org.thp.thehive.migration.th3
 
 import java.util.{Base64, Date}
 
+import scala.concurrent.ExecutionContext
+import scala.reflect.{classTag, ClassTag}
+import scala.util.{Failure, Success, Try}
+
+import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
+import play.api.libs.json._
+import play.api.{Configuration, Logger}
+
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import com.google.inject.Guice
 import com.sksamuel.elastic4s.http.ElasticDsl.{bool, search, termQuery}
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
-import org.elastic4play.database.{DBFind, DBGet}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services.{ImpactStatusSrv, OrganisationSrv, ProfileSrv, ResolutionStatusSrv, UserSrv}
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
-import play.api.libs.json.{JsError, JsObject, JsSuccess, JsValue, Reads}
-import play.api.{Configuration, Logger}
 
-import scala.concurrent.ExecutionContext
-import scala.reflect.{classTag, ClassTag}
-import scala.util.{Failure, Success, Try}
+import org.elastic4play.database.{DBFind, DBGet}
 
 object Input {
 
@@ -32,7 +34,7 @@ object Input {
         override def configure(): Unit = {
           bind[Configuration].toInstance(configuration)
           bind[ActorSystem].toInstance(actorSystem)
-          bind[Materializer].toInstance(ActorMaterializer())
+          bind[Materializer].toInstance(Materializer(actorSystem))
           bind[ExecutionContext].toInstance(actorSystem.dispatcher)
           bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
           bind[Int].annotatedWithName("databaseVersion").toInstance(15)
@@ -42,7 +44,7 @@ object Input {
 }
 
 @Singleton
-class Input @Inject()(configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit val ec: ExecutionContext)
+class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit val ec: ExecutionContext)
     extends migration.Input
     with Conversion {
   lazy val logger: Logger               = Logger(getClass)
@@ -152,14 +154,14 @@ class Input @Inject()(configuration: Configuration, dbFind: DBFind, dbGet: DBGet
       .read[InputUser]
 
   override def listCustomFields: Source[InputCustomField, NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "custom_fields")), Nil, Nil))
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "custom_fields")), Nil, Nil))
     )._1
       .read[InputCustomField]
 
   override def listObservableTypes: Source[InputObservableType, NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "list_artifactDataType")), Nil, Nil))
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "list_artifactDataType")), Nil, Nil))
     )._1
       .read[InputObservableType]
 
@@ -225,15 +227,13 @@ class Input @Inject()(configuration: Configuration, dbFind: DBFind, dbGet: DBGet
       }
 
   override def listJobs: Source[(String, InputJob), NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(termQuery("relations", "case_artifact_job"))
-    )._1
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_artifact_job")))
+      ._1
       .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
 
   override def listJobObservables: Source[(String, InputObservable), NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(termQuery("relations", "case_artifact_job"))
-    )._1
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_artifact_job")))
+      ._1
       .map { json =>
         for {
           metaData        <- json.validate[MetaData]
@@ -261,13 +261,10 @@ class Input @Inject()(configuration: Configuration, dbFind: DBFind, dbGet: DBGet
       }
 
   override def listAction: Source[(String, InputAction), NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(termQuery("relations", "action"))
-    )._1
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "action")))
+      ._1
       .read[(String, InputAction)]
 
   override def listAudit: Source[(String, InputAudit), NotUsed] =
-    dbFind(Some("all"), Nil)(
-      indexName => search(indexName).query(termQuery("relations", "audit"))
-    )._1.read[(String, InputAudit)]
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "audit")))._1.read[(String, InputAudit)]
 }

@@ -183,7 +183,7 @@ class ActionSrv @Inject() (
     } yield relatedTask
 
   // TODO to be tested
-  def listForEntity(id: String)(implicit graph: Graph): List[Action with Entity] = initSteps.forEntity(id).toList
+  def listForEntity(id: String)(implicit graph: Graph): List[RichAction] = initSteps.forEntity(id).richAction.toList
 }
 
 @EntitySteps[Action]

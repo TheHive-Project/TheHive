@@ -2,19 +2,20 @@ package org.thp.thehive.migration
 
 import java.io.File
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
-import com.typesafe.config.ConfigFactory
-import org.thp.scalligraph.NotFoundError
-import play.api.libs.logback.LogbackLoggerConfigurator
-import play.api.{Configuration, Environment, Logger}
-
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
+
+import play.api.libs.logback.LogbackLoggerConfigurator
+import play.api.{Configuration, Environment, Logger}
+
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
+import com.typesafe.config.ConfigFactory
+import org.thp.scalligraph.NotFoundError
 
 class Migration(input: Input, output: Output, implicit val ec: ExecutionContext, implicit val mat: Materializer) {
   lazy val logger: Logger = Logger(getClass)
@@ -99,7 +100,7 @@ object Start extends App {
       .withFallback(ConfigFactory.parseResources("play/reference-overrides.conf"))
       .withFallback(ConfigFactory.defaultReference())
       .resolve() // TODO read filename from argument
-  implicit val actorSystem = ActorSystem("TheHiveMigration", config)
+  implicit val actorSystem: ActorSystem = ActorSystem("TheHiveMigration", config)
 
   (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
 
@@ -112,7 +113,7 @@ object Start extends App {
   }
   val removeData = config.getBoolean("output.removeData")
 
-  val process = new Migration(input, output, actorSystem.dispatcher, ActorMaterializer()(actorSystem)).process(removeData)
+  val process = new Migration(input, output, actorSystem.dispatcher, Materializer(actorSystem)).process(removeData)
   Await.ready(process, Duration.Inf)
   System.exit(0)
 }

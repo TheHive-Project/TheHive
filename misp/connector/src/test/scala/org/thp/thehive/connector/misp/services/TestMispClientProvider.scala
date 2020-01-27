@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.misp.services
 
+import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 import play.api.http.FileMimeTypes
@@ -12,10 +13,11 @@ import mockws.MockWS
 import org.thp.client.NoAuthentication
 import org.thp.misp.client.MispPurpose
 
-class TestMispClientProvider @Inject()(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes) extends Provider[TheHiveMispClient] {
+class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+    extends Provider[TheHiveMispClient] {
   val baseUrl = "https://misp.test/"
 
-  val ws = MockWS {
+  val ws: MockWS = MockWS {
     case (GET, "https://misp.test/users/view/me")        => Action(Results.Ok.sendResource("user.json"))
     case (GET, "https://misp.test/organisations/view/1") => Action(Results.Ok.sendResource("organisation.json"))
     case (POST, "https://misp.test/events/index")        => Action(Results.Ok.sendResource("events.json"))

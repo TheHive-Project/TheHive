@@ -250,7 +250,6 @@ class JobSrv @Inject() (
         (for {
           src <- cortexClient.getAttachment(attachment.id)
           s   <- src.runWith(FileIO.toPath(file))
-          _   <- Future.fromTry(s.status)
           fFile = FFile(attachment.name.getOrElse(attachment.id), file, attachment.contentType.getOrElse("application/octet-stream"))
           savedAttachment <- Future.fromTry {
             db.tryTransaction { implicit graph =>

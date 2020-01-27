@@ -39,7 +39,7 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
   private def receive(checkedJobs: List[CheckJob], failuresCount: Int): Receive = {
     case FirstCheckJobs =>
       logger.debug(s"CortexActor starting check jobs ticking every ${connector.refreshDelay}")
-      timers.startPeriodicTimer(CheckJobsKey, CheckJobs, connector.refreshDelay)
+      timers.startTimerAtFixedRate(CheckJobsKey, CheckJobs, connector.refreshDelay)
 
     case cj @ CheckJob(jobId, cortexJobId, actionId, cortexId, _) =>
       logger.info(s"CortexActor received job or action (${jobId.getOrElse(actionId.get)}, $cortexJobId, $cortexId) to check, added to $checkedJobs")
