@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Import" type="Specs2RunConfiguration" factoryName="Specs2" folderName="misp" show_console_on_std_err="false" show_console_on_std_out="false">
-    <module name="thehive-misp" />
+  <configuration default="false" name="scalligraph/StorageSrv" type="Specs2RunConfiguration" factoryName="Specs2" folderName="scalligraph" show_console_on_std_err="false" show_console_on_std_out="false">
+    <module name="scalligraph-core-test" />
     <option name="allowRunningInParallel" value="false" />
     <option name="testKind" value="Class" />
     <option name="envs">
@@ -11,7 +11,7 @@
     <option name="searchTest" value="Across module dependencies" />
     <option name="showProgressMessages" value="true" />
     <option name="testArgs" value="" />
-    <option name="testClassPath" value="org.thp.thehive.connector.misp.services.MispImportSrvTest" />
+    <option name="testClassPath" value="org.thp.scalligraph.services.StorageSrvTest" />
     <option name="useSbt" value="false" />
     <option name="useUiWithSbt" value="false" />
     <option name="workingDirectory" value="$PROJECT_DIR$" />

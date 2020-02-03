@@ -180,7 +180,7 @@
         },
         {
           "type": "AssignCase",
-          "owner": "user2@thehive.local"
+          "owner": "certuser@thehive.local"
         }
       ]
     },

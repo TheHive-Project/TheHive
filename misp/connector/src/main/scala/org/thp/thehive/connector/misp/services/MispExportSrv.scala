@@ -27,7 +27,7 @@ class MispExportSrv @Inject() (
     db: Database
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def observableToAttribute(observable: RichObservable): Option[Attribute] =
     connector
@@ -138,7 +138,7 @@ class MispExportSrv @Inject() (
       client  <- getMispClient(mispId)
       orgName <- Future.fromTry(client.currentOrganisationName)
       maybeAlert = db.roTransaction(implicit graph => getAlert(`case`, orgName))
-      _          = logger.debug(maybeAlert.fold(s"Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))
+      _          = logger.debug(maybeAlert.fold("Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))
       attributes = db.roTransaction(implicit graph => removeDuplicateAttributes(getAttributes(`case`)))
       eventId <- createEvent(client, `case`, attributes, maybeAlert.map(_.sourceRef))
       _       <- Future.fromTry(db.tryTransaction(implicit graph => createAlert(client, `case`, eventId)))

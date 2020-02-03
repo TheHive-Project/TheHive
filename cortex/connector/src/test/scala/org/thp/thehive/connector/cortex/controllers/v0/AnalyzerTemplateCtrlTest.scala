@@ -71,18 +71,5 @@ class AnalyzerTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
       val deleteResult = app[AnalyzerTemplateCtrl].delete(outputAnalyzerTemplate.id)(deleteRequest)
       status(deleteResult) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(updateResult)}")
     }
-
-    "search templates properly" in testApp { app =>
-      val requestSearch = FakeRequest("POST", s"/api/connector/cortex/report/template/_search?range=0-200")
-        .withHeaders("user" -> "admin@thehive.local")
-        .withJsonBody(Json.parse(s"""
-              {
-                 "query":{"analyzerId": "Yeti_1_0"}
-              }
-            """.stripMargin))
-      val resultSearch = app[CortexQueryExecutor].report.search(requestSearch)
-
-      status(resultSearch) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
-    }
   }
 }

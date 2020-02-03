@@ -24,7 +24,7 @@ class MispActor @Inject() (
   import MispActor._
   import context.dispatcher
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   override def preStart(): Unit = {
     super.preStart()
@@ -39,10 +39,10 @@ class MispActor @Inject() (
   def running: Receive = {
     case Synchro => logger.info("MISP synchronisation is already in progress")
     case EndOfSynchro(Success(_)) =>
-      logger.info(s"MISP synchronisation is complete")
+      logger.info("MISP synchronisation is complete")
       context.become(waiting(context.system.scheduler.scheduleOnce(connector.syncInterval, self, Synchro)))
     case EndOfSynchro(Failure(error)) =>
-      logger.error(s"MISP synchronisation fails", error)
+      logger.error("MISP synchronisation fails", error)
       context.become(waiting(context.system.scheduler.scheduleOnce(connector.syncInterval, self, Synchro)))
     case other => logger.warn(s"Unknown message $other (${other.getClass})")
   }
@@ -61,7 +61,7 @@ class MispActor @Inject() (
 }
 
 class MispActorProvider @Inject() (system: ActorSystem, @Named("misp-actor-singleton") mispActorSingleton: ActorRef) extends Provider[ActorRef] {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
   override def get(): ActorRef = {
     val cluster = Cluster(system)
     logger.info("Initialising cluster")

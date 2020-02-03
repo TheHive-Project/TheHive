@@ -47,10 +47,11 @@ object Conversion {
   )
 
   implicit val analyzerTemplateOutput: Outputer.Aux[AnalyzerTemplate with Entity, OutputAnalyzerTemplate] =
-    Outputer[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](
-      _.into[OutputAnalyzerTemplate]
+    Outputer[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](at =>
+      at.asInstanceOf[AnalyzerTemplate]
+        .into[OutputAnalyzerTemplate]
         .withFieldComputed(_.analyzerId, _.workerId)
-        .withFieldComputed(_.id, _._id)
+        .withFieldConst(_.id, at._id)
         .withFieldComputed(_.content, _.content)
         .transform
     )

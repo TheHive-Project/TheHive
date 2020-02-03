@@ -18,7 +18,6 @@ import org.thp.thehive.models.AlertCase
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,
-  AttachmentSrv,
   AuditSteps,
   CaseSrv,
   CaseSteps,
@@ -38,8 +37,7 @@ class Properties @Inject() (
     caseSrv: CaseSrv,
     userSrv: UserSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    observableSrv: ObservableSrv,
-    attachmentSrv: AttachmentSrv
+    observableSrv: ObservableSrv
 ) {
 
   lazy val alert: List[PublicProperty[_, _]] =
@@ -73,10 +71,10 @@ class Properties @Inject() (
             _.apply(By(Key[Boolean]("read")))
               .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
           ).map {
-            case (true, caseCount) if caseCount == 0  => "Ignored"
-            case (true, caseCount) if caseCount == 1  => "New"
-            case (false, caseCount) if caseCount == 0 => "Ignored"
-            case (false, caseCount) if caseCount == 1 => "Imported"
+            case (true, caseCount) if caseCount == 0L  => "Ignored"
+            case (true, caseCount) if caseCount == 1L  => "New"
+            case (false, caseCount) if caseCount == 0L => "Ignored"
+            case (false, caseCount) if caseCount == 1L => "Imported"
           }
         ).readonly
       )

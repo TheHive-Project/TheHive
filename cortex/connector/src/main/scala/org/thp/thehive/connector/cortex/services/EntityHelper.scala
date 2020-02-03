@@ -8,7 +8,7 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{Database, Entity, Schema}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -19,14 +19,10 @@ class EntityHelper @Inject() (
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,
     observableSrv: ObservableSrv,
-    logSrv: LogSrv,
-    db: Database,
-    schema: Schema,
-    userSrv: UserSrv,
-    organisationSrv: OrganisationSrv
+    logSrv: LogSrv
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   /**
     * Gets an entity from name and id if manageable
@@ -91,6 +87,6 @@ class EntityHelper @Inject() (
         for {
           ro <- observableSrv.get(o).visible.richObservable.getOrFail()
           c  <- observableSrv.get(o).`case`.getOrFail()
-        } yield (s"[${ro.`type`}] ${ro.data.map(_.data)}", ro.tlp, c.pap) // TODO add attachment info
+        } yield (s"[${ro.`type`.name}] ${ro.data.map(_.data).getOrElse("<no data>")}", ro.tlp, c.pap) // TODO add attachment info
     }
 }

@@ -10,7 +10,8 @@ import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
 
 class EntityHelperTest extends PlaySpecification with TestAppBuilder {
-  implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
+  implicit val authContext: AuthContext =
+    DummyUserSrv(userId = "certadmin@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   "entity helper" should {
 
     "return task info" in testApp { app =>
@@ -21,7 +22,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
         } yield (title, tlp, pap)
       } must beASuccessfulTry.which {
         case (title, tlp, pap) =>
-          title must beEqualTo("")
+          title must beEqualTo("case 1 task 1 (Waiting)")
           tlp must beEqualTo(2)
           pap must beEqualTo(2)
       }
@@ -30,13 +31,13 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "return observable info" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          observable        <- app[ObservableSrv].initSteps.has("title", "case 1 task 1").getOrFail() // FIXME
+          observable        <- app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail()
           (title, tlp, pap) <- app[EntityHelper].entityInfo(observable)
         } yield (title, tlp, pap)
       } must beASuccessfulTry.which {
         case (title, tlp, pap) =>
-          title must beEqualTo("")
-          tlp must beEqualTo(2)
+          title must beEqualTo("[domain] h.fr")
+          tlp must beEqualTo(3)
           pap must beEqualTo(2)
       }
     }

@@ -38,7 +38,7 @@ object InputCustomFieldValue {
           case (name, other) =>
             Bad(
               One(
-                InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: string"), other)
+                InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: date"), other)
               )
             )
         }

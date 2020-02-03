@@ -2,6 +2,11 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+import play.api.libs.json.{JsObject, Json, OWrites}
+
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -20,11 +25,7 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
-import org.thp.thehive.services.{AlertSrv, AlertSteps, CaseSrv, CaseSteps, LogSrv, LogSteps, ObservableSrv, ObservableSteps, TaskSrv, TaskSteps}
-import play.api.libs.json.{JsObject, Json, OWrites}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
 
 class ActionSrv @Inject() (
     @Named("cortex-actor") cortexActor: ActorRef,
@@ -35,12 +36,7 @@ class ActionSrv @Inject() (
     implicit val schema: Schema,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
-    auditSrv: CortexAuditSrv,
-    taskSrv: TaskSrv,
-    observableSrv: ObservableSrv,
-    logSrv: LogSrv,
-    alertSrv: AlertSrv,
-    caseSrv: CaseSrv
+    auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action, ActionSteps] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]

@@ -54,7 +54,7 @@ class CortexClient(
   lazy val job            = new BaseClient[InputJob, OutputJob](s"$strippedUrl/api/job")
   lazy val analyser       = new BaseClient[InputWorker, OutputWorker](s"$strippedUrl/api/analyzer")
   lazy val responder      = new BaseClient[InputWorker, OutputWorker](s"$strippedUrl/api/responder")
-  lazy val logger         = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
   val strippedUrl: String = baseUrl.replaceFirst("/*$", "")
 
   /**

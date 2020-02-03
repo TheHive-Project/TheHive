@@ -62,12 +62,12 @@ class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[Cu
   override def productArity: Int            = 0
   override def canEqual(that: Any): Boolean = that.isInstanceOf[CustomFieldValueEdge]
 
-  override val _id: String                = edge.id().toString
-  override val _model: Model              = null
-  override val _createdBy: String         = db.getSingleProperty(edge, "_createdBy", UniMapping.string)
-  override val _updatedBy: Option[String] = db.getOptionProperty(edge, "_updatedBy", UniMapping.string.optional)
-  override val _createdAt: Date           = db.getSingleProperty(edge, "_createdAt", UniMapping.date)
-  override val _updatedAt: Option[Date]   = db.getOptionProperty(edge, "_updatedAt", UniMapping.date.optional)
+  override def _id: String                = edge.id().toString
+  override def _model: Model              = ???
+  override def _createdBy: String         = db.getSingleProperty(edge, "_createdBy", UniMapping.string)
+  override def _updatedBy: Option[String] = db.getOptionProperty(edge, "_updatedBy", UniMapping.string.optional)
+  override def _createdAt: Date           = db.getSingleProperty(edge, "_createdAt", UniMapping.date)
+  override def _updatedAt: Option[Date]   = db.getOptionProperty(edge, "_updatedAt", UniMapping.date.optional)
 }
 
 object CustomFieldType extends Enumeration {

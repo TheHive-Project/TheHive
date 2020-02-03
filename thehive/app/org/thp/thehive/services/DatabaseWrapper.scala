@@ -85,4 +85,7 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override def addTransactionListener(listener: Consumer[Transaction.Status])(implicit graph: Graph): Unit = db.addTransactionListener(listener)
   override def mapPredicate[T](predicate: P[T]): P[T]                                                      = db.mapPredicate(predicate)
   override def toId(id: Any): Any                                                                          = db.toId(id)
+
+  override val binaryLinkModel: Model.Edge[BinaryLink, Binary, Binary] = db.binaryLinkModel
+  override val binaryModel: Model.Vertex[Binary]                       = db.binaryModel
 }

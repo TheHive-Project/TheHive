@@ -31,24 +31,14 @@ object ProxyWSConfig {
       }
     )
 
-  implicit val sslDebugConfigWrites: Writes[SSLDebugConfig] = Writes[SSLDebugConfig](
-    conf =>
-      Json.obj(
-        "all"          -> conf.all,
-        "certpath"     -> conf.certpath,
-        "defaultctx"   -> conf.defaultctx,
-        "handshake"    -> conf.handshake.fold[JsValue](JsNull)(h => Json.obj("data" -> h.data, "verbose" -> h.verbose)),
-        "keygen"       -> conf.keygen,
-        "keymanager"   -> conf.keymanager,
-        "ocsp"         -> conf.ocsp,
-        "pluggability" -> conf.pluggability,
-        "record"       -> conf.record.fold[JsValue](JsNull)(r => Json.obj("packet" -> r.packet, "plaintext" -> r.plaintext)),
-        "session"      -> conf.session,
-        "sessioncache" -> conf.sessioncache,
-        "ssl"          -> conf.ssl,
-        "sslctx"       -> conf.sslctx,
-        "trustmanager" -> conf.trustmanager
-      )
+  implicit val sslDebugConfigWrites: Writes[SSLDebugConfig] = Writes[SSLDebugConfig](conf =>
+    Json.obj(
+      "all"          -> conf.all,
+      "keymanager"   -> conf.keymanager,
+      "ssl"          -> conf.ssl,
+      "sslctx"       -> conf.sslctx,
+      "trustmanager" -> conf.trustmanager
+    )
   )
 
   implicit val sslLooseConfigWrites: Writes[SSLLooseConfig] = Writes[SSLLooseConfig] { c =>

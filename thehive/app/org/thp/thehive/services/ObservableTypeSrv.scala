@@ -13,7 +13,7 @@ import org.thp.thehive.models._
 import scala.util.Try
 
 @Singleton
-class ObservableTypeSrv @Inject() (auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[ObservableType, ObservableTypeSteps] {
+class ObservableTypeSrv @Inject() (implicit db: Database) extends VertexSrv[ObservableType, ObservableTypeSteps] {
 
   override val initialValues: Seq[ObservableType] = Seq(
     ObservableType("url", isAttachment = false),

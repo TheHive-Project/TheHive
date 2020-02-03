@@ -66,6 +66,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       }
     }
 
+    // FIXME doesn't work with SBT ?!
     "get a case with impact status" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         val richCase = app[CaseSrv].get("#2").richCase.head()
@@ -81,7 +82,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           severity = 2,
           startDate = new Date(1531667370000L),
           endDate = None,
-          tags = Seq.empty,
+          tags = richCase.tags,
           flag = false,
           tlp = 2,
           pap = 2,
@@ -101,6 +102,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageShare
           )
         )
+        richCase.tags.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"t1\""))
         richCase._createdBy must_=== "system@thehive.local"
       }
     }
@@ -233,17 +235,16 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     "add new tags and not previous ones" in testApp { app =>
       // Create a case with tags first
       val c = app[Database]
-        .tryTransaction(
-          implicit graph =>
-            app[CaseSrv].create(
-              Case(0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-              None,
-              app[OrganisationSrv].getOrFail("cert").get,
-              app[TagSrv].initSteps.toList.toSet,
-              Map.empty,
-              None,
-              Nil
-            )
+        .tryTransaction(implicit graph =>
+          app[CaseSrv].create(
+            Case(0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+            None,
+            app[OrganisationSrv].getOrFail("cert").get,
+            app[TagSrv].initSteps.toList.toSet,
+            Map.empty,
+            None,
+            Nil
+          )
         )
         .get
 
@@ -251,13 +252,13 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
       val currentLen = c.tags.length
 
-      app[Database].tryTransaction(
-        implicit graph => app[CaseSrv].addTags(c.`case`, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""))
+      app[Database].tryTransaction(implicit graph =>
+        app[CaseSrv].addTags(c.`case`, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""))
       ) must beSuccessfulTry
 
-      app[Database].roTransaction(implicit graph => {
+      app[Database].roTransaction { implicit graph =>
         app[CaseSrv].initSteps.has("title", "case 5").tags.toList.length shouldEqual currentLen + 1
-      })
+      }
     }
 
     "add an observable if not existing" in testApp { app =>
@@ -269,53 +270,46 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
         val hfr = observables.find(_.message.contains("Some weird domain")).get
 
-        app[Database]
-          .tryTransaction(implicit graph => {
-            app[CaseSrv].addObservable(c1, hfr)
-          })
-          .get must throwA[CreateError]
+        app[Database].tryTransaction { implicit graph =>
+          app[CaseSrv].addObservable(c1, hfr)
+        }.get must throwA[CreateError]
 
-        val newObs = app[Database]
-          .tryTransaction(
-            implicit graph => {
-              app[ObservableSrv].create(
-                Observable(Some("if you feel lost"), 1, ioc = false, sighted = true),
-                app[ObservableTypeSrv].get("domain").getOrFail().get,
-                "lost.com",
-                Set[String](),
-                Nil
-              )
-            }
+        val newObs = app[Database].tryTransaction { implicit graph =>
+          app[ObservableSrv].create(
+            Observable(Some("if you feel lost"), 1, ioc = false, sighted = true),
+            app[ObservableTypeSrv].get("domain").getOrFail().get,
+            "lost.com",
+            Set[String](),
+            Nil
           )
-          .get
+        }.get
 
-        app[Database].tryTransaction(implicit graph => {
+        app[Database].tryTransaction { implicit graph =>
           app[CaseSrv].addObservable(c1, newObs)
-        }) must beSuccessfulTry
+        } must beSuccessfulTry
       }
     }
 
     "remove a case and its dependencies" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         val c1 = app[Database]
-          .tryTransaction(
-            implicit graph =>
-              app[CaseSrv].create(
-                Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-                None,
-                app[OrganisationSrv].getOrFail("cert").get,
-                Set[Tag with Entity](),
-                Map.empty,
-                None,
-                Nil
-              )
+          .tryTransaction(implicit graph =>
+            app[CaseSrv].create(
+              Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+              None,
+              app[OrganisationSrv].getOrFail("cert").get,
+              Set[Tag with Entity](),
+              Map.empty,
+              None,
+              Nil
+            )
           )
           .get
 
         app[Database].tryTransaction(implicit graph => app[CaseSrv].cascadeRemove(c1.`case`)) must beSuccessfulTry
-        app[Database].roTransaction(implicit graph => {
+        app[Database].roTransaction { implicit graph =>
           app[CaseSrv].get(c1._id).exists() must beFalse
-        })
+        }
       }
     }
     "set or unset case impact status" in testApp { app =>
@@ -342,19 +336,18 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "set or unset case resolution status" in testApp { app =>
-      app[Database].roTransaction(implicit graph => {
+      app[Database].roTransaction { implicit graph =>
         val c7 = app[Database]
-          .tryTransaction(
-            implicit graph =>
-              app[CaseSrv].create(
-                Case(0, "case 7", "desc 7", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-                None,
-                app[OrganisationSrv].getOrFail("cert").get,
-                app[TagSrv].initSteps.toList.toSet,
-                Map.empty,
-                None,
-                Nil
-              )
+          .tryTransaction(implicit graph =>
+            app[CaseSrv].create(
+              Case(0, "case 7", "desc 7", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+              None,
+              app[OrganisationSrv].getOrFail("cert").get,
+              app[TagSrv].initSteps.toList.toSet,
+              Map.empty,
+              None,
+              Nil
+            )
           )
           .get
 
@@ -363,22 +356,21 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         app[Database].roTransaction(implicit graph => app[CaseSrv].get(c7._id).resolutionStatus.exists() must beTrue)
         app[Database].tryTransaction(implicit graph => app[CaseSrv].unsetResolutionStatus(c7.`case`)) must beSuccessfulTry
         app[Database].roTransaction(implicit graph => app[CaseSrv].get(c7._id).resolutionStatus.exists() must beFalse)
-      })
+      }
     }
 
     "assign/unassign a case" in testApp { app =>
       val c8 = app[Database]
-        .tryTransaction(
-          implicit graph =>
-            app[CaseSrv].create(
-              Case(0, "case 8", "desc 8", 2, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-              Some(app[UserSrv].get("certuser@thehive.local").getOrFail().get),
-              app[OrganisationSrv].getOrFail("cert").get,
-              app[TagSrv].initSteps.toList.toSet,
-              Map.empty,
-              None,
-              Nil
-            )
+        .tryTransaction(implicit graph =>
+          app[CaseSrv].create(
+            Case(0, "case 8", "desc 8", 2, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+            Some(app[UserSrv].get("certuser@thehive.local").getOrFail().get),
+            app[OrganisationSrv].getOrFail("cert").get,
+            app[TagSrv].initSteps.toList.toSet,
+            Map.empty,
+            None,
+            Nil
+          )
         )
         .get
         .`case`
@@ -413,9 +405,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         val observables = app[ObservableSrv].initSteps.richObservable.toList
         val hfr         = observables.find(_.message.contains("Some weird domain")).get
 
-        app[Database].tryTransaction(implicit graph => {
+        app[Database].tryTransaction { implicit graph =>
           app[CaseSrv].addObservable(app[CaseSrv].get("#2").getOrFail().get, hfr)
-        })
+        }
 
         app[Database].roTransaction(implicit graph => app[CaseSrv].get("#1").linkedCases must not(beEmpty))
       }

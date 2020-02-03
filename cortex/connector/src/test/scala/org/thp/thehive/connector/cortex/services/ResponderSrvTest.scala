@@ -9,21 +9,35 @@ import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
+import org.thp.scalligraph.AppBuilder
+import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
+
 class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
+  override val databaseName: String = "thehiveCortex"
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+      .`override`(
+        _.bindActor[CortexActor]("cortex-actor")
+          .bindToProvider[CortexClient, TestCortexClientProvider]
+          .bind[Connector, TestConnector]
+          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+      )
+
   "responder service" should {
     "fetch responders by type" in testApp { app =>
-      val t = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1").getOrFail()
+      val task = app[Database].roTransaction { implicit graph =>
+        app[TaskSrv].initSteps.has("title", "case 1 task 1").head()
       }
 
-      t must successfulTry.which { task =>
-        val r = await(app[ResponderSrv].getRespondersByType("case_task", task._id))
+      val r = await(app[ResponderSrv].getRespondersByType("case_task", task._id))
 
-        r.find(_._1.name == "respTest1") must beSome
-      }
+      r.find(_._1.name == "respTest1") must beSome
     }
 
     "search responders" in testApp { app =>

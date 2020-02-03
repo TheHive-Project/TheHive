@@ -7,12 +7,13 @@ import play.api.Logger
 
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
+import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 
 @Singleton
 class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper, implicit val ec: ExecutionContext) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   /**
     * Lists the Cortex analyzers from all CortexClients
@@ -54,12 +55,12 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
           .getAnalyzer(id)
           .map(_ -> client.name)
       }
-      .map(analyzerByClients =>
-        analyzerByClients
-          .groupBy(_._1.name)
-          .values // Seq[Seq[(worker, cortexId)]]
-          .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]
-          .toMap
-          .head
-      )
+      .flatMap { analyzerByClients =>
+        analyzerByClients     // Seq[(worker, cortexId)]
+          .groupBy(_._1.name) // Map[CortexId, Seq[(worker, cortexId)]]
+          .values             // Seq[Seq[(worker, cortexId)]]
+          .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId]]
+          .headOption
+          .fold[Future[(CortexWorker, Seq[String])]](Future.failed(NotFoundError(s"Analyzer $id not found")))(Future.successful)
+      }
 }

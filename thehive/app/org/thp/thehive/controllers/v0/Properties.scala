@@ -1,5 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
+
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -28,22 +33,15 @@ import org.thp.thehive.services.{
   LogSteps,
   ObservableSrv,
   ObservableSteps,
-  OrganisationSrv,
   OrganisationSteps,
   PageSteps,
-  ProfileSrv,
   ProfileSteps,
-  RoleSrv,
   TagSteps,
   TaskSrv,
   TaskSteps,
   UserSrv,
   UserSteps
 }
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 class Properties @Inject() (
@@ -53,10 +51,7 @@ class Properties @Inject() (
     dashboardSrv: DashboardSrv,
     observableSrv: ObservableSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    organisationSrv: OrganisationSrv,
     taskSrv: TaskSrv,
-    profileSrv: ProfileSrv,
-    roleSrv: RoleSrv,
     customFieldSrv: CustomFieldSrv
 ) {
 
@@ -91,10 +86,10 @@ class Properties @Inject() (
             _.apply(By(Key[Boolean]("read")))
               .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
           ).map {
-            case (false, caseCount) if caseCount == 0 => "New"
-            case (false, _)                           => "Updated"
-            case (true, caseCount) if caseCount == 0  => "Ignored"
-            case (true, _)                            => "Imported"
+            case (false, caseCount) if caseCount == 0L => "New"
+            case (false, _)                            => "Updated"
+            case (true, caseCount) if caseCount == 0L  => "Ignored"
+            case (true, _)                             => "Imported"
           }
         ).readonly
       )

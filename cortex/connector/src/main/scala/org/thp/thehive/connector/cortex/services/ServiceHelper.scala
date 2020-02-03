@@ -6,24 +6,17 @@ import gremlin.scala.P
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputWorker
-import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services._
 
 @Singleton
 class ServiceHelper @Inject() (
-    taskSrv: TaskSrv,
-    caseSrv: CaseSrv,
-    alertSrv: AlertSrv,
-    observableSrv: ObservableSrv,
-    logSrv: LogSrv,
     db: Database,
-    schema: Schema,
-    userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   /**
     * Returns the filtered CortexClients according to config

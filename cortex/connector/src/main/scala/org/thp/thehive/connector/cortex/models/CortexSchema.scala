@@ -16,7 +16,7 @@ class CortexSchema @Inject() () extends Schema {
 
   lazy val logger: Logger = Logger(getClass)
   val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)
-  logger.info(s"Search models in org.thp.thehive.connector.cortex.models")
+  logger.info("Search models in org.thp.thehive.connector.cortex.models")
 
   lazy val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
@@ -31,10 +31,11 @@ class CortexSchema @Inject() () extends Schema {
       .getSubTypesOf(classOf[HasModel[_]])
       .asScala
       .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers))
-      .map { modelClass =>
-        val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel[_]]
-        logger.info(s"Loading model ${hasModel.model.label}")
-        hasModel.model
+      .map(modelClass => rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance)
+      .collect {
+        case hasModel: HasModel[_] =>
+          logger.info(s"Loading model ${hasModel.model.label}")
+          hasModel.model
       }
       .toSeq
   }

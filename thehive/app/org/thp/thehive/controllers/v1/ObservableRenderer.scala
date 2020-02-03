@@ -38,7 +38,7 @@ trait ObservableRenderer {
         )
     }
 
-  def observableLinkRenderer(implicit db: Database, graph: Graph): ObservableSteps => Traversal[JsObject, JsObject] =
+  def observableLinkRenderer: ObservableSteps => Traversal[JsObject, JsObject] =
     _.coalesce(
       _.alert.richAlert.map(a => Json.obj("alert"            -> a.toJson)),
       _.`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson))

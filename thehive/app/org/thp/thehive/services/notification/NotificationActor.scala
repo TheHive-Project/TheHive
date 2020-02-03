@@ -38,7 +38,6 @@ object AuditNotificationMessage {
 }
 
 class NotificationSrv @Inject() (
-    userSrv: UserSrv,
     availableTriggers: immutable.Set[TriggerProvider],
     availableNotifiers: immutable.Set[NotifierProvider]
 ) {

@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.http.HttpErrorHandler
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -20,7 +19,6 @@ class OrganisationCtrl @Inject() (
     db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
-    errorHandler: HttpErrorHandler,
     userSrv: UserSrv
 ) extends QueryableCtrl {
 

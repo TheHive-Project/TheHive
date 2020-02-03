@@ -15,8 +15,6 @@ import org.thp.thehive.services.{
   DashboardSrv,
   ObservableSrv,
   OrganisationSrv,
-  ProfileSrv,
-  RoleSrv,
   ShareSrv,
   TaskSrv,
   UserSrv
@@ -31,10 +29,7 @@ class QueryTest extends PlaySpecification with Mockito {
     mock[DashboardSrv],
     mock[ObservableSrv],
     mock[CaseTemplateSrv],
-    mock[OrganisationSrv],
     mock[TaskSrv],
-    mock[ProfileSrv],
-    mock[RoleSrv],
     mock[CustomFieldSrv]
   )
 

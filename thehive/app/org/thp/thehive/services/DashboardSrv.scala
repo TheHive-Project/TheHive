@@ -28,10 +28,7 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DashboardSteps = new DashboardSteps(raw)
 
-  def create(
-      dashboard: Dashboard,
-      organisation: Organisation with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[RichDashboard] =
+  def create(dashboard: Dashboard)(implicit graph: Graph, authContext: AuthContext): Try[RichDashboard] =
     for {
       createdDashboard <- createEntity(dashboard)
       user             <- userSrv.current.getOrFail()

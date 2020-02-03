@@ -78,7 +78,17 @@ case class OutputReport(
 )
 
 object OutputReport {
-  implicit val writes: Writes[OutputReport] = Json.writes[OutputReport]
+  implicit val writes: Writes[OutputReport] = Writes[OutputReport] { outputReport =>
+    Json.obj(
+      "summary"      -> Json.obj("taxonomies" -> Json.toJson(outputReport.summary)),
+      "full"         -> Json.toJson(outputReport.full),
+      "success"      -> Json.toJson(outputReport.success),
+      "artifacts"    -> Json.toJson(outputReport.artifacts),
+      "operations"   -> Json.toJson(outputReport.operations),
+      "errorMessage" -> Json.toJson(outputReport.errorMessage),
+      "input"        -> Json.toJson(outputReport.input)
+    )
+  }
   implicit val reads: Reads[OutputReport] = Reads[OutputReport] { json =>
     JsSuccess(
       OutputReport(
@@ -98,38 +108,37 @@ object OutputJob {
   implicit val jobStatusFormat: Format[JobStatus.Value] = Json.formatEnum(JobStatus)
   implicit val jobTypeFormat: Format[JobType.Value]     = Json.formatEnum(JobType)
   implicit val writes: Writes[OutputJob]                = Json.writes[OutputJob]
-  implicit val reads: Reads[OutputJob] = Reads[OutputJob](
-    json =>
-      for {
-        id       <- (json \ "id").validate[String]
-        workerId <- (json \ "workerId").orElse(json \ "analyzerId").validate[String]
-        workerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(workerId)
-        workerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(workerId)
-        data             = (json \ "data").asOpt[String]
-        attachment       = (json \ "attachment").asOpt[JsObject]
-        date <- (json \ "date").validate[Date]
-        startDate = (json \ "startDate").asOpt[Date]
-        endDate   = (json \ "endDate").asOpt[Date]
-        status       <- (json \ "status").validate[JobStatus.Value]
-        organization <- (json \ "organization").validate[String]
-        dataType     <- (json \ "dataType").validate[String]
-        report = (json \ "report").asOpt[OutputReport]
-        jobType <- (json \ "type").validate[JobType.Value]
-      } yield OutputJob(
-        id,
-        workerId,
-        workerName,
-        workerDefinition,
-        date,
-        startDate,
-        endDate,
-        status,
-        data,
-        attachment,
-        organization,
-        dataType,
-        report,
-        jobType
-      )
+  implicit val reads: Reads[OutputJob] = Reads[OutputJob](json =>
+    for {
+      id       <- (json \ "id").validate[String]
+      workerId <- (json \ "workerId").orElse(json \ "analyzerId").validate[String]
+      workerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(workerId)
+      workerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(workerId)
+      data             = (json \ "data").asOpt[String]
+      attachment       = (json \ "attachment").asOpt[JsObject]
+      date <- (json \ "date").validate[Date]
+      startDate = (json \ "startDate").asOpt[Date]
+      endDate   = (json \ "endDate").asOpt[Date]
+      status       <- (json \ "status").validate[JobStatus.Value]
+      organization <- (json \ "organization").validate[String]
+      dataType     <- (json \ "dataType").validate[String]
+      report = (json \ "report").asOpt[OutputReport]
+      jobType <- (json \ "type").validate[JobType.Value]
+    } yield OutputJob(
+      id,
+      workerId,
+      workerName,
+      workerDefinition,
+      date,
+      startDate,
+      endDate,
+      status,
+      data,
+      attachment,
+      organization,
+      dataType,
+      report,
+      jobType
+    )
   )
 }

@@ -15,7 +15,7 @@ object ApplicationError {
 }
 
 class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSClient) {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def create(input: Input, url: String = baseUrl)(implicit ec: ExecutionContext, auth: Authentication): Future[Output] = {
     val body = Json.toJson(input)

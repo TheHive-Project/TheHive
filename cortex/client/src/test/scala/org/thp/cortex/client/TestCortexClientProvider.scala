@@ -18,7 +18,7 @@ import mockws.MockWS
 import org.thp.client.NoAuthentication
 import org.thp.cortex.dto.v0.{OutputJob, OutputWorker}
 
-class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+class TestCortexClientProvider @Inject() (Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
     extends Provider[CortexClient] {
   lazy val analyzers: Seq[OutputWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputWorker]]
   lazy val jobs: Seq[OutputJob]          = readResourceAsJson("/jobs.json").as[Seq[OutputJob]]
@@ -32,7 +32,7 @@ class TestCortexClientProvider @Inject()(Action: DefaultActionBuilder, implicit 
   val apiResponderId: Regex              = "^/api/responder/([^/]*)$".r
   val apiResponderIdRun: Regex           = "^/api/responder/([^/]*)/run$".r
 
-  val ws = MockWS {
+  val ws: MockWS = MockWS {
     case (GET, apiJobIdWaitReport(id))        => Action(Results.Ok(Json.toJson(jobs.find(_.id == id).get)))
     case (GET, apiAnalyzer())                 => Action(Results.Ok.sendResource("analyzers.json"))
     case (GET, apiAnalyzerDataType(dataType)) => Action(Results.Ok(Json.toJson(analyzers.filter(_.dataTypeList.contains(dataType)))))

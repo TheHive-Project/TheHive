@@ -50,10 +50,7 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
              }
           }""").as[JsObject]
       app[Database].tryTransaction { implicit graph =>
-        app[DashboardSrv].create(
-          Dashboard("dashboard test 1", "desc dashboard test 1", definition),
-          app[OrganisationSrv].getOrFail("cert").get
-        )
+        app[DashboardSrv].create(Dashboard("dashboard test 1", "desc dashboard test 1", definition))
       } must beASuccessfulTry.which { d =>
         d.title shouldEqual "dashboard test 1"
         d.organisationShares must beEmpty

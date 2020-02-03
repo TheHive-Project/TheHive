@@ -32,7 +32,7 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
         logger.trace(s"Legacy password authentication check  ($hash == $pwd)")
         hash == pwd
       case _ =>
-        logger.trace(s"Legacy password authenticate, invalid password format")
+        logger.trace("Legacy password authenticate, invalid password format")
         false
     }
 

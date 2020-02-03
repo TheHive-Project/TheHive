@@ -30,8 +30,7 @@ class UserCtrl @Inject() (
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    implicit val ec: ExecutionContext,
-    roleSrv: RoleSrv
+    implicit val ec: ExecutionContext
 ) extends QueryableCtrl {
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "user"

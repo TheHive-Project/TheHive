@@ -14,21 +14,21 @@
         <option value="org.thp.thehive.connector.cortex.controllers.v0.JobCtrlTest" />
         <option value="org.thp.thehive.connector.cortex.controllers.v0.AnalyzerCtrlTest" />
         <option value="org.thp.thehive.connector.cortex.controllers.v0.AnalyzerTemplateCtrlTest" />
+        <option value="org.thp.thehive.connector.cortex.controllers.v0.AnalyzerCtrlTest" />
         <option value="org.thp.thehive.connector.cortex.controllers.v0.JobCtrlTest" />
         <option value="org.thp.thehive.connector.cortex.controllers.v0.AnalyzerTemplateCtrlTest" />
-        <option value="org.thp.thehive.connector.cortex.controllers.v0.AnalyzerCtrlTest" />
         <option value="org.thp.thehive.connector.cortex.services.JobSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.ActionSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.AnalyzerSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.EntityHelperTest" />
         <option value="org.thp.thehive.connector.cortex.services.ResponderSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.ServiceHelperTest" />
-        <option value="org.thp.thehive.connector.cortex.services.EntityHelperTest" />
-        <option value="org.thp.thehive.connector.cortex.services.JobSrvTest" />
-        <option value="org.thp.thehive.connector.cortex.services.ServiceHelperTest" />
-        <option value="org.thp.thehive.connector.cortex.services.ResponderSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.ActionSrvTest" />
+        <option value="org.thp.thehive.connector.cortex.services.EntityHelperTest" />
+        <option value="org.thp.thehive.connector.cortex.services.ServiceHelperTest" />
+        <option value="org.thp.thehive.connector.cortex.services.JobSrvTest" />
         <option value="org.thp.thehive.connector.cortex.services.AnalyzerSrvTest" />
+        <option value="org.thp.thehive.connector.cortex.services.ResponderSrvTest" />
       </list>
     </option>
     <option name="envs">

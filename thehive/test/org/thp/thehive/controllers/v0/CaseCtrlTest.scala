@@ -155,6 +155,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       assignee.get.login shouldEqual "certuser@thehive.local"
     }
 
+    // FIXME doesn't work with SBT ?!
     "try to get a case" in testApp { app =>
       val request = FakeRequest("GET", s"/api/v0/case/#2")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -178,7 +179,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         tlp = 2,
         pap = 2,
         status = "Open",
-        tags = Set.empty,
+        tags = Set("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"t1\""),
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = JsObject.empty,
@@ -297,6 +298,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       contentAsJson(resultSearch).as[List[OutputCase]] must not(beEmpty)
     }
 
+    // FIXME doesn't work with SBT ?!
     "get and aggregate properly case stats" in testApp { app =>
       val request = FakeRequest("POST", s"/api/v0/case/_stats")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -324,7 +326,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      resultCase("count").as[Int] shouldEqual 2
+      (resultCase \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "testNamespace.testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "testNamespace.testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "testNamespace.testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
@@ -334,8 +336,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     "assign a case to an user" in testApp { app =>
       val request = FakeRequest("PATCH", s"/api/v0/case/#4")
         .withHeaders("user" -> "certuser@thehive.local")
-        .withJsonBody(Json.obj("owner" -> "csertro@thehive.local"))
-      val result = app[CaseCtrl].update("#4")(request)
+        .withJsonBody(Json.obj("owner" -> "certro@thehive.local"))
+      val result = app[CaseCtrl].update("#1")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase       = contentAsJson(result)
       val resultCaseOutput = resultCase.as[OutputCase]
@@ -345,7 +347,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "force delete a case" in testApp { app =>
       val tasks = app[Database].roTransaction { implicit graph =>
-        val authContext = DummyUserSrv().authContext
+        val authContext = DummyUserSrv(organisation = "cert").authContext
         app[CaseSrv].get("#1").tasks(authContext).toList
       }
       tasks must have size 2

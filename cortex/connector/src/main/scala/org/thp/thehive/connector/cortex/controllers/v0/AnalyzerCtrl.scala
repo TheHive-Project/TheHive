@@ -8,7 +8,6 @@ import play.api.mvc.{Action, AnyContent, Results}
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
-import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 import org.thp.thehive.controllers.v0.Conversion._
@@ -16,7 +15,6 @@ import org.thp.thehive.controllers.v0.Conversion._
 @Singleton
 class AnalyzerCtrl @Inject() (
     entryPoint: EntryPoint,
-    db: Database,
     analyzerSrv: AnalyzerSrv,
     implicit val system: ActorSystem,
     implicit val ec: ExecutionContext

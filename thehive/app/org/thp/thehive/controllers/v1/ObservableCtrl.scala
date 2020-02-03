@@ -116,7 +116,7 @@ class ObservableCtrl @Inject() (
         val observables = observableSrv
           .getByIds(obsId)
           .similar
-          .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
+          .richObservableWithCustomRenderer(observableLinkRenderer)
           .toList
           .map {
             case (org, parent) => org.toJson.as[JsObject] ++ parent

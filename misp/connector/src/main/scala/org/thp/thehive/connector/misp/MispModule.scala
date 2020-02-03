@@ -12,7 +12,7 @@ import org.thp.thehive.connector.misp.services.{Connector, MispActor, MispActorP
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 
 class MispModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   override def configure(): Unit = {
     val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)

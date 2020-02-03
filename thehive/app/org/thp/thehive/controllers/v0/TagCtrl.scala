@@ -66,13 +66,13 @@ class TagCtrl @Inject() (
   def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] =
     for {
       value <- values
-        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
+        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
         ._1
       predicate <- (value \ "predicate").asOpt[String].toList
       entry <- (value \ "entry")
         .asOpt[Seq[JsObject]]
         .getOrElse(Nil)
-        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
         ._1
       v <- (entry \ "value").asOpt[String]
       colour = (entry \ "colour")
@@ -91,7 +91,7 @@ class TagCtrl @Inject() (
   def parsePredicates(namespace: String, predicates: Seq[JsObject]): Seq[Tag] =
     for {
       predicate <- predicates
-        .foldLeft((Seq[JsObject](), Seq[String]()))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
         ._1
       v <- (predicate \ "value").asOpt[String]
       e = (predicate \ "expanded").asOpt[String]

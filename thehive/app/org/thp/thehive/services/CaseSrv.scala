@@ -22,7 +22,6 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseSrv @Inject() (
-    caseTemplateSrv: CaseTemplateSrv,
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     userSrv: UserSrv,

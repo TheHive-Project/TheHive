@@ -51,16 +51,18 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
         Json.parse(data).as[List[OutputJob]].find(_.id == "ZWu85Q1OCVNx03hXK4df").get
       }
 
-      app[Database].tryTransaction { implicit graph =>
+      val createdJobTry = app[Database].tryTransaction { implicit graph =>
         for {
           observable <- app[ObservableSrv].initSteps.has("message", "hello world").getOrFail()
           createdJob <- app[JobSrv].create(job, observable)
-        } yield Await.result(app[JobSrv].finished(app[CortexClient].name, createdJob._id, cortexOutputJob), 20.seconds)
+        } yield createdJob
+      }
+      createdJobTry.map { createdJob =>
+        Await.result(app[JobSrv].finished(app[CortexClient].name, createdJob._id, cortexOutputJob), 20.seconds)
       } must beASuccessfulTry.which { updatedJob =>
         updatedJob.status shouldEqual JobStatus.Success
         updatedJob.report must beSome
-        updatedJob.report.get \ "artifacts" must not(beEmpty)
-        (updatedJob.report.get \ "full" \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
+        (updatedJob.report.get \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
         app[Database].roTransaction { implicit graph =>
           app[JobSrv].get(updatedJob).observable.has("message", "hello world").exists() must beTrue
@@ -73,17 +75,21 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
           } yield new JobFinished().filter(audit, Some(updatedJob), organisatopn, user)
         } must beASuccessfulTry(true)
       }
+    }
 
-      "submit a job" in testApp { app =>
-        app[Database].roTransaction { implicit graph =>
-          for {
-            observable <- app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail()
-            case0      <- app[CaseSrv].getOrFail("#1")
-          } yield await(app[JobSrv].submit("test", "anaTest1", observable, case0))
-        } must beASuccessfulTry.which { job =>
-          job.cortexId shouldEqual "test"
-          job.workerId shouldEqual "anaTest1"
+    "submit a job" in testApp { app =>
+      val x = for {
+        observable <- app[Database].roTransaction { implicit graph =>
+          app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail()
         }
+        case0 <- app[Database].roTransaction { implicit graph =>
+          app[CaseSrv].getOrFail("#1")
+        }
+      } yield await(app[JobSrv].submit("test", "anaTest1", observable, case0))
+
+      x must beASuccessfulTry.which { job =>
+        job.cortexId shouldEqual "test"
+        job.workerId shouldEqual "anaTest1"
       }
     }
   }

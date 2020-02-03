@@ -31,7 +31,7 @@ class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) exten
     } yield created
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(c).remove()
+    get(c).remove() // TODO use force
     auditSrv.customField.delete(c)
   }
 

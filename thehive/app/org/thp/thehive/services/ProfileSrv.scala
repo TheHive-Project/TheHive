@@ -14,9 +14,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 object ProfileSrv {
-  val admin = Profile("admin", Permissions.adminPermissions)
+  val admin: Profile = Profile("admin", Permissions.adminPermissions)
 
-  val analyst = Profile(
+  val analyst: Profile = Profile(
     "analyst",
     Set(
       Permissions.manageCase,
@@ -28,13 +28,13 @@ object ProfileSrv {
     )
   )
 
-  val incidentHandler = Profile(
+  val incidentHandler: Profile = Profile(
     "incident-handler",
     analyst.permissions + Permissions.manageShare
   )
-  val readonly = Profile("read-only", Set.empty)
-  val orgAdmin = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
-  val all      = Profile("all", Permissions.all)
+  val readonly: Profile = Profile("read-only", Set.empty)
+  val orgAdmin: Profile = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
+  val all: Profile      = Profile("all", Permissions.all)
 }
 
 @Singleton

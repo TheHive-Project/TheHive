@@ -14,7 +14,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCaseTemplate
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
-import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv}
 
 @Singleton
 class CaseTemplateCtrl @Inject() (
@@ -22,7 +22,6 @@ class CaseTemplateCtrl @Inject() (
     db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
-    userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
 

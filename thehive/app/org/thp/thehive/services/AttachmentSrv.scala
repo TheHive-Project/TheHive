@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.io.InputStream
 import java.nio.file.Files
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.Try
 
 import play.api.Configuration
@@ -25,7 +25,7 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 
 @Singleton
-class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer, ec: ExecutionContext)
+class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer)
     extends VertexSrv[Attachment, AttachmentSteps] {
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)

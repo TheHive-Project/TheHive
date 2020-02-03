@@ -28,19 +28,17 @@ import org.thp.thehive.services._
 class MispImportSrv @Inject() (
     connector: Connector,
     alertSrv: AlertSrv,
-    caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    tagSrv: TagSrv,
     db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def eventToAlert(client: TheHiveMispClient, event: Event): Try[Alert] =
     client
@@ -90,7 +88,6 @@ class MispImportSrv @Inject() (
   }
 
   def attributeToObservable(
-      client: TheHiveMispClient,
       attribute: Attribute
   ): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
     attribute
@@ -237,7 +234,7 @@ class MispImportSrv @Inject() (
     } match {
       case None =>
         logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
-        val file = Files.createTempFile(s"misp-attachment-", "")
+        val file = Files.createTempFile("misp-attachment-", "")
         (for {
           r <- src.runWith(FileIO.toPath(file))
           fFile = FFile(filename, file, contentType)
@@ -275,7 +272,7 @@ class MispImportSrv @Inject() (
     val startSyncDate = new Date
     client
       .searchAttributes(event.id, lastSynchro)
-      .mapConcat(attributeToObservable(client, _))
+      .mapConcat(attributeToObservable)
       .fold(
         Map.empty[
           (String, String),

@@ -28,8 +28,6 @@ class AlertSrv @Inject() (
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
-    taskSrv: TaskSrv,
-    userSrv: UserSrv,
     auditSrv: AuditSrv
 )(
     implicit db: Database

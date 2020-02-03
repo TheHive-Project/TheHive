@@ -10,7 +10,10 @@
     <option name="allowRunningInParallel" value="false" />
     <option name="testKind" value="All in package" />
     <option name="classBuf">
-      <list />
+      <list>
+        <option value="org.thp.thehive.connector.misp.services.MispImportSrvTest" />
+        <option value="org.thp.thehive.connector.misp.services.MispImportSrvTest" />
+      </list>
     </option>
     <option name="envs">
       <map />

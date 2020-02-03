@@ -23,7 +23,6 @@ class CaseCtrl @Inject() (
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    taskSrv: TaskSrv,
     userSrv: UserSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv

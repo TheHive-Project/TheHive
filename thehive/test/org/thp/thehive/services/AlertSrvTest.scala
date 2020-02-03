@@ -39,10 +39,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
           Map("string1" -> Some("lol")),
           Some(app[CaseTemplateSrv].getOrFail("spam").get)
         )
-
-//          createAlert("test", "test", "test desc", Set("tag1", "tag2"))
       }
-      a must beSuccessfulTry.which(a => {
+      a must beSuccessfulTry.which { a =>
         a.title shouldEqual "test"
         a.source shouldEqual "#1"
         a.sourceRef shouldEqual "alert_creation_test"
@@ -51,7 +49,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         a.severity shouldEqual 0
         a.tlp shouldEqual 1
         a.pap shouldEqual 2
-      })
+      }
 
       app[Database].roTransaction { implicit graph =>
         app[OrganisationSrv].get("cert").alerts.toList must contain(a.get.alert)
@@ -92,8 +90,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         } yield app[AlertSrv].get("testType;testSource;ref1").tags.toList
       }
 
-      tags must beSuccessfulTry.which(
-        t => t.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\"", "tag7"))
+      tags must beSuccessfulTry.which(t =>
+        t.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\"", "tag7"))
       )
     }
 
@@ -207,13 +205,13 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
     "remove totally an alert" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          alert <- app[AlertSrv].getOrFail("testType;testSource;ref1")
+          alert <- app[AlertSrv].getOrFail("testType;testSource;ref4")
           _     <- app[AlertSrv].cascadeRemove(alert)
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.filterOnType("FIXME").filterOnData("FIXME").exists() must beFalse
-        app[AlertSrv].initSteps.get("testType;testSource;ref1").exists() must beFalse
+        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
+        app[AlertSrv].initSteps.get("testType;testSource;ref4").exists() must beFalse
       }
     }
   }

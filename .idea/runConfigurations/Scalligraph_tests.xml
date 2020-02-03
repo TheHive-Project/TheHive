@@ -10,7 +10,36 @@
     <option name="allowRunningInParallel" value="false" />
     <option name="testKind" value="All in package" />
     <option name="classBuf">
-      <list />
+      <list>
+        <option value="org.thp.scalligraph.FPathTest" />
+        <option value="org.thp.scalligraph.RetryTest" />
+        <option value="org.thp.scalligraph.ScalligraphApplicationTest" />
+        <option value="org.thp.scalligraph.ScalligraphApplicationTest" />
+        <option value="org.thp.scalligraph.FPathTest" />
+        <option value="org.thp.scalligraph.RetryTest" />
+        <option value="org.thp.scalligraph.controllers.FieldsTest" />
+        <option value="org.thp.scalligraph.controllers.ControllerTest" />
+        <option value="org.thp.scalligraph.controllers.FieldsParserMacroTest" />
+        <option value="org.thp.scalligraph.controllers.UpdateFieldsParserMacroTest" />
+        <option value="org.thp.scalligraph.controllers.FieldsTest" />
+        <option value="org.thp.scalligraph.controllers.ControllerTest" />
+        <option value="org.thp.scalligraph.controllers.UpdateFieldsParserMacroTest" />
+        <option value="org.thp.scalligraph.controllers.FieldsParserMacroTest" />
+        <option value="org.thp.scalligraph.models.IndexTest" />
+        <option value="org.thp.scalligraph.models.QueryTest" />
+        <option value="org.thp.scalligraph.models.ModernTest" />
+        <option value="org.thp.scalligraph.models.CallbackTest" />
+        <option value="org.thp.scalligraph.models.CardinalityTest" />
+        <option value="org.thp.scalligraph.models.SimpleEntityTest" />
+        <option value="org.thp.scalligraph.models.SimpleEntityTest" />
+        <option value="org.thp.scalligraph.models.IndexTest" />
+        <option value="org.thp.scalligraph.models.ModernTest" />
+        <option value="org.thp.scalligraph.models.CardinalityTest" />
+        <option value="org.thp.scalligraph.models.CallbackTest" />
+        <option value="org.thp.scalligraph.models.QueryTest" />
+        <option value="org.thp.scalligraph.services.StorageSrvTest" />
+        <option value="org.thp.scalligraph.services.StorageSrvTest" />
+      </list>
     </option>
     <option name="envs">
       <map />

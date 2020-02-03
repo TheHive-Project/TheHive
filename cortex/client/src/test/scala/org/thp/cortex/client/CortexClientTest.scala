@@ -2,42 +2,29 @@ package org.thp.cortex.client
 
 import java.util.Date
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
+import org.thp.cortex.dto.v0._
+import org.thp.scalligraph.AppBuilder
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.PlaySpecification
 
-import akka.actor.Terminated
-import org.specs2.specification.core.Fragments
-import org.thp.cortex.dto.v0._
-import org.thp.scalligraph.AppBuilder
+import scala.concurrent.duration._
 
 class CortexClientTest extends PlaySpecification {
-  lazy val app: AppBuilder = new AppBuilder()
-  app.bindToProvider[CortexClient, TestCortexClientProvider]
+  val app: AppBuilder = new AppBuilder()
+    .bindToProvider[CortexClient, TestCortexClientProvider]
   val client: CortexClient = app[CortexClient]
 
-  override def map(fragments: => Fragments): Fragments =
-    fragments ^ step(afterAll())
+  "Cortex client" should {
+    "list analysers" in {
+      await(client.listAnalyser()).map(_.name) must contain(exactly("anaTest1", "anaTest2"))
+    }
 
-  def afterAll(): Future[Terminated] = app.app.actorSystem.terminate()
+    "get analyzer by its id" in {
+      await(client.getAnalyzer("anaTest2")).name must beEqualTo("anaTest2")
+    }
 
-  s"CortexClient" should {
-    "handle requests properly" in {
-      val analyzers: Seq[OutputWorker] = await(client.listAnalyser())
-
-      analyzers.length shouldEqual 2
-      analyzers.head.name shouldEqual "anaTest1"
-
-      val oneAnalyzer: OutputWorker = await(client.getAnalyzer("anaTest2"))
-
-      oneAnalyzer.id shouldEqual "anaTest2"
-      oneAnalyzer.name shouldEqual "anaTest2"
-
-      val searchedAnalyzer: OutputWorker = await(client.getAnalyzerByName("anaTest1"))
-
-      searchedAnalyzer should equalTo(
+    "get analyzer by its name" in {
+      await(client.getAnalyzerByName("anaTest1")) must equalTo(
         OutputWorker(
           id = "anaTest1",
           name = "anaTest1",
@@ -48,10 +35,10 @@ class CortexClientTest extends PlaySpecification {
           maxPap = 3
         )
       )
+    }
 
-      val outputJob: OutputJob = await(client.analyse(searchedAnalyzer.id, InputArtifact(1, 1, "test", "test", Some("test"), None)))
-
-      outputJob should equalTo(
+    "run an analysis" in {
+      await(client.analyse("anaTest1", InputArtifact(1, 1, "test", "test", Some("test"), None))) must equalTo(
         OutputJob(
           id = "AWuYKFatq3Rtqym9DFmL",
           workerId = "anaTest1",
@@ -65,15 +52,15 @@ class CortexClientTest extends PlaySpecification {
           attachment = None,
           organization = "test",
           dataType = "domain",
-//          attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2),
+          //          attributes = Json.obj("tlp" -> 2, "message" -> "0ad6e75a-1a2e-419a-b54a-7a92d6528404", "parameters" -> JsObject.empty, "pap" -> 2),
           None,
           JobType.analyzer
         )
       )
+    }
 
-      val successfulJob = await(client.getReport("XQuYKFert7Rtcvm9DFmT", 0.second))
-
-      successfulJob.report must beSome(
+    "get a report" in {
+      await(client.getReport("XQuYKFert7Rtcvm9DFmT", 0.second)).report must beSome(
         OutputReport(
           summary = Seq(OutputMinireport("info", "test", "data", JsString("test"))),
           success = true,
@@ -131,10 +118,10 @@ class CortexClientTest extends PlaySpecification {
           input = None
         )
       )
+    }
 
-      val searchedResponder: OutputWorker = await(client.getResponderByName("respTest1"))
-
-      searchedResponder should equalTo(
+    "get responder by its name" in {
+      await(client.getResponderByName("respTest1")) must equalTo(
         OutputWorker(
           id = "respTest1",
           name = "respTest1",
@@ -145,10 +132,10 @@ class CortexClientTest extends PlaySpecification {
           maxTlp = 2
         )
       )
+    }
 
-      val responder = await(client.getResponder("respTest2"))
-
-      responder should equalTo(
+    "get responder by its id" in {
+      await(client.getResponder("respTest2")) must equalTo(
         OutputWorker(
           id = "respTest2",
           name = "respTest2",
@@ -159,14 +146,14 @@ class CortexClientTest extends PlaySpecification {
           maxTlp = 2
         )
       )
+    }
 
-      val analyzersByType = await(client.listAnalyzersByType("test"))
+    "list analyzers by type" in {
+      await(client.listAnalyzersByType("test")).length must beEqualTo(2)
+    }
 
-      analyzersByType.length shouldEqual 2
-
-      val responders = await(client.searchResponders(Json.obj("query" -> Json.obj())))
-
-      responders.length must beGreaterThan(0)
+    "list all responders" in {
+      await(client.searchResponders(Json.obj("query" -> Json.obj()))).length must beEqualTo(2)
     }
   }
 }

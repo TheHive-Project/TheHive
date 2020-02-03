@@ -131,7 +131,7 @@ class MispClient(
 
   def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
     val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
-    logger.debug(s"Search MISP events")
+    logger.debug("Search MISP events")
     Source
       .futureSource(postStream("events/index", query))
       .via(JsonFraming.objectScanner(Int.MaxValue))

@@ -26,7 +26,7 @@ import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecu
 import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   override def configure(): Unit = {
 //    bind[UserSrv].to[LocalUserSrv]

@@ -12,14 +12,13 @@ import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
-import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
+import org.thp.thehive.connector.cortex.services.JobSteps
 import org.thp.thehive.controllers.v0._
 import org.thp.thehive.services.ObservableSteps
 
 @Singleton
 class CortexQueryExecutor @Inject() (
     jobCtrl: JobCtrl,
-    jobSrv: JobSrv,
     queryCtrlBuilder: QueryCtrlBuilder,
     implicit val db: Database,
     reportCtrl: AnalyzerTemplateCtrl,

@@ -30,7 +30,7 @@ class ObservableCtrl @Inject() (
 ) extends QueryableCtrl
     with ObservableRenderer {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "observable"
   override val publicProperties: List[PublicProperty[_, _]] = properties.observable ::: metaProperties[ObservableSteps]
   override val initialQuery: Query =
@@ -47,7 +47,7 @@ class ObservableCtrl @Inject() (
         observableSteps
           .richPage(from, to, withTotal = true) {
             case o if withStats =>
-              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph))
+              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext))
             case o =>
               o.richObservable.map(_ -> JsObject.empty)
           }
@@ -118,7 +118,7 @@ class ObservableCtrl @Inject() (
           .visible
           .similar
           .visible
-          .richObservableWithCustomRenderer(observableLinkRenderer(db, graph))
+          .richObservableWithCustomRenderer(observableLinkRenderer)
           .toList
           .map {
             case (org, parent) => org.toJson.as[JsObject] ++ parent

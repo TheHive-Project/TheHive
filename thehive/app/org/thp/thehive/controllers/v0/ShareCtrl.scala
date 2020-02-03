@@ -24,8 +24,7 @@ class ShareCtrl @Inject() (
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
-    profileSrv: ProfileSrv,
-    userSrv: UserSrv
+    profileSrv: ProfileSrv
 ) {
 
   def shareCase(caseId: String): Action[AnyContent] =

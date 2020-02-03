@@ -25,14 +25,13 @@ class CaseCtrl @Inject() (
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    taskSrv: TaskSrv,
     tagSrv: TagSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl
     with CaseRenderer {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "case"
   override val publicProperties: List[PublicProperty[_, _]] = properties.`case` ::: metaProperties[CaseSteps]
   override val initialQuery: Query =

@@ -1,56 +1,62 @@
 import Dependencies._
 
-lazy val scala212               = "2.12.8"
-lazy val scala213               = "2.13.0"
+lazy val scala212               = "2.12.10"
+lazy val scala213               = "2.13.1"
 lazy val supportedScalaVersions = List(scala212, scala213)
-lazy val commonSettings = Seq(
-  organization := "org.thp",
-  scalaVersion := scala212,
-  crossScalaVersions := supportedScalaVersions,
-  resolvers ++= Seq(
-    Resolver.mavenLocal,
-    "Oracle Released Java Packages" at "https://download.oracle.com/maven",
-    "TheHive project repository" at "https://dl.bintray.com/thehive-project/maven/"
-  ),
-  scalacOptions ++= Seq(
-    "-encoding",
-    "UTF-8",
-    "-deprecation",         // Emit warning and location for usages of deprecated APIs.
-    "-feature",             // Emit warning and location for usages of features that should be imported explicitly.
-    "-unchecked",           // Enable additional warnings where generated code depends on assumptions.
-    "-Xlint",               // Enable recommended additional warnings.
-    "-Ywarn-numeric-widen", // Warn when numerics are widened.
-    "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
-    //"-Xfatal-warnings",   // Fail the compilation if there are any warnings.
-    //"-Ywarn-adapted-args",// Warn if an argument list is modified to match the receiver.
-    //"-Ywarn-dead-code",   // Warn when dead code is identified.
-    //"-Ywarn-inaccessible",// Warn about inaccessible types in method signatures.
-    //"-Ywarn-nullary-override",// Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
-    //"-Ylog-classpath",
-    //"-Xlog-implicits",
-    //"-Yshow-trees-compact",
-    //"-Yshow-trees-stringified",
-    //"-Ymacro-debug-lite",
-    "-Xlog-free-types",
-    "-Xlog-free-terms",
-    "-Xprint-types"
-  ),
-  fork in Test := true,
-  javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-Xss1M", "-XX:+CMSClassUnloadingEnabled", "-XX:MaxPermSize=256M", "-XX:MaxMetaspaceSize=512m"),
-  scalafmtConfig := file(".scalafmt.conf"),
-  scalacOptions ++= {
-    CrossVersion.partialVersion((Compile / scalaVersion).value) match {
-      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
-      case _                       => Nil
-    }
-  },
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => Nil
-      case _                       => compilerPlugin(macroParadise) :: Nil
-    }
-  }
+
+organization in ThisBuild := "org.thp"
+scalaVersion in ThisBuild := scala212
+crossScalaVersions in ThisBuild := supportedScalaVersions
+resolvers in ThisBuild ++= Seq(
+  Resolver.mavenLocal,
+  "Oracle Released Java Packages" at "https://download.oracle.com/maven",
+  "TheHive project repository" at "https://dl.bintray.com/thehive-project/maven/"
 )
+scalacOptions in ThisBuild ++= Seq(
+  "-encoding",
+  "UTF-8",
+  "-deprecation",         // Emit warning and location for usages of deprecated APIs.
+  "-feature",             // Emit warning and location for usages of features that should be imported explicitly.
+  "-unchecked",           // Enable additional warnings where generated code depends on assumptions.
+  "-Xlint",               // Enable recommended additional warnings.
+  "-Ywarn-numeric-widen", // Warn when numerics are widened.
+  "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
+  //"-Xfatal-warnings",   // Fail the compilation if there are any warnings.
+  //"-Ywarn-adapted-args",// Warn if an argument list is modified to match the receiver.
+  //"-Ywarn-dead-code",   // Warn when dead code is identified.
+  //"-Ywarn-inaccessible",// Warn about inaccessible types in method signatures.
+  //"-Ywarn-nullary-override",// Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
+  //"-Ylog-classpath",
+  //"-Xlog-implicits",
+  //"-Yshow-trees-compact",
+  //"-Yshow-trees-stringified",
+  //"-Ymacro-debug-lite",
+  "-Xlog-free-types",
+  "-Xlog-free-terms",
+  "-Xprint-types"
+)
+fork in Test in ThisBuild := true
+javaOptions in ThisBuild ++= Seq(
+  "-Xms512M",
+  "-Xmx2048M",
+  "-Xss1M",
+  "-XX:+CMSClassUnloadingEnabled",
+  "-XX:MaxPermSize=256M",
+  "-XX:MaxMetaspaceSize=512m"
+)
+scalafmtConfig in ThisBuild := file(".scalafmt.conf")
+scalacOptions in ThisBuild ++= {
+  CrossVersion.partialVersion((Compile / scalaVersion).value) match {
+    case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+    case _                       => Nil
+  }
+}
+libraryDependencies in ThisBuild ++= {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, n)) if n >= 13 => Nil
+    case _                       => compilerPlugin(macroParadise) :: Nil
+  }
+}
 
 lazy val scalligraph = (project in file("ScalliGraph"))
   .settings(name := "scalligraph")
@@ -59,7 +65,6 @@ lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore, thehiveCortex, thehiveMisp, thehiveFrontend)
   .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex, thehiveMisp, cortexClient, mispClient)
-  .settings(commonSettings)
   .settings(
     name := "thehive",
     crossScalaVersions := Nil,
@@ -77,13 +82,13 @@ lazy val thehiveCore = (project in file("thehive"))
   .dependsOn(cortexClient % "test -> test")
   .dependsOn(thehiveDto)
   .dependsOn(thehiveClient % Test)
-  .settings(commonSettings)
   .settings(
     name := "thehive-core",
     libraryDependencies ++= Seq(
       chimney,
       guice,
       akkaCluster,
+      akkaClusterTyped,
       akkaClusterTools,
       zip4j,
       ws,
@@ -91,13 +96,15 @@ lazy val thehiveCore = (project in file("thehive"))
       handlebars,
       playMailer,
       playMailerGuice,
-      pbkdf2
+      pbkdf2,
+      commonCodec,
+      scalaGuice,
+      reflections
     )
   )
 
 lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
-  .settings(commonSettings)
   .settings(
     name := "thehive-dto"
   )
@@ -105,7 +112,6 @@ lazy val thehiveDto = (project in file("dto"))
 lazy val thehiveClient = (project in file("client"))
   .dependsOn(thehiveDto)
   .dependsOn(clientCommon)
-  .settings(commonSettings)
   .settings(
     name := "thehive-client",
     libraryDependencies ++= Seq(
@@ -119,7 +125,6 @@ lazy val gruntDev   = taskKey[Unit]("Inject bower dependencies in index.html")
 lazy val gruntBuild = taskKey[Seq[(File, String)]]("Build frontend files")
 
 lazy val thehiveFrontend = (project in file("frontend"))
-  .settings(commonSettings)
   .settings(
     name := "thehive-frontend",
     npm :=
@@ -190,17 +195,16 @@ lazy val thehiveCortex = (project in file("cortex/connector"))
   .dependsOn(cortexClient % "test -> test")
   .dependsOn(thehiveCore % "test -> test")
   .dependsOn(scalligraph % "test -> test")
-  .settings(commonSettings)
   .settings(
     name := "thehive-cortex",
     libraryDependencies ++= Seq(
+      reflections,
       specs % Test
     )
   )
 
 lazy val cortexDto = (project in file("cortex/dto"))
   .dependsOn(scalligraph)
-  .settings(commonSettings)
   .settings(
     name := "cortex-dto",
     libraryDependencies ++= Seq(
@@ -212,14 +216,14 @@ lazy val cortexClient = (project in file("cortex/client"))
   .dependsOn(cortexDto)
   .dependsOn(clientCommon)
   .dependsOn(scalligraph % "test -> test")
-  .settings(commonSettings)
   .settings(
     name := "cortex-client",
     libraryDependencies ++= Seq(
       ws,
-      specs       % Test,
-      playFilters % Test,
-      playMockws  % Test
+      specs            % Test,
+      playFilters      % Test,
+      playMockws       % Test,
+      akkaClusterTyped % Test
     )
   )
 
@@ -227,7 +231,6 @@ lazy val thehiveMisp = (project in file("misp/connector"))
   .dependsOn(thehiveCore)
   .dependsOn(mispClient)
   .dependsOn(thehiveCore % "test -> test")
-  .settings(commonSettings)
   .settings(
     name := "thehive-misp",
     libraryDependencies ++= Seq(
@@ -239,7 +242,6 @@ lazy val thehiveMisp = (project in file("misp/connector"))
 lazy val mispClient = (project in file("misp/client"))
   .dependsOn(scalligraph)
   .dependsOn(clientCommon)
-  .settings(commonSettings)
   .settings(
     name := "misp-client",
     libraryDependencies ++= Seq(
@@ -255,7 +257,6 @@ lazy val thehiveMigration = (project in file("migration"))
   .dependsOn(scalligraph)
   .dependsOn(thehiveCore)
   .dependsOn(thehiveCortex)
-  .settings(commonSettings)
   .settings(
     name := "thehive-migration",
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",

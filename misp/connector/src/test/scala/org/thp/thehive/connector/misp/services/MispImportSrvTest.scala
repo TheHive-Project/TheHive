@@ -10,6 +10,7 @@ import play.api.test.PlaySpecification
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
+import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
@@ -20,6 +21,10 @@ import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
+  override val appConfigure: AppBuilder = super
+    .appConfigure
+    .bindToProvider[TheHiveMispClient, TestMispClientProvider]
+
   "MISP client" should {
     "get current user name" in testApp { app =>
       await(app[TheHiveMispClient].getCurrentUser) must beEqualTo(User("1", "1", "admin@admin.test"))
@@ -63,8 +68,9 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
   }
 
   "MISP service " should {
+    // FIXME sometimes it fails ?!
     "import events" in testApp { app =>
-      await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
+      val x = await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
       app[Database].roTransaction { implicit graph =>
         app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").getOrFail()

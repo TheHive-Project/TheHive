@@ -13,12 +13,11 @@ import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{ConfigSrv, UserConfigContext}
+import org.thp.thehive.services.UserConfigContext
 
 @Singleton
 class ConfigCtrl @Inject() (
     appConfig: ApplicationConfig,
-    configSrv: ConfigSrv,
     userConfigContext: UserConfigContext,
     entryPoint: EntryPoint,
     db: Database

@@ -2,12 +2,13 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
 
 import gremlin.scala.Graph
 import javax.inject.Inject
+import org.thp.scalligraph.InternalError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.steps.StepsOps._
@@ -50,7 +51,7 @@ class ActionOperationSrv @Inject() (
     operation match {
       case AddTagToCase(tag) =>
         for {
-          c <- Try(relatedCase.get)
+          c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddTagToCase without case")))(Success(_))
           _ <- caseSrv.addTags(c, Set(tag))
         } yield updateOperation(operation)
 
@@ -62,7 +63,7 @@ class ActionOperationSrv @Inject() (
 
       case CreateTask(title, description) =>
         for {
-          case0        <- Try(relatedCase.get)
+          case0        <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action CreateTask without case")))(Success(_))
           createdTask  <- taskSrv.create(InputTask(title = title, description = Some(description)).toTask, None)
           organisation <- organisationSrv.getOrFail(authContext.organisation)
           _            <- shareSrv.shareTask(createdTask, case0, organisation)
@@ -70,13 +71,13 @@ class ActionOperationSrv @Inject() (
 
       case AddCustomFields(name, _, value) =>
         for {
-          c <- Try(relatedCase.get)
+          c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
           _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))
         } yield updateOperation(operation)
 
       case CloseTask() =>
         for {
-          t <- Try(relatedTask.get)
+          t <- relatedTask.fold[Try[Task with Entity]](Failure(InternalError("Unable to apply action CloseTask without task")))(Success(_))
           _ <- taskSrv.get(t).update("status" -> TaskStatus.Completed)
         } yield updateOperation(operation)
 
@@ -88,19 +89,19 @@ class ActionOperationSrv @Inject() (
 
       case AddLogToTask(content, _) =>
         for {
-          t <- Try(relatedTask.get)
+          t <- relatedTask.fold[Try[Task with Entity]](Failure(InternalError("Unable to apply action AddLogToTask without task")))(Success(_))
           _ <- logSrv.create(Log(content, new Date(), deleted = false), t)
         } yield updateOperation(operation)
 
       case AddArtifactToCase(_, dataType, dataMessage) =>
         for {
-          c       <- Try(relatedCase.get)
+          c       <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
           obsType <- observableTypeSrv.getOrFail(dataType)
           richObservable <- observableSrv.create(
             Observable(Some(dataMessage), 2, ioc = false, sighted = false),
             obsType,
             dataMessage,
-            Set[String](),
+            Set.empty[String],
             Nil
           )
           _ <- caseSrv.addObservable(c, richObservable)
@@ -108,7 +109,7 @@ class ActionOperationSrv @Inject() (
 
       case AssignCase(owner) =>
         for {
-          c <- Try(relatedCase.get)
+          c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AssignCase without case")))(Success(_))
           u <- userSrv.get(owner).getOrFail()
           _ <- Try(caseSrv.initSteps.get(c._id).unassign())
           _ <- caseSrv.assign(c, u)

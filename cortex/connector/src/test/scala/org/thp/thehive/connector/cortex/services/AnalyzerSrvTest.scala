@@ -2,13 +2,28 @@ package org.thp.thehive.connector.cortex.services
 
 import play.api.test.PlaySpecification
 
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputWorker
+import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Permissions
 
 class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
+  override val databaseName: String = "thehiveCortex"
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+      .`override`(
+        _.bindActor[CortexActor]("cortex-actor")
+          .bindToProvider[CortexClient, TestCortexClientProvider]
+          .bind[Connector, TestConnector]
+          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+      )
+
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   "analyzer service" should {

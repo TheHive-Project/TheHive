@@ -45,10 +45,7 @@ class DashboardCtrl @Inject() (
       .extract("dashboard", FieldsParser[InputDashboard])
       .authTransaction(db) { implicit request => implicit graph =>
         val dashboard: InputDashboard = request.body("dashboard")
-        for {
-          organisation     <- organisationSrv.current.getOrFail()
-          createdDashboard <- dashboardSrv.create(dashboard.toDashboard, organisation)
-        } yield Results.Created(createdDashboard.toJson)
+        dashboardSrv.create(dashboard.toDashboard).map(d => Results.Created(d.toJson))
       }
 
   def get(dashboardId: String): Action[AnyContent] =
@@ -59,9 +56,7 @@ class DashboardCtrl @Inject() (
           .visible
           .richDashboard
           .getOrFail()
-          .map { dashboard =>
-            Results.Ok(dashboard.toJson)
-          }
+          .map(dashboard => Results.Ok(dashboard.toJson))
       }
 
   def update(dashboardId: String): Action[AnyContent] =

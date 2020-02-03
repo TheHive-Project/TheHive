@@ -73,7 +73,7 @@ class ShareSrv @Inject() (
   }
 
   def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_))
+    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
 
   def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {

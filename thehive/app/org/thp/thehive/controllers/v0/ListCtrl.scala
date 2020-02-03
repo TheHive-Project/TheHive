@@ -29,7 +29,7 @@ class ListCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: 
         val result = listName match {
           case "list_artifactDataType" =>
             val objectTypes = observableTypeSrv.initialValues.toList.map { ot =>
-              val id = Hasher("MD5").fromString(ot.name).head.toString
+              val id = Hasher("MD5").fromString(ot.name).head.toString // this Traversable.head can't fail
               id -> JsString(ot.name)
             }
             JsObject(objectTypes.toMap)
