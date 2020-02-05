@@ -12,6 +12,8 @@ object Dependencies {
   lazy val akkaCluster             = "com.typesafe.akka"        %% "akka-cluster"                       % akkaVersion
   lazy val akkaClusterTools        = "com.typesafe.akka"        %% "akka-cluster-tools"                 % akkaVersion
   lazy val akkaClusterTyped        = "com.typesafe.akka"        %% "akka-cluster-typed"                 % akkaVersion
+  lazy val akkaHttp                = "com.typesafe.akka"        %% "akka-http"                          % "10.1.11"
+  lazy val akkaHttpXml             = "com.typesafe.akka"        %% "akka-http-xml"                      % "10.1.11"
   lazy val janusGraph              = "org.janusgraph"           % "janusgraph-core"                     % janusVersion
   lazy val janusGraphBerkeleyDB    = "org.janusgraph"           % "janusgraph-berkeleyje"               % janusVersion
   lazy val janusGraphHBase         = "org.janusgraph"           % "janusgraph-hbase"                    % janusVersion
