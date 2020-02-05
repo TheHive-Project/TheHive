@@ -67,6 +67,12 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
     if (linkExists(fromOrg, toOrg)) Success(())
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
 
+  def doubleLink(org1: Organisation with Entity, org2: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
+    for {
+      _ <- link(org1, org2)
+      _ <- link(org2, org1)
+    } yield ()
+
   def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
     Success(
       get(fromOrg)
@@ -74,6 +80,11 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
         .filter(_.otherV().hasId(toOrg._id))
         .remove()
     )
+
+  def doubleUnlink(org1: Organisation with Entity, org2: Organisation with Entity)(implicit graph: Graph): Try[Unit] = {
+    unlink(org1, org2) // can't fail
+    unlink(org2, org1)
+  }
 
   def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[String])(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
     val (orgToAdd, orgToRemove) = get(fromOrg)
@@ -85,8 +96,8 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }
     for {
-      _ <- orgToAdd.toTry(getOrFail(_).flatMap(link(fromOrg, _)))
-      _ <- orgToRemove.toTry(getOrFail(_).flatMap(unlink(fromOrg, _)))
+      _ <- orgToAdd.toTry(getOrFail(_).flatMap(doubleLink(fromOrg, _)))
+      _ <- orgToRemove.toTry(getOrFail(_).flatMap(doubleUnlink(fromOrg, _)))
     } yield ()
   }
 }

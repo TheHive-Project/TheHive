@@ -103,7 +103,7 @@ class OrganisationCtrl @Inject() (
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
           toOrg   <- organisationSrv.getOrFail(toOrganisationId)
-          _       <- organisationSrv.link(fromOrg, toOrg)
+          _       <- organisationSrv.doubleLink(fromOrg, toOrg)
         } yield Results.Created
       }
 
@@ -125,7 +125,7 @@ class OrganisationCtrl @Inject() (
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
           toOrg   <- organisationSrv.getOrFail(toOrganisationId)
-          _ <- if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.unlink(fromOrg, toOrg))
+          _ <- if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.doubleUnlink(fromOrg, toOrg))
           else Failure(NotFoundError(s"Organisation $fromOrganisationId is not linked to $toOrganisationId"))
         } yield Results.NoContent
       }
