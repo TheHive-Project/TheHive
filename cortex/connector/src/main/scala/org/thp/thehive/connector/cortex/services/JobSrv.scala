@@ -249,7 +249,7 @@ class JobSrv @Inject() (
         val file = Files.createTempFile(s"job-cortex-${attachment.id}", "")
         (for {
           src <- cortexClient.getAttachment(attachment.id)
-          s   <- src.runWith(FileIO.toPath(file))
+          _   <- src.runWith(FileIO.toPath(file))
           fFile = FFile(attachment.name.getOrElse(attachment.id), file, attachment.contentType.getOrElse("application/octet-stream"))
           savedAttachment <- Future.fromTry {
             db.tryTransaction { implicit graph =>

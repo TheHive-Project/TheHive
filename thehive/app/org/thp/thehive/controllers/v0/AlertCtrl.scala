@@ -36,7 +36,7 @@ class AlertCtrl @Inject() (
     val userSrv: UserSrv,
     val caseSrv: CaseSrv
 ) extends QueryableCtrl {
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "alert"
   override val publicProperties: List[PublicProperty[_, _]] = properties.alert ::: metaProperties[AlertSteps]
   override val initialQuery: Query =

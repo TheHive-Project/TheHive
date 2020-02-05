@@ -37,7 +37,7 @@ class DescribeCtrl @Inject() (
     applicationConfig: ApplicationConfig
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   val cacheExpireConfig: ConfigItem[Duration, Duration] =
     applicationConfig.item[Duration]("describe.cache.expire", "Custom fields refresh in describe")

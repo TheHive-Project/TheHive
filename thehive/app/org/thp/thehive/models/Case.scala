@@ -132,7 +132,7 @@ object RichCase {
       customFields: Seq[RichCustomField],
       userPermissions: Set[Permission]
   ): RichCase = {
-    val `case` = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
+    val `case`: Case with Entity = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
       override val _id: String                = __id
       override val _model: Model              = Model.vertex[Case]
       override val _createdBy: String         = __createdBy

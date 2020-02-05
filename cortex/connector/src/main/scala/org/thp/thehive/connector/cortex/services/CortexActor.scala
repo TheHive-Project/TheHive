@@ -32,7 +32,7 @@ object CortexActor {
 class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
   import CortexActor._
   implicit val ec: ExecutionContext = context.dispatcher
-  lazy val logger                   = Logger(getClass)
+  lazy val logger: Logger           = Logger(getClass)
 
   def receive: Receive = receive(Nil, 0)
 

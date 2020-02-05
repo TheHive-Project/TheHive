@@ -22,7 +22,7 @@ class ResponderSrv @Inject() (
     implicit val ec: ExecutionContext
 ) {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   /**
     * Gets a list of OutputCortexWorker from all available CortexClients

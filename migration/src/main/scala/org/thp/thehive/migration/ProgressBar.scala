@@ -1,5 +1,5 @@
 package org.thp.thehive.migration
-import java.io.{ PrintWriter, StringWriter }
+import java.io.{PrintWriter, StringWriter}
 
 import scala.util.Try
 
@@ -9,7 +9,7 @@ class ProgressBar(terminal: Terminal, message: String, max: Int) {
   private var isDisplayed   = false
   private var current: Long = 0
   private val isTTY         = Try(terminal.getWidth()).isSuccess
-  lazy val logger           = Logger(getClass)
+  lazy val logger: Logger   = Logger(getClass)
 
   def inc(increment: Int = 1, extraMessage: String = ""): Unit = {
     current += increment

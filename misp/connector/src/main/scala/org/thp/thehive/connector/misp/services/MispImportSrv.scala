@@ -236,7 +236,7 @@ class MispImportSrv @Inject() (
         logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
         val file = Files.createTempFile("misp-attachment-", "")
         (for {
-          r <- src.runWith(FileIO.toPath(file))
+          _ <- src.runWith(FileIO.toPath(file))
           fFile = FFile(filename, file, contentType)
           createdObservable <- Future.fromTry {
             db.tryTransaction { implicit graph =>

@@ -13,9 +13,9 @@ import org.thp.thehive.models.ImpactStatus
 import scala.util.Try
 
 object ImpactStatusSrv {
-  val noImpact      = ImpactStatus("NoImpact")
-  val withImpact    = ImpactStatus("WithImpact")
-  val notApplicable = ImpactStatus("NotApplicable")
+  val noImpact: ImpactStatus      = ImpactStatus("NoImpact")
+  val withImpact: ImpactStatus    = ImpactStatus("WithImpact")
+  val notApplicable: ImpactStatus = ImpactStatus("NotApplicable")
 
 }
 

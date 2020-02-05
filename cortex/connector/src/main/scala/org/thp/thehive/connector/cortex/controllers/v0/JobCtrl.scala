@@ -29,7 +29,7 @@ class JobCtrl @Inject() (
     errorHandler: ErrorHandler,
     implicit val ec: ExecutionContext
 ) extends QueryableCtrl {
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "job"
   override val publicProperties: List[PublicProperty[_, _]] = properties.job
   override val initialQuery: Query =

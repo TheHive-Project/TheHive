@@ -24,12 +24,13 @@ class Connector @Inject() (
 ) extends TheHiveConnector {
   override val name: String = "cortex"
 
-  val clientsConfig                = appConfig.mapItem[Seq[CortexClientConfig], Seq[CortexClient]]("cortex.servers", "", _.map(new CortexClient(_, mat, ec)))
-  def clients: Seq[CortexClient]   = clientsConfig.get
-  val refreshDelayConfig           = appConfig.item[FiniteDuration]("cortex.refreshDelay", "")
-  def refreshDelay: FiniteDuration = refreshDelayConfig.get
-  val maxRetryOnErrorConfig        = appConfig.item[Int]("cortex.maxRetryOnError", "")
-  def maxRetryOnError: Int         = maxRetryOnErrorConfig.get
+  val clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]] =
+    appConfig.mapItem[Seq[CortexClientConfig], Seq[CortexClient]]("cortex.servers", "", _.map(new CortexClient(_, mat, ec)))
+  def clients: Seq[CortexClient]                                     = clientsConfig.get
+  val refreshDelayConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig.item[FiniteDuration]("cortex.refreshDelay", "")
+  def refreshDelay: FiniteDuration                                   = refreshDelayConfig.get
+  val maxRetryOnErrorConfig: ConfigItem[Int, Int]                    = appConfig.item[Int]("cortex.maxRetryOnError", "")
+  def maxRetryOnError: Int                                           = maxRetryOnErrorConfig.get
 
   val statusCheckIntervalConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("cortex.statusCheckInterval", "Interval between two checks of cortex status")

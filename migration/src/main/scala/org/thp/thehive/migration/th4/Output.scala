@@ -272,6 +272,7 @@ class Output @Inject() (
         caseTemplate = inputAlert.caseTemplate.flatMap(caseTemplateSrv.get(_).headOption()) // TODO add warning if case template is not found
         alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
         case0 <- inputAlert.caseId.map(caseSrv.getOrFail(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
+        // TODO add link between case and alert
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
 

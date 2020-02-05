@@ -26,7 +26,7 @@ class CaseTemplateCtrl @Inject() (
     auditSrv: AuditSrv
 ) extends QueryableCtrl {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "caseTemplate"
   override val publicProperties: List[PublicProperty[_, _]] = properties.caseTemplate ::: metaProperties[CaseTemplateSteps]
   override val initialQuery: Query =

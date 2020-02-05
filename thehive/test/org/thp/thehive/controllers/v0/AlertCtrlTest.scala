@@ -274,7 +274,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     observables must contain(
       exactly(
         beLike[RichObservable] {
-          case RichObservable(obs, tpe, Some(data), None, tags, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
+          case RichObservable(_, tpe, Some(data), None, _, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
         } /*,
         beLike[RichObservable] {
           case RichObservable(obs, tpe, None, Some(attachment), tags, _, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
@@ -318,13 +318,12 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       val result1 = app[AlertCtrl].delete("testType;testSource;ref4")(request1)
 
       status(result1) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result1)}")
-      app[Database].roTransaction(
-        graph =>
-          app[ObservableSrv]
-            .initSteps(graph)
-            .has("message", "if you are lost")
-            .alert
-            .getOrFail() must beFailedTry
+      app[Database].roTransaction(graph =>
+        app[ObservableSrv]
+          .initSteps(graph)
+          .has("message", "if you are lost")
+          .alert
+          .getOrFail() must beFailedTry
       )
     }
   }

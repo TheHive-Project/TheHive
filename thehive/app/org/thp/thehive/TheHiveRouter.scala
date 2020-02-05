@@ -19,7 +19,7 @@ class TheHiveRouter @Inject() (
     actionBuilder: DefaultActionBuilder
 ) extends Provider[Router] {
 
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
   lazy val get: Router = routerV1.withPrefix("/api/v1/") orElse
     routerV0.withPrefix("/api/v0/") orElse
     routerV0.withPrefix("/api/") orElse // default version
@@ -36,7 +36,7 @@ class AssetGetter @Inject() (get: String => Action[AnyContent]) {
 }
 
 class AssetProvider @Inject() (environment: Environment, assets: Assets, extAssets: ExternalAssets) extends Provider[AssetGetter] {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   val devResolver: String => Action[AnyContent] = {
     case name if name.startsWith("bower_components") => extAssets.at("frontend", name)

@@ -33,7 +33,7 @@ class MispClient(
     excludedTags: Set[String],
     whitelistTags: Set[String]
 ) {
-  lazy val logger                                      = Logger(getClass)
+  lazy val logger: Logger                              = Logger(getClass)
   val strippedUrl: String                              = baseUrl.replaceFirst("/*$", "")
   private var _currentOrganisationName: Future[String] = getCurrentOrganisationName(ExecutionContext.global)
 

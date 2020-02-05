@@ -102,7 +102,7 @@ class AlertCtrl @Inject() (
           .map(_ => Results.NoContent)
       }
 
-  def mergeWithCase(alertId: String, caseId: String) = ???
+//  def mergeWithCase(alertId: String, caseId: String) = ???
 
   def markAsRead(alertId: String): Action[AnyContent] =
     entryPoint("mark alert as read")

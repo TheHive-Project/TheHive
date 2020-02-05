@@ -17,7 +17,7 @@ import scala.util.{Success, Try}
 import org.thp.scalligraph.RichSeq
 
 object OrganisationSrv {
-  val administration = Organisation("admin", "organisation for administration")
+  val administration: Organisation = Organisation("admin", "organisation for administration")
 }
 
 @Singleton

@@ -27,7 +27,7 @@ class TaskCtrl @Inject() (
     shareSrv: ShareSrv
 ) extends QueryableCtrl {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "task"
   override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =

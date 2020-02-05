@@ -1,8 +1,8 @@
 package org.thp.client
 
+import play.api.http.HeaderNames
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
-import play.shaded.ahc.io.netty.handler.codec.http.HttpHeaders
 
 trait Authentication {
   def apply(request: WSRequest): WSRequest
@@ -36,7 +36,7 @@ case class PasswordAuthentication(username: String, password: String) extends Au
 }
 
 case class KeyAuthentication(key: String, prefix: String) extends Authentication {
-  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HttpHeaders.Names.AUTHORIZATION -> s"$prefix$key")
+  override def apply(request: WSRequest): WSRequest = request.addHttpHeaders(HeaderNames.AUTHORIZATION -> s"$prefix$key")
 }
 
 object NoAuthentication extends Authentication {

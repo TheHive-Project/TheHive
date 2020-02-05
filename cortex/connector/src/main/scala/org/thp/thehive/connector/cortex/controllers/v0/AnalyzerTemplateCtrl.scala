@@ -30,7 +30,7 @@ class AnalyzerTemplateCtrl @Inject() (
     analyzerTemplateSrv: AnalyzerTemplateSrv
 ) extends QueryableCtrl {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "analyzerTemplate"
   override val publicProperties: List[PublicProperty[_, _]] = properties.analyzerTemplate ::: metaProperties[AnalyzerTemplateSteps]
   override val initialQuery: Query =

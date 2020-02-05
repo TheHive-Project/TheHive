@@ -30,7 +30,7 @@ class ObservableCtrl @Inject() (
 ) extends QueryableCtrl
     with ObservableRenderer {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "observable"
   override val publicProperties: List[PublicProperty[_, _]] = properties.observable ::: metaProperties[ObservableSteps]
   override val initialQuery: Query =

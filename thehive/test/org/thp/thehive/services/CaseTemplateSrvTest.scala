@@ -50,7 +50,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
     "add a task to a template" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          richTask     <- app[TaskSrv].create(Task("t1", "default", None, TaskStatus.Waiting, false, None, None, 1, None), None)
+          richTask     <- app[TaskSrv].create(Task("t1", "default", None, TaskStatus.Waiting, flag = false, None, None, 1, None), None)
           caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
           _            <- app[CaseTemplateSrv].addTask(caseTemplate, richTask.task)
         } yield ()

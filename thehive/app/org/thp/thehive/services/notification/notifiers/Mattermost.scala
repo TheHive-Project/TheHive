@@ -49,7 +49,7 @@ class MattermostProvider @Inject() (appConfig: ApplicationConfig, ws: WSClient, 
 class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, baseUrl: String, implicit val ec: ExecutionContext)
     extends Notifier
     with Template {
-  lazy val logger           = Logger(getClass)
+  lazy val logger: Logger   = Logger(getClass)
   override val name: String = "Mattermost"
 
   def execute(

@@ -12,11 +12,11 @@ import org.thp.client.{ApplicationError, Authentication, BaseClient}
 import org.thp.thehive.dto.v1._
 
 class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
-  lazy val logger  = Logger(getClass)
-  val `case`       = new BaseClient[InputCase, OutputCase](s"$baseUrl/api/v1/case")
-  val user         = new BaseClient[InputUser, OutputUser](s"$baseUrl/api/v1/user")
-  val customFields = new BaseClient[InputCustomField, OutputCustomField](s"$baseUrl/api/v1/customField")
-  val organisation = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
+  lazy val logger: Logger = Logger(getClass)
+  val `case`              = new BaseClient[InputCase, OutputCase](s"$baseUrl/api/v1/case")
+  val user                = new BaseClient[InputUser, OutputUser](s"$baseUrl/api/v1/user")
+  val customFields        = new BaseClient[InputCustomField, OutputCustomField](s"$baseUrl/api/v1/customField")
+  val organisation        = new BaseClient[InputOrganisation, OutputOrganisation](s"$baseUrl/api/v1/organisation")
 //  val share        = new BaseClient[InputShare, OutputShare](s"$baseUrl/api/v1/share")
   val task  = new BaseClient[InputTask, OutputTask](s"$baseUrl/api/v1/task")
   val alert = new BaseClient[InputAlert, OutputAlert](s"$baseUrl/api/v1/alert")

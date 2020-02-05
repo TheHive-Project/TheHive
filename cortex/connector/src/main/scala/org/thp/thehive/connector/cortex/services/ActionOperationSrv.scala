@@ -29,7 +29,7 @@ class ActionOperationSrv @Inject() (
     userSrv: UserSrv,
     shareSrv: ShareSrv
 ) {
-  private[ActionOperationSrv] lazy val logger = Logger(getClass)
+  private[ActionOperationSrv] lazy val logger: Logger = Logger(getClass)
 
   /**
     * Executes an operation from Cortex responder

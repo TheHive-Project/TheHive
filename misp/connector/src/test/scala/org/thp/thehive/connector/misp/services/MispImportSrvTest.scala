@@ -70,7 +70,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
   "MISP service " should {
     // FIXME sometimes it fails ?!
     "import events" in testApp { app =>
-      val x = await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
+      await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
       app[Database].roTransaction { implicit graph =>
         app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").getOrFail()

@@ -24,7 +24,7 @@ class LogCtrl @Inject() (
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl {
 
-  lazy val logger                                           = Logger(getClass)
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "log"
   override val publicProperties: List[PublicProperty[_, _]] = properties.log ::: metaProperties[LogSteps]
   override val initialQuery: Query =

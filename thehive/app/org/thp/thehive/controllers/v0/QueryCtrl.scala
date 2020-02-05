@@ -38,7 +38,7 @@ trait QueryableCtrl {
 }
 
 class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
   val filterQuery: FilterQuery                     = new FilterQuery(db, publicProperties)

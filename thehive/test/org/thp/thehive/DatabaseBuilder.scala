@@ -21,7 +21,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 
 @Singleton
-class DatabaseBuilder @Inject()(
+class DatabaseBuilder @Inject() (
     schema: Schema,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
@@ -50,7 +50,7 @@ class DatabaseBuilder @Inject()(
 
   def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
 
-    lazy val logger = Logger(getClass)
+    lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
     db.createSchemaFrom(schema)
     db.tryTransaction { implicit graph =>

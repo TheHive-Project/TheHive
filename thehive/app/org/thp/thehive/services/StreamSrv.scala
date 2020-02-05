@@ -49,7 +49,7 @@ class StreamActor(
 ) extends Actor {
   import context.dispatcher
 
-  lazy val logger = Logger(s"${getClass.getName}.$self")
+  lazy val logger: Logger = Logger(s"${getClass.getName}.$self")
 
   override def receive: Receive = {
     val keepAliveTimer = context.system.scheduler.scheduleOnce(keepAlive, self, PoisonPill)
@@ -143,7 +143,7 @@ class StreamSrv @Inject() (
     implicit val ec: ExecutionContext
 ) {
 
-  lazy val logger                              = Logger(getClass)
+  lazy val logger: Logger                      = Logger(getClass)
   val streamLength                             = 20
   val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
 

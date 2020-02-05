@@ -13,11 +13,11 @@ import org.thp.thehive.models.ResolutionStatus
 import scala.util.Try
 
 object ResolutionStatusSrv {
-  val indeterminate = ResolutionStatus("Indeterminate")
-  val falsePositive = ResolutionStatus("FalsePositive")
-  val truePositive  = ResolutionStatus("TruePositive")
-  val other         = ResolutionStatus("Other")
-  val duplicated    = ResolutionStatus("Duplicated")
+  val indeterminate: ResolutionStatus = ResolutionStatus("Indeterminate")
+  val falsePositive: ResolutionStatus = ResolutionStatus("FalsePositive")
+  val truePositive: ResolutionStatus  = ResolutionStatus("TruePositive")
+  val other: ResolutionStatus         = ResolutionStatus("Other")
+  val duplicated: ResolutionStatus    = ResolutionStatus("Duplicated")
 }
 
 @Singleton

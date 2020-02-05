@@ -14,7 +14,7 @@ import org.thp.thehive.connector.cortex.services.{Connector, CortexActor}
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 
 class CortexModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   override def configure(): Unit = {
     val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)

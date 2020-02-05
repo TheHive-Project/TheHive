@@ -224,8 +224,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           c3 <- app[CaseSrv].get("#3").getOrFail()
-          existingTags = app[CaseSrv].get(c3).tags.toList.map(_.toString)
-          _ <- app[CaseSrv].updateTagNames(c3, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
+          _  <- app[CaseSrv].updateTagNames(c3, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
         } yield app[CaseSrv].get(c3).tags.toList.map(_.toString)
       } must beASuccessfulTry.which { tags =>
         tags must contain(exactly("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
