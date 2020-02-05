@@ -16,10 +16,12 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.http.ElasticDsl.{bool, search, termQuery}
+import com.sksamuel.elastic4s.ElasticDate
+import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, rangeQuery, search, termQuery}
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
+import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services.{ImpactStatusSrv, OrganisationSrv, ProfileSrv, ResolutionStatusSrv, UserSrv}
@@ -86,7 +88,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         .recover { case _ => None }
     }
 
-  override def listOrganisations: Source[InputOrganisation, NotUsed] =
+  override def listOrganisations(filter: Filter): Source[InputOrganisation, NotUsed] =
     Source(
       List(
         InputOrganisation(MetaData("thehive", "system", new Date, None, None), OrganisationSrv.administration),
@@ -94,34 +96,71 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       )
     )
 
-  override def listCases: Source[InputCase, NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case")))
-      ._1
+  override def listCases(filter: Filter): Source[InputCase, NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate))), Nil, Nil))
+    )._1
       .read[InputCase]
 
-  override def listCaseObservables: Source[(String, InputObservable), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_artifact")))
-      ._1
+  override def listCaseObservables(filter: Filter): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact"),
+            hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false)
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
       .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
 
-  override def listCaseTasks: Source[(String, InputTask), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_task")))
-      ._1
+  override def listCaseTasks(filter: Filter): Source[(String, InputTask), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_task"),
+            hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false)
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
       .readWithParent[InputTask](json => Try((json \ "_parent").as[String]))
 
-  override def listCaseTaskLogs: Source[(String, InputLog), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_task_log")))
-      ._1
+  override def listCaseTaskLogs(filter: Filter): Source[(String, InputLog), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_task_log"),
+            hasParentQuery(
+              "case_task",
+              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
-  override def listAlerts: Source[InputAlert, NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "alert")))
-      ._1
+  override def listAlerts(filter: Filter): Source[InputAlert, NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(ElasticDate(filter.alertFromDate))), Nil, Nil))
+    )._1
       .read[InputAlert]
 
-  override def listAlertObservables: Source[(String, InputObservable), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "alert")))
-      ._1
+  override def listAlertObservables(filter: Filter): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(ElasticDate(filter.alertFromDate))), Nil, Nil))
+    )._1
       .map { json =>
         for {
           metaData        <- json.validate[MetaData]
@@ -148,24 +187,24 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           }.toList
       }
 
-  override def listUsers: Source[InputUser, NotUsed] =
+  override def listUsers(filter: Filter): Source[InputUser, NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "user")))
       ._1
       .read[InputUser]
 
-  override def listCustomFields: Source[InputCustomField, NotUsed] =
+  override def listCustomFields(filter: Filter): Source[InputCustomField, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "custom_fields")), Nil, Nil))
     )._1
       .read[InputCustomField]
 
-  override def listObservableTypes: Source[InputObservableType, NotUsed] =
+  override def listObservableTypes(filter: Filter): Source[InputObservableType, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "list_artifactDataType")), Nil, Nil))
     )._1
       .read[InputObservableType]
 
-  override def listProfiles: Source[InputProfile, NotUsed] =
+  override def listProfiles(filter: Filter): Source[InputProfile, NotUsed] =
     Source(
       List(
         ProfileSrv.admin,
@@ -177,11 +216,11 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       )
     ).map(profile => InputProfile(MetaData(profile.name, UserSrv.init.login, new Date, None, None), profile))
 
-  override def listImpactStatus: Source[InputImpactStatus, NotUsed] =
+  override def listImpactStatus(filter: Filter): Source[InputImpactStatus, NotUsed] =
     Source(List(ImpactStatusSrv.noImpact, ImpactStatusSrv.withImpact, ImpactStatusSrv.notApplicable))
       .map(status => InputImpactStatus(MetaData(status.value, UserSrv.init.login, new Date, None, None), status))
 
-  override def listResolutionStatus: Source[InputResolutionStatus, NotUsed] =
+  override def listResolutionStatus(filter: Filter): Source[InputResolutionStatus, NotUsed] =
     Source(
       List(
         ResolutionStatusSrv.indeterminate,
@@ -192,12 +231,12 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       )
     ).map(status => InputResolutionStatus(MetaData(status.value, UserSrv.init.login, new Date, None, None), status))
 
-  override def listCaseTemplate: Source[InputCaseTemplate, NotUsed] =
+  override def listCaseTemplate(filter: Filter): Source[InputCaseTemplate, NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")))
       ._1
       .read[InputCaseTemplate]
 
-  override def listCaseTemplateTask: Source[(String, InputTask), NotUsed] =
+  override def listCaseTemplateTask(filter: Filter): Source[(String, InputTask), NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")))
       ._1
       .map { json =>
@@ -226,14 +265,42 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           }.toList
       }
 
-  override def listJobs: Source[(String, InputJob), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_artifact_job")))
-      ._1
+  override def listJobs(filter: Filter): Source[(String, InputJob), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact_job"),
+            hasParentQuery(
+              "case_artifact",
+              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
       .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
 
-  override def listJobObservables: Source[(String, InputObservable), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "case_artifact_job")))
-      ._1
+  override def listJobObservables(filter: Filter): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact_job"),
+            hasParentQuery(
+              "case_artifact",
+              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
       .map { json =>
         for {
           metaData        <- json.validate[MetaData]
@@ -260,11 +327,22 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           }.toList
       }
 
-  override def listAction: Source[(String, InputAction), NotUsed] =
+  override def listAction(filter: Filter): Source[(String, InputAction), NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "action")))
       ._1
       .read[(String, InputAction)]
 
-  override def listAudit: Source[(String, InputAudit), NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "audit")))._1.read[(String, InputAudit)]
+  override def listAudit(filter: Filter): Source[(String, InputAudit), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "audit"),
+            rangeQuery("createdAt").gte(ElasticDate(filter.auditFromDate))
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1.read[(String, InputAudit)]
 }

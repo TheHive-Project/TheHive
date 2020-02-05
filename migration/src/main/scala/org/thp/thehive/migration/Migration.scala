@@ -57,35 +57,35 @@ class Migration(input: Input, output: Output, implicit val ec: ExecutionContext,
       }
       .runWith(Sink.seq)
 
-  def process(removeData: Boolean): Future[Unit] = {
+  def process(filter: Filter, removeData: Boolean): Future[Unit] = {
     if (removeData) output.removeData()
     for {
-      profileIds          <- migrate(input.listProfiles, output.createProfile)
-      organisationIds     <- migrate(input.listOrganisations, output.createOrganisation)
-      userIds             <- migrate(input.listUsers, output.createUser)
-      impactStatusIds     <- migrate(input.listImpactStatus, output.createImpactStatus)
-      resolutionStatusIds <- migrate(input.listResolutionStatus, output.createResolutionStatus)
-      customFieldsIds     <- migrate(input.listCustomFields, output.createCustomField)
-      observableTypeIds   <- migrate(input.listObservableTypes, output.createObservableTypes)
-      caseTemplateIds     <- migrate(input.listCaseTemplate, output.createCaseTemplate)
-      caseTemplateTaskIds <- migrateWithParent(caseTemplateIds, input.listCaseTemplateTask, output.createCaseTemplateTask)
-      caseIds             <- migrate(input.listCases, output.createCase)
-      caseObservableIds   <- migrateWithParent(caseIds, input.listCaseObservables, output.createCaseObservable)
-      caseTaskIds         <- migrateWithParent(caseIds, input.listCaseTasks, output.createCaseTask)
-      caseTaskLogIds      <- migrateWithParent(caseTaskIds, input.listCaseTaskLogs, output.createCaseTaskLog)
-      alertIds            <- migrate(input.listAlerts, output.createAlert)
-      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables, output.createAlertObservable)
-      jobIds              <- migrateWithParent(caseObservableIds, input.listJobs, output.createJob)
-      jobObservableIds    <- migrateWithParent(jobIds, input.listJobObservables, output.createJobObservable)
+      profileIds          <- migrate(input.listProfiles(filter), output.createProfile)
+      organisationIds     <- migrate(input.listOrganisations(filter), output.createOrganisation)
+      userIds             <- migrate(input.listUsers(filter), output.createUser)
+      impactStatusIds     <- migrate(input.listImpactStatus(filter), output.createImpactStatus)
+      resolutionStatusIds <- migrate(input.listResolutionStatus(filter), output.createResolutionStatus)
+      customFieldsIds     <- migrate(input.listCustomFields(filter), output.createCustomField)
+      observableTypeIds   <- migrate(input.listObservableTypes(filter), output.createObservableTypes)
+      caseTemplateIds     <- migrate(input.listCaseTemplate(filter), output.createCaseTemplate)
+      caseTemplateTaskIds <- migrateWithParent(caseTemplateIds, input.listCaseTemplateTask(filter), output.createCaseTemplateTask)
+      caseIds             <- migrate(input.listCases(filter), output.createCase)
+      caseObservableIds   <- migrateWithParent(caseIds, input.listCaseObservables(filter), output.createCaseObservable)
+      caseTaskIds         <- migrateWithParent(caseIds, input.listCaseTasks(filter), output.createCaseTask)
+      caseTaskLogIds      <- migrateWithParent(caseTaskIds, input.listCaseTaskLogs(filter), output.createCaseTaskLog)
+      alertIds            <- migrate(input.listAlerts(filter), output.createAlert)
+      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables(filter), output.createAlertObservable)
+      jobIds              <- migrateWithParent(caseObservableIds, input.listJobs(filter), output.createJob)
+      jobObservableIds    <- migrateWithParent(jobIds, input.listJobObservables(filter), output.createJobObservable)
       actionIds <- migrateWithParent(
         caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds,
-        input.listAction,
+        input.listAction(filter),
         output.createAction
       )
       _ <- migrateWithParent(
         profileIds ++ organisationIds ++ userIds ++ impactStatusIds ++ resolutionStatusIds ++ customFieldsIds ++ observableTypeIds ++ caseTemplateIds ++ caseTemplateTaskIds ++
           caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds ++ alertObservableIds ++ jobIds ++ jobObservableIds ++ actionIds,
-        input.listAudit,
+        input.listAudit(filter),
         output.createAudit
       )
     } yield ()
@@ -111,9 +111,11 @@ object Start extends App {
   val output = config.getString("output.name") match {
     case _ => th4.Output(Configuration(config.getConfig("output").withFallback(config)))
   }
+
+  val filter     = Filter.fromConfig(config.getConfig("input.filter"))
   val removeData = config.getBoolean("output.removeData")
 
-  val process = new Migration(input, output, actorSystem.dispatcher, Materializer(actorSystem)).process(removeData)
+  val process = new Migration(input, output, actorSystem.dispatcher, Materializer(actorSystem)).process(filter, removeData)
   Await.ready(process, Duration.Inf)
   System.exit(0)
 }
