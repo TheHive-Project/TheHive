@@ -10,6 +10,7 @@ import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
+import org.thp.thehive.services.ProfileSrv
 
 object Conversion {
   implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
@@ -440,6 +441,8 @@ object Conversion {
       .withFieldConst(_.createdBy, profile._createdBy)
       .withFieldConst(_._type, "profile")
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
+      .withFieldComputed(_.editable, p => p.name != ProfileSrv.admin.name && p.name != ProfileSrv.orgAdmin.name)
+      .withFieldComputed(_.isAdmin, _.permissions.intersect(Permissions.restrictedPermissions).nonEmpty)
       .transform
   )
 

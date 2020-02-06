@@ -221,7 +221,7 @@ trait Conversion {
       password <- (json \ "password").validateOpt[String]
       role     <- (json \ "roles").validate[Seq[String]]
       profile = if (role.contains("admin")) ProfileSrv.admin.name
-      else if (role.contains("write")) ProfileSrv.incidentHandler.name
+      else if (role.contains("write")) ProfileSrv.analyst.name
       else if (role.contains("read")) ProfileSrv.readonly.name
       else ProfileSrv.readonly.name
       avatar = (json \ "avatar")

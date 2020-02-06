@@ -33,7 +33,7 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
       createdOrganisation <- create(organisation)
-      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.all)
+      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
     } yield createdOrganisation
 
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =

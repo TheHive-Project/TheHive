@@ -210,9 +210,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         ProfileSrv.admin,
         ProfileSrv.orgAdmin,
         ProfileSrv.analyst,
-        ProfileSrv.incidentHandler,
-        ProfileSrv.readonly,
-        ProfileSrv.all
+        ProfileSrv.readonly
       )
     ).map(profile => InputProfile(MetaData(profile.name, UserSrv.init.login, new Date, None, None), profile))
 

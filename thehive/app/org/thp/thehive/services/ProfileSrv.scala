@@ -24,30 +24,24 @@ object ProfileSrv {
       Permissions.manageAlert,
       Permissions.manageTask,
       Permissions.manageAction,
-      Permissions.manageAnalyse
+      Permissions.manageAnalyse,
+      Permissions.manageShare
     )
-  )
-
-  val incidentHandler: Profile = Profile(
-    "incident-handler",
-    analyst.permissions + Permissions.manageShare
   )
   val readonly: Profile = Profile("read-only", Set.empty)
   val orgAdmin: Profile = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
-  val all: Profile      = Profile("all", Permissions.all)
+//  val all: Profile      = Profile("all", Permissions.all)
 }
 
 @Singleton
 class ProfileSrv @Inject() (auditSrv: AuditSrv)(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
 
-  lazy val all: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.all.name)(graph)).get
+  lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.orgAdmin.name)(graph)).get
   override val initialValues: Seq[Profile] = Seq(
     ProfileSrv.admin,
     ProfileSrv.orgAdmin,
     ProfileSrv.analyst,
-    ProfileSrv.incidentHandler,
-    ProfileSrv.readonly,
-    ProfileSrv.all
+    ProfileSrv.readonly
   )
 
   def create(profile: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] =
