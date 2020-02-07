@@ -68,6 +68,7 @@ lazy val thehive = (project in file("."))
   .settings(
     name := "thehive",
     crossScalaVersions := Nil,
+    PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend/app").getAbsoluteFile) != 0)),
     PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
     Compile / run := {
       (thehiveFrontend / gruntDev).value
