@@ -6,7 +6,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -17,7 +17,7 @@ import org.thp.thehive.models.{Permissions, Profile}
 import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
 
 @Singleton
-class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
+class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ProfileSteps](
     "getProfile",
@@ -38,7 +38,7 @@ class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: P
   val outputQuery: Query = Query.output[Profile with Entity]()
 
   def create: Action[AnyContent] =
-    entryPoint("create profile")
+    entrypoint("create profile")
       .extract("profile", FieldsParser[InputProfile])
       .authTransaction(db) { implicit request => implicit graph =>
         val profile: InputProfile = request.body("profile")
@@ -49,7 +49,7 @@ class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: P
       }
 
   def get(profileId: String): Action[AnyContent] =
-    entryPoint("get profile")
+    entrypoint("get profile")
       .authRoTransaction(db) { _ => implicit graph =>
         profileSrv
           .getOrFail(profileId)
@@ -59,7 +59,7 @@ class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: P
       }
 
   def update(profileId: String): Action[AnyContent] =
-    entryPoint("update profile")
+    entrypoint("update profile")
       .extract("profile", FieldsParser.update("profile", properties.profile))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("profile")
@@ -73,7 +73,7 @@ class ProfileCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: P
       }
 
   def delete(profileId: String): Action[AnyContent] =
-    entryPoint("delete profile")
+    entrypoint("delete profile")
       .authPermittedTransaction(db, Permissions.manageProfile) { implicit request => implicit graph =>
         profileSrv
           .getOrFail(profileId)

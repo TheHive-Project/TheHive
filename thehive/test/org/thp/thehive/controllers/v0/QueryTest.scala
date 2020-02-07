@@ -4,7 +4,7 @@ import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
 import org.specs2.mock.Mockito
-import org.thp.scalligraph.controllers.{EntryPoint, Field}
+import org.thp.scalligraph.controllers.{Entrypoint, Field}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, QueryExecutor}
 import org.thp.thehive.services.{
@@ -34,7 +34,7 @@ class QueryTest extends PlaySpecification with Mockito {
   )
 
   val taskCtrl = new TaskCtrl(
-    mock[EntryPoint],
+    mock[Entrypoint],
     mock[Database],
     properties,
     mock[TaskSrv],
@@ -50,7 +50,7 @@ class QueryTest extends PlaySpecification with Mockito {
     override lazy val queries: Seq[ParamQuery[_]]                  = Seq(taskCtrl.initialQuery, taskCtrl.pageQuery, taskCtrl.outputQuery)
     override lazy val publicProperties: List[PublicProperty[_, _]] = taskCtrl.publicProperties
   }
-  val queryCtrl: QueryCtrl = new QueryCtrlBuilder(mock[EntryPoint], mock[Database]).apply(taskCtrl, queryExecutor)
+  val queryCtrl: QueryCtrl = new QueryCtrlBuilder(mock[Entrypoint], mock[Database]).apply(taskCtrl, queryExecutor)
 
   "Controller" should {
     "parse stats query" in {

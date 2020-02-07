@@ -17,7 +17,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class TaskCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     taskSrv: TaskSrv,
@@ -52,7 +52,7 @@ class TaskCtrl @Inject() (
   )
 
   def create(caseId: String): Action[AnyContent] =
-    entryPoint("create task")
+    entrypoint("create task")
       .extract("task", FieldsParser[InputTask])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
@@ -66,7 +66,7 @@ class TaskCtrl @Inject() (
       }
 
   def get(taskId: String): Action[AnyContent] =
-    entryPoint("get task")
+    entrypoint("get task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .getByIds(taskId)
@@ -79,7 +79,7 @@ class TaskCtrl @Inject() (
       }
 
   def update(taskId: String): Action[AnyContent] =
-    entryPoint("update task")
+    entrypoint("update task")
       .extract("task", FieldsParser.update("task", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")

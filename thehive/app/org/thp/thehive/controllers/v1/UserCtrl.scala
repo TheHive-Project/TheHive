@@ -4,7 +4,7 @@ import java.util.Base64
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class UserCtrl @Inject() (
-    entrypoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     userSrv: UserSrv,

@@ -9,7 +9,7 @@ import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
@@ -18,7 +18,7 @@ import org.thp.thehive.services.{Connector, UserSrv}
 
 @Singleton
 class StatusCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
     userSrv: UserSrv,
@@ -29,7 +29,7 @@ class StatusCtrl @Inject() (
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
 
   def get: Action[AnyContent] =
-    entryPoint("status") { _ =>
+    entrypoint("status") { _ =>
       Success(
         Results.Ok(
           Json.obj(
@@ -59,7 +59,7 @@ class StatusCtrl @Inject() (
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def health: Action[AnyContent] =
-    entryPoint("health") { _ =>
+    entrypoint("health") { _ =>
       val dbStatus = db
         .roTransaction(graph => userSrv.getOrFail(UserSrv.system.login)(graph))
         .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)

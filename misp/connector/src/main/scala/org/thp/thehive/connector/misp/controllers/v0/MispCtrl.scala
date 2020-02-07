@@ -8,7 +8,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv, MispImportSrv}
@@ -16,7 +16,7 @@ import org.thp.thehive.services.{AlertSrv, CaseSrv}
 
 @Singleton
 class MispCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     mispImportSrv: MispImportSrv,
     mispExportSrv: MispExportSrv,
     alertSrv: AlertSrv,
@@ -27,14 +27,14 @@ class MispCtrl @Inject() (
 ) {
 
   def sync: Action[AnyContent] =
-    entryPoint("sync MISP events")
+    entrypoint("sync MISP events")
       .auth { _ =>
         mispActor ! MispActor.Synchro
         Success(Results.NoContent)
       }
 
   def exportCase(mispId: String, caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("export case into MISP")
+    entrypoint("export case into MISP")
       .asyncAuth { implicit authContext => // TODO check permission
         for {
           c <- Future.fromTry(db.roTransaction { implicit graph =>
@@ -47,7 +47,7 @@ class MispCtrl @Inject() (
       }
 
   def cleanMispAlerts: Action[AnyContent] =
-    entryPoint("clean MISP alerts")
+    entrypoint("clean MISP alerts")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .initSteps

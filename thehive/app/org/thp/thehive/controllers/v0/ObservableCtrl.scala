@@ -20,7 +20,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class ObservableCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     observableSrv: ObservableSrv,
@@ -59,7 +59,7 @@ class ObservableCtrl @Inject() (
   )
 
   def create(caseId: String): Action[AnyContent] =
-    entryPoint("create artifact")
+    entrypoint("create artifact")
       .extract("artifact", FieldsParser[InputObservable])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputObservable: InputObservable = request.body("artifact")
@@ -85,7 +85,7 @@ class ObservableCtrl @Inject() (
       }
 
   def get(observableId: String): Action[AnyContent] =
-    entryPoint("get observable")
+    entrypoint("get observable")
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .getByIds(observableId)
@@ -98,7 +98,7 @@ class ObservableCtrl @Inject() (
       }
 
   def update(observableId: String): Action[AnyContent] =
-    entryPoint("update observable")
+    entrypoint("update observable")
       .extract("observable", FieldsParser.update("observable", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
@@ -111,7 +111,7 @@ class ObservableCtrl @Inject() (
       }
 
   def findSimilar(obsId: String): Action[AnyContent] =
-    entryPoint("find similar")
+    entrypoint("find similar")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .getByIds(obsId)
@@ -128,7 +128,7 @@ class ObservableCtrl @Inject() (
       }
 
   def bulkUpdate: Action[AnyContent] =
-    entryPoint("bulk update")
+    entrypoint("bulk update")
       .extract("input", FieldsParser.update("observable", publicProperties))
       .extract("ids", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
@@ -143,7 +143,7 @@ class ObservableCtrl @Inject() (
       }
 
   def delete(obsId: String): Action[AnyContent] =
-    entryPoint("delete")
+    entrypoint("delete")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <- observableSrv

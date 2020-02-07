@@ -8,12 +8,12 @@ import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
 
 @Singleton
-class StatusCtrl @Inject() (entryPoint: EntryPoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
+class StatusCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -21,7 +21,7 @@ class StatusCtrl @Inject() (entryPoint: EntryPoint, appConfig: ApplicationConfig
   def password: String                           = passwordConfig.get
 
   def get: Action[AnyContent] =
-    entryPoint("status") { _ =>
+    entrypoint("status") { _ =>
       Success(
         Results.Ok(
           Json.obj(

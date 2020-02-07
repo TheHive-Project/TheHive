@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.dav
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.AttachmentSrv
 import play.api.Logger
@@ -18,7 +18,7 @@ import scala.util.matching.Regex
 import scala.xml.{Node, NodeSeq}
 
 @Singleton
-class Router @Inject() (entrypoint: EntryPoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
+class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
   lazy val logger: Logger = Logger(getClass)
 
   object PROPFIND {

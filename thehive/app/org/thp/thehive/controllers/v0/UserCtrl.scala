@@ -9,7 +9,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -22,7 +22,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class UserCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     userSrv: UserSrv,
@@ -57,7 +57,7 @@ class UserCtrl @Inject() (
   )
 
   def current: Action[AnyContent] =
-    entryPoint("current user")
+    entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .get(request.userId)
@@ -73,7 +73,7 @@ class UserCtrl @Inject() (
       }
 
   def create: Action[AnyContent] =
-    entryPoint("create user")
+    entrypoint("create user")
       .extract("user", FieldsParser[InputUser])
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
@@ -101,7 +101,7 @@ class UserCtrl @Inject() (
       }
 
   def lock(userId: String): Action[AnyContent] =
-    entryPoint("lock user")
+    entrypoint("lock user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
@@ -110,7 +110,7 @@ class UserCtrl @Inject() (
       }
 
   def delete(userId: String): Action[AnyContent] =
-    entryPoint("delete user")
+    entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail()
@@ -120,7 +120,7 @@ class UserCtrl @Inject() (
       }
 
   def get(userId: String): Action[AnyContent] =
-    entryPoint("get user")
+    entrypoint("get user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .get(userId)
@@ -131,7 +131,7 @@ class UserCtrl @Inject() (
       }
 
   def update(userId: String): Action[AnyContent] =
-    entryPoint("update user")
+    entrypoint("update user")
       .extract("user", FieldsParser.update("user", properties.user))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
@@ -144,7 +144,7 @@ class UserCtrl @Inject() (
       }
 
   def setPassword(userId: String): Action[AnyContent] =
-    entryPoint("set password")
+    entrypoint("set password")
       .extract("password", FieldsParser[String].on("password"))
       .auth { implicit request =>
         for {
@@ -167,7 +167,7 @@ class UserCtrl @Inject() (
       }
 
   def changePassword(userId: String): Action[AnyContent] =
-    entryPoint("change password")
+    entrypoint("change password")
       .extract("password", FieldsParser[String].on("password"))
       .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
@@ -181,7 +181,7 @@ class UserCtrl @Inject() (
       }
 
   def getKey(userId: String): Action[AnyContent] =
-    entryPoint("get key")
+    entrypoint("get key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
@@ -203,7 +203,7 @@ class UserCtrl @Inject() (
       }
 
   def removeKey(userId: String): Action[AnyContent] =
-    entryPoint("remove key")
+    entrypoint("remove key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
@@ -226,7 +226,7 @@ class UserCtrl @Inject() (
       }
 
   def renewKey(userId: String): Action[AnyContent] =
-    entryPoint("renew key")
+    entrypoint("renew key")
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>

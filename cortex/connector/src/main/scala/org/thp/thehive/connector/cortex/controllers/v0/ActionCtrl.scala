@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ActionCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     actionSrv: ActionSrv,
@@ -64,7 +64,7 @@ class ActionCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichAction]()
 
   def create: Action[AnyContent] =
-    entryPoint("create action")
+    entrypoint("create action")
       .extract("action", FieldsParser[InputAction])
       .asyncAuth { implicit request =>
         val action: InputAction = request.body("action")
@@ -78,7 +78,7 @@ class ActionCtrl @Inject() (
       }
 
   def getByEntity(objectType: String, objectId: String): Action[AnyContent] =
-    entryPoint("get by entity")
+    entrypoint("get by entity")
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
           entity <- entityHelper.get(toObjectType(objectType), objectId, Permissions.manageAction)

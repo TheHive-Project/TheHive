@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import gremlin.scala.{By, Key}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -21,7 +21,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class AuditCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entryPoint: Entrypoint,
     properties: Properties,
     auditSrv: AuditSrv,
     val caseSrv: CaseSrv,

@@ -6,7 +6,7 @@ import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
@@ -14,10 +14,10 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
 
 @Singleton
-class CustomFieldCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv) {
+class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv) {
 
   def create: Action[AnyContent] =
-    entryPoint("create custom field")
+    entrypoint("create custom field")
       .extract("customField", FieldsParser[CustomField])
       .authTransaction(db) { implicit request => implicit graph =>
         val customField = request.body("customField")
@@ -27,7 +27,7 @@ class CustomFieldCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFie
       }
 
   def list: Action[AnyContent] =
-    entryPoint("list custom fields")
+    entrypoint("list custom fields")
       .authRoTransaction(db) { _ => implicit graph =>
         val customFields = customFieldSrv
           .initSteps

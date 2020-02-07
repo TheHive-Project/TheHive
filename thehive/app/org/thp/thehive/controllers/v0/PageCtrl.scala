@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -13,7 +13,7 @@ import org.thp.thehive.services.{OrganisationSrv, PageSrv, PageSteps}
 import play.api.mvc._
 
 @Singleton
-class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database, properties: Properties, organisationSrv: OrganisationSrv)
+class PageCtrl @Inject() (entrypoint: Entrypoint, pageSrv: PageSrv, db: Database, properties: Properties, organisationSrv: OrganisationSrv)
     extends QueryableCtrl {
 
   override val entityName: String                           = "page"
@@ -33,7 +33,7 @@ class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database
   val outputQuery: Query = Query.output[Page with Entity]()
 
   def get(idOrTitle: String): Action[AnyContent] =
-    entryPoint("get a page")
+    entrypoint("get a page")
       .authRoTransaction(db) { implicit request => implicit graph =>
         pageSrv
           .get(idOrTitle)
@@ -43,7 +43,7 @@ class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database
       }
 
   def create: Action[AnyContent] =
-    entryPoint("create a page")
+    entrypoint("create a page")
       .extract("page", FieldsParser[InputPage])
       .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
         val page: InputPage = request.body("page")
@@ -54,7 +54,7 @@ class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database
       }
 
   def update(idOrTitle: String): Action[AnyContent] =
-    entryPoint("update a page")
+    entrypoint("update a page")
       .extract("page", FieldsParser.update("page", properties.page))
       .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("page")
@@ -66,7 +66,7 @@ class PageCtrl @Inject() (entryPoint: EntryPoint, pageSrv: PageSrv, db: Database
       }
 
   def delete(idOrTitle: String): Action[AnyContent] =
-    entryPoint("delete a page")
+    entrypoint("delete a page")
       .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
         for {
           page <- pageSrv.get(idOrTitle).visible.getOrFail()

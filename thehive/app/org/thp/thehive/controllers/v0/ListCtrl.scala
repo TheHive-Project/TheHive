@@ -6,7 +6,7 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Hasher
@@ -15,16 +15,16 @@ import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 
 @Singleton
-class ListCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
+class ListCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
 
   def list: Action[AnyContent] =
-    entryPoint("list")
+    entrypoint("list")
       .auth { _ =>
         Success(Results.Ok(Json.arr("list_artifactDataType", "case_metrics", "ui_settings")))
       }
 
   def listItems(listName: String): Action[AnyContent] =
-    entryPoint("list list items")
+    entrypoint("list list items")
       .auth { _ =>
         val result = listName match {
           case "list_artifactDataType" =>
@@ -49,7 +49,7 @@ class ListCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: 
 
   // TODO implement those as admin custom fields management seems to use them
   def addItem(listName: String): Action[AnyContent] =
-    entryPoint("add item to list")
+    entrypoint("add item to list")
       .extract("value", FieldsParser.jsObject.on("value"))
       .auth { request =>
         val value: JsObject = request.body("value")
@@ -66,16 +66,16 @@ class ListCtrl @Inject() (entryPoint: EntryPoint, db: Database, customFieldSrv: 
         }
       }
 
-  def deleteItem(itemId: String): Action[AnyContent] = entryPoint("delete list item") { _ =>
+  def deleteItem(itemId: String): Action[AnyContent] = entrypoint("delete list item") { _ =>
     Success(Results.Locked(""))
   }
 
-  def updateItem(itemId: String): Action[AnyContent] = entryPoint("update list item") { _ =>
+  def updateItem(itemId: String): Action[AnyContent] = entrypoint("update list item") { _ =>
     Success(Results.Locked(""))
   }
 
   def itemExists(listName: String): Action[AnyContent] =
-    entryPoint("check if item exist in list")
+    entrypoint("check if item exist in list")
       .extract("key", FieldsParser.string.on("key"))
       .extract("value", FieldsParser.string.on("value"))
       .authRoTransaction(db) { request => implicit graph =>

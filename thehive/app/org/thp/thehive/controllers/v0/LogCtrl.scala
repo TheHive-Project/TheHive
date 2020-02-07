@@ -4,7 +4,7 @@ import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -16,7 +16,7 @@ import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
 
 @Singleton
 class LogCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     logSrv: LogSrv,
@@ -45,7 +45,7 @@ class LogCtrl @Inject() (
   )
 
   def create(taskId: String): Action[AnyContent] =
-    entryPoint("create log")
+    entrypoint("create log")
       .extract("log", FieldsParser[InputLog])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputLog: InputLog = request.body("log")
@@ -61,7 +61,7 @@ class LogCtrl @Inject() (
       }
 
   def update(logId: String): Action[AnyContent] =
-    entryPoint("update log")
+    entrypoint("update log")
       .extract("log", FieldsParser.update("log", properties.log))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("log")
@@ -75,7 +75,7 @@ class LogCtrl @Inject() (
       }
 
   def delete(logId: String): Action[AnyContent] =
-    entryPoint("delete log")
+    entrypoint("delete log")
       .authTransaction(db) { implicit req => implicit graph =>
         for {
           log <- logSrv.get(logId).can(Permissions.manageTask).getOrFail()

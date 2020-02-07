@@ -37,7 +37,7 @@ trait QueryableCtrl {
       .build
 }
 
-class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
+class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
   lazy val logger: Logger = Logger(getClass)
 
   val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
@@ -114,7 +114,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
   }
 
   def search: Action[AnyContent] =
-    entryPoint(s"search ${ctrl.entityName}")
+    entrypoint(s"search ${ctrl.entityName}")
       .extract("query", searchParser)
       .authRoTransaction(db) { implicit request => graph =>
         val query: Query = request.body("query")
@@ -127,7 +127,7 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
       }
 
   def stats: Action[AnyContent] =
-    entryPoint(s"${ctrl.entityName} stats")
+    entrypoint(s"${ctrl.entityName} stats")
       .extract("query", statsParser)
       .authRoTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body("query")
@@ -144,8 +144,8 @@ class QueryCtrl(entryPoint: EntryPoint, db: Database, ctrl: QueryableCtrl, query
 }
 
 @Singleton
-class QueryCtrlBuilder @Inject() (entryPoint: EntryPoint, db: Database) {
+class QueryCtrlBuilder @Inject() (entrypoint: Entrypoint, db: Database) {
 
   def apply(ctrl: QueryableCtrl, queryExecutor: QueryExecutor): QueryCtrl =
-    new QueryCtrl(entryPoint, db, ctrl, queryExecutor)
+    new QueryCtrl(entrypoint, db, ctrl, queryExecutor)
 }

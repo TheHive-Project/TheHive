@@ -6,7 +6,7 @@ import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -16,7 +16,7 @@ import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
 
 @Singleton
-class AuditCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
+class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
 
   val entityName: String = "audit"
 
@@ -41,7 +41,7 @@ class AuditCtrl @Inject() (entryPoint: EntryPoint, db: Database, properties: Pro
   )
 
   def flow(): Action[AnyContent] =
-    entryPoint("audit flow")
+    entrypoint("audit flow")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val audits = auditSrv
           .initSteps

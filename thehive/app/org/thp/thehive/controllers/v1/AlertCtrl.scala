@@ -4,7 +4,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -16,7 +16,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class AlertCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     alertSrv: AlertSrv,
@@ -47,7 +47,7 @@ class AlertCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create alert")
+    entrypoint("create alert")
       .extract("alert", FieldsParser[InputAlert])
       .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
@@ -67,7 +67,7 @@ class AlertCtrl @Inject() (
       }
 
   def get(alertId: String): Action[AnyContent] =
-    entryPoint("get alert")
+    entrypoint("get alert")
       .authRoTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .getByIds(alertId)
@@ -78,7 +78,7 @@ class AlertCtrl @Inject() (
       }
 
 //  def list: Action[AnyContent] =
-//    entryPoint("list alert")
+//    entrypoint("list alert")
 //      .authRoTransaction(db) { implicit request ⇒ implicit graph ⇒
 //        val alerts = alertSrv.initSteps
 //          .availableFor(request.organisation)
@@ -89,7 +89,7 @@ class AlertCtrl @Inject() (
 //      }
 
   def update(alertId: String): Action[AnyContent] =
-    entryPoint("update alert")
+    entrypoint("update alert")
       .extract("alert", FieldsParser.update("alertUpdate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
@@ -105,7 +105,7 @@ class AlertCtrl @Inject() (
 //  def mergeWithCase(alertId: String, caseId: String) = ???
 
   def markAsRead(alertId: String): Action[AnyContent] =
-    entryPoint("mark alert as read")
+    entrypoint("mark alert as read")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .getByIds(alertId)
@@ -118,7 +118,7 @@ class AlertCtrl @Inject() (
       }
 
   def markAsUnread(alertId: String): Action[AnyContent] =
-    entryPoint("mark alert as unread")
+    entrypoint("mark alert as unread")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .getByIds(alertId)
@@ -131,7 +131,7 @@ class AlertCtrl @Inject() (
       }
 
   def createCase(alertId: String): Action[AnyContent] =
-    entryPoint("create case from alert")
+    entrypoint("create case from alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           (alert, organisation) <- alertSrv.getByIds(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
@@ -140,7 +140,7 @@ class AlertCtrl @Inject() (
       }
 
   def followAlert(alertId: String): Action[AnyContent] =
-    entryPoint("follow alert")
+    entrypoint("follow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .getByIds(alertId)
@@ -153,7 +153,7 @@ class AlertCtrl @Inject() (
       }
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
-    entryPoint("unfollow alert")
+    entrypoint("unfollow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .getByIds(alertId)

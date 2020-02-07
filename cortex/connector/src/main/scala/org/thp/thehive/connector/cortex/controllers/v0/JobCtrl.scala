@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class JobCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     jobSrv: JobSrv,
@@ -47,7 +47,7 @@ class JobCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichJob]()
 
   def get(jobId: String): Action[AnyContent] =
-    entryPoint("get job")
+    entrypoint("get job")
       .authRoTransaction(db) { implicit request => implicit graph =>
         jobSrv
           .getByIds(jobId)
@@ -58,7 +58,7 @@ class JobCtrl @Inject() (
       }
 
   def create: Action[AnyContent] =
-    entryPoint("create job")
+    entrypoint("create job")
       .extract("analyzerId", FieldsParser[String].on("analyzerId"))
       .extract("cortexId", FieldsParser[String].on("cortexId"))
       .extract("artifactId", FieldsParser[String].on("artifactId"))

@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 
 @Singleton
 class OrganisationCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
@@ -47,7 +47,7 @@ class OrganisationCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create organisation")
+    entrypoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
@@ -59,7 +59,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def get(organisationId: String): Action[AnyContent] =
-    entryPoint("get an organisation")
+    entrypoint("get an organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
         organisationSrv
           .get(organisationId)
@@ -70,7 +70,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def list: Action[AnyContent] =
-    entryPoint("list organisation")
+    entrypoint("list organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val organisations = organisationSrv
           .initSteps
@@ -83,7 +83,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def update(organisationId: String): Action[AnyContent] =
-    entryPoint("update organisation")
+    entrypoint("update organisation")
       .extract("organisation", FieldsParser.update("organisation", properties.organisation))
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
@@ -98,7 +98,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def link(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
-    entryPoint("link organisations")
+    entrypoint("link organisations")
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
@@ -108,7 +108,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def bulkLink(fromOrganisationId: String): Action[AnyContent] =
-    entryPoint("link multiple organisations")
+    entrypoint("link multiple organisations")
       .extract("organisations", FieldsParser.string.sequence.on("organisations"))
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
@@ -120,7 +120,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def unlink(fromOrganisationId: String, toOrganisationId: String): Action[AnyContent] =
-    entryPoint("unlink organisations")
+    entrypoint("unlink organisations")
       .authPermittedTransaction(db, Permissions.manageOrganisation) { _ => implicit graph =>
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
@@ -131,7 +131,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def listLinks(organisationId: String): Action[AnyContent] =
-    entryPoint("list organisation links")
+    entrypoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val isInDefaultOrganisation = userSrv.current.organisations.get(OrganisationSrv.administration.name).exists()
         val organisation =

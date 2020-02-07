@@ -9,7 +9,7 @@ import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -24,7 +24,7 @@ import org.thp.thehive.models.Permissions
 
 @Singleton
 class AnalyzerTemplateCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     analyzerTemplateSrv: AnalyzerTemplateSrv
@@ -48,7 +48,7 @@ class AnalyzerTemplateCtrl @Inject() (
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]()
 
   def get(id: String): Action[AnyContent] =
-    entryPoint("get content")
+    entrypoint("get content")
       .authTransaction(db) { _ => implicit graph =>
         analyzerTemplateSrv
           .getOrFail(id)
@@ -56,7 +56,7 @@ class AnalyzerTemplateCtrl @Inject() (
       }
 
   def importTemplates: Action[AnyContent] =
-    entryPoint("import templates")
+    entrypoint("import templates")
       .extract("archive", FieldsParser.file.on("templates"))
       .auth { implicit request =>
         val archive: FFile = request.body("archive")
@@ -73,7 +73,7 @@ class AnalyzerTemplateCtrl @Inject() (
       }
 
   def create: Action[AnyContent] =
-    entryPoint("create template")
+    entrypoint("create template")
       .extract("analyzerTemplate", FieldsParser[InputAnalyzerTemplate])
       .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
         val analyzerTemplate: InputAnalyzerTemplate = request.body("analyzerTemplate")
@@ -83,7 +83,7 @@ class AnalyzerTemplateCtrl @Inject() (
       }
 
   def delete(id: String): Action[AnyContent] =
-    entryPoint("delete template")
+    entrypoint("delete template")
       .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
         analyzerTemplateSrv
           .get(id)
@@ -95,7 +95,7 @@ class AnalyzerTemplateCtrl @Inject() (
       }
 
   def update(id: String): Action[AnyContent] =
-    entryPoint("update template")
+    entrypoint("update template")
       .extract("template", FieldsParser.update("template", properties.analyzerTemplate))
       .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")

@@ -20,7 +20,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class ObservableCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entryPoint: Entrypoint,
     db: Database,
     properties: Properties,
     observableSrv: ObservableSrv,

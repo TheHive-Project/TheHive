@@ -9,7 +9,7 @@ import play.api.{ConfigLoader, Logger}
 import com.typesafe.config.{Config, ConfigRenderOptions}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.Permissions
@@ -19,7 +19,7 @@ import org.thp.thehive.services.UserConfigContext
 class ConfigCtrl @Inject() (
     appConfig: ApplicationConfig,
     userConfigContext: UserConfigContext,
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database
 ) {
 
@@ -38,7 +38,7 @@ class ConfigCtrl @Inject() (
     Json.parse(config.getValue(path).render(ConfigRenderOptions.concise()))
 
   def list: Action[AnyContent] =
-    entryPoint("list configuration items")
+    entrypoint("list configuration items")
       .auth {
         case request if request.permissions.contains(Permissions.manageConfig) =>
           Success(Results.Ok(Json.toJson(appConfig.list)))
@@ -46,7 +46,7 @@ class ConfigCtrl @Inject() (
       }
 
   def set(path: String): Action[AnyContent] =
-    entryPoint("set configuration item")
+    entrypoint("set configuration item")
       .extract("value", FieldsParser.json.on("value"))
       .auth {
         case request if request.permissions.contains(Permissions.manageConfig) =>
@@ -56,7 +56,7 @@ class ConfigCtrl @Inject() (
       }
 
   def userSet(path: String): Action[AnyContent] =
-    entryPoint("set user configuration item")
+    entrypoint("set user configuration item")
       .extract("value", FieldsParser.json.on("value"))
       .authTransaction(db) { implicit request => _ =>
         val config = appConfig.context(userConfigContext).item[JsValue](path, "")
@@ -73,7 +73,7 @@ class ConfigCtrl @Inject() (
       }
 
   def userGet(path: String): Action[AnyContent] =
-    entryPoint("get user configuration item")
+    entrypoint("get user configuration item")
       .authTransaction(db) { implicit request => _ =>
         Try {
           val config = appConfig.context(userConfigContext).item[JsValue](path, "")

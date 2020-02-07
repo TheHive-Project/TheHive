@@ -7,7 +7,7 @@ import play.api.libs.json.{JsArray, JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -20,7 +20,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class CaseCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
@@ -64,7 +64,7 @@ class CaseCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create case")
+    entrypoint("create case")
       .extract("case", FieldsParser[InputCase])
       .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
       .extract("caseTemplate", FieldsParser[String].optional.on("template"))
@@ -92,7 +92,7 @@ class CaseCtrl @Inject() (
       }
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("get case")
+    entrypoint("get case")
       .extract("stats", FieldsParser.boolean.optional.on("nstats"))
       .authRoTransaction(db) { implicit request => implicit graph =>
         val c = caseSrv
@@ -113,7 +113,7 @@ class CaseCtrl @Inject() (
       }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("update case")
+    entrypoint("update case")
       .extract("case", FieldsParser.update("case", properties.`case`))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
@@ -133,7 +133,7 @@ class CaseCtrl @Inject() (
       }
 
   def bulkUpdate: Action[AnyContent] =
-    entryPoint("update case")
+    entrypoint("update case")
       .extract("case", FieldsParser.update("case", properties.`case`))
       .extract("idsOrNumbers", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
@@ -157,7 +157,7 @@ class CaseCtrl @Inject() (
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("delete case")
+    entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
@@ -167,7 +167,7 @@ class CaseCtrl @Inject() (
       }
 
   def realDelete(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("delete case")
+    entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           c <- caseSrv
@@ -179,7 +179,7 @@ class CaseCtrl @Inject() (
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
-    entryPoint("merge cases")
+    entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
         caseIdsOrNumbers
           .split(',')
@@ -197,7 +197,7 @@ class CaseCtrl @Inject() (
       }
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("case link")
+    entrypoint("case link")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val relatedCases = caseSrv
           .get(caseIdOrNumber)

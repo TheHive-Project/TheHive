@@ -5,7 +5,7 @@ import scala.util.{Success, Try}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -18,7 +18,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class CaseCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
@@ -59,7 +59,7 @@ class CaseCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create case")
+    entrypoint("create case")
       .extract("case", FieldsParser[InputCase])
       .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
@@ -86,7 +86,7 @@ class CaseCtrl @Inject() (
       }
 
   def get(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("get case")
+    entrypoint("get case")
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
@@ -97,7 +97,7 @@ class CaseCtrl @Inject() (
       }
 
 //  def list: Action[AnyContent] =
-//    entryPoint("list case")
+//    entrypoint("list case")
 //      .authRoTransaction(db) { implicit request ⇒ implicit graph ⇒
 //        val cases = userSrv.current.organisations.cases.richCase
 //          .map(_.toJson)
@@ -106,7 +106,7 @@ class CaseCtrl @Inject() (
 //      }
 
   def update(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("update case")
+    entrypoint("update case")
       .extract("case", FieldsParser.update("case", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
@@ -116,7 +116,7 @@ class CaseCtrl @Inject() (
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
-    entryPoint("delete case")
+    entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(caseIdOrNumber)
@@ -126,7 +126,7 @@ class CaseCtrl @Inject() (
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
-    entryPoint("merge cases")
+    entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
         caseIdsOrNumbers
           .split(',')

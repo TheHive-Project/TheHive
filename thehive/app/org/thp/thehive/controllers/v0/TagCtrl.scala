@@ -4,7 +4,7 @@ import java.nio.file.Files
 
 import javax.inject.Inject
 import org.thp.scalligraph.RichSeq
-import org.thp.scalligraph.controllers.{EntryPoint, FFile, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -18,7 +18,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Try
 
 class TagCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     tagSrv: TagSrv
@@ -39,7 +39,7 @@ class TagCtrl @Inject() (
   )
 
   def importTaxonomy: Action[AnyContent] =
-    entryPoint("import taxonomy")
+    entrypoint("import taxonomy")
       .extract("file", FieldsParser.file.optional.on("file"))
       .extract("content", FieldsParser.jsObject.optional.on("content"))
       .authPermittedTransaction(db, Permissions.manageTag) { implicit request => implicit graph =>
@@ -102,7 +102,7 @@ class TagCtrl @Inject() (
     } yield Tag(namespace, v, None, e, colour)
 
   def get(tagId: String): Action[AnyContent] =
-    entryPoint("get tag")
+    entrypoint("get tag")
       .authRoTransaction(db) { _ => implicit graph =>
         tagSrv
           .getOrFail(tagId)

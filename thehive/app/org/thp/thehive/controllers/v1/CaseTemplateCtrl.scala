@@ -6,7 +6,7 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -18,7 +18,7 @@ import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, Organisatio
 
 @Singleton
 class CaseTemplateCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
@@ -45,7 +45,7 @@ class CaseTemplateCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create case template")
+    entrypoint("create case template")
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
@@ -58,7 +58,7 @@ class CaseTemplateCtrl @Inject() (
       }
 
   def get(caseTemplateNameOrId: String): Action[AnyContent] =
-    entryPoint("get case template")
+    entrypoint("get case template")
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseTemplateSrv
           .get(caseTemplateNameOrId)
@@ -69,7 +69,7 @@ class CaseTemplateCtrl @Inject() (
       }
 
   def list: Action[AnyContent] =
-    entryPoint("list case template")
+    entrypoint("list case template")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val caseTemplates = caseTemplateSrv
           .initSteps
@@ -81,7 +81,7 @@ class CaseTemplateCtrl @Inject() (
       }
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =
-    entryPoint("update case template")
+    entrypoint("update case template")
       .extract("caseTemplate", FieldsParser.update("caseTemplate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")

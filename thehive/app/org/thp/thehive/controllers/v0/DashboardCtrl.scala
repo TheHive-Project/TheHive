@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -14,7 +14,7 @@ import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv, 
 
 @Singleton
 class DashboardCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     dashboardSrv: DashboardSrv,
@@ -41,7 +41,7 @@ class DashboardCtrl @Inject() (
   val outputQuery: Query = Query.output[RichDashboard]()
 
   def create: Action[AnyContent] =
-    entryPoint("create dashboard")
+    entrypoint("create dashboard")
       .extract("dashboard", FieldsParser[InputDashboard])
       .authTransaction(db) { implicit request => implicit graph =>
         val dashboard: InputDashboard = request.body("dashboard")
@@ -49,7 +49,7 @@ class DashboardCtrl @Inject() (
       }
 
   def get(dashboardId: String): Action[AnyContent] =
-    entryPoint("get dashboard")
+    entrypoint("get dashboard")
       .authRoTransaction(db) { implicit request => implicit graph =>
         dashboardSrv
           .getByIds(dashboardId)
@@ -60,7 +60,7 @@ class DashboardCtrl @Inject() (
       }
 
   def update(dashboardId: String): Action[AnyContent] =
-    entryPoint("update dashboard")
+    entrypoint("update dashboard")
       .extract("dashboard", FieldsParser.update("dashboard", properties.dashboard))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("dashboard")
@@ -71,7 +71,7 @@ class DashboardCtrl @Inject() (
       }
 
   def delete(dashboardId: String): Action[AnyContent] =
-    entryPoint("delete dashboard")
+    entrypoint("delete dashboard")
       .authTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current

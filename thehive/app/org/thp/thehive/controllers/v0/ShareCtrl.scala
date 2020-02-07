@@ -6,7 +6,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, RichSeq}
@@ -17,7 +17,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class ShareCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     shareSrv: ShareSrv,
     organisationSrv: OrganisationSrv,
@@ -28,7 +28,7 @@ class ShareCtrl @Inject() (
 ) {
 
   def shareCase(caseId: String): Action[AnyContent] =
-    entryPoint("create case shares")
+    entrypoint("create case shares")
       .extract("shares", FieldsParser[InputShare].sequence.on("shares"))
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShares: Seq[InputShare] = request.body("shares")
@@ -56,13 +56,13 @@ class ShareCtrl @Inject() (
       }
 
   def removeShare(shareId: String): Action[AnyContent] =
-    entryPoint("remove share")
+    entrypoint("remove share")
       .authTransaction(db) { implicit request => implicit graph =>
         doRemoveShare(shareId).map(_ => Results.NoContent)
       }
 
   def removeShares(): Action[AnyContent] =
-    entryPoint("remove share")
+    entrypoint("remove share")
       .extract("shares", FieldsParser[String].sequence.on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
         val shareIds: Seq[String] = request.body("shares")
@@ -70,7 +70,7 @@ class ShareCtrl @Inject() (
       }
 
   def removeShares(caseId: String): Action[AnyContent] =
-    entryPoint("remove share")
+    entrypoint("remove share")
       .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
@@ -87,7 +87,7 @@ class ShareCtrl @Inject() (
       }
 
   def removeTaskShares(taskId: String): Action[AnyContent] =
-    entryPoint("remove share tasks")
+    entrypoint("remove share tasks")
       .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
@@ -105,7 +105,7 @@ class ShareCtrl @Inject() (
       }
 
   def removeObservableShares(observableId: String): Action[AnyContent] =
-    entryPoint("remove share observables")
+    entrypoint("remove share observables")
       .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
@@ -131,7 +131,7 @@ class ShareCtrl @Inject() (
       shareSrv.remove(shareId)
 
   def updateShare(shareId: String): Action[AnyContent] =
-    entryPoint("update share")
+    entrypoint("update share")
       .extract("profile", FieldsParser.string.on("profile"))
       .authTransaction(db) { implicit request => implicit graph =>
         val profile: String = request.body("profile")
@@ -150,7 +150,7 @@ class ShareCtrl @Inject() (
       }
 
   def listShareCases(caseId: String): Action[AnyContent] =
-    entryPoint("list case shares")
+    entrypoint("list case shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
         Success(
           Results.Ok(
@@ -169,7 +169,7 @@ class ShareCtrl @Inject() (
       }
 
   def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
-    entryPoint("list task shares")
+    entrypoint("list task shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
         Success(
           Results.Ok(
@@ -189,7 +189,7 @@ class ShareCtrl @Inject() (
       }
 
   def listShareObservables(caseId: String, observableId: String): Action[AnyContent] =
-    entryPoint("list observable shares")
+    entrypoint("list observable shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
         Success(
           Results.Ok(
@@ -209,7 +209,7 @@ class ShareCtrl @Inject() (
       }
 
   def shareTask(taskId: String): Action[AnyContent] =
-    entryPoint("share task")
+    entrypoint("share task")
       .extract("organisations", FieldsParser.string.sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisationIds: Seq[String] = request.body("organisations")
@@ -223,7 +223,7 @@ class ShareCtrl @Inject() (
       }
 
   def shareObservable(observableId: String): Action[AnyContent] =
-    entryPoint("share observable")
+    entrypoint("share observable")
       .extract("organisations", FieldsParser.string.sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisationIds: Seq[String] = request.body("organisations")

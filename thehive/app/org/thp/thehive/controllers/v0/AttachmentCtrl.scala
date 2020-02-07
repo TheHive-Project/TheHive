@@ -8,7 +8,7 @@ import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
@@ -20,13 +20,13 @@ import play.api.mvc._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class AttachmentCtrl @Inject() (entryPoint: EntryPoint, appConfig: ApplicationConfig, attachmentSrv: AttachmentSrv, db: Database) {
+class AttachmentCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig, attachmentSrv: AttachmentSrv, db: Database) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
 
   def download(id: String, name: Option[String]): Action[AnyContent] =
-    entryPoint("download attachment")
+    entrypoint("download attachment")
       .authRoTransaction(db) { implicit authContext => implicit graph =>
         if (name.getOrElse("").intersect(forbiddenChar).nonEmpty)
           Success(Results.BadRequest("File name is invalid"))
@@ -54,7 +54,7 @@ class AttachmentCtrl @Inject() (entryPoint: EntryPoint, appConfig: ApplicationCo
       }
 
   def downloadZip(id: String, name: Option[String]): Action[AnyContent] =
-    entryPoint("download attachment")
+    entrypoint("download attachment")
       .authRoTransaction(db) { implicit authContext => implicit graph =>
         if (name.getOrElse("").intersect(forbiddenChar).nonEmpty)
           Success(Results.BadRequest("File name is invalid"))

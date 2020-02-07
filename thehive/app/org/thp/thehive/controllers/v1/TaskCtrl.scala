@@ -4,7 +4,7 @@ import scala.util.Success
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -16,7 +16,7 @@ import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, Ta
 
 @Singleton
 class TaskCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     taskSrv: TaskSrv,
@@ -45,7 +45,7 @@ class TaskCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create task")
+    entrypoint("create task")
       .extract("task", FieldsParser[InputTask])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
@@ -58,7 +58,7 @@ class TaskCtrl @Inject() (
       }
 
   def get(taskId: String): Action[AnyContent] =
-    entryPoint("get task")
+    entrypoint("get task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .getByIds(taskId)
@@ -69,7 +69,7 @@ class TaskCtrl @Inject() (
       }
 
   def list: Action[AnyContent] =
-    entryPoint("list task")
+    entrypoint("list task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val tasks = taskSrv
           .initSteps
@@ -81,7 +81,7 @@ class TaskCtrl @Inject() (
       }
 
   def update(taskId: String): Action[AnyContent] =
-    entryPoint("update task")
+    entrypoint("update task")
       .extract("task", FieldsParser.update("task", properties.task))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")

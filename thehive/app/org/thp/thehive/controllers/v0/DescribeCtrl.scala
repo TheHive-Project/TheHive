@@ -13,7 +13,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
@@ -25,7 +25,7 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 @Singleton
 class DescribeCtrl @Inject() (
     cacheApi: SyncCacheApi,
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,
     alertCtrl: AlertCtrl,
@@ -125,7 +125,7 @@ class DescribeCtrl @Inject() (
     }
 
   def describe(modelName: String): Action[AnyContent] =
-    entryPoint("describe model")
+    entrypoint("describe model")
       .auth { _ =>
         entityControllers.get(modelName) match {
           case Some(ctrl) => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(describe(modelName, ctrl))))
@@ -134,7 +134,7 @@ class DescribeCtrl @Inject() (
       }
 
   def describeAll: Action[AnyContent] =
-    entryPoint("describe all models")
+    entrypoint("describe all models")
       .auth { _ =>
         val descriptors = entityControllers.map {
           case (modelName, ctrl) => modelName -> cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(describe(modelName, ctrl))

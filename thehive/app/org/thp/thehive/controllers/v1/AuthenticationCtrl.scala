@@ -6,7 +6,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, MultiFactorCodeRequired}
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 
 @Singleton
 class AuthenticationCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
@@ -24,7 +24,7 @@ class AuthenticationCtrl @Inject() (
 ) {
 
   def login: Action[AnyContent] =
-    entryPoint("login")
+    entrypoint("login")
       .extract("login", FieldsParser[String].on("user"))
       .extract("password", FieldsParser[String].on("password"))
       .extract("organisation", FieldsParser[String].optional.on("organisation"))
@@ -47,7 +47,7 @@ class AuthenticationCtrl @Inject() (
     }
 
   def totpSetSecret: Action[AnyContent] =
-    entryPoint("Set TOTP secret")
+    entrypoint("Set TOTP secret")
       .extract("code", FieldsParser[Int].optional.on("code"))
       .authTransaction(db) { implicit request => implicit graph =>
         withTotpAuthSrv { totpAuthSrv =>
@@ -76,7 +76,7 @@ class AuthenticationCtrl @Inject() (
       }
 
   def totpUnsetSecret(userId: Option[String]): Action[AnyContent] =
-    entryPoint("Unset TOTP secret")
+    entrypoint("Unset TOTP secret")
       .authTransaction(db) { implicit request => implicit graph =>
         withTotpAuthSrv { totpAuthSrv =>
           userSrv

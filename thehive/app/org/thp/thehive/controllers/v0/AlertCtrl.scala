@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.{EntryPoint, FString, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -23,7 +23,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class AlertCtrl @Inject() (
-    entrypoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     alertSrv: AlertSrv,

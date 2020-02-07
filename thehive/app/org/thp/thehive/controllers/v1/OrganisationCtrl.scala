@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.controllers.{EntryPoint, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
@@ -15,7 +15,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class OrganisationCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
@@ -44,7 +44,7 @@ class OrganisationCtrl @Inject() (
   )
 
   def create: Action[AnyContent] =
-    entryPoint("create organisation")
+    entrypoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
@@ -56,7 +56,7 @@ class OrganisationCtrl @Inject() (
       }
 
   def get(organisationId: String): Action[AnyContent] =
-    entryPoint("get organisation")
+    entrypoint("get organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
@@ -68,7 +68,7 @@ class OrganisationCtrl @Inject() (
       }
 
   //  def list: Action[AnyContent] =
-  //    entryPoint("list organisation")
+  //    entrypoint("list organisation")
   //      .authRoTransaction(db) { _ ⇒ implicit graph ⇒
   //          val organisations = organisationSrv.initSteps.toList
   //            .map(toOutputOrganisation)
@@ -76,7 +76,7 @@ class OrganisationCtrl @Inject() (
   //        }
 
   def update(organisationId: String): Action[AnyContent] =
-    entryPoint("update organisation")
+    entrypoint("update organisation")
       .extract("organisation", FieldsParser.update("organisation", properties.organisation))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")

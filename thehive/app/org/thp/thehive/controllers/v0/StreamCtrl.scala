@@ -8,7 +8,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.thp.scalligraph.controllers.EntryPoint
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
@@ -16,7 +16,7 @@ import org.thp.thehive.services._
 
 @Singleton
 class StreamCtrl @Inject() (
-    entryPoint: EntryPoint,
+    entrypoint: Entrypoint,
     streamSrv: StreamSrv,
     auditSrv: AuditSrv,
     val caseSrv: CaseSrv,
@@ -27,14 +27,14 @@ class StreamCtrl @Inject() (
 ) extends AuditRenderer {
 
   def create: Action[AnyContent] =
-    entryPoint("create stream")
+    entrypoint("create stream")
       .auth { implicit request =>
         val streamId = streamSrv.create
         Success(Results.Ok(streamId))
       }
 
   def get(streamId: String): Action[AnyContent] =
-    entryPoint("get stream").async { _ =>
+    entrypoint("get stream").async { _ =>
       streamSrv
         .get(streamId)
         .map {
@@ -63,7 +63,7 @@ class StreamCtrl @Inject() (
     }
 
   def status: Action[AnyContent] = // TODO
-    entryPoint("get stream") { _ =>
+    entrypoint("get stream") { _ =>
       Success(
         Results.Ok(
           Json.obj(
