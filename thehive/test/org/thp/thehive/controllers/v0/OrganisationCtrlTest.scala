@@ -3,8 +3,11 @@ package org.thp.thehive.controllers.v0
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.services.OrganisationSrv
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
   "organisation controller" should {
@@ -69,7 +72,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
               }
             """.stripMargin))
         .withHeaders("user" -> "admin@thehive.local")
-      val result = app[OrganisationCtrl].update("admin")(request)
+      val result = app[OrganisationCtrl].update("cert")(request)
 
       status(result) must_=== 204
     }
@@ -111,5 +114,25 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
       status(resultLinks2) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultLinks2)}")
       contentAsJson(resultLinks2).as[List[OutputOrganisation]] must beEmpty
     }
+
+    "update organisation name" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/v0/organisation/cert")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.obj("name" -> "cert2"))
+      val result = app[OrganisationCtrl].update("cert")(request)
+      status(result) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
+      app[Database].roTransaction { implicit graph =>
+        app[OrganisationSrv].get("cert2").exists() must beTrue
+      }
+    }
+
+    "fail to update admin organisation" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/v0/organisation/admin")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.obj("description" -> "new description"))
+      val result = app[OrganisationCtrl].update("admin")(request)
+      status(result) must_=== 400
+    }
+
   }
 }

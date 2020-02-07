@@ -2,8 +2,9 @@ package org.thp.thehive.services
 
 import gremlin.scala._
 import scala.collection.JavaConverters._
+
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{BadRequestError, EntitySteps, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -13,8 +14,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
-import scala.util.{Success, Try}
-import org.thp.scalligraph.RichSeq
+import scala.util.{Failure, Success, Try}
 
 object OrganisationSrv {
   val administration: Organisation = Organisation("admin", "organisation for administration")
@@ -52,12 +52,16 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
       steps: OrganisationSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(OrganisationSteps, JsObject)] =
-    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
-      case (orgSteps, updatedFields) =>
-        orgSteps
-          .newInstance()
-          .getOrFail()
-          .flatMap(auditSrv.organisation.update(_, updatedFields))
+    if (steps.newInstance().has("name", OrganisationSrv.administration.name).exists())
+      Failure(BadRequestError("Admin organisation is unmodifiable"))
+    else {
+      auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+        case (orgSteps, updatedFields) =>
+          orgSteps
+            .newInstance()
+            .getOrFail()
+            .flatMap(auditSrv.organisation.update(_, updatedFields))
+      }
     }
 
   def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =

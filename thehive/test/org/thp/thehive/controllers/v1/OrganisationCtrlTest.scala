@@ -3,9 +3,11 @@ package org.thp.thehive.controllers.v1
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
+import org.thp.scalligraph.models.Database
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.services.OrganisationSrv
+import org.thp.scalligraph.steps.StepsOps._
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
   "organisation controller" should {
@@ -47,6 +49,25 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
       val request = FakeRequest("GET", s"/api/v1/organisation/${OrganisationSrv.administration.name}").withHeaders("user" -> "certuser@thehive.local")
       val result  = app[OrganisationCtrl].get(OrganisationSrv.administration.name)(request)
       status(result) must_=== 404
+    }
+
+    "update organisation name" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/v1/organisation/cert")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.obj("name" -> "cert2"))
+      val result = app[OrganisationCtrl].update("cert")(request)
+      status(result) must_=== 204
+      app[Database].roTransaction { implicit graph =>
+        app[OrganisationSrv].get("cert2").exists() must beTrue
+      }
+    }
+
+    "fail to update admin organisation" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/v1/organisation/admin")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.obj("description" -> "new description"))
+      val result = app[OrganisationCtrl].update("admin")(request)
+      status(result) must_=== 400
     }
   }
 }

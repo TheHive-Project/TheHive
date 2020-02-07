@@ -89,11 +89,8 @@ class OrganisationCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
 
         for {
-          _ <- organisationSrv
-            .update(
-              organisationSrv.get(organisationId),
-              propertyUpdaters
-            )
+          organisation <- organisationSrv.getOrFail(organisationId)
+          _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
         } yield Results.NoContent
       }
 

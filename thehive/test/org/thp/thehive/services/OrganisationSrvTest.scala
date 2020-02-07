@@ -11,20 +11,16 @@ class OrganisationSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local").authContext
 
   "organisation service" should {
-    "create and get an organisation by his id" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[OrganisationSrv].create(Organisation(name = "orga1", "no description")) must beSuccessfulTry.which { organisation =>
-          app[OrganisationSrv].getOrFail(organisation._id) must beSuccessfulTry(organisation)
-        }
-      }
+    "create an organisation" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        app[OrganisationSrv].create(Organisation(name = "orga1", "no description"))
+      } must beSuccessfulTry
     }
 
-    "create and get an organisation by its name" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[OrganisationSrv].create(Organisation(name = "orga2", "no description")) must beSuccessfulTry.which { organisation =>
-          app[OrganisationSrv].getOrFail(organisation.name) must beSuccessfulTry(organisation)
-        }
-      }
+    "get an organisation by its name" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        app[OrganisationSrv].getOrFail("cert")
+      } must beSuccessfulTry
     }
   }
 }

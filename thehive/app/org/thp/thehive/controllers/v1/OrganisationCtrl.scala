@@ -78,16 +78,11 @@ class OrganisationCtrl @Inject() (
   def update(organisationId: String): Action[AnyContent] =
     entrypoint("update organisation")
       .extract("organisation", FieldsParser.update("organisation", properties.organisation))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
-        organisationSrv
-          .update(
-            userSrv
-              .current
-              .organisations(Permissions.manageOrganisation)
-              .get(organisationId),
-            propertyUpdaters
-          )
-          .map(_ => Results.NoContent)
+        for {
+          organisation <- organisationSrv.getOrFail(organisationId)
+          _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
+        } yield Results.NoContent
       }
 }
