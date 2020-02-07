@@ -35,12 +35,13 @@ class ShareSrv @Inject() (
     * Shares a case (creates a share entity) for a precise organisation
     * according to the given profile.
     *
+    * @param owner indicate if the share owns the case
     * @param `case` the case to share
     * @param organisation the organisation to share for
     * @param profile the related share profile
     * @return
     */
-  def shareCase(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
+  def shareCase(owner: Boolean, `case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share with Entity] =
@@ -48,7 +49,7 @@ class ShareSrv @Inject() (
       case Some(_) => Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
       case None =>
         for {
-          createdShare <- createEntity(Share())
+          createdShare <- createEntity(Share(owner))
           _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
           _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
           _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
@@ -72,8 +73,8 @@ class ShareSrv @Inject() (
     } yield newShareProfile
   }
 
-  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
+//  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+//    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
 
   def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {

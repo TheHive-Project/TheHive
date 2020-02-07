@@ -1,6 +1,6 @@
 [
-  {"id": "case1-cert"},
-  {"id": "case2-cert"},
-  {"id": "case2-soc"},
-  {"id": "case3-soc"}
+  {"id": "case1-cert", "owner":  true},
+  {"id": "case2-cert", "owner":  true},
+  {"id": "case2-soc", "owner":  false},
+  {"id": "case3-soc", "owner":  true}
 ]

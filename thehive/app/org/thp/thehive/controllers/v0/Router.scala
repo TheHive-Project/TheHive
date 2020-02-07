@@ -130,7 +130,7 @@ class Router @Inject() (
     case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
     case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
-    case POST(p"/case/artifact/$tId/shares")          => shareCtrl.shareObservable(tId)
+    case POST(p"/case/artifact/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/customField")          => customFieldCtrl.list
     case POST(p"/customField")         => customFieldCtrl.create

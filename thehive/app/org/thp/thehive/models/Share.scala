@@ -4,7 +4,7 @@ import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 
 @VertexEntity
-case class Share()
+case class Share(owner: Boolean)
 
 @EdgeEntity[Share, Case]
 case class ShareCase()

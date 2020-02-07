@@ -130,11 +130,14 @@ class Output @Inject() (
     Success(())
   }
 
-  def shareCase(`case`: Case with Entity, organisationName: String, profileName: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def shareCase(`case`: Case with Entity, organisationName: String, profileName: String)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
     for {
       organisation <- organisationSrv.getOrFail(organisationName)
       profile      <- profileSrv.getOrFail(profileName)
-      _            <- shareSrv.shareCase(`case`, organisation, profile)
+      _            <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
     } yield ()
 
   override def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping] = authTransaction(inputOrganisation.metaData.createdBy) {

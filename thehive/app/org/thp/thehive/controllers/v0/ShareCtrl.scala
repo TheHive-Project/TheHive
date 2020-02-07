@@ -45,7 +45,7 @@ class ShareCtrl @Inject() (
                   .get(inputShare.organisationName)
                   .getOrFail()
                 profile   <- profileSrv.getOrFail(inputShare.profile)
-                share     <- shareSrv.shareCase(`case`, organisation, profile)
+                share     <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
                 richShare <- shareSrv.get(share).richShare.getOrFail()
                 _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
                 _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
@@ -79,7 +79,7 @@ class ShareCtrl @Inject() (
             for {
               organisation <- organisationSrv.get(organisationId).getOrFail()
               _            <- if (organisation.name == request.organisation) Failure(BadRequestError("You cannot remove your own share")) else Success(())
-              shareId      <- caseSrv.get(caseId).can(Permissions.manageShare).share(organisationId)._id.getOrFail()
+              shareId      <- caseSrv.get(caseId).can(Permissions.manageShare).share(organisationId).has("owner", false)._id.getOrFail()
               _            <- shareSrv.remove(shareId)
             } yield ()
           }
@@ -127,6 +127,8 @@ class ShareCtrl @Inject() (
       Failure(AuthorizationError("You are not authorized to remove share"))
     else if (shareSrv.get(shareId).byOrganisationName(authContext.organisation).exists())
       Failure(AuthorizationError("You can't remove your share"))
+    else if (shareSrv.get(shareId).has("owner", true).exists())
+      Failure(AuthorizationError("You can't remove initial shares"))
     else
       shareSrv.remove(shareId)
 
